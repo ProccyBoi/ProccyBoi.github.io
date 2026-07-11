@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Diagnostic notes for the Skylabs F110211 telemetry flight.">
+  <title>F110211 Diagnostic | Proccy Boi</title>
+  <link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../../">Proccy Boi</a>
+    <nav aria-label="Primary navigation">
+      <a href="./">Flight replay</a>
+      <a href="https://github.com/ProccyBoi/proccy-boi">Source</a>
+    </nav>
+  </header>
+
+  <main>
+    <header class="document-header">
+      <p class="eyebrow">Flight diagnostic</p>
+      <h1>F110211</h1>
+      <p>11 July 2026, 12:11:37 to 12:22:55 AEST</p>
+    </header>
+
+    <article class="prose">
+      <h2>Overall result</h2>
+      <p>The BNO08x, BME280, GNSS, aircraft SD card, SX1262 air link, and ground-station logging all worked during the flight. The BNO attitude is valid but uses the side-mounted PCB frame.</p>
+      <div class="notice"><strong>Position note:</strong> the aircraft navigation EKF diverged. The replay therefore uses raw GNSS for horizontal position and barometric height for its default vertical path.</div>
+
+      <h2>Aircraft log</h2>
+      <ul>
+        <li>13,773 binary records were recovered; 13,772 contain the complete fields required by the visualizer.</li>
+        <li>679.331 seconds of data at an actual average rate of 20.27 Hz.</li>
+        <li>BNO data was usable on every normalized aircraft row, with no BNO resets.</li>
+        <li>BME altitude ranged from 123.11 to 260.38 m. Temperature ranged from 19.73 to 28.52 C.</li>
+        <li>GNSS maintained a fix with 6 to 16 satellites and a median horizontal accuracy estimate of 1.18 m.</li>
+        <li>Peak GPS ground speed was 37.98 m/s (136.7 km/h).</li>
+        <li>The horizontal ground track covered 6,785.42 m.</li>
+      </ul>
+
+      <h2>Ground link</h2>
+      <ul>
+        <li>8,741 packets were logged over 678.384 seconds, averaging 12.88 received packets per second.</li>
+        <li>RSSI ranged from -106 to -33 dBm, with a median of -82 dBm.</li>
+        <li>SNR ranged from -3.75 to 9.75 dB, with a median of 8.25 dB.</li>
+        <li>The receiver remained usable and preserved a complete recovery track.</li>
+        <li>Ten hertz remains the preferred live-flight setting until controlled range testing supports a higher rate.</li>
+      </ul>
+
+      <h2>Invalid or absent data</h2>
+      <ul>
+        <li>The aircraft EKF position and velocity are not valid for this flight.</li>
+        <li>Digital and analog airspeed channels were not valid.</li>
+        <li>The HX711 showed the expected unloaded or saturated state.</li>
+        <li>No useful ESC telemetry was present.</li>
+      </ul>
+
+      <h2>Viewer</h2>
+      <p>The <a class="text-link" href="./">interactive report</a> includes the 3D route, GPS map, synchronized charts, attitude display, auto-level controls, and the exact recorded GPS track.</p>
+      <p><a class="text-link" href="diagnostic.md">Read the complete diagnostic notes</a></p>
+    </article>
+  </main>
+
+  <footer>
+    <span>Proccy Boi</span>
+    <a href="../../">All reports</a>
+  </footer>
+</body>
+</html>

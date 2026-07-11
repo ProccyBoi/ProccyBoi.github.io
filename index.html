@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Public project reports, interactive visualizations, and tools by Proccy Boi.">
+  <meta property="og:title" content="Proccy Boi">
+  <meta property="og:description" content="Public project reports, interactive visualizations, and tools.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/">
+  <meta property="og:image" content="https://proccyboi.github.io/proccy-boi/reports/f110211/preview.png">
+  <title>Proccy Boi</title>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./">Proccy Boi</a>
+    <nav aria-label="Primary navigation">
+      <a href="#reports">Reports</a>
+      <a href="https://github.com/ProccyBoi/proccy-boi">Source</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="home-title">
+      <img class="hero-image" src="reports/f110211/preview.png" alt="F110211 interactive flight replay interface">
+      <div class="hero-overlay" aria-hidden="true"></div>
+      <div class="hero-content">
+        <p class="eyebrow">Public project archive</p>
+        <h1 id="home-title">Proccy Boi</h1>
+        <p class="lede">Flight reports, interactive visualizations, and project tools.</p>
+        <div class="actions">
+          <a class="button button-primary" href="reports/f110211/">Open flight F110211</a>
+          <a class="button button-secondary" href="#reports">View reports</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="reports" aria-labelledby="reports-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Published work</p>
+          <h2 id="reports-title">Reports</h2>
+        </div>
+        <p>Interactive field data and supporting diagnostics.</p>
+      </div>
+
+      <article class="report-card">
+        <a class="report-image" href="reports/f110211/" aria-label="Open the F110211 interactive flight report">
+          <img src="reports/f110211/preview.png" alt="Telemetry replay showing the F110211 flight path, instruments, and controls">
+        </a>
+        <div class="report-body">
+          <div class="report-meta">
+            <span>11 July 2026</span>
+            <span>Skylabs telemetry</span>
+          </div>
+          <h3><a href="reports/f110211/">F110211 Flight Replay</a></h3>
+          <p>Explore the recorded 3D route, GPS map, aircraft attitude, barometric height, ground speed, radio link, and sensor timeline.</p>
+          <dl class="metrics">
+            <div><dt>Duration</dt><dd>11m 19s</dd></div>
+            <div><dt>Horizontal track</dt><dd>6.79 km</dd></div>
+            <div><dt>Peak speed</dt><dd>38.0 m/s</dd></div>
+            <div><dt>Aircraft samples</dt><dd>13,772</dd></div>
+          </dl>
+          <div class="report-links">
+            <a class="text-link" href="reports/f110211/">Interactive report</a>
+            <a class="text-link" href="reports/f110211/diagnostic.html">Diagnostic notes</a>
+          </div>
+          <p class="privacy-note">This public replay contains the exact GPS track recorded during the flight.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <span>Proccy Boi</span>
+    <a href="https://github.com/ProccyBoi">GitHub profile</a>
+  </footer>
+</body>
+</html>
