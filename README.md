@@ -1,4 +1,4 @@
-# Andrew Chung — Electrical Engineering
+# Andrew Chung — electrical engineering portfolio
 
 Personal portfolio and public project archive published at:
 
@@ -6,12 +6,12 @@ Personal portfolio and public project archive published at:
 
 ## Main routes
 
-- `/` — landing page and selected-work bench index
-- `/about/` — profile, experience, education, skills and public CV
-- `/projects/` — project index and project detail pages
+- `/` — short landing page with three selected projects
+- `/about/` — profile, experience, education, tools and public CV
+- `/projects/` — complete project index and individual project pages
 - `/projects/skylabs/boards/telemetry/` — Skylabs telemetry / avionics board
 - `/projects/skylabs/boards/ground-station/` — Skylabs ground-station board
-- `/shared/` — hierarchical public archive
+- `/shared/` — public files organised by uni, work and projects
 - `/shared/projects/skylabs/f110211/` — interactive F110211 flight replay
 
 The legacy `/reports/f110211/` route redirects to the archive so previously shared links continue to work.
@@ -45,4 +45,4 @@ Each new item should be linked from its parent folder page and from `sitemap.xml
 - `scripts/create-webp.py` creates WebP derivatives.
 - `scripts/build-public-cv.py` builds the public CV into both `output/pdf/` and the website documents folder.
 
-Pushes to `main` publish automatically through GitHub Pages.
+The site is plain HTML, CSS and JavaScript. Pushes to `main` publish automatically through GitHub Pages.

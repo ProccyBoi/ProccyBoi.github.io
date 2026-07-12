@@ -2,8 +2,8 @@
 
 Research completed 12 July 2026 for the Andrew Chung portfolio overhaul.
 
-- 130 source pages reviewed.
-- 128 unique URLs after removing the two overlaps between the parallel reviews.
+- 140 source pages reviewed across both passes.
+- 138 unique URLs after removing overlaps.
 - Mix: recent awarded sites, creative-developer portfolios, industrial and electronics portfolios, and primary accessibility/performance documentation.
 
 The implementation does not copy a source. It synthesises the recurring strengths: real physical work at large scale, factual metadata, a quick-scan/deep-dive hierarchy, durable URLs, semantic HTML, progressive enhancement, restrained motion, accessible controls and responsive image delivery.
@@ -145,14 +145,29 @@ The implementation does not copy a source. It synthesises the recurring strength
 127. [web.dev — Color and contrast](https://web.dev/learn/accessibility/color-contrast) — Dark themes and contrast preferences.
 128. [Motion — Layout animations](https://motion.dev/docs/layout-animations) — Visual continuity without delaying semantic state.
 
+## Second pass: a quieter hardware index
+
+The first implementation still looked like a themed interface. A second, narrower review focused on sites where the work itself carries the identity:
+
+- [Vitsœ](https://www.vitsoe.com/rw) for restraint, durable typography and generous image space.
+- [Kelli Anderson](https://kellianderson.com/) for an unmistakably personal voice.
+- [Craig Mod](https://craigmod.com/essays/) for an editorial index that rewards reading.
+- [Teenage Engineering](https://teenage.engineering/products) for direct, confident product photography.
+- [Boldport](https://boldport.com/) for treating circuit boards as physical objects rather than interface decoration.
+- [Sam Zeloof](https://sam.zeloof.xyz/) for technically credible, first-person documentation.
+- [Monome](https://monome.org/) for a small visual vocabulary used consistently.
+- [Low-tech Magazine](https://solar.lowtechmagazine.com/) for readable pages with visible authorship.
+- [Are.na](https://www.are.na/) for a calm, index-like information structure.
+
+The public copy was also checked against [avoid-ai-writing](https://github.com/conorbronsdon/avoid-ai-writing). That pass removed slogans, stacked metaphors, press-release phrasing, fake instrumentation language and repeated sentence patterns.
+
 ## Applied direction
 
-- Brand is Andrew Chung, not a fictional engineering persona.
-- Real PCB photography is the primary visual material.
-- Palette: graphite, solder-mask blue, silkscreen white, logic-analyser cyan and a small copper/amber accent.
-- The signature interaction is the accessible “Bench index”: ordinary project links update one large preview on hover/focus; mobile renders inline images.
-- Pages use square edges, fine rules, revision-style labels, visible captions and asymmetric editorial layouts.
-- Shared material uses a calm public-directory hierarchy with breadcrumbs and durable deep links.
-- JavaScript only enhances the menu, preview, copy/share controls, lightbox and optional hero probe.
-- Reduced-motion and higher-contrast preferences are respected.
-- No custom cursor, scroll hijacking, autoplay, fabricated metrics, fake terminal, glass-card grid or AI-generated artwork.
+- The home page has four parts: introduction, three selected projects, one shared-file entry and the footer.
+- Real PCB photography is the main visual material. There is no generated artwork or decorative simulation.
+- The palette is warm near-black, off-white, muted grey and one solder-mask blue accent.
+- Typography uses ordinary system sans-serif faces. Monospace is limited to real dates, revisions and technical metadata.
+- Project pages state only confirmed facts and use first-person wording where Andrew's role is known.
+- Shared files use a simple folder hierarchy with durable deep links.
+- JavaScript is limited to the mobile menu, copy controls and the photo lightbox.
+- There are no gradients, glows, fake terminals, dashboards, custom cursors, scroll hijacking or fabricated metrics.
