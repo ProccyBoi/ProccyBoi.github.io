@@ -161,11 +161,23 @@ The first implementation still looked like a themed interface. A second, narrowe
 
 The public copy was also checked against [avoid-ai-writing](https://github.com/conorbronsdon/avoid-ai-writing). That pass removed slogans, stacked metaphors, press-release phrasing, fake instrumentation language and repeated sentence patterns.
 
+## Third pass: Bench Specimen
+
+The quiet hardware index solved the clutter problem but did not yet have a memorable visual gesture. The final pass keeps the same short structure and adds a restrained identity drawn from the physical boards:
+
+- The hero pairs a real Skylabs macro photograph with the complete board inset over it, like a hardware inspection sheet.
+- Andrew's name is set as a large two-line block beside the hardware rather than as a conventional portfolio headline.
+- The three selected projects form an asymmetric numbered contact sheet.
+- Small copper rings mark major rules, referencing real plated mounting holes without drawing decorative circuits.
+- Motion is limited to a small lift of the hero inset and colour-preserving focus treatments.
+
+No new claims or decorative datasets were introduced. The signature comes from authorised project photography, confirmed revision metadata and the boards' real solder-mask colours.
+
 ## Applied direction
 
 - The home page has four parts: introduction, three selected projects, one shared-file entry and the footer.
 - Real PCB photography is the main visual material. There is no generated artwork or decorative simulation.
-- The palette is warm near-black, off-white, muted grey and one solder-mask blue accent.
+- The palette is warm near-black, off-white, muted grey, solder-mask blue and very small copper datum markers.
 - Typography uses ordinary system sans-serif faces. Monospace is limited to real dates, revisions and technical metadata.
 - Project pages state only confirmed facts and use first-person wording where Andrew's role is known.
 - Shared files use a simple folder hierarchy with durable deep links.

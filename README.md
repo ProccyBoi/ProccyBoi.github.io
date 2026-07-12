@@ -6,7 +6,7 @@ Personal portfolio and public project archive published at:
 
 ## Main routes
 
-- `/` — short landing page with three selected projects
+- `/` — Bench Specimen landing page with an inspection diptych and three selected projects
 - `/about/` — profile, experience, education, tools and public CV
 - `/projects/` — complete project index and individual project pages
 - `/projects/skylabs/boards/telemetry/` — Skylabs telemetry / avionics board

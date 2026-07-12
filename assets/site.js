@@ -3,16 +3,26 @@ document.documentElement.classList.add("js");
 const navToggle = document.querySelector("[data-nav-toggle]");
 const siteNav = document.querySelector("[data-site-nav]");
 const desktopNavigation = window.matchMedia("(min-width: 721px)");
+const navigationBackground = [...document.querySelectorAll("main, .site-footer")];
 
 const syncNavigationAccessibility = (open = false) => {
   if (!siteNav) return;
   const isMobile = !desktopNavigation.matches;
-  siteNav.inert = isMobile && !open;
+  siteNav.toggleAttribute("inert", isMobile && !open);
   if (isMobile && !open) {
     siteNav.setAttribute("aria-hidden", "true");
   } else {
     siteNav.removeAttribute("aria-hidden");
   }
+  navigationBackground.forEach((region) => {
+    const hiddenBehindMenu = isMobile && open;
+    region.toggleAttribute("inert", hiddenBehindMenu);
+    if (hiddenBehindMenu) {
+      region.setAttribute("aria-hidden", "true");
+    } else {
+      region.removeAttribute("aria-hidden");
+    }
+  });
 };
 
 const closeNavigation = (restoreFocus = false) => {
