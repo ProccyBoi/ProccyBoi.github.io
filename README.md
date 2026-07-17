@@ -9,6 +9,7 @@ Personal portfolio and public project archive published at:
 - `/` — Bench Specimen landing page with an inspection diptych and three selected projects
 - `/about/` — profile, experience, education, tools and public CV
 - `/projects/` — complete project index and individual project pages
+- `/projects/scopelab/` — ScopeLab browser-based micro:bit and oscilloscope teaching bench
 - `/projects/skylabs/boards/telemetry/` — Skylabs telemetry / avionics board
 - `/projects/skylabs/boards/ground-station/` — Skylabs ground-station board
 - `/shared/` — public files organised by uni, work and projects
