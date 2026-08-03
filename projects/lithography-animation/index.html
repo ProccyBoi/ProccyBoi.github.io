@@ -1,0 +1,1557 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lithography Process Animation</title>
+  <meta name="description" content="Interactive optical lithography teaching model for exploring wavelength, numerical aperture, focus, resist tone, process flow and photon statistics.">
+  <meta name="theme-color" content="#1f6aa5">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Lithography Process Animation">
+  <meta property="og:description" content="Explore Rayleigh CD, depth of focus, resist processing and absorbed-photon shot-noise estimates in an interactive teaching model.">
+  <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/projects/lithography-animation/">
+  <meta property="og:image" content="https://proccyboi.github.io/proccy-boi/assets/images/projects/lithography-simulation-preview.png">
+  <link rel="canonical" href="https://proccyboi.github.io/proccy-boi/projects/lithography-animation/">
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #5d6b7a;
+      --line: #d8e0e8;
+      --blue: #1f6aa5;
+      --green: #2d8064;
+      --red: #b23b3b;
+      --amber: #9b6500;
+      --teal: #217a88;
+      --violet: #6f559b;
+      --shadow: 0 8px 24px rgba(23, 32, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(320px, 400px) 1fr;
+      min-height: 100vh;
+    }
+
+    aside {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding: 18px;
+      overflow: auto;
+    }
+
+    main {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 21px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
+
+    .field {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .field:last-child {
+      border-bottom: 0;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    output {
+      color: var(--blue);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"],
+    select {
+      width: 100%;
+      margin-top: 8px;
+      accent-color: var(--blue);
+    }
+
+    select {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f9fbfd;
+      color: var(--ink);
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f9fbfd;
+      color: var(--ink);
+      min-height: 36px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:hover,
+    button:focus-visible,
+    select:focus-visible {
+      border-color: var(--blue);
+      outline: none;
+    }
+
+    button.active {
+      color: #ffffff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .toolbar button {
+      flex: 1 1 94px;
+    }
+
+    .panel {
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(145px, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-height: 78px;
+      border-left: 4px solid var(--blue);
+      border-radius: 6px;
+      background: #fbfcfe;
+      padding: 10px 12px;
+    }
+
+    .metric:nth-child(2) {
+      border-left-color: var(--green);
+    }
+
+    .metric:nth-child(3) {
+      border-left-color: var(--amber);
+    }
+
+    .metric:nth-child(4) {
+      border-left-color: var(--red);
+    }
+
+    .metric:nth-child(5) {
+      border-left-color: var(--teal);
+    }
+
+    .metric b {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .metric span {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .stage-head {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(250px, 0.95fr);
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+
+    .stage-title {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      min-width: 0;
+    }
+
+    .stage-title span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 24px;
+      border-radius: 6px;
+      background: #e8f1f8;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .insight {
+      border-left: 4px solid var(--green);
+      border-radius: 6px;
+      background: #f7faf8;
+      padding: 10px 12px;
+      min-height: 74px;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(78px, 1fr));
+      gap: 6px;
+      margin: 10px 0 12px;
+    }
+
+    .step-button {
+      position: relative;
+      overflow: hidden;
+      min-height: 46px;
+      padding: 7px 8px;
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .step-button::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: var(--fill, 0%);
+      height: 3px;
+      background: var(--blue);
+    }
+
+    .step-button.active::after {
+      background: #ffffff;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    #processCanvas {
+      height: 510px;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .chart canvas {
+      height: 315px;
+    }
+
+    .equations {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .eq {
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfe;
+      padding: 10px 12px;
+    }
+
+    .eq code {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: normal;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .note {
+      min-height: 98px;
+      border-top: 4px solid var(--blue);
+      border-radius: 6px;
+      background: #fbfcfe;
+      padding: 10px 12px;
+    }
+
+    .note:nth-child(2) {
+      border-top-color: var(--amber);
+    }
+
+    .note:nth-child(3) {
+      border-top-color: var(--red);
+    }
+
+    .note ul {
+      margin: 7px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1120px) {
+      .metrics,
+      .equations,
+      .notes {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+
+      .timeline {
+        grid-template-columns: repeat(4, minmax(78px, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        display: block;
+      }
+
+      aside {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .stage-head,
+      .charts {
+        grid-template-columns: 1fr;
+      }
+
+      #processCanvas {
+        height: 440px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      main,
+      aside {
+        padding: 12px;
+      }
+
+      .metrics,
+      .equations,
+      .notes {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline {
+        grid-template-columns: repeat(2, minmax(78px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <h1>Lithography Process Animation</h1>
+      <p>Optical projection lithography turns a reticle image into a resist pattern, then transfers that pattern into a film on the wafer.</p>
+
+      <div class="field">
+        <label for="source">Exposure source <output id="sourceOut">ArF immersion</output></label>
+        <select id="source">
+          <option value="euv">EUV, 13.5 nm</option>
+          <option value="arfImmersion" selected>ArF immersion, 193 nm</option>
+          <option value="arfDry">ArF dry, 193 nm</option>
+          <option value="krf">KrF, 248 nm</option>
+          <option value="iline">i-line, 365 nm</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Resist tone <output id="toneOut">Positive</output></label>
+        <div class="segmented">
+          <button id="positiveTone" class="active" type="button">Positive</button>
+          <button id="negativeTone" type="button">Negative</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="lambda">Wavelength <output id="lambdaOut">193 nm</output></label>
+        <input id="lambda" type="range" min="13.5" max="365" step="0.5" value="193">
+      </div>
+
+      <div class="field">
+        <label for="na">Numerical aperture <output id="naOut">1.35</output></label>
+        <input id="na" type="range" min="0.30" max="1.55" step="0.01" value="1.35">
+      </div>
+
+      <div class="field">
+        <label for="k1">Resolution factor k1 <output id="k1Out">0.32</output></label>
+        <input id="k1" type="range" min="0.25" max="0.80" step="0.01" value="0.32">
+      </div>
+
+      <div class="field">
+        <label for="k2">DOF factor k2 <output id="k2Out">0.50</output></label>
+        <input id="k2" type="range" min="0.30" max="0.90" step="0.01" value="0.50">
+      </div>
+
+      <div class="field">
+        <label for="dose">Exposure dose <output id="doseOut">32 mJ/cm2</output></label>
+        <input id="dose" type="range" min="8" max="90" step="1" value="32">
+      </div>
+
+      <div class="field">
+        <label for="feature">Square feature width <output id="featureOut">20 nm</output></label>
+        <input id="feature" type="range" min="5" max="100" step="1" value="20">
+      </div>
+
+      <div class="field">
+        <label for="absorption">Absorbed photon fraction <output id="absorptionOut">35%</output></label>
+        <input id="absorption" type="range" min="5" max="100" step="1" value="35">
+      </div>
+
+      <div class="field">
+        <label for="focus">Focus offset <output id="focusOut">0 nm</output></label>
+        <input id="focus" type="range" min="-240" max="240" step="5" value="0">
+      </div>
+
+      <div class="field">
+        <label for="resist">Resist thickness <output id="resistOut">120 nm</output></label>
+        <input id="resist" type="range" min="35" max="520" step="5" value="120">
+      </div>
+
+      <div class="field">
+        <label for="peb">PEB diffusion blur <output id="pebOut">14 nm</output></label>
+        <input id="peb" type="range" min="2" max="60" step="1" value="14">
+      </div>
+
+      <div class="field">
+        <label for="speed">Animation speed <output id="speedOut">1.0x</output></label>
+        <input id="speed" type="range" min="0.5" max="2.5" step="0.1" value="1">
+        <div class="toolbar">
+          <button id="play" type="button">Play</button>
+          <button id="next" type="button">Next</button>
+          <button id="reset" type="button">Reset</button>
+          <button id="exportFrame" type="button">Export PNG</button>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <section class="metrics">
+        <div class="metric">
+          <b>Rayleigh CD</b>
+          <span id="cdMetric">45.7 nm</span>
+          <small id="cdNote">Smaller lambda or k1, larger NA.</small>
+        </div>
+        <div class="metric">
+          <b>Depth of focus</b>
+          <span id="dofMetric">53.0 nm</span>
+          <small>DOF shrinks quickly as NA increases.</small>
+        </div>
+        <div class="metric">
+          <b>Focus margin</b>
+          <span id="focusMetric">100%</span>
+          <small id="focusNote">Current focus is inside the simple DOF window.</small>
+        </div>
+        <div class="metric">
+          <b>Photon shot-noise estimate</b>
+          <span id="noiseMetric">0.5%</span>
+          <small id="noiseNote">About 43,500 absorbed photons for a 20 nm square feature.</small>
+        </div>
+        <div class="metric">
+          <b>Transfer risk</b>
+          <span id="riskMetric">Moderate</span>
+          <small id="riskNote">Risk combines focus, blur, thickness, and dose.</small>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="stage-head">
+          <div>
+            <div class="stage-title">
+              <span id="stepNumber">1</span>
+              <h2 id="stepTitle">Clean, dehydrate, prime</h2>
+            </div>
+            <p id="stepText">A clean wafer surface is dehydrated and primed so photoresist wets uniformly and adheres during develop and etch.</p>
+          </div>
+          <div class="insight">
+            <h3 id="insightTitle">Surface preparation controls adhesion</h3>
+            <p id="insightText">Water on oxide makes resist adhesion weak. HMDS treatment makes the surface more hydrophobic before coating.</p>
+          </div>
+        </div>
+
+        <div id="timeline" class="timeline"></div>
+        <canvas id="processCanvas" aria-label="Animated lithography wafer cross section"></canvas>
+      </section>
+
+      <section class="charts">
+        <div class="panel chart">
+          <h2>Resolution and Focus Trade-Off</h2>
+          <canvas id="resolutionChart"></canvas>
+        </div>
+        <div class="panel chart">
+          <h2>Aerial Image and Resist Threshold</h2>
+          <canvas id="aerialChart"></canvas>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Equations Used in the Animation</h2>
+        <div class="equations">
+          <div class="eq">
+            <code>CD = k1 lambda / NA</code>
+            <p>Critical dimension improves with shorter wavelength and higher numerical aperture, but only when the process can support the required k1.</p>
+          </div>
+          <div class="eq">
+            <code>DOF = k2 lambda / NA^2</code>
+            <p>Higher NA improves resolution while reducing focus tolerance. A flatter wafer and tighter focus control become more important.</p>
+          </div>
+          <div class="eq">
+            <code>N_abs = eta D A / (hc/lambda); sigma_N/N ~= 1/sqrt(N_abs)</code>
+            <p>The photon estimate uses the selected square feature area and absorbed fraction. It shows Poisson scaling only, not a complete resist or defect model.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Wiki-Ready Teaching Points</h2>
+        <div class="notes">
+          <div class="note">
+            <h3>What lithography defines</h3>
+            <ul>
+              <li>Gate length, contact openings, interconnect shapes, and implant masks.</li>
+              <li>Device current, capacitance, leakage, overlay, and yield sensitivity.</li>
+            </ul>
+          </div>
+          <div class="note">
+            <h3>Positive vs negative resist</h3>
+            <ul>
+              <li>Positive tone removes exposed regions during development.</li>
+              <li>Negative tone keeps exposed regions and removes unexposed regions.</li>
+            </ul>
+          </div>
+          <div class="note">
+            <h3>Modern process limits</h3>
+            <ul>
+              <li>Resolution, line-edge roughness, and sensitivity form a practical trade-off.</li>
+              <li>Etch bias and metrology decide whether the final wafer CD matches the mask.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Scope, authorship, and references</h2>
+        <p>This standalone animation, its graphics, and its calculation code are original Team 13 work. It uses simplified educational estimates rather than a scanner/resist calibration. Etch physics, yield statistics, cleanroom practice, and process integration remain on the linked teams' pages.</p>
+        <ul>
+          <li>C. A. Mack, <em>Fundamental Principles of Optical Lithography</em>, Wiley, 2007.</li>
+          <li>R. C. Jaeger, <em>Introduction to Microelectronic Fabrication</em>, 2nd ed., Prentice Hall, 2002.</li>
+          <li><a href="https://www.asml.com/en/technology/lithography-principles/rayleigh-criterion">ASML: Rayleigh criterion for resolution</a>.</li>
+          <li><a href="https://irds.ieee.org/images/files/pdf/2024/2024IRDS_LITHO.pdf">IEEE IRDS 2024: Lithography and Patterning</a>.</li>
+          <li>V. Kosma <em>et al.</em>, "High Sensitivity Resists for EUV Lithography," <em>Materials</em>, vol. 13, 2850, 2020, doi: 10.3390/ma13132850.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const sourcePresets = {
+      euv: { label: "EUV", lambda: 13.5, na: 0.33, k1: 0.45, k2: 0.50, dose: 45, resist: 45, peb: 8 },
+      arfImmersion: { label: "ArF immersion", lambda: 193, na: 1.35, k1: 0.32, k2: 0.50, dose: 32, resist: 120, peb: 14 },
+      arfDry: { label: "ArF dry", lambda: 193, na: 0.93, k1: 0.45, k2: 0.55, dose: 28, resist: 210, peb: 20 },
+      krf: { label: "KrF", lambda: 248, na: 0.68, k1: 0.50, k2: 0.60, dose: 24, resist: 300, peb: 26 },
+      iline: { label: "i-line", lambda: 365, na: 0.55, k1: 0.60, k2: 0.65, dose: 18, resist: 420, peb: 34 }
+    };
+
+    const steps = [
+      {
+        key: "clean",
+        title: "Clean, dehydrate, prime",
+        text: "A clean wafer surface is dehydrated and primed so photoresist wets uniformly and adheres during develop and etch.",
+        insightTitle: "Surface preparation controls adhesion",
+        insight: "Water on oxide makes resist adhesion weak. HMDS treatment makes the surface more hydrophobic before coating."
+      },
+      {
+        key: "coat",
+        title: "Spin coat and soft bake",
+        text: "Liquid resist spreads across the wafer, excess solvent is driven out, and the film thickness becomes a process parameter.",
+        insightTitle: "Thickness is a trade-off",
+        insight: "Thicker resist survives etch better, but it consumes focus budget and can collapse when very narrow openings are developed."
+      },
+      {
+        key: "expose",
+        title: "Align reticle and expose",
+        text: "Projection optics image the mask pattern into the resist. Wavelength, NA, k1, dose, and focus set the printed aerial image.",
+        insightTitle: "Resolution and focus pull against each other",
+        insight: "Increasing NA reduces CD, but DOF falls with NA squared. Fine features need tighter focus and overlay control."
+      },
+      {
+        key: "peb",
+        title: "Post-exposure bake",
+        text: "For chemically amplified resists, exposure generates acid and the bake lets acid catalyze solubility change or cross-linking.",
+        insightTitle: "Amplification adds blur",
+        insight: "A small amount of acid diffusion improves sensitivity, but too much diffusion rounds corners and increases CD error."
+      },
+      {
+        key: "develop",
+        title: "Develop the resist image",
+        text: "Developer removes the soluble regions. Positive tone removes exposed areas; negative tone removes unexposed areas.",
+        insightTitle: "Tone controls polarity",
+        insight: "The same reticle can print opposite topographies depending on whether exposed resist becomes soluble or insoluble."
+      },
+      {
+        key: "transfer",
+        title: "Transfer pattern to the film",
+        text: "The remaining resist acts as a temporary mask while etch, implantation, deposition, or lift-off transfers the pattern.",
+        insightTitle: "The wafer CD is not only optical",
+        insight: "Etch bias, selectivity, resist erosion, and sidewall angle can all move the final feature away from the aerial image."
+      },
+      {
+        key: "strip",
+        title: "Strip resist and inspect",
+        text: "The temporary resist mask is removed and the patterned film is measured for CD, overlay, line-edge roughness, and defects.",
+        insightTitle: "Metrology closes the loop",
+        insight: "Inspection data feeds back to exposure dose, focus, OPC, etch, and overlay recipes before the next wafer lot."
+      }
+    ];
+
+    const ids = [
+      "source", "lambda", "na", "k1", "k2", "dose", "feature", "absorption", "focus",
+      "resist", "peb", "speed"
+    ];
+
+    const elements = {};
+    [
+      ...ids,
+      "sourceOut", "toneOut", "lambdaOut", "naOut", "k1Out", "k2Out", "doseOut",
+      "featureOut", "absorptionOut", "focusOut", "resistOut", "pebOut", "speedOut", "positiveTone", "negativeTone",
+      "play", "next", "reset", "exportFrame", "cdMetric", "dofMetric", "focusMetric",
+      "noiseMetric", "noiseNote", "riskMetric", "cdNote", "focusNote", "riskNote", "stepNumber",
+      "stepTitle", "stepText", "insightTitle", "insightText", "timeline",
+      "processCanvas", "resolutionChart", "aerialChart"
+    ].forEach((id) => { elements[id] = document.getElementById(id); });
+
+    const state = {
+      tone: "positive",
+      step: 0,
+      progress: 0,
+      playing: false,
+      lastTime: 0
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function smooth(t) {
+      return t * t * (3 - 2 * t);
+    }
+
+    function fixed(value, places) {
+      return Number(value).toFixed(places);
+    }
+
+    function resizeCanvas(canvas, minWidth, minHeight) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(minWidth, Math.floor(rect.width));
+      const height = Math.max(minHeight, Math.floor(rect.height));
+      if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+      }
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, width, height };
+    }
+
+    function getModel() {
+      const lambda = Number(elements.lambda.value);
+      const na = Number(elements.na.value);
+      const k1 = Number(elements.k1.value);
+      const k2 = Number(elements.k2.value);
+      const dose = Number(elements.dose.value);
+      const feature = Number(elements.feature.value);
+      const absorption = Number(elements.absorption.value) / 100;
+      const focus = Number(elements.focus.value);
+      const resist = Number(elements.resist.value);
+      const peb = Number(elements.peb.value);
+      const cd = k1 * lambda / Math.max(na, 0.01);
+      const dof = k2 * lambda / Math.max(na * na, 0.01);
+      const halfDof = dof / 2;
+      const focusMargin = halfDof <= 0 ? 0 : clamp((halfDof - Math.abs(focus)) / halfDof, 0, 1);
+      const planck = 6.62607015e-34;
+      const lightSpeed = 299792458;
+      const photonEnergy = planck * lightSpeed / (lambda * 1e-9);
+      const featureAreaCm2 = Math.pow(feature * 1e-7, 2);
+      const incidentPhotons = (dose * 1e-3) * featureAreaCm2 / photonEnergy;
+      const absorbedPhotons = Math.max(1, incidentPhotons * absorption);
+      const shotNoise = 1 / Math.sqrt(absorbedPhotons);
+      const aspect = resist / Math.max(cd, 10);
+      const blurRatio = peb / Math.max(cd, 10);
+      const riskValue =
+        (1 - focusMargin) * 0.35 +
+        clamp((aspect - 3) / 6, 0, 1) * 0.20 +
+        clamp((blurRatio - 0.18) / 0.55, 0, 1) * 0.25 +
+        clamp((shotNoise - 0.01) / 0.06, 0, 1) * 0.20;
+      return {
+        lambda, na, k1, k2, dose, feature, absorption, focus, resist, peb, cd, dof,
+        focusMargin, incidentPhotons, absorbedPhotons, shotNoise, aspect, blurRatio, riskValue,
+        tone: state.tone, source: elements.source.value, speed: Number(elements.speed.value)
+      };
+    }
+
+    function getFeatureIntervals(x, width, model) {
+      const cdPx = clamp(width * (0.045 + model.cd / 2200), 26, 88);
+      const pitch = width * 0.16;
+      const center = x + width * 0.5;
+      const centers = [center - pitch, center, center + pitch];
+      const focusPenalty = clamp(Math.abs(model.focus) / Math.max(model.dof, 1), 0, 1);
+      const blur = clamp((model.peb / 35 + focusPenalty * 10), 0, 18);
+      return centers.map((cx, i) => ({
+        x1: cx - cdPx / 2 - blur * (i === 1 ? 0.25 : 0),
+        x2: cx + cdPx / 2 + blur * (i === 1 ? 0.25 : 0),
+        cx
+      }));
+    }
+
+    function invertIntervals(bounds, intervals) {
+      const sorted = intervals.slice().sort((a, b) => a.x1 - b.x1);
+      const out = [];
+      let cursor = bounds.x1;
+      sorted.forEach((it) => {
+        if (it.x1 > cursor) out.push({ x1: cursor, x2: it.x1 });
+        cursor = Math.max(cursor, it.x2);
+      });
+      if (cursor < bounds.x2) out.push({ x1: cursor, x2: bounds.x2 });
+      return out.filter((it) => it.x2 - it.x1 > 2);
+    }
+
+    function openIntervals(bounds, intervals, model) {
+      return model.tone === "positive" ? intervals : invertIntervals(bounds, intervals);
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
+    function fillRoundRect(ctx, x, y, w, h, r, fill, stroke) {
+      drawRoundRect(ctx, x, y, w, h, r);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    function drawLabel(ctx, text, x, y, color, align) {
+      ctx.fillStyle = color || "#44515f";
+      ctx.font = "12px Segoe UI, Arial, sans-serif";
+      ctx.textAlign = align || "center";
+      ctx.fillText(text, x, y);
+      ctx.textAlign = "start";
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const head = 8;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width || 2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawLayerSegments(ctx, y, h, segments, fill, stroke) {
+      segments.forEach((seg) => {
+        if (seg.x2 - seg.x1 > 1) {
+          fillRoundRect(ctx, seg.x1, y, seg.x2 - seg.x1, h, 3, fill, stroke);
+        }
+      });
+    }
+
+    function subtractGaps(bounds, gaps) {
+      return invertIntervals(bounds, gaps);
+    }
+
+    function roughY(base, x, amp) {
+      return base + Math.sin(x * 0.055) * amp + Math.sin(x * 0.137) * amp * 0.45;
+    }
+
+    function drawRoughTopRect(ctx, x, y, w, h, amp, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + h);
+      ctx.lineTo(x, y + amp);
+      const steps = Math.max(8, Math.floor(w / 10));
+      for (let i = 0; i <= steps; i += 1) {
+        const px = x + (w * i) / steps;
+        ctx.lineTo(px, roughY(y, px, amp));
+      }
+      ctx.lineTo(x + w, y + h);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    function drawBaseWafer(ctx, geo, model, etched) {
+      const { waferX, waferW, siY, siH, oxideY, oxideH } = geo;
+      fillRoundRect(ctx, waferX, siY, waferW, siH, 8, "#d9dee4", "#9da9b5");
+      ctx.fillStyle = "#c7ced7";
+      for (let i = 0; i < 18; i += 1) {
+        const px = waferX + ((i + 0.5) / 18) * waferW;
+        ctx.fillRect(px - 1, siY + 8, 2, siH - 16);
+      }
+      drawLabel(ctx, "silicon wafer", waferX + waferW / 2, siY + siH / 2 + 4, "#3f4c59");
+
+      const bounds = { x1: waferX + 22, x2: waferX + waferW - 22 };
+      const features = getFeatureIntervals(bounds.x1, bounds.x2 - bounds.x1, model);
+      const gaps = etched ? openIntervals(bounds, features, model) : [];
+      const oxideSegments = etched ? subtractGaps(bounds, gaps) : [bounds];
+      drawLayerSegments(ctx, oxideY, oxideH, oxideSegments, "#acd4ec", "#6fa8cb");
+
+      if (etched) {
+        gaps.forEach((gap) => {
+          ctx.fillStyle = "rgba(90, 110, 130, 0.18)";
+          ctx.fillRect(gap.x1, oxideY, gap.x2 - gap.x1, oxideH);
+          ctx.fillStyle = "rgba(85, 95, 105, 0.14)";
+          ctx.fillRect(gap.x1 + 3, siY, Math.max(1, gap.x2 - gap.x1 - 6), 14);
+        });
+      }
+      drawLabel(ctx, etched ? "patterned film" : "oxide or hard mask film", waferX + waferW / 2, oxideY + oxideH / 2 + 4, "#285b75");
+      return { bounds, features };
+    }
+
+    function drawContinuousResist(ctx, geo, model, alpha) {
+      const { resistY, resistH, waferX, waferW } = geo;
+      const x = waferX + 22;
+      const w = waferW - 44;
+      ctx.save();
+      ctx.globalAlpha = alpha == null ? 1 : alpha;
+      drawRoughTopRect(ctx, x, resistY, w, resistH, 1.2, "#f2c24f", "#b88913");
+      ctx.restore();
+      drawLabel(ctx, "photoresist", x + w / 2, resistY + resistH / 2 + 4, "#5a4210");
+    }
+
+    function drawExposedRegions(ctx, geo, model, intensity) {
+      const { resistY, resistH } = geo;
+      const { bounds, features } = drawBaseWafer(ctx, geo, model, false);
+      drawContinuousResist(ctx, geo, model, 1);
+      const blur = clamp(model.peb / 4 + Math.abs(model.focus) / 25, 4, 22);
+      features.forEach((it) => {
+        const g = ctx.createLinearGradient(it.x1 - blur, 0, it.x2 + blur, 0);
+        g.addColorStop(0, "rgba(242, 143, 82, 0)");
+        g.addColorStop(0.18, "rgba(242, 143, 82, " + (0.18 * intensity) + ")");
+        g.addColorStop(0.5, "rgba(216, 96, 61, " + (0.58 * intensity) + ")");
+        g.addColorStop(0.82, "rgba(242, 143, 82, " + (0.18 * intensity) + ")");
+        g.addColorStop(1, "rgba(242, 143, 82, 0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(it.x1 - blur, resistY, it.x2 - it.x1 + blur * 2, resistH);
+      });
+      drawLabel(ctx, model.tone === "positive" ? "exposed regions become soluble" : "exposed regions cross-link", bounds.x1 + (bounds.x2 - bounds.x1) / 2, resistY - 9, "#a04d20");
+      return { bounds, features };
+    }
+
+    function drawDevelopedResist(ctx, geo, model, p) {
+      const { resistY, resistH } = geo;
+      const { bounds, features } = drawBaseWafer(ctx, geo, model, false);
+      const openings = openIntervals(bounds, features, model);
+      const remaining = subtractGaps(bounds, openings);
+      const amp = clamp(model.shotNoise * 10 + model.peb / 20, 1.2, 8);
+
+      if (model.tone === "positive") {
+        drawLayerSegments(ctx, resistY, resistH, remaining, "#f2c24f", "#b88913");
+      } else {
+        drawLayerSegments(ctx, resistY, resistH, remaining, "#d49f3d", "#9a6f17");
+      }
+
+      openings.forEach((gap) => {
+        ctx.save();
+        ctx.globalAlpha = 0.35 + 0.45 * p;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(gap.x1, resistY, gap.x2 - gap.x1, resistH + 2);
+        ctx.restore();
+        ctx.strokeStyle = "rgba(178, 59, 59, 0.48)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(gap.x1, resistY + amp);
+        for (let x = gap.x1; x <= gap.x2; x += 6) ctx.lineTo(x, roughY(resistY, x, amp));
+        ctx.lineTo(gap.x2, resistY + resistH);
+        ctx.moveTo(gap.x1, resistY + resistH);
+        ctx.lineTo(gap.x1, resistY + amp);
+        ctx.stroke();
+      });
+      drawLabel(ctx, model.tone === "positive" ? "openings are the exposed mask image" : "openings are the inverse of the exposed image", bounds.x1 + (bounds.x2 - bounds.x1) / 2, resistY - 9, "#6c4d11");
+      return { bounds, features, openings, remaining };
+    }
+
+    function drawReticleAndOptics(ctx, geo, model, p, expose) {
+      const { waferX, waferW, resistY } = geo;
+      const stageW = waferW - 44;
+      const maskX = waferX + 22;
+      const maskY = 78;
+      const maskH = 32;
+      const features = getFeatureIntervals(maskX, stageW, model);
+
+      fillRoundRect(ctx, maskX, maskY, stageW, maskH, 4, "#f8fafc", "#a8b6c5");
+      features.forEach((it) => {
+        ctx.fillStyle = "#242d38";
+        ctx.fillRect(it.x1, maskY + 3, it.x2 - it.x1, maskH - 6);
+      });
+      drawLabel(ctx, "reticle / mask", maskX + stageW / 2, maskY - 10, "#44515f");
+
+      ctx.strokeStyle = "#7fa8d6";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(maskX + stageW / 2, maskY + 76, stageW * 0.21, 21, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      drawLabel(ctx, "projection lens", maskX + stageW / 2, maskY + 82, "#466a8f");
+
+      if (expose) {
+        ctx.save();
+        ctx.globalAlpha = 0.25 + 0.65 * p;
+        features.forEach((it) => {
+          const cx = (it.x1 + it.x2) / 2;
+          const bottomY = resistY + 2;
+          const spread = clamp(Math.abs(model.focus) / 10 + model.peb / 6, 2, 34);
+          drawArrow(ctx, cx - 18, maskY + maskH, cx - spread, bottomY, "#3c8dcc", 2);
+          drawArrow(ctx, cx + 18, maskY + maskH, cx + spread, bottomY, "#3c8dcc", 2);
+          drawArrow(ctx, cx, maskY + maskH, cx, bottomY, "#1f6aa5", 2.2);
+        });
+        ctx.restore();
+      }
+    }
+
+    function drawCleanAnimation(ctx, geo, model, p) {
+      drawBaseWafer(ctx, geo, model, false);
+      const { waferX, waferW, oxideY } = geo;
+      for (let i = 0; i < 16; i += 1) {
+        const x = waferX + 50 + ((i + p * 1.3) % 16) * (waferW - 100) / 16;
+        const y = oxideY - 8 - 18 * Math.sin((i + p) * 0.9) * 0.5;
+        ctx.fillStyle = i % 2 ? "#2d8064" : "#79b586";
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.strokeStyle = "rgba(155, 101, 0, 0.55)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i += 1) {
+        const x = waferX + 90 + i * (waferW - 180) / 4;
+        ctx.beginPath();
+        ctx.moveTo(x, oxideY - 58);
+        ctx.bezierCurveTo(x - 12, oxideY - 42, x + 12, oxideY - 30, x, oxideY - 14);
+        ctx.stroke();
+      }
+      drawLabel(ctx, "dehydration bake + HMDS prime", waferX + waferW / 2, oxideY - 76, "#2d8064");
+    }
+
+    function drawSpinAnimation(ctx, geo, model, p) {
+      drawBaseWafer(ctx, geo, model, false);
+      const { waferX, waferW, oxideY, resistY, resistH } = geo;
+      const radius = waferW * 0.23;
+      const cx = waferX + waferW / 2;
+      const cy = resistY - 45;
+      ctx.strokeStyle = "#9b6500";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i += 1) {
+        const start = p * Math.PI * 2 + i * 2.0;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - i * 18, start, start + 1.35);
+        ctx.stroke();
+        const ex = cx + Math.cos(start + 1.35) * (radius - i * 18);
+        const ey = cy + Math.sin(start + 1.35) * (radius - i * 18);
+        ctx.fillStyle = "#9b6500";
+        ctx.beginPath();
+        ctx.arc(ex, ey, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const dropY = lerp(oxideY - 110, resistY + resistH / 2, smooth(p));
+      ctx.fillStyle = "#f2c24f";
+      ctx.beginPath();
+      ctx.arc(cx, dropY, lerp(15, 6, smooth(p)), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = clamp(p * 1.4, 0, 1);
+      drawContinuousResist(ctx, geo, model, 1);
+      ctx.globalAlpha = 1;
+      drawLabel(ctx, "spin coat then soft bake", cx, oxideY - 80, "#9b6500");
+    }
+
+    function drawPebAnimation(ctx, geo, model, p) {
+      drawExposedRegions(ctx, geo, model, 1);
+      const { bounds, features } = drawBaseWafer(ctx, geo, model, false);
+      drawContinuousResist(ctx, geo, model, 0);
+      const { resistY, resistH } = geo;
+      features.forEach((it, idx) => {
+        const cx = (it.x1 + it.x2) / 2;
+        const count = 10;
+        for (let i = 0; i < count; i += 1) {
+          const theta = (i / count) * Math.PI * 2 + p * 2.4 + idx;
+          const r = lerp(5, clamp(model.peb, 6, 58), p) * (0.55 + (i % 3) * 0.22);
+          ctx.fillStyle = i % 2 ? "rgba(178, 59, 59, 0.72)" : "rgba(242, 143, 82, 0.72)";
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(theta) * r, resistY + resistH * 0.48 + Math.sin(theta) * r * 0.25, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      drawLabel(ctx, "acid catalysis and diffusion blur", bounds.x1 + (bounds.x2 - bounds.x1) / 2, resistY - 10, "#b23b3b");
+    }
+
+    function drawDevelopAnimation(ctx, geo, model, p) {
+      drawDevelopedResist(ctx, geo, model, p);
+      const { waferX, waferW, resistY } = geo;
+      const waveY = resistY - 28;
+      ctx.strokeStyle = "rgba(31, 106, 165, 0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i += 1) {
+        const x = waferX + 22 + (waferW - 44) * i / 80;
+        const y = waveY + Math.sin(i * 0.5 + p * 8) * 5;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      drawLabel(ctx, "developer dissolves soluble resist", waferX + waferW / 2, waveY - 15, "#1f6aa5");
+    }
+
+    function drawTransferAnimation(ctx, geo, model, p) {
+      const etched = p > 0.34;
+      drawBaseWafer(ctx, geo, model, etched);
+      drawDevelopedResist(ctx, geo, model, 1);
+      const { bounds, features } = drawBaseWafer(ctx, geo, model, etched);
+      const openings = openIntervals(bounds, features, model);
+      const { oxideY, siY } = geo;
+      openings.forEach((gap, i) => {
+        const x = (gap.x1 + gap.x2) / 2;
+        const top = oxideY - 92 - ((i % 2) * 16);
+        const bottom = lerp(oxideY - 10, siY + 8, smooth(p));
+        drawArrow(ctx, x, top, x, bottom, "#b23b3b", 2);
+      });
+      drawLabel(ctx, "etch or implant through resist openings", bounds.x1 + (bounds.x2 - bounds.x1) / 2, oxideY - 108, "#b23b3b");
+    }
+
+    function drawStripAnimation(ctx, geo, model, p) {
+      drawBaseWafer(ctx, geo, model, true);
+      const { bounds, features } = drawBaseWafer(ctx, geo, model, true);
+      const openings = openIntervals(bounds, features, model);
+      const { oxideY, siY } = geo;
+
+      openings.slice(0, 3).forEach((gap) => {
+        const x1 = gap.x1;
+        const x2 = gap.x2;
+        const y = oxideY - 26;
+        ctx.strokeStyle = "#1f6aa5";
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        ctx.moveTo(x1, y - 7);
+        ctx.lineTo(x1, y + 7);
+        ctx.moveTo(x2, y - 7);
+        ctx.lineTo(x2, y + 7);
+        ctx.stroke();
+        drawLabel(ctx, "CD", (x1 + x2) / 2, y - 10, "#1f6aa5");
+      });
+
+      for (let i = 0; i < 7; i += 1) {
+        const x = bounds.x1 + (i + 0.5) * (bounds.x2 - bounds.x1) / 7;
+        drawArrow(ctx, x, oxideY - 76 - Math.sin(i + p * 5) * 5, x, oxideY - 8, "#2d8064", 1.6);
+      }
+      drawLabel(ctx, "strip resist, measure CD, overlay, LER, defects", bounds.x1 + (bounds.x2 - bounds.x1) / 2, siY + 60, "#2d8064");
+    }
+
+    function drawScene() {
+      const model = getModel();
+      const { ctx, width, height } = resizeCanvas(elements.processCanvas, 620, 420);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const margin = clamp(width * 0.08, 36, 78);
+      const waferX = margin;
+      const waferW = width - margin * 2;
+      const siH = clamp(height * 0.14, 58, 76);
+      const siY = height - siH - 34;
+      const oxideH = clamp(height * 0.065, 24, 36);
+      const oxideY = siY - oxideH;
+      const resistH = clamp(model.resist / 4.2, 16, 76);
+      const resistY = oxideY - resistH;
+      const geo = { waferX, waferW, siY, siH, oxideY, oxideH, resistY, resistH };
+      const step = steps[state.step];
+      const p = smooth(state.progress);
+
+      ctx.fillStyle = "#f8fafc";
+      fillRoundRect(ctx, 12, 12, width - 24, height - 24, 8, "#fbfcfe", "#edf1f5");
+
+      if (["expose", "peb"].includes(step.key)) {
+        drawReticleAndOptics(ctx, geo, model, p, step.key === "expose");
+      } else if (step.key === "develop" || step.key === "transfer" || step.key === "strip") {
+        drawReticleAndOptics(ctx, geo, model, 0.08, false);
+      }
+
+      if (step.key === "clean") drawCleanAnimation(ctx, geo, model, p);
+      if (step.key === "coat") drawSpinAnimation(ctx, geo, model, p);
+      if (step.key === "expose") {
+        drawExposedRegions(ctx, geo, model, p);
+        drawReticleAndOptics(ctx, geo, model, p, true);
+      }
+      if (step.key === "peb") drawPebAnimation(ctx, geo, model, p);
+      if (step.key === "develop") drawDevelopAnimation(ctx, geo, model, p);
+      if (step.key === "transfer") drawTransferAnimation(ctx, geo, model, p);
+      if (step.key === "strip") drawStripAnimation(ctx, geo, model, p);
+
+      const pillText = model.tone === "positive" ? "positive tone: exposed resist removed" : "negative tone: exposed resist remains";
+      fillRoundRect(ctx, 26, 24, 230, 30, 15, model.tone === "positive" ? "#e8f1f8" : "#f8efe0", null);
+      drawLabel(ctx, pillText, 141, 44, model.tone === "positive" ? "#1f6aa5" : "#9b6500");
+    }
+
+    function drawAxes(ctx, box, xTitle, yTitle) {
+      ctx.strokeStyle = "#25313d";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(box.left, box.top);
+      ctx.lineTo(box.left, box.bottom);
+      ctx.lineTo(box.right, box.bottom);
+      ctx.stroke();
+      ctx.fillStyle = "#44515f";
+      ctx.font = "12px Segoe UI, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(xTitle, (box.left + box.right) / 2, box.bottom + 34);
+      ctx.save();
+      ctx.translate(15, (box.top + box.bottom) / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(yTitle, 0, 0);
+      ctx.restore();
+      ctx.textAlign = "start";
+    }
+
+    function drawResolutionChart() {
+      const model = getModel();
+      const { ctx, width, height } = resizeCanvas(elements.resolutionChart, 520, 280);
+      const box = { left: 62, top: 24, right: width - 26, bottom: height - 58 };
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const naMin = 0.30;
+      const naMax = 1.55;
+      const cdMax = model.k1 * model.lambda / naMin;
+      const dofMax = model.k2 * model.lambda / (naMin * naMin);
+      const yMax = Math.max(cdMax, dofMax) * 1.08;
+      const toX = (na) => box.left + (na - naMin) / (naMax - naMin) * (box.right - box.left);
+      const toY = (value) => box.bottom - value / yMax * (box.bottom - box.top);
+
+      ctx.strokeStyle = "#edf1f5";
+      ctx.fillStyle = "#627080";
+      ctx.font = "11px Segoe UI, Arial, sans-serif";
+      for (let i = 0; i <= 5; i += 1) {
+        const value = yMax * i / 5;
+        const y = toY(value);
+        ctx.beginPath();
+        ctx.moveTo(box.left, y);
+        ctx.lineTo(box.right, y);
+        ctx.stroke();
+        ctx.fillText(fixed(value, 0), 18, y + 4);
+      }
+      for (let i = 0; i <= 5; i += 1) {
+        const na = naMin + (naMax - naMin) * i / 5;
+        const x = toX(na);
+        ctx.beginPath();
+        ctx.moveTo(x, box.bottom);
+        ctx.lineTo(x, box.bottom + 4);
+        ctx.stroke();
+        ctx.fillText(fixed(na, 2), x - 12, box.bottom + 20);
+      }
+      drawAxes(ctx, box, "numerical aperture NA", "nm");
+
+      function plot(color, fn) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let i = 0; i <= 160; i += 1) {
+          const na = naMin + (naMax - naMin) * i / 160;
+          const x = toX(na);
+          const y = toY(fn(na));
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      plot("#1f6aa5", (na) => model.k1 * model.lambda / na);
+      plot("#b23b3b", (na) => model.k2 * model.lambda / (na * na));
+
+      const currentX = toX(model.na);
+      ctx.strokeStyle = "#9b6500";
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(currentX, box.top);
+      ctx.lineTo(currentX, box.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#1f6aa5";
+      ctx.fillText("CD", box.right - 46, toY(model.k1 * model.lambda / naMax) - 6);
+      ctx.fillStyle = "#b23b3b";
+      ctx.fillText("DOF", box.right - 54, toY(model.k2 * model.lambda / (naMax * naMax)) + 16);
+      ctx.fillStyle = "#9b6500";
+      ctx.fillText("selected NA", currentX + 5, box.top + 16);
+    }
+
+    function gaussian(x, sigma) {
+      return Math.exp(-(x * x) / (2 * sigma * sigma));
+    }
+
+    function drawAerialChart() {
+      const model = getModel();
+      const { ctx, width, height } = resizeCanvas(elements.aerialChart, 520, 280);
+      const box = { left: 58, top: 24, right: width - 26, bottom: height - 58 };
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const toX = (x) => box.left + (x + 2.5) / 5 * (box.right - box.left);
+      const toY = (y) => box.bottom - y * (box.bottom - box.top);
+      ctx.strokeStyle = "#edf1f5";
+      ctx.fillStyle = "#627080";
+      ctx.font = "11px Segoe UI, Arial, sans-serif";
+      for (let i = 0; i <= 4; i += 1) {
+        const value = i / 4;
+        const y = toY(value);
+        ctx.beginPath();
+        ctx.moveTo(box.left, y);
+        ctx.lineTo(box.right, y);
+        ctx.stroke();
+        ctx.fillText(fixed(value, 2), 18, y + 4);
+      }
+      drawAxes(ctx, box, "position across feature", "normalized image intensity");
+
+      const focusBlur = 0.24 + clamp(Math.abs(model.focus) / Math.max(model.dof, 1), 0, 2) * 0.25;
+      const pebBlur = clamp(model.peb / Math.max(model.cd, 10), 0.02, 1.4) * 0.22;
+      const sigma = focusBlur + pebBlur;
+      const doseScale = clamp(model.dose / 38, 0.3, 1.9);
+      const centers = [-1.15, 0, 1.15];
+      const threshold = model.tone === "positive" ? 0.45 : 0.55;
+
+      ctx.fillStyle = "rgba(242, 194, 79, 0.20)";
+      ctx.fillRect(box.left, toY(threshold), box.right - box.left, box.bottom - toY(threshold));
+      ctx.strokeStyle = "#9b6500";
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.moveTo(box.left, toY(threshold));
+      ctx.lineTo(box.right, toY(threshold));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#9b6500";
+      ctx.fillText("resist threshold", box.right - 104, toY(threshold) - 7);
+
+      ctx.strokeStyle = "#1f6aa5";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i <= 260; i += 1) {
+        const x = -2.5 + 5 * i / 260;
+        let y = 0.04;
+        centers.forEach((c) => { y += doseScale * gaussian(x - c, sigma); });
+        y = clamp(y / 1.5, 0, 1);
+        const px = toX(x);
+        const py = toY(y);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = "#b23b3b";
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([2, 4]);
+      for (let x = -2.4; x <= 2.4; x += 0.18) {
+        const y = 0.04 + centers.reduce((sum, c) => sum + doseScale * gaussian(x - c, sigma), 0);
+        const noise = Math.sin(x * 16.3) * model.shotNoise * 0.12;
+        const px = toX(x);
+        const py = toY(clamp(y / 1.5 + noise, 0, 1));
+        ctx.beginPath();
+        ctx.moveTo(px, py - 4);
+        ctx.lineTo(px, py + 4);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#1f6aa5";
+      ctx.fillText("aerial image after focus + PEB blur", box.left + 8, box.top + 16);
+      ctx.fillStyle = "#b23b3b";
+      ctx.fillText("stochastic edge uncertainty", box.left + 8, box.top + 34);
+    }
+
+    function updateTimeline() {
+      elements.timeline.innerHTML = "";
+      steps.forEach((step, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "step-button" + (index === state.step ? " active" : "");
+        button.textContent = String(index + 1) + ". " + step.title.replace(" and ", " + ");
+        const fill = index < state.step ? 100 : index === state.step ? state.progress * 100 : 0;
+        button.style.setProperty("--fill", fill + "%");
+        button.addEventListener("click", () => {
+          state.step = index;
+          state.progress = 0;
+          update();
+        });
+        elements.timeline.appendChild(button);
+      });
+    }
+
+    function riskLabel(value) {
+      if (value < 0.28) return "Low";
+      if (value < 0.62) return "Moderate";
+      return "High";
+    }
+
+    function updateOutputs() {
+      const model = getModel();
+      const preset = sourcePresets[model.source];
+      elements.sourceOut.textContent = preset.label;
+      elements.toneOut.textContent = model.tone === "positive" ? "Positive" : "Negative";
+      elements.lambdaOut.textContent = fixed(model.lambda, model.lambda < 20 ? 1 : 0) + " nm";
+      elements.naOut.textContent = fixed(model.na, 2);
+      elements.k1Out.textContent = fixed(model.k1, 2);
+      elements.k2Out.textContent = fixed(model.k2, 2);
+      elements.doseOut.textContent = fixed(model.dose, 0) + " mJ/cm2";
+      elements.featureOut.textContent = fixed(model.feature, 0) + " nm";
+      elements.absorptionOut.textContent = fixed(model.absorption * 100, 0) + "%";
+      elements.focusOut.textContent = fixed(model.focus, 0) + " nm";
+      elements.resistOut.textContent = fixed(model.resist, 0) + " nm";
+      elements.pebOut.textContent = fixed(model.peb, 0) + " nm";
+      elements.speedOut.textContent = fixed(model.speed, 1) + "x";
+
+      elements.cdMetric.textContent = fixed(model.cd, model.cd < 20 ? 1 : 0) + " nm";
+      elements.dofMetric.textContent = fixed(model.dof, model.dof < 20 ? 1 : 0) + " nm";
+      elements.focusMetric.textContent = fixed(model.focusMargin * 100, 0) + "%";
+      elements.noiseMetric.textContent = fixed(model.shotNoise * 100, model.shotNoise < 0.1 ? 1 : 0) + "%";
+      elements.riskMetric.textContent = riskLabel(model.riskValue);
+
+      elements.cdNote.textContent = model.cd < 40 ? "Aggressive feature size; process control dominates." : "Smaller lambda or k1, larger NA.";
+      elements.focusNote.textContent = model.focusMargin > 0 ? "Current focus is inside the simple DOF window." : "Focus offset exceeds the simple half-DOF window.";
+      elements.noiseNote.textContent = "About " + Math.round(model.absorbedPhotons).toLocaleString() + " absorbed photons for a " + fixed(model.feature, 0) + " nm square feature.";
+      elements.riskNote.textContent = model.riskValue < 0.28 ? "Current settings leave a usable process window." : model.riskValue < 0.62 ? "Several settings are approaching process limits." : "Expect CD error, roughness, or pattern failure.";
+
+      elements.positiveTone.classList.toggle("active", model.tone === "positive");
+      elements.negativeTone.classList.toggle("active", model.tone === "negative");
+      elements.play.textContent = state.playing ? "Pause" : "Play";
+
+      const step = steps[state.step];
+      elements.stepNumber.textContent = String(state.step + 1);
+      elements.stepTitle.textContent = step.title;
+      elements.stepText.textContent = step.text;
+      elements.insightTitle.textContent = step.insightTitle;
+      elements.insightText.textContent = step.insight;
+    }
+
+    function update() {
+      updateOutputs();
+      updateTimeline();
+      drawScene();
+      drawResolutionChart();
+      drawAerialChart();
+    }
+
+    function setPreset(key) {
+      const preset = sourcePresets[key];
+      elements.lambda.value = preset.lambda;
+      elements.na.value = preset.na;
+      elements.k1.value = preset.k1;
+      elements.k2.value = preset.k2;
+      elements.dose.value = preset.dose;
+      elements.resist.value = preset.resist;
+      elements.peb.value = preset.peb;
+      elements.focus.value = 0;
+      update();
+    }
+
+    function reset() {
+      elements.source.value = "arfImmersion";
+      state.tone = "positive";
+      state.step = 0;
+      state.progress = 0;
+      state.playing = false;
+      elements.feature.value = 20;
+      elements.absorption.value = 35;
+      setPreset("arfImmersion");
+    }
+
+    function advanceStep() {
+      state.step = (state.step + 1) % steps.length;
+      state.progress = 0;
+      update();
+    }
+
+    function exportFrame() {
+      const process = elements.processCanvas;
+      const chartA = elements.resolutionChart;
+      const chartB = elements.aerialChart;
+      const canvas = document.createElement("canvas");
+      const gap = 24;
+      canvas.width = Math.max(process.width, chartA.width + chartB.width + gap);
+      canvas.height = process.height + Math.max(chartA.height, chartB.height) + gap;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(process, 0, 0);
+      ctx.drawImage(chartA, 0, process.height + gap);
+      ctx.drawImage(chartB, chartA.width + gap, process.height + gap);
+      const link = document.createElement("a");
+      link.download = "lithography-process-animation-frame.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    function tick(time) {
+      if (!state.lastTime) state.lastTime = time;
+      const dt = (time - state.lastTime) / 1000;
+      state.lastTime = time;
+      if (state.playing) {
+        const model = getModel();
+        state.progress += dt * model.speed / 4.2;
+        if (state.progress >= 1) {
+          state.step = (state.step + 1) % steps.length;
+          state.progress = 0;
+        }
+        update();
+      }
+      window.requestAnimationFrame(tick);
+    }
+
+    ids.forEach((id) => {
+      elements[id].addEventListener("input", () => {
+        if (id === "source") setPreset(elements.source.value);
+        else update();
+      });
+    });
+    elements.positiveTone.addEventListener("click", () => {
+      state.tone = "positive";
+      update();
+    });
+    elements.negativeTone.addEventListener("click", () => {
+      state.tone = "negative";
+      update();
+    });
+    elements.play.addEventListener("click", () => {
+      state.playing = !state.playing;
+      state.lastTime = 0;
+      update();
+    });
+    elements.next.addEventListener("click", advanceStep);
+    elements.reset.addEventListener("click", reset);
+    elements.exportFrame.addEventListener("click", exportFrame);
+    window.addEventListener("resize", update);
+
+    update();
+    window.requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
