@@ -596,44 +596,6 @@
         </div>
       </section>
 
-      <section class="panel">
-        <h2>Wiki-Ready Teaching Points</h2>
-        <div class="notes">
-          <div class="note">
-            <h3>What lithography defines</h3>
-            <ul>
-              <li>Gate length, contact openings, interconnect shapes, and implant masks.</li>
-              <li>Device current, capacitance, leakage, overlay, and yield sensitivity.</li>
-            </ul>
-          </div>
-          <div class="note">
-            <h3>Positive vs negative resist</h3>
-            <ul>
-              <li>Positive tone removes exposed regions during development.</li>
-              <li>Negative tone keeps exposed regions and removes unexposed regions.</li>
-            </ul>
-          </div>
-          <div class="note">
-            <h3>Modern process limits</h3>
-            <ul>
-              <li>Resolution, line-edge roughness, and sensitivity form a practical trade-off.</li>
-              <li>Etch bias and metrology decide whether the final wafer CD matches the mask.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>Scope, authorship, and references</h2>
-        <p>This standalone animation, its graphics, and its calculation code are original Team 13 work. It uses simplified educational estimates rather than a scanner/resist calibration. Etch physics, yield statistics, cleanroom practice, and process integration remain on the linked teams' pages.</p>
-        <ul>
-          <li>C. A. Mack, <em>Fundamental Principles of Optical Lithography</em>, Wiley, 2007.</li>
-          <li>R. C. Jaeger, <em>Introduction to Microelectronic Fabrication</em>, 2nd ed., Prentice Hall, 2002.</li>
-          <li><a href="https://www.asml.com/en/technology/lithography-principles/rayleigh-criterion">ASML: Rayleigh criterion for resolution</a>.</li>
-          <li><a href="https://irds.ieee.org/images/files/pdf/2024/2024IRDS_LITHO.pdf">IEEE IRDS 2024: Lithography and Patterning</a>.</li>
-          <li>V. Kosma <em>et al.</em>, "High Sensitivity Resists for EUV Lithography," <em>Materials</em>, vol. 13, 2850, 2020, doi: 10.3390/ma13132850.</li>
-        </ul>
-      </section>
     </main>
   </div>
 
@@ -941,7 +903,7 @@
       drawLabel(ctx, "photoresist", x + w / 2, resistY + resistH / 2 + 4, "#5a4210");
     }
 
-    function drawExposedRegions(ctx, geo, model, intensity) {
+    function drawExposedRegions(ctx, geo, model, intensity, showLabel = true) {
       const { resistY, resistH } = geo;
       const { bounds, features } = drawBaseWafer(ctx, geo, model, false);
       drawContinuousResist(ctx, geo, model, 1);
@@ -956,7 +918,9 @@
         ctx.fillStyle = g;
         ctx.fillRect(it.x1 - blur, resistY, it.x2 - it.x1 + blur * 2, resistH);
       });
-      drawLabel(ctx, model.tone === "positive" ? "exposed regions become soluble" : "exposed regions cross-link", bounds.x1 + (bounds.x2 - bounds.x1) / 2, resistY - 9, "#a04d20");
+      if (showLabel) {
+        drawLabel(ctx, model.tone === "positive" ? "exposed regions become soluble" : "exposed regions cross-link", bounds.x1 + (bounds.x2 - bounds.x1) / 2, resistY - 9, "#a04d20");
+      }
       return { bounds, features };
     }
 
@@ -1085,7 +1049,7 @@
     }
 
     function drawPebAnimation(ctx, geo, model, p) {
-      drawExposedRegions(ctx, geo, model, 1);
+      drawExposedRegions(ctx, geo, model, 1, false);
       const { bounds, features } = drawBaseWafer(ctx, geo, model, false);
       drawContinuousResist(ctx, geo, model, 0);
       const { resistY, resistH } = geo;
