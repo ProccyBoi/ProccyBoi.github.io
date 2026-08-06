@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOSFET Operating-Region Explorer — ELEC4603 Team 13</title>
+<meta name="description" content="Interactive long-channel MOSFET teaching model for exploring cutoff, weak inversion, triode and saturation operating regions.">
+<meta name="theme-color" content="#2b6cb0">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MOSFET Operating-Region Explorer">
+<meta property="og:description" content="Explore MOSFET channel state, operating-region boundaries, transfer characteristics and output characteristics interactively.">
+<meta property="og:url" content="https://proccyboi.github.io/proccy-boi/projects/mosfet-operating-regions/">
+<meta property="og:image" content="https://proccyboi.github.io/proccy-boi/assets/images/projects/mosfet-operating-regions-preview.png">
+<link rel="canonical" href="https://proccyboi.github.io/proccy-boi/projects/mosfet-operating-regions/">
+<style>
+  :root{
+    --paper:#faf9f6;
+    --card:#ffffff;
+    --ink:#17181a;
+    --muted:#6e7175;
+    --faint:#9a9da1;
+    --rule:#e3e2dd;
+    --hair:#eeede9;
+    --blue:#2b6cb0;
+    --orange:#c05621;
+    --green:#2f855a;
+    --purple:#6b46c1;
+    --magenta:#b83280;
+    --warn:#8a6d1f;
+    --warnbg:#fdf8ea;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px 64px}
+
+  /* ---------- masthead ---------- */
+  .masthead{border-top:3px solid var(--ink);margin-top:0;padding:22px 0 18px;border-bottom:1px solid var(--rule)}
+  .eyebrow{
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 10px;font-weight:600;
+  }
+  h1{
+    font:400 30px/1.2 Georgia,"Iowan Old Style","Times New Roman",serif;
+    margin:0 0 8px;letter-spacing:-.01em;
+  }
+  .standfirst{margin:0;max-width:64ch;color:var(--muted);font-size:14.5px}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:274px 1fr;gap:34px;margin-top:26px;align-items:start}
+  aside{position:sticky;top:20px}
+
+  /* ---------- controls ---------- */
+  .ctrl-head{
+    font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    font-weight:600;padding-bottom:8px;border-bottom:1px solid var(--ink);margin-bottom:2px;
+  }
+  .row{padding:11px 0;border-bottom:1px solid var(--hair)}
+  .row-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .row label{font-size:13.5px;color:var(--ink)}
+  .row .val{
+    font-variant-numeric:tabular-nums;font-size:13px;color:var(--blue);
+    font-weight:600;white-space:nowrap;
+  }
+  input[type=range]{width:100%;margin:9px 0 0;accent-color:var(--blue);height:18px}
+  .sub{font-size:11.5px;color:var(--faint);margin-top:3px}
+
+  .opts{padding:12px 0 4px;border-bottom:1px solid var(--hair)}
+  .opt{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:7px 0;color:var(--ink)}
+  .opt input{margin-top:3px;accent-color:var(--blue);flex:none}
+  .seg{display:flex;margin-top:9px;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+  .seg button{
+    flex:1;border:0;background:var(--card);color:var(--muted);
+    font-weight:500;font-size:11.5px;line-height:1;padding:7px 4px;cursor:pointer;
+  }
+  .seg button+button{border-left:1px solid var(--rule)}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+
+  .presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+  .presets button{
+    border:1px solid var(--rule);background:var(--card);color:var(--ink);
+    border-radius:3px;padding:6px 10px;font-weight:500;font-size:12.5px;line-height:1;cursor:pointer;
+  }
+  .presets button:hover{border-color:var(--ink)}
+
+  /* ---------- readout ---------- */
+  .readout{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    border:1px solid var(--rule);border-radius:4px;background:var(--card);overflow:hidden;
+  }
+  .cell{padding:12px 14px;border-left:1px solid var(--hair)}
+  .cell:first-child{border-left:0}
+  .cell .k{font-size:10.5px;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .cell .v{font-weight:600;font-size:20px;line-height:1.25;font-variant-numeric:tabular-nums;margin-top:5px;letter-spacing:-.01em}
+  .cell .v .u{font-size:12.5px;font-weight:500;color:var(--muted);margin-left:3px}
+  .pill{
+    display:inline-block;padding:3px 9px;border-radius:2px;font-weight:600;font-size:13px;line-height:1.4;
+    margin-top:4px;
+  }
+  .pill.cutoff{background:#f1f1ef;color:var(--muted)}
+  .pill.triode{background:#eaf3ee;color:var(--green)}
+  .pill.saturation{background:#eaf0f7;color:var(--blue)}
+
+  /* ---------- panels ---------- */
+  section{margin-top:26px}
+  h2{
+    font-weight:600;font-size:12px;line-height:1;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--rule);
+  }
+  .plots{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .plot{border:1px solid var(--rule);border-radius:4px;background:var(--card);padding:14px 14px 8px}
+  .plot h3{font-weight:600;font-size:13.5px;line-height:1.3;margin:0 0 2px}
+  .plot .cap{font-size:11.5px;color:var(--muted);margin:0 0 8px}
+  canvas{display:block;width:100%;height:280px}
+  .device-wrap{border:1px solid var(--rule);border-radius:4px;background:var(--card);padding:14px}
+  #deviceCanvas{height:210px}
+
+  .axis-toggle{display:flex;gap:4px;margin-left:auto}
+  .plot-head{display:flex;align-items:flex-start;gap:10px}
+  .axis-toggle button{
+    border:1px solid var(--rule);background:var(--card);color:var(--muted);
+    border-radius:3px;padding:3px 8px;font-weight:500;font-size:11px;line-height:1.4;cursor:pointer;
+  }
+  .axis-toggle button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* ---------- prose ---------- */
+  .note{border:1px solid var(--rule);border-radius:4px;background:var(--card);padding:16px 18px}
+  .eq{
+    font:italic 17px/1.6 Georgia,"Times New Roman",serif;
+    padding:12px 0 12px 16px;border-left:2px solid var(--ink);margin:0 0 12px;
+    overflow-x:auto;white-space:nowrap;
+  }
+  .note p{margin:0 0 10px;max-width:74ch}
+  .note p:last-child{margin-bottom:0}
+  .flag{
+    border-left:2px solid var(--warn);background:var(--warnbg);
+    padding:11px 14px;margin-top:14px;font-size:13.5px;color:#5c4a14;
+  }
+  .flag b{color:var(--warn)}
+  table.limits{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:4px}
+  table.limits th,table.limits td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--hair);vertical-align:top}
+  table.limits th{font-weight:600;width:31%;color:var(--ink)}
+  table.limits td{color:var(--muted)}
+  .refs{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)}
+  .refs li{margin:5px 0}
+  a{color:var(--blue)}
+  footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--faint)}
+  sub{font-size:.72em}
+
+  @media (max-width:980px){
+    .grid{grid-template-columns:1fr}
+    aside{position:static}
+    .plots{grid-template-columns:1fr}
+    .readout{grid-template-columns:repeat(2,1fr)}
+    .cell{border-left:0;border-top:1px solid var(--hair)}
+    .cell:nth-child(-n+2){border-top:0}
+    .cell:nth-child(odd){border-right:1px solid var(--hair)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <p class="eyebrow">ELEC4603 · Team 13 · Topic 2</p>
+    <h1>MOSFET Operating-Region Explorer</h1>
+    <p class="standfirst">Predict the region before you move a slider. The model is the long-channel gradual-channel approximation with an optional weak-inversion tail — a teaching model, not a process-calibrated compact model.</p>
+  </div>
+
+  <div class="grid">
+
+    <aside>
+      <div class="ctrl-head">Bias</div>
+      <div class="row">
+        <div class="row-top"><label for="vgs">Gate voltage, V<sub>GS</sub></label><span class="val" id="vgsOut"></span></div>
+        <input id="vgs" type="range" min="0" max="2" step="0.01" value="1.20">
+      </div>
+      <div class="row">
+        <div class="row-top"><label for="vds">Drain voltage, V<sub>DS</sub></label><span class="val" id="vdsOut"></span></div>
+        <input id="vds" type="range" min="0" max="2" step="0.01" value="1.00">
+      </div>
+
+      <div class="ctrl-head" style="margin-top:22px">Device</div>
+      <div class="row">
+        <div class="row-top"><label for="vth">Threshold, V<sub>th</sub></label><span class="val" id="vthOut"></span></div>
+        <input id="vth" type="range" min="0.10" max="0.90" step="0.01" value="0.45">
+      </div>
+      <div class="row">
+        <div class="row-top"><label for="mucox">Process factor, μ<sub>n</sub>C<sub>ox</sub></label><span class="val" id="mucoxOut"></span></div>
+        <input id="mucox" type="range" min="50" max="400" step="5" value="200">
+      </div>
+      <div class="row">
+        <div class="row-top"><label for="width">Width, W</label><span class="val" id="widthOut"></span></div>
+        <input id="width" type="range" min="1" max="40" step="0.1" value="10">
+      </div>
+      <div class="row">
+        <div class="row-top"><label for="length">Printed length, L</label><span class="val" id="lengthOut"></span></div>
+        <input id="length" type="range" min="0.10" max="2.00" step="0.01" value="0.50">
+      </div>
+      <div class="row">
+        <div class="row-top"><label for="lambda">Channel-length mod., λ</label><span class="val" id="lambdaOut"></span></div>
+        <input id="lambda" type="range" min="0" max="0.15" step="0.005" value="0.04">
+      </div>
+      <div class="row">
+        <div class="row-top"><label for="nfac">Body factor, n</label><span class="val" id="nOut"></span></div>
+        <input id="nfac" type="range" min="1.00" max="2.00" step="0.01" value="1.30">
+        <div class="sub">Sets subthreshold swing S = n·(kT/q)·ln10. n = 1 is the 59.5 mV/dec thermal floor at 300 K.</div>
+      </div>
+
+      <div class="opts">
+        <label class="opt"><input id="clm" type="checkbox" checked> Channel-length modulation in saturation</label>
+        <div class="seg" id="clmMode">
+          <button type="button" data-mode="textbook" aria-pressed="true">(1 + λV<sub>DS</sub>)</button>
+          <button type="button" data-mode="continuous" aria-pressed="false">(1 + λ(V<sub>DS</sub>−V<sub>OV</sub>))</button>
+        </div>
+        <div class="sub">The textbook form is discontinuous at the knee; the second joins the triode branch smoothly. Page 2.6 uses the textbook form.</div>
+        <label class="opt" style="margin-top:12px"><input id="sub" type="checkbox" checked> Weak-inversion (subthreshold) tail</label>
+        <div class="sub">Switch off to reproduce the page 2.6 hand calculation exactly.</div>
+      </div>
+
+      <div class="presets">
+        <button type="button" data-preset="cutoff">Cutoff</button>
+        <button type="button" data-preset="triode">Triode</button>
+        <button type="button" data-preset="saturation">Saturation</button>
+        <button type="button" data-preset="reset">Reset</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="readout">
+        <div class="cell"><div class="k">REGION</div><div><span class="pill" id="regionPill">—</span></div></div>
+        <div class="cell"><div class="k">OVERDRIVE V<sub>OV</sub></div><div class="v" id="vovOut">—</div></div>
+        <div class="cell"><div class="k">β = μ<sub>n</sub>C<sub>ox</sub>W/L</div><div class="v" id="betaOut">—</div></div>
+        <div class="cell"><div class="k">DRAIN CURRENT I<sub>D</sub></div><div class="v" id="idOut">—</div></div>
+        <div class="cell"><div class="k">DISSIPATION V<sub>DS</sub>I<sub>D</sub></div><div class="v" id="pOut">—</div></div>
+      </div>
+
+      <section>
+        <h2>Channel state</h2>
+        <div class="device-wrap">
+          <canvas id="deviceCanvas" aria-label="MOSFET cross-section showing channel state"></canvas>
+        </div>
+      </section>
+
+      <section>
+        <h2>Characteristics</h2>
+        <div class="plots">
+          <div class="plot">
+            <div class="plot-head">
+              <div>
+                <h3>Output characteristic</h3>
+                <p class="cap">I<sub>D</sub> against V<sub>DS</sub>, family of V<sub>GS</sub></p>
+              </div>
+            </div>
+            <canvas id="curveCanvas" aria-label="Drain current versus drain-source voltage"></canvas>
+          </div>
+          <div class="plot">
+            <div class="plot-head">
+              <div>
+                <h3>Transfer characteristic</h3>
+                <p class="cap">I<sub>D</sub> against V<sub>GS</sub> at the set V<sub>DS</sub></p>
+              </div>
+              <div class="axis-toggle" id="axisToggle">
+                <button type="button" data-axis="lin" aria-pressed="true">linear</button>
+                <button type="button" data-axis="log" aria-pressed="false">log</button>
+              </div>
+            </div>
+            <canvas id="transferCanvas" aria-label="Drain current versus gate-source voltage"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Active equation</h2>
+        <div class="note">
+          <p class="eq" id="eqText"></p>
+          <p id="interp"></p>
+          <div class="flag" id="validity"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>What this model leaves out</h2>
+        <div class="note">
+          <table class="limits">
+            <tr><th>Velocity saturation</th><td>Constant mobility is assumed. Above roughly 10<sup>4</sup> V/cm of lateral field, drift velocity saturates and I<sub>D</sub> becomes closer to linear in overdrive than quadratic, so this model over-predicts.</td></tr>
+            <tr><th>Threshold derivation</th><td>V<sub>th</sub> is a slider, not a computed quantity. The electrostatics belong to the assigned threshold-voltage page.</td></tr>
+            <tr><th>Body effect</th><td>Source and body are assumed tied, so V<sub>SB</sub> = 0 and V<sub>th</sub> does not shift.</td></tr>
+            <tr><th>Short-channel effects</th><td>No threshold roll-off, DIBL or punch-through. The subthreshold tail here has no V<sub>DS</sub> dependence beyond the (1 − e<sup>−V<sub>DS</sub>/V<sub>T</sub></sup>) factor.</td></tr>
+            <tr><th>Breakdown and reliability</th><td>No avalanche, punch-through or oxide breakdown at any bias.</td></tr>
+            <tr><th>Temperature</th><td>Fixed at 300 K. kT/q = 25.85 mV throughout.</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>Sources</h2>
+        <div class="note">
+          <ul class="refs">
+            <li>H. Yang and A. Saraiva, <em>ELEC4603 Lecture 5A: MOSFET Operating Mode</em>, UNSW, 2024.</li>
+            <li>S. M. Sze and K. K. Ng, <em>Physics of Semiconductor Devices</em>, 3rd ed. Wiley, 2007.</li>
+            <li>Y. Taur and T. H. Ning, <em>Fundamentals of Modern VLSI Devices</em>, 2nd ed. Cambridge University Press, 2013.</li>
+            <li>C. G. Fonstad, <a href="https://ocw.mit.edu/courses/6-012-microelectronic-devices-and-circuits-fall-2009/resources/mit6_012f09_lec11/">Lecture 11: MOSFETs II — Large Signal Models</a>, MIT OpenCourseWare 6.012, 2009.</li>
+          </ul>
+        </div>
+      </section>
+
+      <footer>Graphics, model and interface code written for Team 13. Values are illustrative; the model is for teaching, not design.</footer>
+    </main>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const VT300 = 0.02585;          // kT/q at 300 K, volts
+const LN10 = Math.LN10;
+
+const el = id => document.getElementById(id);
+const ids = ["vgs","vds","vth","mucox","width","length","lambda","nfac"];
+const inp = Object.fromEntries(ids.map(i => [i, el(i)]));
+const clmBox = el("clm"), subBox = el("sub");
+let clmMode = "textbook";
+let transferAxis = "lin";
+
+const C = {
+  ink:"#17181a", muted:"#6e7175", faint:"#9a9da1", grid:"#eeede9", rule:"#e3e2dd",
+  blue:"#2b6cb0", orange:"#c05621", green:"#2f855a", purple:"#6b46c1", magenta:"#b83280",
+  oxide:"#e8d9a8", metal:"#4a4f55", nplus:"#cfe0ef", bodyfill:"#f2f1ee", channel:"#c05621"
+};
+
+function params(){
+  return {
+    vgs:+inp.vgs.value, vds:+inp.vds.value, vth:+inp.vth.value,
+    mucox:+inp.mucox.value, width:+inp.width.value, length:+inp.length.value,
+    lambda:+inp.lambda.value, n:+inp.nfac.value,
+    clm:clmBox.checked, sub:subBox.checked
+  };
+}
+
+/* Drain current in microamps. Strong inversion = long-channel gradual channel.
+   Weak inversion = exponential tail pinned to the constant-current threshold
+   definition ID(Vth) = 0.1 uA x W/L, with the (1 - exp(-VDS/VT)) drain factor. */
+function model(p, vds = p.vds, vgs = p.vgs){
+  const vov  = vgs - p.vth;
+  const beta = p.mucox * p.width / p.length;      // uA/V^2
+  const S    = p.n * VT300 * LN10;                // V/decade
+  const Ith  = 0.1 * p.width / p.length;          // uA at threshold
+
+  let weak = 0;
+  if (p.sub){
+    const decades = Math.min(vov / S, 0);         // clamp at threshold
+    weak = Ith * Math.pow(10, decades) * (1 - Math.exp(-Math.max(vds,0) / VT300));
+  }
+
+  let strong = 0, region;
+  if (vov <= 0){
+    region = "cutoff";
+  } else if (vds < vov){
+    region = "triode";
+    strong = beta * (vov*vds - 0.5*vds*vds);
+  } else {
+    region = "saturation";
+    let f = 1;
+    if (p.clm) f = clmMode === "continuous" ? 1 + p.lambda*(vds - vov) : 1 + p.lambda*vds;
+    strong = 0.5*beta*vov*vov*f;
+  }
+  return { region, vov, beta, S, weak, strong, id: Math.max(strong + weak, 1e-12) };
+}
+
+function fmtI(uA){
+  if (uA >= 1000) return [(uA/1000).toFixed(3), "mA"];
+  if (uA >= 1)    return [uA.toFixed(1), "µA"];
+  if (uA >= 1e-3) return [(uA*1000).toFixed(1), "nA"];
+  return [(uA*1e6).toFixed(1), "pA"];
+}
+function fmtAxis(uA){
+  if (uA <= 0) return "0";
+  if (uA >= 1000) return (uA/1000).toFixed(2)+" mA";
+  if (uA >= 1)    return uA.toFixed(0)+" µA";
+  if (uA >= 1e-3) return (uA*1e3).toFixed(0)+" nA";
+  return (uA*1e6).toFixed(0)+" pA";
+}
+
+function surface(cv, hCss){
+  const dpr = Math.max(1, window.devicePixelRatio||1);
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(280, Math.round(r.width));
+  const h = hCss;
+  if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){
+    cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  }
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
+  ctx.font = '12px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
+  return {ctx,w,h};
+}
+
+
+/* canvas has no rich text: draw "V" + a smaller, lowered subscript */
+function subText(ctx, base, sub, x, y, align, size){
+  size = size || 12;
+  const sSize = size*0.75;
+  ctx.font = size+'px -apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  const wB = ctx.measureText(base).width;
+  ctx.font = sSize+'px -apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  const wS = ctx.measureText(sub).width;
+  let sx = x;
+  if (align === "center") sx = x - (wB+wS)/2;
+  else if (align === "right") sx = x - (wB+wS);
+  ctx.textAlign = "left";
+  ctx.font = size+'px -apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  ctx.fillText(base, sx, y);
+  ctx.font = sSize+'px -apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  ctx.fillText(sub, sx+wB, y+size*0.22);
+  ctx.font = size+'px -apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  return wB+wS;
+}
+
+/* ---------------- device cross-section ---------------- */
+function drawDevice(p, r){
+  const cv = el("deviceCanvas");
+  const {ctx,w,h} = surface(cv, 210);
+
+  const L = 46, R = w-46;
+  const surfY = 84, botY = h-30;
+  const sW = Math.min(120, (R-L)*0.22);
+  const sx1 = L, sx2 = L+sW, dx1 = R-sW, dx2 = R;
+  const chL = sx2, chR = dx1, chW = chR-chL;
+
+  // body
+  ctx.fillStyle = C.bodyfill; ctx.fillRect(L, surfY, R-L, botY-surfY);
+  ctx.strokeStyle = C.rule; ctx.lineWidth=1; ctx.strokeRect(L+.5, surfY+.5, R-L-1, botY-surfY-1);
+
+  // source / drain wells
+  ctx.fillStyle = C.nplus;
+  ctx.fillRect(sx1, surfY, sW, 44);
+  ctx.fillRect(dx1, surfY, sW, 44);
+
+  // oxide + gate stack
+  ctx.fillStyle = C.oxide; ctx.fillRect(chL, surfY-10, chW, 9);
+  ctx.fillStyle = C.metal; ctx.fillRect(chL, surfY-28, chW, 18);
+
+  ctx.textAlign="center";
+  ctx.fillStyle="#fff"; ctx.fillText("gate", (chL+chR)/2, surfY-15);
+  ctx.fillStyle=C.ink;
+  ctx.fillText("n\u207A source", (sx1+sx2)/2, surfY+26);
+  ctx.fillText("n\u207A drain",  (dx1+dx2)/2, surfY+26);
+  ctx.textAlign="left"; ctx.fillStyle=C.muted;
+  ctx.fillText("p-type body", L+8, botY-10);
+
+  // inversion channel
+  if (r.region !== "cutoff"){
+    ctx.fillStyle = C.channel;
+    ctx.beginPath();
+    if (r.region === "triode"){
+      const t0 = 9, t1 = 9*Math.max(0.22, 1 - p.vds/Math.max(r.vov,1e-6));
+      ctx.moveTo(chL, surfY); ctx.lineTo(chR, surfY);
+      ctx.lineTo(chR, surfY+t1); ctx.lineTo(chL, surfY+t0);
+    } else {
+      const pinch = chR - chW*0.15;
+      ctx.moveTo(chL, surfY); ctx.lineTo(pinch, surfY);
+      ctx.lineTo(pinch, surfY+1.2); ctx.lineTo(chL, surfY+9);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+
+  if (r.region === "saturation"){
+    const pinch = chR - chW*0.15;
+    ctx.setLineDash([3,3]); ctx.strokeStyle=C.magenta; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(pinch, surfY-2); ctx.lineTo(pinch, surfY+40); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=C.magenta; ctx.textAlign="center";
+    ctx.fillText("pinch-off", pinch, surfY+54);
+  }
+
+  // conventional current arrow, clear of every label
+  if (r.region !== "cutoff"){
+    const ay = botY - 34;
+    ctx.strokeStyle=C.blue; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.moveTo(dx1-10, ay); ctx.lineTo(chL+18, ay); ctx.stroke();
+    ctx.fillStyle=C.blue; ctx.beginPath();
+    ctx.moveTo(chL+8, ay); ctx.lineTo(chL+18, ay-4.5); ctx.lineTo(chL+18, ay+4.5);
+    ctx.closePath(); ctx.fill();
+    ctx.textAlign="center";
+    ctx.textAlign="center";
+    ctx.fillText("conventional current, drain \u2192 source", (chL+chR)/2, ay-9);
+  }
+
+  const label = r.region === "cutoff" ? "No inversion channel"
+              : r.region === "triode" ? "Continuous channel \u2014 voltage-controlled resistor"
+              : "Channel pinched off near the drain";
+  const col = r.region === "cutoff" ? C.muted : r.region === "triode" ? C.green : C.blue;
+  ctx.textAlign="left"; ctx.fillStyle=col;
+  ctx.font = '600 13px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
+  ctx.fillText(label, L, 26);
+  ctx.font = '12px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
+}
+
+/* ---------------- output characteristic ---------------- */
+function drawOutput(p, r){
+  const cv = el("curveCanvas");
+  const {ctx,w,h} = surface(cv, 280);
+  const m = {l:60,r:16,t:14,b:38};
+  const pw = w-m.l-m.r, ph = h-m.t-m.b;
+  const xMax = 2.0;
+
+  const fam = [0.8,1.0,1.2,1.4,1.6].filter(g => g <= 2);
+  let yMax = 1;
+  for (const g of fam) for (let i=0;i<=60;i++) yMax = Math.max(yMax, model(p, xMax*i/60, g).id);
+  yMax = Math.max(yMax, model(p).id)*1.14;
+
+  const X = x => m.l + x/xMax*pw;
+  const Y = y => m.t + ph - Math.min(y/yMax,1)*ph;
+
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  ctx.textAlign="center"; ctx.fillStyle=C.faint;
+  for (let i=0;i<=4;i++){ const x=xMax*i/4;
+    ctx.beginPath(); ctx.moveTo(X(x),m.t); ctx.lineTo(X(x),m.t+ph); ctx.stroke();
+    ctx.fillText(x.toFixed(1), X(x), h-20); }
+  ctx.textAlign="right";
+  for (let i=0;i<=4;i++){ const y=yMax*i/4;
+    ctx.beginPath(); ctx.moveTo(m.l,Y(y)); ctx.lineTo(m.l+pw,Y(y)); ctx.stroke();
+    ctx.fillText(fmtAxis(y), m.l-8, Y(y)+4); }
+
+  ctx.strokeStyle=C.rule; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(m.l,m.t); ctx.lineTo(m.l,m.t+ph); ctx.lineTo(m.l+pw,m.t+ph); ctx.stroke();
+  ctx.fillStyle=C.muted;
+  subText(ctx, "V", "DS", m.l+pw/2-14, h-5, "center");
+  ctx.textAlign="left"; ctx.fillText(" (V)", m.l+pw/2+14, h-5);
+
+  // knee locus  ID = 1/2 beta VOV^2  at VDS = VOV
+  ctx.strokeStyle=C.ink; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  for (let i=0;i<=80;i++){
+    const v = xMax*i/80;
+    const y = 0.5*r.beta*v*v;
+    if (y>yMax) break;
+    i===0 ? ctx.moveTo(X(v),Y(y)) : ctx.lineTo(X(v),Y(y));
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+
+  const cols=[C.magenta,C.purple,C.blue,C.green,C.orange];
+  fam.forEach((g,k)=>{
+    const live = Math.abs(g-p.vgs) < 0.051;
+    ctx.strokeStyle=cols[k%cols.length]; ctx.lineWidth= live?2.6:1.4;
+    ctx.globalAlpha = live?1:0.62;
+    ctx.beginPath();
+    for (let i=0;i<=200;i++){ const x=xMax*i/200; const y=model(p,x,g).id;
+      i===0?ctx.moveTo(X(x),Y(y)):ctx.lineTo(X(x),Y(y)); }
+    ctx.stroke(); ctx.globalAlpha=1;
+    const yEnd = model(p,xMax,g).id;
+    if (yEnd/yMax < 0.97){
+      ctx.fillStyle=cols[k%cols.length]; ctx.textAlign="right";
+      ctx.font='11px -apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+      ctx.fillText(g.toFixed(1)+" V", m.l+pw-3, Y(yEnd)-5);
+    }
+  });
+
+  // operating point
+  ctx.fillStyle=C.ink;
+  ctx.beginPath(); ctx.arc(X(p.vds), Y(r.id), 4.5, 0, 7); ctx.fill();
+  ctx.strokeStyle="#fff"; ctx.lineWidth=1.8; ctx.stroke();
+}
+
+/* ---------------- transfer characteristic ---------------- */
+function drawTransfer(p, r){
+  const cv = el("transferCanvas");
+  const {ctx,w,h} = surface(cv, 280);
+  const m = {l:62,r:16,t:14,b:38};
+  const pw = w-m.l-m.r, ph = h-m.t-m.b;
+  const xMax = 2.0;
+  const N = 240;
+
+  const pts=[];
+  for (let i=0;i<=N;i++){ const g=xMax*i/N; pts.push([g, model(p, p.vds, g).id]); }
+  const log = transferAxis==="log";
+
+  let yMax=1, yMin=1e-6;
+  for (const [,y] of pts) yMax=Math.max(yMax,y);
+  yMax*=1.14;
+  if (log){ yMin = Math.max(1e-7, Math.min(...pts.map(q=>q[1]))*0.5); }
+
+  const X = x => m.l + x/xMax*pw;
+  const Y = y => {
+    if (!log) return m.t + ph - Math.min(y/yMax,1)*ph;
+    const lo=Math.log10(yMin), hi=Math.log10(yMax);
+    return m.t + ph - (Math.log10(Math.max(y,yMin))-lo)/(hi-lo)*ph;
+  };
+
+  ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+  ctx.textAlign="center"; ctx.fillStyle=C.faint;
+  for (let i=0;i<=4;i++){ const x=xMax*i/4;
+    ctx.beginPath(); ctx.moveTo(X(x),m.t); ctx.lineTo(X(x),m.t+ph); ctx.stroke();
+    ctx.fillText(x.toFixed(1), X(x), h-20); }
+  ctx.textAlign="right";
+  if (log){
+    const lo=Math.ceil(Math.log10(yMin)), hi=Math.floor(Math.log10(yMax));
+    for (let d=lo; d<=hi; d++){ const y=Math.pow(10,d);
+      ctx.beginPath(); ctx.moveTo(m.l,Y(y)); ctx.lineTo(m.l+pw,Y(y)); ctx.stroke();
+      ctx.fillText(fmtAxis(y), m.l-8, Y(y)+4); }
+  } else {
+    for (let i=0;i<=4;i++){ const y=yMax*i/4;
+      ctx.beginPath(); ctx.moveTo(m.l,Y(y)); ctx.lineTo(m.l+pw,Y(y)); ctx.stroke();
+      ctx.fillText(fmtAxis(y), m.l-8, Y(y)+4); }
+  }
+
+  ctx.strokeStyle=C.rule; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(m.l,m.t); ctx.lineTo(m.l,m.t+ph); ctx.lineTo(m.l+pw,m.t+ph); ctx.stroke();
+  ctx.fillStyle=C.muted;
+  subText(ctx, "V", "GS", m.l+pw/2-14, h-5, "center");
+  ctx.textAlign="left"; ctx.fillText(" (V)", m.l+pw/2+14, h-5);
+
+  // threshold marker
+  ctx.strokeStyle=C.faint; ctx.setLineDash([3,3]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(X(p.vth),m.t); ctx.lineTo(X(p.vth),m.t+ph); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=C.faint; ctx.textAlign="left";
+  ctx.font='11px -apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  subText(ctx, "V", "th", X(p.vth)+4, m.t+11, "left", 11);
+
+  ctx.strokeStyle=C.blue; ctx.lineWidth=2.2;
+  ctx.beginPath();
+  pts.forEach(([g,y],i)=> i===0?ctx.moveTo(X(g),Y(y)):ctx.lineTo(X(g),Y(y)));
+  ctx.stroke();
+
+  if (log && p.sub){
+    ctx.fillStyle=C.muted; ctx.textAlign="left";
+    ctx.fillText("slope = 1/S = "+(1/r.S).toFixed(1)+" dec/V", m.l+8, m.t+ph-10);
+  }
+
+  ctx.fillStyle=C.ink;
+  ctx.beginPath(); ctx.arc(X(p.vgs), Y(r.id), 4.5, 0, 7); ctx.fill();
+  ctx.strokeStyle="#fff"; ctx.lineWidth=1.8; ctx.stroke();
+}
+
+
+/* turn V_GS style tokens into real subscripts */
+function subify(t){
+  return t.replace(/([A-Za-zβλ])_([A-Za-z]{1,3})/g, (m,a,b)=>a+"<sub>"+b+"</sub>");
+}
+
+/* ---------------- text ---------------- */
+function setText(p, r){
+  el("vgsOut").textContent   = p.vgs.toFixed(2)+" V";
+  el("vdsOut").textContent   = p.vds.toFixed(2)+" V";
+  el("vthOut").textContent   = p.vth.toFixed(2)+" V";
+  el("mucoxOut").textContent = p.mucox.toFixed(0)+" µA/V²";
+  el("widthOut").textContent = p.width.toFixed(1)+" µm";
+  el("lengthOut").textContent= p.length.toFixed(2)+" µm";
+  el("lambdaOut").textContent= p.lambda.toFixed(3)+" V⁻¹";
+  el("nOut").textContent     = p.n.toFixed(2)+"  ·  S = "+(r.S*1000).toFixed(0)+" mV/dec";
+
+  const pill = el("regionPill");
+  pill.className = "pill "+r.region;
+  pill.textContent = r.region[0].toUpperCase()+r.region.slice(1);
+
+  el("vovOut").innerHTML  = r.vov.toFixed(3)+'<span class="u">V</span>';
+  el("betaOut").innerHTML = (r.beta/1000).toFixed(3)+'<span class="u">mA/V²</span>';
+  const [iv,iu] = fmtI(r.id);
+  el("idOut").innerHTML   = iv+'<span class="u">'+iu+'</span>';
+  el("pOut").innerHTML    = (r.id*p.vds/1000).toFixed(3)+'<span class="u">mW</span>';
+
+  let eq, txt;
+  if (r.region === "cutoff"){
+    eq = p.sub ? "I_D = I_th (W/L) · 10^((V_GS − V_th)/S) · (1 − e^(−V_DS/V_T))"
+               : "V_GS < V_th  ⟹  I_D ≈ 0";
+    txt = p.sub
+      ? "Below threshold the current is diffusion-driven and falls exponentially — about one decade per "+(r.S*1000).toFixed(0)+" mV here. It is small, not zero, which is exactly why off-state leakage matters across a chip."
+      : "With the weak-inversion tail switched off the model returns exactly zero, which is the idealisation used in hand calculations. A real device still leaks.";
+  } else if (r.region === "triode"){
+    eq = "I_D = β (V_OV V_DS − V_DS²⁄2),   0 ≤ V_DS < V_OV";
+    txt = "A continuous inversion layer joins source and drain. For V_DS well below V_OV the quadratic term is negligible and the channel behaves as a gate-controlled resistance of about "+(p.vds>0.001? (p.vds/(r.id*1e-6)/1000).toFixed(2)+" kΩ" : "1/(βV_OV)")+".";
+  } else {
+    const f = p.clm ? (clmMode==="continuous" ? " (1 + λ(V_DS − V_OV))" : " (1 + λV_DS)") : "";
+    eq = "I_D = ½ β V_OV²"+f+",   V_DS ≥ V_OV";
+    txt = "The inversion charge falls to zero at the drain end. Carriers are still swept across the depleted pinch-off region, so saturation means weak dependence on V_DS, not the absence of current."
+        + (p.clm ? " Channel-length modulation gives the residual slope." : " With λ = 0 the curve is perfectly flat.");
+  }
+  el("eqText").innerHTML = subify(eq);
+  el("interp").innerHTML = subify(txt);
+
+  // validity flags
+  const E = p.vds / (p.length*1e-4);          // V/cm
+  const flags = [];
+  if (E > 1e4) flags.push("Lateral field is about "+(E/1e3).toFixed(0)+" kV/cm, above the ~10 kV/cm scale where silicon carriers approach saturation velocity. The square law over-predicts current here.");
+  if (p.length < 0.25) flags.push("At L = "+p.length.toFixed(2)+" µm the long-channel assumption is doubtful — expect threshold roll-off and DIBL in a real device.");
+  if (r.S*1000 < 60) flags.push("S = "+(r.S*1000).toFixed(0)+" mV/dec is below the 59.5 mV/dec thermal limit at 300 K, which no thermally-injected MOSFET can beat. n < 1 is unphysical.");
+  const box = el("validity");
+  if (flags.length){ box.style.display="block"; box.innerHTML = "<b>Model validity.</b> "+flags.join(" "); }
+  else { box.style.display="block"; box.innerHTML = "<b>Model validity.</b> Lateral field is about "+(E/1e3).toFixed(1)+" kV/cm and L = "+p.length.toFixed(2)+" µm, so the long-channel constant-mobility assumptions are reasonable at this operating point."; }
+}
+
+function update(){
+  const p = params();
+  const r = model(p);
+  setText(p,r);
+  drawDevice(p,r);
+  drawOutput(p,r);
+  drawTransfer(p,r);
+}
+
+document.querySelectorAll("input").forEach(x => x.addEventListener("input", update));
+
+document.querySelectorAll("#clmMode button").forEach(b => b.addEventListener("click", () => {
+  clmMode = b.dataset.mode;
+  document.querySelectorAll("#clmMode button").forEach(o => o.setAttribute("aria-pressed", String(o===b)));
+  update();
+}));
+
+document.querySelectorAll("#axisToggle button").forEach(b => b.addEventListener("click", () => {
+  transferAxis = b.dataset.axis;
+  document.querySelectorAll("#axisToggle button").forEach(o => o.setAttribute("aria-pressed", String(o===b)));
+  update();
+}));
+
+document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
+  const k = b.dataset.preset;
+  if (k==="cutoff")     { inp.vgs.value=0.30; inp.vds.value=1.00; }
+  if (k==="triode")     { inp.vgs.value=1.20; inp.vds.value=0.20; }
+  if (k==="saturation") { inp.vgs.value=1.20; inp.vds.value=1.00; }
+  if (k==="reset"){
+    const d={vgs:1.20,vds:1.00,vth:0.45,mucox:200,width:10,length:0.50,lambda:0.04,nfac:1.30};
+    Object.entries(d).forEach(([k2,v])=>{ inp[k2].value=v; });
+    clmBox.checked=true; subBox.checked=true;
+  }
+  update();
+}));
+
+window.addEventListener("resize", update);
+update();
+</script>
+</body>
+</html>
