@@ -34,13 +34,20 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Check out deployment helper
+        uses: actions/checkout@v7
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/github-script@v9
         with:
-          timeout: 1800000
+          retries: 3
+          retry-exempt-status-codes: 400,401,403,404,422
+          script: |
+            const deploy = require('./.github/scripts/deploy-pages.cjs')
+            await deploy({ github, context, core })
