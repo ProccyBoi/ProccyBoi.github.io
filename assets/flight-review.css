@@ -343,6 +343,28 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 .flight-map-setup-card > .flight-button { margin-top: 1.35rem; }
 .flight-map-key-note { margin-top: 0.75rem !important; color: var(--fr-faint) !important; font-size: 0.66rem !important; }
 
+.flight-map-legend {
+  position: absolute;
+  z-index: 4;
+  right: 0.8rem;
+  bottom: 4.2rem;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 0.45rem 0.9rem;
+  padding: 0.58rem 0.65rem;
+  border: 1px solid rgba(204,236,225,.18);
+  border-radius: 0.42rem;
+  background: rgba(5, 12, 10, 0.82);
+  color: var(--fr-muted);
+  font-size: 0.58rem;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+.flight-map-legend > div { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.flight-map-legend small { grid-column: 1 / -1; color: var(--fr-faint); font-family: var(--fr-mono); font-size: 0.54rem; }
+.flight-map-legend-line { width: 1.6rem; height: 0.18rem; border-radius: 999px; background: #62dfb3; box-shadow: 0 0 0.45rem rgba(98,223,179,.35); }
+.flight-map-legend-line.is-ground { height: 0.14rem; background: linear-gradient(90deg, #6bb6ff, #62dfb3, #f4c86a); box-shadow: 0 0 0 1px #07100e; }
+
 .flight-hud {
   position: absolute;
   z-index: 5;
@@ -544,6 +566,8 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
   .flight-hud { grid-template-columns: repeat(2, 1fr); width: calc(100% - 1.2rem); top: 0.6rem; left: 0.6rem; }
   .flight-hud > div:nth-child(2) { border-right: 0; }
   .flight-hud > div:nth-child(-n+2) { border-bottom: 1px solid var(--fr-line); }
+  .flight-map-legend { right: auto; bottom: 4.55rem; left: 0.6rem; grid-template-columns: 1fr; gap: 0.35rem; }
+  .flight-map-legend small { display: none; }
   .flight-visual-controls { right: 0.6rem; bottom: 0.6rem; left: 0.6rem; overflow-x: auto; }
   .flight-visual-controls label { min-width: max-content; }
   .flight-inspector { grid-template-columns: 1fr; }

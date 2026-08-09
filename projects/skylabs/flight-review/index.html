@@ -133,6 +133,11 @@
         <section class="flight-visualizer" aria-label="Flight replay visualizer">
           <div class="flight-view is-active" data-view="terrain">
             <div id="flight-terrain-map" class="flight-map-host" aria-label="MapLibre 3D terrain flight replay"></div>
+            <div class="flight-map-legend" data-terrain-legend aria-label="3D terrain overlay legend">
+              <div><span class="flight-map-legend-line is-airborne" aria-hidden="true"></span>Airborne path</div>
+              <div><span class="flight-map-legend-line is-ground" aria-hidden="true"></span>Ground projection</div>
+              <small data-terrain-clearance-status>Terrain aligned · 5 m minimum AGL</small>
+            </div>
             <div class="flight-map-setup" data-map-setup>
               <div class="flight-map-setup-card">
                 <p class="flight-kicker"><span aria-hidden="true"></span> Open geospatial replay</p>
@@ -178,8 +183,9 @@
 
           <div class="flight-visual-controls" data-visual-controls>
             <label>Camera<select data-camera-mode><option value="orbit">Orbit</option><option value="follow">Follow</option><option value="top">Top</option></select></label>
-            <label>Height<select data-height-source><option value="baro">Barometer</option><option value="gps">GNSS</option></select></label>
+            <label>Height<select data-height-source><option value="baro">Barometer profile</option><option value="gps">GNSS profile</option></select></label>
             <label>Vertical<select data-vertical-scale><option value="1">1×</option><option value="2">2×</option><option value="5">5×</option></select></label>
+            <label data-terrain-clearance-control>Minimum AGL<select data-terrain-clearance><option value="2">2 m</option><option value="5" selected>5 m</option><option value="10">10 m</option></select></label>
             <button type="button" data-fit-track>Fit track</button>
           </div>
         </section>
