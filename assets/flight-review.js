@@ -100,6 +100,9 @@
     cameraMode: $("[data-camera-mode]"),
     heightSource: $("[data-height-source]"),
     verticalScale: $("[data-vertical-scale]"),
+    terrainClearance: $("[data-terrain-clearance]"),
+    terrainClearanceControl: $("[data-terrain-clearance-control]"),
+    terrainClearanceStatus: $("[data-terrain-clearance-status]"),
     terrainHost: $("#flight-terrain-map"),
     mapSetup: $("[data-map-setup]"),
     mapSetupTitle: $("[data-map-setup-title]"),
@@ -807,6 +810,7 @@
     const overlayVisible = ["terrain", "local"].includes(view);
     $("[data-flight-hud]").hidden = !overlayVisible;
     $("[data-visual-controls]").hidden = !overlayVisible;
+    elements.terrainClearanceControl.hidden = view !== "terrain";
     if (view === "charts") drawAllCharts();
     if (view === "local") state.localViewer?.resize();
     if (view === "terrain" && state.terrainViewer) {
@@ -1177,17 +1181,6 @@
     state.localViewer?.update(index);
   }
 
-  function mapAltitudeSeries() {
-    return elements.heightSource.value === "gps" ? state.model.gnssAltFilled : state.model.baroFilled;
-  }
-
-  function terrainAltitudeSeries() {
-    const source = mapAltitudeSeries();
-    const baseline = firstFinite(source, 0);
-    const scale = Number(elements.verticalScale.value) || 1;
-    return source.map((value) => finite(value) ? baseline + (Number(value) - baseline) * scale : baseline);
-  }
-
   function decimatedTerrainIndices() {
     const model = state.model;
     const maxPoints = 1800;
@@ -1238,7 +1231,7 @@
     elements.mapRetry.hidden = mode !== "error";
     if (mode === "loading") {
       elements.mapSetupTitle.textContent = "Preparing 3D terrain";
-      elements.mapSetupCopy.textContent = "Loading the open basemap, elevation mesh and georeferenced flight overlay.";
+      elements.mapSetupCopy.textContent = "Loading the elevation mesh and aligning the recorded vertical profile to terrain.";
     } else if (mode === "error") {
       elements.mapSetupTitle.textContent = "Open terrain could not load";
       elements.mapSetupCopy.textContent = message || "The public map services did not respond. Check the connection and retry.";
@@ -1249,6 +1242,9 @@
     const viewer = state.terrainViewer;
     if (!viewer) return;
     window.clearTimeout(viewer.loadTimer);
+    window.clearTimeout(viewer.refreshTimer);
+    if (viewer.onTerrainData) viewer.map.off("sourcedata", viewer.onTerrainData);
+    if (viewer.onTerrainIdle) viewer.map.off("idle", viewer.onTerrainIdle);
     viewer.map.remove();
     state.terrainViewer = null;
   }
@@ -1262,8 +1258,30 @@
     const eastRange = rangeOf(model.east);
     const northRange = rangeOf(model.north);
     const horizontalSpan = Math.max(100, Math.hypot(eastRange[1] - eastRange[0], northRange[1] - northRange[0]));
+    const pathRadius = Math.max(0.7, Math.min(1.25, horizontalSpan / 3500));
+    const terrainElevations = new Float64Array(model.count);
+    terrainElevations.fill(NaN);
+    let launchTerrain = NaN;
     let pathMesh = null;
     let renderer = null;
+
+    const clearance = () => Math.max(pathRadius + 0.5, Number(elements.terrainClearance.value) || 5);
+    const relativeProfile = () => elements.heightSource.value === "gps" ? model.gnssUp : model.baroUp;
+    const groundAt = (index, query = true) => {
+      if (finite(terrainElevations[index])) return terrainElevations[index];
+      if (!query || !map.isSourceLoaded("skylabs-terrain")) return NaN;
+      const elevation = map.queryTerrainElevation([model.lon[index], model.lat[index]]);
+      if (finite(elevation)) terrainElevations[index] = Number(elevation);
+      return finite(elevation) ? Number(elevation) : NaN;
+    };
+    const flightAltitude = (index) => {
+      const ground = groundAt(index);
+      const launch = finite(launchTerrain) ? launchTerrain : (finite(ground) ? ground : 0);
+      const profile = relativeProfile();
+      const recordedUp = finite(profile[index]) ? Number(profile[index]) : 0;
+      const desired = launch + clearance() + recordedUp * (Number(elements.verticalScale.value) || 1);
+      return finite(ground) ? Math.max(desired, ground + clearance()) : desired;
+    };
 
     const layer = {
       id: "skylabs-airborne-replay",
@@ -1332,23 +1350,33 @@
           pathMesh.geometry.dispose();
           pathMesh.material.dispose();
         }
-        const altitude = terrainAltitudeSeries();
         const points = indices.map((index) => new THREE.Vector3(
           Number(model.east[index]) - originEast,
-          altitude[index],
+          flightAltitude(index),
           Number(model.north[index]) - originNorth
         )).filter((point) => finite(point.x) && finite(point.y) && finite(point.z));
         if (points.length < 2) return;
         const curve = new THREE.CatmullRomCurve3(points, false, "centripetal", 0.35);
-        const radius = Math.max(1.5, Math.min(7, horizontalSpan / 1200));
-        const geometry = new THREE.TubeGeometry(curve, Math.min(1400, Math.max(180, points.length - 1)), radius, 6, false);
+        const geometry = new THREE.TubeGeometry(curve, Math.min(1800, Math.max(240, points.length - 1)), pathRadius, 6, false);
         const material = new THREE.MeshBasicMaterial({ color: 0x62dfb3, transparent: true, opacity: 0.94 });
         pathMesh = new THREE.Mesh(geometry, material);
         this.scene.add(pathMesh);
       },
+      refreshTerrain() {
+        if (!map.isSourceLoaded("skylabs-terrain")) return 0;
+        let available = 0;
+        indices.forEach((index) => {
+          terrainElevations[index] = NaN;
+          if (finite(groundAt(index))) available += 1;
+        });
+        launchTerrain = groundAt(originIndex);
+        this.rebuildPath();
+        this.update(state.index);
+        return indices.length ? available / indices.length : 0;
+      },
       update(index) {
         if (!this.aircraft) return;
-        const altitude = terrainAltitudeSeries()[index];
+        const altitude = flightAltitude(index);
         const east = Number(model.east[index]) - originEast;
         const north = Number(model.north[index]) - originNorth;
         if (![east, north, altitude].every(finite)) return;
@@ -1356,7 +1384,8 @@
         this.aircraft.position.set(east, altitude, north);
         this.aircraft.rotation.order = "YXZ";
         this.aircraft.rotation.set(radians(attitude.pitch), -radians(attitude.yaw), -radians(attitude.roll));
-        const ground = map.isSourceLoaded("skylabs-terrain") ? (map.queryTerrainElevation([model.lon[index], model.lat[index]]) ?? 0) : 0;
+        const ground = groundAt(index);
+        if (!finite(ground)) return;
         this.tetherPositions.set([east, ground, north, east, altitude, north]);
         this.tetherGeometry.attributes.position.needsUpdate = true;
         map.triggerRepaint();
@@ -1396,9 +1425,14 @@
     const viewer = {
       map,
       ready: false,
+      aligned: false,
       flightLayer: null,
+      refreshTimer: null,
+      refreshAttempts: 0,
+      onTerrainData: null,
+      onTerrainIdle: null,
       loadTimer: window.setTimeout(() => {
-        if (!viewer.ready) showTerrainStatus("error", "The open map services took too long to respond. Check the connection and retry.");
+        if (!viewer.aligned) showTerrainStatus("error", "The terrain elevations took too long to respond. Check the connection and retry.");
       }, 18000)
     };
     state.terrainViewer = viewer;
@@ -1463,11 +1497,38 @@
         viewer.flightLayer = createTerrainFlightLayer(model, map);
         map.addLayer(viewer.flightLayer, firstSymbol);
         viewer.ready = true;
-        window.clearTimeout(viewer.loadTimer);
-        showTerrainStatus("ready");
         fitTerrainMap(false);
-        updateTerrainViewer(0, true);
-        toast("Open 3D terrain ready — no API key required.");
+        const refreshTerrain = () => {
+          if (state.terrainViewer !== viewer || viewer.aligned && viewer.refreshAttempts >= 4) return;
+          viewer.refreshAttempts += 1;
+          const coverage = viewer.flightLayer.refreshTerrain();
+          if (coverage <= 0) return;
+          if (!viewer.aligned) {
+            viewer.aligned = true;
+            window.clearTimeout(viewer.loadTimer);
+            showTerrainStatus("ready");
+            updateTerrainViewer(0, true);
+            toast("Terrain-aligned 3D replay ready — no API key required.");
+          }
+          if (coverage >= 0.98 || viewer.refreshAttempts >= 4) {
+            map.off("sourcedata", viewer.onTerrainData);
+            map.off("idle", viewer.onTerrainIdle);
+          }
+        };
+        const scheduleTerrainRefresh = () => {
+          if (viewer.refreshTimer) return;
+          viewer.refreshTimer = window.setTimeout(() => {
+            viewer.refreshTimer = null;
+            refreshTerrain();
+          }, 80);
+        };
+        viewer.onTerrainData = (event) => {
+          if (event.sourceId === "skylabs-terrain" && map.isSourceLoaded("skylabs-terrain")) scheduleTerrainRefresh();
+        };
+        viewer.onTerrainIdle = scheduleTerrainRefresh;
+        map.on("sourcedata", viewer.onTerrainData);
+        map.on("idle", viewer.onTerrainIdle);
+        scheduleTerrainRefresh();
       } catch (error) {
         showTerrainStatus("error", error instanceof Error ? error.message : "The terrain overlay could not be initialized.");
       }
@@ -1501,6 +1562,11 @@
     if (!viewer?.ready) return;
     viewer.flightLayer.rebuildPath();
     viewer.flightLayer.update(state.index);
+  }
+
+  function updateTerrainClearanceStatus() {
+    const value = Number(elements.terrainClearance.value) || 5;
+    elements.terrainClearanceStatus.textContent = `Terrain aligned · ${value} m minimum AGL`;
   }
 
   function fitTerrainMap(animate = true) {
@@ -1632,6 +1698,11 @@
   });
   elements.verticalScale.addEventListener("change", () => {
     state.localViewer?.rebuildPath();
+    rebuildTerrainPath();
+    updateFrame(state.index, true);
+  });
+  elements.terrainClearance.addEventListener("change", () => {
+    updateTerrainClearanceStatus();
     rebuildTerrainPath();
     updateFrame(state.index, true);
   });

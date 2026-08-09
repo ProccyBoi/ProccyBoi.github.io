@@ -40,17 +40,20 @@ The primary map replay is keyless and uses an open geospatial stack:
 - [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/docs/) 5.24.0, vendored with the site, renders the terrain and synchronized overlays.
 - [OpenFreeMap](https://openfreemap.org/) supplies the Liberty vector basemap using OpenStreetMap data, including 3D building extrusion where height data exists.
 - [Mapterhorn](https://mapterhorn.com/) supplies the public elevation tiles used by MapLibre's terrain mesh and hillshade.
-- the existing Three.js runtime draws the absolute-altitude airborne path, aircraft attitude model and vertical position tether in MapLibre's shared 3D scene.
+- the existing Three.js runtime draws the terrain-aligned airborne path, aircraft attitude model and vertical position tether in MapLibre's shared 3D scene.
 
 No account, API key or billing configuration is required. The uploaded flight file still remains in browser memory; only normal basemap and elevation-tile requests leave the device. Provider and OpenStreetMap attribution remain visible in the map.
 
+Barometric, GNSS and terrain elevations can use different vertical datums. The 3D view therefore treats the selected onboard altitude as a relative profile, anchors it to the launch-point terrain and clamps each rendered point to the chosen minimum AGL. Recorded altitude values remain unchanged in the HUD, charts, sample inspector and normalized CSV export.
+
 The terrain view includes:
 
-- the airborne flight path at the selected barometric or GNSS altitude;
+- an airborne flight path that preserves the selected barometric or GNSS vertical profile while rebasing it to the elevation mesh;
 - a terrain-clamped, distance-gradient ground projection;
 - open-map labels and 3D buildings;
 - start, end and synchronized current-aircraft markers;
 - orbit, follow and top-down camera modes;
+- a selectable minimum above-ground clearance that prevents the rendered tube from clipping through terrain;
 - selectable 1×, 2× and 5× vertical exaggeration.
 
 ## Reference validation
