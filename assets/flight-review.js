@@ -6,7 +6,8 @@
   const MAGIC = "SKYLBIN1";
   const HEADER_BYTES = 48;
   const RECORD_SIZES = new Map([[1, 238], [2, 250], [3, 282]]);
-  const MAPS_STORAGE_KEY = "skylabs-google-maps-key";
+  const OPEN_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+  const TERRAIN_TILEJSON = "https://tiles.mapterhorn.com/tilejson.json";
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -99,10 +100,11 @@
     cameraMode: $("[data-camera-mode]"),
     heightSource: $("[data-height-source]"),
     verticalScale: $("[data-vertical-scale]"),
-    googleHost: $("#flight-google-map"),
+    terrainHost: $("#flight-terrain-map"),
     mapSetup: $("[data-map-setup]"),
-    mapKeyForm: $("[data-map-key-form]"),
-    mapKeyInput: $("#google-maps-key"),
+    mapSetupTitle: $("[data-map-setup-title]"),
+    mapSetupCopy: $("[data-map-setup-copy]"),
+    mapRetry: $("[data-map-retry]"),
     localHost: $("#flight-local-3d"),
     horizonWorld: $("[data-horizon-world]"),
     healthList: $("[data-health-list]"),
@@ -120,8 +122,7 @@
     level: null,
     levelLabel: "Raw IMU",
     localViewer: null,
-    googleViewer: null,
-    googlePromise: null,
+    terrainViewer: null,
     charts: [],
     chartResizeObserver: null,
     toastTimer: null,
@@ -584,9 +585,9 @@
   }
 
   function populateWorkspace(model) {
-    state.googleViewer = null;
-    elements.googleHost.replaceChildren();
-    elements.mapSetup.hidden = false;
+    disposeTerrainViewer();
+    elements.terrainHost.replaceChildren();
+    showTerrainStatus("loading");
     state.model = model;
     state.index = 0;
     state.playing = false;
@@ -625,10 +626,7 @@
       state.localViewer = createLocalViewer(model);
       switchView(model.hasGps ? "terrain" : "local");
       updateFrame(0, true);
-      const configuredKey = document.querySelector('meta[name="google-maps-api-key"]')?.content?.trim();
-      const sessionKey = window.sessionStorage.getItem(MAPS_STORAGE_KEY);
-      const apiKey = configuredKey || sessionKey;
-      if (model.hasGps && apiKey) initializeGoogleViewer(apiKey).catch((error) => showMapError(error.message));
+      if (model.hasGps) initializeTerrainViewer(model);
     });
   }
 
@@ -782,7 +780,7 @@
 
     updateSampleInspector(next);
     updateLocalViewer(next);
-    updateGoogleViewer(next);
+    updateTerrainViewer(next);
     if (state.view === "charts") drawAllCharts();
   }
 
@@ -811,7 +809,10 @@
     $("[data-visual-controls]").hidden = !overlayVisible;
     if (view === "charts") drawAllCharts();
     if (view === "local") state.localViewer?.resize();
-    if (view === "terrain" && state.googleViewer) updateGoogleViewer(state.index, true);
+    if (view === "terrain" && state.terrainViewer) {
+      state.terrainViewer.map.resize();
+      updateTerrainViewer(state.index, true);
+    }
   }
 
   function setLevel(level, label) {
@@ -1176,185 +1177,347 @@
     state.localViewer?.update(index);
   }
 
-  function loadGoogleMaps(apiKey) {
-    if (window.google?.maps?.importLibrary) return Promise.resolve(window.google.maps);
-    if (state.googlePromise) return state.googlePromise;
-    state.googlePromise = new Promise((resolve, reject) => {
-      const callbackName = "__skylabsGoogleMapsReady";
-      window[callbackName] = () => {
-        delete window[callbackName];
-        resolve(window.google.maps);
-      };
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async&libraries=maps3d&v=weekly&callback=${callbackName}`;
-      script.async = true;
-      script.onerror = () => {
-        state.googlePromise = null;
-        reject(new Error("Google Maps JavaScript could not be downloaded."));
-      };
-      document.head.append(script);
-    });
-    return state.googlePromise;
-  }
-
   function mapAltitudeSeries() {
     return elements.heightSource.value === "gps" ? state.model.gnssAltFilled : state.model.baroFilled;
   }
 
-  function mapCameraRange(model, multiplier = 2.7) {
-    const eastRange = rangeOf(model.east);
-    const northRange = rangeOf(model.north);
-    const altitudeRange = rangeOf(mapAltitudeSeries());
-    const horizontal = Math.hypot(eastRange[1] - eastRange[0], northRange[1] - northRange[0]);
-    const vertical = finite(altitudeRange[0]) ? altitudeRange[1] - altitudeRange[0] : 0;
-    return Math.max(500, horizontal * multiplier, vertical * 2.2);
+  function terrainAltitudeSeries() {
+    const source = mapAltitudeSeries();
+    const baseline = firstFinite(source, 0);
+    const scale = Number(elements.verticalScale.value) || 1;
+    return source.map((value) => finite(value) ? baseline + (Number(value) - baseline) * scale : baseline);
   }
 
-  function decimatedMapPath(includeAltitude = true) {
+  function decimatedTerrainIndices() {
     const model = state.model;
-    const altitude = mapAltitudeSeries();
     const maxPoints = 1800;
     const stride = Math.max(1, Math.ceil(model.count / maxPoints));
-    const path = [];
+    const indices = [];
     for (let index = 0; index < model.count; index += stride) {
       if (!finite(model.lat[index]) || !finite(model.lon[index])) continue;
-      const point = { lat: model.lat[index], lng: model.lon[index] };
-      if (includeAltitude && finite(altitude[index])) point.altitude = altitude[index];
-      path.push(point);
+      indices.push(index);
     }
     const last = model.count - 1;
-    if (path.length && path[path.length - 1].lat !== model.lat[last]) {
-      const point = { lat: model.lat[last], lng: model.lon[last] };
-      if (includeAltitude && finite(altitude[last])) point.altitude = altitude[last];
-      path.push(point);
+    if (indices.length && indices[indices.length - 1] !== last && finite(model.lat[last]) && finite(model.lon[last])) {
+      indices.push(last);
     }
-    return path;
+    return indices;
   }
 
-  async function initializeGoogleViewer(apiKey) {
-    if (!state.model?.hasGps) throw new Error("This log has no usable GNSS coordinates.");
-    elements.mapKeyInput.value = "";
-    const maps = await loadGoogleMaps(apiKey);
-    const { Map3DElement, Polyline3DElement, Marker3DElement } = await maps.importLibrary("maps3d");
+  function terrainTrackGeoJson() {
     const model = state.model;
+    return {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: decimatedTerrainIndices().map((index) => [model.lon[index], model.lat[index]])
+      }
+    };
+  }
+
+  function terrainMarkerGeoJson(currentIndex = state.index) {
+    const model = state.model;
+    const valid = [];
+    for (let index = 0; index < model.count; index += 1) {
+      if (finite(model.lat[index]) && finite(model.lon[index])) valid.push(index);
+    }
+    const first = valid[0] ?? 0;
+    const last = valid[valid.length - 1] ?? first;
+    const current = finite(model.lat[currentIndex]) && finite(model.lon[currentIndex]) ? currentIndex : first;
+    const feature = (index, kind, label) => ({
+      type: "Feature",
+      properties: { kind, label },
+      geometry: { type: "Point", coordinates: [model.lon[index], model.lat[index]] }
+    });
+    return { type: "FeatureCollection", features: [feature(first, "start", "START"), feature(last, "end", "END"), feature(current, "current", "")] };
+  }
+
+  function showTerrainStatus(mode, message = "") {
+    elements.mapSetup.hidden = mode === "ready";
+    elements.mapRetry.hidden = mode !== "error";
+    if (mode === "loading") {
+      elements.mapSetupTitle.textContent = "Preparing 3D terrain";
+      elements.mapSetupCopy.textContent = "Loading the open basemap, elevation mesh and georeferenced flight overlay.";
+    } else if (mode === "error") {
+      elements.mapSetupTitle.textContent = "Open terrain could not load";
+      elements.mapSetupCopy.textContent = message || "The public map services did not respond. Check the connection and retry.";
+    }
+  }
+
+  function disposeTerrainViewer() {
+    const viewer = state.terrainViewer;
+    if (!viewer) return;
+    window.clearTimeout(viewer.loadTimer);
+    viewer.map.remove();
+    state.terrainViewer = null;
+  }
+
+  function createTerrainFlightLayer(model, map) {
+    const indices = decimatedTerrainIndices();
+    const originIndex = indices[0] ?? 0;
+    const sceneOrigin = [model.lon[originIndex], model.lat[originIndex]];
+    const originEast = finite(model.east[originIndex]) ? Number(model.east[originIndex]) : 0;
+    const originNorth = finite(model.north[originIndex]) ? Number(model.north[originIndex]) : 0;
+    const eastRange = rangeOf(model.east);
+    const northRange = rangeOf(model.north);
+    const horizontalSpan = Math.max(100, Math.hypot(eastRange[1] - eastRange[0], northRange[1] - northRange[0]));
+    let pathMesh = null;
+    let renderer = null;
+
+    const layer = {
+      id: "skylabs-airborne-replay",
+      type: "custom",
+      renderingMode: "3d",
+      onAdd(mapInstance, gl) {
+        this.camera = new THREE.Camera();
+        this.scene = new THREE.Scene();
+        this.scene.rotateX(Math.PI / 2);
+        this.scene.scale.multiply(new THREE.Vector3(1, 1, -1));
+
+        const aircraftMaterial = new THREE.MeshStandardMaterial({ color: 0x7af5c7, emissive: 0x173c30, roughness: 0.35, metalness: 0.12 });
+        this.aircraft = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.ConeGeometry(1.3, 5.5, 4), aircraftMaterial);
+        body.rotation.x = Math.PI / 2;
+        body.position.z = -0.8;
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.24, 1.2), aircraftMaterial);
+        wing.position.z = 0.35;
+        const tail = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 0.7), aircraftMaterial);
+        tail.position.z = 2.1;
+        this.aircraft.add(body, wing, tail);
+        this.aircraft.scale.setScalar(Math.max(0.9, Math.min(2.5, horizontalSpan / 2500)));
+        this.scene.add(this.aircraft);
+
+        this.tetherGeometry = new THREE.BufferGeometry();
+        this.tetherPositions = new Float32Array(6);
+        const tetherAttribute = new THREE.BufferAttribute(this.tetherPositions, 3);
+        tetherAttribute.setUsage(THREE.DynamicDrawUsage);
+        this.tetherGeometry.setAttribute("position", tetherAttribute);
+        this.tether = new THREE.Line(this.tetherGeometry, new THREE.LineBasicMaterial({ color: 0x7af5c7, transparent: true, opacity: 0.42 }));
+        this.scene.add(this.tether);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+        sun.position.set(50, 80, -30).normalize();
+        this.scene.add(sun);
+
+        renderer = new THREE.WebGLRenderer({ canvas: mapInstance.getCanvas(), context: gl, antialias: true });
+        renderer.autoClear = false;
+        layer.rebuildPath();
+        layer.update(0);
+      },
+      render(gl, args) {
+        const origin = maplibregl.MercatorCoordinate.fromLngLat(sceneOrigin, 0);
+        const scale = origin.meterInMercatorCoordinateUnits();
+        const projection = args?.defaultProjectionData?.mainMatrix || args;
+        const mapMatrix = new THREE.Matrix4().fromArray(projection);
+        const localMatrix = new THREE.Matrix4()
+          .makeTranslation(origin.x, origin.y, origin.z)
+          .scale(new THREE.Vector3(scale, -scale, scale));
+        this.camera.projectionMatrix = mapMatrix.multiply(localMatrix);
+        renderer.resetState();
+        renderer.render(this.scene, this.camera);
+      },
+      onRemove() {
+        this.scene?.traverse((object) => {
+          object.geometry?.dispose?.();
+          if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose?.());
+          else object.material?.dispose?.();
+        });
+        renderer = null;
+      },
+      rebuildPath() {
+        if (!this.scene) return;
+        if (pathMesh) {
+          this.scene.remove(pathMesh);
+          pathMesh.geometry.dispose();
+          pathMesh.material.dispose();
+        }
+        const altitude = terrainAltitudeSeries();
+        const points = indices.map((index) => new THREE.Vector3(
+          Number(model.east[index]) - originEast,
+          altitude[index],
+          Number(model.north[index]) - originNorth
+        )).filter((point) => finite(point.x) && finite(point.y) && finite(point.z));
+        if (points.length < 2) return;
+        const curve = new THREE.CatmullRomCurve3(points, false, "centripetal", 0.35);
+        const radius = Math.max(1.5, Math.min(7, horizontalSpan / 1200));
+        const geometry = new THREE.TubeGeometry(curve, Math.min(1400, Math.max(180, points.length - 1)), radius, 6, false);
+        const material = new THREE.MeshBasicMaterial({ color: 0x62dfb3, transparent: true, opacity: 0.94 });
+        pathMesh = new THREE.Mesh(geometry, material);
+        this.scene.add(pathMesh);
+      },
+      update(index) {
+        if (!this.aircraft) return;
+        const altitude = terrainAltitudeSeries()[index];
+        const east = Number(model.east[index]) - originEast;
+        const north = Number(model.north[index]) - originNorth;
+        if (![east, north, altitude].every(finite)) return;
+        const attitude = displayedAttitude(index);
+        this.aircraft.position.set(east, altitude, north);
+        this.aircraft.rotation.order = "YXZ";
+        this.aircraft.rotation.set(radians(attitude.pitch), -radians(attitude.yaw), -radians(attitude.roll));
+        const ground = map.isSourceLoaded("skylabs-terrain") ? (map.queryTerrainElevation([model.lon[index], model.lat[index]]) ?? 0) : 0;
+        this.tetherPositions.set([east, ground, north, east, altitude, north]);
+        this.tetherGeometry.attributes.position.needsUpdate = true;
+        map.triggerRepaint();
+      }
+    };
+    return layer;
+  }
+
+  function initializeTerrainViewer(model) {
+    if (!model?.hasGps) return;
+    disposeTerrainViewer();
+    elements.terrainHost.replaceChildren();
+    showTerrainStatus("loading");
+    if (!window.maplibregl || !window.THREE) {
+      showTerrainStatus("error", "The open 3D rendering runtime could not be loaded.");
+      return;
+    }
     const latRange = rangeOf(model.lat);
     const lonRange = rangeOf(model.lon);
-    const altitudeRange = rangeOf(mapAltitudeSeries());
-    const center = {
-      lat: (latRange[0] + latRange[1]) / 2,
-      lng: (lonRange[0] + lonRange[1]) / 2,
-      altitude: finite(altitudeRange[0]) ? (altitudeRange[0] + altitudeRange[1]) / 2 : 0
-    };
-    const map = new Map3DElement({
+    const center = [(lonRange[0] + lonRange[1]) / 2, (latRange[0] + latRange[1]) / 2];
+    const map = new maplibregl.Map({
+      container: elements.terrainHost,
+      style: OPEN_MAP_STYLE,
       center,
-      range: mapCameraRange(model),
-      tilt: 66,
-      heading: 18,
-      mode: "SATELLITE",
-      gestureHandling: "GREEDY"
+      zoom: 12,
+      pitch: 64,
+      bearing: 18,
+      maxPitch: 85,
+      attributionControl: true,
+      canvasContextAttributes: { antialias: true }
     });
-    map.addEventListener("gmp-error", () => showMapError("Google Maps rejected the map request. Check that billing and the Maps JavaScript API are enabled for this key."));
-    const groundPath = new Polyline3DElement({
-      path: decimatedMapPath(false),
-      strokeColor: "#315f7e",
-      outerColor: "#07100e",
-      strokeWidth: 5,
-      outerWidth: 0.35,
-      altitudeMode: "RELATIVE_TO_GROUND",
-      drawsOccludedSegments: true,
-      zIndex: 1
+    map.on("styleimagemissing", (event) => {
+      if (!map.hasImage(event.id)) map.addImage(event.id, { width: 1, height: 1, data: new Uint8Array([0, 0, 0, 0]) });
     });
-    const flightPath = new Polyline3DElement({
-      path: decimatedMapPath(true),
-      strokeColor: "#62dfb3",
-      outerColor: "#edf5f1",
-      strokeWidth: 7,
-      outerWidth: 0.25,
-      altitudeMode: "ABSOLUTE",
-      drawsOccludedSegments: true,
-      extruded: true,
-      zIndex: 3
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }), "top-right");
+    map.addControl(new maplibregl.ScaleControl({ maxWidth: 110, unit: "metric" }), "bottom-left");
+    const viewer = {
+      map,
+      ready: false,
+      flightLayer: null,
+      loadTimer: window.setTimeout(() => {
+        if (!viewer.ready) showTerrainStatus("error", "The open map services took too long to respond. Check the connection and retry.");
+      }, 18000)
+    };
+    state.terrainViewer = viewer;
+
+    map.once("load", () => {
+      if (state.terrainViewer !== viewer) return;
+      try {
+        map.addSource("skylabs-terrain", { type: "raster-dem", url: TERRAIN_TILEJSON, maxzoom: 14 });
+        map.addSource("skylabs-hillshade", { type: "raster-dem", url: TERRAIN_TILEJSON, maxzoom: 14 });
+        map.setTerrain({ source: "skylabs-terrain", exaggeration: 1 });
+        const firstSymbol = map.getStyle().layers.find((layer) => layer.type === "symbol")?.id;
+        map.addLayer({
+          id: "skylabs-hillshade",
+          type: "hillshade",
+          source: "skylabs-hillshade",
+          paint: {
+            "hillshade-exaggeration": 0.42,
+            "hillshade-shadow-color": "#10241f",
+            "hillshade-highlight-color": "#dbe8e2",
+            "hillshade-accent-color": "#53756a"
+          }
+        }, firstSymbol);
+        map.addSource("skylabs-ground-track", { type: "geojson", lineMetrics: true, data: terrainTrackGeoJson() });
+        map.addLayer({
+          id: "skylabs-ground-track-casing",
+          type: "line",
+          source: "skylabs-ground-track",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#07100e", "line-width": 7, "line-opacity": 0.72 }
+        }, firstSymbol);
+        map.addLayer({
+          id: "skylabs-ground-track-line",
+          type: "line",
+          source: "skylabs-ground-track",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-width": 3.5,
+            "line-opacity": 0.9,
+            "line-gradient": ["interpolate", ["linear"], ["line-progress"], 0, "#6bb6ff", 0.55, "#62dfb3", 1, "#f4c86a"]
+          }
+        }, firstSymbol);
+        map.addSource("skylabs-track-points", { type: "geojson", data: terrainMarkerGeoJson(0) });
+        map.addLayer({
+          id: "skylabs-track-points",
+          type: "circle",
+          source: "skylabs-track-points",
+          paint: {
+            "circle-radius": ["match", ["get", "kind"], "current", 7, 5],
+            "circle-color": ["match", ["get", "kind"], "start", "#62dfb3", "end", "#f4c86a", "#edf5f1"],
+            "circle-stroke-color": "#07100e",
+            "circle-stroke-width": 2
+          }
+        });
+        map.addLayer({
+          id: "skylabs-track-labels",
+          type: "symbol",
+          source: "skylabs-track-points",
+          filter: ["!=", ["get", "label"], ""],
+          layout: { "text-field": ["get", "label"], "text-font": ["Noto Sans Bold"], "text-size": 10, "text-offset": [0, 1.35], "text-allow-overlap": true },
+          paint: { "text-color": "#edf5f1", "text-halo-color": "#07100e", "text-halo-width": 1.4 }
+        });
+        viewer.flightLayer = createTerrainFlightLayer(model, map);
+        map.addLayer(viewer.flightLayer, firstSymbol);
+        viewer.ready = true;
+        window.clearTimeout(viewer.loadTimer);
+        showTerrainStatus("ready");
+        fitTerrainMap(false);
+        updateTerrainViewer(0, true);
+        toast("Open 3D terrain ready — no API key required.");
+      } catch (error) {
+        showTerrainStatus("error", error instanceof Error ? error.message : "The terrain overlay could not be initialized.");
+      }
     });
-    const startMarker = new Marker3DElement({
-      position: { lat: model.lat[0], lng: model.lon[0], altitude: mapAltitudeSeries()[0] },
-      altitudeMode: "ABSOLUTE",
-      label: "START",
-      sizePreserved: true,
-      drawsWhenOccluded: true
+    map.on("error", (event) => {
+      if (!viewer.ready && event.error?.message) showTerrainStatus("error", event.error.message);
     });
-    const endIndex = model.count - 1;
-    const endMarker = new Marker3DElement({
-      position: { lat: model.lat[endIndex], lng: model.lon[endIndex], altitude: mapAltitudeSeries()[endIndex] },
-      altitudeMode: "ABSOLUTE",
-      label: "END",
-      sizePreserved: true,
-      drawsWhenOccluded: true
-    });
-    const aircraftMarker = new Marker3DElement({
-      position: { lat: model.lat[0], lng: model.lon[0], altitude: mapAltitudeSeries()[0] },
-      altitudeMode: "ABSOLUTE",
-      label: "AIRCRAFT",
-      sizePreserved: true,
-      drawsWhenOccluded: true,
-      extruded: true,
-      zIndex: 8
-    });
-    map.append(groundPath, flightPath, startMarker, endMarker, aircraftMarker);
-    elements.googleHost.replaceChildren(map);
-    elements.mapSetup.hidden = true;
-    state.googleViewer = { map, groundPath, flightPath, startMarker, endMarker, aircraftMarker, center };
-    updateGoogleViewer(state.index, true);
-    toast("Google Maps 3D terrain connected.");
   }
 
-  function updateGoogleViewer(index, force = false) {
-    if (!state.googleViewer || !state.model?.hasGps) return;
-    const model = state.model;
-    const altitude = mapAltitudeSeries()[index];
-    const position = { lat: model.lat[index], lng: model.lon[index], altitude: finite(altitude) ? altitude : 0 };
-    state.googleViewer.aircraftMarker.position = position;
+  function updateTerrainViewer(index, force = false) {
+    const viewer = state.terrainViewer;
+    if (!viewer?.ready || !state.model?.hasGps) return;
+    viewer.flightLayer.update(index);
+    viewer.map.getSource("skylabs-track-points")?.setData(terrainMarkerGeoJson(index));
     const now = performance.now();
     if (elements.cameraMode.value === "follow" && (force || now - state.lastMapCameraUpdate > 110)) {
-      state.googleViewer.map.center = position;
+      const model = state.model;
       const heading = finite(model.series.gnssHeading[index]) ? model.series.gnssHeading[index] : model.series.yaw[index];
-      if (finite(heading)) state.googleViewer.map.heading = Number(heading);
+      viewer.map.jumpTo({
+        center: [model.lon[index], model.lat[index]],
+        bearing: finite(heading) ? Number(heading) : viewer.map.getBearing(),
+        pitch: 68,
+        zoom: Math.max(14.2, viewer.map.getZoom())
+      });
       state.lastMapCameraUpdate = now;
     }
   }
 
-  function rebuildGooglePath() {
-    if (!state.googleViewer) return;
-    const altitude = mapAltitudeSeries();
-    state.googleViewer.flightPath.path = decimatedMapPath(true);
-    state.googleViewer.startMarker.position = { lat: state.model.lat[0], lng: state.model.lon[0], altitude: altitude[0] };
-    const last = state.model.count - 1;
-    state.googleViewer.endMarker.position = { lat: state.model.lat[last], lng: state.model.lon[last], altitude: altitude[last] };
-    updateGoogleViewer(state.index, true);
+  function rebuildTerrainPath() {
+    const viewer = state.terrainViewer;
+    if (!viewer?.ready) return;
+    viewer.flightLayer.rebuildPath();
+    viewer.flightLayer.update(state.index);
   }
 
-  function fitGoogleMap() {
-    if (!state.googleViewer) return;
+  function fitTerrainMap(animate = true) {
+    const viewer = state.terrainViewer;
+    if (!viewer?.ready) return;
     const model = state.model;
-    const latRange = rangeOf(model.lat);
     const lonRange = rangeOf(model.lon);
-    const altitudeRange = rangeOf(mapAltitudeSeries());
-    state.googleViewer.map.center = {
-      lat: (latRange[0] + latRange[1]) / 2,
-      lng: (lonRange[0] + lonRange[1]) / 2,
-      altitude: finite(altitudeRange[0]) ? (altitudeRange[0] + altitudeRange[1]) / 2 : 0
-    };
-    state.googleViewer.map.range = mapCameraRange(model);
-    state.googleViewer.map.tilt = 66;
-    state.googleViewer.map.heading = 18;
-  }
-
-  function showMapError(message) {
-    elements.mapSetup.hidden = false;
-    const title = $("h2", elements.mapSetup);
-    const copy = title?.nextElementSibling;
-    if (title) title.textContent = "Google Maps 3D could not load";
-    if (copy) copy.textContent = message;
-    toast(message, true);
+    const latRange = rangeOf(model.lat);
+    const bounds = new maplibregl.LngLatBounds([lonRange[0], latRange[0]], [lonRange[1], latRange[1]]);
+    const top = elements.cameraMode.value === "top";
+    viewer.map.fitBounds(bounds, {
+      padding: { top: 110, right: 85, bottom: 95, left: 85 },
+      bearing: top ? 0 : 18,
+      pitch: top ? 0 : 64,
+      duration: animate ? 650 : 0,
+      maxZoom: 16.5
+    });
   }
 
   function downloadBlob(name, blob) {
@@ -1458,26 +1621,21 @@
 
   elements.cameraMode.addEventListener("change", () => {
     updateLocalViewer(state.index);
-    if (!state.googleViewer) return;
-    if (elements.cameraMode.value === "top") {
-      const position = { lat: state.model.lat[state.index], lng: state.model.lon[state.index], altitude: mapAltitudeSeries()[state.index] };
-      state.googleViewer.map.center = position;
-      state.googleViewer.map.tilt = 0;
-      state.googleViewer.map.heading = 0;
-      state.googleViewer.map.range = mapCameraRange(state.model, 1.8);
-    } else if (elements.cameraMode.value === "orbit") fitGoogleMap();
-    else updateGoogleViewer(state.index, true);
+    if (!state.terrainViewer?.ready) return;
+    if (["orbit", "top"].includes(elements.cameraMode.value)) fitTerrainMap();
+    else updateTerrainViewer(state.index, true);
   });
   elements.heightSource.addEventListener("change", () => {
     state.localViewer?.rebuildPath();
-    rebuildGooglePath();
+    rebuildTerrainPath();
     updateFrame(state.index, true);
   });
   elements.verticalScale.addEventListener("change", () => {
     state.localViewer?.rebuildPath();
+    rebuildTerrainPath();
     updateFrame(state.index, true);
   });
-  $("[data-fit-track]").addEventListener("click", () => state.view === "terrain" ? fitGoogleMap() : state.localViewer?.fit());
+  $("[data-fit-track]").addEventListener("click", () => state.view === "terrain" ? fitTerrainMap() : state.localViewer?.fit());
 
   $("[data-level-start]").addEventListener("click", () => setLevel({ ...state.model.defaultLevel }, "Auto-level"));
   $("[data-level-now]").addEventListener("click", () => setLevel({
@@ -1487,38 +1645,7 @@
   }, `Leveled ${formatTime(state.model.series.time[state.index])}`));
   $("[data-level-reset]").addEventListener("click", () => setLevel(null, "Raw IMU"));
 
-  elements.mapKeyForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const apiKey = elements.mapKeyInput.value.trim();
-    if (!apiKey) return;
-    const submit = $("button[type='submit']", elements.mapKeyForm);
-    submit.disabled = true;
-    submit.textContent = "Connecting…";
-    const title = $("h2", elements.mapSetup);
-    const copy = title?.nextElementSibling;
-    if (title) title.textContent = "Connect Google Maps 3D";
-    if (copy) copy.textContent = "Overlay the flight path, ground projection and live aircraft position on Google’s 3D terrain and buildings.";
-    try {
-      window.sessionStorage.setItem(MAPS_STORAGE_KEY, apiKey);
-      await initializeGoogleViewer(apiKey);
-    } catch (error) {
-      showMapError(error instanceof Error ? error.message : "Google Maps 3D could not be initialized.");
-    } finally {
-      submit.disabled = false;
-      submit.textContent = "Load 3D map";
-    }
-  });
-
-  $("[data-configure-maps]").addEventListener("click", () => {
-    switchView("terrain");
-    if (state.googleViewer) {
-      fitGoogleMap();
-      toast("Google Maps 3D is already connected for this tab.");
-    } else {
-      elements.mapSetup.hidden = false;
-      window.setTimeout(() => elements.mapKeyInput.focus(), 0);
-    }
-  });
+  elements.mapRetry.addEventListener("click", () => initializeTerrainViewer(state.model));
 
   $("[data-copy-sample]").addEventListener("click", async () => {
     try {

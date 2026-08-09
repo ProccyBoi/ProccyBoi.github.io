@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/proccy-boi/">
   <title>Flight Review | Skylabs</title>
-  <meta name="description" content="Private, in-browser Skylabs flight-log review with synchronized telemetry, 3D replay and Google Maps 3D terrain overlays.">
+  <meta name="description" content="Private, in-browser Skylabs flight-log review with synchronized telemetry and keyless MapLibre 3D terrain replay.">
   <meta name="theme-color" content="#08110f">
-  <meta name="google-maps-api-key" content="">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Skylabs Flight Review">
   <meta property="og:description" content="Review Skylabs binary, Excel and CSV flight logs entirely in your browser.">
   <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/projects/skylabs/flight-review/">
   <link rel="canonical" href="https://proccyboi.github.io/proccy-boi/projects/skylabs/flight-review/">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/flight-review.css?v=20260809-2">
+  <link rel="stylesheet" href="assets/vendor/maplibre-gl.css?v=5.24.0">
+  <link rel="stylesheet" href="assets/flight-review.css?v=20260810-1">
+  <script src="assets/vendor/maplibre-gl.js?v=5.24.0" defer></script>
   <script src="assets/vendor/three.min.js" defer></script>
   <script src="assets/vendor/xlsx.full.min.js" defer></script>
-  <script src="assets/flight-review.js?v=20260809-2" defer></script>
+  <script src="assets/flight-review.js?v=20260810-1" defer></script>
 </head>
 <body class="flight-review-page">
   <a class="flight-skip-link" href="#main">Skip to flight review</a>
@@ -64,7 +65,7 @@
           <span aria-hidden="true">
             <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
           </span>
-          <p><strong>Private by design.</strong> Parsing, charts and replay run in this tab. Optional Google 3D terrain receives map coordinates only after you enable it.</p>
+          <p><strong>Private by design.</strong> Parsing, charts and replay run in this tab. Only the coordinates needed to draw the open basemap and elevation tiles are requested.</p>
         </div>
 
         <button class="flight-schema-link" type="button" data-open-schema>
@@ -96,7 +97,6 @@
         <div class="flight-command-actions">
           <span class="flight-private-chip"><i aria-hidden="true"></i> Local session</span>
           <button type="button" class="flight-command-button" data-download-csv>Export normalized CSV</button>
-          <button type="button" class="flight-command-button" data-configure-maps>Google 3D setup</button>
         </div>
       </header>
 
@@ -112,8 +112,8 @@
       <nav class="flight-view-tabs" aria-label="Workspace view">
         <button type="button" aria-selected="true" data-view-button="terrain">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 18 5-7 4 5 3-4 6 6"/><path d="M3 20h18"/></svg>
-          Google 3D terrain
-          <span class="flight-beta">Optional</span>
+          Open 3D terrain
+          <span class="flight-beta">Keyless</span>
         </button>
         <button type="button" aria-selected="false" data-view-button="local">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
@@ -132,18 +132,19 @@
       <div class="flight-review-grid">
         <section class="flight-visualizer" aria-label="Flight replay visualizer">
           <div class="flight-view is-active" data-view="terrain">
-            <div id="flight-google-map" class="flight-map-host" aria-label="Google Maps 3D flight replay"></div>
+            <div id="flight-terrain-map" class="flight-map-host" aria-label="MapLibre 3D terrain flight replay"></div>
             <div class="flight-map-setup" data-map-setup>
               <div class="flight-map-setup-card">
-                <p class="flight-kicker"><span aria-hidden="true"></span> Photorealistic terrain layer</p>
-                <h2>Connect Google Maps 3D</h2>
-                <p>Overlay the flight path, ground projection and live aircraft position on Google’s 3D terrain and buildings.</p>
-                <form data-map-key-form>
-                  <label for="google-maps-key">Browser-restricted Maps JavaScript API key</label>
-                  <div><input id="google-maps-key" name="key" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…" required><button type="submit">Load 3D map</button></div>
-                </form>
-                <p class="flight-map-key-note">The key remains in this tab. Restrict it to <code>proccyboi.github.io/proccy-boi/*</code> in Google Cloud.</p>
-                <a href="https://developers.google.com/maps/documentation/javascript/3d" target="_blank" rel="noreferrer">Google Maps 3D setup guide ↗</a>
+                <p class="flight-kicker"><span aria-hidden="true"></span> Open geospatial replay</p>
+                <h2 data-map-setup-title>Preparing 3D terrain</h2>
+                <p data-map-setup-copy>Loading the open basemap, elevation mesh and georeferenced flight overlay.</p>
+                <div class="flight-map-stack" aria-label="Open terrain technology stack">
+                  <span><b>Renderer</b> MapLibre GL JS</span>
+                  <span><b>Basemap</b> OpenFreeMap</span>
+                  <span><b>Elevation</b> Mapterhorn</span>
+                </div>
+                <button class="flight-button flight-button-primary" type="button" data-map-retry hidden>Retry terrain</button>
+                <p class="flight-map-key-note">No account, API key or billing setup required. Map data remains attributed in the viewer.</p>
               </div>
             </div>
           </div>
