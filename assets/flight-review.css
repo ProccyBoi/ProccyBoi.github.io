@@ -349,7 +349,7 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
   right: 0.8rem;
   bottom: 4.2rem;
   display: grid;
-  grid-template-columns: repeat(2, max-content);
+  grid-template-columns: repeat(3, max-content);
   gap: 0.45rem 0.9rem;
   padding: 0.58rem 0.65rem;
   border: 1px solid rgba(204,236,225,.18);
@@ -362,8 +362,11 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 }
 .flight-map-legend > div { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
 .flight-map-legend small { grid-column: 1 / -1; color: var(--fr-faint); font-family: var(--fr-mono); font-size: 0.54rem; }
+.flight-map-legend small + small { margin-top: -0.25rem; }
 .flight-map-legend-line { width: 1.6rem; height: 0.18rem; border-radius: 999px; background: #62dfb3; box-shadow: 0 0 0.45rem rgba(98,223,179,.35); }
 .flight-map-legend-line.is-ground { height: 0.14rem; background: linear-gradient(90deg, #6bb6ff, #62dfb3, #f4c86a); box-shadow: 0 0 0 1px #07100e; }
+.flight-map-legend-tree { position: relative; width: 0.72rem; height: 0.72rem; border-radius: 55% 45% 52% 48%; background: #4f8e68; box-shadow: 0 0 0.5rem rgba(79,142,104,.35); }
+.flight-map-legend-tree::after { content: ""; position: absolute; top: 0.55rem; left: 0.31rem; width: 0.1rem; height: 0.35rem; border-radius: 999px; background: #8b6c47; }
 
 .flight-hud {
   position: absolute;
@@ -402,6 +405,7 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 }
 .flight-visual-controls label { display: flex; align-items: center; gap: 0.35rem; padding-left: 0.35rem; color: var(--fr-faint); font-size: 0.58rem; }
 .flight-visual-controls select, .flight-visual-controls button { height: 2rem; padding: 0 0.5rem; border: 1px solid var(--fr-line); border-radius: 0.25rem; background: var(--fr-panel-raised); color: var(--fr-text); font-size: 0.62rem; }
+.flight-visual-controls [data-satellite-settings] { color: var(--fr-green); }
 
 .flight-chart-view, .flight-sample-view { z-index: 2; overflow: auto; padding: 1.4rem; background: var(--fr-bg-deep); }
 .flight-chart-heading, .flight-sample-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 1rem; }
@@ -515,6 +519,26 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 .flight-schema-dialog td span { margin-top: 0.15rem; color: var(--fr-green); font-family: var(--fr-mono); font-size: 0.52rem; text-transform: uppercase; }
 .flight-schema-dialog-inner > footer { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 1rem 1.5rem 1.5rem; }
 .flight-schema-dialog footer p { max-width: 58ch; margin: 0; color: var(--fr-faint); font-size: 0.67rem; }
+
+.flight-provider-dialog { width: min(32rem, calc(100% - 2rem)); padding: 0; border: 1px solid var(--fr-line-strong); border-radius: 0.7rem; background: var(--fr-panel); color: var(--fr-text); box-shadow: 0 3rem 9rem rgba(0,0,0,.68); }
+.flight-provider-dialog::backdrop { background: rgba(2, 7, 6, 0.82); backdrop-filter: blur(6px); }
+.flight-provider-dialog-inner { display: grid; gap: 1rem; padding: 1.35rem; }
+.flight-provider-dialog header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; }
+.flight-provider-dialog h2 { margin: 0.35rem 0 0; font-size: 1.55rem; font-weight: 520; letter-spacing: -0.04em; }
+.flight-provider-dialog header button { width: 2.2rem; height: 2.2rem; flex: 0 0 auto; border: 1px solid var(--fr-line); border-radius: 50%; background: none; color: var(--fr-muted); font-size: 1.3rem; line-height: 1; }
+.flight-provider-dialog-inner > p { margin: 0; color: var(--fr-muted); font-size: 0.74rem; line-height: 1.55; }
+.flight-provider-dialog code { color: var(--fr-text); font-family: var(--fr-mono); }
+.flight-provider-dialog label { display: grid; gap: 0.4rem; color: var(--fr-faint); font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.flight-provider-dialog input { width: 100%; height: 2.7rem; padding: 0 0.75rem; border: 1px solid var(--fr-line-strong); border-radius: 0.3rem; outline: 0; background: var(--fr-bg-deep); color: var(--fr-text); font-family: var(--fr-mono); font-size: 0.72rem; text-transform: none; }
+.flight-provider-dialog input:focus { border-color: var(--fr-green); box-shadow: 0 0 0 3px rgba(98,223,179,.08); }
+.flight-provider-error { padding: 0.65rem 0.75rem; border-left: 2px solid var(--fr-red); background: rgba(255,143,112,.06); color: var(--fr-red) !important; }
+.flight-provider-note { display: grid; grid-template-columns: 7rem minmax(0,1fr); gap: 0.75rem; padding: 0.75rem; border: 1px solid var(--fr-line); border-radius: 0.35rem; background: rgba(7,16,14,.5); font-size: 0.66rem; }
+.flight-provider-note strong { color: var(--fr-green); font-family: var(--fr-mono); font-size: 0.56rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.flight-provider-note span { color: var(--fr-muted); line-height: 1.45; }
+.flight-provider-note a { color: var(--fr-text); text-decoration-color: var(--fr-line-strong); }
+.flight-provider-dialog footer { display: flex; justify-content: flex-end; gap: 0.55rem; padding-top: 0.25rem; }
+.flight-provider-dialog footer button { min-height: 2.35rem; padding: 0 0.85rem; border: 1px solid var(--fr-line); border-radius: 0.3rem; background: var(--fr-panel-raised); color: var(--fr-muted); font-size: 0.66rem; }
+.flight-provider-dialog footer .flight-button-primary { border-color: var(--fr-green); background: var(--fr-green); color: var(--fr-green-ink); }
 
 .flight-toast { position: fixed; z-index: 1000; right: 1rem; bottom: 1rem; max-width: min(24rem, calc(100% - 2rem)); padding: 0.78rem 1rem; border: 1px solid var(--fr-line-strong); border-radius: 0.4rem; background: #15231f; box-shadow: 0 1rem 3rem rgba(0,0,0,.35); color: var(--fr-text); font-size: 0.73rem; }
 

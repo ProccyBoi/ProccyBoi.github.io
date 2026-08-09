@@ -8,6 +8,8 @@
   const RECORD_SIZES = new Map([[1, 238], [2, 250], [3, 282]]);
   const OPEN_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
   const TERRAIN_TILEJSON = "https://tiles.mapterhorn.com/tilejson.json";
+  const MAPTILER_SATELLITE_TILEJSON = "https://api.maptiler.com/tiles/satellite-v2/tiles.json";
+  const MAPTILER_KEY_STORAGE = "skylabs.flightReview.maptilerKey";
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -100,9 +102,17 @@
     cameraMode: $("[data-camera-mode]"),
     heightSource: $("[data-height-source]"),
     verticalScale: $("[data-vertical-scale]"),
+    mapBasemap: $("[data-map-basemap]"),
+    vegetationDensity: $("[data-vegetation-density]"),
     terrainClearance: $("[data-terrain-clearance]"),
-    terrainClearanceControl: $("[data-terrain-clearance-control]"),
     terrainClearanceStatus: $("[data-terrain-clearance-status]"),
+    vegetationStatus: $("[data-vegetation-status]"),
+    satelliteDialog: $("[data-satellite-dialog]"),
+    satelliteForm: $("[data-satellite-form]"),
+    satelliteKey: $("[data-satellite-key]"),
+    satelliteError: $("[data-satellite-error]"),
+    satelliteSave: $("[data-satellite-save]"),
+    satelliteSettings: $("[data-satellite-settings]"),
     terrainHost: $("#flight-terrain-map"),
     mapSetup: $("[data-map-setup]"),
     mapSetupTitle: $("[data-map-setup-title]"),
@@ -810,7 +820,9 @@
     const overlayVisible = ["terrain", "local"].includes(view);
     $("[data-flight-hud]").hidden = !overlayVisible;
     $("[data-visual-controls]").hidden = !overlayVisible;
-    elements.terrainClearanceControl.hidden = view !== "terrain";
+    $$('[data-map-only-control]').forEach((control) => {
+      control.hidden = view !== "terrain" || control === elements.satelliteSettings && elements.mapBasemap.value !== "satellite";
+    });
     if (view === "charts") drawAllCharts();
     if (view === "local") state.localViewer?.resize();
     if (view === "terrain" && state.terrainViewer) {
@@ -1226,6 +1238,76 @@
     return { type: "FeatureCollection", features: [feature(first, "start", "START"), feature(last, "end", "END"), feature(current, "current", "")] };
   }
 
+  function storedMapTilerKey() {
+    try {
+      return localStorage.getItem(MAPTILER_KEY_STORAGE)?.trim() || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function storeMapTilerKey(key) {
+    try {
+      localStorage.setItem(MAPTILER_KEY_STORAGE, key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function openSatelliteDialog() {
+    elements.satelliteKey.value = storedMapTilerKey();
+    elements.satelliteError.hidden = true;
+    elements.satelliteError.textContent = "";
+    if (typeof elements.satelliteDialog.showModal === "function") elements.satelliteDialog.showModal();
+    else elements.satelliteDialog.setAttribute("open", "");
+    window.setTimeout(() => elements.satelliteKey.focus(), 0);
+  }
+
+  function applyTerrainBasemap(mode = elements.mapBasemap.value) {
+    const viewer = state.terrainViewer;
+    if (!viewer?.ready) return;
+    const map = viewer.map;
+    if (mode !== "satellite") {
+      if (map.getLayer("skylabs-satellite")) map.setLayoutProperty("skylabs-satellite", "visibility", "none");
+      if (map.getLayer("skylabs-hillshade")) map.setPaintProperty("skylabs-hillshade", "hillshade-opacity", 0.5);
+      elements.satelliteSettings.hidden = true;
+      return;
+    }
+    const key = storedMapTilerKey();
+    if (!key) {
+      elements.mapBasemap.value = "map";
+      openSatelliteDialog();
+      return;
+    }
+    if (map.getSource("skylabs-satellite") && viewer.satelliteKey !== key) {
+      if (map.getLayer("skylabs-satellite")) map.removeLayer("skylabs-satellite");
+      map.removeSource("skylabs-satellite");
+    }
+    if (!map.getSource("skylabs-satellite")) {
+      map.addSource("skylabs-satellite", {
+        type: "raster",
+        url: `${MAPTILER_SATELLITE_TILEJSON}?key=${encodeURIComponent(key)}`,
+        tileSize: 512
+      });
+      const referenceLayer = map.getLayer("road_area_pattern")
+        ? "road_area_pattern"
+        : map.getStyle().layers.find((layer) => layer.type === "symbol")?.id;
+      map.addLayer({
+        id: "skylabs-satellite",
+        type: "raster",
+        source: "skylabs-satellite",
+        paint: { "raster-opacity": 1, "raster-fade-duration": 180, "raster-saturation": -0.08, "raster-contrast": 0.08 }
+      }, referenceLayer);
+      viewer.satelliteKey = key;
+    } else {
+      map.setLayoutProperty("skylabs-satellite", "visibility", "visible");
+    }
+    if (map.getLayer("skylabs-hillshade")) map.setPaintProperty("skylabs-hillshade", "hillshade-opacity", 0.28);
+    elements.satelliteSettings.hidden = state.view !== "terrain";
+    map.triggerRepaint();
+  }
+
   function showTerrainStatus(mode, message = "") {
     elements.mapSetup.hidden = mode === "ready";
     elements.mapRetry.hidden = mode !== "error";
@@ -1245,6 +1327,7 @@
     window.clearTimeout(viewer.refreshTimer);
     if (viewer.onTerrainData) viewer.map.off("sourcedata", viewer.onTerrainData);
     if (viewer.onTerrainIdle) viewer.map.off("idle", viewer.onTerrainIdle);
+    if (viewer.onZoom) viewer.map.off("zoom", viewer.onZoom);
     viewer.map.remove();
     state.terrainViewer = null;
   }
@@ -1263,7 +1346,48 @@
     terrainElevations.fill(NaN);
     let launchTerrain = NaN;
     let pathMesh = null;
+    let treeTrunks = null;
+    let treeCanopies = null;
+    let vegetationTotal = 0;
     let renderer = null;
+
+    const latMetersPerDegree = EARTH_RADIUS_M * Math.PI / 180;
+    const lonMetersPerDegree = latMetersPerDegree * Math.cos(radians(sceneOrigin[1]));
+    const localPoint = ([lon, lat]) => [
+      (Number(lon) - sceneOrigin[0]) * lonMetersPerDegree - originEast,
+      (Number(lat) - sceneOrigin[1]) * latMetersPerDegree - originNorth
+    ];
+    const lngLatPoint = (east, north) => [
+      sceneOrigin[0] + (east + originEast) / lonMetersPerDegree,
+      sceneOrigin[1] + (north + originNorth) / latMetersPerDegree
+    ];
+    const randomAt = (eastCell, northCell, salt = 0) => {
+      const value = Math.sin(eastCell * 12.9898 + northCell * 78.233 + salt * 37.719) * 43758.5453;
+      return value - Math.floor(value);
+    };
+    const pointInRing = (point, ring) => {
+      let inside = false;
+      for (let current = 0, previous = ring.length - 1; current < ring.length; previous = current, current += 1) {
+        const [currentX, currentY] = ring[current];
+        const [previousX, previousY] = ring[previous];
+        const crosses = currentY > point[1] !== previousY > point[1]
+          && point[0] < (previousX - currentX) * (point[1] - currentY) / ((previousY - currentY) || Number.EPSILON) + currentX;
+        if (crosses) inside = !inside;
+      }
+      return inside;
+    };
+    const pointInPolygon = (point, rings) => pointInRing(point, rings[0]) && !rings.slice(1).some((ring) => pointInRing(point, ring));
+    const removeVegetation = () => {
+      [treeTrunks, treeCanopies].forEach((mesh) => {
+        if (!mesh) return;
+        layer.scene?.remove(mesh);
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+      });
+      treeTrunks = null;
+      treeCanopies = null;
+      vegetationTotal = 0;
+    };
 
     const clearance = () => Math.max(pathRadius + 0.5, Number(elements.terrainClearance.value) || 5);
     const relativeProfile = () => elements.heightSource.value === "gps" ? model.gnssUp : model.baroUp;
@@ -1374,6 +1498,136 @@
         this.update(state.index);
         return indices.length ? available / indices.length : 0;
       },
+      refreshVegetation() {
+        removeVegetation();
+        const density = elements.vegetationDensity.value;
+        if (density === "off") {
+          elements.vegetationStatus.textContent = "3D vegetation off";
+          map.triggerRepaint();
+          return 0;
+        }
+        if (!this.scene || !map.isSourceLoaded("openmaptiles") || !map.isSourceLoaded("skylabs-terrain")) {
+          elements.vegetationStatus.textContent = "Loading mapped woodland…";
+          return 0;
+        }
+        const settings = density === "dense"
+          ? { woodSpacing: 16, parkSpacing: 32, maximum: 3000 }
+          : { woodSpacing: 24, parkSpacing: 46, maximum: 1600 };
+        const buffer = Math.max(220, Math.min(650, horizontalSpan * 0.18));
+        const clipBounds = {
+          minEast: eastRange[0] - originEast - buffer,
+          maxEast: eastRange[1] - originEast + buffer,
+          minNorth: northRange[0] - originNorth - buffer,
+          maxNorth: northRange[1] - originNorth + buffer
+        };
+        const featureGroups = [
+          {
+            kind: "wood",
+            spacing: settings.woodSpacing,
+            features: map.querySourceFeatures("openmaptiles", {
+              sourceLayer: "landcover",
+              filter: ["==", ["get", "class"], "wood"]
+            })
+          },
+          {
+            kind: "park",
+            spacing: settings.parkSpacing,
+            features: map.querySourceFeatures("openmaptiles", { sourceLayer: "park" })
+          }
+        ];
+        const cells = new Set();
+        const candidates = [];
+        featureGroups.forEach((group) => group.features.forEach((feature) => {
+          const polygons = feature.geometry?.type === "Polygon"
+            ? [feature.geometry.coordinates]
+            : feature.geometry?.type === "MultiPolygon" ? feature.geometry.coordinates : [];
+          polygons.forEach((polygon) => {
+            const rings = polygon.map((ring) => ring.map(localPoint));
+            if (!rings[0]?.length) return;
+            const eastValues = rings[0].map((point) => point[0]);
+            const northValues = rings[0].map((point) => point[1]);
+            const eastBounds = rangeOf(eastValues);
+            const northBounds = rangeOf(northValues);
+            const minEastCell = Math.floor(Math.max(clipBounds.minEast, eastBounds[0]) / group.spacing);
+            const maxEastCell = Math.ceil(Math.min(clipBounds.maxEast, eastBounds[1]) / group.spacing);
+            const minNorthCell = Math.floor(Math.max(clipBounds.minNorth, northBounds[0]) / group.spacing);
+            const maxNorthCell = Math.ceil(Math.min(clipBounds.maxNorth, northBounds[1]) / group.spacing);
+            if (minEastCell > maxEastCell || minNorthCell > maxNorthCell) return;
+            for (let eastCell = minEastCell; eastCell <= maxEastCell; eastCell += 1) {
+              for (let northCell = minNorthCell; northCell <= maxNorthCell; northCell += 1) {
+                const east = (eastCell + 0.5 + (randomAt(eastCell, northCell, 1) - 0.5) * 0.72) * group.spacing;
+                const north = (northCell + 0.5 + (randomAt(eastCell, northCell, 2) - 0.5) * 0.72) * group.spacing;
+                if (!pointInPolygon([east, north], rings)) continue;
+                const cellKey = `${Math.round(east / 8)}:${Math.round(north / 8)}`;
+                if (cells.has(cellKey)) continue;
+                cells.add(cellKey);
+                candidates.push({ east, north, kind: group.kind, score: randomAt(eastCell, northCell, group.kind === "wood" ? 3 : 15) });
+              }
+            }
+          });
+        }));
+        const trees = candidates.sort((left, right) => left.score - right.score).slice(0, settings.maximum).map((candidate, index) => {
+          const coordinate = lngLatPoint(candidate.east, candidate.north);
+          const ground = map.queryTerrainElevation(coordinate);
+          if (!finite(ground)) return null;
+          return { ...candidate, ground: Number(ground), seed: randomAt(index, Math.round(candidate.east), 4) };
+        }).filter(Boolean);
+        if (!trees.length) {
+          elements.vegetationStatus.textContent = "No mapped woodland or park cover in the loaded view";
+          return 0;
+        }
+        const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.72, 1, 5);
+        const canopyGeometry = new THREE.IcosahedronGeometry(1, 1);
+        const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x785d3f, roughness: 1, metalness: 0, vertexColors: true });
+        const canopyMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96, metalness: 0, vertexColors: true });
+        treeTrunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, trees.length);
+        treeCanopies = new THREE.InstancedMesh(canopyGeometry, canopyMaterial, trees.length);
+        treeTrunks.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+        treeCanopies.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+        treeTrunks.frustumCulled = false;
+        treeCanopies.frustumCulled = false;
+        const dummy = new THREE.Object3D();
+        const trunkColor = new THREE.Color();
+        const canopyColor = new THREE.Color();
+        trees.forEach((tree, index) => {
+          const height = 5.5 + tree.seed * 8;
+          const trunkHeight = height * (0.5 + randomAt(index, 2, 6) * 0.1);
+          const trunkWidth = 0.22 + height * 0.018;
+          dummy.position.set(tree.east, tree.ground + trunkHeight * 0.5, tree.north);
+          dummy.rotation.set(0, randomAt(index, 3, 7) * Math.PI, 0);
+          dummy.scale.set(trunkWidth, trunkHeight, trunkWidth);
+          dummy.updateMatrix();
+          treeTrunks.setMatrixAt(index, dummy.matrix);
+          trunkColor.setHSL(0.075, 0.27, 0.3 + randomAt(index, 4, 8) * 0.08);
+          treeTrunks.setColorAt(index, trunkColor);
+          const crownWidth = height * (0.2 + randomAt(index, 5, 9) * 0.045);
+          dummy.position.set(tree.east, tree.ground + height * 0.72, tree.north);
+          dummy.rotation.set(0, randomAt(index, 6, 10) * Math.PI, 0);
+          dummy.scale.set(crownWidth, height * 0.27, crownWidth * (0.84 + randomAt(index, 7, 11) * 0.24));
+          dummy.updateMatrix();
+          treeCanopies.setMatrixAt(index, dummy.matrix);
+          canopyColor.setHSL(0.32 + randomAt(index, 8, 12) * 0.035, 0.28 + randomAt(index, 9, 13) * 0.14, 0.29 + randomAt(index, 10, 14) * 0.12);
+          treeCanopies.setColorAt(index, canopyColor);
+        });
+        treeTrunks.instanceMatrix.needsUpdate = true;
+        treeCanopies.instanceMatrix.needsUpdate = true;
+        if (treeTrunks.instanceColor) treeTrunks.instanceColor.needsUpdate = true;
+        if (treeCanopies.instanceColor) treeCanopies.instanceColor.needsUpdate = true;
+        vegetationTotal = trees.length;
+        this.scene.add(treeTrunks, treeCanopies);
+        this.updateVegetationLod();
+        return vegetationTotal;
+      },
+      updateVegetationLod() {
+        if (!treeTrunks || !treeCanopies) return;
+        const zoom = map.getZoom();
+        const fraction = zoom < 11.5 ? 0.16 : zoom < 13 ? 0.45 : zoom < 14.2 ? 0.72 : 1;
+        const visible = Math.max(1, Math.min(vegetationTotal, Math.round(vegetationTotal * fraction)));
+        treeTrunks.count = visible;
+        treeCanopies.count = visible;
+        elements.vegetationStatus.textContent = `${visible.toLocaleString()} of ${vegetationTotal.toLocaleString()} terrain-clamped trees · OSM land cover`;
+        map.triggerRepaint();
+      },
       update(index) {
         if (!this.aircraft) return;
         const altitude = flightAltitude(index);
@@ -1429,8 +1683,11 @@
       flightLayer: null,
       refreshTimer: null,
       refreshAttempts: 0,
+      vegetationReady: false,
+      satelliteKey: "",
       onTerrainData: null,
       onTerrainIdle: null,
+      onZoom: null,
       loadTimer: window.setTimeout(() => {
         if (!viewer.aligned) showTerrainStatus("error", "The terrain elevations took too long to respond. Check the connection and retry.");
       }, 18000)
@@ -1450,6 +1707,7 @@
           source: "skylabs-hillshade",
           paint: {
             "hillshade-exaggeration": 0.42,
+            "hillshade-opacity": 0.5,
             "hillshade-shadow-color": "#10241f",
             "hillshade-highlight-color": "#dbe8e2",
             "hillshade-accent-color": "#53756a"
@@ -1497,20 +1755,25 @@
         viewer.flightLayer = createTerrainFlightLayer(model, map);
         map.addLayer(viewer.flightLayer, firstSymbol);
         viewer.ready = true;
+        applyTerrainBasemap();
         fitTerrainMap(false);
         const refreshTerrain = () => {
-          if (state.terrainViewer !== viewer || viewer.aligned && viewer.refreshAttempts >= 4) return;
+          if (state.terrainViewer !== viewer || viewer.aligned && viewer.refreshAttempts >= 6) return;
           viewer.refreshAttempts += 1;
           const coverage = viewer.flightLayer.refreshTerrain();
           if (coverage <= 0) return;
+          if (!viewer.vegetationReady && map.isSourceLoaded("openmaptiles")) {
+            viewer.flightLayer.refreshVegetation();
+            viewer.vegetationReady = true;
+          }
           if (!viewer.aligned) {
             viewer.aligned = true;
             window.clearTimeout(viewer.loadTimer);
             showTerrainStatus("ready");
             updateTerrainViewer(0, true);
-            toast("Terrain-aligned 3D replay ready — no API key required.");
+            toast("Terrain-aligned replay and 3D vegetation ready — satellite imagery is optional.");
           }
-          if (coverage >= 0.98 || viewer.refreshAttempts >= 4) {
+          if ((coverage >= 0.98 && viewer.vegetationReady) || viewer.refreshAttempts >= 6) {
             map.off("sourcedata", viewer.onTerrainData);
             map.off("idle", viewer.onTerrainIdle);
           }
@@ -1523,17 +1786,23 @@
           }, 80);
         };
         viewer.onTerrainData = (event) => {
-          if (event.sourceId === "skylabs-terrain" && map.isSourceLoaded("skylabs-terrain")) scheduleTerrainRefresh();
+          if (["skylabs-terrain", "openmaptiles"].includes(event.sourceId) && map.isSourceLoaded(event.sourceId)) scheduleTerrainRefresh();
         };
         viewer.onTerrainIdle = scheduleTerrainRefresh;
+        viewer.onZoom = () => viewer.flightLayer.updateVegetationLod();
         map.on("sourcedata", viewer.onTerrainData);
         map.on("idle", viewer.onTerrainIdle);
+        map.on("zoom", viewer.onZoom);
         scheduleTerrainRefresh();
       } catch (error) {
         showTerrainStatus("error", error instanceof Error ? error.message : "The terrain overlay could not be initialized.");
       }
     });
     map.on("error", (event) => {
+      if (event.sourceId === "skylabs-satellite") {
+        toast("Satellite imagery could not load. Check the MapTiler key and its allowed domains.", true);
+        return;
+      }
       if (!viewer.ready && event.error?.message) showTerrainStatus("error", event.error.message);
     });
   }
@@ -1706,6 +1975,43 @@
     rebuildTerrainPath();
     updateFrame(state.index, true);
   });
+  elements.mapBasemap.addEventListener("change", () => applyTerrainBasemap());
+  elements.vegetationDensity.addEventListener("change", () => {
+    const viewer = state.terrainViewer;
+    if (!viewer?.ready) return;
+    viewer.vegetationReady = false;
+    if (viewer.map.isSourceLoaded("openmaptiles") && viewer.map.isSourceLoaded("skylabs-terrain")) {
+      viewer.flightLayer.refreshVegetation();
+      viewer.vegetationReady = true;
+    }
+  });
+  elements.satelliteSettings.addEventListener("click", openSatelliteDialog);
+  $$('[data-satellite-cancel]').forEach((button) => button.addEventListener("click", () => elements.satelliteDialog.close()));
+  elements.satelliteForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const key = elements.satelliteKey.value.trim();
+    if (!key) return;
+    elements.satelliteError.hidden = true;
+    elements.satelliteSave.disabled = true;
+    elements.satelliteSave.textContent = "Checking key…";
+    try {
+      const response = await fetch(`${MAPTILER_SATELLITE_TILEJSON}?key=${encodeURIComponent(key)}`);
+      if (!response.ok) throw new Error(response.status === 403 ? "MapTiler rejected this key. Check the key and its allowed domains." : `MapTiler returned HTTP ${response.status}.`);
+      const tileJson = await response.json();
+      if (!Array.isArray(tileJson.tiles) || !tileJson.tiles.length) throw new Error("The MapTiler response did not contain a satellite tileset.");
+      if (!storeMapTilerKey(key)) throw new Error("This browser would not allow the imagery key to be stored locally.");
+      elements.satelliteDialog.close();
+      elements.mapBasemap.value = "satellite";
+      applyTerrainBasemap("satellite");
+      toast("Satellite basemap enabled. MapTiler attribution remains visible.");
+    } catch (error) {
+      elements.satelliteError.textContent = error instanceof Error ? error.message : "The imagery key could not be verified.";
+      elements.satelliteError.hidden = false;
+    } finally {
+      elements.satelliteSave.disabled = false;
+      elements.satelliteSave.textContent = "Save and enable satellite";
+    }
+  });
   $("[data-fit-track]").addEventListener("click", () => state.view === "terrain" ? fitTerrainMap() : state.localViewer?.fit());
 
   $("[data-level-start]").addEventListener("click", () => setLevel({ ...state.model.defaultLevel }, "Auto-level"));
@@ -1728,7 +2034,7 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    if (!state.model || elements.workspace.hidden || elements.schemaDialog.open) return;
+    if (!state.model || elements.workspace.hidden || elements.schemaDialog.open || elements.satelliteDialog.open) return;
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLButtonElement) return;
     if (event.code === "Space") { event.preventDefault(); elements.play.click(); }
     if (event.code === "ArrowLeft") { event.preventDefault(); setPlaying(false); updateFrame(state.index - 1, true); }
