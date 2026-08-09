@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/proccy-boi/">
   <title>Flight Review | Skylabs</title>
-  <meta name="description" content="Private, in-browser Skylabs flight-log review with synchronized telemetry and keyless MapLibre 3D terrain replay.">
+  <meta name="description" content="Private, in-browser Skylabs flight-log review with synchronized telemetry, MapLibre 3D terrain, optional satellite imagery and mapped vegetation.">
   <meta name="theme-color" content="#08110f">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Skylabs Flight Review">
@@ -113,7 +113,7 @@
         <button type="button" aria-selected="true" data-view-button="terrain">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 18 5-7 4 5 3-4 6 6"/><path d="M3 20h18"/></svg>
           Open 3D terrain
-          <span class="flight-beta">Keyless</span>
+          <span class="flight-beta">Open stack</span>
         </button>
         <button type="button" aria-selected="false" data-view-button="local">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
@@ -136,7 +136,9 @@
             <div class="flight-map-legend" data-terrain-legend aria-label="3D terrain overlay legend">
               <div><span class="flight-map-legend-line is-airborne" aria-hidden="true"></span>Airborne path</div>
               <div><span class="flight-map-legend-line is-ground" aria-hidden="true"></span>Ground projection</div>
+              <div><span class="flight-map-legend-tree" aria-hidden="true"></span>3D vegetation</div>
               <small data-terrain-clearance-status>Terrain aligned · 5 m minimum AGL</small>
+              <small data-vegetation-status>Loading mapped woodland…</small>
             </div>
             <div class="flight-map-setup" data-map-setup>
               <div class="flight-map-setup-card">
@@ -149,7 +151,7 @@
                   <span><b>Elevation</b> Mapterhorn</span>
                 </div>
                 <button class="flight-button flight-button-primary" type="button" data-map-retry hidden>Retry terrain</button>
-                <p class="flight-map-key-note">No account, API key or billing setup required. Map data remains attributed in the viewer.</p>
+                <p class="flight-map-key-note">Core terrain requires no account or API key. Optional satellite imagery uses a user-supplied MapTiler browser key.</p>
               </div>
             </div>
           </div>
@@ -185,7 +187,10 @@
             <label>Camera<select data-camera-mode><option value="orbit">Orbit</option><option value="follow">Follow</option><option value="top">Top</option></select></label>
             <label>Height<select data-height-source><option value="baro">Barometer profile</option><option value="gps">GNSS profile</option></select></label>
             <label>Vertical<select data-vertical-scale><option value="1">1×</option><option value="2">2×</option><option value="5">5×</option></select></label>
-            <label data-terrain-clearance-control>Minimum AGL<select data-terrain-clearance><option value="2">2 m</option><option value="5" selected>5 m</option><option value="10">10 m</option></select></label>
+            <label data-map-only-control>Basemap<select data-map-basemap><option value="map">Map</option><option value="satellite">Satellite</option></select></label>
+            <label data-map-only-control>Vegetation<select data-vegetation-density><option value="off">Off</option><option value="balanced" selected>Balanced</option><option value="dense">Dense</option></select></label>
+            <label data-map-only-control>Minimum AGL<select data-terrain-clearance><option value="2">2 m</option><option value="5" selected>5 m</option><option value="10">10 m</option></select></label>
+            <button type="button" data-map-only-control data-satellite-settings hidden>Imagery key</button>
             <button type="button" data-fit-track>Fit track</button>
           </div>
         </section>
@@ -248,6 +253,20 @@
         </table>
       </div>
       <footer><p>Blank optional cells are allowed. Invalid latitude/longitude rows are excluded from the map but remain available in the sample inspector.</p><button type="button" class="flight-button flight-button-primary" data-download-template>Download CSV template</button></footer>
+    </form>
+  </dialog>
+
+  <dialog class="flight-provider-dialog" data-satellite-dialog>
+    <form class="flight-provider-dialog-inner" data-satellite-form>
+      <header>
+        <div><p class="flight-kicker">Optional satellite basemap</p><h2>Connect MapTiler Satellite</h2></div>
+        <button type="button" data-satellite-cancel aria-label="Close satellite imagery setup">×</button>
+      </header>
+      <p>Satellite imagery is supplied directly by MapTiler. Add a public browser key restricted to <code>proccyboi.github.io</code>; it is stored only in this browser and is never included in flight exports.</p>
+      <label>MapTiler API key<input type="text" data-satellite-key autocomplete="off" spellcheck="false" placeholder="Paste a public browser key" required></label>
+      <p class="flight-provider-error" data-satellite-error role="alert" hidden></p>
+      <div class="flight-provider-note"><strong>Free-plan friendly</strong><span>Create or manage a key in <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener noreferrer">MapTiler Cloud</a>. Provider attribution remains visible on the map.</span></div>
+      <footer><button type="button" data-satellite-cancel>Cancel</button><button type="submit" class="flight-button flight-button-primary" data-satellite-save>Save and enable satellite</button></footer>
     </form>
   </dialog>
 

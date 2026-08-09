@@ -35,11 +35,12 @@ Optional engineering channels include `airspeed_mps`, `gnss_siv`, `gnss_h_acc_m`
 
 ## Open 3D terrain
 
-The primary map replay is keyless and uses an open geospatial stack:
+The primary terrain replay is keyless and uses an open geospatial stack; optional satellite imagery uses the viewer's own MapTiler browser key:
 
 - [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/docs/) 5.24.0, vendored with the site, renders the terrain and synchronized overlays.
 - [OpenFreeMap](https://openfreemap.org/) supplies the Liberty vector basemap using OpenStreetMap data, including 3D building extrusion where height data exists.
 - [Mapterhorn](https://mapterhorn.com/) supplies the public elevation tiles used by MapLibre's terrain mesh and hillshade.
+- [MapTiler Satellite](https://www.maptiler.com/maps/satellite/) is available as an optional raster basemap. It requires a public browser API key, which the page stores only in the current browser and sends directly to MapTiler.
 - the existing Three.js runtime draws the terrain-aligned airborne path, aircraft attitude model and vertical position tether in MapLibre's shared 3D scene.
 
 No account, API key or billing configuration is required. The uploaded flight file still remains in browser memory; only normal basemap and elevation-tile requests leave the device. Provider and OpenStreetMap attribution remain visible in the map.
@@ -50,11 +51,15 @@ The terrain view includes:
 
 - an airborne flight path that preserves the selected barometric or GNSS vertical profile while rebasing it to the elevation mesh;
 - a terrain-clamped, distance-gradient ground projection;
+- terrain-clamped, GPU-instanced trees generated from OpenStreetMap woodland and park polygons, with distance-based level of detail and selectable density;
+- a map/satellite basemap selector, with streets, labels and 3D buildings retained above satellite imagery;
 - open-map labels and 3D buildings;
 - start, end and synchronized current-aircraft markers;
 - orbit, follow and top-down camera modes;
 - a selectable minimum above-ground clearance that prevents the rendered tube from clipping through terrain;
 - selectable 1×, 2× and 5× vertical exaggeration.
+
+Vegetation represents mapped woodland and park coverage rather than a surveyed inventory of individual trees. Parks use a deliberately sparse distribution; woodland uses a denser distribution. Placement is deterministic for a given flight and density setting, while height, canopy shape and colour vary slightly to avoid visible repetition. Satellite imagery remains subject to MapTiler's account limits and attribution requirements; the key should be restricted to the production GitHub Pages domain.
 
 ## Reference validation
 
