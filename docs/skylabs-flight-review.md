@@ -40,7 +40,7 @@ The primary terrain replay is keyless and uses an open geospatial stack; optiona
 - [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/docs/) 5.24.0, vendored with the site, renders the terrain and synchronized overlays.
 - [OpenFreeMap](https://openfreemap.org/) supplies the Liberty vector basemap using OpenStreetMap data, including 3D building extrusion where height data exists.
 - [Mapterhorn](https://mapterhorn.com/) supplies the public elevation tiles used by MapLibre's terrain mesh and hillshade.
-- [MapTiler Satellite](https://www.maptiler.com/maps/satellite/) is available as an optional raster basemap. It requires a public browser API key, which the page stores only in the current browser and sends directly to MapTiler.
+- [MapTiler Satellite](https://www.maptiler.com/maps/satellite/) is the default raster basemap and uses a domain-restricted public browser key. A viewer can replace it locally; overrides remain in that browser and are sent directly to MapTiler.
 - the existing Three.js runtime draws the terrain-aligned airborne path, aircraft attitude model and vertical position tether in MapLibre's shared 3D scene.
 
 No account, API key or billing configuration is required. The uploaded flight file still remains in browser memory; only normal basemap and elevation-tile requests leave the device. Provider and OpenStreetMap attribution remain visible in the map.
@@ -59,7 +59,7 @@ The terrain view includes:
 - a selectable minimum above-ground clearance that prevents the rendered tube from clipping through terrain;
 - selectable 1×, 2× and 5× vertical exaggeration.
 
-Vegetation represents mapped woodland and park coverage rather than a surveyed inventory of individual trees. Parks use a deliberately sparse distribution; woodland uses a denser distribution. Placement is deterministic for a given flight and density setting, while height, canopy shape and colour vary slightly to avoid visible repetition. Satellite imagery remains subject to MapTiler's account limits and attribution requirements; the key should be restricted to the production GitHub Pages domain.
+Vegetation represents mapped woodland and park coverage rather than a surveyed inventory of individual trees. Parks use a deliberately sparse distribution; woodland uses a denser distribution. Placement is deterministic for a given flight and density setting, while height, canopy shape and colour vary slightly to avoid visible repetition. Satellite imagery remains subject to MapTiler's account limits and attribution requirements; the configured public key is restricted to the production GitHub Pages domain.
 
 ## Reference validation
 

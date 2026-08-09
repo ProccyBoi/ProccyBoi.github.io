@@ -9,6 +9,7 @@
   const OPEN_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
   const TERRAIN_TILEJSON = "https://tiles.mapterhorn.com/tilejson.json";
   const MAPTILER_SATELLITE_TILEJSON = "https://api.maptiler.com/tiles/satellite-v2/tiles.json";
+  const MAPTILER_PUBLIC_KEY = "uMM1IyZJAqYFTiSXX7J4";
   const MAPTILER_KEY_STORAGE = "skylabs.flightReview.maptilerKey";
 
   const $ = (selector, root = document) => root.querySelector(selector);
@@ -1240,9 +1241,9 @@
 
   function storedMapTilerKey() {
     try {
-      return localStorage.getItem(MAPTILER_KEY_STORAGE)?.trim() || "";
+      return localStorage.getItem(MAPTILER_KEY_STORAGE)?.trim() || MAPTILER_PUBLIC_KEY;
     } catch {
-      return "";
+      return MAPTILER_PUBLIC_KEY;
     }
   }
 
