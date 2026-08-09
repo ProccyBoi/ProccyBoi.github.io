@@ -315,7 +315,13 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 .flight-view { position: absolute; inset: 0; }
 .flight-view.is-active { z-index: 1; }
 .flight-map-host, .flight-local-host { position: absolute; inset: 0; }
-.flight-map-host > gmp-map-3d { width: 100%; height: 100%; }
+.flight-map-host .maplibregl-canvas { outline: 0; }
+.flight-map-host .maplibregl-ctrl-group { overflow: hidden; border: 1px solid rgba(218, 238, 230, 0.14); border-radius: 0.35rem; background: rgba(7, 16, 14, 0.9); box-shadow: 0 0.5rem 1.8rem rgba(0, 0, 0, 0.24); }
+.flight-map-host .maplibregl-ctrl-group button { border-color: rgba(218, 238, 230, 0.1); }
+.flight-map-host .maplibregl-ctrl-icon { filter: invert(92%) sepia(7%) saturate(271%) hue-rotate(102deg) brightness(102%); }
+.flight-map-host .maplibregl-ctrl-attrib { border: 1px solid rgba(218, 238, 230, 0.08); border-radius: 0.25rem 0 0 0; background: rgba(7, 16, 14, 0.82); color: var(--fr-faint); font-size: 0.58rem; }
+.flight-map-host .maplibregl-ctrl-attrib a { color: var(--fr-muted); }
+.flight-map-host .maplibregl-ctrl-scale { border-color: rgba(237, 245, 241, 0.65); background: rgba(7, 16, 14, 0.72); color: var(--fr-text); font-family: var(--fr-mono); font-size: 0.58rem; }
 .flight-local-host canvas { width: 100%; height: 100%; display: block; touch-action: none; }
 
 .flight-map-setup { position: absolute; z-index: 3; inset: 0; display: grid; place-items: center; padding: 2rem; background: radial-gradient(circle at 50% 40%, rgba(43, 110, 88, 0.18), transparent 32rem), #07100e; }
@@ -331,14 +337,11 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 .flight-map-setup-card { position: relative; width: min(34rem, 100%); padding: clamp(1.5rem, 4vw, 2.6rem); border: 1px solid var(--fr-line-strong); border-radius: 0.75rem; background: rgba(13, 23, 20, 0.95); box-shadow: 0 2rem 7rem rgba(0,0,0,0.45); }
 .flight-map-setup-card h2 { margin: 0.75rem 0 0.6rem; font-size: clamp(1.7rem, 3vw, 2.5rem); font-weight: 520; letter-spacing: -0.045em; }
 .flight-map-setup-card > p:not(.flight-kicker) { margin: 0; color: var(--fr-muted); font-size: 0.84rem; }
-.flight-map-setup-card form { margin-top: 1.6rem; }
-.flight-map-setup-card label { display: block; margin-bottom: 0.45rem; color: var(--fr-muted); font-size: 0.67rem; }
-.flight-map-setup-card form div { display: flex; }
-.flight-map-setup-card input { min-width: 0; flex: 1; height: 2.85rem; padding: 0 0.75rem; border: 1px solid var(--fr-line-strong); border-right: 0; border-radius: 0.3rem 0 0 0.3rem; background: #07100e; color: var(--fr-text); font-family: var(--fr-mono); font-size: 0.76rem; }
-.flight-map-setup-card form button { min-width: max-content; border: 1px solid var(--fr-green); border-radius: 0 0.3rem 0.3rem 0; background: var(--fr-green); color: var(--fr-green-ink); font-size: 0.72rem; font-weight: 700; }
+.flight-map-stack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.55rem; margin-top: 1.5rem; }
+.flight-map-stack span { min-width: 0; padding: 0.7rem 0.75rem; border: 1px solid var(--fr-line); border-radius: 0.35rem; background: rgba(7, 16, 14, 0.7); color: var(--fr-text); font-family: var(--fr-mono); font-size: 0.66rem; }
+.flight-map-stack b { display: block; margin-bottom: 0.26rem; color: var(--fr-faint); font-family: var(--fr-sans); font-size: 0.52rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
+.flight-map-setup-card > .flight-button { margin-top: 1.35rem; }
 .flight-map-key-note { margin-top: 0.75rem !important; color: var(--fr-faint) !important; font-size: 0.66rem !important; }
-.flight-map-key-note code { color: var(--fr-muted); font-family: var(--fr-mono); }
-.flight-map-setup-card > a { display: inline-block; margin-top: 1.25rem; color: var(--fr-green); font-size: 0.72rem; text-underline-offset: 0.22em; }
 
 .flight-hud {
   position: absolute;
@@ -533,6 +536,11 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
   .flight-summary article:nth-child(-n+4) { border-bottom: 1px solid var(--fr-line); }
   .flight-review-grid { min-height: 0; }
   .flight-visualizer { min-height: 34rem; }
+  .flight-map-setup { padding: 0.85rem; }
+  .flight-map-setup-card { padding: 1.3rem; }
+  .flight-map-stack { grid-template-columns: 1fr; gap: 0.35rem; margin-top: 1rem; }
+  .flight-map-stack span { display: grid; grid-template-columns: 5.3rem minmax(0, 1fr); align-items: center; gap: 0.45rem; }
+  .flight-map-stack b { margin: 0; }
   .flight-hud { grid-template-columns: repeat(2, 1fr); width: calc(100% - 1.2rem); top: 0.6rem; left: 0.6rem; }
   .flight-hud > div:nth-child(2) { border-right: 0; }
   .flight-hud > div:nth-child(-n+2) { border-bottom: 1px solid var(--fr-line); }

@@ -33,26 +33,25 @@ Recommended columns:
 
 Optional engineering channels include `airspeed_mps`, `gnss_siv`, `gnss_h_acc_m`, `log_dt_ms`, ESC telemetry, EKF uncertainty, IMU sample count and SD logging counters. The page can download a CSV template containing the preferred headers.
 
-## Google Maps 3D
+## Open 3D terrain
 
-The local Three.js replay works without credentials. Google Maps 3D is optional and requires a browser key with billing and the Maps JavaScript API enabled.
+The primary map replay is keyless and uses an open geospatial stack:
 
-For safe production use:
+- [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/docs/) 5.24.0, vendored with the site, renders the terrain and synchronized overlays.
+- [OpenFreeMap](https://openfreemap.org/) supplies the Liberty vector basemap using OpenStreetMap data, including 3D building extrusion where height data exists.
+- [Mapterhorn](https://mapterhorn.com/) supplies the public elevation tiles used by MapLibre's terrain mesh and hillshade.
+- the existing Three.js runtime draws the absolute-altitude airborne path, aircraft attitude model and vertical position tether in MapLibre's shared 3D scene.
 
-1. Create a Google Maps Platform browser key.
-2. Restrict website access to `https://proccyboi.github.io/proccy-boi/*` and local development origins as needed.
-3. Restrict API access to the Maps JavaScript API.
-4. Paste the key into the setup panel for a tab-only session.
+No account, API key or billing configuration is required. The uploaded flight file still remains in browser memory; only normal basemap and elevation-tile requests leave the device. Provider and OpenStreetMap attribution remain visible in the map.
 
-To configure a public browser key by default, set the empty `google-maps-api-key` meta tag in `projects/skylabs/flight-review/index.html`. Browser keys are visible to visitors by design, so origin and API restrictions are mandatory.
+The terrain view includes:
 
-The Google view adds:
-
-- the full flight path using absolute altitude;
-- a terrain-clamped ground projection;
-- start and end markers;
-- a current-aircraft marker synchronized to the shared replay cursor;
-- orbit, follow and top-down camera modes.
+- the airborne flight path at the selected barometric or GNSS altitude;
+- a terrain-clamped, distance-gradient ground projection;
+- open-map labels and 3D buildings;
+- start, end and synchronized current-aircraft markers;
+- orbit, follow and top-down camera modes;
+- selectable 1×, 2× and 5× vertical exaggeration.
 
 ## Reference validation
 
