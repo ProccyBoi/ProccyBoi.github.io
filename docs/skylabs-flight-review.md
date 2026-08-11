@@ -1,6 +1,6 @@
 # Skylabs Flight Review
 
-`/projects/skylabs/flight-review/` is a static, browser-only flight-log review tool. Files selected by the user remain in browser memory; the site has no upload endpoint.
+`/shared/flight-review/` is a static, browser-only flight-log review tool. Files selected by the user remain in browser memory; the site has no upload endpoint.
 
 ## Supported inputs
 

@@ -1176,8 +1176,15 @@ p {
 .about-facts,
 .skill-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid var(--rule);
+}
+
+.about-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.skill-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .about-fact,
