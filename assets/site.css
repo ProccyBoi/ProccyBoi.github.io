@@ -636,10 +636,39 @@ p {
   padding-block: clamp(4rem, 8vw, 7rem);
 }
 
+.project-index-subsection {
+  padding-top: 0;
+}
+
+.index-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.7fr);
+  gap: 2rem clamp(2rem, 6vw, 6rem);
+  align-items: end;
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.index-section-heading .eyebrow {
+  margin-bottom: 0.65rem;
+}
+
+.index-section-heading h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+}
+
+.index-section-heading > p {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--muted);
+}
+
 .project-catalog {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(3.5rem, 8vw, 7rem) clamp(2rem, 5vw, 5rem);
+  gap: clamp(3rem, 6vw, 5.5rem) clamp(1.5rem, 4vw, 3.5rem);
 }
 
 .catalog-card {
@@ -653,12 +682,32 @@ p {
 }
 
 .catalog-card-media {
+  display: grid;
+  aspect-ratio: 3 / 2;
+  place-items: center;
+  overflow: hidden;
   background: var(--surface);
+}
+
+.catalog-card.wide .catalog-card-media {
+  aspect-ratio: 2 / 1;
+}
+
+.catalog-card-media picture {
+  width: 100%;
+  height: 100%;
 }
 
 .catalog-card-media img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
   transition: opacity 180ms ease;
+}
+
+.catalog-card-media.contain-media img {
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  object-fit: contain;
 }
 
 .catalog-card:hover .catalog-card-media img,
@@ -667,13 +716,16 @@ p {
 }
 
 .catalog-card-copy {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
   margin-top: 0.9rem;
   padding-top: 0.9rem;
   border-top: 1px solid var(--rule);
 }
 
-.catalog-card-copy h2 {
+.catalog-card-copy h2,
+.catalog-card-copy h3 {
   margin-bottom: 0.55rem;
   font-size: clamp(1.4rem, 2.5vw, 2.25rem);
 }
@@ -687,6 +739,80 @@ p {
   color: var(--faint);
   font-family: var(--mono);
   font-size: 0.7rem;
+}
+
+.catalog-card-copy > span {
+  color: var(--faint);
+  font-size: 1rem;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.catalog-card:hover .catalog-card-copy > span,
+.catalog-card:focus-visible .catalog-card-copy > span {
+  color: var(--text);
+  transform: translateX(0.2rem);
+}
+
+.project-catalog-tools {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.project-catalog-tools .catalog-card-media {
+  aspect-ratio: 16 / 10;
+}
+
+.project-catalog-tools .catalog-card-copy h3 {
+  font-size: clamp(1.2rem, 2vw, 1.65rem);
+}
+
+.project-list {
+  border-top: 1px solid var(--rule);
+}
+
+.project-list-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(12rem, 1.25fr) minmax(9rem, 0.55fr) auto;
+  gap: 1rem clamp(1rem, 3vw, 2.5rem);
+  align-items: center;
+  padding-block: 1.35rem;
+  border-bottom: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+}
+
+.project-list-row > span,
+.project-list-row small {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
+
+.project-list-row h3 {
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+}
+
+.project-list-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.project-list-row b {
+  font-weight: 400;
+  transition: transform 180ms ease;
+}
+
+.project-list-row:hover h3,
+.project-list-row:focus-visible h3 {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.project-list-row:hover b,
+.project-list-row:focus-visible b {
+  transform: translateX(0.2rem);
 }
 
 .catalog-arrow {
@@ -1429,6 +1555,10 @@ p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .project-catalog-tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .home-project,
   .home-project-lead {
     grid-column: auto;
@@ -1560,6 +1690,11 @@ p {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .index-section-heading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
   .home-project-lead {
     grid-row: auto;
   }
@@ -1589,6 +1724,24 @@ p {
   .catalog-card.wide,
   .project-gallery figure.wide {
     grid-column: auto;
+  }
+
+  .catalog-card.wide .catalog-card-media {
+    aspect-ratio: 3 / 2;
+  }
+
+  .project-list-row {
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+    gap: 0.4rem 0.8rem;
+  }
+
+  .project-list-row small {
+    grid-column: 2;
+  }
+
+  .project-list-row b {
+    grid-column: 3;
+    grid-row: 1;
   }
 
   .project-hero-grid {
