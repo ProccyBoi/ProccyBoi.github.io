@@ -23,10 +23,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Andrew Chung home">
-        <span class="brand-mark" aria-hidden="true">AC</span>
-        <span class="brand-copy"><strong>Andrew Chung</strong><span>Electrical engineering</span></span>
-      </a>
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
         <a href="about/">About</a>
@@ -34,7 +31,7 @@
         <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       </nav>
 
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation" data-nav-toggle><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -61,10 +58,19 @@
     </section>
 
     <div class="project-body shell">
-      <section class="project-summary" aria-labelledby="metroboard-summary" data-reveal>
-        <h2 id="metroboard-summary">The display</h2>
+      <section class="project-summary" aria-labelledby="metroboard-summary">
+        <h2 id="metroboard-summary">A map, not another app</h2>
         <div class="project-prose">
-          <p>I built a 30 × 30 cm map of Sydney's rail network with more than 290 LEDs. It uses TfNSW GTFS real-time data over Wi-Fi.</p>
+          <p>I wanted Sydney's rail network to live on the wall, not in another browser tab. Metroboard is a 30 × 30 cm PCB with more than 290 LEDs, laid out as a physical map of the network.</p>
+          <p>The board joins Wi-Fi and gets TfNSW GTFS real-time data through a service I wrote. Each update turns vehicle positions into light, so the useful part of the display is visible before I have even picked up my phone.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="metroboard-layout">
+        <h2 id="metroboard-layout">The PCB is the interface</h2>
+        <div class="project-prose">
+          <p>There is no separate screen or printed overlay. The copper, solder mask, silkscreen and LEDs have to work together as both electronics and map graphics.</p>
+          <p>That constraint is what later led to TramTrace. The tram network needed a different scale and much tighter route geometry, but the idea stayed the same: make live transport data legible as a piece of hardware.</p>
         </div>
       </section>
 
@@ -91,9 +97,9 @@
       </section>
     </div>
 
-    <a class="next-project" href="projects/">
-      <span>Project index</span>
-      <strong>All projects</strong>
+    <a class="next-project" href="projects/tramtrace/">
+      <span>Next project</span>
+      <strong>TramTrace</strong>
       <b aria-hidden="true">&rarr;</b>
     </a>
   </main>
@@ -101,6 +107,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>&copy; <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>

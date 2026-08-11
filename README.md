@@ -9,6 +9,10 @@ Personal portfolio and public project archive published at:
 - `/` — Bench Specimen landing page with an inspection diptych and three selected projects
 - `/about/` — profile, experience, education, tools and public CV
 - `/projects/` — complete project index and individual project pages
+- `/projects/tramtrace/` — live Sydney and Parramatta light-rail display PCB
+- `/projects/framework-dual-usb/` — dual USB 2.0 Type-C Framework expansion card
+- `/projects/rf-test-board/` — VNA feedline and filter test board
+- `/projects/pcb-reference-notebook/` — spiral notebook with fabricated reference-board covers
 - `/projects/scopelab/` — ScopeLab browser-based micro:bit and oscilloscope teaching bench
 - `/projects/lithography-animation/` — interactive optical lithography and resist-process teaching model
 - `/projects/mosfet-operating-regions/` — interactive long-channel MOSFET operating-region explorer
@@ -46,6 +50,7 @@ Each new item should be linked from its parent folder page and from `sitemap.xml
 ## Rebuilding generated assets
 
 - `scripts/process-images.ps1` creates responsive JPEG derivatives and copies the explicitly approved existing project images.
+- `scripts/process-project-imports.ps1` creates responsive JPEGs for a selected, structured photo import.
 - `scripts/create-webp.py` creates WebP derivatives.
 - `scripts/build-public-cv.py` builds the public CV into both `output/pdf/` and the website documents folder.
 

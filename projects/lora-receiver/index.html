@@ -23,10 +23,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Andrew Chung home">
-        <span class="brand-mark" aria-hidden="true">AC</span>
-        <span class="brand-copy"><strong>Andrew Chung</strong><span>Electrical engineering</span></span>
-      </a>
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
         <a href="about/">About</a>
@@ -34,7 +31,7 @@
         <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       </nav>
 
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation" data-nav-toggle><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -48,7 +45,7 @@
             <p>A receiver PCB using an ESP32-WROOM-32E, u-blox NEO-M9N and LoRa module.</p>
           </div>
           <dl class="project-meta">
-            <div><dt>Board marking</dt><dd>LoRa Receiver &amp; GPS Module</dd></div>
+            <div><dt>Band</dt><dd>915 MHz</dd></div>
             <div><dt>Revision</dt><dd>A</dd></div>
             <div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div>
             <div><dt>GNSS</dt><dd>u-blox NEO-M9N</dd></div>
@@ -66,10 +63,19 @@
     </section>
 
     <div class="project-body shell">
-      <section class="project-summary" aria-labelledby="receiver-summary" data-reveal>
-        <h2 id="receiver-summary">The board</h2>
+      <section class="project-summary" aria-labelledby="receiver-summary">
+        <h2 id="receiver-summary">Radio and position</h2>
         <div class="project-prose">
-          <p>I designed this Rev A receiver board around an ESP32-WROOM-32E, a u-blox NEO-M9N and a LoRa radio module.</p>
+          <p>I designed this board as one half of a small telemetry link. An ESP32-WROOM-32E runs the application, a 915 MHz LoRa module handles the long-range connection, and a u-blox NEO-M9N supplies position data.</p>
+          <p>Putting the radio and GNSS on one board kept the wiring simple in use. It also made the RF layout impossible to ignore, which turned out to be the more valuable part of the project.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="receiver-result">
+        <h2 id="receiver-result">The first RF lesson</h2>
+        <div class="project-prose">
+          <p>The Rev A feedline was not as close to 50 Ω as I wanted. I checked it with a VNA, took the mismatch seriously, and used what I found when I laid out the dedicated RF test board.</p>
+          <p>Even with that first-pass layout, the pair reached at least one kilometre in testing. That result was useful, but the measurement was better: it gave the next board a specific problem to fix.</p>
         </div>
       </section>
 
@@ -106,7 +112,8 @@
 
   <footer class="site-footer">
     <div class="footer-inner">
-      <p>© <span data-current-year>2026</span> Andrew Chung</p>
+      <p>&copy; <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>
@@ -116,10 +123,10 @@
     <div class="lightbox-frame">
       <div class="lightbox-image-wrap"><img src="assets/images/projects/lora-receiver-hero-960.jpg" alt="" data-lightbox-image></div>
       <div class="lightbox-controls">
-        <button class="button icon-button" type="button" data-lightbox-prev aria-label="Previous image">←</button>
+        <button class="button icon-button" type="button" data-lightbox-prev aria-label="Previous image">&larr;</button>
         <p data-lightbox-caption>LoRa Receiver</p>
-        <button class="button icon-button" type="button" data-lightbox-next aria-label="Next image">→</button>
-        <button class="button icon-button" type="button" data-lightbox-close aria-label="Close image viewer">×</button>
+        <button class="button icon-button" type="button" data-lightbox-next aria-label="Next image">&rarr;</button>
+        <button class="button icon-button" type="button" data-lightbox-close aria-label="Close image viewer">&times;</button>
       </div>
     </div>
   </dialog>
