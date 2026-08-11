@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/proccy-boi/">
   <title>LoRa Talkie | Andrew Chung</title>
-  <meta name="description" content="Andrew Chung's Morse-code LoRa walkie talkie with a custom graphical interface written in C++.">
+  <meta name="description" content="A one-button handheld radio for composing Morse-code messages and sending them over a 915 MHz LoRa link.">
   <meta name="theme-color" content="#111210">
   <meta property="og:type" content="website">
   <meta property="og:title" content="LoRa Talkie | Andrew Chung">
-  <meta property="og:description" content="A personal LoRa RF walkie talkie for Morse-code communication, with a custom C++ GUI.">
+  <meta property="og:description" content="A one-button Morse message composer and 915 MHz LoRa radio built on a Heltec V3 board.">
   <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/projects/lora-talkie/">
   <meta property="og:image" content="https://proccyboi.github.io/proccy-boi/assets/images/projects/loratalkie-web.jpg">
   <meta property="og:image:alt" content="LoRa Talkie handheld unit with screen and antenna">
@@ -23,10 +23,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Andrew Chung home">
-        <span class="brand-mark" aria-hidden="true">AC</span>
-        <span class="brand-copy"><strong>Andrew Chung</strong><span>Electrical engineering</span></span>
-      </a>
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
         <a href="about/">About</a>
@@ -34,7 +31,7 @@
         <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       </nav>
 
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation" data-nav-toggle><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -45,13 +42,13 @@
           <div>
             <p class="eyebrow">Personal project</p>
             <h1 id="project-title">LoRa Talkie</h1>
-            <p>A handheld radio for Morse-code messages over LoRa.</p>
+            <p>A pocket radio that writes one-button Morse messages and sends them over LoRa.</p>
           </div>
           <dl class="project-meta">
             <div><dt>Type</dt><dd>Personal project</dd></div>
-            <div><dt>System</dt><dd>LoRa RF walkie talkie</dd></div>
-            <div><dt>Interface</dt><dd>Custom C++ GUI</dd></div>
-            <div><dt>Input</dt><dd>Morse code</dd></div>
+            <div><dt>Hardware</dt><dd>Heltec V3 LoRa board</dd></div>
+            <div><dt>Radio</dt><dd>915 MHz / SX126x</dd></div>
+            <div><dt>Input</dt><dd>One-button Morse code</dd></div>
           </dl>
         </div>
         <figure class="project-hero-media">
@@ -61,10 +58,20 @@
     </section>
 
     <div class="project-body shell">
-      <section class="project-summary" aria-labelledby="lora-talkie-summary" data-reveal>
-        <h2 id="lora-talkie-summary">The radio</h2>
+      <section class="project-summary" aria-labelledby="lora-talkie-summary">
+        <h2 id="lora-talkie-summary">One button, full messages</h2>
         <div class="project-prose">
-          <p>I built a handheld LoRa radio for Morse-code messages. The interface is written in C++.</p>
+          <p>LoRa Talkie normally sits in receive mode and prints incoming messages straight to its OLED. A double-click opens the composer, where the same program button becomes a Morse key. I added dedicated patterns for spaces and deleting the last character so a complete message can be written without a keyboard.</p>
+          <p>A two-second hold sends the message and returns to the chat screen. The device remembers the last four outgoing messages; they can be selected with one to four clicks, edited and sent again.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="lora-talkie-link">
+        <h2 id="lora-talkie-link">Radio and field controls</h2>
+        <div class="project-prose">
+          <p>The current radio profile uses 915 MHz LoRa with a 250 kHz bandwidth, spreading factor 12 and up to 22 dBm transmit power. After each transmission the firmware puts the radio straight back into continuous receive mode.</p>
+          <p>The status page shows battery voltage, the configured frequency and spreading factor, transmit power and board temperature. There is also a repeating beacon mode for link checks, battery and temperature safety cut-offs, and deep sleep for carrying the unit without running it flat.</p>
+          <p>The OLED interface is deliberately small but not purely functional: it has startup and shutdown animations, plus coin, dice and slot-machine diversions that use the same single-button control scheme.</p>
         </div>
       </section>
 
@@ -89,6 +96,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>&copy; <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>

@@ -23,10 +23,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Andrew Chung home">
-        <span class="brand-mark" aria-hidden="true">AC</span>
-        <span class="brand-copy"><strong>Andrew Chung</strong><span>Electrical engineering</span></span>
-      </a>
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
         <a href="about/">About</a>
@@ -34,7 +31,7 @@
         <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       </nav>
 
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation" data-nav-toggle><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -51,13 +48,13 @@
             </ol>
             <p class="eyebrow">Skylabs</p>
             <h1 id="telemetry-title">Telemetry / avionics</h1>
-            <p>Flight-data logging and live LoRa telemetry.</p>
+            <p>The aircraft-side sensor, logger and radio board.</p>
           </div>
           <dl class="project-meta">
-            <div><dt>Team</dt><dd>UNSW Skylabs</dd></div>
-            <div><dt>Purpose</dt><dd>Flight data + live LoRa telemetry</dd></div>
-            <div><dt>Role</dt><dd>Avionics &amp; Payload Team Lead</dd></div>
-            <div><dt>Lead since</dt><dd>May 2026</dd></div>
+            <div><dt>Controller</dt><dd>STM32G474RET6</dd></div>
+            <div><dt>Radio</dt><dd>SX1262 / 915 MHz</dd></div>
+            <div><dt>Aircraft log</dt><dd>40 Hz binary</dd></div>
+            <div><dt>Live link</dt><dd>Up to 10 Hz</dd></div>
           </dl>
         </div>
         <div class="project-hero-media contain-media">
@@ -71,9 +68,26 @@
 
     <div class="project-body shell">
       <section class="project-summary" aria-labelledby="telemetry-purpose">
-        <h2 id="telemetry-purpose">The board</h2>
+        <h2 id="telemetry-purpose">Sensors with somewhere to go</h2>
         <div class="project-prose">
-          <p>I developed this avionics PCB for flight-data logging and live LoRa telemetry. It includes GNSS, IMU, environmental and strain sensing, battery management and onboard storage. The logs feed the post-flight visualiser.</p>
+          <p>I developed this PCB around an STM32G474RET6. It brings together a u-blox GNSS receiver, BNO08x IMU, BME280 barometer, digital and analogue airspeed inputs, an HX711 strain interface, RTC, microSD storage and an SX1262 radio.</p>
+          <p>The board is not just a collection of sensors. Each one has a different useful rate, failure mode and idea of “fresh”. The firmware keeps presence and validity masks alongside the measurements, and unavailable values become explicit NaNs rather than convincing-looking zeroes.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="telemetry-firmware">
+        <h2 id="telemetry-firmware">Firmware and logging</h2>
+        <div class="project-prose">
+          <p>The IMU supplies acceleration and gyro reports at 100 Hz, attitude at 50 Hz and magnetometer data at 25 Hz. GNSS runs at 10 Hz. The aircraft logger samples at a 40 Hz target, batches eight binary records into each SD transaction and syncs once a second, which avoids making every sample wait for a card write.</p>
+          <p>A compact SX1262 packet carries the live subset to the ground station. The default profile sends at 22 dBm every 100 ms using 500 kHz bandwidth and spreading factor 5. Ground commands can start or stop the aircraft log, add an event marker and change the link profile without a USB cable in the aircraft.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="telemetry-replay">
+        <h2 id="telemetry-replay">After landing</h2>
+        <div class="project-prose">
+          <p>The binary record keeps GNSS, environment, attitude, airspeed, strain and estimator output together. My replay tool reads that file into a synchronized 3D path, aircraft attitude, artificial horizon and engineering plots, while leaving the recorded values untouched.</p>
+          <div class="hero-actions"><a class="button" href="projects/skylabs/flight-review/">Open Flight Review</a></div>
         </div>
       </section>
 
@@ -143,6 +157,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>© <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>

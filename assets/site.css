@@ -946,7 +946,6 @@ p {
 }
 
 .project-summary:first-child {
-  padding-top: 0;
   border-top-color: var(--rule-strong);
 }
 

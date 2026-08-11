@@ -23,10 +23,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Andrew Chung home">
-        <span class="brand-mark" aria-hidden="true">AC</span>
-        <span class="brand-copy"><strong>Andrew Chung</strong><span>Electrical engineering</span></span>
-      </a>
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
         <a href="about/">About</a>
@@ -34,7 +31,7 @@
         <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       </nav>
 
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation" data-nav-toggle><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -50,7 +47,7 @@
             </ol>
             <p class="eyebrow">UNSW Skylabs</p>
             <h1 id="skylabs-title">Skylabs</h1>
-            <p>Avionics and ground-station PCBs for flight-data logging and live LoRa telemetry.</p>
+            <p>A paired aircraft and ground system for recording a flight properly, then seeing it live and replaying it afterwards.</p>
           </div>
           <dl class="project-meta">
             <div><dt>Team</dt><dd>UNSW Skylabs</dd></div>
@@ -72,11 +69,20 @@
       <section class="project-summary" aria-labelledby="skylabs-overview">
         <h2 id="skylabs-overview">My work</h2>
         <div class="project-prose">
-          <p>I joined UNSW Skylabs in August 2025 and became Avionics &amp; Payload Team Lead in May 2026. I work on avionics and ground-station PCBs for flight-data logging and live LoRa telemetry. I represented UNSW at AIAA Design/Build/Fly 2026 in Wichita.</p>
+          <p>I joined UNSW Skylabs in August 2025 and became Avionics &amp; Payload Team Lead in May 2026. I represented UNSW at AIAA Design/Build/Fly 2026 in Wichita.</p>
+          <p>My work spans both ends of the telemetry link: an STM32 aircraft board that samples and records the sensors, and an ESP32 ground station that receives LoRa packets, stores a second log and gives the field crew a live display. I also write the tools that turn those logs into something useful after landing.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="projects/skylabs/flight-review/">Open Flight Review</a>
             <a class="button" href="shared/projects/skylabs/f110211/">View F110211 reference flight</a>
           </div>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="skylabs-system">
+        <h2 id="skylabs-system">One data path, three views</h2>
+        <div class="project-prose">
+          <p>The aircraft binary log is the high-rate record, scheduled at 40 Hz. A smaller telemetry packet crosses the 915 MHz link at up to 10 Hz, where the ground station records it again and forwards a live stream over USB or its own Wi-Fi dashboard.</p>
+          <p>After the flight, the same data contract feeds a replay tool with the 3D route, attitude, artificial horizon, altitude, speed and GPS readouts kept on one timeline. Treating the boards, packet format and analysis software as one system has made faults much easier to trace.</p>
         </div>
       </section>
 
@@ -86,13 +92,13 @@
           <a class="board-row" href="projects/skylabs/boards/telemetry/">
             <span>01</span>
             <h3>Telemetry / avionics</h3>
-            <p>Flight-data capture and live LoRa telemetry.</p>
+            <p>STM32G474 sensor acquisition, 40 Hz binary logging and the aircraft side of the SX1262 link.</p>
             <span aria-hidden="true">↗</span>
           </a>
           <a class="board-row" href="projects/skylabs/boards/ground-station/">
             <span>02</span>
             <h3>Ground station</h3>
-            <p>Ground-station PCB for the live LoRa telemetry system.</p>
+            <p>ESP32 receiver, SD backup, OLED horizon and a phone-ready field dashboard.</p>
             <span aria-hidden="true">↗</span>
           </a>
         </div>
@@ -109,6 +115,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>© <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>
