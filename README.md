@@ -12,7 +12,6 @@ Personal portfolio and public project archive published at:
 - `/projects/tramtrace/` — live Sydney and Parramatta light-rail display PCB
 - `/projects/framework-dual-usb/` — dual USB 2.0 Type-C Framework expansion card
 - `/projects/rf-test-board/` — VNA feedline and filter test board
-- `/projects/pcb-reference-notebook/` — spiral notebook with fabricated reference-board covers
 - `/projects/scopelab/` — ScopeLab browser-based micro:bit and oscilloscope teaching bench
 - `/projects/lithography-animation/` — interactive optical lithography and resist-process teaching model
 - `/projects/mosfet-operating-regions/` — interactive long-channel MOSFET operating-region explorer

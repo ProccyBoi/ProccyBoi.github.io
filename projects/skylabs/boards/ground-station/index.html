@@ -23,10 +23,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Andrew Chung home">
-        <span class="brand-mark" aria-hidden="true">AC</span>
-        <span class="brand-copy"><strong>Andrew Chung</strong><span>Electrical engineering</span></span>
-      </a>
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
         <a href="about/">About</a>
@@ -34,7 +31,7 @@
         <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       </nav>
 
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation" data-nav-toggle><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -51,13 +48,13 @@
             </ol>
             <p class="eyebrow">Skylabs</p>
             <h1 id="ground-station-title">Ground station</h1>
-            <p>A ground-station PCB for the live LoRa telemetry system.</p>
+            <p>A receiver, field display and second flight recorder in one board.</p>
           </div>
           <dl class="project-meta">
-            <div><dt>Team</dt><dd>UNSW Skylabs</dd></div>
-            <div><dt>Purpose</dt><dd>Live LoRa telemetry ground station</dd></div>
-            <div><dt>Role</dt><dd>Avionics &amp; Payload Team Lead</dd></div>
-            <div><dt>Lead since</dt><dd>May 2026</dd></div>
+            <div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div>
+            <div><dt>Radio</dt><dd>SX1262 / 915 MHz</dd></div>
+            <div><dt>Storage</dt><dd>microSD / CSV or binary</dd></div>
+            <div><dt>Display</dt><dd>128 × 64 OLED</dd></div>
           </dl>
         </div>
         <div class="project-hero-media contain-media">
@@ -71,9 +68,26 @@
 
     <div class="project-body shell">
       <section class="project-summary" aria-labelledby="ground-station-purpose">
-        <h2 id="ground-station-purpose">The board</h2>
+        <h2 id="ground-station-purpose">The other end of the link</h2>
         <div class="project-prose">
-          <p>I developed this PCB for the ground end of Skylabs' live LoRa telemetry system.</p>
+          <p>I developed the ground station around an ESP32-WROOM-32E, SX1262 radio, microSD socket and a Qwiic connector for the OLED. Two buttons and two activity LEDs keep the common field actions available even when nobody has a laptop open.</p>
+          <p>Every valid aircraft packet can be stored locally, so the team gets an independent copy of the live data even if the aircraft is damaged or its card is hard to reach. The board can write readable CSV or an indexed, CRC-protected binary format that can recover past a damaged record.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="ground-station-field">
+        <h2 id="ground-station-field">Field workflow</h2>
+        <div class="project-prose">
+          <p>The OLED cycles between an artificial horizon, link figures and sensor status. It shows RSSI, GPS and SD state, heading, satellite count and IMU accuracy instead of reducing the whole system to a single “connected” light.</p>
+          <p>The ESP32 also creates a Wi-Fi access point with a captive dashboard and pre-flight checklist. From a phone, the crew can inspect fresh telemetry, name a flight, choose the log format, add a marker or change the radio profile. Start and stop commands are repeated over LoRa so the aircraft and ground logs begin together.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="ground-station-backup">
+        <h2 id="ground-station-backup">Three copies of the truth</h2>
+        <div class="project-prose">
+          <p>The receiver streams a rate-limited 230400-baud feed over USB without slowing the SD logger. A PC dashboard can record that stream as another CSV backup, while the onboard dashboard remains available when the laptop is not.</p>
+          <p>Giving the aircraft, receiver and laptop separate records costs some storage, but it has made flight-day problems much less mysterious.</p>
         </div>
       </section>
 
@@ -136,6 +150,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>© <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>

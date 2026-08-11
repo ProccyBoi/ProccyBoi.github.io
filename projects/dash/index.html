@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/proccy-boi/">
   <title>Dash | Andrew Chung</title>
-  <meta name="description" content="Andrew Chung's ESP32-based safe driving detector with sensing, audio, display, battery management and a custom housing.">
+  <meta name="description" content="Dash is an ESP32 focus companion with animated eyes, IMU gestures, a phone-based captive portal, session tracking and ESP-NOW experiments.">
   <meta name="theme-color" content="#111210">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Dash | Andrew Chung">
-  <meta property="og:description" content="An ESP32 safe driving detector integrating an IMU, touch input, audio, OLED, charging and battery management.">
+  <meta property="og:description" content="An ESP32 focus companion built around gestures, animated eyes and app-free session control.">
   <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/projects/dash/">
   <meta property="og:image" content="https://proccyboi.github.io/proccy-boi/assets/images/projects/dash1-web.jpg">
   <meta property="og:image:alt" content="Dash safe-driving detector PCB">
@@ -23,10 +23,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Andrew Chung home">
-        <span class="brand-mark" aria-hidden="true">AC</span>
-        <span class="brand-copy"><strong>Andrew Chung</strong><span>Electrical engineering</span></span>
-      </a>
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
         <a href="about/">About</a>
@@ -34,7 +31,7 @@
         <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       </nav>
 
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Toggle navigation" data-nav-toggle><span></span></button>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
@@ -45,13 +42,13 @@
           <div>
             <p class="eyebrow">Personal project</p>
             <h1 id="project-title">Dash</h1>
-            <p>An ESP32-based safe-driving detector.</p>
+            <p>An ESP32 focus companion that grew out of a vehicle-mounted sensor prototype.</p>
           </div>
           <dl class="project-meta">
             <div><dt>Type</dt><dd>Personal project</dd></div>
-            <div><dt>Core</dt><dd>ESP32</dd></div>
-            <div><dt>Sensing</dt><dd>IMU / capacitive touch</dd></div>
-            <div><dt>Power</dt><dd>BMS / charging</dd></div>
+            <div><dt>Core</dt><dd>ESP32-WROOM</dd></div>
+            <div><dt>Sensing</dt><dd>MPU-6050 / capacitive touch</dd></div>
+            <div><dt>Interface</dt><dd>SH1106 OLED / captive portal</dd></div>
           </dl>
         </div>
         <figure class="project-hero-media">
@@ -61,10 +58,21 @@
     </section>
 
     <div class="project-body shell">
-      <section class="project-summary" aria-labelledby="dash-summary" data-reveal>
-        <h2 id="dash-summary">The build</h2>
+      <section class="project-summary" aria-labelledby="dash-summary">
+        <h2 id="dash-summary">From the car to the desk</h2>
         <div class="project-prose">
-          <p>I built Dash as an ESP32-based safe-driving detector. It uses an IMU, capacitive touch, an OLED, an amplifier and speaker, battery management and a custom enclosure.</p>
+          <p>Dash started as the vehicle-mounted safe-driving prototype shown in these photos. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.</p>
+          <p>The current version is a cube-shaped study companion. Its screen is a pair of animated eyes, so a tap, shake, change of orientation or completed session gets a reaction without turning the device into another notification-heavy display.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="dash-firmware">
+        <h2 id="dash-firmware">The firmware underneath</h2>
+        <div class="project-prose">
+          <p>A single state machine coordinates the character, focus timer, games and low-power states. The MPU-6050 is sampled at 100 Hz for software tap and orientation detection, while separate tasks look after the OLED, audio, touch input and session timing.</p>
+          <p>Dash creates its own Wi-Fi access point and serves a captive portal from LittleFS, so a phone can start a study session, see recent stats and change settings without an app or account. Completed sessions are kept in a rolling on-device log, and in-progress sessions can survive a reset through RTC memory.</p>
+          <p>I also built reaction-time and gesture games, OTA update support and an ESP-NOW layer for experimenting with group sessions between nearby units. Power management drops the ESP32 from 240 to 80 MHz as Dash gets drowsy, then uses deep sleep when it has been left alone.</p>
+          <div class="hero-actions"><a class="button" href="https://github.com/JPhusion/dash" target="_blank" rel="noreferrer">View the firmware</a></div>
         </div>
       </section>
 
@@ -93,6 +101,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>&copy; <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>

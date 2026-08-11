@@ -23,11 +23,7 @@ $items = @(
   @{ Source = "rf-test\R6M26402.JPG"; Name = "rf-test-hero" },
   @{ Source = "rf-test\R6M26403.JPG"; Name = "rf-test-sma" },
   @{ Source = "rf-test\R6M26411.JPG"; Name = "rf-test-reverse" },
-  @{ Source = "rf-test\R6M26408.JPG"; Name = "rf-test-details" },
-  @{ Source = "reference-cover\R6M26547.JPG"; Name = "pcb-reference-hero" },
-  @{ Source = "reference-cover\R6M26546.JPG"; Name = "pcb-reference-packages" },
-  @{ Source = "reference-cover\R6M26566.JPG"; Name = "pcb-reference-traces" },
-  @{ Source = "reference-cover\R6M26555.JPG"; Name = "pcb-reference-symbols" }
+  @{ Source = "rf-test\R6M26408.JPG"; Name = "rf-test-details" }
 )
 
 $jpegCodec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() |
