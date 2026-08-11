@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/proccy-boi/">
+  <title>Interactive homepage concepts | Andrew Chung</title>
+  <meta name="description" content="Two interactive homepage directions for Andrew Chung's electronics portfolio.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b0c0b">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/concepts.css">
+  <script src="assets/site.js" defer></script>
+  <script src="assets/concepts.js" defer></script>
+</head>
+<body class="concept-body">
+  <a class="skip-link" href="#main">Skip to concepts</a>
+
+  <header class="site-header concept-header">
+    <div class="header-inner">
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
+      <nav class="site-nav" aria-label="Concept navigation" data-site-nav data-open="false">
+        <a href="concepts/#skylabs-concept">Skylabs</a>
+        <a href="concepts/#tramtrace-concept">TramTrace</a>
+        <a href="./">Back to site</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
+    </div>
+  </header>
+
+  <main id="main" class="concept-main">
+    <section class="concept-intro" aria-labelledby="concept-title">
+      <p class="eyebrow">Homepage review / two live directions</p>
+      <h1 id="concept-title">Two ways into<br>the work.</h1>
+      <div class="concept-intro-note">
+        <p>Both ideas use the projects themselves, rather than adding a decorative effect on top. One follows a real flight through the Skylabs system. The other turns TramTrace into an explorable object.</p>
+        <p class="concept-instruction">Try the controls, drag the flight timeline, and move across the TramTrace board.</p>
+      </div>
+    </section>
+
+    <section class="concept-section concept-skylabs" id="skylabs-concept" aria-labelledby="skylabs-concept-title" data-skylabs-experience data-stage="sense">
+      <header class="concept-heading">
+        <div>
+          <p class="concept-number">Concept 01 / Skylabs</p>
+          <h2 id="skylabs-concept-title">A flight has<br>three lives.</h2>
+        </div>
+        <p>It is sensed in the aircraft, condensed into radio packets, and rebuilt on the ground. This view makes the engineering chain tangible, then hands over to real F110211 flight data.</p>
+      </header>
+
+      <div class="sky-system" aria-label="Skylabs aircraft and ground station data path">
+        <figure class="sky-board sky-board-aircraft">
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-hero-960.webp 960w, assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(max-width: 760px) 48vw, 38vw">
+            <img src="assets/images/projects/skylabs-telemetry-hero-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-hero-960.jpg 960w, assets/images/projects/skylabs-telemetry-hero-1920.jpg 1920w" sizes="(max-width: 760px) 48vw, 38vw" width="1920" height="1280" alt="Blue Skylabs aircraft telemetry PCB">
+          </picture>
+          <figcaption><span>01</span>Aircraft</figcaption>
+          <span class="sky-chip sky-chip-sense">BNO08x / GNSS / BME280</span>
+          <span class="sky-chip sky-chip-record">microSD / 40 Hz target</span>
+        </figure>
+
+        <div class="sky-link" aria-hidden="true">
+          <span class="sky-link-line"></span>
+          <span class="sky-packet">66 B</span>
+          <span class="sky-link-label">915 MHz</span>
+        </div>
+
+        <figure class="sky-board sky-board-ground">
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/skylabs-ground-hero-960.webp 960w, assets/images/projects/skylabs-ground-hero-1920.webp 1920w" sizes="(max-width: 760px) 48vw, 38vw">
+            <img src="assets/images/projects/skylabs-ground-hero-1920.jpg" srcset="assets/images/projects/skylabs-ground-hero-960.jpg 960w, assets/images/projects/skylabs-ground-hero-1920.jpg 1920w" sizes="(max-width: 760px) 48vw, 38vw" width="1920" height="1280" alt="Blue Skylabs ground station PCB">
+          </picture>
+          <figcaption><span>02</span>Ground</figcaption>
+          <span class="sky-chip sky-chip-ground">ESP32 / OLED / microSD</span>
+        </figure>
+      </div>
+
+      <div class="sky-console">
+        <div class="sky-stage-list" aria-label="Skylabs system stages">
+          <button type="button" class="sky-stage-button is-active" data-sky-stage="sense" aria-pressed="true"><span>01</span>Sense</button>
+          <button type="button" class="sky-stage-button" data-sky-stage="record" aria-pressed="false"><span>02</span>Record</button>
+          <button type="button" class="sky-stage-button" data-sky-stage="transmit" aria-pressed="false"><span>03</span>Transmit</button>
+          <button type="button" class="sky-stage-button" data-sky-stage="replay" aria-pressed="false"><span>04</span>Replay</button>
+        </div>
+
+        <article class="sky-readout" aria-live="polite">
+          <p class="sky-readout-label" data-sky-label>01 / SENSE</p>
+          <h3 data-sky-title>One timestamp, many clocks.</h3>
+          <p data-sky-copy>The aircraft board brings faster inertial data and slower environmental and position fixes into one record, while keeping each sensor's validity explicit.</p>
+          <dl class="sky-metrics">
+            <div><dt data-sky-metric-one-label>IMU</dt><dd data-sky-metric-one>100 Hz</dd></div>
+            <div><dt data-sky-metric-two-label>GNSS</dt><dd data-sky-metric-two>10 Hz</dd></div>
+            <div><dt data-sky-metric-three-label>MCU</dt><dd data-sky-metric-three>STM32G474</dd></div>
+          </dl>
+        </article>
+      </div>
+
+      <div class="flight-replay" data-flight-replay>
+        <header class="flight-heading">
+          <div>
+            <p class="concept-number">F110211 / actual flight data</p>
+            <h3>Eleven minutes, compressed into one trace.</h3>
+          </div>
+          <p>11 July 2026 / 13,773 aircraft records / 6.785 km horizontal track</p>
+        </header>
+        <div class="flight-plot">
+          <canvas data-flight-canvas aria-hidden="true"></canvas>
+          <span class="flight-phase flight-phase-ground">Pre-flight</span>
+          <span class="flight-phase flight-phase-air">Airborne</span>
+        </div>
+        <div class="flight-control-row">
+          <button class="flight-play" type="button" data-flight-play aria-label="Play flight trace"><span aria-hidden="true">▶</span><span data-flight-play-label>Play</span></button>
+          <label class="flight-range-label">
+            <span class="sr-only">Flight time</span>
+            <input type="range" min="0" max="47" value="0" step="1" data-flight-range>
+          </label>
+          <dl class="flight-values" aria-live="polite">
+            <div><dt>Time</dt><dd data-flight-time>0:00.0</dd></div>
+            <div><dt>Baro altitude</dt><dd data-flight-alt>152.6 m</dd></div>
+            <div><dt>GPS speed</dt><dd data-flight-speed>0.2 m/s</dd></div>
+          </dl>
+        </div>
+        <a class="concept-deep-link" href="shared/projects/skylabs/f110211/">Open the full flight replay <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+
+    <section class="concept-section concept-tramtrace" id="tramtrace-concept" aria-labelledby="tramtrace-concept-title" data-tram-experience data-region="network" data-route="l1">
+      <header class="concept-heading">
+        <div>
+          <p class="concept-number">Concept 02 / TramTrace</p>
+          <h2 id="tramtrace-concept-title">A city in<br>100 × 200 mm.</h2>
+        </div>
+        <p>TramTrace takes a live transport network and makes it physical. The board becomes the interface: routes reveal their structure, while a moving macro view opens up the controller and pixel hardware underneath.</p>
+      </header>
+
+      <div class="tram-experience">
+        <div class="tram-stage" data-tram-stage>
+          <img src="assets/images/projects/tramtrace-hero-1920.jpg" srcset="assets/images/projects/tramtrace-hero-960.jpg 960w, assets/images/projects/tramtrace-hero-1920.jpg 1920w" sizes="(max-width: 940px) 100vw, 72vw" width="1920" height="1280" alt="Illuminated TramTrace light rail display PCB">
+          <canvas data-tram-canvas aria-hidden="true"></canvas>
+          <div class="tram-lens" data-tram-lens aria-hidden="true">
+            <span data-tram-lens-label>Network / macro</span>
+          </div>
+          <p class="tram-stage-hint">Move across the board</p>
+        </div>
+
+        <aside class="tram-panel">
+          <div class="tram-region-list" aria-label="TramTrace layers">
+            <button type="button" class="tram-region-button is-active" data-tram-region="network" aria-pressed="true"><span>01</span>Network geometry</button>
+            <button type="button" class="tram-region-button" data-tram-region="controller" aria-pressed="false"><span>02</span>Controller</button>
+            <button type="button" class="tram-region-button" data-tram-region="output" aria-pressed="false"><span>03</span>LED output</button>
+          </div>
+
+          <article class="tram-readout" aria-live="polite">
+            <p class="tram-readout-label" data-tram-label>01 / NETWORK GEOMETRY</p>
+            <h3 data-tram-title>Four lines become copper and silkscreen.</h3>
+            <p data-tram-copy>The Sydney and Parramatta networks are redrawn as physical routes. Shared corridors and directional sections turn a familiar diagram into a routing problem.</p>
+          </article>
+
+          <div class="tram-route-list" aria-label="Light rail routes">
+            <button type="button" class="tram-route-button is-active" data-tram-route="l1" aria-pressed="true"><span class="tram-route-swatch"></span><strong>L1</strong><small>23 stops</small></button>
+            <button type="button" class="tram-route-button" data-tram-route="l2" aria-pressed="false"><span class="tram-route-swatch"></span><strong>L2</strong><small>14 stops</small></button>
+            <button type="button" class="tram-route-button" data-tram-route="l3" aria-pressed="false"><span class="tram-route-swatch"></span><strong>L3</strong><small>15 stops</small></button>
+            <button type="button" class="tram-route-button" data-tram-route="l4" aria-pressed="false"><span class="tram-route-swatch"></span><strong>L4</strong><small>16 stops</small></button>
+          </div>
+
+          <dl class="tram-specs">
+            <div><dt>Board</dt><dd>100 × 200 mm</dd></div>
+            <div><dt>Pixels</dt><dd>116 populated</dd></div>
+            <div><dt>Control</dt><dd>ESP32-WROOM-32E</dd></div>
+          </dl>
+          <a class="concept-deep-link" href="projects/tramtrace/">Open the TramTrace project <span aria-hidden="true">↗</span></a>
+        </aside>
+      </div>
+    </section>
+
+    <section class="concept-choice" aria-labelledby="choice-title">
+      <p class="eyebrow">Review point</p>
+      <h2 id="choice-title">Which one belongs on the homepage?</h2>
+      <p>The ideas are intentionally different: Skylabs tells a system story through real data; TramTrace rewards visual exploration of a finished object.</p>
+      <a href="./">Return to the current site</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>© <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
+      <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
+      <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </footer>
+  <p class="live-region" data-live-region aria-live="polite" aria-atomic="true"></p>
+</body>
+</html>
