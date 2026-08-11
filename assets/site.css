@@ -710,6 +710,18 @@ p {
   object-fit: contain;
 }
 
+.catalog-card-media.pcb-thumbnail img {
+  transform-origin: center;
+}
+
+.catalog-card-media.pcb-thumbnail-dual img {
+  transform: scale(0.9) translateY(6%);
+}
+
+.catalog-card-media.pcb-thumbnail-lora img {
+  transform: scale(0.9) translateY(-10%);
+}
+
 .catalog-card:hover .catalog-card-media img,
 .catalog-card:focus-visible .catalog-card-media img {
   opacity: 0.84;
