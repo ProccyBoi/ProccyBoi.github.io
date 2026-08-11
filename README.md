@@ -17,7 +17,7 @@ Personal portfolio and public project archive published at:
 - `/projects/mosfet-operating-regions/` — interactive long-channel MOSFET operating-region explorer
 - `/projects/skylabs/boards/telemetry/` — Skylabs telemetry / avionics board
 - `/projects/skylabs/boards/ground-station/` — Skylabs ground-station board
-- `/projects/skylabs/flight-review/` — local binary/Excel flight-log review with synchronized 3D replay
+- `/shared/flight-review/` — local binary/Excel flight-log review with synchronized 3D replay
 - `/shared/` — public files organised by uni, work and projects
 - `/shared/projects/skylabs/f110211/` — interactive F110211 flight replay
 
