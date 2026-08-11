@@ -80,6 +80,43 @@
       </figure>
     </section>
 
+    <section class="home-signal" data-signal-bench aria-labelledby="signal-bench-title">
+      <div class="signal-heading">
+        <div>
+          <p class="eyebrow">Interactive hardware map</p>
+          <h2 id="signal-bench-title">Trace a signal</h2>
+        </div>
+        <p>Pick a route through a board and follow the same building blocks that turn up across my projects: serial, radio, positioning and power.</p>
+      </div>
+
+      <div class="signal-bench-frame">
+        <div class="signal-stage">
+          <canvas data-signal-canvas aria-hidden="true"></canvas>
+          <span class="signal-stage-label" data-signal-stage-label>USB / PROGRAMMING</span>
+          <span class="signal-stage-hint">Move the probe or choose a route</span>
+        </div>
+
+        <div class="signal-console">
+          <div class="signal-route-list" aria-label="Signal routes">
+            <button class="signal-route is-active" type="button" data-signal-route="usb" aria-pressed="true"><span>01</span>USB</button>
+            <button class="signal-route" type="button" data-signal-route="rf" aria-pressed="false"><span>02</span>RF</button>
+            <button class="signal-route" type="button" data-signal-route="gnss" aria-pressed="false"><span>03</span>GNSS</button>
+            <button class="signal-route" type="button" data-signal-route="power" aria-pressed="false"><span>04</span>Power</button>
+          </div>
+
+          <div class="signal-readout" aria-live="polite">
+            <p class="signal-readout-index" data-signal-index>PATH / 01</p>
+            <h3 data-signal-title>USB programming</h3>
+            <p class="signal-chain" data-signal-chain>USB-C &rarr; CH340K &rarr; ESP32-S3</p>
+            <p data-signal-description>The serial interface handles programming and reset without needing a separate adapter.</p>
+            <a data-signal-link href="projects/framework-expansion-card/">Open Framework ESP32 Card <span aria-hidden="true">&rarr;</span></a>
+          </div>
+        </div>
+      </div>
+
+      <noscript><p class="signal-noscript">Routes shown here: USB programming, 915 MHz radio, GNSS positioning and regulated power.</p></noscript>
+    </section>
+
     <section class="home-work" aria-labelledby="selected-title">
       <div class="simple-section-heading">
         <h2 id="selected-title">Selected work</h2>
