@@ -354,6 +354,11 @@ html {
   opacity: 0;
 }
 
+.inspector-main[data-hotspots="hidden"] .pcb-hotspots {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .pcb-hotspot {
   position: absolute;
   width: 1.25rem;
@@ -430,6 +435,22 @@ html {
   flex-wrap: wrap;
   gap: 1rem 2rem;
   align-items: center;
+}
+
+.pcb-annotation-toggle {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: var(--inspect-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pcb-annotation-toggle:hover,
+.pcb-annotation-toggle:focus-visible {
+  color: var(--inspect-accent);
 }
 
 .pcb-legend [hidden] {
@@ -858,6 +879,10 @@ html {
 
   .pcb-mobile-hint {
     display: inline;
+  }
+
+  .pcb-annotation-toggle {
+    margin-left: 0;
   }
 
   .component-readout {

@@ -15,6 +15,7 @@
   const componentTitle = inspector.querySelector("[data-component-title]");
   const componentCopy = inspector.querySelector("[data-component-copy]");
   const hotspotContainer = inspector.querySelector("[data-pcb-hotspots]");
+  const hotspotToggle = inspector.querySelector("[data-hotspot-toggle]");
   const frameConsole = inspector.querySelector("[data-frame-console]");
   const chainList = inspector.querySelector("[data-chain-list]");
   const frameEyebrow = inspector.querySelector("[data-frame-eyebrow]");
@@ -55,14 +56,31 @@
   let activeChainKey = "l1";
   let currentStep = 0;
   let playTimer = null;
+  let activeComponentButton = null;
 
   const pageToPercent = (value, axis) => (value / data.page[axis === "x" ? 0 : 1]) * 100;
 
+  const clearComponent = () => {
+    hotspotContainer.querySelectorAll(".pcb-hotspot").forEach((item) => {
+      item.classList.remove("is-active");
+      item.setAttribute("aria-pressed", "false");
+    });
+    activeComponentButton = null;
+    componentRef.textContent = "BOARD";
+    componentTitle.textContent = "No component selected";
+    componentCopy.textContent = "Select a + marker to inspect it. Select the active marker again to clear the board.";
+  };
+
   const selectComponent = (button, component) => {
+    if (activeComponentButton === button) {
+      clearComponent();
+      return;
+    }
     hotspotContainer.querySelectorAll(".pcb-hotspot").forEach((item) => {
       item.classList.toggle("is-active", item === button);
       item.setAttribute("aria-pressed", String(item === button));
     });
+    activeComponentButton = button;
     componentRef.textContent = component[0];
     componentTitle.textContent = component[1];
     componentCopy.textContent = component[2];
@@ -79,7 +97,13 @@
     button.innerHTML = `<span>${component[0]} / ${component[1]}</span>`;
     button.addEventListener("click", () => selectComponent(button, component));
     hotspotContainer.append(button);
-    if (component[0] === "U3") selectComponent(button, component);
+  });
+
+  hotspotToggle.addEventListener("click", () => {
+    const visible = inspector.dataset.hotspots !== "hidden";
+    inspector.dataset.hotspots = visible ? "hidden" : "visible";
+    hotspotToggle.textContent = visible ? "Show annotations" : "Hide annotations";
+    hotspotToggle.setAttribute("aria-pressed", String(!visible));
   });
 
   chainOrder.forEach((key) => {
@@ -302,5 +326,6 @@
   });
 
   setChain("l1");
+  clearComponent();
   setMode("assembled");
 })();

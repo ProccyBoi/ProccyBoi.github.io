@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/proccy-boi/">
+  <title>Inside the Skylabs Ground Station | Andrew Chung</title>
+  <meta name="description" content="An interactive, rotatable view of Andrew Chung's Skylabs LoRa ground-station PCB, rendered from its KiCad source and cross-referenced against the receiver firmware.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#080b0d">
+  <link rel="icon" href="data:,">
+  <link rel="preload" as="image" href="assets/images/interactive/skylabs/skylabs-ground-inspect.webp" type="image/webp">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/skylabs-object.css">
+  <script src="assets/site.js" defer></script>
+  <script src="assets/skylabs-object.js" defer></script>
+</head>
+<body class="object-body">
+  <a class="skip-link" href="#main">Skip to board explorer</a>
+
+  <header class="site-header object-header">
+    <div class="header-inner">
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
+      <nav class="site-nav" aria-label="Board explorer navigation" data-site-nav data-open="false">
+        <a href="lab/skylabs/" aria-current="page">Inside Skylabs</a>
+        <a href="projects/skylabs/">Project</a>
+        <a href="projects/">All projects</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
+    </div>
+  </header>
+
+  <main id="main" class="object-main" data-object-inspector data-view="inspect" data-annotations="visible">
+    <section class="object-hero" aria-labelledby="object-title">
+      <p class="object-kicker">Interactive board study / Skylabs ground station</p>
+      <h1 id="object-title">Turn the<br>link over.</h1>
+      <div class="object-hero-copy">
+        <p>This is the receiver between the aircraft and the laptop. It listens for 915 MHz telemetry, records each valid packet and sends flight-control commands back over the same radio link.</p>
+        <p class="object-proof">Rendered from the production KiCad board and checked against the current ground-receiver firmware.</p>
+      </div>
+    </section>
+
+    <section class="object-workbench" aria-labelledby="object-workbench-title">
+      <header class="object-workbench-heading">
+        <div>
+          <p class="object-kicker">Ground station / Rev 1.0</p>
+          <h2 id="object-workbench-title">A receiver you can pick up.</h2>
+        </div>
+        <p>Inspect the component side, then switch to rotate and drag the actual KiCad assembly through a full turn.</p>
+      </header>
+
+      <div class="object-toolbar" aria-label="Board view controls">
+        <div class="object-view-list" aria-label="Board view">
+          <button type="button" class="object-view is-active" data-object-view="inspect" aria-pressed="true">Inspect</button>
+          <button type="button" class="object-view" data-object-view="rotate" aria-pressed="false">Rotate</button>
+        </div>
+        <button type="button" class="object-tool" data-annotation-toggle aria-pressed="true">Hide annotations</button>
+        <button type="button" class="object-tool object-reset" data-rotation-reset hidden>Front angle</button>
+      </div>
+
+      <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs ground-station board. Select marked components, or choose Rotate and drag left or right.">
+        <img src="assets/images/interactive/skylabs/skylabs-ground-inspect.webp" width="1400" height="1000" alt="KiCad rendering of the assembled blue Skylabs ground-station PCB" data-object-image draggable="false">
+        <div class="object-hotspots" data-object-hotspots aria-label="Selectable ground-station components"></div>
+        <p class="object-drag-hint" data-drag-hint hidden><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p>
+        <p class="object-angle" data-object-angle hidden>000&deg;</p>
+      </div>
+
+      <div class="object-readout is-empty" data-object-readout aria-live="polite" aria-atomic="true">
+        <p data-object-ref>BOARD</p>
+        <h3 data-object-name>Ground-station receiver</h3>
+        <p data-object-copy>Select a marker to see how radio, compute, storage and USB fit onto the same board. Select it again to clear the view.</p>
+      </div>
+      <noscript><p class="object-noscript">JavaScript is needed for the component annotations and turntable. The Skylabs project page remains available without it.</p></noscript>
+    </section>
+
+    <section class="object-path" aria-labelledby="object-path-title">
+      <header>
+        <p class="object-kicker">What the board actually does</p>
+        <h2 id="object-path-title">One packet,<br>four useful exits.</h2>
+      </header>
+      <ol class="object-path-list">
+        <li><span>01</span><h3>Receive</h3><p>The SX1262 listens on 915 MHz and hands each valid air-link packet to the ESP32 over VSPI.</p></li>
+        <li><span>02</span><h3>Record</h3><p>The shared SPI microSD stores every accepted packet as readable CSV or an indexed, CRC-protected binary log.</p></li>
+        <li><span>03</span><h3>Present</h3><p>The ESP32 serves a local captive dashboard and streams live telemetry to a computer over USB serial.</p></li>
+        <li><span>04</span><h3>Reply</h3><p>Record, pause and marker commands return to the aircraft as short repeated LoRa command bursts.</p></li>
+      </ol>
+    </section>
+
+    <section class="object-findings" aria-labelledby="object-findings-title">
+      <div>
+        <p class="object-kicker">Firmware, made physical</p>
+        <h2 id="object-findings-title">The board is more than a radio receiver.</h2>
+      </div>
+      <dl class="object-fact-grid">
+        <div><dt>915</dt><dd>MHz LoRa link</dd></div>
+        <div><dt>100</dt><dd>ms default packet interval</dd></div>
+        <div><dt>230400</dt><dd>baud USB serial stream</dd></div>
+        <div><dt>20</dt><dd>MHz primary SD clock</dd></div>
+      </dl>
+      <p class="object-finding-note">The radio and SD card share the ESP32's VSPI bus. Their chip-select lines are managed explicitly so logging cannot hold the radio off the bus while a packet is waiting.</p>
+      <div class="object-links">
+        <a href="projects/skylabs/">Read the Skylabs project <span aria-hidden="true">&rarr;</span></a>
+        <a href="shared/projects/skylabs/f110211/">Open the F110211 replay <span aria-hidden="true">&rarr;</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>&copy; <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="projects/skylabs/">Skylabs</a>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
+      <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </footer>
+  <p class="live-region" data-object-live aria-live="polite" aria-atomic="true"></p>
+</body>
+</html>
