@@ -413,6 +413,7 @@ p {
 }
 
 .home-work,
+.home-signal-path,
 .home-files {
   padding-bottom: clamp(5rem, 10vw, 8rem);
 }
@@ -525,6 +526,179 @@ p {
   color: var(--muted);
   font-size: 0.86rem;
   line-height: 1.4;
+}
+
+.signal-path-heading {
+  align-items: end;
+}
+
+.signal-path-heading .eyebrow {
+  margin-bottom: 0.55rem;
+}
+
+.signal-path-heading > p {
+  max-width: 30rem;
+  margin: 0;
+  color: var(--muted);
+  text-align: right;
+}
+
+.signal-path-layout {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.72fr) minmax(0, 2.28fr);
+  border-block: 1px solid var(--rule-strong);
+}
+
+.signal-path-picker {
+  display: grid;
+  align-content: start;
+  border-right: 1px solid var(--rule-strong);
+}
+
+html:not(.js) .signal-path-picker {
+  display: none;
+}
+
+html:not(.js) .signal-path-diagram {
+  grid-column: 1 / -1;
+}
+
+.signal-path-picker button {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 1.15rem 1.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.signal-path-picker button strong {
+  color: inherit;
+  font-size: 0.94rem;
+  font-weight: 500;
+}
+
+.signal-path-picker button span {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
+
+.signal-path-picker button:hover,
+.signal-path-picker button:focus-visible,
+.signal-path-picker button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.signal-path-picker button[aria-pressed="true"] {
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.signal-path-diagram {
+  display: grid;
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.signal-path-diagram-head,
+.signal-path-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.signal-path-diagram-head {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
+
+.signal-path-diagram-head span:first-child {
+  color: var(--text);
+}
+
+.signal-path-stages {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: clamp(2.5rem, 6vw, 5rem) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signal-path-stages li {
+  position: relative;
+  min-width: 0;
+  padding: 1.15rem clamp(0.6rem, 1.5vw, 1.25rem) 0 0;
+  border-top: 1px solid var(--blue);
+}
+
+.signal-path-stages li::before {
+  content: "";
+  position: absolute;
+  top: -0.33rem;
+  left: 0;
+  width: 0.58rem;
+  height: 0.58rem;
+  border: 1px solid var(--copper);
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.signal-path-stages li:last-child::after {
+  content: "";
+  position: absolute;
+  top: -0.24rem;
+  right: 0;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-top: 1px solid var(--blue);
+  border-right: 1px solid var(--blue);
+  transform: rotate(45deg);
+}
+
+.signal-path-stages span,
+.signal-path-stages strong {
+  display: block;
+}
+
+.signal-path-stages span {
+  margin-bottom: 0.65rem;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+}
+
+.signal-path-stages strong {
+  max-width: 12rem;
+  font-size: clamp(0.95rem, 1.6vw, 1.25rem);
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.signal-path-foot {
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--rule);
+}
+
+.signal-path-foot p {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.signal-path-foot a {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-size: 0.85rem;
+  text-underline-offset: 0.25em;
 }
 
 .home-files {
@@ -1611,6 +1785,15 @@ p {
     grid-column: 2;
   }
 
+  .signal-path-layout {
+    grid-template-columns: minmax(10rem, 0.7fr) minmax(0, 2fr);
+  }
+
+  .signal-path-stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 0;
+  }
+
   .timeline-item {
     grid-template-columns: minmax(7rem, 1fr) minmax(0, 2.6fr);
   }
@@ -1722,6 +1905,68 @@ p {
   .about-facts,
   .skill-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signal-path-heading {
+    align-items: start;
+  }
+
+  .signal-path-heading > p {
+    display: none;
+  }
+
+  .signal-path-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signal-path-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-right: 0;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  .signal-path-picker button:nth-child(odd) {
+    border-right: 1px solid var(--rule);
+  }
+
+  .signal-path-picker button[aria-pressed="true"] {
+    box-shadow: inset 0 3px 0 var(--blue);
+  }
+
+  .signal-path-stages {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-block: 2.5rem;
+  }
+
+  .signal-path-stages li {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr);
+    gap: 1rem;
+    padding: 0 0 1.5rem 1.25rem;
+    border-top: 0;
+    border-left: 1px solid var(--blue);
+  }
+
+  .signal-path-stages li::before {
+    top: 0.1rem;
+    left: -0.33rem;
+  }
+
+  .signal-path-stages li:last-child::after {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: -0.24rem;
+    transform: rotate(135deg);
+  }
+
+  .signal-path-stages span {
+    margin: 0;
+  }
+
+  .signal-path-foot {
+    display: grid;
   }
 
   .index-section-heading {

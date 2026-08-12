@@ -211,3 +211,40 @@ lightbox?.addEventListener("close", () => {
 document.querySelectorAll("[data-current-year]").forEach((element) => {
   element.textContent = String(new Date().getFullYear());
 });
+
+const signalPath = document.querySelector("[data-signal-path]");
+
+if (signalPath) {
+  const projectButtons = [...signalPath.querySelectorAll("[data-signal-project]")];
+  const name = signalPath.querySelector("[data-path-name]:not([data-signal-project])");
+  const diagram = signalPath.querySelector("ol[data-path-stages]");
+  const labels = [...signalPath.querySelectorAll("[data-path-label]")];
+  const stages = [...signalPath.querySelectorAll("[data-path-stage]")];
+  const summary = signalPath.querySelector("[data-path-summary]:not([data-signal-project])");
+  const link = signalPath.querySelector("[data-path-link]");
+
+  const selectSignalProject = (button) => {
+    const nextLabels = button.dataset.pathLabels?.split("|") || [];
+    const nextStages = button.dataset.pathStages?.split("|") || [];
+    const projectName = button.dataset.pathName || "Project";
+
+    projectButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+    if (name) name.textContent = projectName;
+    if (diagram) diagram.setAttribute("aria-label", `${projectName} signal path`);
+    labels.forEach((label, index) => {
+      label.textContent = `${String(index + 1).padStart(2, "0")} / ${nextLabels[index] || "Stage"}`;
+    });
+    stages.forEach((stage, index) => {
+      stage.textContent = nextStages[index] || "";
+    });
+    if (summary) summary.textContent = button.dataset.pathSummary || "";
+    if (link) {
+      link.href = button.dataset.pathHref || "projects/";
+      link.firstChild.textContent = `Open ${projectName} `;
+    }
+  };
+
+  projectButtons.forEach((button) => {
+    button.addEventListener("click", () => selectSignalProject(button));
+  });
+}

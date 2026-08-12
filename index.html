@@ -113,6 +113,50 @@
       </div>
     </section>
 
+    <section class="home-signal-path" aria-labelledby="signal-path-title" data-signal-path>
+      <div class="simple-section-heading signal-path-heading">
+        <div>
+          <p class="eyebrow">Across the work</p>
+          <h2 id="signal-path-title">Signal paths</h2>
+        </div>
+        <p>Four projects, reduced to the information moving through them.</p>
+      </div>
+
+      <div class="signal-path-layout">
+        <div class="signal-path-picker" aria-label="Choose a project">
+          <button type="button" aria-pressed="true" data-signal-project="skylabs" data-path-name="Skylabs" data-path-labels="Measure|Process|Transmit|Use" data-path-stages="IMU + GNSS|STM32G474|915 MHz LoRa|Live view + replay" data-path-summary="One data contract runs from the aircraft sensors to the ground display and post-flight analysis." data-path-href="projects/skylabs/">
+            <strong>Skylabs</strong><span>Aircraft telemetry</span>
+          </button>
+          <button type="button" aria-pressed="false" data-signal-project="tramtrace" data-path-name="TramTrace" data-path-labels="Fetch|Process|Locate|Show" data-path-stages="Live vehicle data|ESP32-WROOM-32E|Route matching|116 RGB stops" data-path-summary="A live feed becomes a physical network map that can be read from across the room." data-path-href="projects/tramtrace/">
+            <strong>TramTrace</strong><span>Transport display</span>
+          </button>
+          <button type="button" aria-pressed="false" data-signal-project="metroboard" data-path-name="Metroboard" data-path-labels="Fetch|Process|Map|Show" data-path-stages="TfNSW GTFS data|ESP32|Sydney rail network|290+ LEDs" data-path-summary="Real-time rail positions are translated into light on a 30 × 30 cm PCB." data-path-href="projects/metroboard/">
+            <strong>Metroboard</strong><span>Network indicator</span>
+          </button>
+          <button type="button" aria-pressed="false" data-signal-project="scopelab" data-path-name="ScopeLab" data-path-labels="Write|Flash|Probe|Understand" data-path-stages="MakeCode TypeScript|Browser WebUSB|GPIO + serial buses|Measured waveforms" data-path-summary="Students can follow one line from code to a signal they can see on the bench." data-path-href="projects/scopelab/">
+            <strong>ScopeLab</strong><span>Teaching bench</span>
+          </button>
+        </div>
+
+        <div class="signal-path-diagram">
+          <div class="signal-path-diagram-head">
+            <span data-path-name>Skylabs</span>
+            <span>End to end</span>
+          </div>
+          <ol class="signal-path-stages" aria-label="Skylabs signal path" data-path-stages>
+            <li><span data-path-label>01 / Measure</span><strong data-path-stage>IMU + GNSS</strong></li>
+            <li><span data-path-label>02 / Process</span><strong data-path-stage>STM32G474</strong></li>
+            <li><span data-path-label>03 / Transmit</span><strong data-path-stage>915 MHz LoRa</strong></li>
+            <li><span data-path-label>04 / Use</span><strong data-path-stage>Live view + replay</strong></li>
+          </ol>
+          <div class="signal-path-foot">
+            <p data-path-summary>One data contract runs from the aircraft sensors to the ground display and post-flight analysis.</p>
+            <a href="projects/skylabs/" data-path-link>Open Skylabs <span aria-hidden="true">&rarr;</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="home-files" aria-labelledby="files-title">
       <h2 id="files-title">Shared files</h2>
       <a class="home-file-row" href="shared/projects/skylabs/f110211/">
