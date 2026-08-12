@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/proccy-boi/">
+  <title>Inside TramTrace | Andrew Chung</title>
+  <meta name="description" content="An interactive, source-derived view of the copper and 116-pixel data architecture inside Andrew Chung's TramTrace PCB.">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b0d0c">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/tramtrace-inspector.css">
+  <script src="assets/site.js" defer></script>
+  <script src="assets/tramtrace-board-data.js" defer></script>
+  <script src="assets/tramtrace-inspector.js" defer></script>
+</head>
+<body class="inspector-body">
+  <a class="skip-link" href="#main">Skip to board explorer</a>
+
+  <header class="site-header inspector-header">
+    <div class="header-inner">
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
+      <nav class="site-nav" aria-label="Board explorer navigation" data-site-nav data-open="false">
+        <a href="lab/tramtrace/" aria-current="page">Inside TramTrace</a>
+        <a href="projects/tramtrace/">Project</a>
+        <a href="projects/">All projects</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
+    </div>
+  </header>
+
+  <main id="main" class="inspector-main" data-board-inspector data-mode="assembled" data-chain="l1">
+    <section class="inspector-hero" aria-labelledby="inspector-title">
+      <p class="inspector-kicker">Interactive board study / TramTrace</p>
+      <h1 id="inspector-title">Under the<br>solder mask.</h1>
+      <div class="inspector-hero-copy">
+        <p>TramTrace looks like a map. Electrically, it is five data chains, 116 tiny computers and hundreds of copper segments passing colour from one pixel to the next.</p>
+        <p class="inspector-proof">This view is generated from the production KiCad board—not traced from a photograph.</p>
+      </div>
+    </section>
+
+    <section class="inspector-workbench" aria-labelledby="workbench-title">
+      <div class="inspector-mode-bar">
+        <div>
+          <p class="inspector-kicker">Inspection layer</p>
+          <div class="inspector-mode-list" aria-label="Board inspection layer">
+            <button class="inspector-mode is-active" type="button" data-inspector-mode="assembled" aria-pressed="true">Assembled</button>
+            <button class="inspector-mode" type="button" data-inspector-mode="copper" aria-pressed="false">Copper</button>
+            <button class="inspector-mode" type="button" data-inspector-mode="data" aria-pressed="false">Data frame</button>
+          </div>
+        </div>
+
+        <article class="inspector-mode-copy" aria-live="polite">
+          <p data-mode-index>01 / ASSEMBLED</p>
+          <h2 id="workbench-title" data-mode-title>The finished object.</h2>
+          <p data-mode-copy>Start with the board as it was designed to be seen. Select a marked component to find out what it contributes.</p>
+        </article>
+      </div>
+
+      <div class="pcb-viewport" tabindex="0" aria-label="Scrollable TramTrace board view">
+        <div class="pcb-stage" data-pcb-stage>
+          <div class="pcb-board-fill" aria-hidden="true"></div>
+          <img class="pcb-render" src="assets/images/interactive/tramtrace/tramtrace-board-render.webp" width="1182" height="555" alt="KiCad rendering of the assembled TramTrace circuit board">
+          <img class="pcb-vector pcb-back-copper" src="assets/images/interactive/tramtrace/tramtrace-back-copper.svg" alt="">
+          <img class="pcb-vector pcb-front-copper" src="assets/images/interactive/tramtrace/tramtrace-front-copper.svg" alt="">
+          <img class="pcb-vector pcb-front-mask" src="assets/images/interactive/tramtrace/tramtrace-front-mask.svg" alt="">
+          <img class="pcb-vector pcb-front-silk" src="assets/images/interactive/tramtrace/tramtrace-front-silk.svg" alt="">
+          <canvas class="pcb-data-canvas" data-pcb-canvas aria-hidden="true"></canvas>
+          <div class="pcb-hotspots" data-pcb-hotspots aria-label="Key components"></div>
+          <div class="pcb-stage-label" aria-hidden="true"><span>Production board</span><span>KiCad source / Rev 1</span></div>
+        </div>
+      </div>
+
+      <div class="pcb-legend" aria-live="polite">
+        <div class="pcb-legend-assembled" data-legend="assembled">
+          <span><i class="legend-dot legend-dot-component"></i> Select a component</span>
+          <span class="pcb-mobile-hint">Swipe to move across the board</span>
+        </div>
+        <div class="pcb-legend-copper" data-legend="copper" hidden>
+          <span><i class="legend-line legend-line-front"></i> Front copper</span>
+          <span><i class="legend-line legend-line-back"></i> Back copper</span>
+          <span>Exported directly from the fabrication layers</span>
+        </div>
+      </div>
+
+      <div class="component-readout" data-component-readout>
+        <p data-component-ref>U3</p>
+        <h3 data-component-title>ESP32-WROOM-32E</h3>
+        <p data-component-copy>Position data and frame generation</p>
+      </div>
+
+      <div class="frame-console" data-frame-console hidden>
+        <div class="chain-list" aria-label="Pixel data chains" data-chain-list></div>
+
+        <div class="frame-readout">
+          <div class="frame-readout-main" aria-live="polite">
+            <p data-frame-eyebrow>L1 / 45 PIXELS</p>
+            <h3 data-frame-title>Frame at the level shifter.</h3>
+            <p data-frame-copy>The first 24 colour bits are about to reach LED94. Everything after them continues downstream.</p>
+          </div>
+          <dl class="frame-metrics">
+            <div><dt>Progress</dt><dd data-frame-progress>0 / 45</dd></div>
+            <div><dt>Bits consumed</dt><dd data-frame-bits>0</dd></div>
+            <div><dt>Wire time</dt><dd data-frame-time>0.00 ms</dd></div>
+          </dl>
+        </div>
+
+        <div class="frame-controls">
+          <button class="frame-play" type="button" data-frame-play aria-label="Play data frame"><span aria-hidden="true">▶</span><span data-frame-play-label>Play frame</span></button>
+          <label class="frame-slider-label">
+            <span class="sr-only">Pixels reached</span>
+            <input type="range" min="0" max="45" value="0" step="1" data-frame-slider>
+          </label>
+          <button class="frame-reset" type="button" data-frame-reset>Reset</button>
+        </div>
+      </div>
+
+      <noscript><p class="inspector-noscript">JavaScript is needed to animate the PCB data chains. The project page remains available without it.</p></noscript>
+    </section>
+
+    <section class="frame-story" aria-labelledby="frame-story-title">
+      <header>
+        <p class="inspector-kicker">What one update actually does</p>
+        <h2 id="frame-story-title">A map is redrawn<br>24 bits at a time.</h2>
+      </header>
+      <ol class="frame-story-list">
+        <li>
+          <span>01</span>
+          <h3>Build the frame</h3>
+          <p>The ESP32 turns live vehicle positions into RGB values for the status pixel and four line-specific chains.</p>
+        </li>
+        <li>
+          <span>02</span>
+          <h3>Cross voltage domains</h3>
+          <p>The MC14504B shifts the controller's logic into the 5 V domain used by the LEDs.</p>
+        </li>
+        <li>
+          <span>03</span>
+          <h3>Consume and forward</h3>
+          <p>Each WS2812C keeps its first 24 bits and regenerates the rest for the next pixel. Position in the chain becomes the address.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="source-findings" aria-labelledby="findings-title">
+      <div>
+        <p class="inspector-kicker">What the board file reveals</p>
+        <h2 id="findings-title">The physical map and the electrical map are different.</h2>
+      </div>
+      <dl class="finding-grid">
+        <div><dt>116</dt><dd>populated RGB pixels</dd></div>
+        <div><dt>5</dt><dd>independent data chains</dd></div>
+        <div><dt>2,784</dt><dd>colour bits in a complete board frame</dd></div>
+        <div><dt>45</dt><dd>pixels on the longest chain</dd></div>
+      </dl>
+      <p class="finding-note">At the LED's 800 kbit/s data rate, the 45-pixel L1 chain takes about 1.35 ms of wire time before the reset interval. The interactive view shows the order and traces recorded in the PCB source.</p>
+      <div class="finding-links">
+        <a href="projects/tramtrace/">Read the TramTrace project <span aria-hidden="true">→</span></a>
+        <a href="https://www.lcsc.com/datasheet/C2976072.pdf" target="_blank" rel="noreferrer">WS2812C-2020-V1 datasheet <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>© <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="projects/tramtrace/">TramTrace</a>
+      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
+      <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </footer>
+  <p class="live-region" data-live-region aria-live="polite" aria-atomic="true"></p>
+</body>
+</html>
