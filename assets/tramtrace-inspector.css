@@ -239,7 +239,7 @@ html {
 
 .pcb-render {
   z-index: 2;
-  height: 87.5735%;
+  height: 87.3065%;
   object-fit: fill;
   opacity: 1;
 }
@@ -311,19 +311,14 @@ html {
 }
 
 .inspector-main[data-mode="data"] .pcb-render {
-  opacity: 0.18;
-  filter: grayscale(0.75) brightness(0.55);
+  opacity: 0.16;
+  filter: grayscale(0.85) brightness(0.48);
 }
 
-.inspector-main[data-mode="data"] .pcb-front-copper,
-.inspector-main[data-mode="data"] .pcb-back-copper {
-  opacity: 0.12;
-  filter: invert(1);
-}
-
-.inspector-main[data-mode="data"] .pcb-front-silk {
-  opacity: 0.15;
-  filter: invert(1);
+.inspector-main[data-mode="data"] .pcb-vector {
+  opacity: 0;
+  filter: none;
+  mix-blend-mode: normal;
 }
 
 .inspector-main[data-mode="data"] .pcb-data-canvas {
