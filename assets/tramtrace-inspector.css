@@ -224,6 +224,9 @@ html {
   left: 2.5429%;
   top: 0.9984%;
   width: 92.8764%;
+}
+
+.pcb-board-fill {
   height: 85.045%;
 }
 
@@ -236,6 +239,7 @@ html {
 
 .pcb-render {
   z-index: 2;
+  height: 86.424%;
   object-fit: fill;
   opacity: 1;
 }
