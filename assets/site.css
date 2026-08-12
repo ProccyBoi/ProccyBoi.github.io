@@ -1929,6 +1929,11 @@ html:not(.js) .signal-path-diagram {
     border-right: 1px solid var(--rule);
   }
 
+  .signal-path-picker button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    border-right: 0;
+  }
+
   .signal-path-picker button[aria-pressed="true"] {
     box-shadow: inset 0 3px 0 var(--blue);
   }
