@@ -61,6 +61,7 @@
   const selectComponent = (button, component) => {
     hotspotContainer.querySelectorAll(".pcb-hotspot").forEach((item) => {
       item.classList.toggle("is-active", item === button);
+      item.setAttribute("aria-pressed", String(item === button));
     });
     componentRef.textContent = component[0];
     componentTitle.textContent = component[1];
@@ -74,6 +75,7 @@
     button.style.left = `${pageToPercent(component[3], "x")}%`;
     button.style.top = `${pageToPercent(component[4], "y")}%`;
     button.setAttribute("aria-label", `${component[0]} ${component[1]}: ${component[2]}`);
+    button.setAttribute("aria-pressed", "false");
     button.innerHTML = `<span>${component[0]} / ${component[1]}</span>`;
     button.addEventListener("click", () => selectComponent(button, component));
     hotspotContainer.append(button);

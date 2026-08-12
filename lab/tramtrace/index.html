@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="assets/tramtrace-inspector.css">
   <script src="assets/site.js" defer></script>
   <script src="assets/tramtrace-board-data.js" defer></script>
+  <script src="assets/tramtrace-component-data.js" defer></script>
   <script src="assets/tramtrace-inspector.js" defer></script>
 </head>
 <body class="inspector-body">
@@ -67,7 +68,7 @@
           <img class="pcb-vector pcb-front-mask" src="assets/images/interactive/tramtrace/tramtrace-front-mask.svg" alt="">
           <img class="pcb-vector pcb-front-silk" src="assets/images/interactive/tramtrace/tramtrace-front-silk.svg" alt="">
           <canvas class="pcb-data-canvas" data-pcb-canvas aria-hidden="true"></canvas>
-          <div class="pcb-hotspots" data-pcb-hotspots aria-label="Key components"></div>
+          <div class="pcb-hotspots" data-pcb-hotspots aria-label="Selectable board components"></div>
           <div class="pcb-stage-label" aria-hidden="true"><span>Production board</span><span>KiCad source / Rev 1</span></div>
         </div>
       </div>
@@ -84,10 +85,10 @@
         </div>
       </div>
 
-      <div class="component-readout" data-component-readout>
+      <div class="component-readout" data-component-readout aria-live="polite" aria-atomic="true">
         <p data-component-ref>U3</p>
         <h3 data-component-title>ESP32-WROOM-32E</h3>
-        <p data-component-copy>Position data and frame generation</p>
+        <p data-component-copy>Wi-Fi, live position processing and LED frame generation</p>
       </div>
 
       <div class="frame-console" data-frame-console hidden>
