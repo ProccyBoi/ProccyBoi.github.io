@@ -42,6 +42,7 @@
         ["U10", "BNO085 IMU", "Reports acceleration and gyro at 100 Hz, attitude at 50 Hz and magnetic heading data at 25 Hz.", 43.3, 61.6],
         ["U12", "SX1262 LoRa module", "Transmits the compact live subset at up to 10 Hz and listens between packets for logging, marker and profile commands.", 70.8, 60.1],
         ["J10 / J6", "RF antenna ports", "Separate U.FL connections place the GNSS and 915 MHz antennas at the board edge and away from the dense sensor section.", 78.9, 18.4],
+        ["U1", "TP4056 Li-ion charger", "Charges the aircraft's single-cell Li-ion battery from USB-C using a constant-current, constant-voltage cycle.", 31.8, 71.6],
         ["U2 / U5", "DW01A + 8205A cell protection", "The DW01A watches cell voltage and fault current, then drives the 8205A dual MOSFET to isolate the battery during over-charge, over-discharge or a short.", 31.6, 60.5]
       ]
     },
