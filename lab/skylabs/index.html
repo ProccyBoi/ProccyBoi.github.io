@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/proccy-boi/">
-  <title>Inside the Skylabs Ground Station | Andrew Chung</title>
-  <meta name="description" content="An interactive, rotatable view of Andrew Chung's Skylabs LoRa ground-station PCB, rendered from its KiCad source and cross-referenced against the receiver firmware.">
+  <title>Inside the Skylabs Telemetry System | Andrew Chung</title>
+  <meta name="description" content="Interactive, rotatable views of Andrew Chung's Skylabs aircraft telemetry and LoRa ground-station PCBs, rendered from their KiCad sources and cross-referenced against the firmware.">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#080b0d">
   <link rel="icon" href="data:,">
-  <link rel="preload" as="image" href="assets/images/interactive/skylabs/skylabs-ground-inspect.webp" type="image/webp">
+  <link rel="preload" as="image" href="assets/images/interactive/skylabs/skylabs-telemetry-inspect.webp" type="image/webp">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/skylabs-object.css">
   <script src="assets/site.js" defer></script>
@@ -30,26 +30,30 @@
     </div>
   </header>
 
-  <main id="main" class="object-main" data-object-inspector data-view="inspect" data-annotations="visible">
+  <main id="main" class="object-main" data-object-inspector data-view="inspect" data-board="telemetry" data-annotations="visible">
     <section class="object-hero" aria-labelledby="object-title">
-      <p class="object-kicker">Interactive board study / Skylabs ground station</p>
+      <p class="object-kicker">Interactive board study / Skylabs telemetry system</p>
       <h1 id="object-title">Turn the<br>link over.</h1>
       <div class="object-hero-copy">
-        <p>This is the receiver between the aircraft and the laptop. It listens for 915 MHz telemetry, records each valid packet and sends flight-control commands back over the same radio link.</p>
-        <p class="object-proof">Rendered from the production KiCad board and checked against the current ground-receiver firmware.</p>
+        <p>The aircraft board measures and records the flight; the ground station catches its live 915 MHz packets and makes them useful on the field. Both ends of that link are here.</p>
+        <p class="object-proof">Rendered from both production KiCad boards and checked against the current aircraft and receiver firmware.</p>
       </div>
     </section>
 
     <section class="object-workbench" aria-labelledby="object-workbench-title">
       <header class="object-workbench-heading">
         <div>
-          <p class="object-kicker">Ground station / Rev 1.0</p>
-          <h2 id="object-workbench-title">A receiver you can pick up.</h2>
+          <p class="object-kicker" data-board-eyebrow>Aircraft telemetry / Rev 4.0</p>
+          <h2 id="object-workbench-title" data-board-heading>Flight data starts here.</h2>
         </div>
-        <p>Inspect the component side, then switch to rotate and drag the actual KiCad assembly through a full turn.</p>
+        <p data-board-copy>Inspect either end of the telemetry link, then switch to Rotate and drag the actual KiCad assembly through a full turn.</p>
       </header>
 
       <div class="object-toolbar" aria-label="Board view controls">
+        <div class="object-board-list" aria-label="Skylabs board">
+          <button type="button" class="object-board is-active" data-object-board="telemetry" aria-pressed="true">Aircraft telemetry</button>
+          <button type="button" class="object-board" data-object-board="ground" aria-pressed="false">Ground station</button>
+        </div>
         <div class="object-view-list" aria-label="Board view">
           <button type="button" class="object-view is-active" data-object-view="inspect" aria-pressed="true">Inspect</button>
           <button type="button" class="object-view" data-object-view="rotate" aria-pressed="false">Rotate</button>
@@ -58,46 +62,46 @@
         <button type="button" class="object-tool object-reset" data-rotation-reset hidden>Front angle</button>
       </div>
 
-      <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs ground-station board. Select marked components, or choose Rotate and drag left or right.">
-        <img src="assets/images/interactive/skylabs/skylabs-ground-inspect.webp" width="1400" height="1000" alt="KiCad rendering of the assembled blue Skylabs ground-station PCB" data-object-image draggable="false">
-        <div class="object-hotspots" data-object-hotspots aria-label="Selectable ground-station components"></div>
+      <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs aircraft telemetry board. Select marked components, or choose Rotate and drag left or right.">
+        <img src="assets/images/interactive/skylabs/skylabs-telemetry-inspect.webp" width="1400" height="1000" alt="KiCad rendering of the assembled blue Skylabs aircraft telemetry PCB" data-object-image draggable="false">
+        <div class="object-hotspots" data-object-hotspots aria-label="Selectable Skylabs board components"></div>
         <p class="object-drag-hint" data-drag-hint hidden><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p>
         <p class="object-angle" data-object-angle hidden>000&deg;</p>
       </div>
 
       <div class="object-readout is-empty" data-object-readout aria-live="polite" aria-atomic="true">
         <p data-object-ref>BOARD</p>
-        <h3 data-object-name>Ground-station receiver</h3>
-        <p data-object-copy>Select a marker to see how radio, compute, storage and USB fit onto the same board. Select it again to clear the view.</p>
+        <h3 data-object-name>Aircraft telemetry / avionics</h3>
+        <p data-object-copy>Select a marker to trace how sensing, navigation, logging and radio share the same aircraft board. Select it again to clear the view.</p>
       </div>
       <noscript><p class="object-noscript">JavaScript is needed for the component annotations and turntable. The Skylabs project page remains available without it.</p></noscript>
     </section>
 
     <section class="object-path" aria-labelledby="object-path-title">
       <header>
-        <p class="object-kicker">What the board actually does</p>
-        <h2 id="object-path-title">One packet,<br>four useful exits.</h2>
+        <p class="object-kicker">What the pair actually does</p>
+        <h2 id="object-path-title">One flight,<br>two records.</h2>
       </header>
       <ol class="object-path-list">
-        <li><span>01</span><h3>Receive</h3><p>The SX1262 listens on 915 MHz and hands each valid air-link packet to the ESP32 over VSPI.</p></li>
-        <li><span>02</span><h3>Record</h3><p>The shared SPI microSD stores every accepted packet as readable CSV or an indexed, CRC-protected binary log.</p></li>
-        <li><span>03</span><h3>Present</h3><p>The ESP32 serves a local captive dashboard and streams live telemetry to a computer over USB serial.</p></li>
-        <li><span>04</span><h3>Reply</h3><p>Record, pause and marker commands return to the aircraft as short repeated LoRa command bursts.</p></li>
+        <li><span>01</span><h3>Sense</h3><p>GNSS, IMU, pressure, airspeed and strain inputs arrive at their own useful rates instead of being forced into one timing loop.</p></li>
+        <li><span>02</span><h3>Record</h3><p>The STM32 assembles a 40 Hz binary aircraft log while keeping freshness and validity beside every measurement.</p></li>
+        <li><span>03</span><h3>Transmit</h3><p>A compact live subset crosses the 915 MHz SX1262 link at up to 10 Hz, independently of the full onboard record.</p></li>
+        <li><span>04</span><h3>Receive</h3><p>The ESP32 validates, stores and presents each packet, while returning log, marker and radio-profile commands to the aircraft.</p></li>
       </ol>
     </section>
 
     <section class="object-findings" aria-labelledby="object-findings-title">
       <div>
         <p class="object-kicker">Firmware, made physical</p>
-        <h2 id="object-findings-title">The board is more than a radio receiver.</h2>
+        <h2 id="object-findings-title">The radio is only the middle.</h2>
       </div>
       <dl class="object-fact-grid">
-        <div><dt>915</dt><dd>MHz LoRa link</dd></div>
-        <div><dt>100</dt><dd>ms default packet interval</dd></div>
-        <div><dt>230400</dt><dd>baud USB serial stream</dd></div>
-        <div><dt>20</dt><dd>MHz primary SD clock</dd></div>
+        <div><dt>40</dt><dd>Hz aircraft binary record</dd></div>
+        <div><dt>10</dt><dd>Hz GNSS and live air link</dd></div>
+        <div><dt>915</dt><dd>MHz bidirectional LoRa link</dd></div>
+        <div><dt>230400</dt><dd>baud ground USB stream</dd></div>
       </dl>
-      <p class="object-finding-note">The radio and SD card share the ESP32's VSPI bus. Their chip-select lines are managed explicitly so logging cannot hold the radio off the bus while a packet is waiting.</p>
+      <p class="object-finding-note">The full-fidelity record stays on the aircraft. The smaller radio packet gives the field crew a live view and an independent ground log without allowing the LoRa schedule to dictate what the aircraft keeps.</p>
       <div class="object-links">
         <a href="projects/skylabs/">Read the Skylabs project <span aria-hidden="true">&rarr;</span></a>
         <a href="shared/projects/skylabs/f110211/">Open the F110211 replay <span aria-hidden="true">&rarr;</span></a>

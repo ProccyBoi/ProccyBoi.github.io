@@ -90,7 +90,10 @@ html { scroll-behavior: smooth; }
   border: 1px solid var(--object-line);
 }
 
+.object-board-list,
 .object-view-list { display: flex; }
+.object-board-list { border-right: 1px solid var(--object-line); }
+.object-board,
 .object-view,
 .object-tool {
   min-height: 3rem;
@@ -103,12 +106,21 @@ html { scroll-behavior: smooth; }
   cursor: pointer;
 }
 
+.object-board {
+  min-width: 10.5rem;
+  color: var(--object-muted);
+}
+.object-board:last-child { border-right: 0; }
 .object-tool { margin-left: auto; border-right: 0; border-left: 1px solid var(--object-line); }
+.object-board:hover,
+.object-board:focus-visible,
+.object-board.is-active,
 .object-view:hover,
 .object-view:focus-visible,
 .object-view.is-active,
 .object-tool:hover,
 .object-tool:focus-visible { background: rgba(255,255,255,0.055); color: var(--object-text); }
+.object-board.is-active,
 .object-view.is-active { box-shadow: inset 0 -2px 0 var(--object-accent); }
 .object-tool[hidden] { display: none; }
 
@@ -208,6 +220,7 @@ html { scroll-behavior: smooth; }
 .object-hotspot:hover span,
 .object-hotspot:focus-visible span,
 .object-hotspot.is-active span { opacity: 1; transform: translateY(-50%) translateX(0); }
+.object-hotspot:nth-child(9) span { right: calc(100% + 0.6rem); left: auto; }
 
 .object-drag-hint,
 .object-angle {
@@ -338,6 +351,8 @@ html { scroll-behavior: smooth; }
   .object-hero { padding-top: 7rem; }
   .object-hero h1 { font-size: clamp(4.2rem, 20vw, 6.8rem); }
   .object-toolbar { flex-wrap: wrap; }
+  .object-board-list { width: 100%; border-right: 0; border-bottom: 1px solid var(--object-line); }
+  .object-board { flex: 1; min-width: 0; }
   .object-view-list { flex: 1; }
   .object-view { flex: 1; }
   .object-tool { min-width: 100%; margin-left: 0; border-top: 1px solid var(--object-line); border-left: 0; }
