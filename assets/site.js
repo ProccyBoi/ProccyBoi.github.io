@@ -1,5 +1,24 @@
 document.documentElement.classList.add("js");
 
+const updatePageProgress = () => {
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 0;
+  document.documentElement.style.setProperty("--page-progress", progress.toFixed(4));
+};
+
+let progressFrame = 0;
+const requestPageProgress = () => {
+  if (progressFrame) return;
+  progressFrame = window.requestAnimationFrame(() => {
+    progressFrame = 0;
+    updatePageProgress();
+  });
+};
+
+updatePageProgress();
+window.addEventListener("scroll", requestPageProgress, { passive: true });
+window.addEventListener("resize", requestPageProgress);
+
 const navToggle = document.querySelector("[data-nav-toggle]");
 const siteNav = document.querySelector("[data-site-nav]");
 const desktopNavigation = window.matchMedia("(min-width: 721px)");
