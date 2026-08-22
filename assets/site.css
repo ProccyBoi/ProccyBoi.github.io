@@ -2575,14 +2575,18 @@ h4 {
 .home-signal-path {
   margin-bottom: clamp(5rem, 8vw, 7.5rem);
   padding: clamp(1.4rem, 3vw, 2.5rem);
-  border: 5px solid #080807;
-  background: var(--black);
-  color: var(--paper);
-  box-shadow: 0.55rem 0.62rem 0 rgba(57, 49, 38, 0.14);
+  border: 1px solid #c5bcab;
+  background:
+    linear-gradient(rgba(61, 97, 108, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61, 97, 108, 0.045) 1px, transparent 1px),
+    var(--paper);
+  background-size: 2rem 2rem, 2rem 2rem, auto;
+  color: var(--black);
+  box-shadow: 0.55rem 0.62rem 0 rgba(57, 49, 38, 0.1);
 }
 
 .home-signal-path .simple-section-heading {
-  border-top-color: #565149;
+  border-top-color: var(--black);
 }
 
 .home-signal-path .simple-section-heading::before {
@@ -2590,58 +2594,58 @@ h4 {
 }
 
 .home-signal-path .eyebrow {
-  color: var(--yellow);
+  color: var(--red);
 }
 
 .home-signal-path .signal-path-heading > p,
 .home-signal-path .signal-path-foot p {
-  color: #b7b0a5;
+  color: var(--muted);
 }
 
 .signal-path-layout,
 .signal-path-picker,
 .signal-path-picker button,
 .signal-path-foot {
-  border-color: #4b4741;
+  border-color: var(--rule-strong);
 }
 
 .signal-path-picker button {
-  color: #b7b0a5;
+  color: var(--muted);
 }
 
 .signal-path-picker button span,
 .signal-path-diagram-head,
 .signal-path-stages span {
-  color: #8e887f;
+  color: var(--faint);
 }
 
 .signal-path-picker button:hover,
 .signal-path-picker button:focus-visible {
-  background: var(--black-soft);
-  color: var(--paper);
+  background: rgba(228, 185, 45, 0.12);
+  color: var(--black);
 }
 
 .signal-path-picker button[aria-pressed="true"] {
-  background: var(--red);
-  color: var(--paper);
-  box-shadow: none;
+  background: rgba(228, 185, 45, 0.16);
+  color: var(--black);
+  box-shadow: inset 4px 0 0 var(--red);
 }
 
 .signal-path-picker button[aria-pressed="true"] span {
-  color: #f6d5ce;
+  color: var(--muted);
 }
 
 .signal-path-stages li {
-  border-color: var(--yellow);
+  border-color: var(--blue);
 }
 
 .signal-path-stages li::before {
-  border-color: var(--yellow);
-  background: var(--black);
+  border-color: var(--red);
+  background: var(--paper);
 }
 
 .signal-path-stages li:last-child::after {
-  border-color: var(--yellow);
+  border-color: var(--blue);
 }
 
 .home-files {
@@ -2693,9 +2697,10 @@ h4 {
 
 .eyebrow {
   width: fit-content;
-  padding: 0.42rem 0.58rem;
-  background: var(--black);
-  color: var(--paper);
+  padding: 0.18rem 0 0.18rem 0.72rem;
+  border-left: 3px solid var(--red);
+  background: transparent;
+  color: var(--muted);
   font-weight: 500;
 }
 
@@ -2715,6 +2720,7 @@ h4 {
 
 .index-section-heading .eyebrow {
   padding: 0;
+  border-left: 0;
   background: transparent;
   color: var(--red);
 }
@@ -2827,22 +2833,24 @@ h4 {
 }
 
 .project-meta {
-  border: 4px solid #080807;
-  background: var(--black);
-  color: var(--paper);
+  overflow: hidden;
+  border: 1px solid #c5bcab;
+  background: var(--paper);
+  color: var(--black);
+  box-shadow: 0.3rem 0.34rem 0 rgba(57, 49, 38, 0.08);
 }
 
 .project-meta > div,
 .project-meta > div:nth-child(odd) {
-  border-color: #4a4640;
+  border-color: var(--rule);
 }
 
 .project-meta dt {
-  color: #aaa399;
+  color: var(--red);
 }
 
 .project-meta dd {
-  color: var(--paper);
+  color: var(--black);
 }
 
 .project-body {
@@ -2901,15 +2909,26 @@ h4 {
 }
 
 .next-project {
+  position: relative;
   width: min(100%, var(--content));
   padding: 2.25rem max(var(--gutter), calc((100% - var(--content)) / 2));
-  border: 0;
-  background: var(--black);
-  color: var(--paper);
+  border-block: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--black);
 }
 
 .next-project span {
-  color: #aaa399;
+  color: var(--muted);
+}
+
+.next-project::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: max(var(--gutter), calc((100% - var(--content)) / 2));
+  width: min(12rem, 32vw);
+  height: 4px;
+  background: var(--stripe);
 }
 
 .board-catalog {
@@ -2966,18 +2985,23 @@ h4 {
 }
 
 .about-facts {
-  border: 4px solid #080807;
-  background: var(--black);
-  color: var(--paper);
+  gap: 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--black);
 }
 
 .about-fact,
-.about-fact:not(:last-child) {
-  border-color: #4a4640;
+.about-fact:not(:last-child),
+.about-fact + .about-fact {
+  padding: 1.35rem;
+  border: 1px solid #c5bcab;
+  background: var(--paper);
+  box-shadow: 0.3rem 0.34rem 0 rgba(57, 49, 38, 0.08);
 }
 
 .about-fact span {
-  color: #aaa399;
+  color: var(--red);
 }
 
 .skill-grid {
@@ -3211,7 +3235,7 @@ h4 {
   }
 
   .signal-path-picker button[aria-pressed="true"] {
-    box-shadow: inset 0 3px 0 var(--yellow);
+    box-shadow: inset 0 3px 0 var(--red);
   }
 
   .page-hero::after,
