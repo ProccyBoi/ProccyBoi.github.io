@@ -2260,6 +2260,7 @@ html:not(.js) .signal-path-diagram {
   --blue: #2787a4;
   --copper: #dc352c;
   --red: #dc352c;
+  --red-text: #a6231e;
   --orange: #ef7f22;
   --yellow: #f3c928;
   --green: #4a9a53;
@@ -2290,6 +2291,10 @@ body {
   font-family: var(--sans);
   font-variation-settings: "wght" 430;
   text-rendering: geometricPrecision;
+}
+
+figure {
+  margin: 0;
 }
 
 h1,
@@ -2681,7 +2686,7 @@ h4 {
 .home-route-grid a > span,
 .home-experience-list article > span,
 .home-education-note span {
-  color: var(--red);
+  color: var(--red-text);
   font-family: var(--mono);
   font-size: 0.62rem;
   letter-spacing: 0.05em;
@@ -2842,7 +2847,7 @@ h4 {
 }
 
 .home-signal-path .eyebrow {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .home-signal-path .signal-path-heading > p,
@@ -3019,7 +3024,7 @@ h4 {
   padding: 0;
   border-left: 0;
   background: transparent;
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .index-section-heading h2 {
@@ -3075,6 +3080,47 @@ h4 {
   color: var(--red);
 }
 
+.interactive-feature-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.interactive-feature-heading h3,
+.interactive-feature-heading p {
+  margin: 0;
+}
+
+.interactive-feature-heading h3 {
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+}
+
+.interactive-feature-heading p {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.interactive-feature-heading-secondary {
+  margin-top: clamp(3.5rem, 7vw, 6rem);
+}
+
+.project-catalog-featured {
+  gap: clamp(1.75rem, 3vw, 3rem);
+}
+
+.lab-card-media {
+  background: #0c0d0b;
+}
+
+.lab-card-media img {
+  object-fit: cover;
+}
+
 .project-list {
   border-top: 4px solid var(--black);
 }
@@ -3091,7 +3137,7 @@ h4 {
 
 .project-list-row > span,
 .project-list-row b {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 /* Project detail pages */
@@ -3143,7 +3189,7 @@ h4 {
 }
 
 .project-meta dt {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .project-meta dd {
@@ -3202,12 +3248,14 @@ h4 {
 }
 
 .project-gallery figcaption span:first-child {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .next-project {
   position: relative;
-  width: min(100%, var(--content));
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
   padding: 2.25rem max(var(--gutter), calc((100% - var(--content)) / 2));
   border-block: 1px solid var(--rule-strong);
   background: var(--paper);
@@ -3315,7 +3363,7 @@ h4 {
 }
 
 .about-fact span {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .about-fact-wide {

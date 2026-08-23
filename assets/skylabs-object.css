@@ -173,12 +173,11 @@ html { scroll-behavior: smooth; }
 
 .object-hotspot {
   position: absolute;
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
-  border: 1px solid rgba(255,255,255,0.9);
-  border-radius: 50%;
-  background: rgba(3, 7, 9, 0.82);
+  border: 0;
+  background: transparent;
   color: var(--object-text);
   cursor: pointer;
   transform: translate(-50%, -50%);
@@ -191,14 +190,29 @@ html { scroll-behavior: smooth; }
   position: absolute;
   top: 50%;
   left: 50%;
-  background: currentColor;
   transform: translate(-50%, -50%);
 }
-.object-hotspot::before { width: 0.46rem; height: 1px; }
-.object-hotspot::after { width: 1px; height: 0.46rem; }
+.object-hotspot::before {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 50%;
+  background: rgba(3, 7, 9, 0.82);
+}
+.object-hotspot::after {
+  content: "+";
+  background: transparent;
+  font-family: Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1;
+}
 .object-hotspot:hover,
 .object-hotspot:focus-visible,
-.object-hotspot.is-active { border-color: var(--object-accent); color: var(--object-accent); box-shadow: 0 0 0 0.38rem rgba(76, 183, 237, 0.15); }
+.object-hotspot.is-active { color: var(--object-accent); }
+.object-hotspot:hover::before,
+.object-hotspot:focus-visible::before,
+.object-hotspot.is-active::before { border-color: var(--object-accent); box-shadow: 0 0 0 0.38rem rgba(76, 183, 237, 0.15); }
 
 .object-hotspot span {
   position: absolute;

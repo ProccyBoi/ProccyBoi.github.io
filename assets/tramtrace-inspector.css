@@ -117,12 +117,22 @@ html {
   margin-bottom: clamp(2rem, 5vw, 4.5rem);
 }
 
-.inspector-mode-list {
+.inspector-control-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: end;
+}
+
+.inspector-mode-list,
+.inspector-view-list {
   display: inline-grid;
-  grid-template-columns: repeat(3, 1fr);
   margin-top: 1rem;
   border: 1px solid var(--inspect-line);
 }
+
+.inspector-mode-list { grid-template-columns: repeat(3, 1fr); }
+.inspector-view-list { grid-template-columns: repeat(2, 1fr); }
 
 .inspector-mode {
   min-width: 7.4rem;
@@ -212,6 +222,7 @@ html {
 
 .pcb-board-fill,
 .pcb-render,
+.pcb-turntable-render,
 .pcb-vector,
 .pcb-data-canvas {
   position: absolute;
@@ -224,6 +235,46 @@ html {
   left: 2.5429%;
   top: 0.9984%;
   width: 92.8764%;
+}
+
+.pcb-turntable-render {
+  z-index: 10;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  visibility: hidden;
+  user-select: none;
+}
+
+.inspector-main[data-view="rotate"] .pcb-viewport {
+  max-width: 980px;
+  margin-inline: auto;
+}
+
+.inspector-main[data-view="rotate"] .pcb-stage {
+  aspect-ratio: 1;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.inspector-main[data-view="rotate"] .pcb-stage.is-dragging {
+  cursor: grabbing;
+}
+
+.inspector-main[data-view="rotate"] .pcb-board-fill,
+.inspector-main[data-view="rotate"] .pcb-render,
+.inspector-main[data-view="rotate"] .pcb-vector,
+.inspector-main[data-view="rotate"] .pcb-data-canvas,
+.inspector-main[data-view="rotate"] .pcb-hotspots {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.inspector-main[data-view="rotate"] .pcb-turntable-render {
+  opacity: 1;
+  visibility: visible;
 }
 
 .pcb-board-fill {
@@ -341,6 +392,30 @@ html {
   pointer-events: none;
 }
 
+.pcb-drag-hint,
+.pcb-angle {
+  position: absolute;
+  z-index: 22;
+  top: 1rem;
+  margin: 0;
+  color: rgba(231, 233, 223, 0.72);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.pcb-drag-hint {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pcb-angle { right: 1rem; }
+
+.pcb-drag-hint[hidden],
+.pcb-angle[hidden] { display: none; }
+
 .pcb-hotspots {
   position: absolute;
   z-index: 16;
@@ -361,12 +436,11 @@ html {
 
 .pcb-hotspot {
   position: absolute;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  background: rgba(7, 9, 8, 0.82);
+  border: 0;
+  background: transparent;
   color: var(--inspect-text);
   cursor: pointer;
   transform: translate(-50%, -50%);
@@ -379,18 +453,36 @@ html {
   position: absolute;
   top: 50%;
   left: 50%;
-  background: currentColor;
   transform: translate(-50%, -50%);
 }
 
-.pcb-hotspot::before { width: 0.42rem; height: 1px; }
-.pcb-hotspot::after { width: 1px; height: 0.42rem; }
+.pcb-hotspot::before {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background: rgba(7, 9, 8, 0.82);
+}
+
+.pcb-hotspot::after {
+  content: "+";
+  background: transparent;
+  font-family: Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1;
+}
 
 .pcb-hotspot:hover,
 .pcb-hotspot:focus-visible,
 .pcb-hotspot.is-active {
-  border-color: var(--inspect-accent);
   color: var(--inspect-accent);
+}
+
+.pcb-hotspot:hover::before,
+.pcb-hotspot:focus-visible::before,
+.pcb-hotspot.is-active::before {
+  border-color: var(--inspect-accent);
   box-shadow: 0 0 0 0.35rem rgba(133, 189, 245, 0.16);
 }
 
@@ -453,6 +545,32 @@ html {
   color: var(--inspect-accent);
 }
 
+.pcb-legend-rotate {
+  justify-content: space-between;
+}
+
+.pcb-rotate-controls {
+  display: inline-flex;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+.pcb-rotate-controls button {
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--inspect-line);
+  background: transparent;
+  color: var(--inspect-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pcb-rotate-controls button:hover,
+.pcb-rotate-controls button:focus-visible {
+  border-color: var(--inspect-accent);
+  color: var(--inspect-accent);
+}
+
 .pcb-legend [hidden] {
   display: none;
 }
@@ -507,6 +625,10 @@ html {
 }
 
 .inspector-main:not([data-mode="assembled"]) .component-readout {
+  display: none;
+}
+
+.inspector-main[data-view="rotate"] .component-readout {
   display: none;
 }
 
@@ -792,7 +914,7 @@ html {
 .inspector-body button:focus-visible,
 .inspector-body a:focus-visible,
 .inspector-body input:focus-visible,
-.pcb-viewport:focus-visible {
+.pcb-stage:focus-visible {
   outline: 2px solid var(--inspect-accent);
   outline-offset: 3px;
 }
@@ -867,6 +989,12 @@ html {
     width: 100%;
   }
 
+  .inspector-control-groups,
+  .inspector-control-groups > div,
+  .inspector-view-list {
+    width: 100%;
+  }
+
   .inspector-mode {
     min-width: 0;
     padding-inline: 0.45rem;
@@ -883,6 +1011,19 @@ html {
 
   .pcb-annotation-toggle {
     margin-left: 0;
+  }
+
+  .pcb-legend-rotate {
+    align-items: flex-start !important;
+  }
+
+  .pcb-rotate-controls {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .pcb-rotate-controls button {
+    flex: 1;
   }
 
   .component-readout {

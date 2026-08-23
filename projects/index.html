@@ -24,20 +24,20 @@
     <div class="header-inner">
       <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
-        <a href="projects/" aria-current="page">Projects</a><a href="about/">Experience</a><a href="projects/#interactive">Labs</a><a href="shared/">Files</a><a href="about/#contact">Contact</a>
+        <a href="projects/" aria-current="page">Projects</a><a href="about/">About</a><a href="projects/#interactive">Labs</a><a href="shared/">Files</a><a href="about/#contact">Contact</a>
       </nav>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
   <main id="main">
-    <section class="page-hero"><div class="page-hero-inner shell"><p class="eyebrow">Selected archive</p><h1>Projects</h1><p>Finished hardware, software and engineering tools. The photographed builds come first.</p></div></section>
+    <section class="page-hero"><div class="page-hero-inner shell"><p class="eyebrow">Selected archive</p><h1>Projects</h1><p>PCB hardware, embedded software and browser-based engineering tools.</p></div></section>
 
     <nav class="project-jumpbar" aria-label="Project sections" data-project-jumpbar>
       <div class="project-jumpbar-inner shell">
         <span class="project-jumpbar-indicator" aria-hidden="true" data-project-jump-indicator></span>
         <a href="projects/#hardware" aria-current="location" data-project-jump data-project-target="hardware">Hardware</a>
-        <a href="projects/#interactive" data-project-jump data-project-target="interactive">Interactive</a>
+        <a href="projects/#interactive" data-project-jump data-project-target="interactive">Labs</a>
         <a href="projects/#archive" data-project-jump data-project-target="archive">Archive</a>
       </div>
     </nav>
@@ -88,7 +88,13 @@
     </section>
 
     <section class="project-index-section project-index-subsection shell" id="interactive" aria-labelledby="tools-title">
-      <div class="index-section-heading"><div><p class="eyebrow">02 / Interactive</p><h2 id="tools-title">Engineering tools</h2></div><p>Small browser-based labs for seeing the system, not just the formula.</p></div>
+      <div class="index-section-heading"><div><p class="eyebrow">02 / Interactive</p><h2 id="tools-title">Engineering labs</h2></div><p>Inspect the boards, then explore waveforms, lithography and MOSFET operation.</p></div>
+      <div class="interactive-feature-heading"><h3>PCB inspectors</h3><p>Source-derived views of the two hardware systems.</p></div>
+      <div class="project-catalog project-catalog-featured">
+        <a class="catalog-card" href="lab/tramtrace/"><div class="catalog-card-media lab-card-media"><img src="assets/images/interactive/tramtrace/tramtrace-turn-00.webp" width="1200" height="1200" alt="Populated KiCad rendering of the TramTrace PCB" loading="lazy"></div><div class="catalog-card-copy"><div><h3>Inside TramTrace</h3><p>Rotate the populated board, inspect its copper and play data through the real LED order.</p><small>KiCad turntable &middot; 116 pixels</small></div><span aria-hidden="true">&rarr;</span></div></a>
+        <a class="catalog-card" href="lab/skylabs/"><div class="catalog-card-media lab-card-media"><img src="assets/images/interactive/skylabs/skylabs-telemetry-inspect.webp" width="1400" height="1000" alt="Populated KiCad rendering of the Skylabs telemetry PCB" loading="lazy"></div><div class="catalog-card-copy"><div><h3>Inside Skylabs</h3><p>Inspect and rotate the aircraft telemetry and ground-station boards.</p><small>Two boards &middot; component guide</small></div><span aria-hidden="true">&rarr;</span></div></a>
+      </div>
+      <div class="interactive-feature-heading interactive-feature-heading-secondary"><h3>Browser tools</h3><p>Waveforms and semiconductor models.</p></div>
       <div class="project-catalog project-catalog-tools">
         <a class="catalog-card" href="projects/scopelab/"><div class="catalog-card-media"><img src="assets/images/projects/scopelab-og.png" width="1731" height="909" alt="ScopeLab browser-based microcontroller and oscilloscope teaching bench" loading="lazy"></div><div class="catalog-card-copy"><div><h3>ScopeLab</h3><p>A micro:bit teaching bench for GPIO and serial-bus waveform labs.</p><small>BBC micro:bit V2</small></div><span aria-hidden="true">&rarr;</span></div></a>
         <a class="catalog-card" href="projects/lithography-animation/"><div class="catalog-card-media"><img src="assets/images/projects/lithography-simulation-preview.png" width="1600" height="1100" alt="Interactive lithography process animation" loading="lazy"></div><div class="catalog-card-copy"><div><h3>Lithography Animation</h3><p>Pattern transfer, resolution, focus, resist tone and photon statistics.</p><small>ELEC4603</small></div><span aria-hidden="true">&rarr;</span></div></a>
@@ -97,7 +103,7 @@
     </section>
 
     <section class="project-index-section project-index-subsection shell" id="archive" aria-labelledby="earlier-title">
-      <div class="index-section-heading"><div><p class="eyebrow">03 / Archive</p><h2 id="earlier-title">Earlier builds</h2></div><p>Projects that still explain where the current work came from.</p></div>
+      <div class="index-section-heading"><div><p class="eyebrow">03 / Archive</p><h2 id="earlier-title">Earlier builds</h2></div><p>Earlier embedded and robotics builds.</p></div>
       <div class="project-list">
         <a class="project-list-row" href="projects/runswift/"><span>01</span><div><h3>rUNSWift</h3><p>Humanoid robot software, hardware integration and competition preparation.</p></div><small>ROS2 &middot; Python &middot; C++</small><b aria-hidden="true">&rarr;</b></a>
         <a class="project-list-row" href="projects/lora-talkie/"><span>02</span><div><h3>LoRa Talkie</h3><p>A one-button Morse message composer and handheld 915 MHz LoRa radio.</p></div><small>Heltec V3 &middot; C++</small><b aria-hidden="true">&rarr;</b></a>
