@@ -16,6 +16,7 @@
   <link rel="canonical" href="https://proccyboi.github.io/proccy-boi/projects/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
+  <script type="module" src="assets/site-enhancements.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -32,7 +33,16 @@
   <main id="main">
     <section class="page-hero"><div class="page-hero-inner shell"><p class="eyebrow">Selected archive</p><h1>Projects</h1><p>Finished hardware, software and engineering tools. The photographed builds come first.</p></div></section>
 
-    <section class="project-index-section shell" aria-labelledby="hardware-title">
+    <nav class="project-jumpbar" aria-label="Project sections" data-project-jumpbar>
+      <div class="project-jumpbar-inner shell">
+        <span class="project-jumpbar-indicator" aria-hidden="true" data-project-jump-indicator></span>
+        <a href="projects/#hardware" aria-current="location" data-project-jump data-project-target="hardware">Hardware</a>
+        <a href="projects/#interactive" data-project-jump data-project-target="interactive">Interactive</a>
+        <a href="projects/#archive" data-project-jump data-project-target="archive">Archive</a>
+      </div>
+    </nav>
+
+    <section class="project-index-section shell" id="hardware" aria-labelledby="hardware-title">
       <div class="index-section-heading"><div><p class="eyebrow">01 / Hardware</p><h2 id="hardware-title">Boards and systems</h2></div><p>Personal builds, team avionics and industry PCB work.</p></div>
       <div class="project-catalog">
         <a class="catalog-card wide" href="projects/tramtrace/">
@@ -77,7 +87,7 @@
       </div>
     </section>
 
-    <section class="project-index-section project-index-subsection shell" aria-labelledby="tools-title">
+    <section class="project-index-section project-index-subsection shell" id="interactive" aria-labelledby="tools-title">
       <div class="index-section-heading"><div><p class="eyebrow">02 / Interactive</p><h2 id="tools-title">Engineering tools</h2></div><p>Small browser-based labs for seeing the system, not just the formula.</p></div>
       <div class="project-catalog project-catalog-tools">
         <a class="catalog-card" href="projects/scopelab/"><div class="catalog-card-media"><img src="assets/images/projects/scopelab-og.png" width="1731" height="909" alt="ScopeLab browser-based microcontroller and oscilloscope teaching bench" loading="lazy"></div><div class="catalog-card-copy"><div><h3>ScopeLab</h3><p>A micro:bit teaching bench for GPIO and serial-bus waveform labs.</p><small>BBC micro:bit V2</small></div><span aria-hidden="true">&rarr;</span></div></a>
@@ -86,7 +96,7 @@
       </div>
     </section>
 
-    <section class="project-index-section project-index-subsection shell" aria-labelledby="earlier-title">
+    <section class="project-index-section project-index-subsection shell" id="archive" aria-labelledby="earlier-title">
       <div class="index-section-heading"><div><p class="eyebrow">03 / Archive</p><h2 id="earlier-title">Earlier builds</h2></div><p>Projects that still explain where the current work came from.</p></div>
       <div class="project-list">
         <a class="project-list-row" href="projects/runswift/"><span>01</span><div><h3>rUNSWift</h3><p>Humanoid robot software, hardware integration and competition preparation.</p></div><small>ROS2 &middot; Python &middot; C++</small><b aria-hidden="true">&rarr;</b></a>

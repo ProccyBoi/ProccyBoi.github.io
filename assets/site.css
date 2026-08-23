@@ -625,6 +625,7 @@ html:not(.js) .signal-path-diagram {
 }
 
 .signal-path-stages {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: clamp(2.5rem, 6vw, 5rem) 0;
@@ -680,6 +681,56 @@ html:not(.js) .signal-path-diagram {
   font-size: clamp(0.95rem, 1.6vw, 1.25rem);
   font-weight: 500;
   line-height: 1.25;
+}
+
+.signal-path-runner {
+  position: absolute;
+  z-index: 2;
+  top: -0.34rem;
+  left: 0;
+  width: 0.68rem;
+  height: 0.68rem;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 1px var(--red), 0 0 1rem rgba(212, 63, 50, 0.3);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.signal-path-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--rule-strong);
+}
+
+.signal-path-metrics > div {
+  min-width: 0;
+  padding: 1rem 1.1rem 1.05rem 0;
+}
+
+.signal-path-metrics > div + div {
+  padding-left: 1.1rem;
+  border-left: 1px solid var(--rule);
+}
+
+.signal-path-metrics span,
+.signal-path-metrics strong {
+  display: block;
+}
+
+.signal-path-metrics span {
+  margin-bottom: 0.4rem;
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+}
+
+.signal-path-metrics strong {
+  overflow-wrap: anywhere;
+  color: var(--black);
+  font-size: clamp(0.92rem, 1.5vw, 1.08rem);
+  font-weight: 620;
 }
 
 .signal-path-foot {
@@ -2706,6 +2757,55 @@ h4 {
 
 .project-index-section {
   padding-block: clamp(5rem, 9vw, 8rem);
+  scroll-margin-top: 9rem;
+}
+
+.project-jumpbar {
+  position: sticky;
+  z-index: 24;
+  top: 4rem;
+  border-bottom: 1px solid rgba(143, 133, 117, 0.45);
+  background: rgba(238, 231, 216, 0.92);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.project-jumpbar-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 3.65rem;
+}
+
+.project-jumpbar a {
+  position: relative;
+  z-index: 1;
+  padding: 0.68rem 1rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.035em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 180ms ease;
+}
+
+.project-jumpbar a:hover,
+.project-jumpbar a:focus-visible,
+.project-jumpbar a[aria-current="location"] {
+  color: var(--black);
+}
+
+.project-jumpbar-indicator {
+  position: absolute;
+  top: 0.47rem;
+  left: 0;
+  height: calc(100% - 0.94rem);
+  border: 1px solid #c5bcab;
+  background: var(--paper);
+  box-shadow: 0.18rem 0.2rem 0 rgba(57, 49, 38, 0.08);
+  pointer-events: none;
 }
 
 .project-index-subsection {
@@ -3236,6 +3336,35 @@ h4 {
 
   .signal-path-picker button[aria-pressed="true"] {
     box-shadow: inset 0 3px 0 var(--red);
+  }
+
+  .signal-path-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signal-path-metrics > div,
+  .signal-path-metrics > div + div {
+    padding: 0.8rem 0;
+    border-left: 0;
+  }
+
+  .signal-path-metrics > div + div {
+    border-top: 1px solid var(--rule);
+  }
+
+  .project-jumpbar {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .project-jumpbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .project-jumpbar-inner {
+    width: max-content;
+    min-width: 100%;
+    padding-inline: var(--gutter);
   }
 
   .page-hero::after,
