@@ -1,13 +1,13 @@
 :root {
-  --inspect-bg: #0b0d0c;
-  --inspect-panel: #111411;
-  --inspect-panel-soft: #151915;
-  --inspect-text: #e7e9df;
-  --inspect-muted: #9da39a;
-  --inspect-line: rgba(231, 233, 223, 0.17);
-  --inspect-copper-front: #efae67;
-  --inspect-copper-back: #65a9d8;
-  --inspect-accent: #85bdf5;
+  --inspect-bg: #12100e;
+  --inspect-panel: #1a1713;
+  --inspect-panel-soft: #211d18;
+  --inspect-text: #f0e9dd;
+  --inspect-muted: #aaa094;
+  --inspect-line: rgba(240, 233, 221, 0.18);
+  --inspect-copper-front: #e09a5d;
+  --inspect-copper-back: #985934;
+  --inspect-accent: #e09a5d;
   --chain-color: #ef5a56;
 }
 
@@ -233,7 +233,7 @@ html {
 .pcb-board-fill {
   z-index: 0;
   border-radius: 2.4% / 5.2%;
-  background: #263d32;
+  background: #2d211a;
   opacity: 0;
 }
 
@@ -258,11 +258,11 @@ html {
 }
 
 .pcb-front-copper {
-  filter: invert(75%) sepia(47%) saturate(817%) hue-rotate(335deg) brightness(104%);
+  filter: invert(57%) sepia(16%) saturate(1046%) hue-rotate(342deg) brightness(86%) contrast(88%);
 }
 
 .pcb-back-copper {
-  filter: invert(69%) sepia(26%) saturate(1250%) hue-rotate(169deg) brightness(93%);
+  filter: invert(35%) sepia(21%) saturate(956%) hue-rotate(336deg) brightness(76%) contrast(91%);
 }
 
 .pcb-front-mask {
@@ -279,30 +279,30 @@ html {
 }
 
 .inspector-main[data-mode="copper"] .pcb-board-fill {
-  opacity: 0.72;
+  opacity: 0.94;
 }
 
 .inspector-main[data-mode="copper"] .pcb-render {
-  opacity: 0.04;
-  filter: grayscale(1);
+  opacity: 0.07;
+  filter: grayscale(1) brightness(0.55);
 }
 
 .inspector-main[data-mode="copper"] .pcb-front-mask {
-  opacity: 0.18;
+  opacity: 0.08;
 }
 
 .inspector-main[data-mode="copper"] .pcb-back-copper {
-  opacity: 0.56;
-  mix-blend-mode: screen;
+  opacity: 0.24;
+  mix-blend-mode: normal;
 }
 
 .inspector-main[data-mode="copper"] .pcb-front-copper {
-  opacity: 0.9;
-  mix-blend-mode: screen;
+  opacity: 0.52;
+  mix-blend-mode: normal;
 }
 
 .inspector-main[data-mode="copper"] .pcb-front-silk {
-  opacity: 0.18;
+  opacity: 0.12;
   mix-blend-mode: screen;
 }
 

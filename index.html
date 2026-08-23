@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="/proccy-boi/">
+  <base href="/">
   <title>Andrew Chung | Electrical engineering</title>
   <meta name="description" content="Andrew Chung is an electrical engineering student at UNSW building PCBs, embedded systems, aircraft telemetry and live transport displays.">
   <meta name="theme-color" content="#111210">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Andrew Chung | Electrical engineering">
   <meta property="og:description" content="PCBs, embedded systems, aircraft telemetry and live transport displays.">
-  <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/">
-  <meta property="og:image" content="https://proccyboi.github.io/proccy-boi/assets/images/og-retro-v2.png">
+  <meta property="og:url" content="https://proccyboi.github.io/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/og-retro-v2.png">
   <meta property="og:image:alt" content="Andrew Chung engineering portfolio framed as an instant photograph featuring the TramTrace light-rail display">
-  <link rel="canonical" href="https://proccyboi.github.io/proccy-boi/">
+  <link rel="canonical" href="https://proccyboi.github.io/">
   <link rel="preload" as="image" href="assets/images/projects/skylabs-telemetry-macro-960.webp" media="(max-width: 760px)" type="image/webp">
   <link rel="preload" as="image" href="assets/images/projects/skylabs-telemetry-macro-1920.webp" media="(min-width: 761px)" type="image/webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
@@ -24,7 +24,7 @@
       "@context": "https://schema.org",
       "@type": "Person",
       "name": "Andrew Chung",
-      "url": "https://proccyboi.github.io/proccy-boi/",
+      "url": "https://proccyboi.github.io/",
       "email": "mailto:andrew.noah.chung@gmail.com",
       "jobTitle": "Electronics Engineer Trainee",
       "affiliation": [
@@ -46,9 +46,10 @@
       <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/">Projects</a>
-        <a href="about/">About</a>
+        <a href="about/">Experience</a>
+        <a href="projects/#interactive">Labs</a>
         <a href="shared/">Files</a>
-        <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
+        <a href="about/#contact">Contact</a>
       </nav>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
@@ -59,8 +60,8 @@
       <div class="home-intro-copy">
         <p class="eyebrow home-kicker">Electrical engineering / embedded hardware</p>
         <h1 id="home-title"><span>Andrew</span> <span>Chung</span></h1>
-        <p class="home-role">Electrical engineering and embedded hardware.</p>
-        <p>I study electrical engineering at UNSW and work as an Electronics Engineer Trainee at Switchmode Power Supplies. I build PCBs for aircraft telemetry, radio and live transport displays, and write robot software for rUNSWift.</p>
+        <p class="home-role">Electrical engineering, built into working hardware.</p>
+        <p>I study electrical engineering at UNSW and work as an Electronics Engineer Trainee at Switchmode Power Supplies. I design and bring up PCBs for aircraft telemetry, radio and live transport displays, and write robot software for rUNSWift.</p>
         <div class="home-links">
           <a href="projects/">View projects</a>
           <a href="about/">About me</a>
@@ -69,18 +70,50 @@
       </div>
 
       <figure class="home-hero-photo home-specimen">
-        <a class="home-specimen-stage" href="projects/skylabs/" aria-label="View the Skylabs project">
-          <picture class="home-specimen-macro">
+        <div class="home-specimen-stage">
+          <a class="home-specimen-link home-specimen-macro" href="projects/skylabs/" aria-label="Read the Skylabs flight-hardware case study">
+            <picture>
             <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-macro-960.webp 960w, assets/images/projects/skylabs-telemetry-macro-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 60vw">
             <img src="assets/images/projects/skylabs-telemetry-macro-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-macro-960.jpg 960w, assets/images/projects/skylabs-telemetry-macro-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 60vw" width="1920" height="1280" alt="Macro view of the Skylabs telemetry PCB and its components">
-          </picture>
-          <picture class="home-specimen-inset" aria-hidden="true">
-            <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-hero-960.webp 960w, assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(max-width: 820px) 42vw, 20vw">
-            <img src="assets/images/projects/skylabs-telemetry-hero-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-hero-960.jpg 960w, assets/images/projects/skylabs-telemetry-hero-1920.jpg 1920w" sizes="(max-width: 820px) 42vw, 20vw" width="1920" height="1280" alt="">
-          </picture>
-        </a>
-        <figcaption><span>Skylabs telemetry PCB</span><span>Rev 4.0 / 2026</span></figcaption>
+            </picture>
+            <span class="home-specimen-action"><strong>Skylabs flight hardware</strong><span>Read the case study <b aria-hidden="true">&rarr;</b></span></span>
+          </a>
+          <a class="home-specimen-inset" href="lab/skylabs/" aria-label="Open the rotatable Skylabs PCB inspector">
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-hero-960.webp 960w, assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(max-width: 820px) 42vw, 20vw">
+              <img src="assets/images/projects/skylabs-telemetry-hero-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-hero-960.jpg 960w, assets/images/projects/skylabs-telemetry-hero-1920.jpg 1920w" sizes="(max-width: 820px) 42vw, 20vw" width="1920" height="1280" alt="Complete Skylabs telemetry PCB">
+            </picture>
+            <span>Rotate both PCBs <b aria-hidden="true">&rarr;</b></span>
+          </a>
+        </div>
+        <figcaption><span>Designed, assembled and tested by Andrew</span><span>Telemetry PCB / Rev 4.0 / 2026</span></figcaption>
       </figure>
+    </section>
+
+    <nav class="home-route-map" aria-labelledby="start-title">
+      <div class="simple-section-heading">
+        <h2 id="start-title">Start here</h2>
+        <p>Three ways into the work.</p>
+      </div>
+      <div class="home-route-grid">
+        <a href="projects/"><span>01</span><strong>Project archive</strong><small>Finished boards, embedded systems and engineering tools</small><b aria-hidden="true">&rarr;</b></a>
+        <a href="about/"><span>02</span><strong>Experience</strong><small>Industry, avionics, teaching and humanoid robotics</small><b aria-hidden="true">&rarr;</b></a>
+        <a href="projects/#interactive"><span>03</span><strong>Interactive labs</strong><small>Inspect PCBs, replay telemetry and explore engineering models</small><b aria-hidden="true">&rarr;</b></a>
+      </div>
+    </nav>
+
+    <section class="home-experience" aria-labelledby="home-experience-title">
+      <div class="simple-section-heading">
+        <div><p class="eyebrow">Current frame</p><h2 id="home-experience-title">Experience</h2></div>
+        <a href="about/">Full experience</a>
+      </div>
+      <div class="home-experience-list">
+        <article><span>Jun. 2026 &mdash; now</span><div><strong>Electronics Engineer Trainee</strong><small>Switchmode Power Supplies</small></div><p>Testing, repair and production hardware across low- and high-voltage power systems.</p></article>
+        <article><span>Aug. 2025 &mdash; now</span><div><strong>Avionics &amp; Payload Team Lead</strong><small>UNSW Skylabs</small></div><p>Aircraft telemetry, flight logging, ground-station hardware and post-flight tools.</p></article>
+        <article><span>Dec. 2023 &mdash; now</span><div><strong>Senior Lab Demonstrator</strong><small>UNSW</small></div><p>Teaching and assessing practical electrical engineering and design courses.</p></article>
+        <article><span>Dec. 2024 &mdash; now</span><div><strong>Behaviours / Hardware</strong><small>rUNSWift &middot; Standard Platform League</small></div><p>Python, C++ and ROS2 work for humanoid robot football.</p></article>
+      </div>
+      <p class="home-education-note"><span>Education</span> Bachelor of Electrical Engineering (Honours) / Master of Electrical Engineering at UNSW, 2023&ndash;2027.</p>
     </section>
 
     <section class="home-work" aria-labelledby="selected-title">
@@ -167,7 +200,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>© <span data-current-year>2026</span> Andrew Chung</p>
-      <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
+      <a href="about/#contact">Contact</a>
       <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
       <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
     </div>

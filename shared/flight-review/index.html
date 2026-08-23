@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="/proccy-boi/">
+  <base href="/">
   <title>Flight Review | Skylabs</title>
-  <meta name="description" content="Private, in-browser Skylabs flight-log review with synchronized telemetry, MapLibre 3D terrain, optional satellite imagery and mapped vegetation.">
+  <meta name="description" content="Private, in-browser Skylabs flight-log review with synchronized telemetry, MapLibre 3D terrain, optional satellite imagery and dense mapped vegetation.">
   <meta name="theme-color" content="#08110f">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Skylabs Flight Review">
   <meta property="og:description" content="Review Skylabs binary, Excel and CSV flight logs entirely in your browser.">
-  <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/shared/flight-review/">
-  <link rel="canonical" href="https://proccyboi.github.io/proccy-boi/shared/flight-review/">
+  <meta property="og:url" content="https://proccyboi.github.io/shared/flight-review/">
+  <link rel="canonical" href="https://proccyboi.github.io/shared/flight-review/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/vendor/maplibre-gl.css?v=5.24.0">
   <link rel="stylesheet" href="assets/flight-review.css?v=20260810-1">
@@ -188,7 +188,6 @@
             <label>Height<select data-height-source><option value="baro">Barometer profile</option><option value="gps">GNSS profile</option></select></label>
             <label>Vertical<select data-vertical-scale><option value="1">1×</option><option value="2">2×</option><option value="5">5×</option></select></label>
             <label data-map-only-control>Basemap<select data-map-basemap><option value="map">Map</option><option value="satellite" selected>Satellite</option></select></label>
-            <label data-map-only-control>Vegetation<select data-vegetation-density><option value="off">Off</option><option value="balanced" selected>Balanced</option><option value="dense">Dense</option></select></label>
             <label data-map-only-control>Minimum AGL<select data-terrain-clearance><option value="2">2 m</option><option value="5" selected>5 m</option><option value="10">10 m</option></select></label>
             <button type="button" data-map-only-control data-satellite-settings hidden>Imagery key</button>
             <button type="button" data-fit-track>Fit track</button>

@@ -104,7 +104,6 @@
     heightSource: $("[data-height-source]"),
     verticalScale: $("[data-vertical-scale]"),
     mapBasemap: $("[data-map-basemap]"),
-    vegetationDensity: $("[data-vegetation-density]"),
     terrainClearance: $("[data-terrain-clearance]"),
     terrainClearanceStatus: $("[data-terrain-clearance-status]"),
     vegetationStatus: $("[data-vegetation-status]"),
@@ -1468,6 +1467,9 @@
         });
         renderer = null;
       },
+      altitudeAt(index) {
+        return flightAltitude(index);
+      },
       rebuildPath() {
         if (!this.scene) return;
         if (pathMesh) {
@@ -1501,19 +1503,11 @@
       },
       refreshVegetation() {
         removeVegetation();
-        const density = elements.vegetationDensity.value;
-        if (density === "off") {
-          elements.vegetationStatus.textContent = "3D vegetation off";
-          map.triggerRepaint();
-          return 0;
-        }
         if (!this.scene || !map.isSourceLoaded("openmaptiles") || !map.isSourceLoaded("skylabs-terrain")) {
           elements.vegetationStatus.textContent = "Loading mapped woodland…";
           return 0;
         }
-        const settings = density === "dense"
-          ? { woodSpacing: 16, parkSpacing: 32, maximum: 3000 }
-          : { woodSpacing: 24, parkSpacing: 46, maximum: 1600 };
+        const settings = { woodSpacing: 16, parkSpacing: 32, maximum: 3000 };
         const buffer = Math.max(220, Math.min(650, horizontalSpan * 0.18));
         const clipBounds = {
           minEast: eastRange[0] - originEast - buffer,
@@ -1669,6 +1663,7 @@
       pitch: 64,
       bearing: 18,
       maxPitch: 85,
+      centerClampedToGround: false,
       attributionControl: true,
       canvasContextAttributes: { antialias: true }
     });
@@ -1819,6 +1814,7 @@
       const heading = finite(model.series.gnssHeading[index]) ? model.series.gnssHeading[index] : model.series.yaw[index];
       viewer.map.jumpTo({
         center: [model.lon[index], model.lat[index]],
+        elevation: viewer.flightLayer.altitudeAt(index),
         bearing: finite(heading) ? Number(heading) : viewer.map.getBearing(),
         pitch: 68,
         zoom: Math.max(14.2, viewer.map.getZoom())
@@ -1977,15 +1973,6 @@
     updateFrame(state.index, true);
   });
   elements.mapBasemap.addEventListener("change", () => applyTerrainBasemap());
-  elements.vegetationDensity.addEventListener("change", () => {
-    const viewer = state.terrainViewer;
-    if (!viewer?.ready) return;
-    viewer.vegetationReady = false;
-    if (viewer.map.isSourceLoaded("openmaptiles") && viewer.map.isSourceLoaded("skylabs-terrain")) {
-      viewer.flightLayer.refreshVegetation();
-      viewer.vegetationReady = true;
-    }
-  });
   elements.satelliteSettings.addEventListener("click", openSatelliteDialog);
   $$('[data-satellite-cancel]').forEach((button) => button.addEventListener("click", () => elements.satelliteDialog.close()));
   elements.satelliteForm.addEventListener("submit", async (event) => {

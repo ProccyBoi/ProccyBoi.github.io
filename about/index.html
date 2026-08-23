@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="/proccy-boi/">
-  <title>About | Andrew Chung</title>
+  <base href="/">
+  <title>Experience &amp; About | Andrew Chung</title>
   <meta name="description" content="Andrew Chung studies electrical engineering at UNSW, teaches engineering labs and works at Switchmode Power Supplies.">
   <meta name="theme-color" content="#111210">
   <meta property="og:type" content="profile">
-  <meta property="og:title" content="About | Andrew Chung">
+  <meta property="og:title" content="Experience &amp; About | Andrew Chung">
   <meta property="og:description" content="Electrical engineering, PCB design, embedded systems, robotics and teaching.">
-  <meta property="og:url" content="https://proccyboi.github.io/proccy-boi/about/">
-  <meta property="og:image" content="https://proccyboi.github.io/proccy-boi/assets/images/projects/skylabs-telemetry-macro-1920.jpg">
-  <link rel="canonical" href="https://proccyboi.github.io/proccy-boi/about/">
+  <meta property="og:url" content="https://proccyboi.github.io/about/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/skylabs-telemetry-macro-1920.jpg">
+  <link rel="canonical" href="https://proccyboi.github.io/about/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
 </head>
@@ -23,9 +23,10 @@
       <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/">Projects</a>
-        <a href="about/" aria-current="page">About</a>
+        <a href="about/" aria-current="page">Experience</a>
+        <a href="projects/#interactive">Labs</a>
         <a href="shared/">Files</a>
-        <a href="mailto:andrew.noah.chung@gmail.com">Email</a>
+        <a href="about/#contact">Contact</a>
       </nav>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
@@ -38,7 +39,7 @@
           <h1>About me</h1>
           <p>I’m Andrew. I study electrical engineering at UNSW, teach engineering labs and work as an Electronics Engineer Trainee at Switchmode Power Supplies.</p>
           <p>My projects cover PCB design, embedded software, telemetry and robotics.</p>
-          <div class="home-links"><a href="assets/documents/Andrew_Chung_Public_CV.pdf" target="_blank" rel="noreferrer">Download my CV</a><a href="mailto:andrew.noah.chung@gmail.com">Email me</a></div>
+          <div class="home-links"><a href="assets/documents/Andrew_Chung_Public_CV.pdf" target="_blank" rel="noreferrer">Download my CV</a><button type="button" data-copy-email="andrew.noah.chung@gmail.com">Copy email address</button></div>
         </div>
         <figure class="about-hero-aside">
           <picture>
@@ -55,7 +56,7 @@
         <article class="timeline-item">
           <div><span class="timeline-date">Jun. 2026 to present</span></div>
           <div><h3>Electronics Engineer Trainee</h3><span class="timeline-place">Switchmode Power Supplies Pty Ltd</span></div>
-          <div><p>I maintain, test and repair low- to high-voltage power supplies and other equipment.</p></div>
+          <div><p>I maintain, test and repair low- and high-voltage power supplies and other equipment.</p></div>
         </article>
         <article class="timeline-item">
           <div><span class="timeline-date">Dec. 2023 to present</span></div>
@@ -80,7 +81,7 @@
         <article class="timeline-item">
           <div><span class="timeline-date">Dec. 2024 to present</span></div>
           <div><h3>Behaviours / Hardware Team Member</h3><span class="timeline-place">rUNSWift</span></div>
-          <div><p>I develop and test Python/C++ ROS2 software for humanoid robots. I led the Sydney team at RoboCup 2025 in El Salvador.</p></div>
+          <div><p>I develop and test Python/C++ ROS2 software for humanoid robots in RoboCup's Standard Platform League (SPL). I led the Sydney team at RoboCup 2025 in Salvador, Brazil.</p></div>
         </article>
       </div>
     </section>
@@ -88,8 +89,7 @@
     <section class="about-section shell" aria-labelledby="education-title">
       <h2 id="education-title">Education</h2>
       <div class="about-facts">
-        <div class="about-fact"><span>UNSW</span><strong>Bachelor of Electrical Engineering (Honours) / Master of Electrical Engineering</strong></div>
-        <div class="about-fact"><span>2023 to 2027</span><strong>WAM 82</strong></div>
+        <div class="about-fact about-fact-wide"><span>UNSW &middot; 2023 to 2027</span><strong>Bachelor of Electrical Engineering (Honours) / Master of Electrical Engineering</strong></div>
       </div>
     </section>
 
@@ -110,8 +110,16 @@
         <article class="timeline-item"><div><span class="timeline-date">Music</span></div><div><h3>AMEB Grade 8 Piano</h3><span class="timeline-place">Grade 6 Clarinet</span></div><div></div></article>
       </div>
     </section>
+
+    <section class="about-section about-contact shell" id="contact" aria-labelledby="contact-title">
+      <p class="eyebrow">Contact sheet</p>
+      <h2 id="contact-title">Let&rsquo;s talk hardware.</h2>
+      <p>For engineering work, project questions or collaboration, email <a href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com</a>.</p>
+      <div class="contact-actions"><button class="button button-primary" type="button" data-copy-email="andrew.noah.chung@gmail.com">Copy email address</button><a class="button" href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a></div>
+    </section>
   </main>
 
-  <footer class="site-footer"><div class="footer-inner"><p>© <span data-current-year>2026</span> Andrew Chung</p><a href="mailto:andrew.noah.chung@gmail.com">Email</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a></div></footer>
+  <footer class="site-footer"><div class="footer-inner"><p>© <span data-current-year>2026</span> Andrew Chung</p><a href="about/#contact">Contact</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a></div></footer>
+  <p class="live-region" aria-live="polite" aria-atomic="true" data-live-region></p>
 </body>
 </html>

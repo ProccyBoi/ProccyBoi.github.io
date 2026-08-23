@@ -2,11 +2,11 @@
 
 Personal portfolio and public project archive published at:
 
-- https://proccyboi.github.io/proccy-boi/
+- https://proccyboi.github.io/
 
 ## Main routes
 
-- `/` — Bench Specimen landing page with an inspection diptych and three selected projects
+- `/` — Polaroid-inspired landing page with an engineering introduction, condensed experience and selected projects
 - `/about/` — profile, experience, education, tools and public CV
 - `/projects/` — complete project index and individual project pages
 - `/projects/tramtrace/` — live Sydney and Parramatta light-rail display PCB
