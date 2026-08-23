@@ -208,7 +208,7 @@ header = Table(
     [[
         Paragraph("Andrew Chung", name_style),
         Paragraph(
-            "andrew.noah.chung@gmail.com<br/>linkedin.com/in/22anc<br/>proccyboi.github.io/",
+            "andrew.noah.chung@gmail.com<br/>linkedin.com/in/22anc<br/>proccyboi.github.io/proccy-boi/",
             contact_style,
         ),
     ], [Paragraph("Electrical engineering / embedded systems / robotics", role_style), ""]],
@@ -231,7 +231,7 @@ story.append(entry(
     "Switchmode Power Supplies Pty Ltd",
     "Electronics Engineer Trainee",
     "Jun. 2026 - Present",
-    ["Maintenance, testing and repair of low- and high-voltage power supplies and equipment."],
+    ["Maintenance, testing and repair of low- to high-voltage power supplies and equipment."],
 ))
 story.append(entry(
     "UNSW Electrical Engineering and Telecommunications Society",
@@ -262,7 +262,10 @@ story.append(entry(
     "University of New South Wales",
     "Bachelor of Electrical Engineering (Honours) / Master of Electrical Engineering",
     "2023 - 2027",
-    ["Coursework across microelectronics, electrical systems, analogue and digital circuits, programming and networks."],
+    [
+        "WAM: 82.",
+        "High Distinctions across design proficiency, microelectronics, electrical systems, analogue and digital circuits, programming and networks.",
+    ],
 ))
 
 story.append(section("Selected projects"))
@@ -280,8 +283,8 @@ story.append(entry(
     "Behaviours / Hardware Team Member",
     "Dec. 2024 - Present",
     [
-        "Develops and tests Python/C++ ROS2 software for NAO V5/6 and Booster K1 humanoid robots in RoboCup's Standard Platform League (SPL).",
-        "Prepared and led the Sydney team at RoboCup 2025 in Salvador, Brazil.",
+        "Develops and tests Python/C++ ROS2 software for NAO V5/6 and Booster K1 humanoid robots.",
+        "Prepared and led the Sydney team at RoboCup 2025 in El Salvador.",
     ],
 ))
 story.append(entry(
