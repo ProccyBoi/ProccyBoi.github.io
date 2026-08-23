@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://proccyboi.github.io/proccy-boi/sitemap.xml
+Sitemap: https://proccyboi.github.io/sitemap.xml

@@ -7,7 +7,6 @@
     ["R2 / R3", "USB-C CC pulldowns", "5.1 kΩ resistors that identify TramTrace as a USB-C power sink", 112.7647, 90.03],
     ["F1", "Resettable polyfuse", "Limits fault current from the USB 5 V input and recovers after the fault is removed", 117.7047, 84.265],
     ["D1", "SMF5.0A TVS diode", "Clamps fast voltage spikes on the protected 5 V rail", 117.6847, 79.585],
-    ["C83", "47 µF bulk capacitor", "Supports the 5 V LED rail when the display current changes quickly", 118.6247, 71.055],
     ["U2", "AMS1117-3.3", "Linear regulator that converts USB 5 V into the ESP32's 3.3 V supply", 123.6647, 78.665],
     ["LED1", "WS2812C status pixel", "Local RGB indicator for connection and board state", 126.8947, 73.505],
     ["U4", "CH340C", "USB-to-serial bridge for firmware upload and debugging", 130.7197, 85.64],

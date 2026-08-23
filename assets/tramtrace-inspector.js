@@ -42,7 +42,7 @@
     copper: {
       index: "02 / COPPER",
       title: "Two layers carry the map.",
-      copy: "The amber front layer and blue back layer are direct fabrication exports. Pads, vias, pours and every routed segment retain their actual board geometry."
+      copy: "The bright front layer and burnished back layer are direct fabrication exports. Pads, vias, pours and every routed segment retain their actual board geometry."
     },
     data: {
       index: "03 / DATA FRAME",

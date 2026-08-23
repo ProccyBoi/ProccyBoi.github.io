@@ -1,10 +1,10 @@
 :root {
-  --object-bg: #080b0d;
-  --object-panel: #0e1418;
-  --object-text: #edf1f2;
-  --object-muted: #98a6ae;
-  --object-line: rgba(220, 235, 243, 0.17);
-  --object-accent: #4cb7ed;
+  --object-bg: #12100e;
+  --object-panel: #1a1713;
+  --object-text: #f0e9dd;
+  --object-muted: #aaa094;
+  --object-line: rgba(240, 233, 221, 0.18);
+  --object-accent: #e09a5d;
 }
 
 html { scroll-behavior: smooth; }
