@@ -239,12 +239,17 @@ if (signalPath) {
   const diagram = signalPath.querySelector("ol[data-path-stages]");
   const labels = [...signalPath.querySelectorAll("[data-path-label]")];
   const stages = [...signalPath.querySelectorAll("[data-path-stage]")];
+  const metricsPanel = signalPath.querySelector("[data-path-metrics]");
+  const metricLabels = [...signalPath.querySelectorAll("[data-path-metric-label]")];
+  const metrics = [...signalPath.querySelectorAll("[data-path-metric]")];
   const summary = signalPath.querySelector("[data-path-summary]:not([data-signal-project])");
   const link = signalPath.querySelector("[data-path-link]");
 
   const selectSignalProject = (button) => {
     const nextLabels = button.dataset.pathLabels?.split("|") || [];
     const nextStages = button.dataset.pathStages?.split("|") || [];
+    const nextMetricLabels = button.dataset.pathMetricLabels?.split("|") || [];
+    const nextMetrics = button.dataset.pathMetricValues?.split("|") || [];
     const projectName = button.dataset.pathName || "Project";
 
     projectButtons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
@@ -256,11 +261,19 @@ if (signalPath) {
     stages.forEach((stage, index) => {
       stage.textContent = nextStages[index] || "";
     });
+    metricLabels.forEach((label, index) => {
+      label.textContent = nextMetricLabels[index] || "Metric";
+    });
+    metrics.forEach((metric, index) => {
+      metric.textContent = nextMetrics[index] || "";
+    });
+    if (metricsPanel) metricsPanel.setAttribute("aria-label", `${projectName} system metrics`);
     if (summary) summary.textContent = button.dataset.pathSummary || "";
     if (link) {
       link.href = button.dataset.pathHref || "projects/";
       link.firstChild.textContent = `Open ${projectName} `;
     }
+    signalPath.dispatchEvent(new CustomEvent("signalpathchange", { detail: { projectName } }));
   };
 
   projectButtons.forEach((button) => {

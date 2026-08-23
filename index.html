@@ -18,6 +18,7 @@
   <link rel="preload" as="image" href="assets/images/projects/skylabs-telemetry-macro-1920.webp" media="(min-width: 761px)" type="image/webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
+  <script type="module" src="assets/site-enhancements.js"></script>
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -126,13 +127,13 @@
 
       <div class="signal-path-layout">
         <div class="signal-path-picker" aria-label="Choose a project">
-          <button type="button" aria-pressed="true" data-signal-project="skylabs" data-path-name="Skylabs" data-path-labels="Measure|Process|Transmit|Use" data-path-stages="IMU + GNSS|STM32G474|915 MHz LoRa|Live view + replay" data-path-summary="One data contract runs from the aircraft sensors to the ground display and post-flight analysis." data-path-href="projects/skylabs/">
+          <button type="button" aria-pressed="true" data-signal-project="skylabs" data-path-name="Skylabs" data-path-labels="Measure|Process|Transmit|Use" data-path-stages="IMU + GNSS|STM32G474|915 MHz LoRa|Live view + replay" data-path-metric-labels="Radio link|Boards|Flight data" data-path-metric-values="915 MHz|2 PCBs|Live + replay" data-path-summary="One data contract runs from the aircraft sensors to the ground display and post-flight analysis." data-path-href="projects/skylabs/">
             <strong>Skylabs</strong><span>Aircraft telemetry</span>
           </button>
-          <button type="button" aria-pressed="false" data-signal-project="tramtrace" data-path-name="TramTrace" data-path-labels="Fetch|Process|Locate|Show" data-path-stages="Live vehicle data|ESP32-WROOM-32E|Route matching|116 RGB stops" data-path-summary="A live feed becomes a physical network map that can be read from across the room." data-path-href="projects/tramtrace/">
+          <button type="button" aria-pressed="false" data-signal-project="tramtrace" data-path-name="TramTrace" data-path-labels="Fetch|Process|Locate|Show" data-path-stages="Live vehicle data|ESP32-WROOM-32E|Route matching|116 RGB stops" data-path-metric-labels="Network|Light points|Board" data-path-metric-values="4 lines|116 stops|100 × 200 mm" data-path-summary="A live feed becomes a physical network map that can be read from across the room." data-path-href="projects/tramtrace/">
             <strong>TramTrace</strong><span>Transport display</span>
           </button>
-          <button type="button" aria-pressed="false" data-signal-project="metroboard" data-path-name="Metroboard" data-path-labels="Fetch|Process|Map|Show" data-path-stages="TfNSW GTFS data|ESP32|Sydney rail network|290+ LEDs" data-path-summary="Real-time rail positions are translated into light on a 30 × 30 cm PCB." data-path-href="projects/metroboard/">
+          <button type="button" aria-pressed="false" data-signal-project="metroboard" data-path-name="Metroboard" data-path-labels="Fetch|Process|Map|Show" data-path-stages="TfNSW GTFS data|ESP32|Sydney rail network|290+ LEDs" data-path-metric-labels="Display|Board|Data" data-path-metric-values="290+ LEDs|30 × 30 cm|Live GTFS" data-path-summary="Real-time rail positions are translated into light on a 30 × 30 cm PCB." data-path-href="projects/metroboard/">
             <strong>Metroboard</strong><span>Network indicator</span>
           </button>
         </div>
@@ -148,6 +149,11 @@
             <li><span data-path-label>03 / Transmit</span><strong data-path-stage>915 MHz LoRa</strong></li>
             <li><span data-path-label>04 / Use</span><strong data-path-stage>Live view + replay</strong></li>
           </ol>
+          <div class="signal-path-metrics" aria-label="Skylabs system metrics" aria-live="polite" aria-atomic="true" data-path-metrics>
+            <div><span data-path-metric-label>Radio link</span><strong data-path-metric>915 MHz</strong></div>
+            <div><span data-path-metric-label>Boards</span><strong data-path-metric>2 PCBs</strong></div>
+            <div><span data-path-metric-label>Flight data</span><strong data-path-metric>Live + replay</strong></div>
+          </div>
           <div class="signal-path-foot">
             <p data-path-summary>One data contract runs from the aircraft sensors to the ground display and post-flight analysis.</p>
             <a href="projects/skylabs/" data-path-link>Open Skylabs <span aria-hidden="true">&rarr;</span></a>
