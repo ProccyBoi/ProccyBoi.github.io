@@ -26,7 +26,7 @@
       <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
-        <a href="about/">Experience</a><a href="projects/#interactive">Labs</a>
+        <a href="about/">About</a><a href="projects/#interactive">Labs</a>
         <a href="shared/">Files</a>
         <a href="about/#contact">Contact</a>
       </nav>
@@ -71,7 +71,7 @@
         <h2 id="telemetry-purpose">Sensors with somewhere to go</h2>
         <div class="project-prose">
           <p>I developed this PCB around an STM32G474RET6. It brings together a u-blox GNSS receiver, BNO08x IMU, BME280 barometer, digital and analogue airspeed inputs, an HX711 strain interface, RTC, microSD storage and an SX1262 radio.</p>
-          <p>The board is not just a collection of sensors. Each one has a different useful rate, failure mode and idea of “fresh”. The firmware keeps presence and validity masks alongside the measurements, and unavailable values become explicit NaNs rather than convincing-looking zeroes.</p>
+          <p>Each sensor has its own useful rate, failure mode and definition of “fresh”. The firmware stores presence and validity beside each measurement; missing values are NaN, not zero.</p>
         </div>
       </section>
 

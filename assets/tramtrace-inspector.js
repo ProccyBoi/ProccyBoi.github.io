@@ -5,11 +5,13 @@
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const modeButtons = [...inspector.querySelectorAll("[data-inspector-mode]")];
+  const viewButtons = [...inspector.querySelectorAll("[data-inspector-view]")];
   const modeIndex = inspector.querySelector("[data-mode-index]");
   const modeTitle = inspector.querySelector("[data-mode-title]");
   const modeCopy = inspector.querySelector("[data-mode-copy]");
   const assembledLegend = inspector.querySelector('[data-legend="assembled"]');
   const copperLegend = inspector.querySelector('[data-legend="copper"]');
+  const rotateLegend = inspector.querySelector('[data-legend="rotate"]');
   const componentReadout = inspector.querySelector("[data-component-readout]");
   const componentRef = inspector.querySelector("[data-component-ref]");
   const componentTitle = inspector.querySelector("[data-component-title]");
@@ -32,6 +34,13 @@
   const canvas = inspector.querySelector("[data-pcb-canvas]");
   const context = canvas.getContext("2d");
   const stage = inspector.querySelector("[data-pcb-stage]");
+  const turntableImage = inspector.querySelector("[data-pcb-turntable]");
+  const dragHint = inspector.querySelector("[data-pcb-drag-hint]");
+  const angleReadout = inspector.querySelector("[data-pcb-angle]");
+  const rotatePrevious = inspector.querySelector("[data-pcb-rotate-previous]");
+  const rotateNext = inspector.querySelector("[data-pcb-rotate-next]");
+  const rotateReset = inspector.querySelector("[data-pcb-rotate-reset]");
+  const liveRegion = document.querySelector("[data-live-region]");
 
   const modes = {
     assembled: {
@@ -52,11 +61,45 @@
   };
 
   const chainOrder = ["l1", "l2", "l3", "l4", "status"];
+  const turntableFrameCount = 24;
   let activeMode = "assembled";
+  let activeView = "inspect";
   let activeChainKey = "l1";
   let currentStep = 0;
+  let rotationFrame = 0;
   let playTimer = null;
   let activeComponentButton = null;
+  let dragging = false;
+  let lastPointerX = 0;
+  let dragRemainder = 0;
+  let framesPreloaded = false;
+
+  const announce = (message) => {
+    if (liveRegion) liveRegion.textContent = message;
+  };
+
+  const turntableFrame = (frame) => `assets/images/interactive/tramtrace/tramtrace-turn-${String(frame).padStart(2, "0")}.webp`;
+
+  const preloadTurntable = () => {
+    if (framesPreloaded) return;
+    framesPreloaded = true;
+    const load = () => {
+      for (let frame = 0; frame < turntableFrameCount; frame += 1) {
+        const preload = new Image();
+        preload.src = turntableFrame(frame);
+      }
+    };
+    if ("requestIdleCallback" in window) window.requestIdleCallback(load, { timeout: 1200 });
+    else window.setTimeout(load, 120);
+  };
+
+  const showRotationFrame = (frame, announceChange = false) => {
+    rotationFrame = (frame + turntableFrameCount) % turntableFrameCount;
+    turntableImage.src = turntableFrame(rotationFrame);
+    const angle = rotationFrame * 15;
+    angleReadout.textContent = `${String(angle).padStart(3, "0")}\u00b0`;
+    if (announceChange) announce(`TramTrace board angle ${angle} degrees`);
+  };
 
   const pageToPercent = (value, axis) => (value / data.page[axis === "x" ? 0 : 1]) * 100;
 
@@ -156,7 +199,7 @@
   const drawDataFrame = () => {
     const rect = setupCanvas();
     context.clearRect(0, 0, rect.width, rect.height);
-    if (activeMode !== "data") return;
+    if (activeMode !== "data" || activeView !== "inspect") return;
 
     const chain = data.chains[activeChainKey];
     chain.traces.forEach((connection, index) => {
@@ -284,6 +327,55 @@
     setStep(0);
   }
 
+  const updateModeCopy = () => {
+    if (activeView === "rotate") {
+      modeIndex.textContent = "3D / ROTATE";
+      modeTitle.textContent = "Turn the finished board.";
+      modeCopy.textContent = "Drag the production KiCad assembly through a full turn, or use the arrow controls. Every visible package in this render comes from the board source.";
+      return;
+    }
+    const mode = modes[activeMode];
+    modeIndex.textContent = mode.index;
+    modeTitle.textContent = mode.title;
+    modeCopy.textContent = mode.copy;
+  };
+
+  const updatePanels = () => {
+    const rotating = activeView === "rotate";
+    assembledLegend.hidden = rotating || activeMode !== "assembled";
+    copperLegend.hidden = rotating || activeMode !== "copper";
+    rotateLegend.hidden = !rotating;
+    frameConsole.hidden = rotating || activeMode !== "data";
+    dragHint.hidden = !rotating;
+    angleReadout.hidden = !rotating;
+    if (rotating || activeMode !== "data") stopPlayback();
+    updateModeCopy();
+    drawDataFrame();
+  };
+
+  const setView = (name, announceChange = true) => {
+    if (!["inspect", "rotate"].includes(name)) return;
+    activeView = name;
+    inspector.dataset.view = name;
+    const rotating = name === "rotate";
+    viewButtons.forEach((button) => {
+      const active = button.dataset.inspectorView === name;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    if (rotating) {
+      preloadTurntable();
+      showRotationFrame(rotationFrame);
+      turntableImage.alt = "Rotatable KiCad rendering of the fully populated TramTrace PCB";
+      stage.setAttribute("aria-label", "Rotatable TramTrace board. Drag left or right, use the arrow buttons, or press the left and right arrow keys.");
+    } else {
+      turntableImage.alt = "";
+      stage.setAttribute("aria-label", "TramTrace board inspection. Select marked components or choose an inspection layer.");
+    }
+    updatePanels();
+    if (announceChange) announce(rotating ? "Rotatable board view selected" : "Board inspection view selected");
+  };
+
   const setMode = (name) => {
     const mode = modes[name];
     if (!mode) return;
@@ -294,18 +386,59 @@
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
     });
-    modeIndex.textContent = mode.index;
-    modeTitle.textContent = mode.title;
-    modeCopy.textContent = mode.copy;
-    assembledLegend.hidden = name !== "assembled";
-    copperLegend.hidden = name !== "copper";
-    frameConsole.hidden = name !== "data";
-    if (name !== "data") stopPlayback();
-    drawDataFrame();
+    updatePanels();
   };
 
   modeButtons.forEach((button) => {
-    button.addEventListener("click", () => setMode(button.dataset.inspectorMode));
+    button.addEventListener("click", () => {
+      setView("inspect", false);
+      setMode(button.dataset.inspectorMode);
+    });
+  });
+  viewButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.inspectorView)));
+
+  rotatePrevious.addEventListener("click", () => showRotationFrame(rotationFrame - 1, true));
+  rotateNext.addEventListener("click", () => showRotationFrame(rotationFrame + 1, true));
+  rotateReset.addEventListener("click", () => showRotationFrame(0, true));
+
+  stage.addEventListener("pointerdown", (event) => {
+    if (activeView !== "rotate") return;
+    dragging = true;
+    lastPointerX = event.clientX;
+    dragRemainder = 0;
+    stage.classList.add("is-dragging");
+    stage.setPointerCapture(event.pointerId);
+  });
+
+  stage.addEventListener("pointermove", (event) => {
+    if (!dragging || activeView !== "rotate") return;
+    const delta = event.clientX - lastPointerX;
+    lastPointerX = event.clientX;
+    dragRemainder += delta;
+    const frameDelta = Math.trunc(dragRemainder / 12);
+    if (!frameDelta) return;
+    dragRemainder -= frameDelta * 12;
+    showRotationFrame(rotationFrame - frameDelta);
+  });
+
+  const stopDragging = (event) => {
+    if (!dragging) return;
+    dragging = false;
+    stage.classList.remove("is-dragging");
+    if (event.pointerId !== undefined && stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+  };
+  stage.addEventListener("pointerup", stopDragging);
+  stage.addEventListener("pointercancel", stopDragging);
+
+  stage.addEventListener("keydown", (event) => {
+    if (activeView === "rotate" && ["ArrowLeft", "ArrowRight", "Home"].includes(event.key)) {
+      event.preventDefault();
+      if (event.key === "Home") showRotationFrame(0, true);
+      else showRotationFrame(rotationFrame + (event.key === "ArrowRight" ? 1 : -1), true);
+    } else if (activeView === "inspect" && event.key === "Escape") {
+      clearComponent();
+      announce("Component selection cleared");
+    }
   });
 
   slider.addEventListener("input", () => {
@@ -328,4 +461,5 @@
   setChain("l1");
   clearComponent();
   setMode("assembled");
+  setView("inspect", false);
 })();
