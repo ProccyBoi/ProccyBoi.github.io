@@ -38,6 +38,23 @@ The production follow-up repeated the route audit after deployment. The automate
 
 No private project, unverified Skylabs render, project source file or CV asset changed in this release.
 
+## Round 3
+
+Release 2 baseline: `387eb27a31259c4a0c74c08ba4de5d1c63f6ee68`
+
+The third pass extended the same audit with explicit button behaviour, safe new-window relationships and validation of every local fragment destination. That produced **297 passing cells across 33 documents**.
+
+### Reproducible findings
+
+| Priority | Finding | Third-release action |
+|---|---|---|
+| P1 | Flight Review had routes back to Skylabs, but no direct exit to the portfolio | Add `Portfolio` to the tool header while retaining the project and reference-flight routes |
+| P2 | The Projects page downloaded a 1.64 MB ScopeLab PNG when its card came into view | Serve a 110 KB WebP with the PNG retained as the social/fallback asset |
+| P2 | Four tabs in the self-contained F110211 replay relied on the browser's default button type | Mark every tab as `type="button"` and add that rule to the repeatable audit |
+| P2 | Broken section links could pass the previous file-existence check | Resolve and validate fragment IDs across all tracked documents |
+
+The ScopeLab preview transfer is approximately 93% smaller in browsers with WebP support. The interactive model and full-resolution fallback are unchanged.
+
 ## Final review
 
 Pending after the refinement releases.

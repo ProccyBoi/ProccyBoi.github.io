@@ -69,7 +69,7 @@ The two user-supplied editing guides were used as editorial checklists, not as a
 
 ## 6. Keep rich media responsive and off the critical path
 
-**Decision:** rotation frames are WebP, the first frame is preloaded only on the TramTrace lab, and the remaining frames are fetched after Rotate is selected. Listing pages load one lazy preview rather than the whole sequence. Intrinsic image dimensions and responsive CSS prevent layout shifts and overflow.
+**Decision:** rotation frames are WebP, the first frame is preloaded only on the TramTrace lab, and the remaining frames are fetched after Rotate is selected. Listing pages load one lazy preview rather than the whole sequence. The oversized ScopeLab listing image now uses a WebP source with its original PNG retained as a fallback and social image. Intrinsic image dimensions and responsive CSS prevent layout shifts and overflow.
 
 **Why:** the board should remain sharp without making every portfolio visitor download the interaction.
 
