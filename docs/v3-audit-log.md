@@ -57,4 +57,21 @@ The ScopeLab preview transfer is approximately 93% smaller in browsers with WebP
 
 ## Final review
 
-Pending after the refinement releases.
+Release 3 baseline: `2cc76ed0cfe1115768e7f94ddf74176c0ccc43af`
+
+The final pass added a primary-navigation current-state assertion, bringing the repeatable local matrix to **330 passing cells across 33 documents**. A parallel production crawl requested all 27 sitemap routes after release 3; every route returned HTTP 200.
+
+One genuine cleanup remained: the empty Uni and Work file placeholders were still marked for indexing and listed in the sitemap even though they had already been removed from the visible Files page. The final patch marks those placeholders `noindex,follow` and removes them from the sitemap. The public Flight Review, Skylabs folder and F110211 replay remain discoverable.
+
+Final browser checks covered:
+
+- homepage identity, primary routes and selected-work links;
+- Projects jump navigation and current-state behaviour;
+- TramTrace inspect, copper, data and rotation views;
+- Skylabs telemetry/ground switching, annotations, component index and rotation;
+- photo lightbox cues and keyboard activation;
+- standalone lab exits and skip targets;
+- Flight Review portfolio/project/reference routes;
+- ScopeLab WebP selection and F110211 tab switching.
+
+No CV asset, KiCad source, unpublished project or private project was changed across the final pass.

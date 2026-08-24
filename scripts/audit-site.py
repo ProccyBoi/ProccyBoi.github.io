@@ -71,6 +71,16 @@ def main() -> int:
             errors.append(f"{page.relative_to(ROOT)}: expected exactly one h1")
         checks += 1  # primary landmark and heading
 
+        primary_navigation = document.xpath("//nav[contains(concat(' ', normalize-space(@class), ' '), ' site-nav ')]")
+        if primary_navigation:
+            current_items = primary_navigation[0].xpath(".//a[@aria-current='page']")
+            expected_items = 0 if relative_page in {Path("index.html"), Path("404.html")} else 1
+            if len(current_items) != expected_items:
+                errors.append(
+                    f"{page.relative_to(ROOT)}: expected {expected_items} current primary navigation item(s), found {len(current_items)}"
+                )
+        checks += 1  # current-page state in the primary navigation
+
         if relative_page not in LANDMARK_EXEMPT:
             title = document.xpath("string(//title)").strip()
             description = document.xpath("string(//meta[@name='description']/@content)").strip()
