@@ -90,6 +90,17 @@ def main() -> int:
                 errors.append(f"{page.relative_to(ROOT)}: image missing alt text")
         checks += 1  # image alternatives
 
+        for button in document.xpath("//button"):
+            if not button.get("type"):
+                errors.append(f"{page.relative_to(ROOT)}: button missing explicit type")
+        checks += 1  # predictable button behaviour
+
+        for external_window in document.xpath("//*[@target='_blank']"):
+            relationship = set(external_window.get("rel", "").lower().split())
+            if not relationship.intersection({"noopener", "noreferrer"}):
+                errors.append(f"{page.relative_to(ROOT)}: target=_blank missing noopener or noreferrer")
+        checks += 1  # safe new-window links
+
         for element in document.xpath("//*[@href or @src]"):
             attribute = "href" if element.get("href") is not None else "src"
             raw_url = element.get(attribute, "").strip()
@@ -111,6 +122,25 @@ def main() -> int:
                 if target and not target[0].exists():
                     errors.append(f"{page.relative_to(ROOT)}: missing srcset target {raw_url}")
         checks += 1  # local links and media targets
+
+    for page, document in parsed_documents.items():
+        relative_page = page.relative_to(ROOT)
+        base_href = document.xpath("string(//base/@href)")
+        if not base_href:
+            parent = relative_page.parent.as_posix()
+            base_href = f"/{parent}/" if parent != "." else "/"
+        for raw_url in document.xpath("//a[@href]/@href"):
+            target = local_target(raw_url.strip(), base_href)
+            if not target or not target[1]:
+                continue
+            target_path, fragment = target
+            target_document = parsed_documents.get(target_path.resolve())
+            if target_document is None:
+                continue
+            matches = target_document.xpath("//*[@id=$fragment or @name=$fragment]", fragment=fragment)
+            if not matches:
+                errors.append(f"{relative_page}: missing fragment target {raw_url}")
+        checks += 1  # in-page and cross-page fragment destinations
 
     if errors:
         print("\n".join(errors))
