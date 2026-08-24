@@ -201,6 +201,14 @@ zoomableImages.forEach((image, index) => {
   image.tabIndex = 0;
   image.setAttribute("role", "button");
   image.setAttribute("aria-label", `Open image: ${image.alt || "project photo"}`);
+  const figure = image.closest("figure");
+  if (figure && !figure.querySelector(".zoom-cue")) {
+    const cue = document.createElement("span");
+    cue.className = "zoom-cue";
+    cue.textContent = "Enlarge";
+    cue.setAttribute("aria-hidden", "true");
+    figure.append(cue);
+  }
   image.addEventListener("click", () => openLightbox(index));
   image.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {

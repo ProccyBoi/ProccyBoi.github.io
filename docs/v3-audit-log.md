@@ -22,7 +22,21 @@ The audit also confirmed one H1, one main landmark, no duplicate IDs or heading 
 
 ## Round 2
 
-Pending after release 1 is live.
+Release 1 baseline: `8df7438f825edb48b47a881c05015b63a663923f`
+
+The production follow-up repeated the route audit after deployment. The automated audit now applies six explicit review cells to every tracked document—parseability, unique identifiers, primary landmark and H1, route metadata, image alternatives, and local links/media—for **198 passing cells across 33 documents**. Browser checks then exercised the two PCB board selectors, component selection, annotation visibility, rotation controls, and both standalone engineering labs.
+
+### Reproducible findings
+
+| Priority | Finding | Second-release action |
+|---|---|---|
+| P1 | Lithography and MOSFET labs were visual and navigational dead ends | Add a compact portfolio masthead, skip link and direct routes to Projects, Labs and About |
+| P1 | PCB markers were larger, but selecting a dense board component still depended on its position | Add a collapsible, keyboard-operable component index synced to the board markers on both TramTrace and Skylabs |
+| P2 | Project photographs opened a lightbox but did not advertise that behaviour on touch screens | Add a restrained `Enlarge` cue inside the photograph frame |
+| P2 | Range inputs in the standalone labs retained narrow browser-default tracks | Increase their interaction height without changing the models |
+| P2 | The 404 route had a title but no description | Add route metadata and make it part of the repeatable audit |
+
+No private project, unverified Skylabs render, project source file or CV asset changed in this release.
 
 ## Final review
 

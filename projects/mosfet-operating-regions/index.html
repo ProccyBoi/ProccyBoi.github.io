@@ -12,6 +12,7 @@
 <meta property="og:url" content="https://proccyboi.github.io/projects/mosfet-operating-regions/">
 <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/mosfet-operating-regions-preview.png">
 <link rel="canonical" href="https://proccyboi.github.io/projects/mosfet-operating-regions/">
+<link rel="stylesheet" href="/assets/lab-chrome.css">
 <style>
   :root{
     --paper:#faf9f6;
@@ -67,7 +68,7 @@
     font-variant-numeric:tabular-nums;font-size:13px;color:var(--blue);
     font-weight:600;white-space:nowrap;
   }
-  input[type=range]{width:100%;margin:9px 0 0;accent-color:var(--blue);height:18px}
+  input[type=range]{width:100%;margin:9px 0 0;accent-color:var(--blue);height:32px}
   .sub{font-size:11.5px;color:var(--faint);margin-top:3px}
 
   .opts{padding:12px 0 4px;border-bottom:1px solid var(--hair)}
@@ -162,6 +163,17 @@
 </style>
 </head>
 <body>
+<a class="lab-skip" href="#lab-main">Skip to simulation</a>
+<header class="lab-chrome">
+  <div class="lab-chrome-inner">
+    <a class="lab-brand" href="/">Andrew Chung</a>
+    <nav class="lab-nav" aria-label="Portfolio navigation">
+      <a href="/projects/">Projects</a>
+      <a href="/projects/#interactive">Other labs</a>
+      <a href="/about/">About</a>
+    </nav>
+  </div>
+</header>
 <div class="wrap">
 
   <div class="masthead">
@@ -229,7 +241,7 @@
       </div>
     </aside>
 
-    <main>
+    <main id="lab-main" tabindex="-1">
       <div class="readout">
         <div class="cell"><div class="k">REGION</div><div><span class="pill" id="regionPill">—</span></div></div>
         <div class="cell"><div class="k">OVERDRIVE V<sub>OV</sub></div><div class="v" id="vovOut">—</div></div>

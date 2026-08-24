@@ -45,6 +45,7 @@ def local_target(raw_url: str, base_href: str) -> tuple[Path, str] | None:
 
 def main() -> int:
     errors: list[str] = []
+    checks = 0
     files = tracked_html()
     parsed_documents: dict[Path, html.HtmlElement] = {}
 
@@ -54,18 +55,30 @@ def main() -> int:
         except Exception as error:  # pragma: no cover - command-line reporting
             errors.append(f"{page.relative_to(ROOT)}: parse error: {error}")
             continue
+        checks += 1  # parseability
         parsed_documents[page.resolve()] = document
 
         ids = document.xpath("//*[@id]/@id")
         duplicates = sorted({identifier for identifier in ids if ids.count(identifier) > 1})
         if duplicates:
             errors.append(f"{page.relative_to(ROOT)}: duplicate ids: {', '.join(duplicates)}")
+        checks += 1  # unique identifiers
 
         relative_page = page.relative_to(ROOT)
         if relative_page not in LANDMARK_EXEMPT and len(document.xpath("//main")) != 1:
             errors.append(f"{page.relative_to(ROOT)}: expected exactly one main landmark")
         if relative_page not in LANDMARK_EXEMPT and len(document.xpath("//h1")) != 1:
             errors.append(f"{page.relative_to(ROOT)}: expected exactly one h1")
+        checks += 1  # primary landmark and heading
+
+        if relative_page not in LANDMARK_EXEMPT:
+            title = document.xpath("string(//title)").strip()
+            description = document.xpath("string(//meta[@name='description']/@content)").strip()
+            if not title:
+                errors.append(f"{page.relative_to(ROOT)}: missing document title")
+            if not description:
+                errors.append(f"{page.relative_to(ROOT)}: missing meta description")
+        checks += 1  # route metadata, with explicit utility-page exemptions
 
         base_href = document.xpath("string(//base/@href)")
         if not base_href:
@@ -75,6 +88,7 @@ def main() -> int:
         for image in document.xpath("//img"):
             if image.get("alt") is None:
                 errors.append(f"{page.relative_to(ROOT)}: image missing alt text")
+        checks += 1  # image alternatives
 
         for element in document.xpath("//*[@href or @src]"):
             attribute = "href" if element.get("href") is not None else "src"
@@ -96,11 +110,12 @@ def main() -> int:
                 target = local_target(raw_url, base_href)
                 if target and not target[0].exists():
                     errors.append(f"{page.relative_to(ROOT)}: missing srcset target {raw_url}")
+        checks += 1  # local links and media targets
 
     if errors:
         print("\n".join(errors))
         return 1
-    print(f"Audited {len(files)} tracked HTML documents: structure and local assets OK")
+    print(f"Audited {len(files)} tracked HTML documents across {checks} review cells: structure, metadata and local assets OK")
     return 0
 
 
