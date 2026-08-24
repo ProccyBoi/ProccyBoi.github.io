@@ -12,6 +12,7 @@
   <meta property="og:url" content="https://proccyboi.github.io/projects/lithography-animation/">
   <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/lithography-simulation-preview.png">
   <link rel="canonical" href="https://proccyboi.github.io/projects/lithography-animation/">
+  <link rel="stylesheet" href="/assets/lab-chrome.css">
   <style>
     :root {
       --bg: #f4f6f8;
@@ -44,7 +45,7 @@
     .app {
       display: grid;
       grid-template-columns: minmax(320px, 400px) 1fr;
-      min-height: 100vh;
+      min-height: calc(100vh - 3.75rem);
     }
 
     aside {
@@ -119,6 +120,10 @@
       width: 100%;
       margin-top: 8px;
       accent-color: var(--blue);
+    }
+
+    input[type="range"] {
+      min-height: 2rem;
     }
 
     select {
@@ -433,7 +438,18 @@
   </style>
 </head>
 <body>
-  <div class="app">
+<a class="lab-skip" href="#lab-main">Skip to simulation</a>
+<header class="lab-chrome">
+  <div class="lab-chrome-inner">
+    <a class="lab-brand" href="/">Andrew Chung</a>
+    <nav class="lab-nav" aria-label="Portfolio navigation">
+      <a href="/projects/">Projects</a>
+      <a href="/projects/#interactive">Other labs</a>
+      <a href="/about/">About</a>
+    </nav>
+  </div>
+</header>
+<div class="app">
     <aside>
       <h1>Lithography Process Animation</h1>
       <p>Optical projection lithography turns a reticle image into a resist pattern, then transfers that pattern into a film on the wafer.</p>
@@ -519,7 +535,7 @@
       </div>
     </aside>
 
-    <main>
+  <main id="lab-main" tabindex="-1">
       <section class="metrics">
         <div class="metric">
           <b>Rayleigh CD</b>

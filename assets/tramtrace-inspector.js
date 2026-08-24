@@ -17,6 +17,8 @@
   const componentTitle = inspector.querySelector("[data-component-title]");
   const componentCopy = inspector.querySelector("[data-component-copy]");
   const hotspotContainer = inspector.querySelector("[data-pcb-hotspots]");
+  const componentDirectory = inspector.querySelector("[data-component-directory]");
+  const componentDirectoryCount = inspector.querySelector("[data-component-directory-count]");
   const hotspotToggle = inspector.querySelector("[data-hotspot-toggle]");
   const frameConsole = inspector.querySelector("[data-frame-console]");
   const chainList = inspector.querySelector("[data-chain-list]");
@@ -68,7 +70,7 @@
   let currentStep = 0;
   let rotationFrame = 0;
   let playTimer = null;
-  let activeComponentButton = null;
+  let activeComponentIndex = -1;
   let dragging = false;
   let lastPointerX = 0;
   let dragRemainder = 0;
@@ -108,28 +110,39 @@
       item.classList.remove("is-active");
       item.setAttribute("aria-pressed", "false");
     });
-    activeComponentButton = null;
+    componentDirectory.querySelectorAll("button").forEach((item) => {
+      item.classList.remove("is-active");
+      item.setAttribute("aria-pressed", "false");
+    });
+    activeComponentIndex = -1;
     componentRef.textContent = "BOARD";
     componentTitle.textContent = "No component selected";
     componentCopy.textContent = "Select a + marker to inspect it. Select the active marker again to clear the board.";
   };
 
-  const selectComponent = (button, component) => {
-    if (activeComponentButton === button) {
+  const selectComponent = (index, component) => {
+    if (activeComponentIndex === index) {
       clearComponent();
       return;
     }
     hotspotContainer.querySelectorAll(".pcb-hotspot").forEach((item) => {
-      item.classList.toggle("is-active", item === button);
-      item.setAttribute("aria-pressed", String(item === button));
+      const active = Number(item.dataset.componentIndex) === index;
+      item.classList.toggle("is-active", active);
+      item.setAttribute("aria-pressed", String(active));
     });
-    activeComponentButton = button;
+    componentDirectory.querySelectorAll("button").forEach((item) => {
+      const active = Number(item.dataset.componentIndex) === index;
+      item.classList.toggle("is-active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+    activeComponentIndex = index;
     componentRef.textContent = component[0];
     componentTitle.textContent = component[1];
     componentCopy.textContent = component[2];
   };
 
-  data.components.forEach((component) => {
+  componentDirectoryCount.textContent = `${data.components.length} selectable parts`;
+  data.components.forEach((component, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "pcb-hotspot";
@@ -137,9 +150,18 @@
     button.style.top = `${pageToPercent(component[4], "y")}%`;
     button.setAttribute("aria-label", `${component[0]} ${component[1]}: ${component[2]}`);
     button.setAttribute("aria-pressed", "false");
+    button.dataset.componentIndex = String(index);
     button.innerHTML = `<span>${component[0]} / ${component[1]}</span>`;
-    button.addEventListener("click", () => selectComponent(button, component));
+    button.addEventListener("click", () => selectComponent(index, component));
     hotspotContainer.append(button);
+
+    const directoryButton = document.createElement("button");
+    directoryButton.type = "button";
+    directoryButton.dataset.componentIndex = String(index);
+    directoryButton.setAttribute("aria-pressed", "false");
+    directoryButton.innerHTML = `<strong>${component[0]}</strong><span>${component[1]}</span>`;
+    directoryButton.addEventListener("click", () => selectComponent(index, component));
+    componentDirectory.append(directoryButton);
   });
 
   hotspotToggle.addEventListener("click", () => {

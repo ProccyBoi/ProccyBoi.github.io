@@ -18,6 +18,8 @@
   const readoutRef = inspector.querySelector("[data-object-ref]");
   const readoutName = inspector.querySelector("[data-object-name]");
   const readoutCopy = inspector.querySelector("[data-object-copy]");
+  const componentDirectory = inspector.querySelector("[data-object-directory]");
+  const directoryCount = inspector.querySelector("[data-object-directory-count]");
   const liveRegion = document.querySelector("[data-object-live]");
 
   const frameCount = 24;
@@ -70,7 +72,7 @@
   };
 
   let activeBoard = "telemetry";
-  let activeButton = null;
+  let activeComponentIndex = -1;
   let activeView = "inspect";
   let currentFrame = 0;
   let dragging = false;
@@ -92,7 +94,11 @@
       button.classList.remove("is-active");
       button.setAttribute("aria-pressed", "false");
     });
-    activeButton = null;
+    componentDirectory.querySelectorAll("button").forEach((button) => {
+      button.classList.remove("is-active");
+      button.setAttribute("aria-pressed", "false");
+    });
+    activeComponentIndex = -1;
     const board = boards[activeBoard];
     readout.classList.add("is-empty");
     readoutRef.textContent = "BOARD";
@@ -101,17 +107,22 @@
     if (announceChange) announce("Component selection cleared");
   };
 
-  const selectComponent = (button, component) => {
-    if (activeButton === button) {
+  const selectComponent = (index, component) => {
+    if (activeComponentIndex === index) {
       clearSelection(true);
       return;
     }
     hotspots.querySelectorAll(".object-hotspot").forEach((item) => {
-      const active = item === button;
+      const active = Number(item.dataset.componentIndex) === index;
       item.classList.toggle("is-active", active);
       item.setAttribute("aria-pressed", String(active));
     });
-    activeButton = button;
+    componentDirectory.querySelectorAll("button").forEach((item) => {
+      const active = Number(item.dataset.componentIndex) === index;
+      item.classList.toggle("is-active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+    activeComponentIndex = index;
     readout.classList.remove("is-empty");
     readoutRef.textContent = component[0];
     readoutName.textContent = component[1];
@@ -120,7 +131,10 @@
 
   const buildHotspots = () => {
     hotspots.replaceChildren();
-    boards[activeBoard].components.forEach((component) => {
+    componentDirectory.replaceChildren();
+    const components = boards[activeBoard].components;
+    directoryCount.textContent = `${components.length} selectable parts`;
+    components.forEach((component, index) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "object-hotspot";
@@ -128,9 +142,18 @@
       button.style.top = `${component[4]}%`;
       button.setAttribute("aria-label", `${component[0]} ${component[1]}: ${component[2]}`);
       button.setAttribute("aria-pressed", "false");
+      button.dataset.componentIndex = String(index);
       button.innerHTML = `<span>${component[0]} / ${component[1]}</span>`;
-      button.addEventListener("click", () => selectComponent(button, component));
+      button.addEventListener("click", () => selectComponent(index, component));
       hotspots.append(button);
+
+      const directoryButton = document.createElement("button");
+      directoryButton.type = "button";
+      directoryButton.dataset.componentIndex = String(index);
+      directoryButton.setAttribute("aria-pressed", "false");
+      directoryButton.innerHTML = `<strong>${component[0]}</strong><span>${component[1]}</span>`;
+      directoryButton.addEventListener("click", () => selectComponent(index, component));
+      componentDirectory.append(directoryButton);
     });
   };
 

@@ -3231,10 +3231,32 @@ h4 {
 }
 
 .project-gallery figure {
+  position: relative;
   padding: 0.65rem 0.65rem 1rem;
   border: 1px solid #c5bcab;
   background: var(--paper);
   box-shadow: 0.4rem 0.45rem 0 rgba(57, 49, 38, 0.1);
+}
+
+.zoom-cue {
+  position: absolute;
+  top: 1.15rem;
+  right: 1.15rem;
+  padding: 0.38rem 0.52rem;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(25, 24, 22, 0.82);
+  color: #fff;
+  font: 650 0.58rem/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.project-gallery figure:focus-within .zoom-cue,
+.project-gallery figure:hover .zoom-cue {
+  background: rgba(25, 24, 22, 0.96);
+  transform: translateY(-1px);
 }
 
 .project-gallery img {

@@ -624,7 +624,70 @@ html {
   color: var(--inspect-muted);
 }
 
+.component-directory {
+  border: 1px solid var(--inspect-line);
+  border-top: 0;
+  background: var(--inspect-panel);
+}
+
+.component-directory summary {
+  min-height: 3.25rem;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--inspect-text);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.component-directory summary span {
+  color: var(--inspect-muted);
+  font-weight: 500;
+}
+
+.component-directory-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--inspect-line);
+}
+
+.component-directory-list button {
+  min-height: 3.5rem;
+  padding: 0.8rem 1rem;
+  display: grid;
+  grid-template-columns: minmax(2.8rem, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  border: 0;
+  border-right: 1px solid var(--inspect-line);
+  border-bottom: 1px solid var(--inspect-line);
+  background: transparent;
+  color: var(--inspect-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.component-directory-list button:nth-child(4n) { border-right: 0; }
+.component-directory-list button strong { color: var(--inspect-accent); font: 650 0.66rem/1 var(--mono); }
+.component-directory-list button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.component-directory-list button:hover,
+.component-directory-list button:focus-visible,
+.component-directory-list button.is-active { background: rgba(255, 255, 255, 0.045); color: var(--inspect-text); }
+.component-directory-list button.is-active { box-shadow: inset 3px 0 0 var(--inspect-accent); }
+
 .inspector-main:not([data-mode="assembled"]) .component-readout {
+  display: none;
+}
+
+.inspector-main:not([data-mode="assembled"]) .component-directory,
+.inspector-main[data-view="rotate"] .component-directory {
   display: none;
 }
 
@@ -959,6 +1022,10 @@ html {
     grid-column: 2;
   }
 
+  .component-directory-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .component-directory-list button:nth-child(4n) { border-right: 1px solid var(--inspect-line); }
+  .component-directory-list button:nth-child(2n) { border-right: 0; }
+
   .frame-readout {
     grid-template-columns: 1fr;
   }
@@ -1084,6 +1151,9 @@ html {
 }
 
 @media (max-width: 430px) {
+  .component-directory-list { grid-template-columns: 1fr; }
+  .component-directory-list button:nth-child(2n) { border-right: 0; }
+  .component-directory-list button { border-right: 0; }
   .inspector-hero h1 {
     font-size: 4rem;
   }

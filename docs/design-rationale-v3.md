@@ -81,12 +81,13 @@ Sources:
 
 ## 7. Make image and component interactions explicit
 
-**Decision:** PCB view and layer controls are named, pressed state is exposed, component markers have larger hit areas, linked lab cards describe their destination, and new-tab file links name that behaviour for assistive technology.
+**Decision:** PCB view and layer controls are named, pressed state is exposed, component markers have larger hit areas, and a synced component index provides a keyboard- and touch-friendly alternative to selecting by position. Project photographs carry a quiet `Enlarge` cue, linked lab cards describe their destination, and new-tab file links name that behaviour for assistive technology.
 
 **Why:** a visitor should be able to predict what a control or destination will do before using it.
 
 Sources:
 
 - [W3C — Link Purpose in Context](https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html)
+- [W3C — Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
 - [U.S. Web Design System — Link](https://designsystem.digital.gov/components/link/)
 - [GOV.UK Design System — Links](https://design-system.service.gov.uk/styles/links/)

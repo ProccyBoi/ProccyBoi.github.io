@@ -11,11 +11,11 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" as="image" href="assets/images/interactive/tramtrace/tramtrace-turn-00.webp" type="image/webp">
   <link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/tramtrace-inspector.css">
+  <link rel="stylesheet" href="assets/tramtrace-inspector.css?v=20260824b">
   <script src="assets/site.js" defer></script>
   <script src="assets/tramtrace-board-data.js" defer></script>
   <script src="assets/tramtrace-component-data.js" defer></script>
-  <script src="assets/tramtrace-inspector.js" defer></script>
+  <script src="assets/tramtrace-inspector.js?v=20260824b" defer></script>
 </head>
 <body class="inspector-body">
   <a class="skip-link" href="#main">Skip to board explorer</a>
@@ -112,6 +112,11 @@
         <h3 data-component-title>No component selected</h3>
         <p data-component-copy>Select a + marker to inspect it. Select the active marker again to clear the board.</p>
       </div>
+
+      <details class="component-directory" data-component-directory-wrap>
+        <summary>Component index <span data-component-directory-count>10 selectable parts</span></summary>
+        <div class="component-directory-list" data-component-directory></div>
+      </details>
 
       <div class="frame-console" data-frame-console hidden>
         <div class="chain-list" aria-label="Pixel data chains" data-chain-list></div>
