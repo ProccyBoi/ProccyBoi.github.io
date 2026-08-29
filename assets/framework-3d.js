@@ -16,7 +16,6 @@
   const explodeButton = root.querySelector('[data-framework-explode]');
   const resetButton = root.querySelector('[data-framework-reset]');
   const viewButtons = [...root.querySelectorAll('[data-framework-view]')];
-  const markingButtons = [...root.querySelectorAll('[data-framework-markings]')];
   const liveRegion = document.querySelector('[data-framework-live]');
 
   const announce = (message) => {
@@ -82,16 +81,8 @@
   board.position.set(0, boardY, -15);
   fallbackGroup.add(board);
 
-  // Direct KiCad plot overlays. SVG preserves all footprint text, logos,
-  // fabrication graphics and user-layer geometry that the earlier raster pass
-  // could lose. The three modes use the same exact 26 x 30 mm board crop.
-  const markingAssets = {
-    silk: 'assets/models/framework-esp32/framework-markings-silk.svg',
-    assembly: 'assets/models/framework-esp32/framework-markings-assembly.svg',
-    all: 'assets/models/framework-esp32/framework-markings-all.svg'
-  };
-  const markingTextures = {};
-  let markingMode = 'silk';
+  // Complete KiCad F.SilkS plot. Keep it rigidly attached to the PCB; unlike
+  // components it never becomes a separate exploded layer.
   const markingMaterial = new THREE.MeshBasicMaterial({
     transparent: true,
     alphaTest: 0.02,
@@ -111,53 +102,25 @@
   markingOverlay.visible = false;
   boardGroup.add(markingOverlay);
 
-  const setMarkingMode = (mode, announceChange = true) => {
-    if (!markingAssets[mode]) mode = 'silk';
-    markingMode = mode;
-    markingButtons.forEach((button) => {
-      const active = button.dataset.frameworkMarkings === mode;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', String(active));
-    });
-    if (markingTextures[mode]) {
-      markingMaterial.map = markingTextures[mode];
+  const markingTextureLoader = new THREE.TextureLoader();
+  markingTextureLoader.load(
+    'assets/models/framework-esp32/framework-markings-silk.svg',
+    (texture) => {
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      // KiCad's plotted X axis enters this viewer reversed after the board's
+      // 180 degree enclosure correction. Mirror in UV space only.
+      texture.repeat.x = -1;
+      texture.offset.x = 1;
+      markingMaterial.map = texture;
       markingMaterial.needsUpdate = true;
       markingOverlay.visible = true;
-    } else {
-      markingOverlay.visible = false;
-    }
-    if (announceChange) {
-      const label = mode === 'silk' ? 'Silkscreen' : mode === 'assembly' ? 'Assembly markings' : 'All PCB markings';
-      announce(`${label} shown`);
-    }
-  };
-
-  const markingTextureLoader = new THREE.TextureLoader();
-  Object.entries(markingAssets).forEach(([mode, url]) => {
-    markingTextureLoader.load(
-      url,
-      (texture) => {
-        texture.encoding = THREE.sRGBEncoding;
-        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        // KiCad's plotted X axis enters this viewer reversed after the board's
-        // 180 degree enclosure correction. Mirror the texture in UV space only
-        // (not the plane geometry) so text reads normally while the 26x30 mm
-        // overlay stays registered to the PCB.
-        texture.repeat.x = -1;
-        texture.offset.x = 1;
-        markingTextures[mode] = texture;
-        if (markingMode === mode) {
-          markingMaterial.map = texture;
-          markingMaterial.needsUpdate = true;
-          markingOverlay.visible = true;
-        }
-      },
-      undefined,
-      (error) => console.warn(`Framework ${mode} marking overlay failed to load`, error)
-    );
-  });
+    },
+    undefined,
+    (error) => console.warn('Framework silkscreen overlay failed to load', error)
+  );
 
   // Slightly lighter board edge makes the 0.6 mm laminate readable at grazing angles.
   const boardEdge = new THREE.LineSegments(
@@ -175,7 +138,7 @@
   // The enclosure nose extends roughly 2 mm beyond the PCB edge. Shift the
   // rendered connector forward relative to the footprint datum so the mating
   // shell sits naturally through the housing aperture rather than too far in.
-  const usbMountedZ = 0.0;
+  const usbMountedZ = 0.8;
   usbGroup.position.set(0, boardTopY + 0.90, usbMountedZ);
   boardGroup.add(usbGroup);
   const exactUsbGroup = new THREE.Group();
@@ -401,7 +364,6 @@
   // are captured once so assembly is perfectly reversible rather than relying
   // on accumulated frame-to-frame offsets.
   const componentExplodeParts = [];
-  const pcbExplodeLayers = [];
   const registerExplodePart = (object, options = {}) => {
     if (!object || componentExplodeParts.some((part) => part.object === object)) return;
     const offset = options.offset || new THREE.Vector3();
@@ -585,39 +547,22 @@
 
       const dx = child.position.x - boardCentreX;
       const dz = child.position.z - boardCentreZ;
-      const radialScale = isModule ? 0.48 : isIC ? 0.42 : isTransistor ? 0.34 : 0.29;
-      const lift = isModule ? 0.0125 : isIC ? 0.0084 : isTransistor ? 0.0062 : 0.0044;
+      const radialScale = isModule ? 0.42 : isIC ? 0.38 : isTransistor ? 0.32 : 0.34;
+      const lift = isModule ? 0.0105 : isIC ? 0.0073 : isTransistor ? 0.0057 : 0.0052;
       const directionX = dx >= 0 ? 1 : -1;
       const directionZ = dz >= 0 ? 1 : -1;
-      const delay = isModule ? 0.21 : isIC ? 0.29 : isTransistor ? 0.36 : 0.43 + (passiveIndex++ % 7) * 0.028;
+      const delay = isModule ? 0.22 : isIC ? 0.30 : isTransistor ? 0.37 : 0.41 + (passiveIndex++ % 7) * 0.024;
 
       registerExplodePart(child, {
         // KiCad GLB child coordinates are metres; the parent is scaled 1000x.
         offset: new THREE.Vector3(dx * radialScale, lift, dz * radialScale),
         rotation: new THREE.Euler(
-          d(directionZ * (isModule ? 10 : isPassive ? 4 : 7)),
-          d(directionX * (isModule ? 6 : isPassive ? 3 : 4)),
-          d(directionX * (isModule ? 12 : isPassive ? 5 : 9))
+          d(directionZ * (isModule ? 8 : isPassive ? 3 : 6)),
+          d(directionX * (isModule ? 5 : isPassive ? 2 : 3)),
+          d(directionX * (isModule ? 9 : isPassive ? 4 : 7))
         ),
         delay
       });
-    });
-  };
-
-  const registerPcbExplodeLayer = (object, lift, delay, rotation = 0) => {
-    if (!object || pcbExplodeLayers.some((part) => part.object === object)) return;
-    const basePosition = object.position.clone();
-    const baseQuaternion = object.quaternion.clone();
-    const targetQuaternion = baseQuaternion.clone().multiply(
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, THREE.MathUtils.degToRad(rotation), 0))
-    );
-    pcbExplodeLayers.push({
-      object,
-      basePosition,
-      targetPosition: basePosition.clone().add(new THREE.Vector3(0, lift, 0)),
-      baseQuaternion,
-      targetQuaternion,
-      delay
     });
   };
 
@@ -628,13 +573,11 @@
 
     model.children.forEach((child) => {
       let isBoardLayer = false;
-      const layerNames = new Set();
       child.traverse((object) => {
         if (!object.isMesh) return;
         const objectMaterials = materialsFor(object);
         const isSilkscreen = objectMaterials.some((material) => material.name === 'mat_16');
         objectMaterials.forEach((material) => {
-          layerNames.add(material.name);
           if (boardMaterialNames.has(material.name)) isBoardLayer = true;
           if (material.name === 'mat_15') {
             material.color.setHex(0xd0a24b);
@@ -699,8 +642,6 @@
 
       if (isBoardLayer) {
         child.scale.y *= thicknessScale;
-        if (layerNames.has('mat_17')) registerPcbExplodeLayer(child, 0.00125, 0.16, -1.5);
-        else if (layerNames.has('mat_15')) registerPcbExplodeLayer(child, 0.00072, 0.20, 1.1);
       } else if (child.position && child.position.y > 0) {
         // Lower component seating by the same amount removed from the PCB top.
         child.position.y -= componentDrop;
@@ -861,7 +802,6 @@
   let exploded = false;
   let componentExplodeProgress = 0;
   let componentExplodeTarget = 0;
-  const markingBaseY = markingOverlay.position.y;
 
   fetch('assets/models/framework-esp32/framework-enclosure.stl')
     .then((response) => {
@@ -910,7 +850,6 @@
   };
 
   viewButtons.forEach((button) => button.addEventListener('click', () => setPreset(button.dataset.frameworkView)));
-  markingButtons.forEach((button) => button.addEventListener('click', () => setMarkingMode(button.dataset.frameworkMarkings)));
 
   shellButton.addEventListener('click', () => {
     shellVisible = !shellVisible;
@@ -946,7 +885,6 @@
     if (shellMesh) shellMesh.visible = true;
     shellButton.setAttribute('aria-pressed', 'true');
     shellButton.textContent = 'Hide shell';
-    setMarkingMode('silk', false);
     selectComponent(-1, false);
     announce('3D view reset');
   });
@@ -1108,24 +1046,13 @@
     shellGroup.rotation.x = THREE.MathUtils.degToRad(-5.0) * shellPhase;
     shellGroup.rotation.z = THREE.MathUtils.degToRad(2.3) * shellPhase;
 
-    // The visible top artwork peels above the PCB stack before the components fan out.
-    const markingPhase = staged(0.14, 0.43, true);
-    markingOverlay.position.y = markingBaseY + 1.55 * markingPhase;
-
-    pcbExplodeLayers.forEach((part) => {
-      const raw = THREE.MathUtils.clamp((componentExplodeProgress - part.delay) / Math.max(0.001, 0.46 - part.delay), 0, 1);
-      const posPhase = componentExplodeTarget > 0.5 ? easeOutBack(raw, 1.15) : smoothstep(raw);
-      const rotPhase = smoothstep(raw);
-      part.object.position.lerpVectors(part.basePosition, part.targetPosition, posPhase);
-      part.object.quaternion.copy(part.baseQuaternion).slerp(part.targetQuaternion, rotPhase);
-    });
   };
 
   const updateComponentExplode = () => {
     componentExplodeParts.forEach((part) => {
       const span = Math.max(0.001, 1 - part.delay);
       const raw = THREE.MathUtils.clamp((componentExplodeProgress - part.delay) / span, 0, 1);
-      const posPhase = componentExplodeTarget > 0.5 ? easeOutBack(raw, 1.42) : smoothstep(raw);
+      const posPhase = componentExplodeTarget > 0.5 ? easeOutBack(raw, 1.16) : smoothstep(raw);
       const rotPhase = smoothstep(raw);
       part.object.position.lerpVectors(part.basePosition, part.targetPosition, posPhase);
       part.object.quaternion.copy(part.baseQuaternion).slerp(part.targetQuaternion, rotPhase);
@@ -1157,7 +1084,6 @@
   };
 
   defaultReadout();
-  setMarkingMode('silk', false);
   setPreset('iso', false);
   animate();
 })();
