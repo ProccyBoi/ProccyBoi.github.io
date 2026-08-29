@@ -4,14 +4,7 @@
 
   const stage = root.querySelector('[data-framework-stage]');
   const canvas = root.querySelector('[data-framework-canvas]');
-  const hotspotLayer = root.querySelector('[data-framework-hotspots]');
   const status = root.querySelector('[data-framework-status]');
-  const readout = root.querySelector('[data-framework-readout]');
-  const readoutRef = root.querySelector('[data-framework-ref]');
-  const readoutName = root.querySelector('[data-framework-name]');
-  const readoutCopy = root.querySelector('[data-framework-copy]');
-  const directory = root.querySelector('[data-framework-directory]');
-  const directoryCount = root.querySelector('[data-framework-directory-count]');
   const shellButton = root.querySelector('[data-framework-shell]');
   const explodeButton = root.querySelector('[data-framework-explode]');
   const resetButton = root.querySelector('[data-framework-reset]');
@@ -53,13 +46,23 @@
   // Rotate the complete PCB assembly about its 26 x 30 mm centre, leaving the shell fixed.
   boardGroup.rotation.y = Math.PI;
   boardGroup.position.z = -30;
+
+  // Mirror the physical card about the longitudinal centreline that runs through
+  // the USB-C mating axis (local x = 0). Keep the connector itself outside this
+  // group so its pin numbering/contact geometry is not mirrored left-to-right.
+  const mirroredCardGroup = new THREE.Group();
+  mirroredCardGroup.scale.x = -1;
+  boardGroup.add(mirroredCardGroup);
+
   const shellGroup = new THREE.Group();
   assembly.add(shellGroup);
+  // The enclosure belongs to the mirrored mechanical assembly as well.
+  shellGroup.scale.x = -1;
 
   const fallbackGroup = new THREE.Group();
-  boardGroup.add(fallbackGroup);
+  mirroredCardGroup.add(fallbackGroup);
   const kicadGroup = new THREE.Group();
-  boardGroup.add(kicadGroup);
+  mirroredCardGroup.add(kicadGroup);
 
   const boardMaterial = new THREE.MeshStandardMaterial({
     color: 0x111214,
@@ -100,7 +103,7 @@
   markingOverlay.position.set(0, boardTopY + 0.18, -15);
   markingOverlay.renderOrder = 120;
   markingOverlay.visible = false;
-  boardGroup.add(markingOverlay);
+  mirroredCardGroup.add(markingOverlay);
 
   const markingTextureLoader = new THREE.TextureLoader();
   markingTextureLoader.load(
@@ -145,12 +148,10 @@
   boardGroup.add(usbGroup);
   const exactUsbGroup = new THREE.Group();
   boardGroup.add(exactUsbGroup);
-  const usbHighlightMeshes = [];
   const addUsbPart = (geometry, material, position) => {
     const mesh = new THREE.Mesh(geometry, material.clone ? material.clone() : material);
     mesh.position.set(...position);
     usbGroup.add(mesh);
-    usbHighlightMeshes.push(mesh);
     return mesh;
   };
   const roundedRectPath = (path, x, y, width, height, radius) => {
@@ -196,7 +197,7 @@
   const matingRearZ = 2.30;
   const matingTipZ = 10.00;
   const matingDepth = matingTipZ - matingRearZ;
-  const usbShell = addUsbPart(
+  addUsbPart(
     usbRingGeometry(8.25, 2.40, 6.83, 1.30, matingDepth, 1.05, 0.57),
     connectorMetal,
     [0, 0, (matingRearZ + matingTipZ) / 2]
@@ -205,7 +206,7 @@
   addUsbPart(usbRingGeometry(8.30, 2.50, 6.75, 1.22, 0.34, 1.08, 0.54), connectorMetal, [0, 0, 9.83]);
   addUsbPart(usbRingGeometry(8.25, 2.40, 6.83, 1.30, 2.30, 1.05, 0.57), connectorMetal, [0, 0, 1.15]);
   const usbCoreMaterial = new THREE.MeshStandardMaterial({ color: 0x242526, roughness: 0.67, metalness: 0.03 });
-  const usbTongue = addUsbPart(usbRoundedBlockGeometry(5.50, 0.80, 7.40, 0.20), usbCoreMaterial, [0, 0, 6.10]);
+  addUsbPart(usbRoundedBlockGeometry(5.50, 0.80, 7.40, 0.20), usbCoreMaterial, [0, 0, 6.10]);
   const contactMaterial = new THREE.MeshStandardMaterial({ color: 0xd3ae5d, roughness: 0.32, metalness: 0.76 });
   const contactDepth = 6.84;
   const contactCentreZ = (2.34 + 9.18) / 2;
@@ -239,7 +240,7 @@
   const screwDrive = new THREE.MeshStandardMaterial({ color: 0x3d4143, roughness: 0.46, metalness: 0.5 });
   const screwGroup = new THREE.Group();
   const screwAssemblies = [];
-  boardGroup.add(screwGroup);
+  mirroredCardGroup.add(screwGroup);
   const addMountingScrew = (x, y) => {
     const p = kcToModel(x, y, 0);
     const screw = new THREE.Group();
@@ -329,34 +330,6 @@
   silkB.position.set(-10.4, boardTopY + 0.07, -17.1);
   fallbackGroup.add(silkB);
 
-  const componentData = [
-    {
-      ref: 'U4', name: 'ESP32-S3-MINI-1',
-      copy: 'The radio and compute module. It provides the ESP32-S3 MCU, 2.4 GHz Wi-Fi and Bluetooth inside the Framework bay.',
-      anchor: kcToModel(140.1, 146.29, 2.25).add(new THREE.Vector3(0, 1.3, 0)), mesh: esp32
-    },
-    {
-      ref: 'U1', name: 'CH340K USB–UART',
-      copy: 'The USB serial bridge used for programming and console access, letting the card behave like a normal development board.',
-      anchor: kcToModel(132.2575, 130.84, 1.25).add(new THREE.Vector3(0, 0.95, 0)), mesh: ch340
-    },
-    {
-      ref: 'U2', name: 'AMS1117-3.3 regulator',
-      copy: 'Generates the 3.3 V rail for the ESP32 from the card input supply.',
-      anchor: kcToModel(148.37, 131.35, 1.75).add(new THREE.Vector3(0, 1.15, 0)), mesh: regulator
-    },
-    {
-      ref: 'Q1 / Q2', name: 'BC817 auto-reset pair',
-      copy: 'The transistor pair drives the ESP32 boot/reset lines so firmware uploads do not require a manual button sequence.',
-      anchor: kcToModel(138.4, 133.25, 1.05).add(new THREE.Vector3(0, 0.85, 0)), mesh: q1, meshes: [q1, q2]
-    },
-    {
-      ref: 'P1', name: 'USB-C edge plug',
-      copy: 'The card mates directly with the Framework laptop bay. The thin PCB and connector geometry are part of the expansion-card mechanical design.',
-      anchor: new THREE.Vector3(0, usbGroup.position.y + 1.62, usbGroup.position.z + 6.0), mesh: usbShell, meshes: usbHighlightMeshes
-    }
-  ];
-
   const materialsFor = (mesh) => {
     if (!mesh || !mesh.material) return [];
     return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
@@ -395,151 +368,18 @@
   };
   registerFallbackExplodeParts();
 
-  const componentMeshes = (component) => component.meshes || (component.mesh ? [component.mesh] : []);
-  const selectionBox = new THREE.Box3();
-  const selectionHelper = new THREE.Box3Helper(selectionBox, 0xe09a5d);
-  selectionHelper.visible = false;
-  scene.add(selectionHelper);
-
-  directoryCount.textContent = `${componentData.length} selectable parts`;
-  let selectedIndex = -1;
-  const hotspotButtons = [];
-  const directoryButtons = [];
-
-  const defaultReadout = () => {
-    readout.classList.add('is-empty');
-    readoutRef.textContent = 'BOARD';
-    readoutName.textContent = 'Framework ESP32 Card';
-    readoutCopy.textContent = 'Select a marker to inspect the main devices. Drag anywhere else on the model to rotate the complete assembly.';
-  };
-
-  const clearHighlights = () => {
-    selectionHelper.visible = false;
-    componentData.forEach((component) => {
-      componentMeshes(component).forEach((mesh) => {
-        materialsFor(mesh).forEach((material) => {
-          const key = material.uuid;
-          const saved = mesh.userData.frameworkOriginalMaterials && mesh.userData.frameworkOriginalMaterials[key];
-          if (!saved || !material.emissive) return;
-          material.emissive.setHex(saved.emissive);
-          material.emissiveIntensity = saved.intensity;
-        });
-      });
-    });
-  };
-
-  const selectComponent = (index, fromUser = true) => {
-    if (selectedIndex === index) index = -1;
-    selectedIndex = index;
-    clearHighlights();
-
-    hotspotButtons.forEach((button, i) => {
-      const active = i === selectedIndex;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', String(active));
-    });
-    directoryButtons.forEach((button, i) => {
-      const active = i === selectedIndex;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', String(active));
-    });
-
-    if (selectedIndex < 0) {
-      defaultReadout();
-      if (fromUser) announce('Component selection cleared');
-      return;
-    }
-
-    const component = componentData[selectedIndex];
-    readout.classList.remove('is-empty');
-    readoutRef.textContent = component.ref;
-    readoutName.textContent = component.name;
-    readoutCopy.textContent = component.copy;
-    if (component.detailObjects && component.detailObjects.length) {
-      selectionBox.makeEmpty();
-      component.detailObjects.forEach((object) => {
-        const box = new THREE.Box3().setFromObject(object);
-        if (!box.isEmpty()) selectionBox.union(box);
-      });
-      selectionHelper.visible = !selectionBox.isEmpty();
-    } else {
-      componentMeshes(component).forEach((mesh) => {
-        if (!mesh) return;
-        if (!mesh.userData.frameworkOriginalMaterials) mesh.userData.frameworkOriginalMaterials = {};
-        materialsFor(mesh).forEach((material) => {
-          if (!material.emissive) return;
-          if (!mesh.userData.frameworkOriginalMaterials[material.uuid]) {
-            mesh.userData.frameworkOriginalMaterials[material.uuid] = {
-              emissive: material.emissive.getHex(),
-              intensity: material.emissiveIntensity || 0
-            };
-          }
-          material.emissive.setHex(0x5c3014);
-          material.emissiveIntensity = 0.9;
-        });
-      });
-    }
-    if (fromUser) announce(`${component.ref}, ${component.name}`);
-  };
-
-  const refreshSelectionHelper = () => {
-    if (selectedIndex < 0) return;
-    const component = componentData[selectedIndex];
-    if (!component.detailObjects || !component.detailObjects.length) return;
-    selectionBox.makeEmpty();
-    component.detailObjects.forEach((object) => {
-      const box = new THREE.Box3().setFromObject(object);
-      if (!box.isEmpty()) selectionBox.union(box);
-    });
-    selectionHelper.visible = !selectionBox.isEmpty();
-  };
-
-  componentData.forEach((component, index) => {
-    const hotspot = document.createElement('button');
-    hotspot.type = 'button';
-    hotspot.className = 'object-hotspot';
-    hotspot.setAttribute('aria-label', `${component.ref} ${component.name}: ${component.copy}`);
-    hotspot.setAttribute('aria-pressed', 'false');
-    hotspot.innerHTML = `<span>${component.ref} / ${component.name}</span>`;
-    hotspot.addEventListener('click', (event) => {
-      event.stopPropagation();
-      selectComponent(index);
-    });
-    hotspotLayer.append(hotspot);
-    hotspotButtons.push(hotspot);
-
-    const directoryButton = document.createElement('button');
-    directoryButton.type = 'button';
-    directoryButton.setAttribute('aria-pressed', 'false');
-    directoryButton.innerHTML = `<strong>${component.ref}</strong><span>${component.name}</span>`;
-    directoryButton.addEventListener('click', () => selectComponent(index));
-    directory.append(directoryButton);
-    directoryButtons.push(directoryButton);
-  });
-
-  const setDetailedComponentObjects = (model) => {
-    const remap = {
-      U4: [model.getObjectByName('U4')].filter(Boolean),
-      U1: [model.getObjectByName('U1')].filter(Boolean),
-      U2: [model.getObjectByName('U2')].filter(Boolean),
-      'Q1 / Q2': [model.getObjectByName('Q1'), model.getObjectByName('Q2')].filter(Boolean)
-    };
-    componentData.forEach((component) => {
-      const detailed = remap[component.ref];
-      if (!detailed || !detailed.length) return;
-      component.detailObjects = detailed;
-    });
-  };
-
   const registerDetailedExplodeParts = (model) => {
     const boardCentreX = 0.140;
     const boardCentreZ = 0.142;
     const d = THREE.MathUtils.degToRad;
     let passiveIndex = 0;
 
-    model.children.forEach((child) => {
+    model.traverse((child) => {
       const ref = child.name || '';
-      if (!ref || ref.startsWith('=>[')) return;
+      // The GLB scene has an unnamed wrapper root; populated footprints live
+      // beneath it. Traverse the hierarchy so the runtime actually registers
+      // the component nodes rather than stopping at that wrapper.
+      if (!/^(?:U|Q|R|C)\d+$/.test(ref)) return;
 
       const isModule = ref === 'U4';
       const isIC = ref === 'U1' || ref === 'U2';
@@ -572,8 +412,15 @@
     const thicknessScale = boardThickness / exportedBoardThickness;
     const componentDrop = (exportedBoardThickness - boardThickness) / 1000;
     const boardMaterialNames = new Set(['mat_15', 'mat_16', 'mat_17', 'mat_18']);
+    // KiCad's GLB exporter wraps every populated footprint and PCB layer in one
+    // unnamed scene node. Work on that node's children, not model.children,
+    // otherwise the wrapper itself is mistaken for a board layer and the whole
+    // assembly (including components) is squashed when thinning the PCB.
+    const exportedRoot = model.children.length === 1 && !model.children[0].name
+      ? model.children[0]
+      : model;
 
-    model.children.forEach((child) => {
+    exportedRoot.children.forEach((child) => {
       let isBoardLayer = false;
       child.traverse((object) => {
         if (!object.isMesh) return;
@@ -644,7 +491,7 @@
 
       if (isBoardLayer) {
         child.scale.y *= thicknessScale;
-      } else if (child.position && child.position.y > 0) {
+      } else if (/^(?:U|Q|R|C)\d+$/.test(child.name || '') && child.position.y > 0) {
         // Lower component seating by the same amount removed from the PCB top.
         child.position.y -= componentDrop;
       }
@@ -669,20 +516,14 @@
       (gltf) => {
         const model = gltf.scene;
         // KiCad GLB is exported in metres with board X/Y mapped to glTF X/Z.
-        // Convert to the viewer's millimetre X/Y/Z convention without changing
-        // the existing hotspot coordinate system.
+        // Convert to the viewer's millimetre X/Y/Z convention while preserving
+        // the board-centred coordinate system used by the mechanical assembly.
         model.scale.set(1000, 1000, -1000);
         model.position.set(-140, 3.04, 127);
         styleDetailedBoard(model);
         kicadGroup.add(model);
         registerDetailedExplodeParts(model);
         fallbackGroup.visible = false;
-        setDetailedComponentObjects(model);
-        if (selectedIndex >= 0) {
-          const pendingSelection = selectedIndex;
-          selectedIndex = -1;
-          selectComponent(pendingSelection, false);
-        }
         detailedBoardReady = true;
         status.textContent = 'Detailed KiCad assembly loaded';
         refreshReadyStatus();
@@ -740,19 +581,6 @@
           delay: 0.10
         });
 
-        const usbComponent = componentData.find((component) => component.ref === 'P1');
-        if (usbComponent) {
-          usbComponent.mesh = exactPlug;
-          usbComponent.meshes = [exactPlug];
-          usbComponent.detailObjects = [exactPlug];
-          usbComponent.anchor = new THREE.Vector3(0, boardTopY + 2.3, usbMountedZ + 6.5);
-        }
-
-        if (selectedIndex >= 0 && componentData[selectedIndex] === usbComponent) {
-          const pendingSelection = selectedIndex;
-          selectedIndex = -1;
-          selectComponent(pendingSelection, false);
-        }
       },
       undefined,
       (error) => {
@@ -851,7 +679,6 @@
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-pressed', String(active));
     });
-    root.classList.toggle('is-top-view', keyName === 'top');
     if (announceChange) announce(`${keyName} camera view`);
   };
 
@@ -891,7 +718,6 @@
     if (shellMesh) shellMesh.visible = true;
     shellButton.setAttribute('aria-pressed', 'true');
     shellButton.textContent = 'Hide shell';
-    selectComponent(-1, false);
     announce('3D view reset');
   });
 
@@ -901,7 +727,6 @@
   let pinchStartZoom = distance;
 
   const markCustomView = () => {
-    root.classList.remove('is-top-view');
     viewButtons.forEach((button) => {
       button.classList.remove('is-active');
       button.setAttribute('aria-pressed', 'false');
@@ -982,38 +807,6 @@
   new ResizeObserver(resize).observe(stage);
   resize();
 
-  const worldAnchor = new THREE.Vector3();
-  const detailAnchor = new THREE.Vector3();
-  const boardUpWorld = new THREE.Vector3();
-  const boardWorldQuaternion = new THREE.Quaternion();
-  const projected = new THREE.Vector3();
-  const updateHotspots = () => {
-    const rect = stage.getBoundingClientRect();
-    boardGroup.getWorldQuaternion(boardWorldQuaternion);
-    boardUpWorld.set(0, 1, 0).applyQuaternion(boardWorldQuaternion);
-    componentData.forEach((component, index) => {
-      if (component.detailObjects && component.detailObjects.length) {
-        worldAnchor.set(0, 0, 0);
-        component.detailObjects.forEach((object) => {
-          object.getWorldPosition(detailAnchor);
-          worldAnchor.add(detailAnchor);
-        });
-        worldAnchor.multiplyScalar(1 / component.detailObjects.length);
-        const lift = component.ref === 'U4' ? 3.2 : component.ref === 'P1' ? 2.2 : 1.8;
-        worldAnchor.addScaledVector(boardUpWorld, lift);
-      } else {
-        worldAnchor.copy(component.anchor);
-        boardGroup.localToWorld(worldAnchor);
-      }
-      projected.copy(worldAnchor).project(camera);
-      const visible = projected.z > -1 && projected.z < 1 && Math.abs(projected.x) < 1.08 && Math.abs(projected.y) < 1.08;
-      const button = hotspotButtons[index];
-      button.classList.toggle('is-offscreen', !visible);
-      button.style.left = `${(projected.x * 0.5 + 0.5) * rect.width}px`;
-      button.style.top = `${(-projected.y * 0.5 + 0.5) * rect.height}px`;
-    });
-  };
-
   const clock = new THREE.Clock();
   const smoothstep = (value) => {
     const t = THREE.MathUtils.clamp(value, 0, 1);
@@ -1077,7 +870,6 @@
     if (Math.abs(componentExplodeTarget - componentExplodeProgress) < 0.0001) componentExplodeProgress = componentExplodeTarget;
     updateMechanicalExplode();
     updateComponentExplode();
-    refreshSelectionHelper();
 
     const cp = Math.cos(pitch);
     camera.position.set(
@@ -1087,10 +879,8 @@
     );
     camera.lookAt(target);
     renderer.render(scene, camera);
-    updateHotspots();
   };
 
-  defaultReadout();
   setPreset('iso', false);
   animate();
 })();

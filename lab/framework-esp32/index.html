@@ -10,11 +10,11 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/skylabs-object.css?v=20260829c">
-  <link rel="stylesheet" href="assets/framework-3d.css?v=20260830a">
+  <link rel="stylesheet" href="assets/framework-3d.css?v=20260830b">
   <script src="assets/site.js" defer></script>
   <script src="assets/vendor/three.min.js" defer></script>
   <script src="assets/vendor/GLTFLoader.js" defer></script>
-  <script src="assets/framework-3d.js?v=20260830b" defer></script>
+  <script src="assets/framework-3d.js?v=20260830c" defer></script>
 </head>
 <body class="object-body framework-3d-body">
   <a class="skip-link" href="#main">Skip to 3D explorer</a>
@@ -53,16 +53,11 @@
         <button type="button" class="object-tool" data-framework-explode aria-pressed="false">Explode</button>
         <button type="button" class="object-tool object-reset" data-framework-reset>Reset view</button>
       </div>
-      <div class="object-stage framework-3d-stage" data-framework-stage tabindex="0" aria-label="Interactive 3D Framework ESP32 expansion card. Drag to rotate, scroll or pinch to zoom, or select a marked component.">
+      <div class="object-stage framework-3d-stage" data-framework-stage tabindex="0" aria-label="Interactive 3D Framework ESP32 expansion card. Drag to rotate, scroll or pinch to zoom.">
         <canvas data-framework-canvas aria-hidden="true"></canvas>
-        <div class="object-hotspots framework-3d-hotspots" data-framework-hotspots aria-label="Selectable Framework card components"></div>
         <p class="framework-3d-status" data-framework-status>Loading Framework enclosure…</p>
         <p class="object-drag-hint framework-3d-hint"><span aria-hidden="true">&larr;</span> Drag to orbit · scroll to zoom <span aria-hidden="true">&rarr;</span></p>
       </div>
-      <div class="object-readout is-empty" data-framework-readout aria-live="polite" aria-atomic="true">
-        <p data-framework-ref>BOARD</p><h3 data-framework-name>Framework ESP32 Card</h3><p data-framework-copy>Select a marker to inspect the main devices. Drag anywhere else on the model to rotate the complete assembly.</p>
-      </div>
-      <details class="component-directory"><summary>Component index <span data-framework-directory-count>5 selectable parts</span></summary><div class="component-directory-list" data-framework-directory></div></details>
       <noscript><p class="object-noscript">JavaScript and WebGL are needed for the 3D explorer. The Framework ESP32 project page remains available without them.</p></noscript>
     </section>
     <section class="object-path" aria-labelledby="framework-path-title">

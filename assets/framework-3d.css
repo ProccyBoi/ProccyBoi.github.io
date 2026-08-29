@@ -22,16 +22,6 @@
   height: 100%;
 }
 
-.framework-3d-hotspots { z-index: 8; }
-.framework-3d-hotspots .object-hotspot { transition: opacity 120ms ease; }
-.framework-3d-hotspots .object-hotspot.is-offscreen { opacity: 0; pointer-events: none; }
-.framework-3d-hotspots .object-hotspot span { max-width: 18rem; min-width: max-content; }
-.framework-3d-hotspots .object-hotspot::after {
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-.framework-3d-body.is-top-view .framework-3d-hotspots .object-hotspot::after { opacity: 1; }
-
 .framework-3d-status {
   position: absolute;
   z-index: 9;
@@ -72,7 +62,6 @@
   .framework-3d-toolbar .object-view-list { width: 100%; flex-basis: 100%; }
   .framework-3d-toolbar .object-tool { min-width: 50%; flex: 1; border-left: 0; }
   .framework-3d-toolbar .object-tool:first-of-type { border-left: 0; }
-  .framework-3d-hotspots .object-hotspot span { display: none; }
 }
 
 @media (max-width: 430px) {
@@ -81,6 +70,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .framework-3d-status,
-  .framework-3d-hotspots .object-hotspot { transition: none; }
+  .framework-3d-status { transition: none; }
 }
