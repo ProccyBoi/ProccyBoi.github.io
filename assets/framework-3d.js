@@ -110,10 +110,9 @@
       texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
-      // KiCad's plotted X axis enters this viewer reversed after the board's
-      // 180 degree enclosure correction. Mirror in UV space only.
-      texture.repeat.x = -1;
-      texture.offset.x = 1;
+      // Keep the KiCad X axis unmirrored so footprint references and outlines
+      // remain registered to the physical components. The plane transform
+      // below already handles the board's Y/Z orientation.
       markingMaterial.map = texture;
       markingMaterial.needsUpdate = true;
       markingOverlay.visible = true;
@@ -138,8 +137,11 @@
   // The enclosure nose extends roughly 2 mm beyond the PCB edge. Shift the
   // rendered connector forward relative to the footprint datum so the mating
   // shell sits naturally through the housing aperture rather than too far in.
-  const usbMountedZ = 0.8;
+  const usbMountedZ = 1.4;
   usbGroup.position.set(0, boardTopY + 0.90, usbMountedZ);
+  // Match the exact CAD orientation: rotate the fallback 180 degrees about
+  // its mating axis so the former lower contact row is on top and vice versa.
+  usbGroup.rotation.z = Math.PI;
   boardGroup.add(usbGroup);
   const exactUsbGroup = new THREE.Group();
   boardGroup.add(exactUsbGroup);
@@ -547,19 +549,19 @@
 
       const dx = child.position.x - boardCentreX;
       const dz = child.position.z - boardCentreZ;
-      const radialScale = isModule ? 0.42 : isIC ? 0.38 : isTransistor ? 0.32 : 0.34;
-      const lift = isModule ? 0.0105 : isIC ? 0.0073 : isTransistor ? 0.0057 : 0.0052;
+      const radialScale = isModule ? 0.52 : isIC ? 0.50 : isTransistor ? 0.42 : 0.44;
+      const lift = isModule ? 0.0150 : isIC ? 0.0110 : isTransistor ? 0.0080 : 0.0070;
       const directionX = dx >= 0 ? 1 : -1;
       const directionZ = dz >= 0 ? 1 : -1;
-      const delay = isModule ? 0.22 : isIC ? 0.30 : isTransistor ? 0.37 : 0.41 + (passiveIndex++ % 7) * 0.024;
+      const delay = isModule ? 0.20 : isIC ? 0.27 : isTransistor ? 0.34 : 0.39 + (passiveIndex++ % 7) * 0.022;
 
       registerExplodePart(child, {
         // KiCad GLB child coordinates are metres; the parent is scaled 1000x.
         offset: new THREE.Vector3(dx * radialScale, lift, dz * radialScale),
         rotation: new THREE.Euler(
-          d(directionZ * (isModule ? 8 : isPassive ? 3 : 6)),
-          d(directionX * (isModule ? 5 : isPassive ? 2 : 3)),
-          d(directionX * (isModule ? 9 : isPassive ? 4 : 7))
+          d(directionZ * (isModule ? 9 : isPassive ? 3.5 : 6)),
+          d(directionX * (isModule ? 5 : isPassive ? 2.5 : 3.5)),
+          d(directionX * (isModule ? 10 : isPassive ? 4.5 : 7.5))
         ),
         delay
       });
@@ -714,6 +716,9 @@
         exactPlug.name = 'P1_Molex_105444_exact';
         exactPlug.position.set(0, 0, 0);
         exactPlug.rotation.x = Math.PI / 2;
+        // Flip the plug 180 degrees around its own mating axis. This swaps the
+        // top/bottom contact rows without changing the insertion direction.
+        exactPlug.rotateY(Math.PI);
         exactPlug.scale.setScalar(1000);
         exactPlug.position.set(0, boardTopY, usbMountedZ);
         exactPlug.traverse((object) => {
@@ -846,6 +851,7 @@
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-pressed', String(active));
     });
+    root.classList.toggle('is-top-view', keyName === 'top');
     if (announceChange) announce(`${keyName} camera view`);
   };
 
@@ -895,6 +901,7 @@
   let pinchStartZoom = distance;
 
   const markCustomView = () => {
+    root.classList.remove('is-top-view');
     viewButtons.forEach((button) => {
       button.classList.remove('is-active');
       button.setAttribute('aria-pressed', 'false');
@@ -1052,7 +1059,7 @@
     componentExplodeParts.forEach((part) => {
       const span = Math.max(0.001, 1 - part.delay);
       const raw = THREE.MathUtils.clamp((componentExplodeProgress - part.delay) / span, 0, 1);
-      const posPhase = componentExplodeTarget > 0.5 ? easeOutBack(raw, 1.16) : smoothstep(raw);
+      const posPhase = componentExplodeTarget > 0.5 ? easeOutBack(raw, 1.10) : smoothstep(raw);
       const rotPhase = smoothstep(raw);
       part.object.position.lerpVectors(part.basePosition, part.targetPosition, posPhase);
       part.object.quaternion.copy(part.baseQuaternion).slerp(part.targetQuaternion, rotPhase);

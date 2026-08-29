@@ -26,6 +26,11 @@
 .framework-3d-hotspots .object-hotspot { transition: opacity 120ms ease; }
 .framework-3d-hotspots .object-hotspot.is-offscreen { opacity: 0; pointer-events: none; }
 .framework-3d-hotspots .object-hotspot span { max-width: 18rem; min-width: max-content; }
+.framework-3d-hotspots .object-hotspot::after {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.framework-3d-body.is-top-view .framework-3d-hotspots .object-hotspot::after { opacity: 1; }
 
 .framework-3d-status {
   position: absolute;
