@@ -16,6 +16,7 @@
   const explodeButton = root.querySelector('[data-framework-explode]');
   const resetButton = root.querySelector('[data-framework-reset]');
   const viewButtons = [...root.querySelectorAll('[data-framework-view]')];
+  const markingButtons = [...root.querySelectorAll('[data-framework-markings]')];
   const liveRegion = document.querySelector('[data-framework-live]');
 
   const announce = (message) => {
@@ -81,39 +82,72 @@
   board.position.set(0, boardY, -15);
   fallbackGroup.add(board);
 
-  // Screen-readable overlay of the real KiCad F.SilkS layer. The raw GLB
-  // silkscreen uses 0.12–0.20 mm strokes which become sub-pixel at the default
-  // camera distance, so use the same source geometry as a transparent texture
-  // with widened screen strokes. Components still occlude it because
-  // depth testing remains enabled.
-  const silkOverlayGroup = new THREE.Group();
-  boardGroup.add(silkOverlayGroup);
-  const silkTextureLoader = new THREE.TextureLoader();
-  silkTextureLoader.load(
-    'assets/models/framework-esp32/framework-silkscreen.png',
-    (texture) => {
-      texture.encoding = THREE.sRGBEncoding;
-      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        alphaTest: 0.03,
-        side: THREE.DoubleSide,
-        depthTest: true,
-        depthWrite: false
-      });
-      material.toneMapped = false;
-      const overlay = new THREE.Mesh(new THREE.PlaneGeometry(26, 30), material);
-      overlay.rotation.x = Math.PI / 2;
-      overlay.position.set(0, boardTopY + 0.18, -15);
-      overlay.renderOrder = 120;
-      silkOverlayGroup.add(overlay);
-    },
-    undefined,
-    (error) => console.warn('Framework silkscreen overlay failed to load', error)
-  );
+  // Direct KiCad plot overlays. SVG preserves all footprint text, logos,
+  // fabrication graphics and user-layer geometry that the earlier raster pass
+  // could lose. The three modes use the same exact 26 x 30 mm board crop.
+  const markingAssets = {
+    silk: 'assets/models/framework-esp32/framework-markings-silk.svg',
+    assembly: 'assets/models/framework-esp32/framework-markings-assembly.svg',
+    all: 'assets/models/framework-esp32/framework-markings-all.svg'
+  };
+  const markingTextures = {};
+  let markingMode = 'silk';
+  const markingMaterial = new THREE.MeshBasicMaterial({
+    transparent: true,
+    alphaTest: 0.02,
+    side: THREE.DoubleSide,
+    depthTest: true,
+    depthWrite: false
+  });
+  markingMaterial.toneMapped = false;
+  const markingOverlay = new THREE.Mesh(new THREE.PlaneGeometry(26, 30), markingMaterial);
+  markingOverlay.rotation.x = Math.PI / 2;
+  markingOverlay.position.set(0, boardTopY + 0.18, -15);
+  markingOverlay.renderOrder = 120;
+  markingOverlay.visible = false;
+  boardGroup.add(markingOverlay);
+
+  const setMarkingMode = (mode, announceChange = true) => {
+    if (!markingAssets[mode]) mode = 'silk';
+    markingMode = mode;
+    markingButtons.forEach((button) => {
+      const active = button.dataset.frameworkMarkings === mode;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    if (markingTextures[mode]) {
+      markingMaterial.map = markingTextures[mode];
+      markingMaterial.needsUpdate = true;
+      markingOverlay.visible = true;
+    } else {
+      markingOverlay.visible = false;
+    }
+    if (announceChange) {
+      const label = mode === 'silk' ? 'Silkscreen' : mode === 'assembly' ? 'Assembly markings' : 'All PCB markings';
+      announce(`${label} shown`);
+    }
+  };
+
+  const markingTextureLoader = new THREE.TextureLoader();
+  Object.entries(markingAssets).forEach(([mode, url]) => {
+    markingTextureLoader.load(
+      url,
+      (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        markingTextures[mode] = texture;
+        if (markingMode === mode) {
+          markingMaterial.map = texture;
+          markingMaterial.needsUpdate = true;
+          markingOverlay.visible = true;
+        }
+      },
+      undefined,
+      (error) => console.warn(`Framework ${mode} marking overlay failed to load`, error)
+    );
+  });
 
   // Slightly lighter board edge makes the 0.6 mm laminate readable at grazing angles.
   const boardEdge = new THREE.LineSegments(
@@ -342,6 +376,38 @@
     return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
   };
 
+  // Every populated part gets its own staged explode transform. Base transforms
+  // are captured once so assembly is perfectly reversible rather than relying
+  // on accumulated frame-to-frame offsets.
+  const componentExplodeParts = [];
+  const registerExplodePart = (object, options = {}) => {
+    if (!object || componentExplodeParts.some((part) => part.object === object)) return;
+    const offset = options.offset || new THREE.Vector3();
+    const rotation = options.rotation || new THREE.Euler();
+    const basePosition = object.position.clone();
+    const baseQuaternion = object.quaternion.clone();
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(rotation);
+    componentExplodeParts.push({
+      object,
+      basePosition,
+      targetPosition: basePosition.clone().add(offset),
+      baseQuaternion,
+      targetQuaternion: baseQuaternion.clone().multiply(deltaQuaternion),
+      delay: THREE.MathUtils.clamp(options.delay || 0, 0, 0.72)
+    });
+  };
+
+  const registerFallbackExplodeParts = () => {
+    const d = THREE.MathUtils.degToRad;
+    registerExplodePart(usbGroup, { offset: new THREE.Vector3(0, 4.2, 7.0), rotation: new THREE.Euler(d(-5), 0, d(3)), delay: 0.12 });
+    registerExplodePart(esp32, { offset: new THREE.Vector3(0, 8.5, -2.4), rotation: new THREE.Euler(d(7), d(-3), d(-7)), delay: 0.18 });
+    registerExplodePart(ch340, { offset: new THREE.Vector3(-3.2, 6.0, 1.2), rotation: new THREE.Euler(d(5), d(-4), d(8)), delay: 0.25 });
+    registerExplodePart(regulator, { offset: new THREE.Vector3(3.0, 5.7, 1.3), rotation: new THREE.Euler(d(-5), d(5), d(-8)), delay: 0.29 });
+    registerExplodePart(q1, { offset: new THREE.Vector3(1.7, 4.4, 1.4), rotation: new THREE.Euler(d(4), 0, d(7)), delay: 0.34 });
+    registerExplodePart(q2, { offset: new THREE.Vector3(-1.7, 4.1, 1.3), rotation: new THREE.Euler(d(-4), 0, d(-7)), delay: 0.37 });
+  };
+  registerFallbackExplodeParts();
+
   const componentMeshes = (component) => component.meshes || (component.mesh ? [component.mesh] : []);
   const selectionBox = new THREE.Box3();
   const selectionHelper = new THREE.Box3Helper(selectionBox, 0xe09a5d);
@@ -429,6 +495,18 @@
     if (fromUser) announce(`${component.ref}, ${component.name}`);
   };
 
+  const refreshSelectionHelper = () => {
+    if (selectedIndex < 0) return;
+    const component = componentData[selectedIndex];
+    if (!component.detailObjects || !component.detailObjects.length) return;
+    selectionBox.makeEmpty();
+    component.detailObjects.forEach((object) => {
+      const box = new THREE.Box3().setFromObject(object);
+      if (!box.isEmpty()) selectionBox.union(box);
+    });
+    selectionHelper.visible = !selectionBox.isEmpty();
+  };
+
   componentData.forEach((component, index) => {
     const hotspot = document.createElement('button');
     hotspot.type = 'button';
@@ -463,6 +541,43 @@
       const detailed = remap[component.ref];
       if (!detailed || !detailed.length) return;
       component.detailObjects = detailed;
+    });
+  };
+
+  const registerDetailedExplodeParts = (model) => {
+    const boardCentreX = 0.140;
+    const boardCentreZ = 0.142;
+    const d = THREE.MathUtils.degToRad;
+    let passiveIndex = 0;
+
+    model.children.forEach((child) => {
+      const ref = child.name || '';
+      if (!ref || ref.startsWith('=>[')) return;
+
+      const isModule = ref === 'U4';
+      const isIC = ref === 'U1' || ref === 'U2';
+      const isTransistor = ref.startsWith('Q');
+      const isPassive = ref.startsWith('R') || ref.startsWith('C');
+      if (!isModule && !isIC && !isTransistor && !isPassive) return;
+
+      const dx = child.position.x - boardCentreX;
+      const dz = child.position.z - boardCentreZ;
+      const radialScale = isModule ? 0.34 : isIC ? 0.31 : isTransistor ? 0.26 : 0.20;
+      const lift = isModule ? 0.0090 : isIC ? 0.0064 : isTransistor ? 0.0048 : 0.0032;
+      const directionX = dx >= 0 ? 1 : -1;
+      const directionZ = dz >= 0 ? 1 : -1;
+      const delay = isModule ? 0.18 : isIC ? 0.25 : isTransistor ? 0.33 : 0.40 + (passiveIndex++ % 7) * 0.025;
+
+      registerExplodePart(child, {
+        // KiCad GLB child coordinates are metres; the parent is scaled 1000x.
+        offset: new THREE.Vector3(dx * radialScale, lift, dz * radialScale),
+        rotation: new THREE.Euler(
+          d(directionZ * (isModule ? 7 : isPassive ? 2.5 : 5)),
+          d(directionX * (isModule ? 4 : 2)),
+          d(directionX * (isModule ? 8 : isPassive ? 3 : 6))
+        ),
+        delay
+      });
     });
   };
 
@@ -573,6 +688,7 @@
         model.position.set(-140, 3.04, 127);
         styleDetailedBoard(model);
         kicadGroup.add(model);
+        registerDetailedExplodeParts(model);
         fallbackGroup.visible = false;
         setDetailedComponentObjects(model);
         if (selectedIndex >= 0) {
@@ -628,11 +744,17 @@
         });
         exactUsbGroup.add(exactPlug);
         usbGroup.visible = false;
+        registerExplodePart(exactPlug, {
+          offset: new THREE.Vector3(0, 4.8, 7.5),
+          rotation: new THREE.Euler(THREE.MathUtils.degToRad(-5), 0, THREE.MathUtils.degToRad(4)),
+          delay: 0.12
+        });
 
         const usbComponent = componentData.find((component) => component.ref === 'P1');
         if (usbComponent) {
           usbComponent.mesh = exactPlug;
           usbComponent.meshes = [exactPlug];
+          usbComponent.detailObjects = [exactPlug];
           usbComponent.anchor = new THREE.Vector3(0, boardTopY + 2.3, 4.5);
         }
 
@@ -697,6 +819,8 @@
   let shellTargetY = 0;
   let screwYOffset = 0;
   let screwTargetY = 0;
+  let componentExplodeProgress = 0;
+  let componentExplodeTarget = 0;
 
   fetch('assets/models/framework-esp32/framework-enclosure.stl')
     .then((response) => {
@@ -744,6 +868,7 @@
   };
 
   viewButtons.forEach((button) => button.addEventListener('click', () => setPreset(button.dataset.frameworkView)));
+  markingButtons.forEach((button) => button.addEventListener('click', () => setMarkingMode(button.dataset.frameworkMarkings)));
 
   shellButton.addEventListener('click', () => {
     shellVisible = !shellVisible;
@@ -757,9 +882,10 @@
     exploded = !exploded;
     shellTargetY = exploded ? -11 : 0;
     screwTargetY = exploded ? 8.5 : 0;
+    componentExplodeTarget = exploded ? 1 : 0;
     explodeButton.setAttribute('aria-pressed', String(exploded));
     explodeButton.textContent = exploded ? 'Assemble' : 'Explode';
-    announce(exploded ? 'Exploded enclosure view' : 'Assembled enclosure view');
+    announce(exploded ? 'Exploded enclosure and component view' : 'Assembled enclosure and component view');
   });
 
   resetButton.addEventListener('click', () => {
@@ -768,12 +894,14 @@
     exploded = false;
     shellTargetY = 0;
     screwTargetY = 0;
+    componentExplodeTarget = 0;
     explodeButton.setAttribute('aria-pressed', 'false');
     explodeButton.textContent = 'Explode';
     shellVisible = true;
     if (shellMesh) shellMesh.visible = true;
     shellButton.setAttribute('aria-pressed', 'true');
     shellButton.textContent = 'Hide shell';
+    setMarkingMode('silk', false);
     selectComponent(-1, false);
     announce('3D view reset');
   });
@@ -865,12 +993,28 @@
   resize();
 
   const worldAnchor = new THREE.Vector3();
+  const detailAnchor = new THREE.Vector3();
+  const boardUpWorld = new THREE.Vector3();
+  const boardWorldQuaternion = new THREE.Quaternion();
   const projected = new THREE.Vector3();
   const updateHotspots = () => {
     const rect = stage.getBoundingClientRect();
+    boardGroup.getWorldQuaternion(boardWorldQuaternion);
+    boardUpWorld.set(0, 1, 0).applyQuaternion(boardWorldQuaternion);
     componentData.forEach((component, index) => {
-      worldAnchor.copy(component.anchor);
-      boardGroup.localToWorld(worldAnchor);
+      if (component.detailObjects && component.detailObjects.length) {
+        worldAnchor.set(0, 0, 0);
+        component.detailObjects.forEach((object) => {
+          object.getWorldPosition(detailAnchor);
+          worldAnchor.add(detailAnchor);
+        });
+        worldAnchor.multiplyScalar(1 / component.detailObjects.length);
+        const lift = component.ref === 'U4' ? 3.2 : component.ref === 'P1' ? 2.2 : 1.8;
+        worldAnchor.addScaledVector(boardUpWorld, lift);
+      } else {
+        worldAnchor.copy(component.anchor);
+        boardGroup.localToWorld(worldAnchor);
+      }
       projected.copy(worldAnchor).project(camera);
       const visible = projected.z > -1 && projected.z < 1 && Math.abs(projected.x) < 1.08 && Math.abs(projected.y) < 1.08;
       const button = hotspotButtons[index];
@@ -881,6 +1025,20 @@
   };
 
   const clock = new THREE.Clock();
+  const smoothstep = (value) => {
+    const t = THREE.MathUtils.clamp(value, 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+
+  const updateComponentExplode = () => {
+    componentExplodeParts.forEach((part) => {
+      const span = Math.max(0.001, 1 - part.delay);
+      const phase = smoothstep((componentExplodeProgress - part.delay) / span);
+      part.object.position.lerpVectors(part.basePosition, part.targetPosition, phase);
+      part.object.quaternion.copy(part.baseQuaternion).slerp(part.targetQuaternion, phase);
+    });
+  };
+
   const animate = () => {
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -892,6 +1050,10 @@
     shellGroup.position.y = shellYOffset;
     screwYOffset += (screwTargetY - screwYOffset) * smoothing;
     screwGroup.position.y = screwYOffset;
+    componentExplodeProgress += (componentExplodeTarget - componentExplodeProgress) * (1 - Math.pow(0.01, dt));
+    if (Math.abs(componentExplodeTarget - componentExplodeProgress) < 0.0001) componentExplodeProgress = componentExplodeTarget;
+    updateComponentExplode();
+    refreshSelectionHelper();
 
     const cp = Math.cos(pitch);
     camera.position.set(
@@ -905,6 +1067,7 @@
   };
 
   defaultReadout();
+  setMarkingMode('silk', false);
   setPreset('iso', false);
   animate();
 })();
