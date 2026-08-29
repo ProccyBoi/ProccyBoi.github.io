@@ -101,7 +101,11 @@
   });
   markingMaterial.toneMapped = false;
   const markingOverlay = new THREE.Mesh(new THREE.PlaneGeometry(26, 30), markingMaterial);
-  markingOverlay.rotation.x = Math.PI / 2;
+  // Keep the KiCad Y-down artwork registered to board Z while presenting the
+  // plane's front face upward. The previous +90 degree rotation exposed the
+  // back face of the texture, which made all text read mirrored.
+  markingOverlay.rotation.x = -Math.PI / 2;
+  markingOverlay.scale.y = -1;
   markingOverlay.position.set(0, boardTopY + 0.18, -15);
   markingOverlay.renderOrder = 120;
   markingOverlay.visible = false;
@@ -137,6 +141,12 @@
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
+        // KiCad's plotted X axis enters this viewer reversed after the board's
+        // 180 degree enclosure correction. Mirror the texture in UV space only
+        // (not the plane geometry) so text reads normally while the 26x30 mm
+        // overlay stays registered to the PCB.
+        texture.repeat.x = -1;
+        texture.offset.x = 1;
         markingTextures[mode] = texture;
         if (markingMode === mode) {
           markingMaterial.map = texture;
@@ -162,7 +172,11 @@
   // The footprint origin is the termination datum; its PCB edge is 0.96 mm
   // forward of that datum, so the mating section correctly protrudes.
   const usbGroup = new THREE.Group();
-  usbGroup.position.set(0, boardTopY + 0.90, -2.0);
+  // The enclosure nose extends roughly 2 mm beyond the PCB edge. Shift the
+  // rendered connector forward relative to the footprint datum so the mating
+  // shell sits naturally through the housing aperture rather than too far in.
+  const usbMountedZ = 0.0;
+  usbGroup.position.set(0, boardTopY + 0.90, usbMountedZ);
   boardGroup.add(usbGroup);
   const exactUsbGroup = new THREE.Group();
   boardGroup.add(exactUsbGroup);
@@ -259,23 +273,30 @@
   const screwMetal = new THREE.MeshStandardMaterial({ color: 0xaeb4b7, roughness: 0.28, metalness: 0.82 });
   const screwDrive = new THREE.MeshStandardMaterial({ color: 0x3d4143, roughness: 0.46, metalness: 0.5 });
   const screwGroup = new THREE.Group();
+  const screwAssemblies = [];
   boardGroup.add(screwGroup);
   const addMountingScrew = (x, y) => {
     const p = kcToModel(x, y, 0);
+    const screw = new THREE.Group();
+    screw.position.set(p.x, 0, p.z);
+    screw.userData.frameworkBasePosition = screw.position.clone();
+    screwGroup.add(screw);
+
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.85, 24), screwMetal);
-    shaft.position.set(p.x, boardTopY - 0.58, p.z);
-    screwGroup.add(shaft);
+    shaft.position.set(0, boardTopY - 0.58, 0);
+    screw.add(shaft);
 
     const head = new THREE.Mesh(new THREE.CylinderGeometry(1.72, 1.62, 0.58, 32), screwMetal);
-    head.position.set(p.x, boardTopY + 0.28, p.z);
-    screwGroup.add(head);
+    head.position.set(0, boardTopY + 0.28, 0);
+    screw.add(head);
 
     const slotA = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.055, 0.22), screwDrive);
-    slotA.position.set(p.x, boardTopY + 0.585, p.z);
-    screwGroup.add(slotA);
+    slotA.position.set(0, boardTopY + 0.585, 0);
+    screw.add(slotA);
     const slotB = slotA.clone();
     slotB.rotation.y = Math.PI / 2;
-    screwGroup.add(slotB);
+    screw.add(slotB);
+    screwAssemblies.push(screw);
   };
   addMountingScrew(128.7, 146.5);
   addMountingScrew(151.3, 146.5);
@@ -380,6 +401,7 @@
   // are captured once so assembly is perfectly reversible rather than relying
   // on accumulated frame-to-frame offsets.
   const componentExplodeParts = [];
+  const pcbExplodeLayers = [];
   const registerExplodePart = (object, options = {}) => {
     if (!object || componentExplodeParts.some((part) => part.object === object)) return;
     const offset = options.offset || new THREE.Vector3();
@@ -399,12 +421,13 @@
 
   const registerFallbackExplodeParts = () => {
     const d = THREE.MathUtils.degToRad;
-    registerExplodePart(usbGroup, { offset: new THREE.Vector3(0, 4.2, 7.0), rotation: new THREE.Euler(d(-5), 0, d(3)), delay: 0.12 });
-    registerExplodePart(esp32, { offset: new THREE.Vector3(0, 8.5, -2.4), rotation: new THREE.Euler(d(7), d(-3), d(-7)), delay: 0.18 });
-    registerExplodePart(ch340, { offset: new THREE.Vector3(-3.2, 6.0, 1.2), rotation: new THREE.Euler(d(5), d(-4), d(8)), delay: 0.25 });
-    registerExplodePart(regulator, { offset: new THREE.Vector3(3.0, 5.7, 1.3), rotation: new THREE.Euler(d(-5), d(5), d(-8)), delay: 0.29 });
-    registerExplodePart(q1, { offset: new THREE.Vector3(1.7, 4.4, 1.4), rotation: new THREE.Euler(d(4), 0, d(7)), delay: 0.34 });
-    registerExplodePart(q2, { offset: new THREE.Vector3(-1.7, 4.1, 1.3), rotation: new THREE.Euler(d(-4), 0, d(-7)), delay: 0.37 });
+    registerExplodePart(usbGroup, { offset: new THREE.Vector3(0, 5.4, 9.5), rotation: new THREE.Euler(d(-7), 0, d(5)), delay: 0.10 });
+    registerExplodePart(esp32, { offset: new THREE.Vector3(0, 11.8, -3.5), rotation: new THREE.Euler(d(9), d(-5), d(-10)), delay: 0.21 });
+    registerExplodePart(ch340, { offset: new THREE.Vector3(-4.2, 8.0, 1.8), rotation: new THREE.Euler(d(7), d(-5), d(10)), delay: 0.29 });
+    registerExplodePart(regulator, { offset: new THREE.Vector3(4.0, 7.6, 1.8), rotation: new THREE.Euler(d(-7), d(6), d(-10)), delay: 0.31 });
+    registerExplodePart(q1, { offset: new THREE.Vector3(2.2, 5.8, 1.8), rotation: new THREE.Euler(d(5), d(2), d(9)), delay: 0.36 });
+    registerExplodePart(q2, { offset: new THREE.Vector3(-2.2, 5.5, 1.7), rotation: new THREE.Euler(d(-5), d(-2), d(-9)), delay: 0.39 });
+    registerExplodePart(antenna, { offset: new THREE.Vector3(0, 10.9, -3.5), rotation: new THREE.Euler(d(9), d(-5), d(-10)), delay: 0.21 });
   };
   registerFallbackExplodeParts();
 
@@ -562,22 +585,39 @@
 
       const dx = child.position.x - boardCentreX;
       const dz = child.position.z - boardCentreZ;
-      const radialScale = isModule ? 0.34 : isIC ? 0.31 : isTransistor ? 0.26 : 0.20;
-      const lift = isModule ? 0.0090 : isIC ? 0.0064 : isTransistor ? 0.0048 : 0.0032;
+      const radialScale = isModule ? 0.48 : isIC ? 0.42 : isTransistor ? 0.34 : 0.29;
+      const lift = isModule ? 0.0125 : isIC ? 0.0084 : isTransistor ? 0.0062 : 0.0044;
       const directionX = dx >= 0 ? 1 : -1;
       const directionZ = dz >= 0 ? 1 : -1;
-      const delay = isModule ? 0.18 : isIC ? 0.25 : isTransistor ? 0.33 : 0.40 + (passiveIndex++ % 7) * 0.025;
+      const delay = isModule ? 0.21 : isIC ? 0.29 : isTransistor ? 0.36 : 0.43 + (passiveIndex++ % 7) * 0.028;
 
       registerExplodePart(child, {
         // KiCad GLB child coordinates are metres; the parent is scaled 1000x.
         offset: new THREE.Vector3(dx * radialScale, lift, dz * radialScale),
         rotation: new THREE.Euler(
-          d(directionZ * (isModule ? 7 : isPassive ? 2.5 : 5)),
-          d(directionX * (isModule ? 4 : 2)),
-          d(directionX * (isModule ? 8 : isPassive ? 3 : 6))
+          d(directionZ * (isModule ? 10 : isPassive ? 4 : 7)),
+          d(directionX * (isModule ? 6 : isPassive ? 3 : 4)),
+          d(directionX * (isModule ? 12 : isPassive ? 5 : 9))
         ),
         delay
       });
+    });
+  };
+
+  const registerPcbExplodeLayer = (object, lift, delay, rotation = 0) => {
+    if (!object || pcbExplodeLayers.some((part) => part.object === object)) return;
+    const basePosition = object.position.clone();
+    const baseQuaternion = object.quaternion.clone();
+    const targetQuaternion = baseQuaternion.clone().multiply(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(0, THREE.MathUtils.degToRad(rotation), 0))
+    );
+    pcbExplodeLayers.push({
+      object,
+      basePosition,
+      targetPosition: basePosition.clone().add(new THREE.Vector3(0, lift, 0)),
+      baseQuaternion,
+      targetQuaternion,
+      delay
     });
   };
 
@@ -588,11 +628,13 @@
 
     model.children.forEach((child) => {
       let isBoardLayer = false;
+      const layerNames = new Set();
       child.traverse((object) => {
         if (!object.isMesh) return;
         const objectMaterials = materialsFor(object);
         const isSilkscreen = objectMaterials.some((material) => material.name === 'mat_16');
         objectMaterials.forEach((material) => {
+          layerNames.add(material.name);
           if (boardMaterialNames.has(material.name)) isBoardLayer = true;
           if (material.name === 'mat_15') {
             material.color.setHex(0xd0a24b);
@@ -657,6 +699,8 @@
 
       if (isBoardLayer) {
         child.scale.y *= thicknessScale;
+        if (layerNames.has('mat_17')) registerPcbExplodeLayer(child, 0.00125, 0.16, -1.5);
+        else if (layerNames.has('mat_15')) registerPcbExplodeLayer(child, 0.00072, 0.20, 1.1);
       } else if (child.position && child.position.y > 0) {
         // Lower component seating by the same amount removed from the PCB top.
         child.position.y -= componentDrop;
@@ -730,7 +774,7 @@
         exactPlug.position.set(0, 0, 0);
         exactPlug.rotation.x = Math.PI / 2;
         exactPlug.scale.setScalar(1000);
-        exactPlug.position.set(0, boardTopY, -2.0);
+        exactPlug.position.set(0, boardTopY, usbMountedZ);
         exactPlug.traverse((object) => {
           if (!object.isMesh) return;
           const material = connectorMetal.clone();
@@ -745,9 +789,9 @@
         exactUsbGroup.add(exactPlug);
         usbGroup.visible = false;
         registerExplodePart(exactPlug, {
-          offset: new THREE.Vector3(0, 4.8, 7.5),
-          rotation: new THREE.Euler(THREE.MathUtils.degToRad(-5), 0, THREE.MathUtils.degToRad(4)),
-          delay: 0.12
+          offset: new THREE.Vector3(0, 6.0, 10.5),
+          rotation: new THREE.Euler(THREE.MathUtils.degToRad(-8), 0, THREE.MathUtils.degToRad(6)),
+          delay: 0.10
         });
 
         const usbComponent = componentData.find((component) => component.ref === 'P1');
@@ -755,7 +799,7 @@
           usbComponent.mesh = exactPlug;
           usbComponent.meshes = [exactPlug];
           usbComponent.detailObjects = [exactPlug];
-          usbComponent.anchor = new THREE.Vector3(0, boardTopY + 2.3, 4.5);
+          usbComponent.anchor = new THREE.Vector3(0, boardTopY + 2.3, usbMountedZ + 6.5);
         }
 
         if (selectedIndex >= 0 && componentData[selectedIndex] === usbComponent) {
@@ -815,12 +859,9 @@
   let shellMesh = null;
   let shellVisible = true;
   let exploded = false;
-  let shellYOffset = 0;
-  let shellTargetY = 0;
-  let screwYOffset = 0;
-  let screwTargetY = 0;
   let componentExplodeProgress = 0;
   let componentExplodeTarget = 0;
+  const markingBaseY = markingOverlay.position.y;
 
   fetch('assets/models/framework-esp32/framework-enclosure.stl')
     .then((response) => {
@@ -847,6 +888,7 @@
   let targetYaw = yaw;
   let targetPitch = pitch;
   let targetDistance = distance;
+  let assembledDistance = targetDistance;
 
   const presets = {
     iso: { yaw: -31, pitch: 29, distance: 58 },
@@ -880,9 +922,13 @@
 
   explodeButton.addEventListener('click', () => {
     exploded = !exploded;
-    shellTargetY = exploded ? -11 : 0;
-    screwTargetY = exploded ? 8.5 : 0;
     componentExplodeTarget = exploded ? 1 : 0;
+    if (exploded) {
+      assembledDistance = targetDistance;
+      targetDistance = Math.min(86, assembledDistance + 7);
+    } else {
+      targetDistance = assembledDistance;
+    }
     explodeButton.setAttribute('aria-pressed', String(exploded));
     explodeButton.textContent = exploded ? 'Assemble' : 'Explode';
     announce(exploded ? 'Exploded enclosure and component view' : 'Assembled enclosure and component view');
@@ -891,9 +937,8 @@
   resetButton.addEventListener('click', () => {
     setPreset('iso', false);
     targetDistance = 58;
+    assembledDistance = 58;
     exploded = false;
-    shellTargetY = 0;
-    screwTargetY = 0;
     componentExplodeTarget = 0;
     explodeButton.setAttribute('aria-pressed', 'false');
     explodeButton.textContent = 'Explode';
@@ -1030,12 +1075,60 @@
     return t * t * (3 - 2 * t);
   };
 
+  const easeOutBack = (value, overshoot = 1.35) => {
+    const t = THREE.MathUtils.clamp(value, 0, 1) - 1;
+    const c3 = overshoot + 1;
+    return 1 + c3 * t * t * t + overshoot * t * t;
+  };
+
+  const staged = (start, end, useBackEase = false) => {
+    const raw = THREE.MathUtils.clamp((componentExplodeProgress - start) / Math.max(0.001, end - start), 0, 1);
+    if (componentExplodeTarget < 0.5) return smoothstep(raw);
+    return useBackEase ? easeOutBack(raw) : smoothstep(raw);
+  };
+
+  const updateMechanicalExplode = () => {
+    // Screws extract first, with opposite spin directions and a small outward fan.
+    screwAssemblies.forEach((screw, index) => {
+      const phase = staged(index * 0.018, 0.24 + index * 0.018, true);
+      const base = screw.userData.frameworkBasePosition;
+      const side = index === 0 ? -1 : 1;
+      screw.position.copy(base);
+      screw.position.x += side * 0.75 * phase;
+      screw.position.y += 10.8 * phase;
+      screw.position.z -= 0.55 * phase;
+      screw.rotation.x = THREE.MathUtils.degToRad(side * 3.5) * phase;
+      screw.rotation.y = side * Math.PI * 4.5 * phase;
+      screw.rotation.z = THREE.MathUtils.degToRad(side * 4.5) * phase;
+    });
+
+    // Housing leaves in the opposite direction and acquires a small cinematic tilt.
+    const shellPhase = staged(0.04, 0.43, false);
+    shellGroup.position.set(0, -12.0 * shellPhase, -2.8 * shellPhase);
+    shellGroup.rotation.x = THREE.MathUtils.degToRad(-5.0) * shellPhase;
+    shellGroup.rotation.z = THREE.MathUtils.degToRad(2.3) * shellPhase;
+
+    // The visible top artwork peels above the PCB stack before the components fan out.
+    const markingPhase = staged(0.14, 0.43, true);
+    markingOverlay.position.y = markingBaseY + 1.55 * markingPhase;
+
+    pcbExplodeLayers.forEach((part) => {
+      const raw = THREE.MathUtils.clamp((componentExplodeProgress - part.delay) / Math.max(0.001, 0.46 - part.delay), 0, 1);
+      const posPhase = componentExplodeTarget > 0.5 ? easeOutBack(raw, 1.15) : smoothstep(raw);
+      const rotPhase = smoothstep(raw);
+      part.object.position.lerpVectors(part.basePosition, part.targetPosition, posPhase);
+      part.object.quaternion.copy(part.baseQuaternion).slerp(part.targetQuaternion, rotPhase);
+    });
+  };
+
   const updateComponentExplode = () => {
     componentExplodeParts.forEach((part) => {
       const span = Math.max(0.001, 1 - part.delay);
-      const phase = smoothstep((componentExplodeProgress - part.delay) / span);
-      part.object.position.lerpVectors(part.basePosition, part.targetPosition, phase);
-      part.object.quaternion.copy(part.baseQuaternion).slerp(part.targetQuaternion, phase);
+      const raw = THREE.MathUtils.clamp((componentExplodeProgress - part.delay) / span, 0, 1);
+      const posPhase = componentExplodeTarget > 0.5 ? easeOutBack(raw, 1.42) : smoothstep(raw);
+      const rotPhase = smoothstep(raw);
+      part.object.position.lerpVectors(part.basePosition, part.targetPosition, posPhase);
+      part.object.quaternion.copy(part.baseQuaternion).slerp(part.targetQuaternion, rotPhase);
     });
   };
 
@@ -1046,12 +1139,9 @@
     yaw += (targetYaw - yaw) * smoothing;
     pitch += (targetPitch - pitch) * smoothing;
     distance += (targetDistance - distance) * smoothing;
-    shellYOffset += (shellTargetY - shellYOffset) * smoothing;
-    shellGroup.position.y = shellYOffset;
-    screwYOffset += (screwTargetY - screwYOffset) * smoothing;
-    screwGroup.position.y = screwYOffset;
-    componentExplodeProgress += (componentExplodeTarget - componentExplodeProgress) * (1 - Math.pow(0.01, dt));
+    componentExplodeProgress += (componentExplodeTarget - componentExplodeProgress) * (1 - Math.pow(0.025, dt));
     if (Math.abs(componentExplodeTarget - componentExplodeProgress) < 0.0001) componentExplodeProgress = componentExplodeTarget;
+    updateMechanicalExplode();
     updateComponentExplode();
     refreshSelectionHelper();
 
