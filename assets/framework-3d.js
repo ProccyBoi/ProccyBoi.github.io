@@ -72,8 +72,12 @@
   const copperMaterial = new THREE.MeshStandardMaterial({ color: 0xc9a45e, roughness: 0.42, metalness: 0.55 });
   const whiteSilk = new THREE.MeshBasicMaterial({ color: 0xe5e3dc });
 
-  const boardY = 3.34;
-  const board = new THREE.Mesh(new THREE.BoxGeometry(26, 0.6, 30), boardMaterial);
+  const exportedBoardThickness = 0.6;
+  const boardThickness = 0.46;
+  const boardBottomY = 3.04;
+  const boardY = boardBottomY + boardThickness / 2;
+  const boardTopY = boardBottomY + boardThickness;
+  const board = new THREE.Mesh(new THREE.BoxGeometry(26, boardThickness, 30), boardMaterial);
   board.position.set(0, boardY, -15);
   fallbackGroup.add(board);
 
@@ -86,9 +90,9 @@
 
   // Molex 105444 edge plug. KiCad no longer ships the old referenced WRL model,
   // so reconstruct the visible connector from its 8.25 x 2.40 mm envelope,
-  // 0.50 mm terminal pitch, tongue, shell panels and retention ears.
+  // 0.50 mm terminal pitch, rounded shell, tongue, contacts and retention ears.
   const usbGroup = new THREE.Group();
-  usbGroup.position.set(0, boardY + 1.2, -1.0);
+  usbGroup.position.set(0, boardTopY + 0.90, -1.0);
   boardGroup.add(usbGroup);
   const usbHighlightMeshes = [];
   const addUsbPart = (geometry, material, position) => {
@@ -98,28 +102,96 @@
     usbHighlightMeshes.push(mesh);
     return mesh;
   };
+  const roundedRectPath = (path, x, y, width, height, radius) => {
+    const r = Math.min(radius, width / 2, height / 2);
+    path.moveTo(x + r, y);
+    path.lineTo(x + width - r, y);
+    path.quadraticCurveTo(x + width, y, x + width, y + r);
+    path.lineTo(x + width, y + height - r);
+    path.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    path.lineTo(x + r, y + height);
+    path.quadraticCurveTo(x, y + height, x, y + height - r);
+    path.lineTo(x, y + r);
+    path.quadraticCurveTo(x, y, x + r, y);
+  };
+  const usbRingGeometry = (outerW, outerH, innerW, innerH, depth, outerR, innerR) => {
+    const shape = new THREE.Shape();
+    roundedRectPath(shape, -outerW / 2, -outerH / 2, outerW, outerH, outerR);
+    const hole = new THREE.Path();
+    roundedRectPath(hole, -innerW / 2, -innerH / 2, innerW, innerH, innerR);
+    shape.holes.push(hole);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: false,
+      curveSegments: 12,
+      steps: 1
+    });
+    geometry.translate(0, 0, -depth / 2);
+    return geometry;
+  };
+  const usbRoundedBlockGeometry = (width, height, depth, radius) => {
+    const shape = new THREE.Shape();
+    roundedRectPath(shape, -width / 2, -height / 2, width, height, radius);
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth,
+      bevelEnabled: false,
+      curveSegments: 8,
+      steps: 1
+    });
+    geometry.translate(0, 0, -depth / 2);
+    return geometry;
+  };
+
   const shellDepth = 5.8;
-  const usbShell = addUsbPart(new THREE.BoxGeometry(8.25, 0.22, shellDepth), connectorMetal, [0, 1.09, 0]);
-  addUsbPart(new THREE.BoxGeometry(8.25, 0.22, shellDepth), connectorMetal, [0, -1.09, 0]);
-  addUsbPart(new THREE.BoxGeometry(0.22, 1.96, shellDepth), connectorMetal, [-4.015, 0, 0]);
-  addUsbPart(new THREE.BoxGeometry(0.22, 1.96, shellDepth), connectorMetal, [4.015, 0, 0]);
-  // Reinforced mouth lip, built as four pieces to keep the Type-C opening hollow.
-  addUsbPart(new THREE.BoxGeometry(8.25, 0.28, 0.34), connectorMetal, [0, 1.03, 2.73]);
-  addUsbPart(new THREE.BoxGeometry(8.25, 0.28, 0.34), connectorMetal, [0, -1.03, 2.73]);
-  addUsbPart(new THREE.BoxGeometry(0.28, 1.82, 0.34), connectorMetal, [-3.985, 0, 2.73]);
-  addUsbPart(new THREE.BoxGeometry(0.28, 1.82, 0.34), connectorMetal, [3.985, 0, 2.73]);
+  const usbShell = addUsbPart(
+    usbRingGeometry(8.25, 2.40, 6.78, 1.56, shellDepth, 1.05, 0.67),
+    connectorMetal,
+    [0, 0, 0]
+  );
+  // Slightly heavier front lip and rear collar reproduce the pressed shell profile.
+  addUsbPart(usbRingGeometry(8.38, 2.50, 6.63, 1.43, 0.38, 1.10, 0.62), connectorMetal, [0, 0, 2.70]);
+  addUsbPart(usbRingGeometry(8.30, 2.44, 6.72, 1.50, 0.42, 1.07, 0.65), connectorMetal, [0, 0, -2.48]);
   const usbCoreMaterial = new THREE.MeshStandardMaterial({ color: 0x242526, roughness: 0.67, metalness: 0.03 });
-  const usbTongue = addUsbPart(new THREE.BoxGeometry(5.5, 0.46, 4.55), usbCoreMaterial, [0, -0.08, 0.28]);
+  const usbTongue = addUsbPart(usbRoundedBlockGeometry(5.55, 0.48, 4.45, 0.18), usbCoreMaterial, [0, -0.03, 0.30]);
   const contactMaterial = new THREE.MeshStandardMaterial({ color: 0xd3ae5d, roughness: 0.32, metalness: 0.76 });
   for (let i = 0; i < 12; i += 1) {
     const x = -2.75 + i * 0.5;
-    addUsbPart(new THREE.BoxGeometry(0.27, 0.055, 2.85), contactMaterial, [x, 0.19, 0.72]);
+    addUsbPart(new THREE.BoxGeometry(0.27, 0.035, 2.82), contactMaterial, [x, 0.225, 0.70]);
+    addUsbPart(new THREE.BoxGeometry(0.27, 0.035, 2.82), contactMaterial, [x, -0.285, 0.70]);
   }
+  // Dark rear dielectric and shell seams add depth behind the contact tongue.
+  addUsbPart(usbRoundedBlockGeometry(6.55, 1.43, 0.34, 0.60), usbCoreMaterial, [0, 0, -2.34]);
   // Side retention/shell tabs visible where the connector meets the PCB.
-  addUsbPart(new THREE.BoxGeometry(1.15, 0.28, 1.55), connectorMetal, [-4.32, -0.83, -2.25]);
-  addUsbPart(new THREE.BoxGeometry(1.15, 0.28, 1.55), connectorMetal, [4.32, -0.83, -2.25]);
+  addUsbPart(new THREE.BoxGeometry(1.18, 0.30, 1.62), connectorMetal, [-4.30, -0.86, -2.18]);
+  addUsbPart(new THREE.BoxGeometry(1.18, 0.30, 1.62), connectorMetal, [4.30, -0.86, -2.18]);
 
-  const kcToModel = (x, y, height = 1.0) => new THREE.Vector3(x - 140, boardY + 0.3 + height / 2, -(y - 127));
+  const kcToModel = (x, y, height = 1.0) => new THREE.Vector3(x - 140, boardTopY + height / 2, -(y - 127));
+
+  // The board uses the Framework reference M2 mounting-hole positions.
+  // Add fitted M2 pan-head screws so the PCB reads as mechanically retained.
+  const screwMetal = new THREE.MeshStandardMaterial({ color: 0xaeb4b7, roughness: 0.28, metalness: 0.82 });
+  const screwDrive = new THREE.MeshStandardMaterial({ color: 0x3d4143, roughness: 0.46, metalness: 0.5 });
+  const screwGroup = new THREE.Group();
+  boardGroup.add(screwGroup);
+  const addMountingScrew = (x, y) => {
+    const p = kcToModel(x, y, 0);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.85, 24), screwMetal);
+    shaft.position.set(p.x, boardTopY - 0.58, p.z);
+    screwGroup.add(shaft);
+
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(1.72, 1.62, 0.58, 32), screwMetal);
+    head.position.set(p.x, boardTopY + 0.28, p.z);
+    screwGroup.add(head);
+
+    const slotA = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.055, 0.22), screwDrive);
+    slotA.position.set(p.x, boardTopY + 0.585, p.z);
+    screwGroup.add(slotA);
+    const slotB = slotA.clone();
+    slotB.rotation.y = Math.PI / 2;
+    screwGroup.add(slotB);
+  };
+  addMountingScrew(128.7, 146.5);
+  addMountingScrew(151.3, 146.5);
 
   const addBoxPart = ({ x, y, sx, sz, h, material = blackChip, rotation = 0 }) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, h, sz), material.clone ? material.clone() : material);
@@ -148,7 +220,7 @@
     [-10.2, -25.8, 1.2, 0.7], [10.1, -25.6, 1.2, 0.7]
   ].forEach(([x, z, sx, sz]) => {
     const p = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.55, sz), passiveMaterial);
-    p.position.set(x, boardY + 0.6, z);
+    p.position.set(x, boardTopY + 0.30, z);
     fallbackGroup.add(p);
   });
 
@@ -158,14 +230,14 @@
     [3.4, -15.7], [-9.7, -23.5], [9.4, -23.9], [-7.8, -28.0], [7.6, -28.2]
   ].forEach(([x, z]) => {
     const via = new THREE.Mesh(viaGeometry, copperMaterial);
-    via.position.set(x, boardY + 0.63, z);
+    via.position.set(x, boardTopY + 0.03, z);
     fallbackGroup.add(via);
   });
 
   // Minimal copper-like traces: visual context only, deliberately not a replacement for the KiCad artwork.
   const traceMaterial = new THREE.LineBasicMaterial({ color: 0xa8854b, transparent: true, opacity: 0.42 });
   const addTrace = (pts) => {
-    const geometry = new THREE.BufferGeometry().setFromPoints(pts.map(([x, z]) => new THREE.Vector3(x, boardY + 0.655, z)));
+    const geometry = new THREE.BufferGeometry().setFromPoints(pts.map(([x, z]) => new THREE.Vector3(x, boardTopY + 0.055, z)));
     fallbackGroup.add(new THREE.Line(geometry, traceMaterial));
   };
   addTrace([[-1.5, -3.7], [-1.5, -7], [-3.8, -9.3], [-3.8, -11.8]]);
@@ -177,11 +249,11 @@
   const silkGeo = new THREE.PlaneGeometry(5.5, 0.11);
   const silkA = new THREE.Mesh(silkGeo, whiteSilk);
   silkA.rotation.x = -Math.PI / 2;
-  silkA.position.set(-9.2, boardY + 0.67, -16.4);
+  silkA.position.set(-9.2, boardTopY + 0.07, -16.4);
   fallbackGroup.add(silkA);
   const silkB = silkA.clone();
   silkB.scale.x = 0.55;
-  silkB.position.set(-10.4, boardY + 0.67, -17.1);
+  silkB.position.set(-10.4, boardTopY + 0.07, -17.1);
   fallbackGroup.add(silkB);
 
   const componentData = [
@@ -208,7 +280,7 @@
     {
       ref: 'P1', name: 'USB-C edge plug',
       copy: 'The card mates directly with the Framework laptop bay. The thin PCB and connector geometry are part of the expansion-card mechanical design.',
-      anchor: new THREE.Vector3(0, boardY + 2.8, -1.0), mesh: usbShell, meshes: usbHighlightMeshes
+      anchor: new THREE.Vector3(0, usbGroup.position.y + 1.62, -1.0), mesh: usbShell, meshes: usbHighlightMeshes
     }
   ];
 
@@ -341,6 +413,53 @@
     });
   };
 
+  const styleDetailedBoard = (model) => {
+    const thicknessScale = boardThickness / exportedBoardThickness;
+    const componentDrop = (exportedBoardThickness - boardThickness) / 1000;
+    const boardMaterialNames = new Set(['mat_15', 'mat_16', 'mat_17', 'mat_18']);
+
+    model.children.forEach((child) => {
+      let isBoardLayer = false;
+      child.traverse((object) => {
+        if (!object.isMesh) return;
+        materialsFor(object).forEach((material) => {
+          if (boardMaterialNames.has(material.name)) isBoardLayer = true;
+          if (material.name === 'mat_15') {
+            material.color.setHex(0xd0a24b);
+            material.metalness = 0.78;
+            material.roughness = 0.34;
+          } else if (material.name === 'mat_16') {
+            material.color.setHex(0xf4f1e8);
+            material.opacity = 1;
+            material.transparent = false;
+            material.metalness = 0;
+            material.roughness = 0.82;
+          } else if (material.name === 'mat_17') {
+            material.color.setHex(0x07080a);
+            material.opacity = 0.97;
+            material.transparent = true;
+            material.metalness = 0.02;
+            material.roughness = 0.58;
+          } else if (material.name === 'mat_18') {
+            material.color.setHex(0x121416);
+            material.opacity = 1;
+            material.transparent = false;
+            material.metalness = 0.02;
+            material.roughness = 0.72;
+          }
+          material.needsUpdate = true;
+        });
+      });
+
+      if (isBoardLayer) {
+        child.scale.y *= thicknessScale;
+      } else if (child.position && child.position.y > 0) {
+        // Lower component seating by the same amount removed from the PCB top.
+        child.position.y -= componentDrop;
+      }
+    });
+  };
+
   let detailedBoardReady = false;
   let shellReady = false;
   const refreshReadyStatus = () => {
@@ -363,6 +482,7 @@
         // the existing hotspot coordinate system.
         model.scale.set(1000, 1000, -1000);
         model.position.set(-140, 3.04, 127);
+        styleDetailedBoard(model);
         kicadGroup.add(model);
         fallbackGroup.visible = false;
         setDetailedComponentObjects(model);
@@ -487,7 +607,7 @@
 
   explodeButton.addEventListener('click', () => {
     exploded = !exploded;
-    shellTargetY = exploded ? 11 : 0;
+    shellTargetY = exploded ? -11 : 0;
     explodeButton.setAttribute('aria-pressed', String(exploded));
     explodeButton.textContent = exploded ? 'Assemble' : 'Explode';
     announce(exploded ? 'Exploded enclosure view' : 'Assembled enclosure view');
