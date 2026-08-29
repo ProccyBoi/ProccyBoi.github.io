@@ -81,6 +81,40 @@
   board.position.set(0, boardY, -15);
   fallbackGroup.add(board);
 
+  // Screen-readable overlay of the real KiCad F.SilkS layer. The raw GLB
+  // silkscreen uses 0.12–0.20 mm strokes which become sub-pixel at the default
+  // camera distance, so use the same source geometry as a transparent texture
+  // with widened screen strokes. Components still occlude it because
+  // depth testing remains enabled.
+  const silkOverlayGroup = new THREE.Group();
+  boardGroup.add(silkOverlayGroup);
+  const silkTextureLoader = new THREE.TextureLoader();
+  silkTextureLoader.load(
+    'assets/models/framework-esp32/framework-silkscreen.png',
+    (texture) => {
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.03,
+        side: THREE.DoubleSide,
+        depthTest: true,
+        depthWrite: false
+      });
+      material.toneMapped = false;
+      const overlay = new THREE.Mesh(new THREE.PlaneGeometry(26, 30), material);
+      overlay.rotation.x = Math.PI / 2;
+      overlay.position.set(0, boardTopY + 0.18, -15);
+      overlay.renderOrder = 120;
+      silkOverlayGroup.add(overlay);
+    },
+    undefined,
+    (error) => console.warn('Framework silkscreen overlay failed to load', error)
+  );
+
   // Slightly lighter board edge makes the 0.6 mm laminate readable at grazing angles.
   const boardEdge = new THREE.LineSegments(
     new THREE.EdgesGeometry(board.geometry),
@@ -464,13 +498,16 @@
               material.emissiveIntensity = 1.0;
             }
           } else if (material.name === 'mat_17') {
-            material.color.setHex(0x07080a);
-            material.opacity = 0.97;
-            material.transparent = true;
-            material.metalness = 0.02;
-            material.roughness = 0.58;
+            // Real board is black soldermask. Keep this fully opaque so the
+            // exported green KiCad material cannot tint the PCB in WebGL.
+            material.color.setHex(0x000000);
+            material.opacity = 1;
+            material.transparent = false;
+            material.depthWrite = true;
+            material.metalness = 0.01;
+            material.roughness = 0.42;
           } else if (material.name === 'mat_18') {
-            material.color.setHex(0x121416);
+            material.color.setHex(0x050506);
             material.opacity = 1;
             material.transparent = false;
             material.metalness = 0.02;
@@ -491,13 +528,15 @@
               polygonOffsetUnits: -6
             });
             material.toneMapped = false;
+            material.fog = false;
             return material;
           };
           object.material = Array.isArray(object.material)
             ? object.material.map(() => makeSilkMaterial())
             : makeSilkMaterial();
-          object.position.y += 0.00014;
-          object.renderOrder = 10;
+          // A dedicated high-resolution F.SilkS overlay is used below for
+          // screen readability, so suppress the sub-pixel GLB silk layer.
+          object.visible = false;
         }
       });
 
@@ -562,28 +601,31 @@
       'assets/models/framework-esp32/framework-usbc.glb',
       (gltf) => {
         const p1 = gltf.scene.getObjectByName('P1');
-        let sourceMesh = null;
-        if (p1) {
-          p1.traverse((object) => {
-            if (!sourceMesh && object.isMesh) sourceMesh = object;
-          });
-        }
-        if (!sourceMesh) {
+        if (!p1) {
           console.warn('Framework Molex 105444 GLB did not contain a P1 mesh');
           return;
         }
 
-        const exactPlug = sourceMesh.clone(true);
+        // Keep the entire CAD subtree rather than flattening only the first
+        // mesh. This preserves the STEP tessellation hierarchy and avoids
+        // dropped/inverted faces at the shell lip and retention features.
+        const exactPlug = p1.clone(true);
         exactPlug.name = 'P1_Molex_105444_exact';
-        exactPlug.geometry = sourceMesh.geometry;
-        exactPlug.material = connectorMetal.clone();
+        exactPlug.position.set(0, 0, 0);
         exactPlug.rotation.x = Math.PI / 2;
         exactPlug.scale.setScalar(1000);
-        exactPlug.position.set(
-          0,
-          boardBottomY + 0.595 - (exportedBoardThickness - boardThickness),
-          -2.0
-        );
+        exactPlug.position.set(0, boardTopY, -2.0);
+        exactPlug.traverse((object) => {
+          if (!object.isMesh) return;
+          const material = connectorMetal.clone();
+          material.side = THREE.DoubleSide;
+          material.color.setHex(0xb9bec1);
+          material.metalness = 0.86;
+          material.roughness = 0.24;
+          object.material = material;
+          object.castShadow = false;
+          object.receiveShadow = false;
+        });
         exactUsbGroup.add(exactPlug);
         usbGroup.visible = false;
 
