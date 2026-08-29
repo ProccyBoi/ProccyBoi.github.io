@@ -10,10 +10,11 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/skylabs-object.css?v=20260829c">
-  <link rel="stylesheet" href="assets/framework-3d.css?v=20260829a">
+  <link rel="stylesheet" href="assets/framework-3d.css?v=20260829b">
   <script src="assets/site.js" defer></script>
   <script src="assets/vendor/three.min.js" defer></script>
-  <script src="assets/framework-3d.js?v=20260829a" defer></script>
+  <script src="assets/vendor/GLTFLoader.js" defer></script>
+  <script src="assets/framework-3d.js?v=20260829b" defer></script>
 </head>
 <body class="object-body framework-3d-body">
   <a class="skip-link" href="#main">Skip to 3D explorer</a>
@@ -34,7 +35,7 @@
       <h1 id="object-title">Turn the<br>card over.</h1>
       <div class="object-hero-copy">
         <p>Orbit the complete expansion-card assembly, peel the clear shell away and inspect the main parts that make the ESP32-S3 fit inside a Framework laptop bay.</p>
-        <p class="object-proof">The enclosure is the Framework mechanical STL. Major component positions come from the current KiCad board; package shapes and PCB detail are simplified for the browser model.</p>
+        <p class="object-proof">The enclosure is the Framework mechanical STL. The populated PCB is exported directly from the current KiCad design, including copper, solder mask, silkscreen and detailed package models.</p>
       </div>
     </section>
     <section class="object-workbench" aria-labelledby="framework-workbench-title">
@@ -76,8 +77,8 @@
     <section class="object-findings" aria-labelledby="framework-facts-title">
       <div><p class="object-kicker">Mechanical envelope</p><h2 id="framework-facts-title">Built around the real card geometry.</h2></div>
       <dl class="object-fact-grid"><div><dt>30</dt><dd>mm enclosure width</dd></div><div><dt>32</dt><dd>mm enclosure length</dd></div><div><dt>6.8</dt><dd>mm enclosure height</dd></div><div><dt>0.6</dt><dd>mm finished PCB thickness</dd></div></dl>
-      <p class="object-finding-note">The shell is rendered from Framework's expansion-card enclosure STL. The PCB and major packages are deliberately lightweight browser geometry, positioned from the KiCad design rather than presented as manufacturing CAD.</p>
-      <div class="object-links"><a href="projects/framework-expansion-card/">Read the Framework ESP32 project <span aria-hidden="true">&rarr;</span></a><a href="https://github.com/FrameworkComputer/ExpansionCards" target="_blank" rel="noreferrer">Framework expansion-card source <span aria-hidden="true">↗</span></a></div>
+      <p class="object-finding-note">The shell is rendered from Framework's expansion-card enclosure STL. The board is a KiCad GLB export of the actual 0.6 mm design; the ESP32-S3-MINI-1 uses Espressif's official 3D model, while the discontinued KiCad Molex plug model is reconstructed from the connector envelope and terminal pitch.</p>
+      <div class="object-links"><a href="projects/framework-expansion-card/">Read the Framework ESP32 project <span aria-hidden="true">&rarr;</span></a><a href="https://github.com/FrameworkComputer/ExpansionCards" target="_blank" rel="noreferrer">Framework expansion-card source <span aria-hidden="true">↗</span></a><a href="https://github.com/espressif/kicad-libraries" target="_blank" rel="noreferrer">Espressif KiCad models <span aria-hidden="true">↗</span></a></div>
     </section>
   </main>
   <footer class="site-footer"><div class="footer-inner"><p>&copy; <span data-current-year>2026</span> Andrew Chung</p><a href="projects/framework-expansion-card/">Framework ESP32 Card</a><a href="about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a></div></footer>

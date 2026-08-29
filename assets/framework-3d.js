@@ -49,15 +49,23 @@
 
   const boardGroup = new THREE.Group();
   assembly.add(boardGroup);
+  // The KiCad board coordinate system originally entered the enclosure backwards.
+  // Rotate the complete PCB assembly about its 26 x 30 mm centre, leaving the shell fixed.
+  boardGroup.rotation.y = Math.PI;
+  boardGroup.position.z = -30;
   const shellGroup = new THREE.Group();
   assembly.add(shellGroup);
+
+  const fallbackGroup = new THREE.Group();
+  boardGroup.add(fallbackGroup);
+  const kicadGroup = new THREE.Group();
+  boardGroup.add(kicadGroup);
 
   const boardMaterial = new THREE.MeshStandardMaterial({
     color: 0x111214,
     roughness: 0.5,
     metalness: 0.08
   });
-  const edgeMaterial = new THREE.MeshStandardMaterial({ color: 0x2e3134, roughness: 0.62, metalness: 0.08 });
   const blackChip = new THREE.MeshStandardMaterial({ color: 0x16181a, roughness: 0.45, metalness: 0.06 });
   const moduleMetal = new THREE.MeshStandardMaterial({ color: 0xbfc4c6, roughness: 0.25, metalness: 0.72 });
   const connectorMetal = new THREE.MeshStandardMaterial({ color: 0xa8adaf, roughness: 0.28, metalness: 0.8 });
@@ -67,7 +75,7 @@
   const boardY = 3.34;
   const board = new THREE.Mesh(new THREE.BoxGeometry(26, 0.6, 30), boardMaterial);
   board.position.set(0, boardY, -15);
-  boardGroup.add(board);
+  fallbackGroup.add(board);
 
   // Slightly lighter board edge makes the 0.6 mm laminate readable at grazing angles.
   const boardEdge = new THREE.LineSegments(
@@ -76,13 +84,40 @@
   );
   board.add(boardEdge);
 
-  // The direct-mating USB-C plug sits at the narrow top edge of the PCB.
-  const usbShell = new THREE.Mesh(new THREE.BoxGeometry(8.7, 2.45, 5.4), connectorMetal);
-  usbShell.position.set(0, boardY + 1.2, -0.8);
-  boardGroup.add(usbShell);
-  const usbCore = new THREE.Mesh(new THREE.BoxGeometry(6.3, 1.3, 5.8), new THREE.MeshStandardMaterial({ color: 0x27292b, roughness: 0.62 }));
-  usbCore.position.set(0, boardY + 1.2, -0.95);
-  boardGroup.add(usbCore);
+  // Molex 105444 edge plug. KiCad no longer ships the old referenced WRL model,
+  // so reconstruct the visible connector from its 8.25 x 2.40 mm envelope,
+  // 0.50 mm terminal pitch, tongue, shell panels and retention ears.
+  const usbGroup = new THREE.Group();
+  usbGroup.position.set(0, boardY + 1.2, -1.0);
+  boardGroup.add(usbGroup);
+  const usbHighlightMeshes = [];
+  const addUsbPart = (geometry, material, position) => {
+    const mesh = new THREE.Mesh(geometry, material.clone ? material.clone() : material);
+    mesh.position.set(...position);
+    usbGroup.add(mesh);
+    usbHighlightMeshes.push(mesh);
+    return mesh;
+  };
+  const shellDepth = 5.8;
+  const usbShell = addUsbPart(new THREE.BoxGeometry(8.25, 0.22, shellDepth), connectorMetal, [0, 1.09, 0]);
+  addUsbPart(new THREE.BoxGeometry(8.25, 0.22, shellDepth), connectorMetal, [0, -1.09, 0]);
+  addUsbPart(new THREE.BoxGeometry(0.22, 1.96, shellDepth), connectorMetal, [-4.015, 0, 0]);
+  addUsbPart(new THREE.BoxGeometry(0.22, 1.96, shellDepth), connectorMetal, [4.015, 0, 0]);
+  // Reinforced mouth lip, built as four pieces to keep the Type-C opening hollow.
+  addUsbPart(new THREE.BoxGeometry(8.25, 0.28, 0.34), connectorMetal, [0, 1.03, 2.73]);
+  addUsbPart(new THREE.BoxGeometry(8.25, 0.28, 0.34), connectorMetal, [0, -1.03, 2.73]);
+  addUsbPart(new THREE.BoxGeometry(0.28, 1.82, 0.34), connectorMetal, [-3.985, 0, 2.73]);
+  addUsbPart(new THREE.BoxGeometry(0.28, 1.82, 0.34), connectorMetal, [3.985, 0, 2.73]);
+  const usbCoreMaterial = new THREE.MeshStandardMaterial({ color: 0x242526, roughness: 0.67, metalness: 0.03 });
+  const usbTongue = addUsbPart(new THREE.BoxGeometry(5.5, 0.46, 4.55), usbCoreMaterial, [0, -0.08, 0.28]);
+  const contactMaterial = new THREE.MeshStandardMaterial({ color: 0xd3ae5d, roughness: 0.32, metalness: 0.76 });
+  for (let i = 0; i < 12; i += 1) {
+    const x = -2.75 + i * 0.5;
+    addUsbPart(new THREE.BoxGeometry(0.27, 0.055, 2.85), contactMaterial, [x, 0.19, 0.72]);
+  }
+  // Side retention/shell tabs visible where the connector meets the PCB.
+  addUsbPart(new THREE.BoxGeometry(1.15, 0.28, 1.55), connectorMetal, [-4.32, -0.83, -2.25]);
+  addUsbPart(new THREE.BoxGeometry(1.15, 0.28, 1.55), connectorMetal, [4.32, -0.83, -2.25]);
 
   const kcToModel = (x, y, height = 1.0) => new THREE.Vector3(x - 140, boardY + 0.3 + height / 2, -(y - 127));
 
@@ -90,15 +125,15 @@
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, h, sz), material.clone ? material.clone() : material);
     mesh.position.copy(kcToModel(x, y, h));
     mesh.rotation.y = THREE.MathUtils.degToRad(-rotation);
-    boardGroup.add(mesh);
+    fallbackGroup.add(mesh);
     return mesh;
   };
 
-  const esp32 = addBoxPart({ x: 140.1, y: 146.29, sx: 20, sz: 15.4, h: 2.25, material: moduleMetal, rotation: 180 });
+  const esp32 = addBoxPart({ x: 140.1, y: 146.29, sx: 15.4, sz: 20, h: 2.25, material: moduleMetal, rotation: 180 });
   // Antenna end: a pale ceramic/RF region makes orientation obvious without pretending to be exact package CAD.
   const antenna = new THREE.Mesh(new THREE.BoxGeometry(18.0, 0.12, 4.2), new THREE.MeshStandardMaterial({ color: 0xe9e1cb, roughness: 0.76 }));
   antenna.position.set(esp32.position.x, esp32.position.y + 1.19, esp32.position.z - 5.35);
-  boardGroup.add(antenna);
+  fallbackGroup.add(antenna);
 
   const ch340 = addBoxPart({ x: 132.2575, y: 130.84, sx: 4.9, sz: 3.9, h: 1.25, rotation: -90 });
   const regulator = addBoxPart({ x: 148.37, y: 131.35, sx: 6.4, sz: 3.5, h: 1.75, rotation: 90 });
@@ -114,7 +149,7 @@
   ].forEach(([x, z, sx, sz]) => {
     const p = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.55, sz), passiveMaterial);
     p.position.set(x, boardY + 0.6, z);
-    boardGroup.add(p);
+    fallbackGroup.add(p);
   });
 
   const viaGeometry = new THREE.CylinderGeometry(0.26, 0.26, 0.08, 16);
@@ -124,14 +159,14 @@
   ].forEach(([x, z]) => {
     const via = new THREE.Mesh(viaGeometry, copperMaterial);
     via.position.set(x, boardY + 0.63, z);
-    boardGroup.add(via);
+    fallbackGroup.add(via);
   });
 
   // Minimal copper-like traces: visual context only, deliberately not a replacement for the KiCad artwork.
   const traceMaterial = new THREE.LineBasicMaterial({ color: 0xa8854b, transparent: true, opacity: 0.42 });
   const addTrace = (pts) => {
     const geometry = new THREE.BufferGeometry().setFromPoints(pts.map(([x, z]) => new THREE.Vector3(x, boardY + 0.655, z)));
-    boardGroup.add(new THREE.Line(geometry, traceMaterial));
+    fallbackGroup.add(new THREE.Line(geometry, traceMaterial));
   };
   addTrace([[-1.5, -3.7], [-1.5, -7], [-3.8, -9.3], [-3.8, -11.8]]);
   addTrace([[2.0, -4.0], [5.8, -6.7], [6.8, -10.7]]);
@@ -143,11 +178,11 @@
   const silkA = new THREE.Mesh(silkGeo, whiteSilk);
   silkA.rotation.x = -Math.PI / 2;
   silkA.position.set(-9.2, boardY + 0.67, -16.4);
-  boardGroup.add(silkA);
+  fallbackGroup.add(silkA);
   const silkB = silkA.clone();
   silkB.scale.x = 0.55;
   silkB.position.set(-10.4, boardY + 0.67, -17.1);
-  boardGroup.add(silkB);
+  fallbackGroup.add(silkB);
 
   const componentData = [
     {
@@ -173,9 +208,20 @@
     {
       ref: 'P1', name: 'USB-C edge plug',
       copy: 'The card mates directly with the Framework laptop bay. The thin PCB and connector geometry are part of the expansion-card mechanical design.',
-      anchor: new THREE.Vector3(0, boardY + 2.8, -1.0), mesh: usbShell
+      anchor: new THREE.Vector3(0, boardY + 2.8, -1.0), mesh: usbShell, meshes: usbHighlightMeshes
     }
   ];
+
+  const materialsFor = (mesh) => {
+    if (!mesh || !mesh.material) return [];
+    return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  };
+
+  const componentMeshes = (component) => component.meshes || (component.mesh ? [component.mesh] : []);
+  const selectionBox = new THREE.Box3();
+  const selectionHelper = new THREE.Box3Helper(selectionBox, 0xe09a5d);
+  selectionHelper.visible = false;
+  scene.add(selectionHelper);
 
   directoryCount.textContent = `${componentData.length} selectable parts`;
   let selectedIndex = -1;
@@ -190,13 +236,16 @@
   };
 
   const clearHighlights = () => {
+    selectionHelper.visible = false;
     componentData.forEach((component) => {
-      (component.meshes || [component.mesh]).forEach((mesh) => {
-        if (!mesh || !mesh.material) return;
-        if (mesh.userData.originalEmissive !== undefined && mesh.material.emissive) {
-          mesh.material.emissive.setHex(mesh.userData.originalEmissive);
-          mesh.material.emissiveIntensity = mesh.userData.originalIntensity || 0;
-        }
+      componentMeshes(component).forEach((mesh) => {
+        materialsFor(mesh).forEach((material) => {
+          const key = material.uuid;
+          const saved = mesh.userData.frameworkOriginalMaterials && mesh.userData.frameworkOriginalMaterials[key];
+          if (!saved || !material.emissive) return;
+          material.emissive.setHex(saved.emissive);
+          material.emissiveIntensity = saved.intensity;
+        });
       });
     });
   };
@@ -228,15 +277,30 @@
     readoutRef.textContent = component.ref;
     readoutName.textContent = component.name;
     readoutCopy.textContent = component.copy;
-    (component.meshes || [component.mesh]).forEach((mesh) => {
-      if (!mesh || !mesh.material || !mesh.material.emissive) return;
-      if (mesh.userData.originalEmissive === undefined) {
-        mesh.userData.originalEmissive = mesh.material.emissive.getHex();
-        mesh.userData.originalIntensity = mesh.material.emissiveIntensity;
-      }
-      mesh.material.emissive.setHex(0x5c3014);
-      mesh.material.emissiveIntensity = 0.9;
-    });
+    if (component.detailObjects && component.detailObjects.length) {
+      selectionBox.makeEmpty();
+      component.detailObjects.forEach((object) => {
+        const box = new THREE.Box3().setFromObject(object);
+        if (!box.isEmpty()) selectionBox.union(box);
+      });
+      selectionHelper.visible = !selectionBox.isEmpty();
+    } else {
+      componentMeshes(component).forEach((mesh) => {
+        if (!mesh) return;
+        if (!mesh.userData.frameworkOriginalMaterials) mesh.userData.frameworkOriginalMaterials = {};
+        materialsFor(mesh).forEach((material) => {
+          if (!material.emissive) return;
+          if (!mesh.userData.frameworkOriginalMaterials[material.uuid]) {
+            mesh.userData.frameworkOriginalMaterials[material.uuid] = {
+              emissive: material.emissive.getHex(),
+              intensity: material.emissiveIntensity || 0
+            };
+          }
+          material.emissive.setHex(0x5c3014);
+          material.emissiveIntensity = 0.9;
+        });
+      });
+    }
     if (fromUser) announce(`${component.ref}, ${component.name}`);
   };
 
@@ -262,6 +326,66 @@
     directory.append(directoryButton);
     directoryButtons.push(directoryButton);
   });
+
+  const setDetailedComponentObjects = (model) => {
+    const remap = {
+      U4: [model.getObjectByName('U4')].filter(Boolean),
+      U1: [model.getObjectByName('U1')].filter(Boolean),
+      U2: [model.getObjectByName('U2')].filter(Boolean),
+      'Q1 / Q2': [model.getObjectByName('Q1'), model.getObjectByName('Q2')].filter(Boolean)
+    };
+    componentData.forEach((component) => {
+      const detailed = remap[component.ref];
+      if (!detailed || !detailed.length) return;
+      component.detailObjects = detailed;
+    });
+  };
+
+  let detailedBoardReady = false;
+  let shellReady = false;
+  const refreshReadyStatus = () => {
+    if (detailedBoardReady && shellReady) {
+      status.textContent = 'Detailed KiCad assembly + enclosure loaded';
+      status.classList.add('is-ready');
+      announce('Detailed 3D Framework ESP32 model ready');
+    } else {
+      status.classList.remove('is-ready');
+    }
+  };
+  if (THREE.GLTFLoader) {
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      'assets/models/framework-esp32/framework-board.glb',
+      (gltf) => {
+        const model = gltf.scene;
+        // KiCad GLB is exported in metres with board X/Y mapped to glTF X/Z.
+        // Convert to the viewer's millimetre X/Y/Z convention without changing
+        // the existing hotspot coordinate system.
+        model.scale.set(1000, 1000, -1000);
+        model.position.set(-140, 3.04, 127);
+        kicadGroup.add(model);
+        fallbackGroup.visible = false;
+        setDetailedComponentObjects(model);
+        if (selectedIndex >= 0) {
+          const pendingSelection = selectedIndex;
+          selectedIndex = -1;
+          selectComponent(pendingSelection, false);
+        }
+        detailedBoardReady = true;
+        status.textContent = 'Detailed KiCad assembly loaded';
+        refreshReadyStatus();
+      },
+      undefined,
+      (error) => {
+        detailedBoardReady = false;
+        fallbackGroup.visible = true;
+        status.textContent = 'Detailed PCB unavailable · simplified PCB shown';
+        console.warn('Framework KiCad GLB failed to load', error);
+      }
+    );
+  } else {
+    status.textContent = 'Detailed PCB loader unavailable · simplified PCB shown';
+  }
 
   const parseBinarySTL = (buffer) => {
     const view = new DataView(buffer);
@@ -316,9 +440,9 @@
       shellMesh = new THREE.Mesh(geometry, shellMaterial);
       shellMesh.renderOrder = 3;
       shellGroup.add(shellMesh);
-      status.textContent = 'Framework enclosure loaded';
-      status.classList.add('is-ready');
-      announce('3D Framework ESP32 model ready');
+      shellReady = true;
+      if (!detailedBoardReady) status.textContent = 'Framework enclosure loaded · loading detailed PCB';
+      refreshReadyStatus();
     })
     .catch((error) => {
       status.textContent = 'Enclosure unavailable · PCB remains interactive';
