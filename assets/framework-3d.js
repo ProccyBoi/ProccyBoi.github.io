@@ -88,12 +88,16 @@
   );
   board.add(boardEdge);
 
-  // Molex 105444 edge plug. KiCad no longer ships the old referenced WRL model,
-  // so reconstruct the visible connector from its 8.25 x 2.40 mm envelope,
-  // 0.50 mm terminal pitch, rounded shell, tongue, contacts and retention ears.
+  // Molex 105444 edge plug. Reconstructed from the Molex customer drawing:
+  // 8.25 x 2.40 mm shell, 12.00 mm overall length, 7.70 mm mating section,
+  // 6.83 x 1.30 mm inner opening, 5.50 mm contact span and 0.50 mm pitch.
+  // The footprint origin is the termination datum; its PCB edge is 0.96 mm
+  // forward of that datum, so the mating section correctly protrudes.
   const usbGroup = new THREE.Group();
-  usbGroup.position.set(0, boardTopY + 0.90, -1.0);
+  usbGroup.position.set(0, boardTopY + 0.90, -2.0);
   boardGroup.add(usbGroup);
+  const exactUsbGroup = new THREE.Group();
+  boardGroup.add(exactUsbGroup);
   const usbHighlightMeshes = [];
   const addUsbPart = (geometry, material, position) => {
     const mesh = new THREE.Mesh(geometry, material.clone ? material.clone() : material);
@@ -142,28 +146,43 @@
     return geometry;
   };
 
-  const shellDepth = 5.8;
+  const matingRearZ = 2.30;
+  const matingTipZ = 10.00;
+  const matingDepth = matingTipZ - matingRearZ;
   const usbShell = addUsbPart(
-    usbRingGeometry(8.25, 2.40, 6.78, 1.56, shellDepth, 1.05, 0.67),
+    usbRingGeometry(8.25, 2.40, 6.83, 1.30, matingDepth, 1.05, 0.57),
     connectorMetal,
-    [0, 0, 0]
+    [0, 0, (matingRearZ + matingTipZ) / 2]
   );
-  // Slightly heavier front lip and rear collar reproduce the pressed shell profile.
-  addUsbPart(usbRingGeometry(8.38, 2.50, 6.63, 1.43, 0.38, 1.10, 0.62), connectorMetal, [0, 0, 2.70]);
-  addUsbPart(usbRingGeometry(8.30, 2.44, 6.72, 1.50, 0.42, 1.07, 0.65), connectorMetal, [0, 0, -2.48]);
+  // Front spring/lip and rear shell transition from the Molex profile.
+  addUsbPart(usbRingGeometry(8.30, 2.50, 6.75, 1.22, 0.34, 1.08, 0.54), connectorMetal, [0, 0, 9.83]);
+  addUsbPart(usbRingGeometry(8.25, 2.40, 6.83, 1.30, 2.30, 1.05, 0.57), connectorMetal, [0, 0, 1.15]);
   const usbCoreMaterial = new THREE.MeshStandardMaterial({ color: 0x242526, roughness: 0.67, metalness: 0.03 });
-  const usbTongue = addUsbPart(usbRoundedBlockGeometry(5.55, 0.48, 4.45, 0.18), usbCoreMaterial, [0, -0.03, 0.30]);
+  const usbTongue = addUsbPart(usbRoundedBlockGeometry(5.50, 0.80, 7.40, 0.20), usbCoreMaterial, [0, 0, 6.10]);
   const contactMaterial = new THREE.MeshStandardMaterial({ color: 0xd3ae5d, roughness: 0.32, metalness: 0.76 });
+  const contactDepth = 6.84;
+  const contactCentreZ = (2.34 + 9.18) / 2;
   for (let i = 0; i < 12; i += 1) {
     const x = -2.75 + i * 0.5;
-    addUsbPart(new THREE.BoxGeometry(0.27, 0.035, 2.82), contactMaterial, [x, 0.225, 0.70]);
-    addUsbPart(new THREE.BoxGeometry(0.27, 0.035, 2.82), contactMaterial, [x, -0.285, 0.70]);
+    addUsbPart(new THREE.BoxGeometry(0.22, 0.035, contactDepth), contactMaterial, [x, 0.415, contactCentreZ]);
+    if (i !== 5 && i !== 6) {
+      addUsbPart(new THREE.BoxGeometry(0.22, 0.035, contactDepth), contactMaterial, [x, -0.415, contactCentreZ]);
+    }
   }
-  // Dark rear dielectric and shell seams add depth behind the contact tongue.
-  addUsbPart(usbRoundedBlockGeometry(6.55, 1.43, 0.34, 0.60), usbCoreMaterial, [0, 0, -2.34]);
-  // Side retention/shell tabs visible where the connector meets the PCB.
-  addUsbPart(new THREE.BoxGeometry(1.18, 0.30, 1.62), connectorMetal, [-4.30, -0.86, -2.18]);
-  addUsbPart(new THREE.BoxGeometry(1.18, 0.30, 1.62), connectorMetal, [4.30, -0.86, -2.18]);
+  addUsbPart(usbRoundedBlockGeometry(6.84, 1.30, 2.0, 0.48), usbCoreMaterial, [0, 0, -1.0]);
+  // Shell retention feet use the footprint's exact ±3.42 mm centres.
+  addUsbPart(new THREE.BoxGeometry(0.70, 0.34, 1.15), connectorMetal, [-3.42, -0.86, -0.88]);
+  addUsbPart(new THREE.BoxGeometry(0.70, 0.34, 1.15), connectorMetal, [3.42, -0.86, -0.88]);
+
+  // Separate termination tails make this read as the actual straddle-mount male
+  // plug instead of a receptacle. The bottom row omits B6/B7 (22 contacts total).
+  for (let i = 0; i < 12; i += 1) {
+    const x = -2.75 + i * 0.5;
+    addUsbPart(new THREE.BoxGeometry(0.38, 0.045, 1.0), contactMaterial, [x, -0.58, -0.15]);
+    if (i !== 5 && i !== 6) {
+      addUsbPart(new THREE.BoxGeometry(0.38, 0.045, 1.0), contactMaterial, [x, 0.58, -0.15]);
+    }
+  }
 
   const kcToModel = (x, y, height = 1.0) => new THREE.Vector3(x - 140, boardTopY + height / 2, -(y - 127));
 
@@ -280,7 +299,7 @@
     {
       ref: 'P1', name: 'USB-C edge plug',
       copy: 'The card mates directly with the Framework laptop bay. The thin PCB and connector geometry are part of the expansion-card mechanical design.',
-      anchor: new THREE.Vector3(0, usbGroup.position.y + 1.62, -1.0), mesh: usbShell, meshes: usbHighlightMeshes
+      anchor: new THREE.Vector3(0, usbGroup.position.y + 1.62, usbGroup.position.z + 6.0), mesh: usbShell, meshes: usbHighlightMeshes
     }
   ];
 
@@ -422,18 +441,28 @@
       let isBoardLayer = false;
       child.traverse((object) => {
         if (!object.isMesh) return;
-        materialsFor(object).forEach((material) => {
+        const objectMaterials = materialsFor(object);
+        const isSilkscreen = objectMaterials.some((material) => material.name === 'mat_16');
+        objectMaterials.forEach((material) => {
           if (boardMaterialNames.has(material.name)) isBoardLayer = true;
           if (material.name === 'mat_15') {
             material.color.setHex(0xd0a24b);
             material.metalness = 0.78;
             material.roughness = 0.34;
           } else if (material.name === 'mat_16') {
-            material.color.setHex(0xf4f1e8);
+            material.color.setHex(0xffffff);
             material.opacity = 1;
             material.transparent = false;
             material.metalness = 0;
-            material.roughness = 0.82;
+            material.roughness = 0.35;
+            material.depthWrite = false;
+            material.polygonOffset = true;
+            material.polygonOffsetFactor = -4;
+            material.polygonOffsetUnits = -4;
+            if (material.emissive) {
+              material.emissive.setHex(0x555555);
+              material.emissiveIntensity = 1.0;
+            }
           } else if (material.name === 'mat_17') {
             material.color.setHex(0x07080a);
             material.opacity = 0.97;
@@ -449,6 +478,27 @@
           }
           material.needsUpdate = true;
         });
+
+        if (isSilkscreen) {
+          const makeSilkMaterial = () => {
+            const material = new THREE.MeshBasicMaterial({
+              color: 0xffffff,
+              side: THREE.DoubleSide,
+              depthTest: true,
+              depthWrite: false,
+              polygonOffset: true,
+              polygonOffsetFactor: -6,
+              polygonOffsetUnits: -6
+            });
+            material.toneMapped = false;
+            return material;
+          };
+          object.material = Array.isArray(object.material)
+            ? object.material.map(() => makeSilkMaterial())
+            : makeSilkMaterial();
+          object.position.y += 0.00014;
+          object.renderOrder = 10;
+        }
       });
 
       if (isBoardLayer) {
@@ -503,6 +553,60 @@
         console.warn('Framework KiCad GLB failed to load', error);
       }
     );
+
+    // The Molex 105444 plug was removed from newer KiCad 3D libraries. Load a
+    // standalone GLB generated from the exact legacy KiCad STEP model and use
+    // the original footprint transform (zero offset/rotation). The STEP source
+    // uses Z-up; rotate only the solid so its long axis follows the PCB edge.
+    loader.load(
+      'assets/models/framework-esp32/framework-usbc.glb',
+      (gltf) => {
+        const p1 = gltf.scene.getObjectByName('P1');
+        let sourceMesh = null;
+        if (p1) {
+          p1.traverse((object) => {
+            if (!sourceMesh && object.isMesh) sourceMesh = object;
+          });
+        }
+        if (!sourceMesh) {
+          console.warn('Framework Molex 105444 GLB did not contain a P1 mesh');
+          return;
+        }
+
+        const exactPlug = sourceMesh.clone(true);
+        exactPlug.name = 'P1_Molex_105444_exact';
+        exactPlug.geometry = sourceMesh.geometry;
+        exactPlug.material = connectorMetal.clone();
+        exactPlug.rotation.x = Math.PI / 2;
+        exactPlug.scale.setScalar(1000);
+        exactPlug.position.set(
+          0,
+          boardBottomY + 0.595 - (exportedBoardThickness - boardThickness),
+          -2.0
+        );
+        exactUsbGroup.add(exactPlug);
+        usbGroup.visible = false;
+
+        const usbComponent = componentData.find((component) => component.ref === 'P1');
+        if (usbComponent) {
+          usbComponent.mesh = exactPlug;
+          usbComponent.meshes = [exactPlug];
+          usbComponent.anchor = new THREE.Vector3(0, boardTopY + 2.3, 4.5);
+        }
+
+        if (selectedIndex >= 0 && componentData[selectedIndex] === usbComponent) {
+          const pendingSelection = selectedIndex;
+          selectedIndex = -1;
+          selectComponent(pendingSelection, false);
+        }
+      },
+      undefined,
+      (error) => {
+        // Keep the drawing-based reconstruction as a resilient fallback.
+        usbGroup.visible = true;
+        console.warn('Exact Molex 105444 model failed to load; using fallback geometry', error);
+      }
+    );
   } else {
     status.textContent = 'Detailed PCB loader unavailable · simplified PCB shown';
   }
@@ -549,6 +653,8 @@
   let exploded = false;
   let shellYOffset = 0;
   let shellTargetY = 0;
+  let screwYOffset = 0;
+  let screwTargetY = 0;
 
   fetch('assets/models/framework-esp32/framework-enclosure.stl')
     .then((response) => {
@@ -608,6 +714,7 @@
   explodeButton.addEventListener('click', () => {
     exploded = !exploded;
     shellTargetY = exploded ? -11 : 0;
+    screwTargetY = exploded ? 8.5 : 0;
     explodeButton.setAttribute('aria-pressed', String(exploded));
     explodeButton.textContent = exploded ? 'Assemble' : 'Explode';
     announce(exploded ? 'Exploded enclosure view' : 'Assembled enclosure view');
@@ -618,6 +725,7 @@
     targetDistance = 58;
     exploded = false;
     shellTargetY = 0;
+    screwTargetY = 0;
     explodeButton.setAttribute('aria-pressed', 'false');
     explodeButton.textContent = 'Explode';
     shellVisible = true;
@@ -740,6 +848,8 @@
     distance += (targetDistance - distance) * smoothing;
     shellYOffset += (shellTargetY - shellYOffset) * smoothing;
     shellGroup.position.y = shellYOffset;
+    screwYOffset += (screwTargetY - screwYOffset) * smoothing;
+    screwGroup.position.y = screwYOffset;
 
     const cp = Math.cos(pitch);
     camera.position.set(
