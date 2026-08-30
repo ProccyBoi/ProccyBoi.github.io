@@ -22,7 +22,7 @@
   renderer.toneMappingExposure = 0.98;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 300);
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.5, 300);
   const target = new THREE.Vector3(0, 3.25, -15);
 
   // Neutral studio lighting: keep enough hemisphere fill to preserve the
@@ -241,16 +241,19 @@
   // view. The plane transform matches KiCad's Y-down board coordinate system.
   const silkMaterial = new THREE.MeshBasicMaterial({
     transparent: true,
-    alphaTest: 0.02,
+    alphaTest: 0.001,
     side: THREE.DoubleSide,
     depthTest: true,
-    depthWrite: false
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -4,
+    polygonOffsetUnits: -4
   });
   silkMaterial.toneMapped = false;
   const silkOverlay = new THREE.Mesh(new THREE.PlaneGeometry(26, 30), silkMaterial);
   silkOverlay.rotation.x = -Math.PI / 2;
   silkOverlay.scale.y = -1;
-  silkOverlay.position.set(0, PCB_TOP + 0.055, -15);
+  silkOverlay.position.set(0, PCB_TOP + 0.080, -15);
   silkOverlay.renderOrder = 120;
   silkOverlay.visible = false;
   silkOverlay.raycast = () => {};
@@ -275,19 +278,33 @@
   // Exact F.Cu SMD pad map. A few pads remain visible around components and make
   // the layout read like the real board without shipping another heavy GLB.
   const padGroup = new THREE.Group();
+  padGroup.renderOrder = 40;
   mirroredCardGroup.add(padGroup);
+
+  // Give exposed copper its own depth-biased material. The pad meshes sit only
+  // tens of microns above the soldermask, so relying on raw depth precision
+  // caused them to pop in/out at oblique camera angles.
+  const padMaterial = mat.gold.clone();
+  padMaterial.polygonOffset = true;
+  padMaterial.polygonOffsetFactor = -2;
+  padMaterial.polygonOffsetUnits = -2;
+  padMaterial.emissive = new THREE.Color(0x1d1202);
+  padMaterial.emissiveIntensity = 0.10;
+
   FRONT_PADS.forEach(([x, y, width, height, shape, angle]) => {
     let pad;
     if (shape === 'oval' || shape === 'circle') {
-      pad = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.035, 18), mat.gold);
+      pad = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.035, 18), padMaterial);
       pad.scale.set(width, 1, height);
     } else {
-      pad = new THREE.Mesh(new THREE.BoxGeometry(width, 0.035, height), mat.gold);
+      pad = new THREE.Mesh(new THREE.BoxGeometry(width, 0.035, height), padMaterial);
     }
-    pad.position.set(x, PCB_TOP + 0.022, -y);
+    // Keep the geometry physically close to the board while maintaining enough
+    // separation for stable rasterisation at grazing incidence.
+    pad.position.set(x, PCB_TOP + 0.045, -y);
     // Same KiCad Y-down → Three.js X/-Z mapping as component bodies.
-    // Using the old negative sign made 90°/−90° pads cross their own packages.
     pad.rotation.y = THREE.MathUtils.degToRad(angle);
+    pad.renderOrder = 40;
     padGroup.add(pad);
   });
 
