@@ -241,10 +241,7 @@
     alphaTest: 0.0,
     side: THREE.DoubleSide,
     depthTest: true,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -4,
-    polygonOffsetUnits: -4
+    depthWrite: false
   });
   silkMaterial.toneMapped = false;
   const silkOverlay = new THREE.Mesh(new THREE.PlaneGeometry(26, 30), silkMaterial);
@@ -283,9 +280,6 @@
   // tens of microns above the soldermask, so relying on raw depth precision
   // caused them to pop in/out at oblique camera angles.
   const padMaterial = mat.gold.clone();
-  padMaterial.polygonOffset = true;
-  padMaterial.polygonOffsetFactor = -2;
-  padMaterial.polygonOffsetUnits = -2;
   padMaterial.emissive = new THREE.Color(0x1d1202);
   padMaterial.emissiveIntensity = 0.10;
 
