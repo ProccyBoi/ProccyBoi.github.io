@@ -798,7 +798,7 @@
     componentExplodeTarget = exploded ? 1 : 0;
     if (exploded) {
       assembledDistance = targetDistance;
-      targetDistance = Math.min(88, assembledDistance + 10);
+      targetDistance = Math.min(98, assembledDistance + 18);
     } else {
       targetDistance = assembledDistance;
     }
