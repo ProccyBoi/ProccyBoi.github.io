@@ -346,14 +346,15 @@
     const group = addGroupAt(ref, x, y, rotation);
     const isCustomFivePin = pins === 5;
     group.userData.packageEnvelope = isCustomFivePin
-      ? { length: packageSpec.SOT23.length, width: packageSpec.SOT23.span, height: packageSpec.SOT23.height, rotatedFootprint: true }
-      : packageSpec.SOT23;
+      ? { bodyLength: 3.0, bodyWidth: 1.7, leadSpan: 2.8, height: 1.45, source: 'EasyEDA SOT-23-5 F.Fab' }
+      : { bodyLength: 2.9, bodyWidth: 1.6, leadSpan: 2.8, height: 1.45, source: 'KiCad SOT-23-6 F.Fab' };
 
-    // U1/U4 use the EasyEDA L3.0-W1.7 footprint, which is locally rotated 90°
-    // relative to KiCad's stock SOT-23-6 footprint used by U5/U6/U7.
-    const bodyX = isCustomFivePin ? 2.90068 : 1.60020;
-    const bodyZ = isCustomFivePin ? 1.60020 : 2.90068;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(bodyX, 1.45034, bodyZ), mat.chip);
+    // Source footprint bodies: U1/U4 = L3.0 × W1.7 mm, while U5/U6/U7
+    // use KiCad SOT-23-6 F.Fab = 1.6 × 2.9 mm. Keep that local orientation
+    // before applying the exact footprint rotation.
+    const bodyX = isCustomFivePin ? 3.00 : 1.60;
+    const bodyZ = isCustomFivePin ? 1.70 : 2.90;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(bodyX, 1.45, bodyZ), mat.chip);
     body.position.y = 0.82423;
     group.add(body);
     const top = new THREE.Mesh(new THREE.BoxGeometry(bodyX - 0.18, 0.045, bodyZ - 0.18), mat.chipTop);
