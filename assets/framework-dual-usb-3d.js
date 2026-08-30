@@ -16,7 +16,7 @@
   const announce = (message) => { if (liveRegion) liveRegion.textContent = message; };
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -59,17 +59,19 @@
   const kc = (x, y, height = 0) => new THREE.Vector3(x - 140, PCB_BOTTOM + height, -(y - 127));
 
   const mat = {
-    board: new THREE.MeshStandardMaterial({ color: 0x285e38, roughness: 0.48, metalness: 0.04 }),
-    boardEdge: new THREE.LineBasicMaterial({ color: 0x91a798, transparent: true, opacity: 0.48 }),
-    chip: new THREE.MeshStandardMaterial({ color: 0x141719, roughness: 0.45, metalness: 0.05 }),
-    chipMark: new THREE.MeshBasicMaterial({ color: 0x777b7d }),
-    metal: new THREE.MeshStandardMaterial({ color: 0xb9bec1, roughness: 0.24, metalness: 0.86 }),
-    darkMetal: new THREE.MeshStandardMaterial({ color: 0x686e72, roughness: 0.32, metalness: 0.74 }),
-    gold: new THREE.MeshStandardMaterial({ color: 0xd0a24b, roughness: 0.34, metalness: 0.78 }),
-    ceramic: new THREE.MeshStandardMaterial({ color: 0xcfc6ad, roughness: 0.65, metalness: 0.02 }),
-    resistor: new THREE.MeshStandardMaterial({ color: 0x33312d, roughness: 0.62, metalness: 0.03 }),
-    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x202225, roughness: 0.68, metalness: 0.02 }),
-    diode: new THREE.MeshStandardMaterial({ color: 0x26292c, roughness: 0.54, metalness: 0.08 }),
+    board: new THREE.MeshPhysicalMaterial({ color: 0x2c7a4b, roughness: 0.42, metalness: 0.02, clearcoat: 0.16, clearcoatRoughness: 0.56 }),
+    boardEdge: new THREE.LineBasicMaterial({ color: 0xa9c8af, transparent: true, opacity: 0.52 }),
+    chip: new THREE.MeshStandardMaterial({ color: 0x171a1d, roughness: 0.44, metalness: 0.05 }),
+    chipTop: new THREE.MeshStandardMaterial({ color: 0x2a2e31, roughness: 0.36, metalness: 0.04 }),
+    chipMark: new THREE.MeshBasicMaterial({ color: 0xc2c7ca }),
+    metal: new THREE.MeshStandardMaterial({ color: 0xc1c6ca, roughness: 0.2, metalness: 0.9 }),
+    darkMetal: new THREE.MeshStandardMaterial({ color: 0x747b81, roughness: 0.28, metalness: 0.8 }),
+    gold: new THREE.MeshStandardMaterial({ color: 0xd3ab58, roughness: 0.28, metalness: 0.86 }),
+    ceramic: new THREE.MeshStandardMaterial({ color: 0xd2c7b1, roughness: 0.56, metalness: 0.01 }),
+    resistor: new THREE.MeshStandardMaterial({ color: 0x373531, roughness: 0.58, metalness: 0.02 }),
+    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x232527, roughness: 0.66, metalness: 0.02 }),
+    diode: new THREE.MeshStandardMaterial({ color: 0x2a2d30, roughness: 0.5, metalness: 0.07 }),
+    diodeBand: new THREE.MeshBasicMaterial({ color: 0xf3f0df }),
     white: new THREE.MeshBasicMaterial({ color: 0xf0eee7 })
   };
 
@@ -199,18 +201,19 @@
   mirroredCardGroup.add(silkOverlay);
 
   new THREE.TextureLoader().load(
-    'assets/models/framework-dual-usb/framework-dual-usb-silk.svg?v=20260830a',
+    'assets/models/framework-dual-usb/framework-dual-usb-silk.svg?v=20260830g',
     (texture) => {
       texture.encoding = THREE.sRGBEncoding;
       texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      texture.minFilter = THREE.LinearFilter;
+      texture.generateMipmaps = true;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
       texture.magFilter = THREE.LinearFilter;
       silkMaterial.map = texture;
       silkMaterial.needsUpdate = true;
       silkOverlay.visible = true;
     },
     undefined,
-    (error) => console.warn('Dual USB-C F.SilkS overlay failed to load', error)
+    (error) => console.warn('Dual USB-C high-resolution F.SilkS overlay failed to load', error)
   );
 
   // Exact F.Cu SMD pad map. A few pads remain visible around components and make
@@ -273,13 +276,24 @@
   const add0805 = (ref, x, y, rotation, capacitor) => {
     const group = addGroupAt(ref, x, y, rotation);
     const bodyMat = capacitor ? mat.ceramic : mat.resistor;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.52, 1.36), bodyMat);
-    body.position.y = 0.34;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.56, 1.52), bodyMat);
+    body.position.y = 0.35;
     group.add(body);
-    [-0.82, 0.82].forEach((z) => {
-      const end = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.42, 0.34), mat.darkMetal);
-      end.position.set(0, 0.26, z);
+    const capTop = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.08, 1.26), capacitor ? mat.white : mat.chipTop);
+    capTop.position.y = 0.63;
+    group.add(capTop);
+    if (!capacitor) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.03, 1.02), mat.chipMark);
+      band.position.y = 0.68;
+      group.add(band);
+    }
+    [-0.94, 0.94].forEach((z) => {
+      const end = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.46, 0.34), mat.darkMetal);
+      end.position.set(0, 0.28, z);
       group.add(end);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.05, 0.44), mat.metal);
+      foot.position.set(0, 0.03, z);
+      group.add(foot);
     });
     automaticExplode(group, ref, x, y, 0.42, 5.4);
     return group;
@@ -287,16 +301,30 @@
 
   const addSOT23 = (ref, x, y, rotation, pins, infoDelay) => {
     const group = addGroupAt(ref, x, y, rotation);
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.1, 2.9), mat.chip);
-    body.position.y = 0.62;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.92, 2.92), mat.chip);
+    body.position.y = 0.54;
     group.add(body);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.08, 2.48), mat.chipTop);
+    top.position.y = 1.02;
+    group.add(top);
+    const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.03, 14), mat.chipMark);
+    dot.rotation.x = Math.PI / 2;
+    dot.position.set(-0.46, 1.07, -0.92);
+    group.add(dot);
     const sideCounts = pins === 5 ? [3, 2] : [3, 3];
     sideCounts.forEach((count, sideIndex) => {
-      const xSide = sideIndex ? 1.35 : -1.35;
+      const side = sideIndex ? 1 : -1;
       for (let i = 0; i < count; i += 1) {
-        const lead = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.12, 0.38), mat.darkMetal);
-        lead.position.set(xSide, 0.10, (i - (count - 1) / 2) * 0.95);
-        group.add(lead);
+        const pz = (i - (count - 1) / 2) * 0.95;
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.055, 0.33), mat.metal);
+        foot.position.set(side * 1.20, 0.03, pz);
+        group.add(foot);
+        const riser = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.20, 0.33), mat.darkMetal);
+        riser.position.set(side * 0.92, 0.13, pz);
+        group.add(riser);
+        const shoulder = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.055, 0.33), mat.darkMetal);
+        shoulder.position.set(side * 0.69, 0.23, pz);
+        group.add(shoulder);
       }
     });
     automaticExplode(group, ref, x, y, infoDelay, 7.0);
@@ -305,9 +333,15 @@
 
   const addQFN = (ref, x, y, rotation) => {
     const group = addGroupAt(ref, x, y, rotation);
-    const body = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.75, 4.0), mat.chip);
-    body.position.y = 0.44;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.74, 4.0), mat.chip);
+    body.position.y = 0.43;
     group.add(body);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(3.54, 0.08, 3.54), mat.chipTop);
+    top.position.y = 0.82;
+    group.add(top);
+    const ep = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.04, 2.8), mat.darkMetal);
+    ep.position.y = 0.03;
+    group.add(ep);
     const pinGeoX = new THREE.BoxGeometry(0.42, 0.055, 0.24);
     const pinGeoZ = new THREE.BoxGeometry(0.24, 0.055, 0.42);
     for (let i = 0; i < 6; i += 1) {
@@ -320,18 +354,30 @@
       });
     }
     const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.03, 14), mat.chipMark);
-    dot.position.set(-1.35, 0.83, -1.35); group.add(dot);
+    dot.position.set(-1.35, 0.84, -1.35);
+    group.add(dot);
     automaticExplode(group, ref, x, y, 0.22, 9.5);
     return group;
   };
 
   const addDiode = (ref, x, y, rotation) => {
     const group = addGroupAt(ref, x, y, rotation);
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.88, 2.8), mat.diode);
-    body.position.y = 0.48; group.add(body);
-    [-1.55, 1.55].forEach((z) => {
-      const lead = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.14, 0.62), mat.darkMetal);
-      lead.position.set(0, 0.10, z); group.add(lead);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.86, 0.86, 2.82), mat.diode);
+    body.position.y = 0.46;
+    group.add(body);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.08, 2.44), mat.chipTop);
+    top.position.y = 0.91;
+    group.add(top);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.03, 0.24), mat.diodeBand);
+    band.position.set(0, 0.93, -0.72);
+    group.add(band);
+    [-1.58, 1.58].forEach((z) => {
+      const lead = new THREE.Mesh(new THREE.BoxGeometry(1.74, 0.16, 0.64), mat.darkMetal);
+      lead.position.set(0, 0.10, z);
+      group.add(lead);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.05, 0.50), mat.metal);
+      foot.position.set(0, 0.03, z);
+      group.add(foot);
     });
     automaticExplode(group, ref, x, y, 0.38, 6.0);
     return group;
@@ -340,8 +386,20 @@
   const addCrystal = () => {
     const ref = 'X1', x = 135.78, y = 138.37, rotation = -90;
     const group = addGroupAt(ref, x, y, rotation);
-    const base = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.18, 3.2), mat.darkMetal); base.position.y = 0.11; group.add(base);
-    const can = new THREE.Mesh(new THREE.BoxGeometry(2.34, 0.58, 3.04), mat.metal); can.position.y = 0.48; group.add(can);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.54, 0.14, 3.22), mat.darkMetal);
+    base.position.y = 0.08;
+    group.add(base);
+    [[-0.8,-1.1],[0.8,-1.1],[-0.8,1.1],[0.8,1.1]].forEach(([px,pz]) => {
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.05, 0.82), mat.darkMetal);
+      pad.position.set(px, 0.03, pz);
+      group.add(pad);
+    });
+    const can = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.56, 3.02), mat.metal);
+    can.position.y = 0.43;
+    group.add(can);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.82, 0.04, 2.34), mat.white);
+    top.position.y = 0.74;
+    group.add(top);
     automaticExplode(group, ref, x, y, 0.34, 7.0);
   };
 
@@ -380,19 +438,35 @@
     shell.position.set(0, 1.655, centreZ);
     group.add(shell);
 
-    const rear = new THREE.Mesh(new THREE.BoxGeometry(7.65, 2.42, 1.05), mat.blackPlastic);
-    rear.position.set(0, 1.54, 3.05); group.add(rear);
+    const rear = new THREE.Mesh(new THREE.BoxGeometry(7.65, 2.42, 1.10), mat.blackPlastic);
+    rear.position.set(0, 1.54, 3.03);
+    group.add(rear);
     const tongue = new THREE.Mesh(new THREE.BoxGeometry(6.40, 0.66, 5.55), mat.blackPlastic);
-    tongue.position.set(0, 1.57, -0.35); group.add(tongue);
+    tongue.position.set(0, 1.57, -0.35);
+    group.add(tongue);
+    const tongueLip = new THREE.Mesh(new THREE.BoxGeometry(5.68, 0.07, 4.90), mat.white);
+    tongueLip.position.set(0, 1.92, -0.48);
+    group.add(tongueLip);
     const contactGeo = new THREE.BoxGeometry(0.22, 0.035, 4.4);
     for (let i = 0; i < 8; i += 1) {
       const px = -1.75 + i * 0.5;
-      const top = new THREE.Mesh(contactGeo, mat.gold); top.position.set(px, 1.94, -0.62); group.add(top);
-      const bottom = new THREE.Mesh(contactGeo, mat.gold); bottom.position.set(px, 1.20, -0.62); group.add(bottom);
+      const top = new THREE.Mesh(contactGeo, mat.gold);
+      top.position.set(px, 1.94, -0.62);
+      group.add(top);
+      const bottom = new THREE.Mesh(contactGeo, mat.gold);
+      bottom.position.set(px, 1.20, -0.62);
+      group.add(bottom);
     }
     const sideTabGeo = new THREE.BoxGeometry(0.55, 0.72, 1.20);
     [-4.32, 4.32].forEach((px) => {
-      const tab = new THREE.Mesh(sideTabGeo, mat.metal); tab.position.set(px, 0.34, 1.0); group.add(tab);
+      const tab = new THREE.Mesh(sideTabGeo, mat.metal);
+      tab.position.set(px, 0.34, 1.0);
+      group.add(tab);
+    });
+    [[-4.31, 2.44], [4.31, 2.44], [-4.31, -1.74], [4.31, -1.74]].forEach(([px, pz]) => {
+      const stake = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.24, 0.86), mat.darkMetal);
+      stake.position.set(px, 0.18, pz);
+      group.add(stake);
     });
 
     registerExplodePart(group, {
