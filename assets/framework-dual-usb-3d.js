@@ -64,16 +64,16 @@
   const mat = {
     board: new THREE.MeshPhysicalMaterial({ color: 0x0b6035, roughness: 0.44, metalness: 0.015, clearcoat: 0.10, clearcoatRoughness: 0.64 }),
     boardEdge: new THREE.LineBasicMaterial({ color: 0x164b2c, transparent: true, opacity: 0.52 }),
-    chip: new THREE.MeshStandardMaterial({ color: 0x171a1d, roughness: 0.44, metalness: 0.05 }),
-    chipTop: new THREE.MeshStandardMaterial({ color: 0x2a2e31, roughness: 0.36, metalness: 0.04 }),
-    chipMark: new THREE.MeshBasicMaterial({ color: 0xc2c7ca }),
-    metal: new THREE.MeshStandardMaterial({ color: 0xaeb5b8, roughness: 0.28, metalness: 0.86 }),
-    darkMetal: new THREE.MeshStandardMaterial({ color: 0x686f73, roughness: 0.34, metalness: 0.76 }),
-    gold: new THREE.MeshStandardMaterial({ color: 0xc89b43, roughness: 0.34, metalness: 0.80 }),
-    ceramic: new THREE.MeshStandardMaterial({ color: 0xc8bda5, roughness: 0.62, metalness: 0.01 }),
-    resistor: new THREE.MeshStandardMaterial({ color: 0x302f2c, roughness: 0.62, metalness: 0.01 }),
-    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x1d2022, roughness: 0.70, metalness: 0.01 }),
-    diode: new THREE.MeshStandardMaterial({ color: 0x232629, roughness: 0.56, metalness: 0.05 }),
+    chip: new THREE.MeshStandardMaterial({ color: 0x07090a, roughness: 0.50, metalness: 0.05 }),
+    chipTop: new THREE.MeshStandardMaterial({ color: 0x111416, roughness: 0.46, metalness: 0.04 }),
+    chipMark: new THREE.MeshBasicMaterial({ color: 0x8f9699 }),
+    metal: new THREE.MeshStandardMaterial({ color: 0x7d868a, roughness: 0.32, metalness: 0.86 }),
+    darkMetal: new THREE.MeshStandardMaterial({ color: 0x444b4f, roughness: 0.38, metalness: 0.76 }),
+    gold: new THREE.MeshStandardMaterial({ color: 0x8b641f, roughness: 0.38, metalness: 0.80 }),
+    ceramic: new THREE.MeshStandardMaterial({ color: 0x6f624b, roughness: 0.68, metalness: 0.01 }),
+    resistor: new THREE.MeshStandardMaterial({ color: 0x141311, roughness: 0.66, metalness: 0.01 }),
+    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x080a0b, roughness: 0.74, metalness: 0.01 }),
+    diode: new THREE.MeshStandardMaterial({ color: 0x0c0e0f, roughness: 0.62, metalness: 0.05 }),
     diodeBand: new THREE.MeshBasicMaterial({ color: 0xf3f0df }),
     white: new THREE.MeshBasicMaterial({ color: 0xf0eee7 })
   };
@@ -203,26 +203,21 @@
   // exposed top and routed edge their own soldermask surfaces. The previous
   // single lit material made the directly-lit top/side look pale while the
   // underside happened to have the desired deep green.
-  const topMaskMaterial = new THREE.MeshStandardMaterial({
-    color: 0x07552d,
-    roughness: 0.64,
-    metalness: 0.0,
+  // Match the exposed soldermask to the already-correct underside rather than
+  // allowing the studio lights to wash the top and routed edge towards mint.
+  // These two mask surfaces are deliberately unlit and untone-mapped.
+  const topMaskMaterial = new THREE.MeshBasicMaterial({
+    color: 0x000702,
     polygonOffset: true,
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -1
   });
-  const sideMaskMaterial = new THREE.MeshStandardMaterial({
-    color: 0x07552d,
-    roughness: 0.68,
-    metalness: 0.0,
+  topMaskMaterial.toneMapped = false;
+  const sideMaskMaterial = new THREE.MeshBasicMaterial({
+    color: 0x000702,
     side: THREE.DoubleSide
   });
-  const invisibleCapMaterial = new THREE.MeshBasicMaterial({
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    colorWrite: false
-  });
+  sideMaskMaterial.toneMapped = false;
 
   const topMaskGeometry = new THREE.ShapeGeometry(boardShape, 16);
   topMaskGeometry.rotateX(-Math.PI / 2);
@@ -232,18 +227,10 @@
   topMask.raycast = () => {};
   mirroredCardGroup.add(topMask);
 
-  const sideMaskGeometry = new THREE.ExtrudeGeometry(boardShape, {
-    depth: PCB_T + 0.008,
-    bevelEnabled: false,
-    curveSegments: 16,
-    steps: 1
-  });
-  sideMaskGeometry.rotateX(-Math.PI / 2);
-  sideMaskGeometry.translate(0, PCB_BOTTOM - 0.004, 0);
-  const sideMask = new THREE.Mesh(sideMaskGeometry, [invisibleCapMaterial, sideMaskMaterial]);
-  sideMask.renderOrder = 2;
-  sideMask.raycast = () => {};
-  mirroredCardGroup.add(sideMask);
+  // ExtrudeGeometry already separates cap faces (material 0) from side walls
+  // (material 1). Assign the side material directly; this avoids the coplanar
+  // edge overlay that produced the previous vertical z-fighting/mesh stripes.
+  board.material = [mat.board, sideMaskMaterial];
 
   const boardEdge = new THREE.LineSegments(new THREE.EdgesGeometry(boardGeometry, 28), mat.boardEdge);
   boardEdge.renderOrder = 4;
