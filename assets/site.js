@@ -239,6 +239,23 @@ document.querySelectorAll("[data-current-year]").forEach((element) => {
   element.textContent = String(new Date().getFullYear());
 });
 
+const sydneyTime = document.querySelector("[data-sydney-time]");
+
+if (sydneyTime) {
+  const sydneyClock = new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Sydney",
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+  const updateSydneyClock = () => {
+    sydneyTime.textContent = sydneyClock.format(new Date());
+  };
+  updateSydneyClock();
+  window.setInterval(updateSydneyClock, 30_000);
+}
+
 const signalPath = document.querySelector("[data-signal-path]");
 
 if (signalPath) {

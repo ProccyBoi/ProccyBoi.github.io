@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Book a time | Andrew Chung</title>
+  <meta name="description" content="Book a 15, 30, 45, or 60-minute online or in-person meeting with Andrew Chung.">
+  <meta name="theme-color" content="#111210">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Book a time | Andrew Chung">
+  <meta property="og:description" content="Choose an open time for an online or in-person meeting with Andrew.">
+  <meta property="og:url" content="https://proccyboi.github.io/book/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/og-retro-v2.png">
+  <meta property="og:image:alt" content="Andrew Chung electrical engineering portfolio">
+  <link rel="canonical" href="https://proccyboi.github.io/book/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/booking.css">
+  <script src="assets/site.js" defer></script>
+  <script src="assets/booking.js" defer></script>
+  <script type="module" src="assets/site-enhancements.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
+      <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
+        <a href="projects/">Projects</a>
+        <a href="about/">About</a>
+        <a href="projects/#interactive">Labs</a>
+        <a href="shared/">Files</a>
+        <a href="book/" aria-current="page">Book</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
+    </div>
+  </header>
+
+  <main id="main" class="booking-main">
+    <section class="booking-hero">
+      <div class="booking-hero-inner shell">
+        <div class="booking-hero-copy">
+          <p class="eyebrow">Make time</p>
+          <h1>Book a conversation.</h1>
+          <p>Choose a meeting length and an open time. We can talk engineering, a role, a project, or anything else worth putting on the calendar.</p>
+        </div>
+        <aside class="booking-clock" aria-label="Andrew's time zone">
+          <span>Sydney right now</span>
+          <strong data-sydney-time>Loading&hellip;</strong>
+          <small data-visitor-time-zone>Times are shown in your local time</small>
+        </aside>
+      </div>
+    </section>
+
+    <section class="booking-desk shell" aria-labelledby="booking-title" data-booking-app data-booking-endpoint="https://script.google.com/macros/s/AKfycbwsYVMhOB31wRlBvFdfKPU_GgfZ-WeIWCOkztARSootZfRAOphx2mQR_ez9j6VO12rB/exec">
+      <div class="booking-notes">
+        <p class="eyebrow">Meeting setup</p>
+        <h2 id="booking-title">What works for you?</h2>
+        <p>Start with the length and format. The available times will update to match.</p>
+
+        <fieldset class="booking-choice-group" data-duration-group>
+          <legend>Meeting length</legend>
+          <div class="duration-options">
+            <label><input type="radio" name="duration-choice" value="15" checked><span><strong>15</strong><small>min</small></span></label>
+            <label><input type="radio" name="duration-choice" value="30"><span><strong>30</strong><small>min</small></span></label>
+            <label><input type="radio" name="duration-choice" value="45"><span><strong>45</strong><small>min</small></span></label>
+            <label><input type="radio" name="duration-choice" value="60"><span><strong>60</strong><small>min</small></span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="booking-choice-group" data-format-group>
+          <legend>Meeting format</legend>
+          <div class="format-options">
+            <label><input type="radio" name="format-choice" value="online" checked><span><strong>Online</strong><small>Google Meet</small></span></label>
+            <label><input type="radio" name="format-choice" value="in-person"><span><strong>In person</strong><small>Location arranged after booking</small></span></label>
+          </div>
+        </fieldset>
+
+        <dl class="booking-facts">
+          <div><dt>When</dt><dd>Weekdays, 9am&ndash;5pm Sydney</dd></div>
+          <div><dt>Notice</dt><dd>At least four hours</dd></div>
+          <div><dt>Invite</dt><dd>Sent when the booking is confirmed</dd></div>
+        </dl>
+      </div>
+
+      <div class="booking-card" id="availability" aria-label="Appointment booking calendar">
+        <div class="booking-card-head">
+          <div><span>Availability</span><strong data-booking-card-title>Choose a 15-minute time</strong></div>
+          <span class="booking-live"><i aria-hidden="true"></i> Live calendar</span>
+        </div>
+
+        <div class="booking-calendar" data-booking-calendar>
+          <div class="booking-week-nav">
+            <button type="button" class="booking-week-button" data-week-previous aria-label="Show previous week">&larr;</button>
+            <p data-week-label>Loading availability&hellip;</p>
+            <button type="button" class="booking-week-button" data-week-next aria-label="Show next week">&rarr;</button>
+          </div>
+
+          <div class="booking-status" data-booking-status aria-live="polite">
+            <span class="booking-loader" aria-hidden="true"></span>
+            <p>Checking the calendar&hellip;</p>
+          </div>
+
+          <div class="booking-days" data-booking-days hidden></div>
+
+          <section class="booking-details" data-booking-details hidden aria-labelledby="booking-details-title">
+            <div class="booking-selection">
+              <span>Your time</span>
+              <strong data-selection-time></strong>
+              <small data-selection-meta></small>
+            </div>
+
+            <form class="booking-form" method="post" target="booking-response" data-booking-form>
+              <h3 id="booking-details-title">A few details</h3>
+              <div class="booking-form-row">
+                <label for="booking-name">Name</label>
+                <input id="booking-name" name="name" type="text" autocomplete="name" maxlength="100" required>
+              </div>
+              <div class="booking-form-row">
+                <label for="booking-email">Email</label>
+                <input id="booking-email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="160" required>
+              </div>
+              <div class="booking-form-row">
+                <label for="booking-topic">What should we talk about?</label>
+                <textarea id="booking-topic" name="topic" rows="4" maxlength="1200" placeholder="A sentence or two is plenty."></textarea>
+              </div>
+              <div class="booking-honeypot" aria-hidden="true">
+                <label for="booking-website">Website</label>
+                <input id="booking-website" name="website" type="text" tabindex="-1" autocomplete="off">
+              </div>
+              <input type="hidden" name="start" data-form-start>
+              <input type="hidden" name="duration" data-form-duration>
+              <input type="hidden" name="format" data-form-format>
+              <input type="hidden" name="time_zone" data-form-time-zone>
+              <input type="hidden" name="token" data-form-token>
+              <input type="hidden" name="return_origin" data-form-origin>
+              <p class="booking-form-error" data-booking-form-error hidden></p>
+              <button class="button button-primary booking-submit" type="submit" data-booking-submit>Confirm booking</button>
+            </form>
+          </section>
+
+          <section class="booking-success" data-booking-success hidden aria-live="polite">
+            <span aria-hidden="true">&#10003;</span>
+            <h3>You&rsquo;re booked.</h3>
+            <p data-booking-success-copy>A calendar invitation is on its way.</p>
+            <button class="button" type="button" data-book-another>Book another time</button>
+          </section>
+        </div>
+        <iframe class="booking-response-frame" name="booking-response" title="Booking response" data-booking-response></iframe>
+      </div>
+    </section>
+
+    <section class="booking-fallback shell" aria-labelledby="fallback-title">
+      <p class="eyebrow">Nothing suitable?</p>
+      <div>
+        <h2 id="fallback-title">Send me a note.</h2>
+        <p>If the calendar does not line up, email me and suggest a few options.</p>
+        <a class="button button-primary" href="mailto:andrew.noah.chung@gmail.com?subject=Meeting%20with%20Andrew">Email Andrew</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>&copy; <span data-current-year>2026</span> Andrew Chung</p>
+      <a href="about/#contact">Contact</a>
+      <a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a>
+      <a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </footer>
+  <p class="live-region" aria-live="polite" aria-atomic="true" data-live-region></p>
+</body>
+</html>

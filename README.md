@@ -8,6 +8,7 @@ Personal portfolio and public project archive published at:
 
 - `/` — Polaroid-inspired landing page with an engineering introduction, condensed experience and selected projects
 - `/about/` — profile, experience, education, tools and public CV
+- `/book/` — live free/busy booking page for 15–60 minute online or in-person meetings
 - `/projects/` — complete project index and individual project pages
 - `/projects/tramtrace/` — live Sydney and Parramatta light-rail display PCB
 - `/projects/framework-dual-usb/` — dual USB 2.0 Type-C Framework expansion card
