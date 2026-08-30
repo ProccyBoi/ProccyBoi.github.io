@@ -314,26 +314,26 @@
     group.userData.packageEnvelope = spec;
 
     if (capacitor) {
-      // KiCad C_0805_2012Metric: 2.0015 × 1.2497 × 1.2497 mm overall.
-      const body = new THREE.Mesh(new THREE.BoxGeometry(1.42, 1.14, 1.21), mat.ceramic);
-      body.position.y = 0.64;
+      // Exact sub-envelopes from KiCad C_0805_2012Metric.wrl.
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.19888, 1.16840, 1.16840), mat.ceramic);
+      body.position.y = 0.62484;
       group.add(body);
-      [-0.855, 0.855].forEach((px) => {
-        const end = new THREE.Mesh(new THREE.BoxGeometry(0.31, 1.20, 1.25), mat.darkMetal);
-        end.position.set(px, 0.625, 0);
+      [-0.80010, 0.80010].forEach((px) => {
+        const end = new THREE.Mesh(new THREE.BoxGeometry(0.40132, 1.24968, 1.24968), mat.darkMetal);
+        end.position.set(px, 0.62484, 0);
         group.add(end);
       });
     } else {
-      // KiCad R_0805_2012Metric: 2.0015 × 1.1989 × 0.4496 mm overall.
-      const substrate = new THREE.Mesh(new THREE.BoxGeometry(1.46, 0.40, 1.16), mat.resistor);
-      substrate.position.y = 0.225;
+      // Exact sub-envelopes from KiCad R_0805_2012Metric.wrl.
+      const substrate = new THREE.Mesh(new THREE.BoxGeometry(1.40208, 0.35814, 1.19888), mat.resistor);
+      substrate.position.y = 0.22479;
       group.add(substrate);
-      const film = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.035, 0.94), mat.chipTop);
-      film.position.y = 0.435;
+      const film = new THREE.Mesh(new THREE.BoxGeometry(1.40208, 0.04572, 1.19888), mat.chipTop);
+      film.position.y = 0.42672;
       group.add(film);
-      [-0.855, 0.855].forEach((px) => {
-        const end = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.44, 1.20), mat.darkMetal);
-        end.position.set(px, 0.225, 0);
+      [-0.85090, 0.85090].forEach((px) => {
+        const end = new THREE.Mesh(new THREE.BoxGeometry(0.29972, 0.44958, 1.19888), mat.darkMetal);
+        end.position.set(px, 0.22479, 0);
         group.add(end);
       });
     }
@@ -351,23 +351,24 @@
 
     // U1/U4 use the EasyEDA L3.0-W1.7 footprint, which is locally rotated 90°
     // relative to KiCad's stock SOT-23-6 footprint used by U5/U6/U7.
-    const bodyX = isCustomFivePin ? 2.90 : 1.68;
-    const bodyZ = isCustomFivePin ? 1.68 : 2.90;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(bodyX, 1.40, bodyZ), mat.chip);
-    body.position.y = 0.82;
+    const bodyX = isCustomFivePin ? 2.90068 : 1.60020;
+    const bodyZ = isCustomFivePin ? 1.60020 : 2.90068;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(bodyX, 1.45034, bodyZ), mat.chip);
+    body.position.y = 0.82423;
     group.add(body);
-    const top = new THREE.Mesh(new THREE.BoxGeometry(bodyX - 0.22, 0.08, bodyZ - 0.22), mat.chipTop);
-    top.position.y = 1.545;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(bodyX - 0.18, 0.045, bodyZ - 0.18), mat.chipTop);
+    top.position.y = 1.5269;
     group.add(top);
 
+    // Stock KiCad SOT-23 model leads extend from ±0.7747 to ±1.39954 mm.
     const addLeadAlongZ = (px, localY) => {
       const pz = -localY;
       const outer = Math.sign(pz || 1);
-      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.10, 0.88), mat.metal);
-      lead.position.set(px, 0.08, outer * 1.18);
+      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.49784, 0.14986, 0.62484), mat.metal);
+      lead.position.set(px, 0.07493, outer * 1.08712);
       group.add(lead);
-      const heel = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.18, 0.30), mat.darkMetal);
-      heel.position.set(px, 0.21, outer * 0.91);
+      const heel = new THREE.Mesh(new THREE.BoxGeometry(0.49784, 0.249, 0.17), mat.darkMetal);
+      heel.position.set(px, 0.33, outer * 0.86);
       group.add(heel);
     };
 
@@ -375,11 +376,11 @@
       const px = localX;
       const pz = -localY;
       const outer = Math.sign(px || 1);
-      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.10, 0.38), mat.metal);
-      lead.position.set(outer * 1.18, 0.08, pz);
+      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.62484, 0.14986, 0.49784), mat.metal);
+      lead.position.set(outer * 1.08712, 0.07493, pz);
       group.add(lead);
-      const heel = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.18, 0.38), mat.darkMetal);
-      heel.position.set(outer * 0.91, 0.21, pz);
+      const heel = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.249, 0.49784), mat.darkMetal);
+      heel.position.set(outer * 0.86, 0.33, pz);
       group.add(heel);
     };
 
@@ -387,13 +388,13 @@
       [[-0.95, 1.15], [0, 1.15], [0.95, 1.15], [0.95, -1.15], [-0.95, -1.15]]
         .forEach(([px, py]) => addLeadAlongZ(px, py));
       const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.026, 16), mat.chipMark);
-      dot.position.set(-1.02, 1.59, -0.51);
+      dot.position.set(-1.02, 1.562, -0.51);
       group.add(dot);
     } else {
       [[-1.1375, -0.95], [-1.1375, 0], [-1.1375, 0.95], [1.1375, 0.95], [1.1375, 0], [1.1375, -0.95]]
         .forEach(([px, py]) => addLeadAlongX(px, py));
       const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.026, 16), mat.chipMark);
-      dot.position.set(-0.51, 1.59, 1.00);
+      dot.position.set(-0.51, 1.562, 1.00);
       group.add(dot);
     }
 
@@ -404,11 +405,11 @@
   const addQFN = (ref, x, y, rotation) => {
     const group = addGroupAt(ref, x, y, rotation);
     group.userData.packageEnvelope = packageSpec.QFN24;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(3.998, 0.71, 3.998), mat.chip);
-    body.position.y = 0.405;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(3.99796, 0.729, 3.99796), mat.chip);
+    body.position.y = 0.3895;
     group.add(body);
-    const top = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.055, 3.62), mat.chipTop);
-    top.position.y = 0.742;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(3.62, 0.04062, 3.62), mat.chipTop);
+    top.position.y = 0.74931;
     group.add(top);
     const ep = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.04, 2.8), mat.darkMetal);
     ep.position.y = 0.03;
@@ -441,20 +442,20 @@
     const group = addGroupAt(ref, x, y, rotation);
     group.userData.packageEnvelope = packageSpec.SOD123F;
     // KiCad D_SOD-123F overall envelope: 3.5001 × 1.6002 × 1.0998 mm.
-    const body = new THREE.Mesh(new THREE.BoxGeometry(2.76, 1.00, 1.56), mat.diode);
-    body.position.y = 0.56;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.60096, 1.09982, 1.60020), mat.diode);
+    body.position.y = 0.54991;
     group.add(body);
-    const top = new THREE.Mesh(new THREE.BoxGeometry(2.50, 0.055, 1.34), mat.chipTop);
-    top.position.y = 1.075;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2.47396, 0.030, 1.47320), mat.chipTop);
+    top.position.y = 1.08482;
     group.add(top);
-    [-1.55, 1.55].forEach((px) => {
-      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.14, 1.60), mat.darkMetal);
-      lead.position.set(px, 0.09, 0);
+    [-1.51765, 1.51765].forEach((px) => {
+      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.46482, 0.20066, 0.65024), mat.darkMetal);
+      lead.position.set(px, 0.10033, 0);
       group.add(lead);
     });
-    // Pad 1 is the cathode in the source footprint: local X = -1.4 mm.
-    const band = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.03, 1.31), mat.diodeBand);
-    band.position.set(-0.88, 1.108, 0);
+    // Exact KiCad model cathode label lies from X=-1.18618 to -0.78740 mm.
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.39878, 0.018, 1.37160), mat.diodeBand);
+    band.position.set(-0.98679, 1.104, 0);
     group.add(band);
     automaticExplode(group, ref, x, y, 0.38, 6.0);
     return group;
@@ -465,22 +466,22 @@
     const group = addGroupAt(ref, x, y, rotation);
     group.userData.packageEnvelope = packageSpec.XTAL3225;
     // KiCad Crystal_SMD_3225: 3.2004 × 2.5008 × 0.6400 mm.
-    const base = new THREE.Mesh(new THREE.BoxGeometry(3.20, 0.10, 2.50), mat.darkMetal);
-    base.position.y = 0.055;
+    const base = new THREE.Mesh(new THREE.BoxGeometry(3.20042, 0.399999, 2.50084), mat.darkMetal);
+    base.position.y = 0.1999995;
     group.add(base);
     [[-1.10, 0.80], [1.10, 0.80], [1.10, -0.80], [-1.10, -0.80]].forEach(([px, py]) => {
-      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.05, 0.62), mat.metal);
-      pad.position.set(px, 0.03, -py);
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.70, 0.055, 0.62), mat.metal);
+      pad.position.set(px, 0.0275, -py);
       group.add(pad);
     });
-    const can = new THREE.Mesh(new THREE.BoxGeometry(2.94, 0.50, 2.24), mat.metal);
-    can.position.y = 0.36;
+    const can = new THREE.Mesh(new THREE.BoxGeometry(3.09999, 0.1399997, 2.399995), mat.metal);
+    can.position.y = 0.469999;
     group.add(can);
-    const lid = new THREE.Mesh(new THREE.BoxGeometry(2.72, 0.035, 2.02), mat.darkMetal);
-    lid.position.y = 0.622;
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(2.899994, 0.0999998, 2.199996), mat.metal);
+    lid.position.y = 0.589999;
     group.add(lid);
     const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.022, 14), mat.chipMark);
-    dot.position.set(-1.00, 0.65, -0.67);
+    dot.position.set(-1.00, 0.648, -0.67);
     group.add(dot);
     automaticExplode(group, ref, x, y, 0.34, 7.0);
   };
