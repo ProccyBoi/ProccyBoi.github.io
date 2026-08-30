@@ -22,7 +22,7 @@
   renderer.toneMappingExposure = 0.98;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 1.0, 300);
+  const camera = new THREE.PerspectiveCamera(34, 1, 2.0, 300);
   const target = new THREE.Vector3(0, 3.25, -15);
 
   // Neutral studio lighting: keep enough hemisphere fill to preserve the
