@@ -63,7 +63,7 @@
 
   const mat = {
     board: new THREE.MeshPhysicalMaterial({ color: 0x0b6035, roughness: 0.44, metalness: 0.015, clearcoat: 0.10, clearcoatRoughness: 0.64 }),
-    boardEdge: new THREE.LineBasicMaterial({ color: 0x416d54, transparent: true, opacity: 0.56 }),
+    boardEdge: new THREE.LineBasicMaterial({ color: 0x164b2c, transparent: true, opacity: 0.52 }),
     chip: new THREE.MeshStandardMaterial({ color: 0x171a1d, roughness: 0.44, metalness: 0.05 }),
     chipTop: new THREE.MeshStandardMaterial({ color: 0x2a2e31, roughness: 0.36, metalness: 0.04 }),
     chipMark: new THREE.MeshBasicMaterial({ color: 0xc2c7ca }),
