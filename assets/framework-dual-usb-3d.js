@@ -291,7 +291,7 @@
     C0805: { length: 2.00152, width: 1.24968, height: 1.24968 },
     SOT23: { span: 2.79908, length: 2.90068, height: 1.54940 },
     QFN24: { length: 3.99796, width: 3.99796, height: 0.76962 },
-    SOD123F: { length: 3.50012, width: 1.60020, height: 1.09982 },
+    SOD123FL: { bodyLength: 2.80000, bodyWidth: 1.80000, overallLength: 3.70000, height: 1.00000 },
     XTAL3225: { length: 3.20042, width: 2.50084, height: 0.639999 }
   });
 
@@ -440,22 +440,24 @@
 
   const addDiode = (ref, x, y, rotation) => {
     const group = addGroupAt(ref, x, y, rotation);
-    group.userData.packageEnvelope = packageSpec.SOD123F;
-    // KiCad D_SOD-123F overall envelope: 3.5001 × 1.6002 × 1.0998 mm.
-    const body = new THREE.Mesh(new THREE.BoxGeometry(2.60096, 1.09982, 1.60020), mat.diode);
-    body.position.y = 0.54991;
+    group.userData.packageEnvelope = packageSpec.SOD123FL;
+    // The project uses PCM_JLCPCB:D_SOD-123FL. Its KiCad F.Fab body is
+    // exactly 2.8 × 1.8 mm; the SMF5.0CA SOD-123FL nominal overall length is
+    // about 3.7 mm, so the leads are centred on the source pads at ±1.4 mm.
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.80000, 1.00000, 1.80000), mat.diode);
+    body.position.y = 0.52;
     group.add(body);
-    const top = new THREE.Mesh(new THREE.BoxGeometry(2.47396, 0.030, 1.47320), mat.chipTop);
-    top.position.y = 1.08482;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2.58, 0.035, 1.58), mat.chipTop);
+    top.position.y = 1.028;
     group.add(top);
-    [-1.51765, 1.51765].forEach((px) => {
-      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.46482, 0.20066, 0.65024), mat.darkMetal);
-      lead.position.set(px, 0.10033, 0);
+    [-1.625, 1.625].forEach((px) => {
+      const lead = new THREE.Mesh(new THREE.BoxGeometry(0.450, 0.18, 0.78), mat.darkMetal);
+      lead.position.set(px, 0.09, 0);
       group.add(lead);
     });
-    // Exact KiCad model cathode label lies from X=-1.18618 to -0.78740 mm.
-    const band = new THREE.Mesh(new THREE.BoxGeometry(0.39878, 0.018, 1.37160), mat.diodeBand);
-    band.position.set(-0.98679, 1.104, 0);
+    // Source pad 1 is the cathode; keep the polarity bar on local -X.
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.020, 1.50), mat.diodeBand);
+    band.position.set(-0.93, 1.05, 0);
     group.add(band);
     automaticExplode(group, ref, x, y, 0.38, 6.0);
     return group;
@@ -530,27 +532,42 @@
     const tongueLip = new THREE.Mesh(new THREE.BoxGeometry(5.68, 0.07, 4.90), mat.white);
     tongueLip.position.set(0, 1.92, -0.48);
     group.add(tongueLip);
-    const contactGeo = new THREE.BoxGeometry(0.22, 0.035, 4.4);
-    for (let i = 0; i < 8; i += 1) {
-      const px = -1.75 + i * 0.5;
+    // USB Type-C 16-contact population: A/B rows keep the USB2.0 contacts
+    // at the standard 0.5 mm mating pitch and omit the SuperSpeed positions.
+    const contactGeo = new THREE.BoxGeometry(0.18, 0.035, 4.40);
+    const contactX = [-2.75, -1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 2.75];
+    contactX.forEach((px) => {
       const top = new THREE.Mesh(contactGeo, mat.gold);
       top.position.set(px, 1.94, -0.62);
       group.add(top);
       const bottom = new THREE.Mesh(contactGeo, mat.gold);
       bottom.position.set(px, 1.20, -0.62);
       group.add(bottom);
-    }
-    const sideTabGeo = new THREE.BoxGeometry(0.55, 0.72, 1.20);
-    [-4.32, 4.32].forEach((px) => {
-      const tab = new THREE.Mesh(sideTabGeo, mat.metal);
-      tab.position.set(px, 0.34, 1.0);
-      group.add(tab);
     });
-    [[-4.31, 2.44], [4.31, 2.44], [-4.31, -1.74], [4.31, -1.74]].forEach(([px, pz]) => {
-      const stake = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.24, 0.86), mat.darkMetal);
-      stake.position.set(px, 0.18, pz);
-      group.add(stake);
+
+    // Exact solder-tail row from the KiCad USB4105 footprint (local Y=-3.68).
+    const tailX = [-3.20, -2.40, -1.75, -1.25, -0.75, -0.25, 0.25, 0.75, 1.25, 1.75, 2.40, 3.20];
+    tailX.forEach((px) => {
+      const wide = Math.abs(px) >= 2.39;
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(wide ? 0.48 : 0.22, 0.08, 0.82), mat.gold);
+      tail.position.set(px, 0.055, 3.47);
+      group.add(tail);
     });
+
+    // Exact locating pegs: footprint ±2.89 mm, Y=-2.605 mm, Ø0.65 NPTH.
+    [-2.89, 2.89].forEach((px) => {
+      const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 1.10, 18), mat.blackPlastic);
+      peg.position.set(px, -0.24, 2.605);
+      group.add(peg);
+    });
+
+    // Shell stakes use the four actual S1 drill centres from the PCB footprint.
+    [[-4.32, 3.105, 1.55], [4.32, 3.105, 1.55], [-4.32, -1.075, 1.28], [4.32, -1.075, 1.28]]
+      .forEach(([px, pz, depth]) => {
+        const stake = new THREE.Mesh(new THREE.BoxGeometry(0.52, 1.16, depth), mat.darkMetal);
+        stake.position.set(px, -0.18, pz);
+        group.add(stake);
+      });
 
     registerExplodePart(group, {
       offset: new THREE.Vector3(x < 140 ? -8.2 : 8.2, 5.8, -10.8),
