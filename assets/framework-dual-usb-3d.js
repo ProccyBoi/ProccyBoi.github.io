@@ -22,7 +22,7 @@
   renderer.toneMappingExposure = 0.98;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.5, 300);
+  const camera = new THREE.PerspectiveCamera(34, 1, 1.0, 300);
   const target = new THREE.Vector3(0, 3.25, -15);
 
   // Neutral studio lighting: keep enough hemisphere fill to preserve the
@@ -218,7 +218,7 @@
 
   const topMaskGeometry = new THREE.ShapeGeometry(boardShape, 16);
   topMaskGeometry.rotateX(-Math.PI / 2);
-  topMaskGeometry.translate(0, PCB_TOP + 0.012, 0);
+  topMaskGeometry.translate(0, PCB_TOP + 0.018, 0);
   const topMask = new THREE.Mesh(topMaskGeometry, topMaskMaterial);
   topMask.renderOrder = 2;
   topMask.raycast = () => {};
@@ -250,9 +250,10 @@
   const silkOverlay = new THREE.Mesh(new THREE.PlaneGeometry(26, 30), silkMaterial);
   silkOverlay.rotation.x = -Math.PI / 2;
   silkOverlay.scale.y = -1;
-  silkOverlay.position.set(0, PCB_TOP + 0.080, -15);
+  silkOverlay.position.set(0, PCB_TOP + 0.095, -15);
   silkOverlay.renderOrder = 120;
   silkOverlay.visible = false;
+  silkOverlay.frustumCulled = false;
   silkOverlay.raycast = () => {};
   mirroredCardGroup.add(silkOverlay);
 
@@ -298,10 +299,11 @@
     }
     // Keep the geometry physically close to the board while maintaining enough
     // separation for stable rasterisation at grazing incidence.
-    pad.position.set(x, PCB_TOP + 0.045, -y);
+    pad.position.set(x, PCB_TOP + 0.055, -y);
     // Same KiCad Y-down → Three.js X/-Z mapping as component bodies.
     pad.rotation.y = THREE.MathUtils.degToRad(angle);
     pad.renderOrder = 40;
+    pad.frustumCulled = false;
     padGroup.add(pad);
   });
 
