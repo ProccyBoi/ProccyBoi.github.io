@@ -207,10 +207,7 @@
   // allowing the studio lights to wash the top and routed edge towards mint.
   // These two mask surfaces are deliberately unlit and untone-mapped.
   const topMaskMaterial = new THREE.MeshBasicMaterial({
-    color: 0x000702,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    polygonOffsetUnits: -1
+    color: 0x000702
   });
   topMaskMaterial.toneMapped = false;
   const sideMaskMaterial = new THREE.MeshBasicMaterial({
@@ -221,7 +218,7 @@
 
   const topMaskGeometry = new THREE.ShapeGeometry(boardShape, 16);
   topMaskGeometry.rotateX(-Math.PI / 2);
-  topMaskGeometry.translate(0, PCB_TOP + 0.004, 0);
+  topMaskGeometry.translate(0, PCB_TOP + 0.012, 0);
   const topMask = new THREE.Mesh(topMaskGeometry, topMaskMaterial);
   topMask.renderOrder = 2;
   topMask.raycast = () => {};
@@ -241,7 +238,7 @@
   // view. The plane transform matches KiCad's Y-down board coordinate system.
   const silkMaterial = new THREE.MeshBasicMaterial({
     transparent: true,
-    alphaTest: 0.001,
+    alphaTest: 0.0,
     side: THREE.DoubleSide,
     depthTest: true,
     depthWrite: false,
