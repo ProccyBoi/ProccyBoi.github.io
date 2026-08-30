@@ -6,11 +6,12 @@
   <base href="/">
   <title>Inside TramTrace | Andrew Chung</title>
   <meta name="description" content="An interactive, source-derived view of the copper and 116-pixel data architecture inside Andrew Chung's TramTrace PCB.">
-  <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#12100e">
+  <link rel="canonical" href="https://proccyboi.github.io/lab/tramtrace/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" as="image" href="assets/images/interactive/tramtrace/tramtrace-turn-00.webp" type="image/webp">
   <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260831a">
   <link rel="stylesheet" href="assets/tramtrace-inspector.css?v=20260824b">
   <script src="assets/site.js" defer></script>
   <script src="assets/tramtrace-board-data.js" defer></script>
@@ -23,14 +24,13 @@
   <header class="site-header inspector-header">
     <div class="header-inner">
       <a class="brand brand-plain" href="./">Andrew Chung</a>
-      <nav class="site-nav" aria-label="Board explorer navigation" data-site-nav data-open="false">
-        <a href="lab/tramtrace/" aria-current="page">Inside TramTrace</a>
-        <a href="projects/tramtrace/">Project</a>
-        <a href="projects/">All projects</a>
+      <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
+        <a href="projects/">Projects</a><a href="about/">About</a><a href="lab/" aria-current="page">Labs</a><a href="shared/">Files</a><a href="book/">Book</a>
       </nav>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
+  <nav class="project-flow" aria-label="TramTrace pages"><div class="project-flow-inner"><a class="project-flow-parent" href="projects/tramtrace/"><span>Project</span><strong>TramTrace</strong></a><div class="project-flow-tabs"><a href="projects/tramtrace/">Overview</a><a href="lab/tramtrace/" aria-current="page">PCB explorer</a></div></div></nav>
 
   <main id="main" class="inspector-main" data-board-inspector data-mode="assembled" data-view="inspect" data-chain="l1">
     <section class="inspector-hero" aria-labelledby="inspector-title">

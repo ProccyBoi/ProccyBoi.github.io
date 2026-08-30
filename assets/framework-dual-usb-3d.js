@@ -820,7 +820,7 @@
   const resetPartPanel = () => {
     if (!partPanel || !partName || !partDetail) return;
     partName.textContent = 'Component map';
-    partDetail.textContent = 'Move over the PCB to identify the hub, power switches, protection and ports.';
+    partDetail.textContent = 'Point to or tap the PCB to identify the hub, power switches, protection and ports.';
     partPanel.classList.remove('is-active');
   };
 
@@ -863,8 +863,8 @@
     }
     return null;
   };
-  const updatePartHover = (event) => {
-    if (!partPanel || !partName || !partDetail || pointers.size) return;
+  const updatePartHover = (event, allowActivePointer = false) => {
+    if (!partPanel || !partName || !partDetail || (pointers.size && !allowActivePointer)) return;
     const rect = stage.getBoundingClientRect();
     pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -916,6 +916,10 @@
     } else if (pointers.size === 0) {
       dragStart = null;
       pinchStartDistance = 0;
+      if (dragTravel < 6) {
+        updatePartHover(event, true);
+        if (partPanel.classList.contains('is-active')) announce(`${partName.textContent}. ${partDetail.textContent}`);
+      }
     }
   };
   stage.addEventListener('pointerup', releasePointer);

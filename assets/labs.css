@@ -1,0 +1,101 @@
+.labs-main { overflow: hidden; }
+
+.labs-hero {
+  padding: clamp(6rem, 12vw, 11rem) 0 clamp(4rem, 8vw, 7rem);
+  border-bottom: 1px solid var(--rule);
+}
+
+.labs-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
+  gap: clamp(3rem, 10vw, 10rem);
+  align-items: end;
+}
+
+.labs-hero h1 {
+  max-width: 10ch;
+  margin: 0;
+  font-size: clamp(4.8rem, 12vw, 10rem);
+  line-height: 0.82;
+  letter-spacing: -0.075em;
+}
+
+.labs-hero-copy {
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.labs-hero-copy p { margin: 0; color: var(--muted); font-size: clamp(1.05rem, 1.5vw, 1.25rem); }
+
+.labs-section { padding: clamp(5rem, 10vw, 9rem) 0; }
+.labs-section + .labs-section { border-top: 1px solid var(--rule); }
+
+.labs-heading {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.55fr) minmax(0, 1fr);
+  gap: 2rem clamp(3rem, 9vw, 9rem);
+  align-items: end;
+  margin-bottom: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.labs-heading h2 { margin: 0; font-size: clamp(2.8rem, 6vw, 5.8rem); }
+.labs-heading > p { margin: 0; color: var(--muted); }
+
+.lab-pairs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
+
+.lab-pair {
+  min-height: 38rem;
+  display: grid;
+  grid-template-rows: minmax(18rem, 1fr) auto;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.lab-pair-media { position: relative; min-height: 0; overflow: hidden; background: #0b0c0b; }
+.lab-pair-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms cubic-bezier(.2,.7,.2,1); }
+.lab-pair:hover .lab-pair-media img { transform: scale(1.025); }
+.lab-pair-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,.42)); pointer-events: none; }
+.lab-pair-media.is-contain img { object-fit: contain; padding: clamp(1rem, 4vw, 3rem); }
+
+.lab-pair-copy { padding: clamp(1.25rem, 3vw, 2rem); }
+.lab-pair-copy header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.lab-pair-copy h3 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.5rem); }
+.lab-pair-copy small { color: var(--faint); font: 600 0.62rem/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.lab-pair-copy > p { min-height: 3.2em; margin: 1rem 0 1.5rem; color: var(--muted); }
+
+.lab-pair-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--rule); }
+.lab-pair-actions a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0.85rem; color: var(--text); font-size: 0.82rem; font-weight: 600; text-decoration: none; }
+.lab-pair-actions a + a { border-left: 1px solid var(--rule); }
+.lab-pair-actions a:last-child { color: #fff; background: var(--blue); }
+.lab-pair-actions a:hover { filter: brightness(1.12); }
+
+.tool-list { border-top: 1px solid var(--rule); }
+.tool-row { display: grid; grid-template-columns: 4rem minmax(12rem, 0.6fr) minmax(18rem, 1fr) auto; gap: 2rem; align-items: center; padding: 1.4rem 0; border-bottom: 1px solid var(--rule); color: var(--text); text-decoration: none; }
+.tool-row > span:first-child { color: var(--copper); font: 600 0.68rem/1 var(--mono); }
+.tool-row h3 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2rem); }
+.tool-row p { margin: 0; color: var(--muted); }
+.tool-row b { font-weight: 400; transition: transform 180ms ease; }
+.tool-row:hover b { transform: translateX(0.35rem); }
+
+@media (max-width: 820px) {
+  .labs-hero-grid,
+  .labs-heading { grid-template-columns: 1fr; }
+  .labs-hero-copy { max-width: 38rem; }
+  .lab-pairs { grid-template-columns: 1fr; }
+  .lab-pair { min-height: 0; }
+  .lab-pair-media { min-height: min(70vw, 28rem); }
+  .tool-row { grid-template-columns: 2.5rem 1fr auto; gap: 1rem; }
+  .tool-row p { grid-column: 2 / -1; }
+}
+
+@media (max-width: 480px) {
+  .labs-hero h1 { font-size: clamp(4rem, 21vw, 6rem); }
+  .lab-pair-actions { grid-template-columns: 1fr; }
+  .lab-pair-actions a + a { border-top: 1px solid var(--rule); border-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-pair-media img,
+  .tool-row b { transition: none; }
+}

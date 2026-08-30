@@ -4,16 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/">
-  <title>Inside the Skylabs Telemetry System | Andrew Chung</title>
+  <title>Skylabs Board Explorer | Andrew Chung</title>
   <meta name="description" content="Interactive, rotatable views of Andrew Chung's Skylabs aircraft telemetry and LoRa ground-station PCBs, rendered from their KiCad sources and cross-referenced against the firmware.">
-  <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#12100e">
+  <link rel="canonical" href="https://proccyboi.github.io/lab/skylabs/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preload" as="image" href="assets/images/interactive/skylabs/skylabs-telemetry-inspect.webp" type="image/webp">
+  <link rel="preload" as="image" href="assets/images/interactive/skylabs/skylabs-telemetry-turn-00.webp" type="image/webp">
   <link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/skylabs-object.css?v=20260824b">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260831a">
+  <link rel="stylesheet" href="assets/skylabs-object.css?v=20260831a">
   <script src="assets/site.js" defer></script>
-  <script src="assets/skylabs-object.js?v=20260824b" defer></script>
+  <script src="assets/skylabs-object.js?v=20260831a" defer></script>
 </head>
 <body class="object-body">
   <a class="skip-link" href="#main">Skip to board explorer</a>
@@ -21,22 +22,22 @@
   <header class="site-header object-header">
     <div class="header-inner">
       <a class="brand brand-plain" href="./">Andrew Chung</a>
-      <nav class="site-nav" aria-label="Board explorer navigation" data-site-nav data-open="false">
-        <a href="lab/skylabs/" aria-current="page">Inside Skylabs</a>
-        <a href="projects/skylabs/">Project</a>
-        <a href="projects/">All projects</a>
+      <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
+        <a href="projects/">Projects</a><a href="about/">About</a><a href="lab/" aria-current="page">Labs</a><a href="shared/">Files</a><a href="book/">Book</a>
       </nav>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
     </div>
   </header>
 
-  <main id="main" class="object-main" data-object-inspector data-view="inspect" data-board="telemetry" data-annotations="visible">
+  <nav class="project-flow" aria-label="Skylabs pages"><div class="project-flow-inner"><a class="project-flow-parent" href="projects/skylabs/"><span>Project</span><strong>Skylabs telemetry system</strong></a><div class="project-flow-tabs"><a href="projects/skylabs/">Overview</a><a href="lab/skylabs/" aria-current="page">Board explorer</a></div></div></nav>
+
+  <main id="main" class="object-main" data-object-inspector data-view="rotate" data-board="telemetry" data-annotations="visible">
     <section class="object-hero" aria-labelledby="object-title">
       <p class="object-kicker">Interactive board study / Skylabs telemetry system</p>
       <h1 id="object-title">Turn the<br>link over.</h1>
       <div class="object-hero-copy">
         <p>The aircraft board measures and records the flight; the ground station catches its live 915 MHz packets and makes them useful on the field. Both ends of that link are here.</p>
-        <p class="object-proof">Rendered from both production KiCad boards and checked against the current aircraft and receiver firmware.</p>
+        <p class="object-proof">Every angle is rendered from the production KiCad assemblies and checked against the aircraft and receiver firmware.</p>
       </div>
     </section>
 
@@ -46,7 +47,7 @@
           <p class="object-kicker" data-board-eyebrow>Aircraft telemetry / Rev 4.0</p>
           <h2 id="object-workbench-title" data-board-heading>Flight data starts here.</h2>
         </div>
-        <p data-board-copy>Inspect either end of the telemetry link, then switch to Rotate and drag the actual KiCad assembly through a full turn.</p>
+        <div class="object-workbench-notes"><p data-board-copy>Drag the source-rendered assembly through a full turn, or switch to Parts for a guided component map.</p><a href="projects/skylabs/boards/telemetry/" data-object-project-link>Read the aircraft telemetry project <span aria-hidden="true">&rarr;</span></a></div>
       </header>
 
       <div class="object-toolbar" aria-label="Board view controls">
@@ -55,18 +56,22 @@
           <button type="button" class="object-board" data-object-board="ground" aria-pressed="false">Ground station</button>
         </div>
         <div class="object-view-list" aria-label="Board view">
-          <button type="button" class="object-view is-active" data-object-view="inspect" aria-pressed="true">Inspect</button>
-          <button type="button" class="object-view" data-object-view="rotate" aria-pressed="false">Rotate</button>
+          <button type="button" class="object-view" data-object-view="inspect" aria-pressed="false">Parts</button>
+          <button type="button" class="object-view is-active" data-object-view="rotate" aria-pressed="true">360&deg;</button>
         </div>
-        <button type="button" class="object-tool" data-annotation-toggle aria-pressed="true">Hide annotations</button>
-        <button type="button" class="object-tool object-reset" data-rotation-reset hidden>Front angle</button>
+        <button type="button" class="object-tool" data-annotation-toggle aria-pressed="true" hidden>Hide annotations</button>
       </div>
 
-      <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs aircraft telemetry board. Select marked components, or choose Rotate and drag left or right.">
-        <img src="assets/images/interactive/skylabs/skylabs-telemetry-inspect.webp" width="1400" height="1000" alt="KiCad rendering of the assembled blue Skylabs aircraft telemetry PCB" data-object-image draggable="false">
+      <div class="object-rotation-bar" data-rotation-bar aria-label="Board angle controls">
+        <div class="object-angle-presets" aria-label="Preset angles"><button type="button" data-angle-preset="0" aria-pressed="true">Front</button><button type="button" data-angle-preset="6" aria-pressed="false">Side</button><button type="button" data-angle-preset="12" aria-pressed="false">Back</button></div>
+        <div class="object-angle-steps"><button type="button" data-rotation-previous aria-label="Rotate 15 degrees left">&larr; 15&deg;</button><button type="button" data-rotation-reset>Reset</button><button type="button" data-rotation-next aria-label="Rotate 15 degrees right">15&deg; &rarr;</button></div>
+      </div>
+
+      <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs aircraft telemetry board. Drag left or right to rotate.">
+        <img src="assets/images/interactive/skylabs/skylabs-telemetry-turn-00.webp" width="1400" height="1000" alt="Rotatable KiCad rendering of the assembled blue Skylabs aircraft telemetry PCB" data-object-image draggable="false">
         <div class="object-hotspots" data-object-hotspots aria-label="Selectable Skylabs board components"></div>
-        <p class="object-drag-hint" data-drag-hint hidden><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p>
-        <p class="object-angle" data-object-angle hidden>000&deg;</p>
+        <p class="object-drag-hint" data-drag-hint><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p>
+        <p class="object-angle" data-object-angle>000&deg;</p>
       </div>
 
       <div class="object-readout is-empty" data-object-readout aria-live="polite" aria-atomic="true">

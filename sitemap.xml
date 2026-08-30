@@ -3,6 +3,7 @@
   <url><loc>https://proccyboi.github.io/</loc></url>
   <url><loc>https://proccyboi.github.io/about/</loc></url>
   <url><loc>https://proccyboi.github.io/book/</loc></url>
+  <url><loc>https://proccyboi.github.io/lab/</loc></url>
   <url><loc>https://proccyboi.github.io/projects/</loc></url>
   <url><loc>https://proccyboi.github.io/projects/tramtrace/</loc></url>
   <url><loc>https://proccyboi.github.io/projects/framework-dual-usb/</loc></url>
@@ -21,6 +22,10 @@
   <url><loc>https://proccyboi.github.io/projects/lora-talkie/</loc></url>
   <url><loc>https://proccyboi.github.io/projects/dash/</loc></url>
   <url><loc>https://proccyboi.github.io/projects/metroboard/</loc></url>
+  <url><loc>https://proccyboi.github.io/lab/tramtrace/</loc></url>
+  <url><loc>https://proccyboi.github.io/lab/skylabs/</loc></url>
+  <url><loc>https://proccyboi.github.io/lab/framework-esp32/</loc></url>
+  <url><loc>https://proccyboi.github.io/lab/framework-dual-usb/</loc></url>
   <url><loc>https://proccyboi.github.io/shared/</loc></url>
   <url><loc>https://proccyboi.github.io/shared/projects/</loc></url>
   <url><loc>https://proccyboi.github.io/shared/projects/skylabs/</loc></url>

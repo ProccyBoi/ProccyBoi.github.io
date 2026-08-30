@@ -8,7 +8,11 @@
   const boardButtons = [...inspector.querySelectorAll("[data-object-board]")];
   const viewButtons = [...inspector.querySelectorAll("[data-object-view]")];
   const annotationToggle = inspector.querySelector("[data-annotation-toggle]");
+  const rotationBar = inspector.querySelector("[data-rotation-bar]");
   const rotationReset = inspector.querySelector("[data-rotation-reset]");
+  const rotationPrevious = inspector.querySelector("[data-rotation-previous]");
+  const rotationNext = inspector.querySelector("[data-rotation-next]");
+  const anglePresets = [...inspector.querySelectorAll("[data-angle-preset]")];
   const dragHint = inspector.querySelector("[data-drag-hint]");
   const angleReadout = inspector.querySelector("[data-object-angle]");
   const boardEyebrow = inspector.querySelector("[data-board-eyebrow]");
@@ -20,15 +24,18 @@
   const readoutCopy = inspector.querySelector("[data-object-copy]");
   const componentDirectory = inspector.querySelector("[data-object-directory]");
   const directoryCount = inspector.querySelector("[data-object-directory-count]");
+  const projectLink = inspector.querySelector("[data-object-project-link]");
   const liveRegion = document.querySelector("[data-object-live]");
 
   const frameCount = 24;
   const boards = {
     telemetry: {
       label: "Aircraft telemetry",
+      projectLabel: "aircraft telemetry",
+      projectUrl: "projects/skylabs/boards/telemetry/",
       eyebrow: "Aircraft telemetry / Rev 4.0",
       heading: "Flight data starts here.",
-      introduction: "Inspect the aircraft-side sensor, logger and radio board, then switch to Rotate and drag the actual KiCad assembly through a full turn.",
+      introduction: "Drag the source-rendered assembly through a full turn, or switch to Parts for a guided map of the sensor, logger and radio hardware.",
       inspectImage: "assets/images/interactive/skylabs/skylabs-telemetry-inspect.webp",
       frameStem: "skylabs-telemetry-turn-",
       alt: "assembled blue Skylabs aircraft telemetry PCB",
@@ -50,9 +57,11 @@
     },
     ground: {
       label: "Ground station",
+      projectLabel: "ground-station",
+      projectUrl: "projects/skylabs/boards/ground-station/",
       eyebrow: "Ground station / Rev 1.0",
       heading: "The other end of the link.",
-      introduction: "Inspect the field receiver and backup logger, then switch to Rotate and drag its KiCad assembly through the same full turn.",
+      introduction: "Drag the source-rendered assembly through a full turn, or switch to Parts for a guided map of the receiver, logger and USB interface.",
       inspectImage: "assets/images/interactive/skylabs/skylabs-ground-inspect.webp",
       frameStem: "skylabs-ground-turn-",
       alt: "assembled blue Skylabs ground-station PCB",
@@ -73,7 +82,7 @@
 
   let activeBoard = "telemetry";
   let activeComponentIndex = -1;
-  let activeView = "inspect";
+  let activeView = "rotate";
   let currentFrame = 0;
   let dragging = false;
   let lastPointerX = 0;
@@ -175,6 +184,11 @@
     image.src = frameImage(activeBoard, currentFrame);
     const angle = currentFrame * 15;
     angleReadout.textContent = `${String(angle).padStart(3, "0")}\u00b0`;
+    anglePresets.forEach((button) => {
+      const active = Number(button.dataset.anglePreset) === currentFrame;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
     if (announceChange) announce(`${boards[activeBoard].label} angle ${angle} degrees`);
   };
 
@@ -206,16 +220,17 @@
     boardEyebrow.textContent = board.eyebrow;
     boardHeading.textContent = board.heading;
     boardCopy.textContent = board.introduction;
+    projectLink.href = board.projectUrl;
+    projectLink.firstChild.textContent = `Read the ${board.projectLabel} project `;
     buildHotspots();
     clearSelection();
     updateStage();
-    if (announceChange) {
-      const url = new URL(window.location.href);
-      if (boardKey === "telemetry") url.searchParams.delete("board");
-      else url.searchParams.set("board", boardKey);
-      window.history.replaceState({}, "", url);
-      announce(`${board.label} board selected`);
-    }
+    const url = new URL(window.location.href);
+    if (boardKey === "telemetry") url.searchParams.delete("board");
+    else url.searchParams.set("board", boardKey);
+    url.searchParams.set("view", activeView);
+    window.history.replaceState({}, "", url);
+    if (announceChange) announce(`${board.label} board selected`);
   };
 
   const setView = (view) => {
@@ -229,10 +244,16 @@
     });
     const rotating = view === "rotate";
     annotationToggle.hidden = rotating;
-    rotationReset.hidden = !rotating;
+    rotationBar.hidden = !rotating;
     dragHint.hidden = !rotating;
     angleReadout.hidden = !rotating;
     updateStage();
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    if (activeBoard === "telemetry") url.searchParams.delete("board");
+    else url.searchParams.set("board", activeBoard);
+    window.history.replaceState({}, "", url);
+    announce(view === "rotate" ? "360 degree board view" : "Component map");
   };
 
   boardButtons.forEach((button) => button.addEventListener("click", () => setBoard(button.dataset.objectBoard)));
@@ -247,6 +268,9 @@
   });
 
   rotationReset.addEventListener("click", () => showFrame(0, true));
+  rotationPrevious.addEventListener("click", () => showFrame(currentFrame - 1, true));
+  rotationNext.addEventListener("click", () => showFrame(currentFrame + 1, true));
+  anglePresets.forEach((button) => button.addEventListener("click", () => showFrame(Number(button.dataset.anglePreset), true)));
 
   stage.addEventListener("pointerdown", (event) => {
     if (activeView !== "rotate") return;
@@ -288,9 +312,10 @@
   });
 
   const requestedBoard = new URLSearchParams(window.location.search).get("board");
+  const requestedView = new URLSearchParams(window.location.search).get("view");
   const initialBoard = Object.prototype.hasOwnProperty.call(boards, requestedBoard) ? requestedBoard : "telemetry";
   setBoard(initialBoard, false);
-  setView("inspect");
+  setView(requestedView === "inspect" ? "inspect" : "rotate");
   const firstCompanionFrame = new Image();
   firstCompanionFrame.src = frameImage(initialBoard === "ground" ? "telemetry" : "ground", 0);
 })();
