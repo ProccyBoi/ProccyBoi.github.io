@@ -19,16 +19,19 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 0.98;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 300);
   const target = new THREE.Vector3(0, 3.25, -15);
 
-  scene.add(new THREE.HemisphereLight(0xddeaf2, 0x1b1511, 1.35));
-  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-24, 40, 30); scene.add(key);
-  const fill = new THREE.DirectionalLight(0x8cc8ff, 0.85); fill.position.set(30, 16, -36); scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xffc58f, 0.7); rim.position.set(-30, 6, -20); scene.add(rim);
+  // Neutral studio lighting: keep enough hemisphere fill to preserve the
+  // underside appearance, while avoiding the previous blue/white wash on the
+  // exposed soldermask and component tops.
+  scene.add(new THREE.HemisphereLight(0xdfe6e2, 0x171914, 1.22));
+  const key = new THREE.DirectionalLight(0xfffdf8, 1.38); key.position.set(-24, 40, 30); scene.add(key);
+  const fill = new THREE.DirectionalLight(0xd7e4ee, 0.42); fill.position.set(30, 16, -36); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffe1c4, 0.30); rim.position.set(-30, 6, -20); scene.add(rim);
 
   const assembly = new THREE.Group();
   scene.add(assembly);
@@ -64,13 +67,13 @@
     chip: new THREE.MeshStandardMaterial({ color: 0x171a1d, roughness: 0.44, metalness: 0.05 }),
     chipTop: new THREE.MeshStandardMaterial({ color: 0x2a2e31, roughness: 0.36, metalness: 0.04 }),
     chipMark: new THREE.MeshBasicMaterial({ color: 0xc2c7ca }),
-    metal: new THREE.MeshStandardMaterial({ color: 0xc1c6ca, roughness: 0.2, metalness: 0.9 }),
-    darkMetal: new THREE.MeshStandardMaterial({ color: 0x747b81, roughness: 0.28, metalness: 0.8 }),
-    gold: new THREE.MeshStandardMaterial({ color: 0xd3ab58, roughness: 0.28, metalness: 0.86 }),
-    ceramic: new THREE.MeshStandardMaterial({ color: 0xd2c7b1, roughness: 0.56, metalness: 0.01 }),
-    resistor: new THREE.MeshStandardMaterial({ color: 0x373531, roughness: 0.58, metalness: 0.02 }),
-    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x232527, roughness: 0.66, metalness: 0.02 }),
-    diode: new THREE.MeshStandardMaterial({ color: 0x2a2d30, roughness: 0.5, metalness: 0.07 }),
+    metal: new THREE.MeshStandardMaterial({ color: 0xaeb5b8, roughness: 0.28, metalness: 0.86 }),
+    darkMetal: new THREE.MeshStandardMaterial({ color: 0x686f73, roughness: 0.34, metalness: 0.76 }),
+    gold: new THREE.MeshStandardMaterial({ color: 0xc89b43, roughness: 0.34, metalness: 0.80 }),
+    ceramic: new THREE.MeshStandardMaterial({ color: 0xc8bda5, roughness: 0.62, metalness: 0.01 }),
+    resistor: new THREE.MeshStandardMaterial({ color: 0x302f2c, roughness: 0.62, metalness: 0.01 }),
+    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x1d2022, roughness: 0.70, metalness: 0.01 }),
+    diode: new THREE.MeshStandardMaterial({ color: 0x232629, roughness: 0.56, metalness: 0.05 }),
     diodeBand: new THREE.MeshBasicMaterial({ color: 0xf3f0df }),
     white: new THREE.MeshBasicMaterial({ color: 0xf0eee7 })
   };
@@ -195,6 +198,53 @@
   boardGeometry.translate(0, PCB_BOTTOM, 0);
   const board = tagPart(new THREE.Mesh(boardGeometry, mat.board), 'BOARD');
   mirroredCardGroup.add(board);
+
+  // Preserve the underside exactly as the base laminate renders, but give the
+  // exposed top and routed edge their own soldermask surfaces. The previous
+  // single lit material made the directly-lit top/side look pale while the
+  // underside happened to have the desired deep green.
+  const topMaskMaterial = new THREE.MeshStandardMaterial({
+    color: 0x07552d,
+    roughness: 0.64,
+    metalness: 0.0,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
+  });
+  const sideMaskMaterial = new THREE.MeshStandardMaterial({
+    color: 0x07552d,
+    roughness: 0.68,
+    metalness: 0.0,
+    side: THREE.DoubleSide
+  });
+  const invisibleCapMaterial = new THREE.MeshBasicMaterial({
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    colorWrite: false
+  });
+
+  const topMaskGeometry = new THREE.ShapeGeometry(boardShape, 16);
+  topMaskGeometry.rotateX(-Math.PI / 2);
+  topMaskGeometry.translate(0, PCB_TOP + 0.004, 0);
+  const topMask = new THREE.Mesh(topMaskGeometry, topMaskMaterial);
+  topMask.renderOrder = 2;
+  topMask.raycast = () => {};
+  mirroredCardGroup.add(topMask);
+
+  const sideMaskGeometry = new THREE.ExtrudeGeometry(boardShape, {
+    depth: PCB_T + 0.008,
+    bevelEnabled: false,
+    curveSegments: 16,
+    steps: 1
+  });
+  sideMaskGeometry.rotateX(-Math.PI / 2);
+  sideMaskGeometry.translate(0, PCB_BOTTOM - 0.004, 0);
+  const sideMask = new THREE.Mesh(sideMaskGeometry, [invisibleCapMaterial, sideMaskMaterial]);
+  sideMask.renderOrder = 2;
+  sideMask.raycast = () => {};
+  mirroredCardGroup.add(sideMask);
+
   const boardEdge = new THREE.LineSegments(new THREE.EdgesGeometry(boardGeometry, 28), mat.boardEdge);
   boardEdge.renderOrder = 4;
   mirroredCardGroup.add(boardEdge);
@@ -248,7 +298,9 @@
       pad = new THREE.Mesh(new THREE.BoxGeometry(width, 0.035, height), mat.gold);
     }
     pad.position.set(x, PCB_TOP + 0.022, -y);
-    pad.rotation.y = THREE.MathUtils.degToRad(-angle);
+    // Same KiCad Y-down → Three.js X/-Z mapping as component bodies.
+    // Using the old negative sign made 90°/−90° pads cross their own packages.
+    pad.rotation.y = THREE.MathUtils.degToRad(angle);
     padGroup.add(pad);
   });
 
@@ -681,14 +733,14 @@
   };
 
   const shellMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xdce8ed,
-    roughness: 0.24,
-    metalness: 0.02,
+    color: 0xe2e9e8,
+    roughness: 0.32,
+    metalness: 0.01,
     transparent: true,
-    opacity: 0.28,
-    transmission: 0.14,
-    clearcoat: 0.65,
-    clearcoatRoughness: 0.22,
+    opacity: 0.17,
+    transmission: 0.08,
+    clearcoat: 0.42,
+    clearcoatRoughness: 0.30,
     side: THREE.DoubleSide,
     depthWrite: false
   });
