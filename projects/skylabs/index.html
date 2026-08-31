@@ -16,10 +16,13 @@
   <link rel="preload" as="image" href="assets/images/projects/skylabs-ground-hero-960.webp" media="(max-width: 760px)" type="image/webp">
   <link rel="preload" as="image" href="assets/images/projects/skylabs-ground-hero-1920.webp" media="(min-width: 761px)" type="image/webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/project-flow.css?v=20260831a">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260901a">
+  <link rel="stylesheet" href="assets/skylabs-object.css?v=20260831a">
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260901b">
   <script src="assets/site.js" defer></script>
+  <script src="assets/skylabs-object.js?v=20260901a" defer></script>
 </head>
-<body>
+<body class="project-page">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
@@ -27,7 +30,7 @@
       <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
-        <a href="about/">About</a><a href="lab/">Labs</a>
+        <a href="about/">About</a>
         <a href="shared/">Files</a>
         <a href="book/">Book</a>
       </nav>
@@ -36,10 +39,10 @@
     </div>
   </header>
 
-  <nav class="project-flow" aria-label="Skylabs pages"><div class="project-flow-inner"><a class="project-flow-parent" href="projects/skylabs/"><span>Project</span><strong>Skylabs telemetry system</strong></a><div class="project-flow-tabs"><a href="projects/skylabs/" aria-current="page">Overview</a><a href="lab/skylabs/?view=rotate">Board explorer</a></div></div></nav>
+  <nav class="project-flow" aria-label="Skylabs sections"><div class="project-flow-inner"><a class="project-flow-parent" href="projects/skylabs/#overview"><span>Project</span><strong>Skylabs telemetry system</strong></a><div class="project-flow-tabs"><a href="projects/skylabs/#overview">Overview</a><a href="projects/skylabs/#explore">360&deg;</a><a href="projects/skylabs/#system">System</a><a href="projects/skylabs/#boards">Boards</a></div></div></nav>
 
-  <main id="main">
-    <section class="project-hero" aria-labelledby="skylabs-title">
+  <main id="main" class="object-main" data-object-inspector data-view="rotate" data-board="telemetry" data-annotations="visible">
+    <section class="project-hero" id="overview" aria-labelledby="skylabs-title">
       <div class="project-hero-grid">
         <div class="project-hero-copy">
           <div>
@@ -68,6 +71,18 @@
       </div>
     </section>
 
+    <section class="project-interactive" id="explore" aria-labelledby="skylabs-explore-title">
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header"><div><p class="eyebrow" data-board-eyebrow>Aircraft telemetry / Rev 4.0</p><h2 id="skylabs-explore-title" data-board-heading>Flight data starts here.</h2></div><div class="object-workbench-notes"><p data-board-copy>Drag the source-rendered assembly through a full turn, or switch to Parts for a guided map of the sensor, logger and radio hardware.</p><a href="projects/skylabs/boards/telemetry/" data-object-project-link>Read the aircraft telemetry project <span aria-hidden="true">&rarr;</span></a></div></header>
+        <div class="object-toolbar" aria-label="Board view controls"><div class="object-board-list" aria-label="Skylabs board"><button type="button" class="object-board is-active" data-object-board="telemetry" aria-pressed="true">Aircraft telemetry</button><button type="button" class="object-board" data-object-board="ground" aria-pressed="false">Ground station</button></div><div class="object-view-list" aria-label="Board view"><button type="button" class="object-view" data-object-view="inspect" aria-pressed="false">Parts</button><button type="button" class="object-view is-active" data-object-view="rotate" aria-pressed="true">360&deg;</button></div><button type="button" class="object-tool" data-annotation-toggle aria-pressed="true" hidden>Hide annotations</button></div>
+        <div class="object-rotation-bar" data-rotation-bar aria-label="Board angle controls"><div class="object-angle-presets" aria-label="Preset angles"><button type="button" data-angle-preset="0" aria-pressed="true">Front</button><button type="button" data-angle-preset="6" aria-pressed="false">Side</button><button type="button" data-angle-preset="12" aria-pressed="false">Back</button></div><div class="object-angle-steps"><button type="button" data-rotation-previous aria-label="Rotate 15 degrees left">&larr; 15&deg;</button><button type="button" data-rotation-reset>Reset</button><button type="button" data-rotation-next aria-label="Rotate 15 degrees right">15&deg; &rarr;</button></div></div>
+        <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs aircraft telemetry board. Drag left or right to rotate."><img src="assets/images/interactive/skylabs/skylabs-telemetry-turn-00.webp" width="1400" height="1000" alt="Rotatable KiCad rendering of the assembled blue Skylabs aircraft telemetry PCB" data-object-image draggable="false"><div class="object-hotspots" data-object-hotspots aria-label="Selectable Skylabs board components"></div><p class="object-drag-hint" data-drag-hint><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p><p class="object-angle" data-object-angle>000&deg;</p></div>
+        <div class="object-readout is-empty" data-object-readout aria-live="polite" aria-atomic="true"><p data-object-ref>BOARD</p><h3 data-object-name>Aircraft telemetry / avionics</h3><p data-object-copy>Select a marker to trace how sensing, navigation, logging and radio share the same aircraft board. Select it again to clear the view.</p></div>
+        <details class="component-directory" data-object-directory-wrap><summary>Component index <span data-object-directory-count>11 selectable parts</span></summary><div class="component-directory-list" data-object-directory></div></details>
+        <dl class="project-interactive-facts"><div><dt>Aircraft log</dt><dd>40 Hz binary</dd></div><div><dt>Live link</dt><dd>915 MHz LoRa</dd></div><div><dt>Boards</dt><dd>Aircraft + ground</dd></div></dl>
+      </div>
+    </section>
+
     <div class="project-body shell">
       <section class="project-summary" aria-labelledby="skylabs-overview">
         <h2 id="skylabs-overview">My work</h2>
@@ -76,13 +91,13 @@
           <p>My work covers both ends of the link: the STM32 aircraft logger, the ESP32 LoRa ground station and the replay tools used after landing.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="shared/flight-review/" target="_blank" rel="noreferrer">Open Flight Review ↗</a>
-            <a class="button" href="lab/skylabs/?view=rotate">Open the board explorer</a>
+            <a class="button" href="projects/skylabs/#explore">Explore both boards</a>
             <a class="button" href="shared/projects/skylabs/f110211/" target="_blank" rel="noreferrer">View F110211 reference flight ↗</a>
           </div>
         </div>
       </section>
 
-      <section class="project-summary" aria-labelledby="skylabs-system">
+      <section class="project-summary" id="system" aria-labelledby="skylabs-system">
         <h2 id="skylabs-system">One data path, three views</h2>
         <div class="project-prose">
           <p>The aircraft binary log is the high-rate record, scheduled at 40 Hz. A smaller telemetry packet crosses the 915 MHz link at up to 10 Hz, where the ground station records it again and forwards a live stream over USB or its own Wi-Fi dashboard.</p>
@@ -90,7 +105,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="skylabs-boards">
+      <section id="boards" aria-labelledby="skylabs-boards">
         <div class="section-heading" data-reveal><div><h2 id="skylabs-boards">Boards</h2></div></div>
         <div class="board-catalog" data-reveal>
           <a class="board-row" href="projects/skylabs/boards/telemetry/">
@@ -125,6 +140,6 @@
     </div>
   </footer>
 
-  <p class="live-region" aria-live="polite" data-live-region></p>
+  <p class="live-region" aria-live="polite" data-live-region data-object-live></p>
 </body>
 </html>

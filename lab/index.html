@@ -3,75 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="/">
-  <title>Interactive Labs | Andrew Chung</title>
-  <meta name="description" content="Interactive hardware explorers and engineering tools built by Andrew Chung.">
-  <meta name="theme-color" content="#111210">
-  <link rel="canonical" href="https://proccyboi.github.io/lab/">
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/labs.css?v=20260831a">
-  <script src="assets/site.js" defer></script>
+  <title>Interactive projects | Andrew Chung</title>
+  <meta name="description" content="Andrew Chung's interactive engineering work is now integrated into the project archive.">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0;url=/projects/#interactive">
+  <link rel="canonical" href="https://proccyboi.github.io/projects/#interactive">
+  <style>body{margin:0;display:grid;min-height:100vh;place-items:center;background:#f5f5f3;color:#161615;font:16px/1.5 system-ui,sans-serif}main{padding:2rem;text-align:center}h1{font-size:1.5rem}a{color:inherit}</style>
+  <script>window.location.replace("/projects/#interactive");</script>
 </head>
-<body>
-  <a class="skip-link" href="#main">Skip to labs</a>
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="brand brand-plain" href="./">Andrew Chung</a>
-      <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
-        <a href="projects/">Projects</a><a href="about/">About</a><a href="lab/" aria-current="page">Labs</a><a href="shared/">Files</a><a href="book/">Book</a>
-      </nav>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
-    </div>
-  </header>
-
-  <main id="main" class="labs-main">
-    <section class="labs-hero">
-      <div class="labs-hero-grid shell">
-        <div><p class="eyebrow">Interactive engineering</p><h1>Take a closer look.</h1></div>
-        <div class="labs-hero-copy"><p>Rotate the hardware, trace a signal path or open a working engineering tool. Each explorer links back to the project that explains why it exists.</p></div>
-      </div>
-    </section>
-
-    <section class="labs-section shell" aria-labelledby="hardware-labs-title">
-      <header class="labs-heading">
-        <div><p class="eyebrow">01 / Hardware</p><h2 id="hardware-labs-title">Board explorers</h2></div>
-        <p>Built from the same KiCad files and mechanical references used for the physical boards.</p>
-      </header>
-      <div class="lab-pairs">
-        <article class="lab-pair">
-          <div class="lab-pair-media"><img src="assets/images/interactive/tramtrace/tramtrace-turn-00.webp" width="1200" height="1200" alt="Populated TramTrace PCB viewed at an angle" loading="eager"></div>
-          <div class="lab-pair-copy"><header><h3>TramTrace</h3><small>PCB inspector</small></header><p>Turn the light-rail map over, inspect its copper and play data through all 116 pixels.</p><div class="lab-pair-actions"><a href="projects/tramtrace/">Project story <span aria-hidden="true">&rarr;</span></a><a href="lab/tramtrace/">Open explorer <span aria-hidden="true">&rarr;</span></a></div></div>
-        </article>
-        <article class="lab-pair">
-          <div class="lab-pair-media"><img src="assets/images/interactive/skylabs/skylabs-telemetry-turn-03.webp" width="1400" height="1000" alt="Skylabs aircraft telemetry PCB viewed at an angle" loading="eager"></div>
-          <div class="lab-pair-copy"><header><h3>Skylabs</h3><small>Two-board system</small></header><p>Move between the aircraft and ground-station boards, rotate each assembly and identify the parts.</p><div class="lab-pair-actions"><a href="projects/skylabs/">Project story <span aria-hidden="true">&rarr;</span></a><a href="lab/skylabs/?view=rotate">Open explorer <span aria-hidden="true">&rarr;</span></a></div></div>
-        </article>
-        <article class="lab-pair">
-          <div class="lab-pair-media is-contain"><img src="assets/images/projects/framework-black-hero-960.webp" width="960" height="640" alt="Framework ESP32 expansion card in its clear enclosure" loading="lazy"></div>
-          <div class="lab-pair-copy"><header><h3>Framework ESP32</h3><small>WebGL model</small></header><p>Orbit the complete expansion card, lift the enclosure and separate the board from the shell.</p><div class="lab-pair-actions"><a href="projects/framework-expansion-card/">Project story <span aria-hidden="true">&rarr;</span></a><a href="lab/framework-esp32/">Open 3D model <span aria-hidden="true">&rarr;</span></a></div></div>
-        </article>
-        <article class="lab-pair">
-          <div class="lab-pair-media is-contain"><img src="assets/images/projects/framework-dual-hero-960.webp" width="960" height="640" alt="Dual USB-C Framework expansion card in its clear enclosure" loading="lazy"></div>
-          <div class="lab-pair-copy"><header><h3>Dual USB-C</h3><small>WebGL model</small></header><p>Inspect the hub, ports and power path, then explode the mechanical assembly in place.</p><div class="lab-pair-actions"><a href="projects/framework-dual-usb/">Project story <span aria-hidden="true">&rarr;</span></a><a href="lab/framework-dual-usb/">Open 3D model <span aria-hidden="true">&rarr;</span></a></div></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="labs-section shell" aria-labelledby="browser-tools-title">
-      <header class="labs-heading">
-        <div><p class="eyebrow">02 / Browser tools</p><h2 id="browser-tools-title">Run the model.</h2></div>
-        <p>Small, focused tools for teaching, reviewing data and testing an idea without installing anything.</p>
-      </header>
-      <div class="tool-list">
-        <a class="tool-row" href="projects/scopelab/"><span>01</span><h3>ScopeLab</h3><p>Microcontroller exercises with a working oscilloscope and logic analyser.</p><b aria-hidden="true">&rarr;</b></a>
-        <a class="tool-row" href="shared/flight-review/"><span>02</span><h3>Flight Review</h3><p>Open a Skylabs flight log and move through the record alongside its map and charts.</p><b aria-hidden="true">&rarr;</b></a>
-        <a class="tool-row" href="projects/lithography-animation/"><span>03</span><h3>Lithography</h3><p>Explore pattern transfer, focus, resist tone and photon statistics.</p><b aria-hidden="true">&rarr;</b></a>
-        <a class="tool-row" href="projects/mosfet-operating-regions/"><span>04</span><h3>MOSF regions</h3><p>See channel state and operating-region boundaries change together.</p><b aria-hidden="true">&rarr;</b></a>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer"><div class="footer-inner"><p>&copy; <span data-current-year>2026</span> Andrew Chung</p><a href="projects/">Projects</a><a href="about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a></div></footer>
-</body>
+<body><main><h1>Interactive work has moved</h1><p><a href="/projects/#interactive">Continue to projects</a></p></main></body>
 </html>

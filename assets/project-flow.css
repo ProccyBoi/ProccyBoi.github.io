@@ -15,6 +15,7 @@
   align-items: stretch;
   justify-content: space-between;
   gap: 2rem;
+  overflow: hidden;
 }
 
 .project-flow-parent {
@@ -45,7 +46,12 @@
 .project-flow-tabs {
   display: flex;
   align-items: stretch;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
+
+.project-flow-tabs::-webkit-scrollbar { display: none; }
 
 .project-flow-tabs a {
   position: relative;
@@ -62,8 +68,8 @@
 
 .project-flow-tabs a:last-child { border-right: 1px solid var(--rule); }
 .project-flow-tabs a:hover { background: var(--surface); color: var(--text); }
-.project-flow-tabs a[aria-current="page"] { color: var(--text); }
-.project-flow-tabs a[aria-current="page"]::after {
+.project-flow-tabs a:focus-visible { color: var(--text); }
+.project-flow-tabs a:focus-visible::after {
   content: "";
   position: absolute;
   right: 1rem;
@@ -85,9 +91,10 @@
 @media (max-width: 720px) {
   .project-flow { top: 4.25rem; }
   .project-flow-inner { width: 100%; gap: 0; }
-  .project-flow-parent { flex: 1; padding-inline: 1rem; }
+  .project-flow-parent { flex: 0 1 auto; min-width: 7.25rem; padding-inline: 1rem; }
   .project-flow-parent span { display: none; }
-  .project-flow-tabs a { min-width: auto; padding-inline: 0.9rem; }
+  .project-flow-tabs { flex: 1; }
+  .project-flow-tabs a { min-width: max-content; padding-inline: 0.9rem; }
   .project-flow-tabs a:last-child { border-right: 0; }
 }
 

@@ -16,10 +16,16 @@
   <link rel="preload" as="image" href="assets/images/projects/framework-black-hero-960.webp" media="(max-width: 760px)" type="image/webp">
   <link rel="preload" as="image" href="assets/images/projects/framework-black-hero-1920.webp" media="(min-width: 761px)" type="image/webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/project-flow.css?v=20260831a">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260901a">
+  <link rel="stylesheet" href="assets/skylabs-object.css?v=20260831a">
+  <link rel="stylesheet" href="assets/framework-3d.css?v=20260830b">
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260901b">
   <script src="assets/site.js" defer></script>
+  <script src="assets/vendor/three.min.js" defer></script>
+  <script src="assets/vendor/GLTFLoader.js" defer></script>
+  <script src="assets/framework-3d.js?v=20260830c" defer></script>
 </head>
-<body>
+<body class="project-page framework-3d-body">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
@@ -27,7 +33,7 @@
       <a class="brand brand-plain" href="./">Andrew Chung</a>
       <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
         <a href="projects/" aria-current="page">Projects</a>
-        <a href="about/">About</a><a href="lab/">Labs</a>
+        <a href="about/">About</a>
         <a href="shared/">Files</a>
         <a href="book/">Book</a>
       </nav>
@@ -37,11 +43,11 @@
   </header>
 
   <nav class="project-flow" aria-label="Framework ESP32 Card pages">
-    <div class="project-flow-inner"><a class="project-flow-parent" href="projects/framework-expansion-card/"><span>Project</span><strong>Framework ESP32 Card</strong></a><div class="project-flow-tabs"><a href="projects/framework-expansion-card/" aria-current="page">Overview</a><a href="lab/framework-esp32/">3D model</a></div></div>
+    <div class="project-flow-inner"><a class="project-flow-parent" href="projects/framework-expansion-card/#overview"><span>Project</span><strong>Framework ESP32 Card</strong></a><div class="project-flow-tabs"><a href="projects/framework-expansion-card/#overview">Overview</a><a href="projects/framework-expansion-card/#explore">3D</a><a href="projects/framework-expansion-card/#details">Design</a><a href="projects/framework-expansion-card/#build">Build</a></div></div>
   </nav>
 
   <main id="main">
-    <section class="project-hero" aria-labelledby="project-title">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
       <div class="project-hero-grid">
         <div class="project-hero-copy">
           <div>
@@ -65,14 +71,28 @@
       </div>
     </section>
 
-    <div class="project-body shell">
+    <section class="project-interactive framework-3d-main" id="explore" aria-labelledby="framework-explore-title" data-framework-inspector>
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header">
+          <div><p class="eyebrow">Source-derived 3D</p><h2 id="framework-explore-title">See how it fits.</h2></div>
+          <p>The enclosure is Framework's mechanical STL and the populated PCB is exported from the working KiCad design. Orbit the assembly, remove the shell or pull the two apart.</p>
+        </header>
+        <div class="object-toolbar framework-3d-toolbar" aria-label="3D model controls">
+          <div class="object-view-list" aria-label="Camera angle"><button type="button" class="object-view is-active" data-framework-view="iso" aria-pressed="true">Angle</button><button type="button" class="object-view" data-framework-view="top" aria-pressed="false">Top</button><button type="button" class="object-view" data-framework-view="side" aria-pressed="false">Side</button></div>
+          <button type="button" class="object-tool" data-framework-shell aria-pressed="true">Hide shell</button><button type="button" class="object-tool" data-framework-explode aria-pressed="false">Explode</button><button type="button" class="object-tool object-reset" data-framework-reset>Reset</button>
+        </div>
+        <div class="object-stage framework-3d-stage" data-framework-stage tabindex="0" aria-label="Interactive 3D Framework ESP32 expansion card. Drag to rotate, scroll or pinch to zoom."><canvas data-framework-canvas aria-hidden="true"></canvas><p class="framework-3d-status" data-framework-status>Loading board and enclosure…</p><p class="object-drag-hint framework-3d-hint"><span aria-hidden="true">&larr;</span> Drag to orbit · scroll to zoom <span aria-hidden="true">&rarr;</span></p></div>
+        <dl class="project-interactive-facts"><div><dt>PCB</dt><dd>0.6 mm FR-4</dd></div><div><dt>Module</dt><dd>ESP32-S3-MINI-1</dd></div><div><dt>Enclosure</dt><dd>Framework geometry</dd></div></dl>
+      </div>
+    </section>
+
+    <div class="project-body shell" id="details">
       <section class="project-summary" aria-labelledby="framework-summary">
         <h2 id="framework-summary">A laptop-bay dev board</h2>
         <div class="project-prose">
           <p>I liked the Framework expansion-card system, but I wanted a module that could do more than expose another laptop port. This one puts an ESP32-S3-MINI-1 in the bay and leaves the radio visible through a clear shell.</p>
           <p>The 0.6 mm board thickness is part of the electrical design as much as the mechanical one: it lets the card mate with the laptop's USB-C connector without a separate plug or interposer.</p>
           <p>The latest revision swaps the original green board for black solder mask and white silkscreen. It is now assembled in the clear enclosure, with the antenna end of the ESP32 left unobstructed.</p>
-          <p><a class="button button-primary" href="lab/framework-esp32/">Explore the card in 3D &rarr;</a></p>
         </div>
       </section>
 
@@ -84,8 +104,8 @@
         </div>
       </section>
 
-      <h2 class="gallery-title">Photos</h2>
-      <section class="project-gallery" aria-label="Framework Expansion Card photography">
+      <h2 class="gallery-title" id="build">Build</h2>
+      <section class="project-gallery" aria-labelledby="build">
         <figure class="wide" data-reveal>
           <picture>
             <source type="image/webp" srcset="assets/images/projects/framework-black-overview-960.webp 960w, assets/images/projects/framework-black-overview-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 90vw">
@@ -149,6 +169,6 @@
       </div>
     </div>
   </dialog>
-  <p class="live-region" aria-live="polite" data-live-region></p>
+  <p class="live-region" aria-live="polite" data-live-region data-framework-live></p>
 </body>
 </html>

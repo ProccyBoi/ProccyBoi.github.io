@@ -3,81 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="/">
-  <title>Framework ESP32 Card — 3D Explorer | Andrew Chung</title>
-  <meta name="description" content="Interactive WebGL explorer for Andrew Chung's Framework ESP32 expansion card, using the real Framework enclosure geometry and component positions from the KiCad board.">
-  <meta name="theme-color" content="#12100e">
-  <link rel="canonical" href="https://proccyboi.github.io/lab/framework-esp32/">
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/project-flow.css?v=20260831a">
-  <link rel="stylesheet" href="assets/skylabs-object.css?v=20260829c">
-  <link rel="stylesheet" href="assets/framework-3d.css?v=20260830b">
-  <script src="assets/site.js" defer></script>
-  <script src="assets/vendor/three.min.js" defer></script>
-  <script src="assets/vendor/GLTFLoader.js" defer></script>
-  <script src="assets/framework-3d.js?v=20260830c" defer></script>
+  <title>Framework ESP32 Card | Andrew Chung</title>
+  <meta name="description" content="The Framework ESP32 3D model is now part of its complete project case study.">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0;url=/projects/framework-expansion-card/#explore">
+  <link rel="canonical" href="https://proccyboi.github.io/projects/framework-expansion-card/#explore">
+  <style>body{margin:0;display:grid;min-height:100vh;place-items:center;background:#f5f5f3;color:#161615;font:16px/1.5 system-ui,sans-serif}main{padding:2rem;text-align:center}h1{font-size:1.5rem}a{color:inherit}</style>
+  <script>window.location.replace("/projects/framework-expansion-card/#explore");</script>
 </head>
-<body class="object-body framework-3d-body">
-  <a class="skip-link" href="#main">Skip to 3D explorer</a>
-  <header class="site-header object-header">
-    <div class="header-inner">
-      <a class="brand brand-plain" href="./">Andrew Chung</a>
-      <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
-        <a href="projects/">Projects</a><a href="about/">About</a><a href="lab/" aria-current="page">Labs</a><a href="shared/">Files</a><a href="book/">Book</a>
-      </nav>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
-    </div>
-  </header>
-  <nav class="project-flow" aria-label="Framework ESP32 Card pages"><div class="project-flow-inner"><a class="project-flow-parent" href="projects/framework-expansion-card/"><span>Project</span><strong>Framework ESP32 Card</strong></a><div class="project-flow-tabs"><a href="projects/framework-expansion-card/">Overview</a><a href="lab/framework-esp32/" aria-current="page">3D model</a></div></div></nav>
-  <main id="main" class="object-main framework-3d-main" data-framework-inspector>
-    <section class="object-hero" aria-labelledby="object-title">
-      <p class="object-kicker">Interactive hardware study / Framework ESP32 Card</p>
-      <h1 id="object-title">Turn the<br>card over.</h1>
-      <div class="object-hero-copy">
-        <p>Orbit the complete expansion-card assembly, peel the clear shell away and inspect the main parts that make the ESP32-S3 fit inside a Framework laptop bay.</p>
-        <p class="object-proof">The enclosure is the Framework mechanical STL. The populated PCB is exported directly from the current KiCad design, including copper, solder mask, silkscreen and detailed package models.</p>
-      </div>
-    </section>
-    <section class="object-workbench" aria-labelledby="framework-workbench-title">
-      <header class="object-workbench-heading">
-        <div><p class="object-kicker">Framework Expansion Card / ESP32-S3</p><h2 id="framework-workbench-title">A dev board inside the bay.</h2></div>
-        <p>Drag to orbit, scroll or pinch to zoom, then hide or separate the enclosure to see how the board occupies the available volume.</p>
-      </header>
-      <div class="object-toolbar framework-3d-toolbar" aria-label="3D model controls">
-        <div class="object-view-list" aria-label="Camera angle">
-          <button type="button" class="object-view is-active" data-framework-view="iso" aria-pressed="true">Angle</button>
-          <button type="button" class="object-view" data-framework-view="top" aria-pressed="false">Top</button>
-          <button type="button" class="object-view" data-framework-view="side" aria-pressed="false">Side</button>
-        </div>
-        <button type="button" class="object-tool" data-framework-shell aria-pressed="true">Hide shell</button>
-        <button type="button" class="object-tool" data-framework-explode aria-pressed="false">Explode</button>
-        <button type="button" class="object-tool object-reset" data-framework-reset>Reset view</button>
-      </div>
-      <div class="object-stage framework-3d-stage" data-framework-stage tabindex="0" aria-label="Interactive 3D Framework ESP32 expansion card. Drag to rotate, scroll or pinch to zoom.">
-        <canvas data-framework-canvas aria-hidden="true"></canvas>
-        <p class="framework-3d-status" data-framework-status>Loading Framework enclosure…</p>
-        <p class="object-drag-hint framework-3d-hint"><span aria-hidden="true">&larr;</span> Drag to orbit · scroll to zoom <span aria-hidden="true">&rarr;</span></p>
-      </div>
-      <noscript><p class="object-noscript">JavaScript and WebGL are needed for the 3D explorer. The Framework ESP32 project page remains available without them.</p></noscript>
-    </section>
-    <section class="object-path" aria-labelledby="framework-path-title">
-      <header><p class="object-kicker">From laptop to radio</p><h2 id="framework-path-title">USB in,<br>ESP32 out.</h2></header>
-      <ol class="object-path-list">
-        <li><span>01</span><h3>Mate</h3><p>The thin PCB and USB-C edge geometry let the card connect directly inside the Framework expansion bay.</p></li>
-        <li><span>02</span><h3>Translate</h3><p>The CH340K provides the USB-to-UART programming and console path.</p></li>
-        <li><span>03</span><h3>Reset</h3><p>Two BC817 transistors automate the ESP32 boot and reset sequence during firmware uploads.</p></li>
-        <li><span>04</span><h3>Run</h3><p>The 3.3 V regulator powers the ESP32-S3-MINI-1 for embedded, Wi-Fi and Bluetooth development.</p></li>
-      </ol>
-    </section>
-    <section class="object-findings" aria-labelledby="framework-facts-title">
-      <div><p class="object-kicker">Mechanical envelope</p><h2 id="framework-facts-title">Built around the real card geometry.</h2></div>
-      <dl class="object-fact-grid"><div><dt>30</dt><dd>mm enclosure width</dd></div><div><dt>32</dt><dd>mm enclosure length</dd></div><div><dt>6.8</dt><dd>mm enclosure height</dd></div><div><dt>0.6</dt><dd>mm finished PCB thickness</dd></div></dl>
-      <p class="object-finding-note">The shell is rendered from Framework's expansion-card enclosure STL. The board is a KiCad GLB export of the actual 0.6 mm design; the ESP32-S3-MINI-1 uses Espressif's official 3D model, and the USB-C plug uses the exact legacy KiCad Molex 105444 CAD model. The complete KiCad front silkscreen is overlaid with heavier display strokes for screen legibility.</p>
-      <div class="object-links"><a href="projects/framework-expansion-card/">Read the Framework ESP32 project <span aria-hidden="true">&rarr;</span></a><a href="https://github.com/FrameworkComputer/ExpansionCards" target="_blank" rel="noreferrer">Framework expansion-card source <span aria-hidden="true">↗</span></a><a href="https://github.com/espressif/kicad-libraries" target="_blank" rel="noreferrer">Espressif KiCad models <span aria-hidden="true">↗</span></a></div>
-    </section>
-  </main>
-  <footer class="site-footer"><div class="footer-inner"><p>&copy; <span data-current-year>2026</span> Andrew Chung</p><a href="projects/framework-expansion-card/">Framework ESP32 Card</a><a href="about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a></div></footer>
-  <p class="live-region" data-framework-live aria-live="polite" aria-atomic="true"></p>
-</body>
+<body><main><h1>The 3D model has moved</h1><p><a href="/projects/framework-expansion-card/#explore">Continue to the Framework ESP32 project</a></p></main></body>
 </html>

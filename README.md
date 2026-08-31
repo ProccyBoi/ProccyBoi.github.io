@@ -9,13 +9,11 @@ Personal portfolio and public project archive published at:
 - `/` — Polaroid-inspired landing page with an engineering introduction, condensed experience and selected projects
 - `/about/` — profile, experience, education, tools and public CV
 - `/book/` — live free/busy booking page for 15–60 minute online or in-person meetings
-- `/projects/` — complete project index and individual project pages
-- `/lab/` — hardware explorers and browser-based engineering tools
-- `/lab/skylabs/` — 360° aircraft telemetry and ground-station board explorer
-- `/lab/framework-esp32/` — WebGL Framework ESP32 expansion-card model
-- `/lab/framework-dual-usb/` — WebGL dual USB-C expansion-card model
-- `/projects/tramtrace/` — live Sydney and Parramatta light-rail display PCB
-- `/projects/framework-dual-usb/` — dual USB 2.0 Type-C Framework expansion card
+- `/projects/` — complete project index, including browser-based engineering tools
+- `/projects/tramtrace/` — light-rail display case study with an integrated PCB and data explorer
+- `/projects/skylabs/` — Skylabs system case study with integrated aircraft and ground-station board explorers
+- `/projects/framework-expansion-card/` — ESP32-S3 Framework card case study with its integrated WebGL model
+- `/projects/framework-dual-usb/` — dual USB-C Framework card case study with its integrated WebGL model
 - `/projects/rf-test-board/` — VNA feedline and filter test board
 - `/projects/scopelab/` — ScopeLab browser-based micro:bit and oscilloscope teaching bench
 - `/projects/lithography-animation/` — interactive optical lithography and resist-process teaching model
@@ -26,7 +24,7 @@ Personal portfolio and public project archive published at:
 - `/shared/` — public files organised by uni, work and projects
 - `/shared/projects/skylabs/f110211/` — interactive F110211 flight replay
 
-The legacy `/reports/f110211/` route redirects to the archive so previously shared links continue to work.
+The legacy `/lab/` and `/reports/f110211/` routes redirect to their canonical project pages so previously shared links continue to work.
 
 ## Content rules
 

@@ -220,8 +220,10 @@
     boardEyebrow.textContent = board.eyebrow;
     boardHeading.textContent = board.heading;
     boardCopy.textContent = board.introduction;
-    projectLink.href = board.projectUrl;
-    projectLink.firstChild.textContent = `Read the ${board.projectLabel} project `;
+    if (projectLink) {
+      projectLink.href = board.projectUrl;
+      projectLink.firstChild.textContent = `Read the ${board.projectLabel} project `;
+    }
     buildHotspots();
     clearSelection();
     updateStage();
@@ -313,7 +315,8 @@
 
   const requestedBoard = new URLSearchParams(window.location.search).get("board");
   const requestedView = new URLSearchParams(window.location.search).get("view");
-  const initialBoard = Object.prototype.hasOwnProperty.call(boards, requestedBoard) ? requestedBoard : "telemetry";
+  const fallbackBoard = Object.prototype.hasOwnProperty.call(boards, inspector.dataset.board) ? inspector.dataset.board : "telemetry";
+  const initialBoard = Object.prototype.hasOwnProperty.call(boards, requestedBoard) ? requestedBoard : fallbackBoard;
   setBoard(initialBoard, false);
   setView(requestedView === "inspect" ? "inspect" : "rotate");
   const firstCompanionFrame = new Image();
