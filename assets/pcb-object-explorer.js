@@ -217,14 +217,17 @@
   };
 
   const target = new THREE.Vector3(0,0,0); let distance = config.cameraDistance || Math.max(config.width, config.height) * 1.35; let targetDistance = distance; let yaw = d2r(config.startYaw == null ? -28 : config.startYaw); let pitch = d2r(config.startPitch == null ? 50 : config.startPitch); let targetYaw = yaw, targetPitch = pitch;
+  const viewButtons=[...root.querySelectorAll('[data-pcb-view]')];
   const setPreset = (name) => {
     if (name === 'top') { targetYaw=0; targetPitch=d2r(89.2); targetDistance=Math.max(config.width, config.height)*1.2; }
     else if (name === 'bottom') { targetYaw=0; targetPitch=d2r(-89.2); targetDistance=Math.max(config.width, config.height)*1.2; }
     else if (name === 'side') { targetYaw=d2r(-90); targetPitch=d2r(10); targetDistance=Math.max(config.width, config.height)*1.2; }
-    else { targetYaw=d2r(config.startYaw == null ? -28 : config.startYaw); targetPitch=d2r(config.startPitch == null ? 50 : config.startPitch); targetDistance=config.cameraDistance || Math.max(config.width, config.height)*1.35; }
+    else { name='angle'; targetYaw=d2r(config.startYaw == null ? -28 : config.startYaw); targetPitch=d2r(config.startPitch == null ? 50 : config.startPitch); targetDistance=config.cameraDistance || Math.max(config.width, config.height)*1.35; }
+    viewButtons.forEach((b)=>b.setAttribute('aria-pressed',b.dataset.pcbView===name?'true':'false'));
   };
 
-  root.querySelectorAll('[data-pcb-view]').forEach((b) => b.addEventListener('click', () => setPreset(b.dataset.pcbView)));
+  viewButtons.forEach((b) => b.addEventListener('click', () => setPreset(b.dataset.pcbView)));
+  setPreset('angle');
   const explodeButton = root.querySelector('[data-pcb-explode]'); explodeButton?.addEventListener('click', () => { explodeTarget = explodeTarget > 0.5 ? 0 : 1; explodeButton.setAttribute('aria-pressed', explodeTarget ? 'true' : 'false'); explodeButton.textContent = explodeTarget ? 'Assemble' : 'Explode'; targetDistance = Math.max(config.width, config.height) * (explodeTarget ? 1.55 : 1.35); });
   root.querySelector('[data-pcb-reset]')?.addEventListener('click', () => { explodeTarget=0; if(explodeButton){explodeButton.textContent='Explode';explodeButton.setAttribute('aria-pressed','false');} setPreset('angle'); });
 
@@ -234,6 +237,18 @@
   canvas.addEventListener('pointerup',(e)=>{dragging=false;canvas.releasePointerCapture?.(e.pointerId);});
   canvas.addEventListener('pointercancel',()=>dragging=false);
   canvas.addEventListener('wheel',(e)=>{e.preventDefault();targetDistance=clamp(targetDistance*Math.exp(e.deltaY*0.001),Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);},{passive:false});
+  canvas.addEventListener('keydown',(e)=>{
+    const step=d2r(7); let used=true;
+    if(e.key==='ArrowLeft')targetYaw+=step;
+    else if(e.key==='ArrowRight')targetYaw-=step;
+    else if(e.key==='ArrowUp')targetPitch=clamp(targetPitch+step,d2r(-88),d2r(88));
+    else if(e.key==='ArrowDown')targetPitch=clamp(targetPitch-step,d2r(-88),d2r(88));
+    else if(e.key==='+'||e.key==='=')targetDistance=clamp(targetDistance*0.90,Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);
+    else if(e.key==='-'||e.key==='_')targetDistance=clamp(targetDistance*1.10,Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);
+    else if(e.key==='Home'){setPreset('angle');}
+    else used=false;
+    if(used)e.preventDefault();
+  });
 
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(2,2); let hover=null;
   const refEl=root.querySelector('[data-pcb-ref]'),nameEl=root.querySelector('[data-pcb-name]'),copyEl=root.querySelector('[data-pcb-copy]');
