@@ -79,7 +79,8 @@
     [108,277,true],[128,277,true],[132,294,false],[151,296,true],[157,296,true],[199,278,true],
     [104,269,false],[116,269,true],[129,268,false],[146,269,true],[158,269,false],[174,267,true],
     [218,267,true],[224,278,false],[216,289,true],[194,291,false],[179,295,true],[161,285,false],
-    [136,276,true],[121,286,false],[111,297,true],[150,276,false],[182,274,true],[201,284,false]
+    [136,276,true],[121,286,false],[111,297,true],[150,276,false],[182,274,true],[201,284,false],
+    [188,295,true]
   ];
   passives.forEach((a,i)=>add({type:'passive',ref:(a[2]?'C':'R')+(i+1),name:a[2]?'Controller capacitor':'Controller resistor',copy:'Source-board controller support passive.',w:2.0,h:a[2]?0.82:0.48,d:1.25,material:a[2]?'ceramic':'black',rot:i%3===0?90:0,explode:9+(i%4)*.6},a[0],a[1]));
   add({type:'passive',ref:'F1',name:'Resettable fuse',copy:'USB input protection element.',w:4.4,h:1.0,d:2.1,material:'greenCeramic',rot:0,explode:10,explodeX:-5},111,298);
