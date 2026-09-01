@@ -32,7 +32,7 @@
       ctx.fillStyle='rgba(239,237,224,.86)';ctx.font='700 47px ui-sans-serif,Arial,sans-serif';ctx.textAlign='left';ctx.fillText('Sydney Rail Network',58,38);
       ctx.font='600 11px ui-monospace,monospace';ctx.fillStyle='rgba(225,222,206,.62)';ctx.fillText('METROBOARD · 290 RGB PIXELS · 300 × 300 mm',58,58);
       SOURCE.lines.forEach((l,i)=>{const x=58+i*48,y=78;ctx.fillStyle=l.color;ctx.fillRect(x,y-9,27,14);ctx.fillStyle='#f4f2e9';ctx.font='700 9px ui-monospace,monospace';ctx.textAlign='center';ctx.fillText(l.line,x+13.5,y+1);});
-      // Controller-side assembly markings, positioned from the physical-board photography.
+      // Controller-edge assembly markings registered to the same board frame as the 3D parts.
       ctx.strokeStyle='rgba(230,226,210,.45)';ctx.lineWidth=1;
       [[418,958,78,50],[510,954,70,65],[600,900,82,82],[690,935,58,42]].forEach(r=>ctx.strokeRect(r[0],r[1],r[2],r[3]));
       ctx.font='500 8px ui-monospace,monospace';ctx.fillStyle='rgba(230,226,210,.62)';ctx.textAlign='left';
@@ -69,8 +69,8 @@
   const components=[];
   const add=(spec,x,y)=>{const p=phys(x,y);components.push({...spec,x:p.x,z:p.y});};
   add({type:'usbC',ref:'J1',name:'HRO USB-C receptacle',copy:'Board-edge USB-C power/programming connector; body reconstructed because the original HRO model was unavailable.',w:9.0,h:3.2,d:7.4,rot:0,explode:14,explodeZ:-4},118,292);
-  add({type:'module',ref:'U1',name:'ESP32-WROOM-32E',copy:'Wi-Fi controller running the Metroboard firmware and LED update logic.',w:25.5,d:18.0,rot:0,explode:18,explodeX:5},171,281);
-  add({type:'chip',ref:'U2',name:'CH340C USB-UART',copy:'USB-to-UART programming interface.',w:5.0,h:1.2,d:5.0,pins:16,rot:0,explode:13},142,285);
+  add({type:'module',ref:'U1',name:'ESP32-WROOM-32E',copy:'Wi-Fi controller running the Metroboard firmware and LED update logic.',w:18.0,d:25.5,rot:0,explode:18,explodeX:5},171,281);
+  add({type:'chip',ref:'U2',name:'CH340C USB-UART',copy:'USB-to-UART programming interface.',w:10.0,h:1.45,d:6.0,pins:16,rot:0,explode:13},142,285);
   add({type:'chip',ref:'U3',name:'MC14504B level shifter',copy:'One of two SOIC-16 logic-domain translators feeding the addressable LED chains.',w:10.0,h:1.55,d:6.2,pins:16,rot:90,explode:15,explodeX:5},188,263);
   add({type:'chip',ref:'U5',name:'MC14504B level shifter',copy:'Second SOIC-16 logic-domain translator for the LED chains.',w:10.0,h:1.55,d:6.2,pins:16,rot:90,explode:15,explodeX:7},207,263);
   add({type:'chip',ref:'U4',name:'USB / power protection',copy:'Protection and support circuitry on the USB-C input.',w:4.4,h:1.0,d:3.2,pins:6,rot:0,explode:11,explodeX:-5},100,286);
@@ -82,13 +82,13 @@
     [136,276,true],[121,286,false],[111,297,true],[150,276,false],[182,274,true],[201,284,false],
     [188,295,true]
   ];
-  passives.forEach((a,i)=>add({type:'passive',ref:(a[2]?'C':'R')+(i+1),name:a[2]?'Controller capacitor':'Controller resistor',copy:'Source-board controller support passive.',w:2.0,h:a[2]?0.82:0.48,d:1.25,material:a[2]?'ceramic':'black',rot:i%3===0?90:0,explode:9+(i%4)*.6},a[0],a[1]));
-  add({type:'passive',ref:'F1',name:'Resettable fuse',copy:'USB input protection element.',w:4.4,h:1.0,d:2.1,material:'greenCeramic',rot:0,explode:10,explodeX:-5},111,298);
+  passives.forEach((a,i)=>add({type:a[2]?'capacitor':'resistor',ref:(a[2]?'C':'R')+(i+1),name:a[2]?'Controller capacitor':'Controller resistor',copy:'Controller support passive in the V3 assembly cluster.',w:a[2]?1.0:1.0,h:a[2]?0.52:0.42,d:0.50,rot:i%3===0?90:0,explode:9+(i%4)*.6},a[0],a[1]));
+  add({type:'capacitor',ref:'F1',name:'Resettable fuse',copy:'USB input protection element.',w:3.2,h:0.85,d:1.6,material:'greenCeramic',rot:0,explode:10,explodeX:-5},111,298);
 
   window.PCB_OBJECT_CONFIG={
     boardName:'Metroboard',
-    boardCopy:'Metroboard V3 · 300 × 305.7 × 1.6 mm black PCB with 323 front-side footprints, including 291 WS2812B-2020 RGB pixels.',
-    width:W,height:H,thickness:T,radius:R,maskColor:0x040505,bottomColor:0x040505,edgeColor:0x111314,
+    boardCopy:'Metroboard V3 · 300 × 305.7 × 1.6 mm black PCB with 323 front-side footprints, including 291 WS2812B-2020 RGB pixels; the complete assembly is oriented as one registered board object.',
+    width:W,height:H,thickness:T,radius:R,maskColor:0x040505,bottomColor:0x040505,edgeColor:0x111314,boardRotation:180,
     drawTop,drawBottom,textureWidth:2400,textureHeight:Math.round(2400*H/W),
     components,ledInstances,ledSize:2.0,ledExplode:7.0,fadeSurfaceOnExplode:false,
     cameraDistance:430,startYaw:-28,startPitch:50
