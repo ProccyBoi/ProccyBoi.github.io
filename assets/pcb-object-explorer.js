@@ -10,7 +10,7 @@
   const d2r = THREE.MathUtils.degToRad;
   const clamp = THREE.MathUtils.clamp;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -100,13 +100,23 @@
     chip(spec) { const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(spec.w, spec.h, spec.d), materials.chip); body.position.y = spec.h / 2; body.castShadow = true; g.add(body); const top = new THREE.Mesh(new THREE.BoxGeometry(spec.w * 0.88, 0.05, spec.d * 0.88), materials.chipTop); top.position.y = spec.h + 0.025; g.add(top); const pins = spec.pins || 8; const long = spec.w >= spec.d; for (let i = 0; i < Math.ceil(pins / 2); i++) { const t = (i + 0.5) / Math.ceil(pins / 2) - 0.5; for (const side of [-1,1]) { const lead = new THREE.Mesh(new THREE.BoxGeometry(long ? 0.22 : 0.72, 0.10, long ? 0.72 : 0.22), materials.silver); if (long) lead.position.set(t * spec.w * 0.88, 0.08, side * (spec.d / 2 + 0.28)); else lead.position.set(side * (spec.w / 2 + 0.28), 0.08, t * spec.d * 0.88); g.add(lead); } } return g; },
     passive(spec) { const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(spec.w, spec.h, spec.d), materials[spec.material || 'ceramic']); body.position.y = spec.h / 2; body.castShadow = true; g.add(body); addMetalEnds(g, spec.w, spec.h, spec.d); return g; },
     ufl(spec) { const g = new THREE.Group(); const base = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.55, 3.0), materials.silver); base.position.y = 0.275; g.add(base); const ins = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 1.08, 0.70, 32), materials.white); ins.position.y = 0.85; g.add(ins); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.20, 12, 32), materials.gold); ring.rotation.x = Math.PI / 2; ring.position.y = 1.21; g.add(ring); const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.55, 18), materials.gold); pin.position.y = 1.13; g.add(pin); return g; },
+    sma(spec) {
+      const g = new THREE.Group();
+      const flange = new THREE.Mesh(new THREE.BoxGeometry(6.35, 1.05, 6.35), materials.silver); flange.position.y = 0.53; g.add(flange);
+      const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(3.15, 3.15, 1.35, 36), materials.darkSilver); shoulder.position.y = 1.72; g.add(shoulder);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(2.35, 2.35, 5.1, 40), materials.silver); barrel.position.y = 4.95; g.add(barrel);
+      const dielectric = new THREE.Mesh(new THREE.CylinderGeometry(1.47, 1.47, 0.20, 36), materials.white); dielectric.position.y = 7.56; g.add(dielectric);
+      const centre = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.44, 20), materials.gold); centre.position.y = 7.68; g.add(centre);
+      const nut = new THREE.Mesh(new THREE.CylinderGeometry(2.85, 2.85, 1.0, 6), materials.darkSilver); nut.position.y = 6.95; g.add(nut);
+      return g;
+    },
     usbC(spec) { const g = new THREE.Group(); const shell = new THREE.Mesh(new THREE.BoxGeometry(spec.w || 9.0, spec.h || 3.2, spec.d || 7.5), materials.silver); shell.position.y = (spec.h || 3.2) / 2; g.add(shell); const opening = new THREE.Mesh(new THREE.BoxGeometry((spec.w || 9)-1.3, (spec.h || 3.2)-1.35, 0.18), materials.black); opening.position.set(0, (spec.h || 3.2)/2, -(spec.d || 7.5)/2 - 0.10); g.add(opening); return g; },
     module(spec) { const g = new THREE.Group(); const pcb = new THREE.Mesh(new THREE.BoxGeometry(spec.w, 0.8, spec.d), new THREE.MeshStandardMaterial({ color: 0x0b3327, roughness: 0.7 })); pcb.position.y=0.4; g.add(pcb); const shield = new THREE.Mesh(new THREE.BoxGeometry(spec.w*0.72, 2.2, spec.d*0.66), materials.silver); shield.position.set(0,1.7, spec.d*0.05); g.add(shield); const antenna = new THREE.Mesh(new THREE.BoxGeometry(spec.w*0.84,0.06,spec.d*0.18),materials.gold); antenna.position.set(0,0.84,-spec.d*0.36); g.add(antenna); return g; },
     led(spec) { const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(spec.w || 2.0, spec.h || 0.84, spec.d || 2.0), materials.led); body.position.y=(spec.h||0.84)/2; g.add(body); const win = new THREE.Mesh(new THREE.BoxGeometry((spec.w||2)*0.6,0.025,(spec.d||2)*0.6),materials.ledWindow); win.position.y=(spec.h||0.84)+0.02; g.add(win); return g; }
   };
 
   (config.components || []).forEach((spec, index) => {
-    const maker = makers[spec.type] || makers.box; const g = maker(spec); g.position.set(spec.x, config.thickness / 2 + (spec.baseY || 0.02), spec.z); g.rotation.y = d2r(spec.rot || 0); board.add(g); tag(g, spec); registerExplode(g, spec, index);
+    const maker = makers[spec.type] || makers.box; const g = maker(spec); g.position.set(spec.x, config.thickness / 2 + (spec.baseY || 0.02), spec.z); g.rotation.y = d2r(spec.rot || 0); g.traverse((o)=>{ if(o.isMesh){ o.frustumCulled=false; o.castShadow=true; } }); board.add(g); tag(g, spec); registerExplode(g, spec, index);
   });
 
   if (config.ledInstances?.length) {
