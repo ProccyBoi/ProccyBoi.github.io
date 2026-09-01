@@ -56,6 +56,24 @@
     row.centres.forEach((x,ci)=>components.push({type:'passive',ref:`F${ri+1}.${ci+1}`,name:row.label,copy:'Small tuning/filter footprint on the measured RF path.',x,z:zFromTop(row.y),w:0.95,h:0.48,d:0.60,material:'ceramic',rot:0,explode:5.2+ri*0.7}));
   });
 
+  // Remaining four populated tuning footprints on the lower SMA split-pi row.
+  // Their centres follow the corresponding physical/KiCad pad row used by the board artwork.
+  [
+    ['C9', -6.0, 86.4, true],
+    ['C10', -0.8, 86.4, true],
+    ['R1', 0.5, 86.4, false],
+    ['R2', 5.8, 86.4, false]
+  ].forEach(([ref, x, y, capacitor], i) => {
+    components.push({
+      type:'passive', ref,
+      name: capacitor ? 'RF tuning capacitor' : 'RF tuning resistor',
+      copy:'Populated tuning element on the lower SMA split-pi measurement path.',
+      x, z:zFromTop(y), w:0.95, h:capacitor?0.56:0.42, d:0.62,
+      material:capacitor?'ceramic':'black', rot:0,
+      explode:7.2+i*0.22
+    });
+  });
+
   // Four SMA footprints are the EasyEDA models missing from the local 3D library.
   // Reconstruct their bodies at the exact KiCad placement centres/rotations.
   const SMA = [
