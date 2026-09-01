@@ -21,6 +21,7 @@
   scene.background = new THREE.Color(0x080a0b);
   const camera = new THREE.PerspectiveCamera(34, 1, Math.max(0.5, Math.min(config.width, config.height) * 0.01), Math.max(config.width, config.height) * 12);
   const board = new THREE.Group();
+  board.rotation.y = d2r(config.boardRotation || 0);
   scene.add(board);
 
   scene.add(new THREE.HemisphereLight(0xe8ece9, 0x171512, 1.35));
@@ -36,8 +37,12 @@
     silver: new THREE.MeshStandardMaterial({ color: 0xa7afb2, roughness: 0.28, metalness: 0.88 }),
     darkSilver: new THREE.MeshStandardMaterial({ color: 0x586064, roughness: 0.34, metalness: 0.78 }),
     gold: new THREE.MeshStandardMaterial({ color: 0xaa762c, roughness: 0.34, metalness: 0.8 }),
-    ceramic: new THREE.MeshStandardMaterial({ color: 0xa3977d, roughness: 0.64, metalness: 0.01 }),
+    ceramic: new THREE.MeshStandardMaterial({ color: 0xb7aa8f, roughness: 0.58, metalness: 0.01 }),
+    ceramicDark: new THREE.MeshStandardMaterial({ color: 0x857861, roughness: 0.62, metalness: 0.01 }),
     greenCeramic: new THREE.MeshStandardMaterial({ color: 0x556441, roughness: 0.64, metalness: 0.01 }),
+    ferrite: new THREE.MeshStandardMaterial({ color: 0x282b2b, roughness: 0.55, metalness: 0.04 }),
+    resistorBody: new THREE.MeshStandardMaterial({ color: 0x151718, roughness: 0.56, metalness: 0.02 }),
+    solder: new THREE.MeshStandardMaterial({ color: 0x8e979a, roughness: 0.30, metalness: 0.82 }),
     led: new THREE.MeshPhysicalMaterial({ color: 0xe3ded1, roughness: 0.36, metalness: 0.01, clearcoat: 0.25, clearcoatRoughness: 0.4 }),
     ledWindow: new THREE.MeshBasicMaterial({ color: 0x697568, transparent: true, opacity: 0.72 }),
     white: new THREE.MeshBasicMaterial({ color: 0xf1eee6 }),
@@ -99,6 +104,31 @@
     box(spec) { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(spec.w, spec.h, spec.d), materials[spec.material || 'chip']); m.position.y = spec.h / 2; m.castShadow = true; g.add(m); return g; },
     chip(spec) { const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(spec.w, spec.h, spec.d), materials.chip); body.position.y = spec.h / 2; body.castShadow = true; g.add(body); const top = new THREE.Mesh(new THREE.BoxGeometry(spec.w * 0.88, 0.05, spec.d * 0.88), materials.chipTop); top.position.y = spec.h + 0.025; g.add(top); const pins = spec.pins || 8; const long = spec.w >= spec.d; for (let i = 0; i < Math.ceil(pins / 2); i++) { const t = (i + 0.5) / Math.ceil(pins / 2) - 0.5; for (const side of [-1,1]) { const lead = new THREE.Mesh(new THREE.BoxGeometry(long ? 0.22 : 0.72, 0.10, long ? 0.72 : 0.22), materials.silver); if (long) lead.position.set(t * spec.w * 0.88, 0.08, side * (spec.d / 2 + 0.28)); else lead.position.set(side * (spec.w / 2 + 0.28), 0.08, t * spec.d * 0.88); g.add(lead); } } return g; },
     passive(spec) { const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(spec.w, spec.h, spec.d), materials[spec.material || 'ceramic']); body.position.y = spec.h / 2; body.castShadow = true; g.add(body); addMetalEnds(g, spec.w, spec.h, spec.d); return g; },
+    capacitor(spec) {
+      const g=new THREE.Group(),w=spec.w||1.0,h=spec.h||0.55,d=spec.d||0.50;
+      const body=new THREE.Mesh(new THREE.BoxGeometry(w*0.62,h,d),materials[spec.material||'ceramic']);body.position.y=h/2;body.castShadow=true;g.add(body);
+      const termW=w*0.20;
+      [-1,1].forEach((side)=>{
+        const end=new THREE.Mesh(new THREE.BoxGeometry(termW,h*1.04,d*1.03),materials.silver);end.position.set(side*(w-termW)/2,h/2,0);g.add(end);
+        const fillet=new THREE.Mesh(new THREE.BoxGeometry(termW*1.18,0.055,d*1.18),materials.solder);fillet.position.set(side*(w-termW)/2,0.025,0);g.add(fillet);
+      });
+      return g;
+    },
+    resistor(spec) {
+      const g=new THREE.Group(),w=spec.w||1.0,h=spec.h||0.42,d=spec.d||0.50;
+      const body=new THREE.Mesh(new THREE.BoxGeometry(w*0.60,h,d),materials.resistorBody);body.position.y=h/2;body.castShadow=true;g.add(body);
+      const capW=w*0.21;
+      [-1,1].forEach((side)=>{const end=new THREE.Mesh(new THREE.BoxGeometry(capW,h*1.04,d*1.03),materials.silver);end.position.set(side*(w-capW)/2,h/2,0);g.add(end);});
+      return g;
+    },
+    inductor(spec) {
+      const g=new THREE.Group(),w=spec.w||1.6,h=spec.h||0.80,d=spec.d||0.80;
+      const body=new THREE.Mesh(new THREE.BoxGeometry(w*0.70,h,d),materials.ferrite);body.position.y=h/2;body.castShadow=true;g.add(body);
+      const top=new THREE.Mesh(new THREE.BoxGeometry(w*0.46,0.045,d*0.62),materials.chipTop);top.position.y=h+0.023;g.add(top);
+      const termW=w*0.18;
+      [-1,1].forEach((side)=>{const end=new THREE.Mesh(new THREE.BoxGeometry(termW,h*0.84,d*1.02),materials.darkSilver);end.position.set(side*(w-termW)/2,h*0.42,0);g.add(end);});
+      return g;
+    },
     ufl(spec) { const g = new THREE.Group(); const base = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.55, 3.0), materials.silver); base.position.y = 0.275; g.add(base); const ins = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 1.08, 0.70, 32), materials.white); ins.position.y = 0.85; g.add(ins); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.20, 12, 32), materials.gold); ring.rotation.x = Math.PI / 2; ring.position.y = 1.21; g.add(ring); const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.55, 18), materials.gold); pin.position.y = 1.13; g.add(pin); return g; },
     sma(spec) {
       const g = new THREE.Group();
@@ -155,16 +185,27 @@
     const size=config.ledSize||2, count=config.ledInstances.length;
     const bodyGeo=new THREE.BoxGeometry(size,0.72,size);
     const winGeo=new THREE.BoxGeometry(size*0.56,0.035,size*0.56);
+    const padGeo=new THREE.BoxGeometry(size*0.28,0.035,size*0.34);
+    const notchGeo=new THREE.BoxGeometry(size*0.13,0.028,size*0.13);
     const bodies=new THREE.InstancedMesh(bodyGeo,materials.led,count);
     const windows=new THREE.InstancedMesh(winGeo,materials.ledWindow,count);
+    const pads=new THREE.InstancedMesh(padGeo,materials.solder,count*4);
+    const notches=new THREE.InstancedMesh(notchGeo,materials.chip,count);
     const dummy=new THREE.Object3D();
     config.ledInstances.forEach((p,i)=>{
-      dummy.position.set(p[0],config.thickness/2+0.38,p[1]); dummy.rotation.set(0,d2r(p[2]||0),0); dummy.scale.set(1,1,1); dummy.updateMatrix(); bodies.setMatrixAt(i,dummy.matrix);
+      const rot=d2r(p[2]||0);
+      dummy.position.set(p[0],config.thickness/2+0.38,p[1]); dummy.rotation.set(0,rot,0); dummy.scale.set(1,1,1); dummy.updateMatrix(); bodies.setMatrixAt(i,dummy.matrix);
       dummy.position.y=config.thickness/2+0.765; dummy.updateMatrix(); windows.setMatrixAt(i,dummy.matrix);
+      const c=Math.cos(rot),ss=Math.sin(rot),off=size*0.47;
+      [[-off,-off],[off,-off],[-off,off],[off,off]].forEach((q,k)=>{
+        dummy.position.set(p[0]+q[0]*c+q[1]*ss,config.thickness/2+0.055,p[1]-q[0]*ss+q[1]*c);dummy.rotation.set(0,rot,0);dummy.updateMatrix();pads.setMatrixAt(i*4+k,dummy.matrix);
+      });
+      const nx=-size*0.32,nz=-size*0.32;
+      dummy.position.set(p[0]+nx*c+nz*ss,config.thickness/2+0.79,p[1]-nx*ss+nz*c);dummy.rotation.set(0,rot,0);dummy.updateMatrix();notches.setMatrixAt(i,dummy.matrix);
     });
-    bodies.instanceMatrix.needsUpdate=true; windows.instanceMatrix.needsUpdate=true;
-    bodies.castShadow=true; bodies.frustumCulled=false; windows.frustumCulled=false;
-    g.add(bodies,windows);
+    [bodies,windows,pads,notches].forEach((m)=>{m.instanceMatrix.needsUpdate=true;m.frustumCulled=false;});
+    bodies.castShadow=true;
+    g.add(pads,bodies,windows,notches);
     if (config.ledExplode) registerExplode(g,{explode:config.ledExplode,delay:0.05},0);
   }
 
