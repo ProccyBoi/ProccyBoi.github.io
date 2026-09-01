@@ -40,51 +40,59 @@
   };
 
   const components = [
-    {type:'ufl',ref:'J1',name:'u.FL connector',copy:'Top 50 Ω coplanar-with-ground reference path.',x:-16.25,z:zFromTop(4.7),rot:0,explode:4.8,explodeX:-2},
-    {type:'ufl',ref:'J2',name:'u.FL connector',copy:'Top 50 Ω coplanar-with-ground reference path.',x:16.25,z:zFromTop(4.7),rot:0,explode:4.8,explodeX:2},
-    {type:'ufl',ref:'J3',name:'u.FL connector',copy:'Reference path with the solder mask removed over the RF trace.',x:-16.25,z:zFromTop(14.8),rot:0,explode:5.4,explodeX:-2},
-    {type:'ufl',ref:'J4',name:'u.FL connector',copy:'Reference path with the solder mask removed over the RF trace.',x:16.25,z:zFromTop(14.8),rot:0,explode:5.4,explodeX:2},
+    {type:'ufl',ref:'J1',name:'u.FL connector',copy:'Masked 50 Ω u.FL reference path.',x:-16.25,z:zFromTop(4.7),rot:0,explode:4.8,explodeX:-2},
+    {type:'ufl',ref:'J2',name:'u.FL connector',copy:'Masked 50 Ω u.FL reference path.',x:16.25,z:zFromTop(4.7),rot:0,explode:4.8,explodeX:2},
+    {type:'ufl',ref:'J3',name:'u.FL connector',copy:'Exposed-copper u.FL reference path.',x:-16.25,z:zFromTop(14.8),rot:0,explode:5.4,explodeX:-2},
+    {type:'ufl',ref:'J4',name:'u.FL connector',copy:'Exposed-copper u.FL reference path.',x:16.25,z:zFromTop(14.8),rot:0,explode:5.4,explodeX:2}
   ];
-  const rows=[
-    {y:26.4,label:'Tuning network',centres:[-6,5.7]},
-    {y:37.6,label:'Split-pi filter',centres:[-5.6,0,5.6]},
-    {y:48.7,label:'Split-pi filter / exposed copper',centres:[-0.8,0.8]},
-    {y:60.6,label:'Split-pi filter',centres:[-0.8,0.4,5.8]}
+
+  // Explicit populated RF placements.  Package envelopes are realistic 0402/0603
+  // scale instead of the oversized placeholder blocks used in the first viewer.
+  const rfParts = [
+    ['capacitor','C1',-16.20,26.40,90,1.60,0.78,0.82,'Series tuning capacitor'],
+    ['capacitor','C2', 16.20,26.40,90,1.60,0.78,0.82,'Series tuning capacitor'],
+    ['capacitor','C11',-6.00,26.40,0,1.00,0.50,0.52,'Tuning capacitor'],
+    ['capacitor','C12', 5.70,26.40,0,1.00,0.50,0.52,'Tuning capacitor'],
+
+    ['capacitor','C3',-16.20,37.60,90,1.60,0.78,0.82,'Series split-pi capacitor'],
+    ['capacitor','C4', 16.20,37.60,90,1.60,0.78,0.82,'Series split-pi capacitor'],
+    ['capacitor','C13',-5.60,37.60,0,1.00,0.50,0.52,'Split-pi shunt capacitor'],
+    ['inductor','L1',0.00,37.60,0,1.60,0.80,0.82,'Split-pi series inductor'],
+    ['capacitor','C14',5.60,37.60,0,1.00,0.50,0.52,'Split-pi shunt capacitor'],
+
+    ['capacitor','C5',-16.20,48.70,90,1.60,0.78,0.82,'Series exposed-copper capacitor'],
+    ['capacitor','C6', 16.20,48.70,90,1.60,0.78,0.82,'Series exposed-copper capacitor'],
+    ['capacitor','C15',-0.80,48.70,0,1.00,0.50,0.52,'Exposed-copper tuning capacitor'],
+    ['capacitor','C16', 0.80,48.70,0,1.00,0.50,0.52,'Exposed-copper tuning capacitor'],
+
+    ['capacitor','C7',-16.20,60.60,90,1.60,0.78,0.82,'Series split-pi capacitor'],
+    ['capacitor','C8', 16.20,60.60,90,1.60,0.78,0.82,'Series split-pi capacitor'],
+    ['capacitor','C17',-0.80,60.60,0,1.00,0.50,0.52,'Split-pi shunt capacitor'],
+    ['inductor','L2',0.40,60.60,0,1.60,0.80,0.82,'Split-pi series inductor'],
+    ['capacitor','C18',5.80,60.60,0,1.00,0.50,0.52,'Split-pi shunt capacitor'],
+
+    ['capacitor','C9',-6.00,86.40,0,1.00,0.50,0.52,'SMA-path tuning capacitor'],
+    ['capacitor','C10',-0.80,86.40,0,1.00,0.50,0.52,'SMA-path shunt capacitor'],
+    ['inductor','L3',0.50,86.40,0,1.60,0.80,0.82,'SMA-path series inductor'],
+    ['resistor','R1',5.80,86.40,0,1.00,0.46,0.52,'SMA-path damping/tuning element']
   ];
-  rows.forEach((row,ri)=>{
-    for(const x of [-16.2,16.2]) components.push({type:'passive',ref:`C${ri*2+(x<0?1:2)}`,name:'RF series capacitor',copy:row.label,x,z:zFromTop(row.y),w:2.5,h:1.45,d:1.8,material:'greenCeramic',rot:90,explode:4.5+ri*0.7,explodeX:x<0?-1.5:1.5});
-    row.centres.forEach((x,ci)=>components.push({type:'passive',ref:`F${ri+1}.${ci+1}`,name:row.label,copy:'Small tuning/filter footprint on the measured RF path.',x,z:zFromTop(row.y),w:0.95,h:0.48,d:0.60,material:'ceramic',rot:0,explode:5.2+ri*0.7}));
-  });
+  rfParts.forEach(([type,ref,x,y,rot,w,h,d,name],i)=>components.push({
+    type,ref,name,copy:'Populated RF matching element at the board-source placement.',
+    x,z:zFromTop(y),rot,w,h,d,explode:5.3+(i%7)*0.34,
+    explodeX:Math.abs(x)>10?(x<0?-1.4:1.4):0
+  }));
 
-  // Remaining four populated tuning footprints on the lower SMA split-pi row.
-  // Their centres follow the corresponding physical/KiCad pad row used by the board artwork.
-  [
-    ['C9', -6.0, 86.4, true],
-    ['C10', -0.8, 86.4, true],
-    ['R1', 0.5, 86.4, false],
-    ['R2', 5.8, 86.4, false]
-  ].forEach(([ref, x, y, capacitor], i) => {
-    components.push({
-      type:'passive', ref,
-      name: capacitor ? 'RF tuning capacitor' : 'RF tuning resistor',
-      copy:'Populated tuning element on the lower SMA split-pi measurement path.',
-      x, z:zFromTop(y), w:0.95, h:capacitor?0.56:0.42, d:0.62,
-      material:capacitor?'ceramic':'black', rot:0,
-      explode:7.2+i*0.22
-    });
-  });
-
-  // Four SMA footprints are the EasyEDA models missing from the local 3D library.
-  // Reconstruct their bodies at the exact KiCad placement centres/rotations.
+  // Four SMA footprints were missing usable library bodies, so their connector
+  // geometry is reconstructed at the exact KiCad centres and 0° rotations.
   const SMA = [
     ['U1', 90.00, 110.60, 'Masked SMA reference'],
     ['U2', 60.80, 110.60, 'Masked SMA reference'],
     ['U3', 89.95, 124.60, 'Split-pi SMA path'],
     ['U4', 60.65, 124.60, 'Split-pi SMA path']
   ];
-  SMA.forEach(([ref, x, y, label], i) => {
-    const p = fromKiCad(x, y);
-    components.push({type:'sma',ref,name:'SMA connector',copy:label + ' · exact KiCad centre, 0° rotation.',x:p.x,z:p.z,rot:0,explode:8.2+i*0.35,explodeX:p.x<0?-2.4:2.4});
+  SMA.forEach(([ref,x,y,label],i)=>{
+    const p=fromKiCad(x,y);
+    components.push({type:'sma',ref,name:'SMA connector',copy:label+' · KiCad centre, 0° rotation.',x:p.x,z:p.z,rot:0,explode:8.2+i*0.35,explodeX:p.x<0?-2.4:2.4});
   });
 
   const holes=[];
@@ -93,7 +101,7 @@
 
   window.PCB_OBJECT_CONFIG = {
     boardName:'RF Test Board',
-    boardCopy:'Rev A source-derived 2-layer RF coupon: exact 42.3 × 101.5 × 1.6 mm envelope, 30 populated top-side footprints, and four reconstructed SMA bodies at their KiCad placements.',
+    boardCopy:'Rev A source-derived 2-layer RF coupon: exact 42.3 × 101.5 × 1.6 mm envelope, 30 populated top-side footprints with 0402/0603-scale matching parts, and four reconstructed SMA bodies at their KiCad placements.',
     width:W,height:H,thickness:1.6,radius:5.0,maskColor:0x07090a,bottomColor:0x07090a,edgeColor:0x17191a,
     drawTop,drawBottom,textureWidth:1700,textureHeight:4080,components,holes,fadeSurfaceOnExplode:false,cameraDistance:142,startYaw:-26,startPitch:42
   };
