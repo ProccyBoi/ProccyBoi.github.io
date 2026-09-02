@@ -60,11 +60,11 @@
     ctx.drawImage(map,0,0,w,mapH);
   };
 
-  const ledInstances=SOURCE.leds.map(item=>{const p=mapPhysical(item.x,item.y);return[p.x,p.y,item.angle];});
+  const ledInstances=SOURCE.leds.map(item=>{const p=mapPhysical(item.x,item.y);return[p.x,p.y,item.angle,item.line,item.name];});
   // V3 has 291 WS2812B-2020 footprints. SOURCE contains the 290 rail-map pixels;
   // the remaining status pixel is in the controller cluster.
   const phys=(x,y)=>mapPhysical((x/W)*VBW,(y/MAP_H)*VBH);
-  const status=phys(94,296); ledInstances.push([status.x,status.y,0]);
+  const status=phys(94,296); ledInstances.push([status.x,status.y,0,'STATUS','Controller status LED']);
 
   const components=[];
   const add=(spec,x,y)=>{const p=phys(x,y);components.push({...spec,x:p.x,z:p.y});};
