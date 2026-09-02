@@ -51,10 +51,11 @@
 
   const roundedRectShape = (w, h, r = 0) => {
     const s = new THREE.Shape(); const x = -w / 2, y = -h / 2; const rr = Math.min(r, w / 2, h / 2);
-    s.moveTo(x + rr, y); s.lineTo(x + w - rr, y); s.quadraticCurveTo(x + w, y, x + w, y + rr);
-    s.lineTo(x + w, y + h - rr); s.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
-    s.lineTo(x + rr, y + h); s.quadraticCurveTo(x, y + h, x, y + h - rr);
-    s.lineTo(x, y + rr); s.quadraticCurveTo(x, y, x + rr, y); s.closePath(); return s;
+    if (rr <= 0) { s.moveTo(x, y); s.lineTo(x + w, y); s.lineTo(x + w, y + h); s.lineTo(x, y + h); s.closePath(); return s; }
+    s.moveTo(x + rr, y); s.lineTo(x + w - rr, y); s.absarc(x + w - rr, y + rr, rr, -Math.PI / 2, 0, false);
+    s.lineTo(x + w, y + h - rr); s.absarc(x + w - rr, y + h - rr, rr, 0, Math.PI / 2, false);
+    s.lineTo(x + rr, y + h); s.absarc(x + rr, y + h - rr, rr, Math.PI / 2, Math.PI, false);
+    s.lineTo(x, y + rr); s.absarc(x + rr, y + rr, rr, Math.PI, Math.PI * 1.5, false); s.closePath(); return s;
   };
 
   const cutHoles=(shape)=>{
@@ -65,12 +66,13 @@
     });
     return shape;
   };
-  const bodyShape = cutHoles(roundedRectShape(config.width, config.height, config.radius || 1.5));
+  const boardRadius = config.radius == null ? 1.5 : config.radius;
+  const bodyShape = cutHoles(roundedRectShape(config.width, config.height, boardRadius));
   const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: config.thickness, bevelEnabled: false, curveSegments: 24, steps: 1 });
   bodyGeo.rotateX(-Math.PI / 2); bodyGeo.translate(0, -config.thickness / 2, 0);
   const bodyMesh = new THREE.Mesh(bodyGeo, materials.edge); bodyMesh.receiveShadow = true; board.add(bodyMesh);
 
-  const surfaceShape = cutHoles(roundedRectShape(config.width - 0.06, config.height - 0.06, Math.max(0, (config.radius || 1.5) - 0.04)));
+  const surfaceShape = cutHoles(roundedRectShape(config.width - 0.06, config.height - 0.06, Math.max(0, boardRadius - 0.04)));
   const surfaceGeo = new THREE.ShapeGeometry(surfaceShape, 24); surfaceGeo.rotateX(-Math.PI / 2);
   { const p = surfaceGeo.getAttribute('position'); const uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i += 1) { uv[i*2] = (p.getX(i) + config.width/2) / config.width; uv[i*2+1] = (p.getZ(i) + config.height/2) / config.height; } surfaceGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
   const topMat = new THREE.MeshPhysicalMaterial({ color: config.maskColor || 0x070909, roughness: 0.66, metalness: 0.015, clearcoat: 0.16, clearcoatRoughness: 0.62, side: THREE.DoubleSide });
@@ -94,10 +96,14 @@
   if (config.holes?.length) {
     config.holes.forEach((h) => {
       const ringMaterial=h.plated===false?materials.edge:materials.gold;
-      const ringGeo=new THREE.TorusGeometry((h.d||1.0)*0.5+(h.ring||0.12)*0.45,h.ring||0.12,10,28);
+      const drillRadius=(h.d||1.0)*0.5;
+      const ringGeo=h.padD
+        ? new THREE.RingGeometry(drillRadius, h.padD*0.5, 40)
+        : new THREE.TorusGeometry(drillRadius+(h.ring||0.12)*0.45,h.ring||0.12,10,28);
       const topRing=new THREE.Mesh(ringGeo,ringMaterial);
-      topRing.rotation.x=Math.PI/2;topRing.position.set(h.x,config.thickness/2+0.035,h.z);board.add(topRing);
+      topRing.rotation.x=h.padD?-Math.PI/2:Math.PI/2;topRing.position.set(h.x,config.thickness/2+0.035,h.z);board.add(topRing);
       const bottomRing=topRing.clone();
+      if(h.padD)bottomRing.rotation.x=Math.PI/2;
       bottomRing.position.y=-config.thickness/2-0.035;board.add(bottomRing);
     });
   }
@@ -131,6 +137,20 @@
       [-1,1].forEach((side)=>{const end=new THREE.Mesh(new THREE.BoxGeometry(capW,h*1.04,d*1.03),materials.silver);end.position.set(side*(w-capW)/2,h/2,0);g.add(end);});
       return g;
     },
+    sot23(spec) {
+      const g=new THREE.Group(),w=spec.w||3.0,h=spec.h||1.1,d=spec.d||2.9;
+      const body=new THREE.Mesh(new THREE.BoxGeometry(w*0.72,h,d*0.82),materials.chip);body.position.y=h/2;body.castShadow=true;g.add(body);
+      const leadGeo=new THREE.BoxGeometry(0.52,0.10,0.46);
+      [[-w*0.42,-d*0.28],[-w*0.42,d*0.28],[w*0.42,0]].forEach(([x,z])=>{const lead=new THREE.Mesh(leadGeo,materials.silver);lead.position.set(x,0.08,z);g.add(lead);});
+      return g;
+    },
+    sot223(spec) {
+      const g=new THREE.Group(),w=spec.w||6.5,h=spec.h||1.8,d=spec.d||7.0;
+      const body=new THREE.Mesh(new THREE.BoxGeometry(w*0.72,h,d*0.62),materials.chip);body.position.y=h/2;body.castShadow=true;g.add(body);
+      const tab=new THREE.Mesh(new THREE.BoxGeometry(w*0.55,0.12,d*0.22),materials.silver);tab.position.set(0,0.10,d*0.43);g.add(tab);
+      [-1,0,1].forEach((i)=>{const lead=new THREE.Mesh(new THREE.BoxGeometry(w*0.11,0.10,d*0.30),materials.silver);lead.position.set(i*w*0.24,0.08,-d*0.43);g.add(lead);});
+      return g;
+    },
     inductor(spec) {
       const g=new THREE.Group(),w=spec.w||1.6,h=spec.h||0.80,d=spec.d||0.80;
       const body=new THREE.Mesh(new THREE.BoxGeometry(w*0.70,h,d),materials.ferrite);body.position.y=h/2;body.castShadow=true;g.add(body);
@@ -139,10 +159,11 @@
       [-1,1].forEach((side)=>{const end=new THREE.Mesh(new THREE.BoxGeometry(termW,h*0.84,d*1.02),materials.darkSilver);end.position.set(side*(w-termW)/2,h*0.42,0);g.add(end);});
       return g;
     },
-    ufl(spec) { const g = new THREE.Group(); const base = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.55, 3.0), materials.silver); base.position.y = 0.275; g.add(base); const ins = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 1.08, 0.70, 32), materials.white); ins.position.y = 0.85; g.add(ins); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.20, 12, 32), materials.gold); ring.rotation.x = Math.PI / 2; ring.position.y = 1.21; g.add(ring); const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.55, 18), materials.gold); pin.position.y = 1.13; g.add(pin); return g; },
+    ufl(spec) { const g = new THREE.Group(), body = new THREE.Group(); body.position.x=spec.modelOffsetX||0; g.add(body); const base = new THREE.Mesh(new THREE.BoxGeometry(spec.w||2.85, spec.h||0.55, spec.d||3.0), materials.silver); base.position.set(spec.baseOffsetX||0,(spec.h||0.55)/2,0); body.add(base); const ins = new THREE.Mesh(new THREE.CylinderGeometry(1.08, 1.08, 0.70, 32), materials.white); ins.position.y = 0.85; body.add(ins); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.20, 12, 32), materials.gold); ring.rotation.x = Math.PI / 2; ring.position.y = 1.05; body.add(ring); const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.55, 18), materials.gold); pin.position.y = 0.975; body.add(pin); return g; },
     sma(spec) {
       const g = new THREE.Group();
-      const flange = new THREE.Mesh(new THREE.BoxGeometry(6.35, 1.05, 6.35), materials.silver); flange.position.y = 0.53; g.add(flange);
+      const flangeSize=spec.flange||6.5;
+      const flange = new THREE.Mesh(new THREE.BoxGeometry(flangeSize, 1.05, flangeSize), materials.silver); flange.position.y = 0.53; g.add(flange);
       const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(3.15, 3.15, 1.35, 36), materials.darkSilver); shoulder.position.y = 1.72; g.add(shoulder);
       const barrel = new THREE.Mesh(new THREE.CylinderGeometry(2.35, 2.35, 5.1, 40), materials.silver); barrel.position.y = 4.95; g.add(barrel);
       const dielectric = new THREE.Mesh(new THREE.CylinderGeometry(1.47, 1.47, 0.20, 36), materials.white); dielectric.position.y = 7.56; g.add(dielectric);
@@ -322,8 +343,10 @@
       const info=first.object.userData.instanceInfo[first.instanceId]||[];
       const ref=info[3]||`LED ${first.instanceId+1}`;
       const station=info[4]||'RGB pixel';
-      const key=`${ref}:${station}:${first.instanceId}`;
-      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent=station;if(copyEl)copyEl.textContent=ref==='STATUS'?'Controller status RGB pixel.':`${station} · ${ref} rail-map RGB pixel.`;}
+      const line=info[5]||'';
+      const isStatus=line==='STATUS'||ref==='STATUS';
+      const key=`${ref}:${station}:${line}:${first.instanceId}`;
+      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent=station;if(copyEl)copyEl.textContent=isStatus?`${ref} · controller status RGB pixel.`:`${station}${line&&line!=='MAP'?` · ${line}`:''} · ${ref} rail-map RGB pixel.`;}
     }else{
       const hit=first?.object; let tagged=hit; while(tagged&&!tagged.userData.ref)tagged=tagged.parent;
       if(tagged!==hover){hover=tagged;showPart(hover);}
