@@ -10,7 +10,7 @@
   const d2r = THREE.MathUtils.degToRad;
   const clamp = THREE.MathUtils.clamp;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -218,6 +218,17 @@
 
   const target = new THREE.Vector3(0,0,0); let distance = config.cameraDistance || Math.max(config.width, config.height) * 1.35; let targetDistance = distance; let yaw = d2r(config.startYaw == null ? -28 : config.startYaw); let pitch = d2r(config.startPitch == null ? 50 : config.startPitch); let targetYaw = yaw, targetPitch = pitch;
   const viewButtons=[...root.querySelectorAll('[data-pcb-view]')];
+  const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+  let liveRegion=document.querySelector('[data-live-region]');
+  if(!liveRegion){
+    liveRegion=document.createElement('span');
+    liveRegion.className='pcb-sr-only';
+    liveRegion.setAttribute('aria-live','polite');
+    root.appendChild(liveRegion);
+  }
+  const announce=(message)=>{if(liveRegion)liveRegion.textContent=message;};
+  const markCustomView=()=>viewButtons.forEach((b)=>b.setAttribute('aria-pressed','false'));
+  canvas.setAttribute('aria-keyshortcuts','ArrowLeft ArrowRight ArrowUp ArrowDown + - Home');
   const setPreset = (name) => {
     if (name === 'top') { targetYaw=0; targetPitch=d2r(89.2); targetDistance=Math.max(config.width, config.height)*1.2; }
     else if (name === 'bottom') { targetYaw=0; targetPitch=d2r(-89.2); targetDistance=Math.max(config.width, config.height)*1.2; }
@@ -226,41 +237,73 @@
     viewButtons.forEach((b)=>b.setAttribute('aria-pressed',b.dataset.pcbView===name?'true':'false'));
   };
 
-  viewButtons.forEach((b) => b.addEventListener('click', () => setPreset(b.dataset.pcbView)));
+  viewButtons.forEach((b) => b.addEventListener('click', () => { setPreset(b.dataset.pcbView); announce(`${b.dataset.pcbView} camera view`); }));
   setPreset('angle');
-  const explodeButton = root.querySelector('[data-pcb-explode]'); explodeButton?.addEventListener('click', () => { explodeTarget = explodeTarget > 0.5 ? 0 : 1; explodeButton.setAttribute('aria-pressed', explodeTarget ? 'true' : 'false'); explodeButton.textContent = explodeTarget ? 'Assemble' : 'Explode'; targetDistance = Math.max(config.width, config.height) * (explodeTarget ? 1.55 : 1.35); });
-  root.querySelector('[data-pcb-reset]')?.addEventListener('click', () => { explodeTarget=0; if(explodeButton){explodeButton.textContent='Explode';explodeButton.setAttribute('aria-pressed','false');} setPreset('angle'); });
+  const explodeButton = root.querySelector('[data-pcb-explode]'); explodeButton?.addEventListener('click', () => { explodeTarget = explodeTarget > 0.5 ? 0 : 1; explodeButton.setAttribute('aria-pressed', explodeTarget ? 'true' : 'false'); explodeButton.textContent = explodeTarget ? 'Assemble' : 'Explode'; targetDistance = Math.max(config.width, config.height) * (explodeTarget ? 1.55 : 1.35); announce(explodeTarget?'Exploded board view':'Assembled board view'); });
+  root.querySelector('[data-pcb-reset]')?.addEventListener('click', () => { explodeTarget=0; if(explodeButton){explodeButton.textContent='Explode';explodeButton.setAttribute('aria-pressed','false');} setPreset('angle'); announce('3D view reset'); });
 
-  let dragging=false,lastX=0,lastY=0;
-  canvas.addEventListener('pointerdown',(e)=>{dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});
-  canvas.addEventListener('pointermove',(e)=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;targetYaw-=dx*0.008;targetPitch=clamp(targetPitch+dy*0.006,d2r(-88),d2r(88));});
-  canvas.addEventListener('pointerup',(e)=>{dragging=false;canvas.releasePointerCapture?.(e.pointerId);});
-  canvas.addEventListener('pointercancel',()=>dragging=false);
-  canvas.addEventListener('wheel',(e)=>{e.preventDefault();targetDistance=clamp(targetDistance*Math.exp(e.deltaY*0.001),Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);},{passive:false});
+  const pointers=new Map();
+  let dragStart=null,pinchStartDistance=0,pinchStartZoom=distance;
+  canvas.addEventListener('pointerdown',(e)=>{
+    canvas.setPointerCapture?.(e.pointerId);
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size===1){
+      dragStart={x:e.clientX,y:e.clientY,yaw:targetYaw,pitch:targetPitch};
+      canvas.classList.add('is-dragging');
+    }else if(pointers.size===2){
+      const pts=[...pointers.values()];
+      pinchStartDistance=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+      pinchStartZoom=targetDistance;
+    }
+  });
+  canvas.addEventListener('pointermove',(e)=>{
+    const r=canvas.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+    if(!pointers.has(e.pointerId))return;
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size===1&&dragStart){
+      targetYaw=dragStart.yaw-(e.clientX-dragStart.x)*0.008;
+      targetPitch=clamp(dragStart.pitch+(e.clientY-dragStart.y)*0.006,d2r(-88),d2r(88));
+      markCustomView();
+    }else if(pointers.size===2&&pinchStartDistance>0){
+      const pts=[...pointers.values()];
+      const pinch=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+      targetDistance=clamp(pinchStartZoom*pinchStartDistance/Math.max(1,pinch),Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);
+      markCustomView();
+    }
+  });
+  const releasePointer=(e)=>{
+    pointers.delete(e.pointerId);
+    canvas.releasePointerCapture?.(e.pointerId);
+    canvas.classList.toggle('is-dragging',pointers.size>0);
+    if(pointers.size===1){const p=[...pointers.values()][0];dragStart={x:p.x,y:p.y,yaw:targetYaw,pitch:targetPitch};}
+    else if(!pointers.size){dragStart=null;pinchStartDistance=0;}
+  };
+  canvas.addEventListener('pointerup',releasePointer);
+  canvas.addEventListener('pointercancel',releasePointer);
+  canvas.addEventListener('wheel',(e)=>{e.preventDefault();targetDistance=clamp(targetDistance*Math.exp(e.deltaY*0.001),Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);markCustomView();},{passive:false});
   canvas.addEventListener('keydown',(e)=>{
-    const step=d2r(7); let used=true;
+    const step=d2r(7); let used=true,custom=true;
     if(e.key==='ArrowLeft')targetYaw+=step;
     else if(e.key==='ArrowRight')targetYaw-=step;
     else if(e.key==='ArrowUp')targetPitch=clamp(targetPitch+step,d2r(-88),d2r(88));
     else if(e.key==='ArrowDown')targetPitch=clamp(targetPitch-step,d2r(-88),d2r(88));
     else if(e.key==='+'||e.key==='=')targetDistance=clamp(targetDistance*0.90,Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);
     else if(e.key==='-'||e.key==='_')targetDistance=clamp(targetDistance*1.10,Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);
-    else if(e.key==='Home'){setPreset('angle');}
+    else if(e.key==='Home'){setPreset('angle');custom=false;}
     else used=false;
-    if(used)e.preventDefault();
+    if(used){e.preventDefault();if(custom)markCustomView();}
   });
 
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(2,2); let hover=null;
   const refEl=root.querySelector('[data-pcb-ref]'),nameEl=root.querySelector('[data-pcb-name]'),copyEl=root.querySelector('[data-pcb-copy]');
   const showPart=(o)=>{const part=o?.userData?.ref?o:o?.parent; const ref=part?.userData?.ref||'BOARD'; if(refEl)refEl.textContent=ref; if(nameEl)nameEl.textContent=part?.userData?.name||config.boardName; if(copyEl)copyEl.textContent=part?.userData?.copy||config.boardCopy;}; showPart(null);
-  canvas.addEventListener('pointermove',(e)=>{const r=canvas.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;});
-  canvas.addEventListener('pointerleave',()=>{mouse.set(2,2);showPart(null);});
+  canvas.addEventListener('pointerleave',()=>{if(!pointers.size){mouse.set(2,2);showPart(null);}});
 
   const resize=()=>{const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
   new ResizeObserver(resize).observe(canvas); resize();
 
   const clock=new THREE.Clock();
-  const animate=()=>{requestAnimationFrame(animate); const dt=Math.min(0.05,clock.getDelta()); yaw=THREE.MathUtils.damp(yaw,targetYaw,7,dt); pitch=THREE.MathUtils.damp(pitch,targetPitch,7,dt); distance=THREE.MathUtils.damp(distance,targetDistance,7,dt); exploded=THREE.MathUtils.damp(exploded,explodeTarget,6,dt); updateExplode();
+  const animate=()=>{requestAnimationFrame(animate); const dt=Math.min(0.05,clock.getDelta()); yaw=THREE.MathUtils.damp(yaw,targetYaw,reducedMotion?40:7,dt); pitch=THREE.MathUtils.damp(pitch,targetPitch,reducedMotion?40:7,dt); distance=THREE.MathUtils.damp(distance,targetDistance,reducedMotion?40:7,dt); exploded=THREE.MathUtils.damp(exploded,explodeTarget,reducedMotion?40:6,dt); updateExplode();
     const cp=Math.cos(pitch),sp=Math.sin(pitch),cy=Math.cos(yaw),sy=Math.sin(yaw); camera.position.set(target.x+distance*cp*sy,target.y+distance*sp,target.z+distance*cp*cy); camera.lookAt(target);
     ray.setFromCamera(mouse,camera); const hits=ray.intersectObjects(pickables,true); const hit=hits[0]?.object; let tagged=hit; while(tagged&&!tagged.userData.ref)tagged=tagged.parent; if(tagged!==hover){hover=tagged;showPart(hover);}
     renderer.render(scene,camera); };
