@@ -57,12 +57,20 @@
     s.lineTo(x, y + rr); s.quadraticCurveTo(x, y, x + rr, y); s.closePath(); return s;
   };
 
-  const bodyShape = roundedRectShape(config.width, config.height, config.radius || 1.5);
+  const cutHoles=(shape)=>{
+    (config.holes||[]).forEach((h)=>{
+      const hole=new THREE.Path();
+      hole.absarc(h.x,-h.z,(h.d||1.0)*0.5,0,Math.PI*2,false);
+      shape.holes.push(hole);
+    });
+    return shape;
+  };
+  const bodyShape = cutHoles(roundedRectShape(config.width, config.height, config.radius || 1.5));
   const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: config.thickness, bevelEnabled: false, curveSegments: 24, steps: 1 });
   bodyGeo.rotateX(-Math.PI / 2); bodyGeo.translate(0, -config.thickness / 2, 0);
   const bodyMesh = new THREE.Mesh(bodyGeo, materials.edge); bodyMesh.receiveShadow = true; board.add(bodyMesh);
 
-  const surfaceShape = roundedRectShape(config.width - 0.06, config.height - 0.06, Math.max(0, (config.radius || 1.5) - 0.04));
+  const surfaceShape = cutHoles(roundedRectShape(config.width - 0.06, config.height - 0.06, Math.max(0, (config.radius || 1.5) - 0.04)));
   const surfaceGeo = new THREE.ShapeGeometry(surfaceShape, 24); surfaceGeo.rotateX(-Math.PI / 2);
   { const p = surfaceGeo.getAttribute('position'); const uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i += 1) { uv[i*2] = (p.getX(i) + config.width/2) / config.width; uv[i*2+1] = (p.getZ(i) + config.height/2) / config.height; } surfaceGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
   const topMat = new THREE.MeshPhysicalMaterial({ color: config.maskColor || 0x070909, roughness: 0.66, metalness: 0.015, clearcoat: 0.16, clearcoatRoughness: 0.62, side: THREE.DoubleSide });
@@ -85,10 +93,12 @@
 
   if (config.holes?.length) {
     config.holes.forEach((h) => {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry((h.d || 1.0) * 0.5, h.ring || 0.12, 10, 28), h.plated === false ? materials.edge : materials.gold);
-      ring.rotation.x = Math.PI / 2; ring.position.set(h.x, config.thickness/2 + 0.03, h.z); board.add(ring);
-      const voidMesh = new THREE.Mesh(new THREE.CylinderGeometry((h.d || 1.0)*0.40, (h.d || 1.0)*0.40, config.thickness+0.12, 24), new THREE.MeshBasicMaterial({color:0x020303}));
-      voidMesh.position.set(h.x,0,h.z); board.add(voidMesh);
+      const ringMaterial=h.plated===false?materials.edge:materials.gold;
+      const ringGeo=new THREE.TorusGeometry((h.d||1.0)*0.5+(h.ring||0.12)*0.45,h.ring||0.12,10,28);
+      const topRing=new THREE.Mesh(ringGeo,ringMaterial);
+      topRing.rotation.x=Math.PI/2;topRing.position.set(h.x,config.thickness/2+0.035,h.z);board.add(topRing);
+      const bottomRing=topRing.clone();
+      bottomRing.position.y=-config.thickness/2-0.035;board.add(bottomRing);
     });
   }
 
