@@ -65,10 +65,10 @@
   const surfaceShape = roundedRectShape(config.width - 0.06, config.height - 0.06, Math.max(0, (config.radius || 1.5) - 0.04));
   const surfaceGeo = new THREE.ShapeGeometry(surfaceShape, 24); surfaceGeo.rotateX(-Math.PI / 2);
   { const p = surfaceGeo.getAttribute('position'); const uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i += 1) { uv[i*2] = (p.getX(i) + config.width/2) / config.width; uv[i*2+1] = (p.getZ(i) + config.height/2) / config.height; } surfaceGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
-  const topMat = new THREE.MeshBasicMaterial({ color: config.maskColor || 0x070909, side: THREE.DoubleSide }); topMat.toneMapped = false;
-  const bottomMat = new THREE.MeshBasicMaterial({ color: config.bottomColor || config.maskColor || 0x070909, side: THREE.DoubleSide }); bottomMat.toneMapped = false;
-  const topSurface = new THREE.Mesh(surfaceGeo, topMat); topSurface.position.y = config.thickness / 2 + 0.008; topSurface.renderOrder = 2; board.add(topSurface);
-  const bottomSurface = new THREE.Mesh(surfaceGeo.clone(), bottomMat); bottomSurface.rotation.z = Math.PI; bottomSurface.position.y = -config.thickness / 2 - 0.008; bottomSurface.renderOrder = 2; board.add(bottomSurface);
+  const topMat = new THREE.MeshPhysicalMaterial({ color: config.maskColor || 0x070909, roughness: 0.66, metalness: 0.015, clearcoat: 0.16, clearcoatRoughness: 0.62, side: THREE.DoubleSide });
+  const bottomMat = new THREE.MeshPhysicalMaterial({ color: config.bottomColor || config.maskColor || 0x070909, roughness: 0.70, metalness: 0.01, clearcoat: 0.12, clearcoatRoughness: 0.68, side: THREE.DoubleSide });
+  const topSurface = new THREE.Mesh(surfaceGeo, topMat); topSurface.position.y = config.thickness / 2 + 0.008; topSurface.renderOrder = 2; topSurface.receiveShadow=true; board.add(topSurface);
+  const bottomSurface = new THREE.Mesh(surfaceGeo.clone(), bottomMat); bottomSurface.rotation.z = Math.PI; bottomSurface.position.y = -config.thickness / 2 - 0.008; bottomSurface.renderOrder = 2; bottomSurface.receiveShadow=true; board.add(bottomSurface);
 
   const textureCanvas = (draw, width, height) => {
     const c = document.createElement('canvas'); c.width = width; c.height = height; const ctx = c.getContext('2d'); draw(ctx, width, height); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.minFilter = THREE.LinearMipmapLinearFilter; return t;
@@ -205,6 +205,8 @@
     });
     [bodies,windows,pads,notches].forEach((m)=>{m.instanceMatrix.needsUpdate=true;m.frustumCulled=false;});
     bodies.castShadow=true;
+    bodies.userData.instanceInfo=config.ledInstances;
+    pickables.push(bodies);
     g.add(pads,bodies,windows,notches);
     if (config.ledExplode) registerExplode(g,{explode:config.ledExplode,delay:0.05},0);
   }
@@ -305,7 +307,17 @@
   const clock=new THREE.Clock();
   const animate=()=>{requestAnimationFrame(animate); const dt=Math.min(0.05,clock.getDelta()); yaw=THREE.MathUtils.damp(yaw,targetYaw,reducedMotion?40:7,dt); pitch=THREE.MathUtils.damp(pitch,targetPitch,reducedMotion?40:7,dt); distance=THREE.MathUtils.damp(distance,targetDistance,reducedMotion?40:7,dt); exploded=THREE.MathUtils.damp(exploded,explodeTarget,reducedMotion?40:6,dt); updateExplode();
     const cp=Math.cos(pitch),sp=Math.sin(pitch),cy=Math.cos(yaw),sy=Math.sin(yaw); camera.position.set(target.x+distance*cp*sy,target.y+distance*sp,target.z+distance*cp*cy); camera.lookAt(target);
-    ray.setFromCamera(mouse,camera); const hits=ray.intersectObjects(pickables,true); const hit=hits[0]?.object; let tagged=hit; while(tagged&&!tagged.userData.ref)tagged=tagged.parent; if(tagged!==hover){hover=tagged;showPart(hover);}
+    ray.setFromCamera(mouse,camera); const hits=ray.intersectObjects(pickables,true); const first=hits[0];
+    if(first?.object?.userData?.instanceInfo&&first.instanceId!=null){
+      const info=first.object.userData.instanceInfo[first.instanceId]||[];
+      const ref=info[3]||`LED ${first.instanceId+1}`;
+      const station=info[4]||'RGB pixel';
+      const key=`${ref}:${station}:${first.instanceId}`;
+      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent=station;if(copyEl)copyEl.textContent=ref==='STATUS'?'Controller status RGB pixel.':`${station} · ${ref} rail-map RGB pixel.`;}
+    }else{
+      const hit=first?.object; let tagged=hit; while(tagged&&!tagged.userData.ref)tagged=tagged.parent;
+      if(tagged!==hover){hover=tagged;showPart(hover);}
+    }
     renderer.render(scene,camera); };
   animate();
 })();
