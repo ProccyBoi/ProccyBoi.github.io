@@ -101,7 +101,7 @@
 
   window.PCB_OBJECT_CONFIG = {
     boardName:'RF Test Board',
-    boardCopy:'Rev A source-derived 2-layer RF coupon: exact 42.3 × 101.5 × 1.6 mm envelope, 30 populated top-side footprints with 0402/0603-scale matching parts, and four reconstructed SMA bodies at their KiCad placements.',
+    boardCopy:'Rev A 2-layer RF coupon: 42.3 × 101.5 × 1.6 mm board envelope, 30 populated top-side structures with package-scale matching parts, and four reconstructed SMA bodies at their verified KiCad centres.',
     width:W,height:H,thickness:1.6,radius:5.0,maskColor:0x07090a,bottomColor:0x07090a,edgeColor:0x17191a,
     drawTop,drawBottom,textureWidth:1700,textureHeight:4080,components,holes,fadeSurfaceOnExplode:false,cameraDistance:142,startYaw:-26,startPitch:42
   };
