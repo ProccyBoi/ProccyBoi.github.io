@@ -19,8 +19,14 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/project-flow.css?v=20260901a">
   <link rel="stylesheet" href="assets/tramtrace-inspector.css?v=20260824b">
+  <link rel="stylesheet" href="assets/pcb-object-explorer.css?v=20260903b">
+  <link rel="stylesheet" href="assets/tramtrace-3d.css?v=20260903b">
   <link rel="stylesheet" href="assets/project-integrated.css?v=20260901b">
   <script src="assets/site.js" defer></script>
+  <script src="assets/vendor/three.min.js" defer></script>
+  <script src="assets/vendor/GLTFLoader.js" defer></script>
+  <script src="assets/tramtrace-3d.js?v=20260903b" defer></script>
+  <script src="assets/tramtrace-pcb-explorer.js?v=20260903b" defer></script>
   <script src="assets/tramtrace-board-data.js" defer></script>
   <script src="assets/tramtrace-component-data.js" defer></script>
   <script src="assets/tramtrace-inspector.js?v=20260824b" defer></script>
@@ -66,6 +72,15 @@
     <section class="project-interactive" id="explore" aria-labelledby="tramtrace-explore-title">
       <div class="project-interactive-inner">
         <header class="project-interactive-header"><div><p class="eyebrow">Production-board explorer</p><h2 id="tramtrace-explore-title">Under the solder mask.</h2></div><p>The assembled view, copper layers and LED order come from the production KiCad source. Inspect a part, rotate the board or play one frame through its real electrical path.</p></header>
+        <section class="tramtrace-3d-explorer" data-pcb-object aria-labelledby="tramtrace-3d-title">
+          <div class="tramtrace-3d-intro"><div><p class="eyebrow">Free 3D inspection</p><h3 id="tramtrace-3d-title">Orbit the production board.</h3></div><p>Drag through a full 360&deg; orbit, inspect the underside, or separate the populated assembly. <strong>The production view loads the KiCad-exported GLB assembly itself: all 144 physical references, source-bound 3D models, centres and rotations remain intact.</strong></p></div>
+          <div class="pcb-object-toolbar" aria-label="TramTrace 3D view controls">
+            <button type="button" data-pcb-view="angle" aria-pressed="true">Angle</button><button type="button" data-pcb-view="top" aria-pressed="false">Top</button><button type="button" data-pcb-view="bottom" aria-pressed="false">Bottom</button><button type="button" data-pcb-view="side" aria-pressed="false">Side</button><span class="pcb-spacer" aria-hidden="true"></span><button type="button" data-pcb-explode aria-pressed="false">Explode</button><button type="button" class="pcb-reset" data-pcb-reset>Reset view</button>
+          </div>
+          <div class="pcb-object-stage"><canvas data-pcb-object-canvas tabindex="0" aria-label="Interactive three-dimensional TramTrace PCB. Drag to orbit, use the mouse wheel or pinch to zoom, and use arrow keys to rotate."></canvas><div class="pcb-object-stage-label" aria-hidden="true"><span>KiCad Rev 1</span><span>207.81 &times; 94.55 &times; 1.6 mm</span></div></div>
+          <div class="pcb-object-readout" aria-live="polite" aria-atomic="true"><p data-pcb-ref>BOARD</p><h3 data-pcb-name>TramTrace production board</h3><p data-pcb-copy>Hover a component to inspect its source reference, package and exact KiCad placement.</p></div>
+          <div class="tramtrace-3d-source" aria-label="3D source fidelity"><span>116 &times; WS2815C-2020</span><span>28 controller/support parts</span><span>R5 Edge.Cuts</span><span>KiCad-exported component CAD</span><span>Source-derived copper, mask and silk</span></div>
+        </section>
         <section class="inspector-workbench" aria-labelledby="tramtrace-workbench-title">
           <div class="inspector-mode-bar">
             <div class="inspector-control-groups"><div><p class="inspector-kicker">Board view</p><div class="inspector-view-list" aria-label="Board view"><button class="inspector-mode is-active" type="button" data-inspector-view="inspect" aria-pressed="true">Inspect</button><button class="inspector-mode" type="button" data-inspector-view="rotate" aria-pressed="false">Rotate</button></div></div><div><p class="inspector-kicker">Inspection layer</p><div class="inspector-mode-list" aria-label="Board inspection layer"><button class="inspector-mode is-active" type="button" data-inspector-mode="assembled" aria-pressed="true">Assembled</button><button class="inspector-mode" type="button" data-inspector-mode="copper" aria-pressed="false">Copper</button><button class="inspector-mode" type="button" data-inspector-mode="data" aria-pressed="false">Data frame</button></div></div></div>

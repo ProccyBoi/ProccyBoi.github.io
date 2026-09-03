@@ -13,6 +13,8 @@
   const rotationPrevious = inspector.querySelector("[data-rotation-previous]");
   const rotationNext = inspector.querySelector("[data-rotation-next]");
   const anglePresets = [...inspector.querySelectorAll("[data-angle-preset]")];
+  const explodeButton = inspector.querySelector("[data-object-explode]");
+  const explodeLayer = inspector.querySelector("[data-object-explode-layer]");
   const dragHint = inspector.querySelector("[data-drag-hint]");
   const angleReadout = inspector.querySelector("[data-object-angle]");
   const boardEyebrow = inspector.querySelector("[data-board-eyebrow]");
@@ -35,8 +37,9 @@
       projectUrl: "projects/skylabs/boards/telemetry/",
       eyebrow: "Aircraft telemetry / Rev 4.0",
       heading: "Flight data starts here.",
-      introduction: "Drag the source-rendered assembly through a full turn, or switch to Parts for a guided map of the sensor, logger and radio hardware.",
+      introduction: "Drag the corrected source-rendered assembly through a full turn, switch to Parts for a guided map, or separate the major populated hardware with Explode.",
       inspectImage: "assets/images/interactive/skylabs/skylabs-telemetry-inspect.webp",
+      explodeBase: "assets/images/interactive/skylabs/explode/skylabs-telemetry-board-explode.webp",
       frameStem: "skylabs-telemetry-turn-",
       alt: "assembled blue Skylabs aircraft telemetry PCB",
       emptyName: "Aircraft telemetry / avionics",
@@ -53,6 +56,19 @@
         ["J10 / J6", "RF antenna ports", "Separate U.FL connections place the GNSS and 915 MHz antennas at the board edge and away from the dense sensor section.", 78.9, 18.4],
         ["U1", "TP4056 Li-ion charger", "Charges the aircraft's single-cell Li-ion battery from USB-C using a constant-current, constant-voltage cycle.", 31.8, 71.6],
         ["U2 / U5", "DW01A + 8205A cell protection", "The DW01A watches cell voltage and fault current, then drives the 8205A dual MOSFET to isolate the battery during over-charge, over-discharge or a short.", 31.6, 60.5]
+      ],
+      explodeParts: [
+        ["J3", "assets/images/interactive/skylabs/explode/skylabs-telemetry-j3-explode.webp", 34.0, 26.0],
+        ["U7", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u7-explode.webp", 65.6, 25.5],
+        ["U14", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u14-explode.webp", 55.8, 45.6],
+        ["U11", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u11-explode.webp", 43.3, 47.6],
+        ["J1", "assets/images/interactive/skylabs/explode/skylabs-telemetry-j1-explode.webp", 21.7, 51.7],
+        ["U9", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u9-explode.webp", 37.6, 59.6],
+        ["U10", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u10-explode.webp", 43.3, 61.6],
+        ["U12", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u12-explode.webp", 70.8, 60.1],
+        ["J10 / J6", "assets/images/interactive/skylabs/explode/skylabs-telemetry-j10-j6-explode.webp", 78.9, 18.4],
+        ["U1", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u1-explode.webp", 31.8, 71.6],
+        ["U2 / U5", "assets/images/interactive/skylabs/explode/skylabs-telemetry-u2-u5-explode.webp", 31.6, 60.5]
       ]
     },
     ground: {
@@ -61,8 +77,9 @@
       projectUrl: "projects/skylabs/boards/ground-station/",
       eyebrow: "Ground station / Rev 1.0",
       heading: "The other end of the link.",
-      introduction: "Drag the source-rendered assembly through a full turn, or switch to Parts for a guided map of the receiver, logger and USB interface.",
+      introduction: "Drag the corrected source-rendered assembly through a full turn, switch to Parts for a guided map, or separate the major populated hardware with Explode.",
       inspectImage: "assets/images/interactive/skylabs/skylabs-ground-inspect.webp",
+      explodeBase: "assets/images/interactive/skylabs/explode/skylabs-ground-board-explode.webp",
       frameStem: "skylabs-ground-turn-",
       alt: "assembled blue Skylabs ground-station PCB",
       emptyName: "Ground-station receiver",
@@ -76,6 +93,16 @@
         ["U1", "SX1262 LoRa module", "Receives aircraft telemetry and transmits short command bursts back to the aircraft on 915 MHz.", 50.0, 54.2],
         ["J3", "microSD socket", "Stores every valid packet as CSV or as an indexed, CRC-protected SKB binary record.", 74.0, 78.2],
         ["J2", "U.FL antenna connector", "Connects the receiver to its external 915 MHz antenna at the edge of the RF path.", 41.2, 89.0]
+      ],
+      explodeParts: [
+        ["J1", "assets/images/interactive/skylabs/explode/skylabs-ground-j1-explode.webp", 17.7, 15.5],
+        ["U4", "assets/images/interactive/skylabs/explode/skylabs-ground-u4-explode.webp", 33.9, 16.4],
+        ["Q1 / Q2", "assets/images/interactive/skylabs/explode/skylabs-ground-q1-q2-explode.webp", 44.6, 22.2],
+        ["U2", "assets/images/interactive/skylabs/explode/skylabs-ground-u2-explode.webp", 57.8, 22.8],
+        ["U3", "assets/images/interactive/skylabs/explode/skylabs-ground-u3-explode.webp", 25.0, 53.0],
+        ["U1", "assets/images/interactive/skylabs/explode/skylabs-ground-u1-explode.webp", 50.0, 54.2],
+        ["J3", "assets/images/interactive/skylabs/explode/skylabs-ground-j3-explode.webp", 74.0, 78.2],
+        ["J2", "assets/images/interactive/skylabs/explode/skylabs-ground-j2-explode.webp", 41.2, 89.0]
       ]
     }
   };
@@ -84,6 +111,7 @@
   let activeComponentIndex = -1;
   let activeView = "rotate";
   let currentFrame = 0;
+  let exploded = false;
   let dragging = false;
   let lastPointerX = 0;
   let dragRemainder = 0;
@@ -166,6 +194,28 @@
     });
   };
 
+  const buildExplodeLayer = () => {
+    if (!explodeLayer) return;
+    explodeLayer.replaceChildren();
+    const parts = boards[activeBoard].explodeParts || [];
+    parts.forEach((part, index) => {
+      const [ref, src, x, y] = part;
+      const imagePart = document.createElement("img");
+      imagePart.className = "object-explode-part";
+      imagePart.src = src;
+      imagePart.alt = "";
+      imagePart.decoding = "async";
+      imagePart.draggable = false;
+      imagePart.dataset.ref = ref;
+      const dx = (x - 50) * 0.22;
+      const dy = -5.5 - Math.abs(x - 50) * 0.035 + ((index % 3) - 1) * 1.2;
+      imagePart.style.setProperty("--explode-x", `${dx.toFixed(2)}%`);
+      imagePart.style.setProperty("--explode-y", `${dy.toFixed(2)}%`);
+      imagePart.style.setProperty("--explode-delay", `${(index * 22).toFixed(0)}ms`);
+      explodeLayer.append(imagePart);
+    });
+  };
+
   const preloadFrames = (boardKey) => {
     if (preloadedBoards.has(boardKey)) return;
     preloadedBoards.add(boardKey);
@@ -194,15 +244,22 @@
 
   const updateStage = () => {
     const board = boards[activeBoard];
-    if (activeView === "rotate") {
+    if (exploded) {
+      image.src = board.explodeBase;
+      image.alt = `Source-derived depopulated rendering of the ${board.alt}`;
+      stage.setAttribute("aria-label", `Exploded ${board.label} board showing source-rendered populated components lifted from the PCB.`);
+      if (explodeLayer) explodeLayer.hidden = false;
+    } else if (activeView === "rotate") {
       preloadFrames(activeBoard);
       showFrame(currentFrame);
       image.alt = `Rotatable KiCad rendering of the ${board.alt}`;
       stage.setAttribute("aria-label", `Rotatable ${board.label} board. Drag left or right, or use the arrow keys.`);
+      if (explodeLayer) explodeLayer.hidden = true;
     } else {
       image.src = board.inspectImage;
       image.alt = `KiCad rendering of the ${board.alt}`;
       stage.setAttribute("aria-label", `${board.label} board with selectable component markers.`);
+      if (explodeLayer) explodeLayer.hidden = true;
     }
   };
 
@@ -225,6 +282,7 @@
       projectLink.firstChild.textContent = `Read the ${board.projectLabel} project `;
     }
     buildHotspots();
+    buildExplodeLayer();
     clearSelection();
     updateStage();
     const url = new URL(window.location.href);
@@ -237,6 +295,7 @@
 
   const setView = (view) => {
     if (!["inspect", "rotate"].includes(view)) return;
+    if (exploded) setExploded(false, false);
     activeView = view;
     inspector.dataset.view = view;
     viewButtons.forEach((button) => {
@@ -258,8 +317,29 @@
     announce(view === "rotate" ? "360 degree board view" : "Component map");
   };
 
+  const setExploded = (value, announceChange = true) => {
+    exploded = Boolean(value);
+    inspector.dataset.exploded = exploded ? "true" : "false";
+    if (explodeButton) {
+      explodeButton.setAttribute("aria-pressed", String(exploded));
+      explodeButton.textContent = exploded ? "Assemble" : "Explode";
+    }
+    const rotating = activeView === "rotate" && !exploded;
+    annotationToggle.hidden = exploded || activeView === "rotate";
+    rotationBar.hidden = !rotating;
+    dragHint.hidden = !rotating;
+    angleReadout.hidden = !rotating;
+    updateStage();
+    const url = new URL(window.location.href);
+    if (exploded) url.searchParams.set("explode", "1");
+    else url.searchParams.delete("explode");
+    window.history.replaceState({}, "", url);
+    if (announceChange) announce(exploded ? `${boards[activeBoard].label} exploded view` : `${boards[activeBoard].label} assembled view`);
+  };
+
   boardButtons.forEach((button) => button.addEventListener("click", () => setBoard(button.dataset.objectBoard)));
   viewButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.objectView)));
+  explodeButton?.addEventListener("click", () => setExploded(!exploded));
 
   annotationToggle.addEventListener("click", () => {
     const visible = inspector.dataset.annotations !== "hidden";
@@ -275,7 +355,7 @@
   anglePresets.forEach((button) => button.addEventListener("click", () => showFrame(Number(button.dataset.anglePreset), true)));
 
   stage.addEventListener("pointerdown", (event) => {
-    if (activeView !== "rotate") return;
+    if (activeView !== "rotate" || exploded) return;
     dragging = true;
     lastPointerX = event.clientX;
     dragRemainder = 0;
@@ -284,7 +364,7 @@
   });
 
   stage.addEventListener("pointermove", (event) => {
-    if (!dragging || activeView !== "rotate") return;
+    if (!dragging || activeView !== "rotate" || exploded) return;
     const delta = event.clientX - lastPointerX;
     lastPointerX = event.clientX;
     dragRemainder += delta;
@@ -304,7 +384,7 @@
   stage.addEventListener("pointercancel", stopDragging);
 
   stage.addEventListener("keydown", (event) => {
-    if (activeView === "rotate" && ["ArrowLeft", "ArrowRight", "Home"].includes(event.key)) {
+    if (activeView === "rotate" && !exploded && ["ArrowLeft", "ArrowRight", "Home"].includes(event.key)) {
       event.preventDefault();
       if (event.key === "Home") showFrame(0, true);
       else showFrame(currentFrame + (event.key === "ArrowRight" ? 1 : -1), true);
@@ -315,10 +395,12 @@
 
   const requestedBoard = new URLSearchParams(window.location.search).get("board");
   const requestedView = new URLSearchParams(window.location.search).get("view");
+  const requestedExplode = new URLSearchParams(window.location.search).get("explode");
   const fallbackBoard = Object.prototype.hasOwnProperty.call(boards, inspector.dataset.board) ? inspector.dataset.board : "telemetry";
   const initialBoard = Object.prototype.hasOwnProperty.call(boards, requestedBoard) ? requestedBoard : fallbackBoard;
   setBoard(initialBoard, false);
   setView(requestedView === "inspect" ? "inspect" : "rotate");
+  if (requestedExplode === "1") setExploded(true, false);
   const firstCompanionFrame = new Image();
   firstCompanionFrame.src = frameImage(initialBoard === "ground" ? "telemetry" : "ground", 0);
 })();

@@ -123,7 +123,8 @@ html { scroll-behavior: smooth; }
   color: var(--object-muted);
 }
 .object-board:last-child { border-right: 0; }
-.object-tool { margin-left: auto; border-right: 0; border-left: 1px solid var(--object-line); }
+.object-tool { border-right: 0; border-left: 1px solid var(--object-line); }
+.object-explode { margin-left: auto; }
 .object-board:hover,
 .object-board:focus-visible,
 .object-board.is-active,
@@ -200,6 +201,37 @@ html { scroll-behavior: smooth; }
   pointer-events: none;
 }
 
+.object-explode-layer {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.object-explode-layer[hidden] { display: none; }
+.object-explode-part {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: drop-shadow(0 0 0 rgba(0,0,0,0));
+  transition: transform 620ms cubic-bezier(.2,.75,.2,1), opacity 220ms ease, filter 620ms ease;
+  transition-delay: var(--explode-delay, 0ms);
+  will-change: transform, opacity, filter;
+}
+.object-main[data-exploded="true"] .object-explode-part {
+  opacity: 1;
+  transform: translate3d(var(--explode-x, 0), var(--explode-y, -6%), 0) scale(1.035);
+  filter: drop-shadow(0 1.1rem .8rem rgba(0,0,0,.48));
+}
+.object-main[data-exploded="true"] > .project-interactive .object-stage > [data-object-image] {
+  filter: saturate(.86) brightness(.88);
+  transition: filter 320ms ease;
+}
+
 .object-main[data-view="rotate"] .object-stage { cursor: grab; }
 .object-main[data-view="rotate"] .object-stage.is-dragging { cursor: grabbing; }
 
@@ -214,6 +246,7 @@ html { scroll-behavior: smooth; }
 }
 
 .object-main[data-view="rotate"] .object-hotspots,
+.object-main[data-exploded="true"] .object-hotspots,
 .object-main[data-annotations="hidden"] .object-hotspots { opacity: 0; visibility: hidden; }
 
 .object-hotspot {
@@ -374,6 +407,7 @@ html { scroll-behavior: smooth; }
 .component-directory-list button.is-active { background: rgba(255, 255, 255, 0.045); color: var(--object-text); }
 .component-directory-list button.is-active { box-shadow: inset 3px 0 0 var(--object-accent); }
 .object-main[data-view="rotate"] .component-directory { display: none; }
+.object-main[data-exploded="true"] .component-directory { display: none; }
 
 .object-path,
 .object-findings { padding: clamp(6rem, 12vw, 11rem) 0; border-top: 1px solid var(--object-line); }
@@ -468,7 +502,8 @@ html { scroll-behavior: smooth; }
   .object-board { flex: 1; min-width: 0; }
   .object-view-list { width: 100%; flex: 0 0 100%; }
   .object-view { flex: 1; }
-  .object-tool { min-width: 100%; margin-left: 0; border-top: 1px solid var(--object-line); border-left: 0; }
+  .object-tool { min-width: 50%; margin-left: 0; border-top: 1px solid var(--object-line); border-left: 0; }
+  .object-tool + .object-tool { border-left: 1px solid var(--object-line); }
   .object-rotation-bar { flex-wrap: wrap; }
   .object-angle-presets,
   .object-angle-steps { width: 100%; }
@@ -498,6 +533,7 @@ html { scroll-behavior: smooth; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .object-explode-part { transition: none; }
   .object-hotspots,
   .object-hotspot span { transition: none; }
 }
