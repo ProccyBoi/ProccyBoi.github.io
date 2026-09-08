@@ -120,6 +120,8 @@
 
   const cleanupJsonp = (callbackName, script) => {
     delete window[callbackName];
+    script.onload = null;
+    script.onerror = null;
     script.remove();
   };
 
@@ -131,20 +133,29 @@
     url.searchParams.set("start", startDate);
     url.searchParams.set("duration", String(duration));
     url.searchParams.set("callback", callbackName);
+    let settled = false;
+    const settle = (error, payload) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      // A removed JSONP script can still execute. Keep its callback callable
+      // until load/error confirms the request has finished, even after timeout.
+      window[callbackName] = () => {};
+      if (error) reject(error);
+      else resolve(payload);
+    };
     const timer = window.setTimeout(() => {
-      cleanupJsonp(callbackName, script);
-      reject(new Error("The calendar took too long to respond."));
+      settle(new Error("The calendar took too long to respond."));
     }, 12_000);
 
-    window[callbackName] = (payload) => {
-      window.clearTimeout(timer);
+    window[callbackName] = (payload) => settle(null, payload);
+    script.onload = () => {
+      settle(new Error("The calendar returned an incomplete response."));
       cleanupJsonp(callbackName, script);
-      resolve(payload);
     };
     script.onerror = () => {
-      window.clearTimeout(timer);
+      settle(new Error("The calendar could not be reached."));
       cleanupJsonp(callbackName, script);
-      reject(new Error("The calendar could not be reached."));
     };
     script.src = url.toString();
     document.head.append(script);

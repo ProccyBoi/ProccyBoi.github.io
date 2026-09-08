@@ -1,28 +1,48 @@
 document.documentElement.classList.add("js");
 
-const updatePageProgress = () => {
-  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-  const progress = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 0;
-  document.documentElement.style.setProperty("--page-progress", progress.toFixed(4));
-};
-
-let progressFrame = 0;
-const requestPageProgress = () => {
-  if (progressFrame) return;
-  progressFrame = window.requestAnimationFrame(() => {
-    progressFrame = 0;
-    updatePageProgress();
-  });
-};
-
-updatePageProgress();
-window.addEventListener("scroll", requestPageProgress, { passive: true });
-window.addEventListener("resize", requestPageProgress);
-
 const navToggle = document.querySelector("[data-nav-toggle]");
 const siteNav = document.querySelector("[data-site-nav]");
 const desktopNavigation = window.matchMedia("(min-width: 721px)");
-const navigationBackground = [...document.querySelectorAll("main, .site-footer")];
+const navigationBackground = [...document.querySelectorAll("main, .site-footer, .project-flow")];
+
+if (siteNav && navToggle) {
+  siteNav.id ||= "primary-navigation";
+  navToggle.setAttribute("aria-controls", siteNav.id);
+}
+
+// A focusable anchor target keeps keyboard users on the current page.
+document.querySelector("main")?.setAttribute("tabindex", "-1");
+
+// Both archive and case-study navigation use the same section tracking.
+const sectionLinks = [...document.querySelectorAll("[data-project-jump], .project-flow-tabs a")];
+const sectionTargets = sectionLinks.map((link) => ({
+  link,
+  section: document.getElementById(new URL(link.href).hash.slice(1)),
+})).filter(({ section }) => section);
+if (sectionTargets.length) {
+  let sectionFrame = 0;
+  const syncSection = () => {
+    sectionFrame = 0;
+    const header = document.querySelector(".site-header");
+    const localNav = document.querySelector(".project-flow, .project-jumpbar");
+    const marker = (header?.offsetHeight || 0) + (localNav?.offsetHeight || 0) + 32;
+    let active = sectionTargets[0];
+    sectionTargets.forEach((item) => {
+      if (item.section.getBoundingClientRect().top <= marker) active = item;
+    });
+    sectionTargets.forEach(({ link }) => {
+      if (link === active.link) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+  };
+  const requestSection = () => {
+    if (!sectionFrame) sectionFrame = requestAnimationFrame(syncSection);
+  };
+  window.addEventListener("scroll", requestSection, { passive: true });
+  window.addEventListener("resize", requestSection);
+  window.addEventListener("load", requestSection, { once: true });
+  syncSection();
+}
 
 const syncNavigationAccessibility = (open = false) => {
   if (!siteNav) return;

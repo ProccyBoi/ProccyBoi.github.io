@@ -15,7 +15,8 @@
     if (liveRegion) liveRegion.textContent = message;
   };
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const renderer = window.PortfolioExplorer.createRenderer(THREE, { canvas, antialias: true, alpha: true });
+  if (!renderer) return;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -859,14 +860,14 @@
     });
   };
 
+  const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
   const animate = () => {
-    requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
-    const smoothing = 1 - Math.pow(0.001, dt);
+    const smoothing = motionPreference.matches ? 1 : 1 - Math.pow(0.001, dt);
     yaw += (targetYaw - yaw) * smoothing;
     pitch += (targetPitch - pitch) * smoothing;
     distance += (targetDistance - distance) * smoothing;
-    componentExplodeProgress += (componentExplodeTarget - componentExplodeProgress) * (1 - Math.pow(0.025, dt));
+    componentExplodeProgress += (componentExplodeTarget - componentExplodeProgress) * (motionPreference.matches ? 1 : 1 - Math.pow(0.025, dt));
     if (Math.abs(componentExplodeTarget - componentExplodeProgress) < 0.0001) componentExplodeProgress = componentExplodeTarget;
     updateMechanicalExplode();
     updateComponentExplode();
@@ -882,5 +883,5 @@
   };
 
   setPreset('iso', false);
-  animate();
+  window.PortfolioExplorer.start(animate, stage);
 })();

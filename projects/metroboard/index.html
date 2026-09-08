@@ -5,21 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/">
   <title>Metroboard | Andrew Chung</title>
-  <meta name="description" content="Andrew Chung's live Sydney rail network indicator using 290+ LEDs, Wi-Fi and TfNSW GTFS real-time data.">
+  <meta name="description" content="Andrew Chung's live Sydney rail network indicator using 291 LEDs, Wi-Fi and TfNSW GTFS real-time data.">
   <meta name="theme-color" content="#111210">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Metroboard | Andrew Chung">
-  <meta property="og:description" content="A 30 x 30 cm Sydney rail network PCB displaying live TfNSW data with more than 290 LEDs.">
+  <meta property="og:description" content="A 300 × 305.7 mm Sydney rail network PCB displaying live TfNSW data with 291 LEDs.">
   <meta property="og:url" content="https://proccyboi.github.io/projects/metroboard/">
   <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/metroboard1-web.jpg">
   <meta property="og:image:alt" content="Metroboard Sydney rail indicator illuminated in a dark room">
   <link rel="canonical" href="https://proccyboi.github.io/projects/metroboard/">
   <link rel="preload" as="image" href="assets/images/projects/metroboard1-web.jpg">
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/project-integrated.css?v=20260901b"><link rel="stylesheet" href="assets/pcb-object-explorer.css?v=20260902b">
-  <script src="assets/site.js" defer></script><script src="assets/vendor/three.min.js" defer></script><script src="assets/metroboard-3d.js?v=20260903b" defer></script><script src="assets/pcb-object-explorer.js?v=20260903b" defer></script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/pcb-object-explorer.css?v=20260902b"><link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
+  <script src="assets/site.js" defer></script><script src="assets/explorer-runtime.js?v=20260907" defer></script><script src="assets/vendor/three.min.js" defer></script><script src="assets/metroboard-3d.js?v=20260903b" defer></script><script src="assets/pcb-object-explorer.js?v=20260907" defer></script>
 </head>
 <body class="project-page">
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="/projects/metroboard/#main">Skip to content</a>
 
   <header class="site-header">
     <div class="header-inner">
@@ -36,7 +36,7 @@
   </header>
 
   <main id="main">
-    <section class="project-hero" aria-labelledby="project-title">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
       <div class="project-hero-grid">
         <div class="project-hero-copy">
           <div>
@@ -47,20 +47,23 @@
           <dl class="project-meta">
             <div><dt>Type</dt><dd>Personal project</dd></div>
             <div><dt>Data</dt><dd>TfNSW GTFS real-time</dd></div>
-            <div><dt>Display</dt><dd>290+ LEDs</dd></div>
-            <div><dt>Format</dt><dd>30 x 30 cm PCB</dd></div>
+            <div><dt>Display</dt><dd>291 LEDs</dd></div>
+            <div><dt>Format</dt><dd>300 × 305.7 mm PCB</dd></div>
           </dl>
+          <div class="project-hero-actions"><a href="projects/metroboard/#explore">Explore the hardware →</a><a href="projects/metroboard/#details">Read the engineering</a></div>
         </div>
         <figure class="project-hero-media">
           <img src="assets/images/projects/metroboard1-web.jpg" width="1600" height="900" alt="Sydney rail network indicator with LEDs illuminated in a dark room">
         </figure>
       </div>
     </section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>A custom rail-map PCB and a service for TfNSW real-time data.</dd></div><div><dt>Design constraint</dt><dd>Copper, mask, silkscreen and LEDs form the display itself.</dd></div><div><dt>Built hardware</dt><dd>291 RGB pixels on the 300 × 305.7 mm V3 board.</dd></div></dl>
+
 
     
     <section class="project-interactive pcb-object-main" id="explore" aria-labelledby="metro-explore" data-pcb-object>
       <div class="project-interactive-inner">
-        <header class="project-interactive-header"><div><p class="eyebrow">Interactive hardware reconstruction</p><h2 id="metro-explore">A map made of hardware.</h2></div><p>Orbit the V3 board reconstruction, inspect the 291 RGB packages and controller edge, or lift the populated electronics away from the 300 × 305.7 mm black PCB.</p></header>
+        <header class="project-interactive-header"><div><p class="eyebrow">Interactive hardware reconstruction</p><h2 id="metro-explore">Explore the rail-map PCB.</h2></div><p>Orbit the V3 board reconstruction, inspect the 291 RGB packages and controller edge, or lift the populated electronics away from the 300 × 305.7 mm black PCB.</p></header>
         <div class="pcb-object-toolbar" aria-label="3D view controls"><button type="button" data-pcb-view="angle">Angle</button><button type="button" data-pcb-view="top">Top</button><button type="button" data-pcb-view="bottom">Bottom</button><button type="button" data-pcb-view="side">Side</button><span class="pcb-spacer"></span><button type="button" data-pcb-explode aria-pressed="false">Explode</button><button type="button" class="pcb-reset" data-pcb-reset>Reset</button></div>
         <div class="pcb-object-stage"><canvas data-pcb-object-canvas tabindex="0" aria-label="Interactive 3D Metroboard"></canvas><div class="pcb-object-stage-label"><span>Drag to orbit</span><span>Pinch / wheel to zoom</span></div></div>
         <div class="pcb-object-readout" aria-live="polite"><p data-pcb-ref>BOARD</p><h3 data-pcb-name>Loading board…</h3><p data-pcb-copy>3D board reconstruction is loading.</p></div>
@@ -68,11 +71,11 @@
       </div>
     </section>
 
-<div class="project-body shell">
+<div class="project-body shell" id="details">
       <section class="project-summary" aria-labelledby="metroboard-summary">
         <h2 id="metroboard-summary">A map, not another app</h2>
         <div class="project-prose">
-          <p>I wanted Sydney's rail network to live on the wall, not in another browser tab. Metroboard is a 30 × 30 cm PCB with more than 290 LEDs, laid out as a physical map of the network.</p>
+          <p>I wanted Sydney's rail network to live on the wall, not in another browser tab. Metroboard is a 300 × 305.7 mm PCB with 291 LEDs, laid out as a physical map of the network.</p>
           <p>The board joins Wi-Fi and gets TfNSW GTFS real-time data through a service I wrote. Each update turns vehicle positions into light, so the useful part of the display is visible before I have even picked up my phone.</p>
         </div>
       </section>

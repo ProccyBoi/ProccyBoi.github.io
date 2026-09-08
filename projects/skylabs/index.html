@@ -16,14 +16,14 @@
   <link rel="preload" as="image" href="assets/images/projects/skylabs-ground-hero-960.webp" media="(max-width: 760px)" type="image/webp">
   <link rel="preload" as="image" href="assets/images/projects/skylabs-ground-hero-1920.webp" media="(min-width: 761px)" type="image/webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/project-flow.css?v=20260901a">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
   <link rel="stylesheet" href="assets/skylabs-object.css?v=20260903b">
-  <link rel="stylesheet" href="assets/project-integrated.css?v=20260901b">
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
   <script src="assets/site.js" defer></script>
   <script src="assets/skylabs-object.js?v=20260903b" defer></script>
 </head>
 <body class="project-page">
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="/projects/skylabs/#main">Skip to content</a>
 
   <header class="site-header">
     <div class="header-inner">
@@ -61,6 +61,7 @@
             <div><dt>Current role</dt><dd>Avionics &amp; Payload Team Lead</dd></div>
             <div><dt>Competition</dt><dd>AIAA DBF 2026 / Wichita</dd></div>
           </dl>
+          <div class="project-hero-actions"><a href="projects/skylabs/#explore">Explore the hardware →</a><a href="projects/skylabs/#details">Read the engineering</a></div>
         </div>
         <div class="project-hero-media contain-media">
           <picture>
@@ -70,10 +71,12 @@
         </div>
       </div>
     </section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>Aircraft logger, ground station and post-flight replay tools.</dd></div><div><dt>System constraint</dt><dd>40 Hz onboard logging; a smaller live packet at up to 10 Hz.</dd></div><div><dt>In the field</dt><dd>AIAA Design/Build/Fly 2026, Wichita; recorded flight replay.</dd></div></dl>
+
 
     <section class="project-interactive" id="explore" aria-labelledby="skylabs-explore-title">
       <div class="project-interactive-inner">
-        <header class="project-interactive-header"><div><p class="eyebrow" data-board-eyebrow>Aircraft telemetry / Rev 4.0</p><h2 id="skylabs-explore-title" data-board-heading>Flight data starts here.</h2></div><div class="object-workbench-notes"><p data-board-copy>Drag the corrected source-rendered assembly through a full turn, switch to Parts for a guided map, or separate the major populated hardware with Explode.</p><a href="projects/skylabs/boards/telemetry/" data-object-project-link>Read the aircraft telemetry project <span aria-hidden="true">&rarr;</span></a></div></header>
+        <header class="project-interactive-header"><div><p class="eyebrow" data-board-eyebrow>Aircraft telemetry / Rev 4.0</p><h2 id="skylabs-explore-title" data-board-heading>Explore the flight hardware.</h2></div><div class="object-workbench-notes"><p data-board-copy>Drag left or right to rotate the board. Choose Parts to identify components, or Explode to separate the assembly. The arrow keys also rotate the view.</p><a href="projects/skylabs/boards/telemetry/" data-object-project-link>Read the aircraft telemetry project <span aria-hidden="true">&rarr;</span></a></div></header>
         <div class="object-toolbar" aria-label="Board view controls"><div class="object-board-list" aria-label="Skylabs board"><button type="button" class="object-board is-active" data-object-board="telemetry" aria-pressed="true">Aircraft telemetry</button><button type="button" class="object-board" data-object-board="ground" aria-pressed="false">Ground station</button></div><div class="object-view-list" aria-label="Board view"><button type="button" class="object-view" data-object-view="inspect" aria-pressed="false">Parts</button><button type="button" class="object-view is-active" data-object-view="rotate" aria-pressed="true">360&deg;</button></div><button type="button" class="object-tool object-explode" data-object-explode aria-pressed="false">Explode</button><button type="button" class="object-tool" data-annotation-toggle aria-pressed="true" hidden>Hide annotations</button></div>
         <div class="object-rotation-bar" data-rotation-bar aria-label="Board angle controls"><div class="object-angle-presets" aria-label="Preset angles"><button type="button" data-angle-preset="0" aria-pressed="true">Front</button><button type="button" data-angle-preset="6" aria-pressed="false">Side</button><button type="button" data-angle-preset="12" aria-pressed="false">Back</button></div><div class="object-angle-steps"><button type="button" data-rotation-previous aria-label="Rotate 15 degrees left">&larr; 15&deg;</button><button type="button" data-rotation-reset>Reset</button><button type="button" data-rotation-next aria-label="Rotate 15 degrees right">15&deg; &rarr;</button></div></div>
         <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs aircraft telemetry board. Drag left or right to rotate."><img src="assets/images/interactive/skylabs/skylabs-telemetry-turn-00.webp" width="1400" height="1000" alt="Rotatable KiCad rendering of the assembled blue Skylabs aircraft telemetry PCB" data-object-image draggable="false"><div class="object-explode-layer" data-object-explode-layer hidden aria-hidden="true"></div><div class="object-hotspots" data-object-hotspots aria-label="Selectable Skylabs board components"></div><p class="object-drag-hint" data-drag-hint><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p><p class="object-angle" data-object-angle>000&deg;</p></div>
@@ -83,7 +86,7 @@
       </div>
     </section>
 
-    <div class="project-body shell">
+    <div class="project-body shell" id="details">
       <section class="project-summary" aria-labelledby="skylabs-overview">
         <h2 id="skylabs-overview">My work</h2>
         <div class="project-prose">

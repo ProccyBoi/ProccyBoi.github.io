@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/">
   <title>TramTrace | Andrew Chung</title>
-  <meta name="description" content="A 100 × 200 mm live light-rail map for Sydney and Parramatta, built around an ESP32 and addressable RGB LEDs.">
+  <meta name="description" content="A 207.81 × 94.55 mm live light-rail map for Sydney and Parramatta, built around an ESP32 and addressable RGB LEDs.">
   <meta name="theme-color" content="#111210">
   <meta property="og:type" content="website">
   <meta property="og:title" content="TramTrace | Andrew Chung">
@@ -17,22 +17,22 @@
   <link rel="preload" as="image" href="assets/images/projects/tramtrace-hero-960.webp" media="(max-width: 760px)" type="image/webp">
   <link rel="preload" as="image" href="assets/images/projects/tramtrace-hero-1920.webp" media="(min-width: 761px)" type="image/webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/project-flow.css?v=20260901a">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
   <link rel="stylesheet" href="assets/tramtrace-inspector.css?v=20260824b">
   <link rel="stylesheet" href="assets/pcb-object-explorer.css?v=20260903b">
   <link rel="stylesheet" href="assets/tramtrace-3d.css?v=20260903b">
-  <link rel="stylesheet" href="assets/project-integrated.css?v=20260901b">
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
   <script src="assets/site.js" defer></script>
-  <script src="assets/vendor/three.min.js" defer></script>
+  <script src="assets/explorer-runtime.js?v=20260907" defer></script><script src="assets/vendor/three.min.js" defer></script>
   <script src="assets/vendor/GLTFLoader.js" defer></script>
   <script src="assets/tramtrace-3d.js?v=20260903b" defer></script>
-  <script src="assets/tramtrace-pcb-explorer.js?v=20260903b" defer></script>
+  <script src="assets/tramtrace-pcb-explorer.js?v=20260907" defer></script>
   <script src="assets/tramtrace-board-data.js" defer></script>
   <script src="assets/tramtrace-component-data.js" defer></script>
   <script src="assets/tramtrace-inspector.js?v=20260824b" defer></script>
 </head>
 <body class="project-page">
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="/projects/tramtrace/#main">Skip to content</a>
   <header class="site-header">
     <div class="header-inner">
       <a class="brand brand-plain" href="./">Andrew Chung</a>
@@ -51,14 +51,15 @@
           <div>
             <p class="eyebrow">Live transport display</p>
             <h1 id="project-title">TramTrace</h1>
-            <p>A 100 × 200 mm map that puts one RGB LED at every stop on Sydney and Parramatta's light-rail network.</p>
+            <p>A live light-rail map for Sydney and Parramatta, built around an ESP32 and 116 addressable RGB pixels.</p>
           </div>
           <dl class="project-meta">
             <div><dt>Network</dt><dd>L1, L2, L3 and L4</dd></div>
             <div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div>
             <div><dt>Display</dt><dd>WS2812C-2020 RGB LEDs</dd></div>
-            <div><dt>Board</dt><dd>100 × 200 mm, Rev 1.0</dd></div>
+            <div><dt>Board</dt><dd>207.81 × 94.55 mm, Rev 1.0</dd></div>
           </dl>
+          <div class="project-hero-actions"><a href="projects/tramtrace/#explore">Explore the hardware →</a><a href="projects/tramtrace/#details">Read the engineering</a></div>
         </div>
         <div class="project-hero-media">
           <picture>
@@ -68,18 +69,20 @@
         </div>
       </div>
     </section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>PCB design, embedded display logic and vehicle-position service.</dd></div><div><dt>Design constraint</dt><dd>Route labels, controller circuitry and LEDs share one compact PCB.</dd></div><div><dt>Built hardware</dt><dd>An assembled, illuminated map of four light-rail lines.</dd></div></dl>
+
 
     <section class="project-interactive" id="explore" aria-labelledby="tramtrace-explore-title">
       <div class="project-interactive-inner">
-        <header class="project-interactive-header"><div><p class="eyebrow">Production-board explorer</p><h2 id="tramtrace-explore-title">Under the solder mask.</h2></div><p>The assembled view, copper layers and LED order come from the production KiCad source. Inspect a part, rotate the board or play one frame through its real electrical path.</p></header>
+        <header class="project-interactive-header"><div><p class="eyebrow">Production-board explorer</p><h2 id="tramtrace-explore-title">Explore the production board.</h2></div><p>The assembled view, copper layers and LED order come from the production KiCad source. Inspect a part, rotate the board or play one frame through its real electrical path.</p></header>
         <section class="tramtrace-3d-explorer" data-pcb-object aria-labelledby="tramtrace-3d-title">
-          <div class="tramtrace-3d-intro"><div><p class="eyebrow">Free 3D inspection</p><h3 id="tramtrace-3d-title">Orbit the production board.</h3></div><p>Drag through a full 360&deg; orbit, inspect the underside, or separate the populated assembly. <strong>The production view loads the KiCad-exported GLB assembly itself: all 144 physical references, source-bound 3D models, centres and rotations remain intact.</strong></p></div>
+          <div class="tramtrace-3d-intro"><div><p class="eyebrow">Free 3D inspection</p><h3 id="tramtrace-3d-title">Orbit the production board.</h3></div><p>Drag through a full 360&deg; orbit, inspect the underside, or separate the populated assembly. <strong>The assembly comes from the production KiCad design, including all 144 physical parts.</strong></p></div>
           <div class="pcb-object-toolbar" aria-label="TramTrace 3D view controls">
             <button type="button" data-pcb-view="angle" aria-pressed="true">Angle</button><button type="button" data-pcb-view="top" aria-pressed="false">Top</button><button type="button" data-pcb-view="bottom" aria-pressed="false">Bottom</button><button type="button" data-pcb-view="side" aria-pressed="false">Side</button><span class="pcb-spacer" aria-hidden="true"></span><button type="button" data-pcb-explode aria-pressed="false">Explode</button><button type="button" class="pcb-reset" data-pcb-reset>Reset view</button>
           </div>
           <div class="pcb-object-stage"><canvas data-pcb-object-canvas tabindex="0" aria-label="Interactive three-dimensional TramTrace PCB. Drag to orbit, use the mouse wheel or pinch to zoom, and use arrow keys to rotate."></canvas><div class="pcb-object-stage-label" aria-hidden="true"><span>KiCad Rev 1</span><span>207.81 &times; 94.55 &times; 1.6 mm</span></div></div>
           <div class="pcb-object-readout" aria-live="polite" aria-atomic="true"><p data-pcb-ref>BOARD</p><h3 data-pcb-name>TramTrace production board</h3><p data-pcb-copy>Hover a component to inspect its source reference, package and exact KiCad placement.</p></div>
-          <div class="tramtrace-3d-source" aria-label="3D source fidelity"><span>116 &times; WS2815C-2020</span><span>28 controller/support parts</span><span>R5 Edge.Cuts</span><span>KiCad-exported component CAD</span><span>Source-derived copper, mask and silk</span></div>
+          <div class="tramtrace-3d-source" aria-label="3D source fidelity"><span>116 &times; WS2812C-2020</span><span>28 controller/support parts</span><span>R5 Edge.Cuts</span><span>KiCad-exported component CAD</span><span>Source-derived copper, mask and silk</span></div>
         </section>
         <section class="inspector-workbench" aria-labelledby="tramtrace-workbench-title">
           <div class="inspector-mode-bar">
@@ -92,7 +95,7 @@
           <details class="component-directory" data-component-directory-wrap><summary>Component index <span data-component-directory-count>10 selectable parts</span></summary><div class="component-directory-list" data-component-directory></div></details>
           <div class="frame-console" data-frame-console hidden><div class="chain-list" aria-label="Pixel data chains" data-chain-list></div><div class="frame-readout"><div class="frame-readout-main" aria-live="polite"><p data-frame-eyebrow>L1 / 45 PIXELS</p><h3 data-frame-title>Frame at the level shifter.</h3><p data-frame-copy>The first 24 colour bits are about to reach LED94. Everything after them continues downstream.</p></div><dl class="frame-metrics"><div><dt>Progress</dt><dd data-frame-progress>0 / 45</dd></div><div><dt>Bits consumed</dt><dd data-frame-bits>0</dd></div><div><dt>Wire time</dt><dd data-frame-time>0.00 ms</dd></div></dl></div><div class="frame-controls"><button class="frame-play" type="button" data-frame-play aria-label="Play data frame"><span aria-hidden="true">&#9654;</span><span data-frame-play-label>Play frame</span></button><label class="frame-slider-label"><span class="sr-only">Pixels reached</span><input type="range" min="0" max="45" value="0" step="1" data-frame-slider></label><button class="frame-reset" type="button" data-frame-reset>Reset</button></div></div>
         </section>
-        <dl class="project-interactive-facts"><div><dt>Pixels</dt><dd>116 × WS2812C</dd></div><div><dt>Data chains</dt><dd>Five</dd></div><div><dt>Board</dt><dd>100 × 200 mm</dd></div></dl>
+        <dl class="project-interactive-facts"><div><dt>Pixels</dt><dd>116 × WS2812C</dd></div><div><dt>Data chains</dt><dd>Five</dd></div><div><dt>Board</dt><dd>207.81 × 94.55 mm</dd></div></dl>
       </div>
     </section>
 
@@ -109,7 +112,7 @@
         <h2 id="tramtrace-board">On the board</h2>
         <div class="project-prose">
           <p>An ESP32-WROOM-32E handles the network connection and display logic. A CH340C gives me a straightforward USB programming path, while level shifting keeps the ESP32 and LED data happy together.</p>
-          <p>The hard part was physical rather than computational: the station names, route geometry and components all had to share the same 100 × 200 mm rectangle. The silkscreen ended up doing real work as part map, part assembly drawing.</p>
+          <p>The hard part was physical rather than computational: the station names, route geometry and components all had to share the same compact board. The silkscreen ended up doing real work as part map, part assembly drawing.</p>
           <div class="hero-actions"><a class="button button-primary" href="projects/tramtrace/#explore">Inspect the PCB</a></div>
         </div>
       </section>

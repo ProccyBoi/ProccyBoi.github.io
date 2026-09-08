@@ -1,63 +1,62 @@
-.project-page { background: var(--paper, #f1ecdf); }
+.project-page { background: var(--bg); }
 
 .project-page .project-hero {
-  min-height: calc(100svh - 8rem);
+  min-height: 0;
   display: grid;
   align-items: center;
 }
 
-.project-page .project-hero-grid { width: min(100% - 3rem, 1500px); }
-.project-page .project-hero-copy h1 { max-width: 11ch; text-wrap: balance; }
-.project-page .project-body { padding-block: clamp(6rem, 11vw, 11rem); }
+.project-page .project-hero-grid { width: min(var(--content), calc(100% - 2 * var(--gutter))); }
+.project-page .project-hero-copy h1 { max-width: 16ch; text-wrap: balance; }
+.project-page .project-body { padding-block: var(--section-space); }
 
 .project-page #overview,
 .project-page #explore,
 .project-page #details,
-.project-page #build { scroll-margin-top: 8.5rem; }
+.project-page #build { scroll-margin-top: calc(var(--header-height) + 4rem); }
 
 .project-interactive {
-  --object-bg: #090a0a;
-  --object-panel: #111312;
+  --object-bg: #0d1210;
+  --object-panel: #171d19;
   --object-text: #f4f1e9;
-  --object-muted: #a6a49e;
+  --object-muted: #b3bdb0;
   --object-line: rgba(244, 241, 233, 0.16);
-  --object-accent: #d99a62;
-  padding: clamp(5.5rem, 10vw, 10rem) 0;
-  overflow: hidden;
+  --object-accent: #e7a57c;
+  padding: var(--section-space) 0;
   background: var(--object-bg);
   color: var(--object-text);
 }
 
 .project-interactive-inner {
-  width: min(100% - 3rem, 1400px);
+  width: min(var(--content), calc(100% - 2 * var(--gutter)));
   margin-inline: auto;
 }
 
 .project-interactive-header {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(19rem, 0.7fr);
-  gap: 2rem clamp(3rem, 8vw, 8rem);
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem 3rem;
   align-items: end;
-  margin-bottom: clamp(3rem, 6vw, 5.5rem);
+  margin-bottom: 1.75rem;
 }
 
 .project-interactive-header .eyebrow { color: var(--object-accent); }
 .project-interactive-header h2 {
-  max-width: 12ch;
+  max-width: 23ch;
   margin: 0.8rem 0 0;
   color: var(--object-text);
-  font-size: clamp(3.5rem, 8vw, 7.5rem);
-  font-weight: 430;
-  line-height: 0.88;
-  letter-spacing: -0.065em;
+  font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+  font-weight: 550;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
   text-wrap: balance;
 }
-.project-interactive-header > p { margin: 0; color: var(--object-muted); font-size: clamp(1rem, 1.4vw, 1.18rem); line-height: 1.65; }
+.project-interactive-header > p { margin: 0; color: var(--object-muted); font-size: 1rem; line-height: 1.65; }
 
 .project-interactive .object-toolbar,
 .project-interactive .object-stage { width: 100%; }
 .project-interactive .object-toolbar { background: rgba(255, 255, 255, 0.018); }
-.project-interactive .object-stage { background: radial-gradient(circle at 50% 44%, rgba(90, 116, 125, 0.13), transparent 36%), #020303; }
+.project-interactive .object-stage { background: #050907; }
 
 .project-interactive-facts {
   display: grid;
@@ -66,12 +65,12 @@
   border-top: 1px solid var(--object-line);
   border-left: 1px solid var(--object-line);
 }
-.project-interactive-facts div { min-height: 7rem; padding: 1.25rem; border-right: 1px solid var(--object-line); border-bottom: 1px solid var(--object-line); }
-.project-interactive-facts dt { color: var(--object-muted); font: 600 0.64rem/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
-.project-interactive-facts dd { margin: 2.2rem 0 0; color: var(--object-text); font-size: clamp(1.1rem, 2vw, 1.55rem); letter-spacing: -0.025em; }
+.project-interactive-facts div { min-height: 0; padding: 1.25rem; border-right: 1px solid var(--object-line); border-bottom: 1px solid var(--object-line); }
+.project-interactive-facts dt { color: var(--object-muted); font: 400 .75rem/1.5 var(--mono); letter-spacing: 0; text-transform: none; }
+.project-interactive-facts dd { margin: .4rem 0 0; color: var(--object-text); font-size: 1rem; letter-spacing: -0.025em; }
 
-.project-page .project-summary { padding-block: clamp(4rem, 8vw, 7rem); }
-.project-page .gallery-title { padding-top: clamp(4rem, 8vw, 7rem); }
+.project-page .project-summary { padding-block: 2.5rem; }
+.project-page .gallery-title { padding-top: 1.25rem; }
 
 .project-interactive .inspector-workbench { width: 100%; padding: 0; border: 0; }
 .project-interactive .inspector-mode-bar { margin-top: 0; }
@@ -91,10 +90,10 @@
 
 @media (max-width: 720px) {
   .project-page .project-hero-grid,
-  .project-interactive-inner { width: min(100% - 2rem, 1400px); }
-  .project-interactive-facts { grid-template-columns: 1fr; }
-  .project-interactive-facts div { min-height: 5.5rem; }
-  .project-interactive-facts dd { margin-top: 1rem; }
+  .project-interactive-inner { width: calc(100% - 2 * var(--gutter)); }
+  .project-interactive-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .project-interactive-facts div { min-height: 0; padding: 1rem .75rem; }
+  .project-interactive-facts dd { margin-top: .4rem; font-size: .9375rem; overflow-wrap: anywhere; }
   .project-interactive .object-angle-presets button,
   .project-interactive .object-angle-steps button,
   .project-interactive .pcb-annotation-toggle { min-height: 2.75rem; }
@@ -102,3 +101,41 @@
   .project-interactive .pcb-hotspot { width: 2.75rem; height: 2.75rem; }
   .project-interactive .pcb-annotation-toggle { padding-block: 0.7rem; }
 }
+
+/* Case-study framing and shared controls, independent of board coordinates. */
+.engineering-brief { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.5rem 2rem; margin-block:0; padding-block:1.5rem 2rem; }
+.engineering-brief > div { padding-top:1rem; border-top:1px solid var(--rule); }
+.engineering-brief dt { margin-bottom:.4rem; color:var(--red-text); font:500 .75rem/1.5 var(--mono); }
+.engineering-brief dd { margin:0; color:var(--muted); font-size:.9375rem; line-height:1.6; }
+.project-interactive :is(.object-board,.object-view,.object-tool,.object-angle-presets button,.object-angle-steps button,.pcb-object-toolbar button) { min-height:2.75rem; font:500 .875rem/1.5 var(--sans); letter-spacing:0; text-transform:none; }
+.project-interactive :is(.object-drag-hint,.framework-3d-hint,.framework-dual-3d-hint,.object-angle-readout,.pcb-object-stage-label) { font:400 .75rem/1.5 var(--mono); color:#d2d9ce; letter-spacing:0; text-transform:none; }
+.project-interactive :is(.framework-3d-status,.framework-dual-3d-status) { max-width:calc(100% - 2rem); font-size:.75rem; text-transform:none; letter-spacing:0; }
+.project-interactive :is(.object-readout,.pcb-object-readout) { min-height:0; padding:1.25rem; }
+.project-interactive :is(.object-readout h3,.pcb-object-readout h3) { font-size:1.35rem; line-height:1.2; }
+.project-interactive .object-workbench-notes { gap:.5rem; }
+.project-interactive .object-workbench-notes a { min-height:2.75rem; display:inline-flex; align-items:center; font-size:.875rem; }
+.project-interactive .framework-dual-part { opacity:1; background:#0d1210ed; }
+.project-interactive .framework-dual-part strong { font-size:.75rem; letter-spacing:0; }
+.project-interactive .framework-dual-part span { font-size:.875rem; }
+.project-interactive .tramtrace-3d-intro h3 { font-size:1.4rem; margin-bottom:0; }
+.project-interactive .tramtrace-3d-source { font:400 .75rem/1.5 var(--mono); color:var(--object-muted); text-transform:none; letter-spacing:0; }
+@media(max-width:720px) {
+  .engineering-brief { grid-template-columns:1fr; gap:.75rem; padding-block:0 1.5rem; }
+  .engineering-brief > div { display:grid; grid-template-columns:5.5rem 1fr; gap:.75rem; }
+  .engineering-brief dt { margin:0; }
+  .project-interactive-header { gap:1rem; margin-bottom:1.5rem; }
+  .project-interactive-header h2 { font-size:2rem; }
+  .project-interactive .object-toolbar { flex-wrap:wrap; }
+  .project-interactive .object-board-list { flex-basis:100%; width:100%; }
+  .project-interactive .object-board { min-width:0; flex:1; }
+  .project-interactive .object-view-list { flex:1 1 auto; width:auto; }
+  .project-interactive .object-tool { min-width:0; flex:1; padding-inline:.65rem; }
+  .project-interactive .object-view { min-width:0; flex:1; padding-inline:.8rem; }
+  .project-interactive .object-rotation-bar { min-height:0; }
+  .project-interactive :is(.object-angle-presets,.object-angle-steps) { flex:1; }
+  .project-interactive :is(.object-angle-presets button,.object-angle-steps button) { min-width:0; flex:1; padding-inline:.5rem; }
+  .project-interactive :is(.framework-3d-toolbar,.framework-dual-3d-toolbar) .object-view-list { flex-basis:100%; }
+  .project-interactive :is(.framework-3d-toolbar,.framework-dual-3d-toolbar) .object-tool { min-width:0; }
+  .project-interactive .pcb-object-stage-label { flex-wrap:wrap; gap:.2rem 1rem; left:.75rem; right:.75rem; bottom:.6rem; }
+}
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }

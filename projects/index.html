@@ -19,7 +19,7 @@
   <script type="module" src="assets/site-enhancements.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="/projects/#main">Skip to content</a>
   <header class="site-header">
     <div class="header-inner">
       <a class="brand brand-plain" href="./">Andrew Chung</a>
@@ -31,13 +31,14 @@
   </header>
 
   <main id="main">
-    <section class="page-hero"><div class="page-hero-inner shell"><p class="eyebrow">Selected archive</p><h1>Projects</h1><p>PCB hardware, embedded software and browser-based engineering tools.</p></div></section>
+    <section class="page-hero"><div class="page-hero-inner shell"><p class="eyebrow">Design / build / test</p><h1>Projects</h1><p>PCBs, embedded systems, robotics and engineering tools. Explore the builds and the engineering behind them.</p></div></section>
 
     <nav class="project-jumpbar" aria-label="Project sections" data-project-jumpbar>
       <div class="project-jumpbar-inner shell">
         <span class="project-jumpbar-indicator" aria-hidden="true" data-project-jump-indicator></span>
         <a href="projects/#hardware" aria-current="location" data-project-jump data-project-target="hardware">Hardware</a>
         <a href="projects/#interactive" data-project-jump data-project-target="interactive">Tools</a>
+        <a href="projects/#robotics" data-project-jump data-project-target="robotics">Robotics</a>
         <a href="projects/#archive" data-project-jump data-project-target="archive">Archive</a>
       </div>
     </nav>
@@ -46,43 +47,43 @@
       <div class="index-section-heading"><div><p class="eyebrow">01 / Hardware</p><h2 id="hardware-title">Boards and systems</h2></div><p>Personal builds, team avionics and industry PCB work.</p></div>
       <div class="project-catalog">
         <a class="catalog-card wide" href="projects/tramtrace/">
-          <div class="catalog-card-media project-thumb project-thumb-tramtrace"><picture><source type="image/webp" srcset="assets/images/projects/tramtrace-hero-960.webp 960w, assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 90vw"><img src="assets/images/projects/tramtrace-hero-1920.jpg" srcset="assets/images/projects/tramtrace-hero-960.jpg 960w, assets/images/projects/tramtrace-hero-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 90vw" width="1920" height="1280" alt="TramTrace light-rail display PCB illuminated against a black background"></picture></div>
-          <div class="catalog-card-copy"><div><h3>TramTrace</h3><p>A live LED map of Sydney and Parramatta light rail, built around an ESP32.</p><small>100 × 200 mm &middot; Integrated PCB explorer</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-media project-thumb project-thumb-tramtrace"><picture><source type="image/webp" srcset="assets/images/projects/tramtrace-hero-960.webp 960w, assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(max-width: 720px) 100vw, 46vw"><img src="assets/images/projects/tramtrace-hero-1920.jpg" srcset="assets/images/projects/tramtrace-hero-960.jpg 960w, assets/images/projects/tramtrace-hero-1920.jpg 1920w" sizes="(max-width: 720px) 100vw, 46vw" width="1920" height="1280" alt="TramTrace light-rail display PCB illuminated against a black background"></picture></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Embedded / transport</span><h3>TramTrace</h3><p>A live LED map of Sydney and Parramatta light rail, built around an ESP32.</p><small>207.81 × 94.55 mm &middot; Interactive PCB + copper</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card wide" href="projects/skylabs/">
-          <div class="catalog-card-media project-thumb project-thumb-skylabs"><picture><source type="image/webp" srcset="assets/images/projects/skylabs-ground-hero-960.webp 960w, assets/images/projects/skylabs-ground-hero-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 90vw"><img src="assets/images/projects/skylabs-ground-hero-1920.jpg" srcset="assets/images/projects/skylabs-ground-hero-960.jpg 960w, assets/images/projects/skylabs-ground-hero-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 90vw" width="1920" height="1280" alt="Blue UNSW Skylabs ground-station PCB" loading="lazy"></picture></div>
-          <div class="catalog-card-copy"><div><h3>Skylabs</h3><p>Avionics and ground-station PCBs for flight logging and live LoRa telemetry.</p><small>Two boards &middot; Integrated 360° explorer</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-media project-thumb project-thumb-skylabs"><picture><source type="image/webp" srcset="assets/images/projects/skylabs-ground-hero-960.webp 960w, assets/images/projects/skylabs-ground-hero-1920.webp 1920w" sizes="(max-width: 720px) 100vw, 46vw"><img src="assets/images/projects/skylabs-ground-hero-1920.jpg" srcset="assets/images/projects/skylabs-ground-hero-960.jpg 960w, assets/images/projects/skylabs-ground-hero-1920.jpg 1920w" sizes="(max-width: 720px) 100vw, 46vw" width="1920" height="1280" alt="Blue UNSW Skylabs ground-station PCB" loading="lazy"></picture></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Avionics / telemetry</span><h3>Skylabs</h3><p>Avionics and ground-station PCBs for flight logging and live LoRa telemetry.</p><small>Two boards &middot; Interactive boards</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card" href="projects/framework-dual-usb/">
           <div class="catalog-card-media pcb-thumbnail pcb-thumbnail-dual"><picture><source type="image/webp" srcset="assets/images/projects/framework-dual-hero-960.webp 960w, assets/images/projects/framework-dual-hero-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 45vw"><img src="assets/images/projects/framework-dual-hero-1920.jpg" srcset="assets/images/projects/framework-dual-hero-960.jpg 960w, assets/images/projects/framework-dual-hero-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 45vw" width="1920" height="1280" alt="Dual USB-C Framework card centred in a clear case" loading="lazy"></picture></div>
-          <div class="catalog-card-copy"><div><h3>Dual USB-C Framework Card</h3><p>One laptop expansion bay turned into two USB 2.0 Type-C ports.</p><small>CH334F &middot; Integrated WebGL model</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Hardware / USB</span><h3>Dual USB-C Framework Card</h3><p>One laptop expansion bay turned into two USB 2.0 Type-C ports.</p><small>CH334F &middot; Interactive 3D assembly</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card" href="projects/lora-receiver/">
           <div class="catalog-card-media pcb-thumbnail pcb-thumbnail-lora"><picture><source type="image/webp" srcset="assets/images/projects/lora-receiver-system-960.webp 960w, assets/images/projects/lora-receiver-system-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 45vw"><img src="assets/images/projects/lora-receiver-system-1920.jpg" srcset="assets/images/projects/lora-receiver-system-960.jpg 960w, assets/images/projects/lora-receiver-system-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 45vw" width="1920" height="1280" alt="Complete black LoRa Receiver and GPS Module PCB" loading="lazy"></picture></div>
-          <div class="catalog-card-copy"><div><h3>LoRa Receiver + GNSS</h3><p>An ESP32 receiver board with a u-blox NEO-M9N and 915 MHz LoRa.</p><small>Rev A &middot; Tested beyond 1 km</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Embedded / radio + GNSS</span><h3>LoRa Receiver + GNSS</h3><p>An ESP32 receiver board with a u-blox NEO-M9N and 915 MHz LoRa.</p><small>Rev A &middot; Tested beyond 1 km</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card" href="projects/rf-test-board/">
           <div class="catalog-card-media contain-media"><picture><source type="image/webp" srcset="assets/images/projects/rf-test-hero-960.webp 960w, assets/images/projects/rf-test-hero-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 45vw"><img src="assets/images/projects/rf-test-hero-1920.jpg" srcset="assets/images/projects/rf-test-hero-960.jpg 960w, assets/images/projects/rf-test-hero-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 45vw" width="1920" height="1280" alt="RF test board with u.FL and SMA feedlines" loading="lazy"></picture></div>
-          <div class="catalog-card-copy"><div><h3>RF Test Board</h3><p>Feedlines and filter footprints made to be compared on a VNA.</p><small>50 Ω target &middot; u.FL and SMA</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Hardware / RF measurement</span><h3>RF Test Board</h3><p>Feedlines and filter footprints made to be compared on a VNA.</p><small>50 Ω target &middot; u.FL and SMA</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card" href="projects/framework-expansion-card/">
           <div class="catalog-card-media contain-media"><picture><source type="image/webp" srcset="assets/images/projects/framework-black-hero-960.webp 960w, assets/images/projects/framework-black-hero-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 45vw"><img src="assets/images/projects/framework-black-hero-1920.jpg" srcset="assets/images/projects/framework-black-hero-960.jpg 960w, assets/images/projects/framework-black-hero-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 45vw" width="1920" height="1280" alt="Black Framework Expansion Card built around an ESP32-S3" loading="lazy"></picture></div>
-          <div class="catalog-card-copy"><div><h3>Framework ESP32 Card</h3><p>An ESP32-S3 squeezed into a black Framework expansion-card PCB.</p><small>ESP32-S3-MINI-1 &middot; Integrated WebGL model</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Embedded / USB + Wi-Fi</span><h3>Framework ESP32 Card</h3><p>An ESP32-S3 squeezed into a black Framework expansion-card PCB.</p><small>ESP32-S3-MINI-1 &middot; Interactive 3D assembly</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card wide" href="projects/switch-mode-power-supplies/">
-          <div class="catalog-card-media project-thumb project-thumb-switchmode"><picture><source type="image/webp" srcset="assets/images/projects/switchmode-channel-hero-960.webp 960w, assets/images/projects/switchmode-channel-hero-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 90vw"><img src="assets/images/projects/switchmode-channel-hero-1920.jpg" srcset="assets/images/projects/switchmode-channel-hero-960.jpg 960w, assets/images/projects/switchmode-channel-hero-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 90vw" width="1920" height="1280" alt="Isolated Glitch Tester V03 PCB" loading="lazy"></picture></div>
-          <div class="catalog-card-copy"><div><h3>Switchmode Power Supplies</h3><p>Isolated test hardware and production PCB work from my trainee engineering role.</p><small>Industry work &middot; 2026</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-media project-thumb project-thumb-switchmode"><picture><source type="image/webp" srcset="assets/images/projects/switchmode-channel-hero-960.webp 960w, assets/images/projects/switchmode-channel-hero-1920.webp 1920w" sizes="(max-width: 720px) 100vw, 46vw"><img src="assets/images/projects/switchmode-channel-hero-1920.jpg" srcset="assets/images/projects/switchmode-channel-hero-960.jpg 960w, assets/images/projects/switchmode-channel-hero-1920.jpg 1920w" sizes="(max-width: 720px) 100vw, 46vw" width="1920" height="1280" alt="Isolated Glitch Tester V03 PCB" loading="lazy"></picture></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Industry / test hardware</span><h3>Switchmode Power Supplies</h3><p>Isolated test hardware and production PCB work from my trainee engineering role.</p><small>Industry work &middot; 2026</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card" href="projects/metroboard/">
           <div class="catalog-card-media"><img src="assets/images/projects/metroboard1-web.jpg" width="1600" height="900" alt="Metroboard Sydney rail indicator illuminated in a dark room" loading="lazy"></div>
-          <div class="catalog-card-copy"><div><h3>Metroboard</h3><p>A 30 × 30 cm Sydney rail map driven by live data and more than 290 LEDs.</p><small>Personal project &middot; ESP32</small></div><span aria-hidden="true">&rarr;</span></div>
+          <div class="catalog-card-copy"><div><span class="catalog-category">Embedded / transport</span><h3>Metroboard</h3><p>A 300 × 305.7 mm Sydney rail map driven by live data and 291 LEDs.</p><small>Personal project &middot; ESP32</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
       </div>
     </section>
@@ -90,18 +91,24 @@
     <section class="project-index-section project-index-subsection shell" id="interactive" aria-labelledby="tools-title">
       <div class="index-section-heading"><div><p class="eyebrow">02 / Tools</p><h2 id="tools-title">Engineering tools</h2></div><p>Browser-based tools for waveforms, fabrication and semiconductor behaviour.</p></div>
       <div class="project-catalog project-catalog-tools">
-        <a class="catalog-card" href="projects/scopelab/"><div class="catalog-card-media"><picture><source type="image/webp" srcset="assets/images/projects/scopelab-og.webp"><img src="assets/images/projects/scopelab-og.png" width="1731" height="909" alt="ScopeLab browser-based microcontroller and oscilloscope teaching bench" loading="lazy"></picture></div><div class="catalog-card-copy"><div><h3>ScopeLab</h3><p>A micro:bit teaching bench for GPIO and serial-bus waveform labs.</p><small>BBC micro:bit V2</small></div><span aria-hidden="true">&rarr;</span></div></a>
-        <a class="catalog-card" href="projects/lithography-animation/"><div class="catalog-card-media"><img src="assets/images/projects/lithography-simulation-preview.png" width="1600" height="1100" alt="Interactive lithography process animation" loading="lazy"></div><div class="catalog-card-copy"><div><h3>Lithography Animation</h3><p>Pattern transfer, resolution, focus, resist tone and photon statistics.</p><small>ELEC4603</small></div><span aria-hidden="true">&rarr;</span></div></a>
-        <a class="catalog-card" href="projects/mosfet-operating-regions/"><div class="catalog-card-media"><img src="assets/images/projects/mosfet-operating-regions-preview.png" width="1600" height="1000" alt="MOSFET operating-region explorer" loading="lazy"></div><div class="catalog-card-copy"><div><h3>MOSFET Region Explorer</h3><p>A long-channel model for cutoff, weak inversion, triode and saturation.</p><small>ELEC4603</small></div><span aria-hidden="true">&rarr;</span></div></a>
+        <a class="catalog-card" href="projects/scopelab/"><div class="catalog-card-media"><picture><source type="image/webp" srcset="assets/images/projects/scopelab-og.webp"><img src="assets/images/projects/scopelab-og.png" width="1731" height="909" alt="ScopeLab browser-based microcontroller and oscilloscope teaching bench" loading="lazy"></picture></div><div class="catalog-card-copy"><div><span class="catalog-category">Teaching / waveforms</span><h3>ScopeLab</h3><p>A micro:bit teaching bench for GPIO and serial-bus waveform labs.</p><small>BBC micro:bit V2</small></div><span aria-hidden="true">&rarr;</span></div></a>
+        <a class="catalog-card" href="projects/lithography-animation/"><div class="catalog-card-media"><img src="assets/images/projects/lithography-simulation-preview.png" width="1600" height="1100" alt="Interactive lithography process animation" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">Teaching / fabrication</span><h3>Lithography Animation</h3><p>Pattern transfer, resolution, focus, resist tone and photon statistics.</p><small>ELEC4603</small></div><span aria-hidden="true">&rarr;</span></div></a>
+        <a class="catalog-card" href="projects/mosfet-operating-regions/"><div class="catalog-card-media"><img src="assets/images/projects/mosfet-operating-regions-preview.png" width="1600" height="1000" alt="MOSFET operating-region explorer" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">Teaching / semiconductors</span><h3>MOSFET Region Explorer</h3><p>A long-channel model for cutoff, weak inversion, triode and saturation.</p><small>ELEC4603</small></div><span aria-hidden="true">&rarr;</span></div></a>
       </div>
+      <div class="project-list tool-list"><a class="project-list-row" href="shared/flight-review/"><span>↗</span><div><h3>Flight Review</h3><p>Open local binary or Excel flight logs for synchronised 3D replay and analysis.</p></div><small>Skylabs / browser tool</small><b aria-hidden="true">→</b></a></div>
+    </section>
+
+    <section class="project-index-section project-index-subsection shell" id="robotics" aria-labelledby="robotics-title">
+      <div class="index-section-heading"><div><p class="eyebrow">03 / Robotics</p><h2 id="robotics-title">Software meets hardware</h2></div><p>Humanoid robot behaviours, integration and competition preparation.</p></div>
+      <div class="project-list">        <a class="project-list-row" href="projects/runswift/"><span>01</span><div><h3>rUNSWift</h3><p>Humanoid robot software, hardware integration and competition preparation.</p></div><small>ROS2 &middot; Python &middot; C++</small><b aria-hidden="true">&rarr;</b></a></div>
     </section>
 
     <section class="project-index-section project-index-subsection shell" id="archive" aria-labelledby="earlier-title">
-      <div class="index-section-heading"><div><p class="eyebrow">03 / Archive</p><h2 id="earlier-title">Earlier builds</h2></div><p>Earlier embedded and robotics builds.</p></div>
+      <div class="index-section-heading"><div><p class="eyebrow">04 / Archive</p><h2 id="earlier-title">Earlier builds</h2></div><p>Earlier experiments in embedded interaction and handheld radio.</p></div>
       <div class="project-list">
-        <a class="project-list-row" href="projects/runswift/"><span>01</span><div><h3>rUNSWift</h3><p>Humanoid robot software, hardware integration and competition preparation.</p></div><small>ROS2 &middot; Python &middot; C++</small><b aria-hidden="true">&rarr;</b></a>
-        <a class="project-list-row" href="projects/lora-talkie/"><span>02</span><div><h3>LoRa Talkie</h3><p>A one-button Morse message composer and handheld 915 MHz LoRa radio.</p></div><small>Heltec V3 &middot; C++</small><b aria-hidden="true">&rarr;</b></a>
-        <a class="project-list-row" href="projects/dash/"><span>03</span><div><h3>Dash</h3><p>An ESP32 focus companion with animated eyes, gestures and app-free session control.</p></div><small>ESP32 &middot; FreeRTOS</small><b aria-hidden="true">&rarr;</b></a>
+
+        <a class="project-list-row" href="projects/lora-talkie/"><span>01</span><div><h3>LoRa Talkie</h3><p>A one-button Morse message composer and handheld 915 MHz LoRa radio.</p></div><small>Heltec V3 &middot; C++</small><b aria-hidden="true">&rarr;</b></a>
+        <a class="project-list-row" href="projects/dash/"><span>02</span><div><h3>Dash</h3><p>An ESP32 focus companion with animated eyes, gestures and app-free session control.</p></div><small>ESP32 &middot; FreeRTOS</small><b aria-hidden="true">&rarr;</b></a>
       </div>
     </section>
   </main>

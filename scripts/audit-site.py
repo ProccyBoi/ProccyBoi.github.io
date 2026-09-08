@@ -95,6 +95,14 @@ def main() -> int:
             parent = relative_page.parent.as_posix()
             base_href = f"/{parent}/" if parent != "." else "/"
 
+        for skip in document.xpath("//a[contains(@class, 'skip-link')]"):
+            target = local_target(skip.get("href", ""), base_href)
+            if not target or target[0].resolve() != page.resolve() or not document.xpath(
+                "//main[@id=$fragment]", fragment=target[1] if target else ""
+            ):
+                errors.append(f"{relative_page}: skip link must target this page's main landmark")
+        checks += 1  # skip links must not resolve to another page through a base element
+
         for image in document.xpath("//img"):
             if image.get("alt") is None:
                 errors.append(f"{page.relative_to(ROOT)}: image missing alt text")

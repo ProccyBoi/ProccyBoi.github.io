@@ -2,7 +2,7 @@
 
 .booking-hero {
   position: relative;
-  border-bottom: 5px solid var(--black);
+  border-bottom: 1px solid var(--rule);
 }
 
 .booking-hero::after {
@@ -16,21 +16,21 @@
 }
 
 .booking-hero-inner {
-  min-height: 34rem;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.65fr);
   align-items: end;
   gap: clamp(3rem, 8vw, 8rem);
-  padding-block: clamp(5rem, 9vw, 8rem) clamp(3.75rem, 6vw, 5.5rem);
+  padding-block: var(--section-space);
 }
 
 .booking-hero-copy h1 {
   max-width: 10ch;
   margin-bottom: 1.35rem;
-  font-size: clamp(4.2rem, 9vw, 8.5rem);
+  font-size: clamp(3rem, 5.5vw, 5rem);
   font-weight: 720;
   letter-spacing: -0.08em;
-  line-height: 0.86;
+  line-height: 1.04;
 }
 
 .booking-hero-copy > p:last-child {
@@ -46,7 +46,7 @@
   border: 1px solid var(--black);
   background: var(--black);
   color: var(--paper);
-  box-shadow: 0.45rem 0.5rem 0 rgba(57, 49, 38, 0.13);
+  box-shadow: none;
 }
 
 .booking-clock::before {
@@ -66,7 +66,7 @@
 .booking-choice-group legend,
 .booking-selection > span {
   font-family: var(--mono);
-  font-size: 0.65rem;
+  font-size: .75rem;
   font-weight: 500;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -515,7 +515,7 @@
 .booking-form-row label {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.65rem;
+  font-size: .75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -653,12 +653,13 @@
   }
 
   .booking-hero-inner {
-    gap: 2.75rem;
-    padding-block: 3.75rem 4rem;
+    gap: 2rem;
+    padding-block: 2.5rem;
   }
 
   .booking-hero-copy h1 {
-    font-size: clamp(3.8rem, 18vw, 5.8rem);
+    font-size: clamp(2.5rem, 11vw, 3.25rem);
+    letter-spacing: -0.055em;
   }
 
   .booking-desk {
@@ -678,7 +679,7 @@
   }
 
   .booking-calendar {
-    min-height: 34rem;
+    min-height: 0;
     padding-inline: var(--gutter);
   }
 

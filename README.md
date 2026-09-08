@@ -6,7 +6,7 @@ Personal portfolio and public project archive published at:
 
 ## Main routes
 
-- `/` — Polaroid-inspired landing page with an engineering introduction, condensed experience and selected projects
+- `/` — hardware-led portfolio with selected builds, interactive data paths and a concise engineering introduction
 - `/about/` — profile, experience, education, tools and public CV
 - `/book/` — live free/busy booking page for 15–60 minute online or in-person meetings
 - `/projects/` — complete project index, including browser-based engineering tools
@@ -24,7 +24,15 @@ Personal portfolio and public project archive published at:
 - `/shared/` — public files organised by uni, work and projects
 - `/shared/projects/skylabs/f110211/` — interactive F110211 flight replay
 
-The legacy `/lab/` and `/reports/f110211/` routes redirect to their canonical project pages so previously shared links continue to work.
+Legacy links under `/lab/` and `/reports/f110211/` remain supported. Most redirect to their canonical project pages; the RF Test Board and Metroboard lab routes retain their standalone explorers.
+
+## Shared presentation and explorers
+
+Design tokens and shared page patterns live in `assets/site.css`, with case-study layouts in `assets/project-flow.css` and `assets/project-integrated.css`. The site uses self-hosted Archivo and IBM Plex Mono fonts.
+
+`assets/explorer-runtime.js` handles rendering visibility and unsupported-WebGL states for the four WebGL engines. It pauses rendering offscreen or in a hidden tab without replacing source-derived geometry, textures, component placement or models. Skylabs keeps its own rendering and interaction system.
+
+Run `python scripts/audit-site.py` for structural, link, asset and skip-link checks. Browser QA is still required for visual changes and interactive hardware.
 
 ## Content rules
 

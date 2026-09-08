@@ -16,17 +16,17 @@
   <link rel="preload" as="image" href="assets/images/projects/framework-black-hero-960.webp" media="(max-width: 760px)" type="image/webp">
   <link rel="preload" as="image" href="assets/images/projects/framework-black-hero-1920.webp" media="(min-width: 761px)" type="image/webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
-  <link rel="stylesheet" href="assets/project-flow.css?v=20260901a">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
   <link rel="stylesheet" href="assets/skylabs-object.css?v=20260831a">
   <link rel="stylesheet" href="assets/framework-3d.css?v=20260830b">
-  <link rel="stylesheet" href="assets/project-integrated.css?v=20260901b">
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
   <script src="assets/site.js" defer></script>
-  <script src="assets/vendor/three.min.js" defer></script>
+  <script src="assets/explorer-runtime.js?v=20260907" defer></script><script src="assets/vendor/three.min.js" defer></script>
   <script src="assets/vendor/GLTFLoader.js" defer></script>
-  <script src="assets/framework-3d.js?v=20260830c" defer></script>
+  <script src="assets/framework-3d.js?v=20260907" defer></script>
 </head>
 <body class="project-page framework-3d-body">
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="/projects/framework-expansion-card/#main">Skip to content</a>
 
   <header class="site-header">
     <div class="header-inner">
@@ -61,6 +61,7 @@
             <div><dt>Module</dt><dd>ESP32-S3-MINI-1</dd></div>
             <div><dt>USB interface</dt><dd>CH340K</dd></div>
           </dl>
+          <div class="project-hero-actions"><a href="projects/framework-expansion-card/#explore">Explore the hardware →</a><a href="projects/framework-expansion-card/#details">Read the engineering</a></div>
         </div>
         <div class="project-hero-media contain-media">
           <picture>
@@ -70,11 +71,13 @@
         </div>
       </div>
     </section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>An ESP32-S3 development board integrated into a laptop expansion bay.</dd></div><div><dt>Design constraint</dt><dd>0.6 mm PCB, direct USB-C mating and an unobstructed antenna.</dd></div><div><dt>Built hardware</dt><dd>Black two-layer PCB, assembled in the Framework enclosure.</dd></div></dl>
+
 
     <section class="project-interactive framework-3d-main" id="explore" aria-labelledby="framework-explore-title" data-framework-inspector>
       <div class="project-interactive-inner">
         <header class="project-interactive-header">
-          <div><p class="eyebrow">Source-derived 3D</p><h2 id="framework-explore-title">See how it fits.</h2></div>
+          <div><p class="eyebrow">Source-derived 3D</p><h2 id="framework-explore-title">Inside the ESP32 card.</h2></div>
           <p>The enclosure is Framework's mechanical STL and the populated PCB is exported from the working KiCad design. Orbit the assembly, remove the shell or pull the two apart.</p>
         </header>
         <div class="object-toolbar framework-3d-toolbar" aria-label="3D model controls">

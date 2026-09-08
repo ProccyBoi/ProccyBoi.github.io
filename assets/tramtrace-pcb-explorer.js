@@ -9,7 +9,8 @@
   const THREE = window.THREE;
   const d2r = THREE.MathUtils.degToRad;
   const clamp = THREE.MathUtils.clamp;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  const renderer = window.PortfolioExplorer.createRenderer(THREE, { canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  if (!renderer) return;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -21,6 +22,10 @@
   scene.background = new THREE.Color(0x080a0b);
   const camera = new THREE.PerspectiveCamera(34, 1, Math.max(0.5, Math.min(config.width, config.height) * 0.01), Math.max(config.width, config.height) * 12);
   const board = new THREE.Group();
+  // Correct the procedural fallback's source-to-world handedness as one
+  // assembly. The production KiCad GLB is a separate scene node below and
+  // retains its exported coordinate frame and transforms.
+  board.scale.z = -1;
   board.rotation.y = d2r(config.boardRotation || 0);
   scene.add(board);
 
@@ -28,6 +33,10 @@
   const key = new THREE.DirectionalLight(0xfffbf4, 1.65); key.position.set(-0.65, 1.4, 0.85).multiplyScalar(Math.max(config.width, config.height)); key.castShadow = true; scene.add(key);
   const fill = new THREE.DirectionalLight(0xd9e4ef, 0.58); fill.position.set(1.2, 0.75, -1).multiplyScalar(Math.max(config.width, config.height)); scene.add(fill);
   const rim = new THREE.DirectionalLight(0xffd7ae, 0.32); rim.position.set(-1.2, 0.35, -0.8).multiplyScalar(Math.max(config.width, config.height)); scene.add(rim);
+
+  // Soft reflected light keeps underside inspection readable.
+  const underside = new THREE.DirectionalLight(0xe1e7e3, 0.85);
+  underside.position.set(0.4, -1, 0.6); scene.add(underside);
 
   const materials = {
     edge: new THREE.MeshStandardMaterial({ color: config.edgeColor || 0x15191a, roughness: 0.78, metalness: 0.02 }),
@@ -246,11 +255,16 @@
   // cannot load GLB, but production uses the source CAD itself: KiCad keeps
   // every footprint reference as a named scene node, so both picking and the
   // exploded view can operate on the real component geometry.
+  const sourceStatus = document.createElement('p');
+  sourceStatus.className = 'explorer-source-status';
+  sourceStatus.setAttribute('role', 'status');
+  sourceStatus.textContent = 'Loading the production KiCad assembly…';
+  canvas.parentElement.append(sourceStatus);
   let exactModelReady = false;
   if (config.exactModel && THREE.GLTFLoader) {
     const componentByRef = new Map((config.components || []).map((spec) => [spec.ref, spec]));
     const ledByRef = new Map((config.ledInstances || []).map((p) => [p[3], {
-      ref: p[3], name: p[4] || 'WS2815C-2020', copy: `${p[3]} · ${p[4] || 'WS2815C-2020'} · exact KiCad 3D model`, explode: config.ledExplode || 12, delay: 0.05
+      ref: p[3], name: 'WS2812C-2020 RGB pixel', copy: `${p[3]} · WS2812C-2020-V1/W · exact KiCad 3D model`, explode: config.ledExplode || 12, delay: 0.05
     }]));
     const sourceCentre = config.exactModelCenter || [0, 0];
     const sourceScale = config.exactModelScale || 1000;
@@ -295,13 +309,16 @@
       board.visible = false;
       exactModelReady = true;
       root.dataset.sourceModel = 'kicad-glb';
+      sourceStatus.hidden = true;
       announce('Exact KiCad 3D assembly ready');
     }, undefined, (error) => {
       console.warn('TramTrace exact KiCad GLB failed to load; using procedural fallback', error);
       root.dataset.sourceModel = 'fallback';
+      sourceStatus.textContent = 'The production 3D assembly could not load. This simplified fallback retains source placements; use the copper and inspection views below for board detail.';
     });
   } else {
     root.dataset.sourceModel = 'fallback';
+      sourceStatus.textContent = 'The production 3D assembly could not load. This simplified fallback retains source placements; use the copper and inspection views below for board detail.';
   }
 
   let exploded = 0, explodeTarget = 0;
@@ -313,7 +330,7 @@
 
   const target = new THREE.Vector3(0,0,0); let distance = config.cameraDistance || Math.max(config.width, config.height) * 1.35; let targetDistance = distance; let yaw = d2r(config.startYaw == null ? -28 : config.startYaw); let pitch = d2r(config.startPitch == null ? 50 : config.startPitch); let targetYaw = yaw, targetPitch = pitch;
   const viewButtons=[...root.querySelectorAll('[data-pcb-view]')];
-  const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   let liveRegion=document.querySelector('[data-live-region]');
   if(!liveRegion){
     liveRegion=document.createElement('span');
@@ -324,17 +341,19 @@
   const announce=(message)=>{if(liveRegion)liveRegion.textContent=message;};
   const markCustomView=()=>viewButtons.forEach((b)=>b.setAttribute('aria-pressed','false'));
   canvas.setAttribute('aria-keyshortcuts','ArrowLeft ArrowRight ArrowUp ArrowDown + - Home');
+  // Frame the complete assembly at the current viewport aspect ratio.
+  const fitDistance = (flat = false) => (flat ? Math.max(config.width, config.height) : Math.hypot(config.width, config.height)) * 1.85 / Math.min(camera.aspect, 1);
   const setPreset = (name) => {
-    if (name === 'top') { targetYaw=0; targetPitch=d2r(89.2); targetDistance=Math.max(config.width, config.height)*1.2; }
-    else if (name === 'bottom') { targetYaw=0; targetPitch=d2r(-89.2); targetDistance=Math.max(config.width, config.height)*1.2; }
-    else if (name === 'side') { targetYaw=d2r(-90); targetPitch=d2r(10); targetDistance=Math.max(config.width, config.height)*1.2; }
-    else { name='angle'; targetYaw=d2r(config.startYaw == null ? -28 : config.startYaw); targetPitch=d2r(config.startPitch == null ? 50 : config.startPitch); targetDistance=config.cameraDistance || Math.max(config.width, config.height)*1.35; }
+    if (name === 'top') { targetYaw=0; targetPitch=d2r(89.2); targetDistance=fitDistance(true); }
+    else if (name === 'bottom') { targetYaw=0; targetPitch=d2r(-89.2); targetDistance=fitDistance(true); }
+    else if (name === 'side') { targetYaw=d2r(-90); targetPitch=d2r(10); targetDistance=fitDistance(true); }
+    else { name='angle'; targetYaw=d2r(config.startYaw == null ? -28 : config.startYaw); targetPitch=d2r(config.startPitch == null ? 50 : config.startPitch); targetDistance=Math.max(config.cameraDistance || 0, fitDistance()); }
     viewButtons.forEach((b)=>b.setAttribute('aria-pressed',b.dataset.pcbView===name?'true':'false'));
   };
 
   viewButtons.forEach((b) => b.addEventListener('click', () => { setPreset(b.dataset.pcbView); announce(`${b.dataset.pcbView} camera view`); }));
   setPreset('angle');
-  const explodeButton = root.querySelector('[data-pcb-explode]'); explodeButton?.addEventListener('click', () => { explodeTarget = explodeTarget > 0.5 ? 0 : 1; explodeButton.setAttribute('aria-pressed', explodeTarget ? 'true' : 'false'); explodeButton.textContent = explodeTarget ? 'Assemble' : 'Explode'; targetDistance = Math.max(config.width, config.height) * (explodeTarget ? 1.55 : 1.35); announce(explodeTarget?'Exploded board view':'Assembled board view'); });
+  const explodeButton = root.querySelector('[data-pcb-explode]'); explodeButton?.addEventListener('click', () => { explodeTarget = explodeTarget > 0.5 ? 0 : 1; explodeButton.setAttribute('aria-pressed', explodeTarget ? 'true' : 'false'); explodeButton.textContent = explodeTarget ? 'Assemble' : 'Explode'; targetDistance = fitDistance() * (explodeTarget ? 1.2 : 1); announce(explodeTarget?'Exploded board view':'Assembled board view'); });
   root.querySelector('[data-pcb-reset]')?.addEventListener('click', () => { explodeTarget=0; if(explodeButton){explodeButton.textContent='Explode';explodeButton.setAttribute('aria-pressed','false');} setPreset('angle'); announce('3D view reset'); });
 
   const pointers=new Map();
@@ -394,25 +413,22 @@
   const showPart=(o)=>{const part=o?.userData?.ref?o:o?.parent; const ref=part?.userData?.ref||'BOARD'; if(refEl)refEl.textContent=ref; if(nameEl)nameEl.textContent=part?.userData?.name||config.boardName; if(copyEl)copyEl.textContent=part?.userData?.copy||config.boardCopy;}; showPart(null);
   canvas.addEventListener('pointerleave',()=>{if(!pointers.size){mouse.set(2,2);showPart(null);}});
 
-  const resize=()=>{const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};
+  const resize=()=>{const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const preset=viewButtons.find(b=>b.getAttribute('aria-pressed')==='true');if(preset&&!explodeTarget)setPreset(preset.dataset.pcbView);};
   new ResizeObserver(resize).observe(canvas); resize();
 
   const clock=new THREE.Clock();
-  const animate=()=>{requestAnimationFrame(animate); const dt=Math.min(0.05,clock.getDelta()); yaw=THREE.MathUtils.damp(yaw,targetYaw,reducedMotion?40:7,dt); pitch=THREE.MathUtils.damp(pitch,targetPitch,reducedMotion?40:7,dt); distance=THREE.MathUtils.damp(distance,targetDistance,reducedMotion?40:7,dt); exploded=THREE.MathUtils.damp(exploded,explodeTarget,reducedMotion?40:6,dt); updateExplode();
+  const animate=()=>{const reducedMotion=motionPreference.matches; const dt=Math.min(0.05,clock.getDelta()); yaw=reducedMotion?targetYaw:THREE.MathUtils.damp(yaw,targetYaw,7,dt); pitch=reducedMotion?targetPitch:THREE.MathUtils.damp(pitch,targetPitch,7,dt); distance=reducedMotion?targetDistance:THREE.MathUtils.damp(distance,targetDistance,7,dt); exploded=reducedMotion?explodeTarget:THREE.MathUtils.damp(exploded,explodeTarget,6,dt); updateExplode();
     const cp=Math.cos(pitch),sp=Math.sin(pitch),cy=Math.cos(yaw),sy=Math.sin(yaw); camera.position.set(target.x+distance*cp*sy,target.y+distance*sp,target.z+distance*cp*cy); camera.lookAt(target);
     ray.setFromCamera(mouse,camera); const hits=ray.intersectObjects(pickables,true); const first=hits[0];
     if(first?.object?.userData?.instanceInfo&&first.instanceId!=null){
       const info=first.object.userData.instanceInfo[first.instanceId]||[];
       const ref=info[3]||`LED ${first.instanceId+1}`;
-      const station=info[4]||'RGB pixel';
-      const line=info[5]||'';
-      const isStatus=line==='STATUS'||ref==='STATUS';
-      const key=`${ref}:${station}:${line}:${first.instanceId}`;
-      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent=station;if(copyEl)copyEl.textContent=isStatus?`${ref} · controller status RGB pixel.`:`${station}${line&&line!=='MAP'?` · ${line}`:''} · ${ref} rail-map RGB pixel.`;}
+      const key=`${ref}:${first.instanceId}`;
+      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent='WS2812C-2020 RGB pixel';if(copyEl)copyEl.textContent=`${ref} · WS2812C-2020-V1/W · source-positioned RGB pixel.`;}
     }else{
       const hit=first?.object; let tagged=hit; while(tagged&&!tagged.userData.ref)tagged=tagged.parent;
       if(tagged!==hover){hover=tagged;showPart(hover);}
     }
     renderer.render(scene,camera); };
-  animate();
+  window.PortfolioExplorer.start(animate, canvas);
 })();
