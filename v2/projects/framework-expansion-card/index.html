@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Framework ESP32 Card | Andrew Chung</title>
+  <meta name="description" content="A 0.6 mm Framework expansion card built around an ESP32-S3-MINI-1, now shown in its finished black-PCB revision.">
+  <meta name="theme-color" content="#f5f5f2">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Framework ESP32 Card | Andrew Chung">
+  <meta property="og:description" content="An ESP32-S3 development board built into the Framework expansion-card form factor, including the finished black-PCB revision.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/framework-expansion-card/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/framework-black-hero-1920.jpg">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/framework-expansion-card/">
+
+
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
+  <link rel="stylesheet" href="assets/skylabs-object.css?v=20260831a">
+  <link rel="stylesheet" href="assets/framework-3d.css?v=20260830b">
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
+  <script src="assets/site.js" defer></script>
+  <script src="assets/explorer-runtime.js?v=20260907" defer></script><script src="assets/vendor/three.min.js" defer></script>
+  <script src="assets/vendor/GLTFLoader.js" defer></script>
+  <script src="assets/framework-3d.js?v=20260907" defer></script>
+<link rel="preload" as="image" href="/assets/images/v2/framework-cad.webp" type="image/webp">
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+  <link rel="stylesheet" href="/assets/v2-motion.css">
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2-motion.js" defer></script>
+</head>
+<body class="v2 v2-case project-page framework-3d-body">
+  <a class="skip-link" href="/v2/projects/framework-expansion-card/#main">Skip to content</a>
+
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v2/">Andrew Chung <span>ENGINEERING</span></a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v2/projects/" aria-current="page">Work</a>
+        <a href="/v2/about/">About</a>
+        <a class="v2-nav-contact" href="/v2/about/#contact">Let’s talk <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Framework ESP32 Card</span><div class="v2-case-nav-links"><a href="/v2/projects/framework-expansion-card/#overview" data-v2-section>Overview</a><a href="/v2/projects/framework-expansion-card/#explore" data-v2-section>Interactive</a><a href="/v2/projects/framework-expansion-card/#details" data-v2-section>Engineering</a><a href="/v2/projects/framework-expansion-card/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+
+  <main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><p class="v2-case-number">Selected work <span>04 / 14</span></p><div>
+            <p class="eyebrow">Custom hardware</p>
+            <h1 id="project-title">Framework ESP32 Card</h1>
+            <p>An ESP32-S3 development board that disappears into a Framework laptop bay.</p>
+          </div><div class="project-hero-actions"><a href="/v2/projects/framework-expansion-card/#explore">Explore the hardware <span aria-hidden="true">↗</span></a><a href="/v2/projects/framework-expansion-card/#details">Engineering details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/framework-cad.webp" width="1600" height="1200" alt="Source-derived CAD rendering of the populated Framework ESP32 card" fetchpriority="high"><figcaption class="v2-cad-caption">Source-derived geometry / engineering render</figcaption></figure></div>
+    <div class="v2-case-specs shell"><dl class="project-meta">
+            <div><dt>PCB</dt><dd>0.6 mm, black 2-layer FR-4</dd></div>
+            <div><dt>Form factor</dt><dd>Framework Expansion Card</dd></div>
+            <div><dt>Module</dt><dd>ESP32-S3-MINI-1</dd></div>
+            <div><dt>USB interface</dt><dd>CH340K</dd></div>
+          </dl></div></section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>An ESP32-S3 development board integrated into a laptop expansion bay.</dd></div><div><dt>Design constraint</dt><dd>0.6 mm PCB, direct USB-C mating and an unobstructed antenna.</dd></div><div><dt>Built hardware</dt><dd>Black two-layer PCB, assembled in the Framework enclosure.</dd></div></dl>
+
+
+    <section class="project-interactive framework-3d-main" id="explore" aria-labelledby="framework-explore-title" data-framework-inspector>
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header">
+          <div><p class="eyebrow">Source-derived 3D</p><h2 id="framework-explore-title">Inside the ESP32 card.</h2></div>
+          <p>The enclosure is Framework's mechanical STL and the populated PCB is exported from the working KiCad design. Orbit the assembly, remove the shell or pull the two apart.</p>
+        </header>
+        <div class="object-toolbar framework-3d-toolbar" aria-label="3D model controls">
+          <div class="object-view-list" aria-label="Camera angle"><button type="button" class="object-view is-active" data-framework-view="iso" aria-pressed="true">Angle</button><button type="button" class="object-view" data-framework-view="top" aria-pressed="false">Top</button><button type="button" class="object-view" data-framework-view="side" aria-pressed="false">Side</button></div>
+          <button type="button" class="object-tool" data-framework-shell aria-pressed="true">Hide shell</button><button type="button" class="object-tool" data-framework-explode aria-pressed="false">Explode</button><button type="button" class="object-tool object-reset" data-framework-reset>Reset</button>
+        </div>
+        <div class="object-stage framework-3d-stage" data-framework-stage tabindex="0" aria-label="Interactive 3D Framework ESP32 expansion card. Drag to rotate, scroll or pinch to zoom."><canvas data-framework-canvas aria-hidden="true"></canvas><p class="framework-3d-status" data-framework-status>Loading board and enclosure…</p><p class="object-drag-hint framework-3d-hint"><span aria-hidden="true">&larr;</span> Drag to orbit · scroll to zoom <span aria-hidden="true">&rarr;</span></p></div>
+        <dl class="project-interactive-facts"><div><dt>PCB</dt><dd>0.6 mm FR-4</dd></div><div><dt>Module</dt><dd>ESP32-S3-MINI-1</dd></div><div><dt>Enclosure</dt><dd>Framework geometry</dd></div></dl>
+      </div>
+    </section>
+
+    <div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="framework-summary">
+        <h2 id="framework-summary">A laptop-bay dev board</h2>
+        <div class="project-prose">
+          <p>I liked the Framework expansion-card system, but I wanted a module that could do more than expose another laptop port. This one puts an ESP32-S3-MINI-1 in the bay and leaves the radio visible through a clear shell.</p>
+          <p>The 0.6 mm board thickness is part of the electrical design as much as the mechanical one: it lets the card mate with the laptop's USB-C connector without a separate plug or interposer.</p>
+          <p>The latest revision swaps the original green board for black solder mask and white silkscreen. It is now assembled in the clear enclosure, with the antenna end of the ESP32 left unobstructed.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="framework-circuit">
+        <h2 id="framework-circuit">Programming and power</h2>
+        <div class="project-prose">
+          <p>A CH340K provides the USB serial connection. The BC817 transistor pair handles automatic boot and reset, so uploading firmware feels like using a normal development board rather than a bare module.</p>
+          <p>An AMS1117-3.3 supplies the ESP32. None of those parts are exotic; fitting them, the USB routing and the module keep-out into the expansion-card outline was the real exercise.</p>
+        </div>
+      </section>
+
+      <h2 class="gallery-title" id="build">Build</h2>
+      <section class="project-gallery" aria-labelledby="build">
+        <figure class="wide" data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/framework-black-overview-960.webp 960w, assets/images/projects/framework-black-overview-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 90vw">
+            <img src="assets/images/projects/framework-black-overview-1920.jpg" srcset="assets/images/projects/framework-black-overview-960.jpg 960w, assets/images/projects/framework-black-overview-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 90vw" width="1920" height="1280" loading="lazy" alt="Finished black Framework ESP32 card in its clear enclosure" data-zoomable data-caption="Black revision / finished assembly">
+          </picture>
+          <figcaption><span>Black revision</span><span>Finished assembly</span></figcaption>
+        </figure>
+        <figure data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/framework-black-programming-960.webp 960w, assets/images/projects/framework-black-programming-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 45vw">
+            <img src="assets/images/projects/framework-black-programming-1920.jpg" srcset="assets/images/projects/framework-black-programming-960.jpg 960w, assets/images/projects/framework-black-programming-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Close-up of the USB-C, programming and power components on the black PCB" data-zoomable data-caption="USB and power / black revision">
+          </picture>
+          <figcaption><span>USB and power</span><span>Black revision</span></figcaption>
+        </figure>
+        <figure class="wide" data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/framework-angle-960.webp 960w, assets/images/projects/framework-angle-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 90vw">
+            <img src="assets/images/projects/framework-angle-1920.jpg" srcset="assets/images/projects/framework-angle-960.jpg 960w, assets/images/projects/framework-angle-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 90vw" width="1920" height="1280" loading="lazy" alt="Earlier green revision of the Framework card with its ESP32-S3 module and USB-C connector" data-zoomable data-caption="Earlier revision / green PCB">
+          </picture>
+          <figcaption><span>Earlier revision</span><span>Green PCB</span></figcaption>
+        </figure>
+        <figure data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/framework-esp32-960.webp 960w, assets/images/projects/framework-esp32-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 45vw">
+            <img src="assets/images/projects/framework-esp32-1920.jpg" srcset="assets/images/projects/framework-esp32-960.jpg 960w, assets/images/projects/framework-esp32-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Macro view of the Espressif ESP32-S3-MINI-1 module" data-zoomable data-caption="ESP32-S3-MINI-1 / macro">
+          </picture>
+          <figcaption><span>ESP32-S3-MINI-1</span><span>Macro</span></figcaption>
+        </figure>
+        <figure data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/framework-detail-960.webp 960w, assets/images/projects/framework-detail-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 45vw">
+            <img src="assets/images/projects/framework-detail-1920.jpg" srcset="assets/images/projects/framework-detail-960.jpg 960w, assets/images/projects/framework-detail-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Close-up of the green PCB edge, module and USB-C connector inside the clear case" data-zoomable data-caption="PCB edge / component detail">
+          </picture>
+          <figcaption><span>PCB edge</span><span>Component detail</span></figcaption>
+        </figure>
+      </section>
+    </div>
+
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">Continue exploring</p><div>
+      <a href="/v2/projects/framework-dual-usb/"><span>← Previous case study</span><strong>Dual USB-C Framework Card</strong></a>
+      <a href="/v2/projects/lora-receiver/"><span>Next case study →</span><strong>LoRa Receiver + GNSS</strong></a>
+    </div><a class="v2-all-work" href="/v2/projects/">View the complete collection <span aria-hidden="true">↗</span></a></nav>
+  </main>
+
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung.</a><div class="v2-footer-links"><a href="/v2/projects/">Work</a><a href="/v2/about/#contact">Get in touch ↗</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Electrical engineering. Sydney, Australia.</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+
+  <dialog class="lightbox" data-lightbox aria-label="Image viewer">
+    <div class="lightbox-frame">
+      <div class="lightbox-image-wrap"><img src="assets/images/projects/framework-black-hero-960.jpg" alt="" data-lightbox-image></div>
+      <div class="lightbox-controls">
+        <button class="button icon-button" type="button" data-lightbox-prev aria-label="Previous image">&larr;</button>
+        <p data-lightbox-caption>Framework ESP32 Card</p>
+        <button class="button icon-button" type="button" data-lightbox-next aria-label="Next image">&rarr;</button>
+        <button class="button icon-button" type="button" data-lightbox-close aria-label="Close image viewer">&times;</button>
+      </div>
+    </div>
+  </dialog>
+  <p class="live-region" aria-live="polite" data-live-region data-framework-live></p>
+</body>
+</html>

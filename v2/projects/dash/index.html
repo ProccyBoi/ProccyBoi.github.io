@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Dash | Andrew Chung</title>
+  <meta name="description" content="Dash is an ESP32 focus companion with animated eyes, IMU gestures, a phone-based captive portal, session tracking and ESP-NOW experiments.">
+  <meta name="theme-color" content="#f5f5f2">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Dash | Andrew Chung">
+  <meta property="og:description" content="An ESP32 focus companion built around gestures, animated eyes and app-free session control.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/dash/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/dash1-web.jpg">
+  <meta property="og:image:alt" content="Dash safe-driving detector PCB">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/dash/">
+  <link rel="preload" as="image" href="assets/images/projects/dash1-web.jpg">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
+  <script src="assets/site.js" defer></script>
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+  <link rel="stylesheet" href="/assets/v2-motion.css">
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2-motion.js" defer></script>
+</head>
+<body class="v2 v2-case">
+  <a class="skip-link" href="/v2/projects/dash/#main">Skip to content</a>
+
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v2/">Andrew Chung <span>ENGINEERING</span></a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v2/projects/" aria-current="page">Work</a>
+        <a href="/v2/about/">About</a>
+        <a class="v2-nav-contact" href="/v2/about/#contact">Let’s talk <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Dash</span><div class="v2-case-nav-links"><a href="/v2/projects/dash/#overview" data-v2-section>Overview</a><a href="/v2/projects/dash/#details" data-v2-section>Engineering</a><a href="/v2/projects/dash/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+<main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><p class="v2-case-number">Selected work <span>14 / 14</span></p><div>
+            <p class="eyebrow">Personal project</p>
+            <h1 id="project-title">Dash</h1>
+            <p>An ESP32 focus companion that grew out of a vehicle-mounted sensor prototype.</p>
+          </div><div class="project-hero-actions"><a href="/v2/projects/dash/#details">Read the story <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media">
+          <img src="assets/images/projects/dash1-web.jpg" width="1600" height="900" alt="Dash ESP32 electronics PCB close-up">
+        </figure></div>
+    <div class="v2-case-specs shell"><dl class="project-meta">
+            <div><dt>Type</dt><dd>Personal project</dd></div>
+            <div><dt>Core</dt><dd>ESP32-WROOM</dd></div>
+            <div><dt>Sensing</dt><dd>MPU-6050 / capacitive touch</dd></div>
+            <div><dt>Interface</dt><dd>SH1106 OLED / captive portal</dd></div>
+          </dl></div></section>
+<dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>The interaction</dt><dd>Animated eyes, gestures and a focus timer in an ESP32 desk companion.</dd></div><div><dt>The firmware</dt><dd>A coordinating state machine with separate sensing, display and audio tasks.</dd></div><div><dt>The workflow</dt><dd>A local Wi-Fi captive portal for sessions, settings and recent statistics.</dd></div></dl>
+
+    <div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="dash-summary">
+        <h2 id="dash-summary">From the car to the desk</h2>
+        <div class="project-prose">
+          <p>Dash started as the vehicle-mounted safe-driving prototype shown in these photos. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.</p>
+          <p>The current version is a cube-shaped study companion. Its screen is a pair of animated eyes, so a tap, shake, change of orientation or completed session gets a reaction without turning the device into another notification-heavy display.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="dash-firmware">
+        <h2 id="dash-firmware">The firmware underneath</h2>
+        <div class="project-prose">
+          <p>A single state machine coordinates the character, focus timer, games and low-power states. The MPU-6050 is sampled at 100 Hz for software tap and orientation detection, while separate tasks look after the OLED, audio, touch input and session timing.</p>
+          <p>Dash creates its own Wi-Fi access point and serves a captive portal from LittleFS, so a phone can start a study session, see recent stats and change settings without an app or account. Completed sessions are kept in a rolling on-device log, and in-progress sessions can survive a reset through RTC memory.</p>
+          <p>I also built reaction-time and gesture games, OTA update support and an ESP-NOW layer for experimenting with group sessions between nearby units. Power management drops the ESP32 from 240 to 80 MHz as Dash gets drowsy, then uses deep sleep when it has been left alone.</p>
+          <div class="hero-actions"><a class="button" href="https://github.com/JPhusion/dash" target="_blank" rel="noreferrer">View the firmware</a></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="dash-gallery" data-reveal>
+        <div class="section-heading"><div><h2 id="dash-gallery">Photos</h2></div></div>
+        <div class="project-gallery" id="build">
+          <figure>
+            <img src="assets/images/projects/dash1-web.jpg" width="1600" height="900" alt="Dash ESP32 electronics PCB close-up with surface-mount components" data-zoomable data-caption="Dash PCB close-up">
+            <figcaption><span>PCB close-up</span><span>01 / 02</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/images/projects/dash2-web.jpg" width="1600" height="900" alt="Dash safe driving detector enclosure mounted inside a vehicle" loading="lazy" data-zoomable data-caption="Dash mounted enclosure">
+            <figcaption><span>Mounted enclosure</span><span>02 / 02</span></figcaption>
+          </figure>
+        </div>
+      </section>
+    </div>
+
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">Continue exploring</p><div>
+      <a href="/v2/projects/lora-talkie/"><span>← Previous case study</span><strong>LoRa Talkie</strong></a>
+      <a href="/v2/projects/tramtrace/"><span>Next case study →</span><strong>TramTrace</strong></a>
+    </div><a class="v2-all-work" href="/v2/projects/">View the complete collection <span aria-hidden="true">↗</span></a></nav>
+  </main>
+
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung.</a><div class="v2-footer-links"><a href="/v2/projects/">Work</a><a href="/v2/about/#contact">Get in touch ↗</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Electrical engineering. Sydney, Australia.</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+
+  <dialog class="lightbox" data-lightbox aria-label="Project image viewer">
+    <div class="lightbox-frame">
+      <div class="lightbox-image-wrap"><img src="assets/images/projects/dash1-web.jpg" alt="" data-lightbox-image></div>
+      <div class="lightbox-controls">
+        <button class="button icon-button" type="button" aria-label="Previous image" data-lightbox-prev>&larr;</button>
+        <p data-lightbox-caption></p>
+        <button class="button icon-button" type="button" aria-label="Next image" data-lightbox-next>&rarr;</button>
+        <button class="button" type="button" data-lightbox-close>Close</button>
+      </div>
+    </div>
+  </dialog>
+  <p class="live-region" aria-live="polite" data-live-region></p>
+</body>
+</html>

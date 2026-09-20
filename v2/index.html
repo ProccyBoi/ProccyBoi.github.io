@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Andrew Chung — Hardware. Software. Connected.</title>
+  <meta name="description" content="Electrical engineering by Andrew Chung. Explore custom PCBs, embedded systems and the software that connects them, from aircraft telemetry to live transport displays.">
+  <meta name="theme-color" content="#101311">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Andrew Chung — Hardware. Software. Connected.">
+  <meta property="og:description" content="Custom electronics, considered from the first trace to the complete system.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/v2/framework-cad.webp">
+  <meta property="og:image:alt" content="Studio rendering of Andrew Chung’s Framework ESP32 circuit board">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/images/v2/framework-cad.webp" as="image" type="image/webp" fetchpriority="high">
+  <link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-motion.css">
+  <link rel="stylesheet" href="/assets/v2-process.css">
+  <script src="/assets/v2.js" defer></script>
+  <script src="/assets/v2-motion.js" defer></script>
+  <script src="/assets/v2-process.js" defer></script>
+  <script src="/assets/v2-cad.js" defer></script>
+</head>
+<body class="v2 v2-home">
+  <a class="v2-skip" href="#main">Skip to content</a>
+  <header class="v2-header">
+    <div class="v2-nav-shell">
+      <a class="v2-brand" href="/v2/">Andrew Chung<span>Engineering</span></a>
+      <nav class="v2-nav" id="v2-navigation" data-v2-nav aria-label="Primary navigation">
+        <a href="/v2/projects/">Work</a><a href="/v2/about/">About</a><a class="v2-nav-contact" href="/v2/about/#contact">Let’s talk <span aria-hidden="true">↗</span></a>
+      </nav>
+      <button class="v2-menu" type="button" data-v2-menu aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div>
+  </header>
+  <main id="main">
+    <section class="v2-hero" aria-labelledby="hero-title">
+      <div class="v2-hero-grid v2-shell">
+        <div class="v2-hero-copy">
+          <p class="v2-eyebrow"><span class="v2-status-dot" aria-hidden="true"></span> Electrical engineering · Sydney</p>
+          <h1 id="hero-title"><span class="v2-hero-line"><span>Hardware.</span></span><span class="v2-hero-line"><span>Software.</span></span><span class="v2-hero-line"><span>Connected.</span></span></h1>
+          <p class="v2-hero-description">I’m Andrew. I design circuit boards, write embedded software, and bring the whole system to life.</p>
+          <div class="v2-actions"><a class="v2-button v2-button-light" href="#work">Explore the work <span aria-hidden="true">↓</span></a><a class="v2-text-link" href="/v2/about/">A little about me <span aria-hidden="true">↗</span></a></div>
+        </div>
+        <figure class="v2-hero-object" data-cad-hero data-cad-model="framework">
+          <div class="v2-object-topline"><span>OBJECT / 001</span><span>DESIGNED TO FIT.</span></div>
+          <div class="v2-cad-stage">
+            <img class="v2-cad-poster" data-cad-poster src="/assets/images/v2/framework-cad.webp" width="1600" height="1200" alt="Source-derived CAD rendering of the populated Framework ESP32 expansion card" fetchpriority="high">
+            <canvas data-cad-canvas aria-label="Interactive Framework ESP32 circuit board. Use arrow keys to rotate and Home to reset." tabindex="0" hidden></canvas>
+            <span class="v2-cross v2-cross-tl" aria-hidden="true">+</span><span class="v2-cross v2-cross-br" aria-hidden="true">+</span>
+          </div>
+          <div class="v2-object-controls">
+            <button type="button" class="v2-orbit-button" data-cad-start><span aria-hidden="true">◎</span> Explore in 3D</button>
+            <div class="v2-camera-controls" aria-label="Model viewpoint"><button type="button" data-cad-view="iso" aria-pressed="true">Angle</button><button type="button" data-cad-view="top" aria-pressed="false">Top</button><button type="button" data-cad-view="side" aria-pressed="false">Side</button></div>
+          </div>
+          <p class="v2-cad-status" data-cad-status role="status" aria-live="polite">Rendered from the working KiCad design.</p>
+          <figcaption><div><span class="v2-micro">Featured hardware</span><a href="/v2/projects/framework-expansion-card/">Framework ESP32 Card <span aria-hidden="true">↗</span></a></div><div class="v2-object-dimension"><strong>0.6<span>mm</span></strong><span class="v2-micro">PCB thickness</span></div></figcaption>
+        </figure>
+      </div>
+      <div class="v2-hero-bottom v2-shell"><span>From the first trace to the complete system.</span><a href="#work">Selected work <span aria-hidden="true">↓</span></a></div>
+    </section>
+
+    <section class="v2-intro v2-shell" aria-labelledby="intro-title">
+      <p class="v2-eyebrow">The whole picture</p>
+      <div><h2 id="intro-title">The board is only<br>the beginning.</h2><p>Good hardware needs software that understands it. I work across PCB design, firmware and the tools that make a system useful — on the bench, in the air, and out in the world.</p></div>
+      <div class="v2-discipline-strip" aria-label="Engineering disciplines"><span>01 / Circuit design</span><span>02 / Embedded software</span><span>03 / System integration</span></div>
+    </section>
+
+    <section class="v2-work v2-shell" id="work" aria-labelledby="work-title">
+      <div class="v2-section-heading"><div><p class="v2-eyebrow">Selected work / 01—04</p><h2 id="work-title">Built with intention.</h2></div><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
+      <div class="v2-feature-grid">
+        <a class="v2-feature v2-feature-tram" href="/v2/projects/tramtrace/">
+          <div class="v2-feature-heading"><span class="v2-micro">01 / Connected objects</span><span class="v2-circle-arrow" aria-hidden="true">↗</span><h3>A city in motion.<br>On a circuit board.</h3><p>TramTrace turns live light-rail positions into a physical map of Sydney and Parramatta.</p></div>
+          <img src="/assets/images/v2/tramtrace-cad.webp" alt="CAD rendering of the TramTrace light-rail display PCB" width="1600" height="1200" loading="lazy">
+          <div class="v2-feature-foot"><strong>TramTrace</strong><span>116 RGB pixels · 4 lines</span></div>
+        </a>
+        <a class="v2-feature v2-feature-sky" href="/v2/projects/skylabs/">
+          <div class="v2-feature-heading"><span class="v2-micro">02 / Flight systems</span><span class="v2-circle-arrow" aria-hidden="true">↗</span><h3>Every flight.<br>A fuller picture.</h3><p>Aircraft logging, live telemetry and the tools to understand what happened.</p></div>
+          <img src="/assets/images/interactive/skylabs/skylabs-telemetry-turn-02.webp" alt="Source-rendered Skylabs aircraft telemetry circuit board" width="1376" height="984" loading="lazy">
+          <div class="v2-feature-foot"><strong>UNSW Skylabs</strong><span>Aircraft → ground → replay</span></div>
+        </a>
+      </div>
+      <div class="v2-small-work">
+        <a class="v2-small-project" href="/v2/projects/framework-dual-usb/"><div class="v2-small-image"><img src="/assets/images/projects/framework-dual-hero-960.webp" alt="Dual USB-C Framework expansion card in its clear enclosure" width="960" height="640" loading="lazy"></div><div><span class="v2-micro">03 / Interface design</span><h3>One bay. Two ports.</h3><p>Two USB 2.0 Type-C ports, engineered around a very small space.</p><span class="v2-small-project-name">Framework Dual USB-C <span aria-hidden="true">↗</span></span></div></a>
+        <a class="v2-small-project" href="/v2/projects/rf-test-board/"><div class="v2-small-image"><img src="/assets/images/projects/rf-test-hero-960.webp" alt="Detail of RF transmission-line test structures and connectors" width="960" height="640" loading="lazy"></div><div><span class="v2-micro">04 / Measurement</span><h3>Design. Measure. Refine.</h3><p>A test board to investigate what happens between an RF chip and its antenna.</p><span class="v2-small-project-name">RF Test Board <span aria-hidden="true">↗</span></span></div></a>
+      </div>
+    </section>
+
+<section class="v2-process" id="process" data-v2-process aria-labelledby="v2-process-title">
+  <div class="v2-shell">
+    <header class="v2-process-heading">
+      <div><p class="v2-eyebrow">Inside TramTrace / From the working design</p><h2 id="v2-process-title">From trace<br><span>to tangible.</span></h2></div>
+      <p>A city map is the surface. Beneath it: two copper layers, a hundred small decisions, and a physical connection to the world outside.</p>
+    </header>
+    <div class="v2-process-rail">
+      <div class="v2-process-chapters">
+        <article class="v2-process-chapter" id="v2-process-copper" data-process-chapter="0">
+          <p class="v2-process-step"><span>01</span> Route the invisible.</p>
+          <h3>Every light.<br>A path back.</h3>
+          <p>Front and back copper carry power and data through a map-shaped circuit. Pads, vias and routed tracks come directly from the production KiCad design.</p>
+          <dl><div><dt>PCB</dt><dd>2 copper layers</dd></div><div><dt>Footprint</dt><dd>207.81 × 94.55 mm</dd></div></dl>
+        </article>
+        <article class="v2-process-chapter" id="v2-process-assembly" data-process-chapter="1">
+          <p class="v2-process-step"><span>02</span> Bring the layers together.</p>
+          <h3>116 pixels.<br>One system.</h3>
+          <p>The routing, solder-mask openings and silkscreen become a populated board. An ESP32 drives 116 RGB pixels across five electrical data chains.</p>
+          <dl><div><dt>Pixels</dt><dd>WS2812C-2020</dd></div><div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div></dl>
+        </article>
+        <article class="v2-process-chapter" id="v2-process-live" data-process-chapter="2">
+          <p class="v2-process-step"><span>03</span> Give the data a place.</p>
+          <h3>The city moves.<br>The board follows.</h3>
+          <p>Live light-rail positions become a glanceable object. Sydney and Parramatta’s L1–L4 network, built into the PCB that displays it.</p>
+          <a class="v2-text-link" href="/v2/projects/tramtrace/">Explore the complete board <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+      <figure class="v2-process-visual">
+        <div class="v2-process-topline"><span>TRAMTRACE / ENGINEERING STUDY</span><span data-process-frame>03 / LIVE OBJECT</span></div>
+        <div class="v2-process-stage" aria-label="TramTrace manufacturing layers, assembled board and finished light-rail display">
+          <div class="v2-process-grid" aria-hidden="true"></div>
+          <div class="v2-process-corners" aria-hidden="true"><span>+</span><span>+</span><span>+</span><span>+</span></div>
+          <div class="v2-process-stack" data-process-stack>
+            <div class="v2-process-plane v2-process-back" data-process-layer="back"><img src="/assets/images/interactive/tramtrace/tramtrace-back-copper.svg" width="2237" height="1112" alt="Actual back copper routing exported from the TramTrace KiCad design" loading="lazy" decoding="async"><span aria-hidden="true">B.Cu</span></div>
+            <div class="v2-process-plane v2-process-substrate" data-process-layer="substrate" aria-hidden="true"><i></i></div>
+            <div class="v2-process-plane v2-process-copper" data-process-layer="copper"><img src="/assets/images/interactive/tramtrace/tramtrace-front-copper.svg" width="2237" height="1112" alt="Actual front copper routing exported from the TramTrace KiCad design" loading="lazy" decoding="async"><span aria-hidden="true">F.Cu</span></div>
+            <div class="v2-process-plane v2-process-mask" data-process-layer="mask"><img src="/assets/images/interactive/tramtrace/tramtrace-front-mask.svg" width="2237" height="1112" alt="Solder-mask openings from the production board" loading="lazy" decoding="async"><span aria-hidden="true">F.Mask</span></div>
+            <div class="v2-process-plane v2-process-silk" data-process-layer="silk"><img src="/assets/images/interactive/tramtrace/tramtrace-front-silk.svg" width="2237" height="1112" alt="TramTrace station labels and map silkscreen from the production board" loading="lazy" decoding="async"><span aria-hidden="true">F.SilkS</span></div>
+          </div>
+          <img class="v2-process-assembled" data-process-assembled src="/assets/images/interactive/tramtrace/tramtrace-board-render.webp" width="2263" height="1057" alt="Source-derived front rendering of the assembled TramTrace PCB and its RGB pixels" loading="lazy" decoding="async">
+          <picture class="v2-process-photo" data-process-photo><source type="image/webp" srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 60vw"><img src="/assets/images/projects/tramtrace-hero-1920.jpg" width="1920" height="1280" alt="The finished TramTrace board illuminated with live light-rail positions on a dark background" loading="lazy" decoding="async"></picture>
+          <div class="v2-process-measure" aria-hidden="true"><span></span><b>207.81 mm</b><span></span></div>
+        </div>
+        <div class="v2-process-controls" aria-label="Choose a board stage" data-process-controls hidden>
+          <button type="button" aria-pressed="false" data-process-select="0"><span>01</span>Copper<span class="v2-process-button-progress" aria-hidden="true"></span></button>
+          <button type="button" aria-pressed="false" data-process-select="1"><span>02</span>Assembly<span class="v2-process-button-progress" aria-hidden="true"></span></button>
+          <button type="button" aria-pressed="true" data-process-select="2"><span>03</span>Live object<span class="v2-process-button-progress" aria-hidden="true"></span></button>
+        </div>
+        <figcaption><span class="v2-process-stage-caption" data-process-caption>The finished PCB, photographed in use.</span><span>KiCad fabrication exports · source-derived board render · actual build photography. Layers separated for clarity.</span></figcaption>
+        <p class="v2-process-sr" aria-live="polite" aria-atomic="true" data-process-announcement></p>
+      </figure>
+    </div>
+  </div>
+</section>
+
+    <section class="v2-systems" id="systems" aria-labelledby="systems-title" data-system-explorer>
+      <div class="v2-shell">
+        <div class="v2-section-heading"><div><p class="v2-eyebrow">Look a little deeper</p><h2 id="systems-title">Follow the signal.</h2></div><p>Different hardware. A complete path from input to something useful. Choose a system, then inspect each step.</p></div>
+        <div class="v2-system-tabs" aria-label="Choose a system"><button type="button" disabled data-system="skylabs" aria-pressed="true">Skylabs <span>01</span></button><button type="button" disabled data-system="tramtrace" aria-pressed="false">TramTrace <span>02</span></button><button type="button" disabled data-system="framework" aria-pressed="false">Framework <span>03</span></button></div>
+        <div class="v2-system-panel">
+          <div class="v2-signal-diagram" aria-label="Skylabs signal path" data-system-diagram>
+            <button type="button" disabled data-system-step="0" aria-pressed="true"><span class="v2-signal-number">01 / Sense</span><span class="v2-signal-symbol" aria-hidden="true">⊕</span><strong>Aircraft sensors</strong><span class="v2-signal-small">IMU + GNSS + air data</span></button>
+            <button type="button" disabled data-system-step="1" aria-pressed="false"><span class="v2-signal-number">02 / Record</span><span class="v2-signal-symbol" aria-hidden="true">▤</span><strong>Onboard logger</strong><span class="v2-signal-small">STM32G474 + microSD</span></button>
+            <button type="button" disabled data-system-step="2" aria-pressed="false"><span class="v2-signal-number">03 / Transmit</span><span class="v2-signal-symbol" aria-hidden="true">⌁</span><strong>Radio link</strong><span class="v2-signal-small">915 MHz LoRa</span></button>
+            <button type="button" disabled data-system-step="3" aria-pressed="false"><span class="v2-signal-number">04 / Understand</span><span class="v2-signal-symbol" aria-hidden="true">↗</span><strong>Ground + replay</strong><span class="v2-signal-small">Live view &amp; flight review</span></button>
+          </div>
+          <div class="v2-system-detail" aria-live="polite" aria-atomic="true"><div><span class="v2-micro" data-system-detail-label>01 / Sense</span><h3 data-system-detail-title>A flight starts with measurements.</h3></div><p data-system-detail-text>The aircraft board brings together inertial, GNSS, pressure and airspeed inputs. Sensor presence and validity travel with the data, so missing measurements don’t become convincing numbers.</p></div>
+          <div class="v2-system-footer"><span data-system-note>40 Hz onboard logging · live subset up to 10 Hz</span><a href="/v2/projects/skylabs/" data-system-link>Inside Skylabs <span aria-hidden="true">↗</span></a></div>
+        </div>
+        <noscript><p class="v2-nojs-note">Explore the complete data paths in the <a href="/v2/projects/skylabs/">Skylabs</a>, <a href="/v2/projects/tramtrace/">TramTrace</a> and <a href="/v2/projects/framework-expansion-card/">Framework</a> case studies.</p></noscript>
+      </div>
+    </section>
+
+    <section class="v2-about-preview v2-shell" aria-labelledby="about-title">
+      <div><p class="v2-eyebrow">The engineer behind the boards</p><h2 id="about-title">Curious by nature.<br>Hands-on by default.</h2><a class="v2-text-link" href="/v2/about/">More about me <span aria-hidden="true">↗</span></a></div>
+      <div class="v2-about-copy"><p>I’m studying electrical engineering at UNSW, working with power electronics, and leading avionics and payload work at UNSW Skylabs.</p><p>I enjoy the point where disciplines meet: a mechanical constraint that shapes a PCB, a firmware decision that changes a measurement, or a tool that makes a complex system easier to understand.</p><div class="v2-role-line"><span>Industry</span><strong>Switchmode Power Supplies</strong></div><div class="v2-role-line"><span>University</span><strong>UNSW Electrical Engineering</strong></div></div>
+    </section>
+
+    <section class="v2-contact" aria-labelledby="contact-title"><div class="v2-shell"><p class="v2-eyebrow">Start a conversation</p><div><h2 id="contact-title">Have something<br>in mind?</h2><a class="v2-contact-link" href="mailto:andrew.noah.chung@gmail.com" aria-label="Email Andrew Chung"><span aria-hidden="true">↗</span></a></div><a class="v2-contact-email" href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com</a></div></section>
+  </main>
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-brand" href="/v2/">Andrew Chung<span>Engineering</span></a><div><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV ↗</a></div><p>© <span data-v2-year>2026</span> Andrew Chung</p></div></footer>
+</body>
+</html>

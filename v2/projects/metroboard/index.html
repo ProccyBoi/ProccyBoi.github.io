@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Metroboard | Andrew Chung</title>
+  <meta name="description" content="Andrew Chung's live Sydney rail network indicator using 291 LEDs, Wi-Fi and TfNSW GTFS real-time data.">
+  <meta name="theme-color" content="#f5f5f2">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Metroboard | Andrew Chung">
+  <meta property="og:description" content="A 300 × 305.7 mm Sydney rail network PCB displaying live TfNSW data with 291 LEDs.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/metroboard/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/metroboard1-web.jpg">
+  <meta property="og:image:alt" content="Metroboard Sydney rail indicator illuminated in a dark room">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/metroboard/">
+  <link rel="preload" as="image" href="assets/images/projects/metroboard1-web.jpg">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/pcb-object-explorer.css?v=20260902b"><link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
+  <script src="assets/site.js" defer></script><script src="assets/explorer-runtime.js?v=20260907" defer></script><script src="assets/vendor/three.min.js" defer></script><script src="assets/metroboard-3d.js?v=20260903b" defer></script><script src="assets/pcb-object-explorer.js?v=20260907" defer></script>
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+  <link rel="stylesheet" href="/assets/v2-motion.css">
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2-motion.js" defer></script>
+</head>
+<body class="v2 v2-case project-page">
+  <a class="skip-link" href="/v2/projects/metroboard/#main">Skip to content</a>
+
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v2/">Andrew Chung <span>ENGINEERING</span></a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v2/projects/" aria-current="page">Work</a>
+        <a href="/v2/about/">About</a>
+        <a class="v2-nav-contact" href="/v2/about/#contact">Let’s talk <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Metroboard</span><div class="v2-case-nav-links"><a href="/v2/projects/metroboard/#overview" data-v2-section>Overview</a><a href="/v2/projects/metroboard/#explore" data-v2-section>Interactive</a><a href="/v2/projects/metroboard/#details" data-v2-section>Engineering</a><a href="/v2/projects/metroboard/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+<main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><p class="v2-case-number">Selected work <span>07 / 14</span></p><div>
+            <p class="eyebrow">Personal project</p>
+            <h1 id="project-title">Metroboard</h1>
+            <p>A Sydney rail map driven by TfNSW real-time data.</p>
+          </div><div class="project-hero-actions"><a href="/v2/projects/metroboard/#explore">Explore the hardware <span aria-hidden="true">↗</span></a><a href="/v2/projects/metroboard/#details">Engineering details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media">
+          <img src="assets/images/projects/metroboard1-web.jpg" width="1600" height="900" alt="Sydney rail network indicator with LEDs illuminated in a dark room">
+        </figure></div>
+    <div class="v2-case-specs shell"><dl class="project-meta">
+            <div><dt>Type</dt><dd>Personal project</dd></div>
+            <div><dt>Data</dt><dd>TfNSW GTFS real-time</dd></div>
+            <div><dt>Display</dt><dd>291 LEDs</dd></div>
+            <div><dt>Format</dt><dd>300 × 305.7 mm PCB</dd></div>
+          </dl></div></section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>A custom rail-map PCB and a service for TfNSW real-time data.</dd></div><div><dt>Design constraint</dt><dd>Copper, mask, silkscreen and LEDs form the display itself.</dd></div><div><dt>Built hardware</dt><dd>291 RGB pixels on the 300 × 305.7 mm V3 board.</dd></div></dl>
+
+
+
+    <section class="project-interactive pcb-object-main" id="explore" aria-labelledby="metro-explore" data-pcb-object>
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header"><div><p class="eyebrow">Interactive hardware reconstruction</p><h2 id="metro-explore">Explore the rail-map PCB.</h2></div><p>Orbit the V3 board reconstruction, inspect the 291 RGB packages and controller edge, or lift the populated electronics away from the 300 × 305.7 mm black PCB.</p></header>
+        <div class="pcb-object-toolbar" aria-label="3D view controls"><button type="button" data-pcb-view="angle">Angle</button><button type="button" data-pcb-view="top">Top</button><button type="button" data-pcb-view="bottom">Bottom</button><button type="button" data-pcb-view="side">Side</button><span class="pcb-spacer"></span><button type="button" data-pcb-explode aria-pressed="false">Explode</button><button type="button" class="pcb-reset" data-pcb-reset>Reset</button></div>
+        <div class="pcb-object-stage"><canvas data-pcb-object-canvas tabindex="0" aria-label="Interactive 3D Metroboard"></canvas><div class="pcb-object-stage-label"><span>Drag to orbit</span><span>Pinch / wheel to zoom</span></div></div>
+        <div class="pcb-object-readout" aria-live="polite"><p data-pcb-ref>BOARD</p><h3 data-pcb-name>Loading board…</h3><p data-pcb-copy>3D board reconstruction is loading.</p></div>
+        <dl class="project-interactive-facts"><div><dt>Board</dt><dd>300 × 305.7 mm</dd></div><div><dt>Pixels</dt><dd>291 RGB</dd></div><div><dt>Footprints</dt><dd>323 front-side</dd></div></dl>
+      </div>
+    </section>
+
+<div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="metroboard-summary">
+        <h2 id="metroboard-summary">A map, not another app</h2>
+        <div class="project-prose">
+          <p>I wanted Sydney's rail network to live on the wall, not in another browser tab. Metroboard is a 300 × 305.7 mm PCB with 291 LEDs, laid out as a physical map of the network.</p>
+          <p>The board joins Wi-Fi and gets TfNSW GTFS real-time data through a service I wrote. Each update turns vehicle positions into light, so the useful part of the display is visible before I have even picked up my phone.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="metroboard-layout">
+        <h2 id="metroboard-layout">The PCB is the interface</h2>
+        <div class="project-prose">
+          <p>There is no separate screen or printed overlay. The copper, solder mask, silkscreen and LEDs have to work together as both electronics and map graphics.</p>
+          <p>That constraint is what later led to TramTrace. The tram network needed a different scale and much tighter route geometry, but the idea stayed the same: make live transport data legible as a piece of hardware.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="metroboard-gallery" data-reveal>
+        <div class="section-heading"><div><h2 id="metroboard-gallery">Photos</h2></div></div>
+        <div class="project-gallery" id="build">
+          <figure class="wide">
+            <img src="assets/images/projects/metroboard1-web.jpg" width="1600" height="900" alt="Sydney rail network indicator with LEDs illuminated in a dark room" data-zoomable data-caption="Metroboard live network lights">
+            <figcaption><span>Live network lights</span><span>01 / 04</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/images/projects/metroboard2-web.jpg" width="1600" height="900" alt="Sydney rail network PCB before its LEDs are illuminated" loading="lazy" data-zoomable data-caption="Metroboard PCB layout">
+            <figcaption><span>PCB layout</span><span>02 / 04</span></figcaption>
+          </figure>
+          <figure>
+            <img src="assets/images/projects/metroboard3-web.jpg" width="1600" height="900" alt="Low-angle view of Metroboard electronics near the USB connector" loading="lazy" data-zoomable data-caption="Metroboard controller edge">
+            <figcaption><span>Controller edge</span><span>03 / 04</span></figcaption>
+          </figure>
+          <figure class="wide">
+            <img src="assets/images/projects/metroboard4-web.jpg" width="1600" height="900" alt="Close view of Metroboard LEDs illuminated across the Sydney rail map" loading="lazy" data-zoomable data-caption="Illuminated Metroboard LED routes">
+            <figcaption><span>LED routes</span><span>04 / 04</span></figcaption>
+          </figure>
+        </div>
+      </section>
+    </div>
+
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">Continue exploring</p><div>
+      <a href="/v2/projects/rf-test-board/"><span>← Previous case study</span><strong>RF Test Board</strong></a>
+      <a href="/v2/projects/switch-mode-power-supplies/"><span>Next case study →</span><strong>Switchmode Power Supplies</strong></a>
+    </div><a class="v2-all-work" href="/v2/projects/">View the complete collection <span aria-hidden="true">↗</span></a></nav>
+  </main>
+
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung.</a><div class="v2-footer-links"><a href="/v2/projects/">Work</a><a href="/v2/about/#contact">Get in touch ↗</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Electrical engineering. Sydney, Australia.</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+
+  <dialog class="lightbox" data-lightbox aria-label="Project image viewer">
+    <div class="lightbox-frame">
+      <div class="lightbox-image-wrap"><img src="assets/images/projects/metroboard1-web.jpg" alt="" data-lightbox-image></div>
+      <div class="lightbox-controls">
+        <button class="button icon-button" type="button" aria-label="Previous image" data-lightbox-prev>&larr;</button>
+        <p data-lightbox-caption></p>
+        <button class="button icon-button" type="button" aria-label="Next image" data-lightbox-next>&rarr;</button>
+        <button class="button" type="button" data-lightbox-close>Close</button>
+      </div>
+    </div>
+  </dialog>
+  <p class="live-region" aria-live="polite" data-live-region></p>
+</body>
+</html>

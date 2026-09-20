@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Internal CAD studio · V2</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; background: transparent; }
+    [data-cad-hero], .stage { position: relative; width: 100%; height: 100%; }
+    canvas { width: 100%; height: 100%; display: block; }
+    [hidden] { display: none !important; }
+    button { position: absolute; bottom: 12px; left: 12px; }
+    [data-cad-status] { position: absolute; top: 0; font: 12px monospace; color: white; }
+    [data-cad-state="ready"] [data-cad-status] { display: none; }
+  </style>
+</head>
+<body>
+  <main data-cad-hero data-cad-capture>
+    <div class="stage"><canvas data-cad-canvas></canvas></div>
+    <button data-cad-start>Render original CAD</button>
+    <p data-cad-status role="status"></p>
+  </main>
+  <script>
+    document.querySelector('[data-cad-hero]').dataset.cadModel = new URLSearchParams(location.search).get('model') || 'framework';
+  </script>
+  <script src="/assets/v2-cad.js"></script>
+  <script>document.querySelector('[data-cad-start]').click();</script>
+</body>
+</html>

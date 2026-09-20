@@ -25,6 +25,9 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 
+      - name: Verify v2 documents and local assets
+        run: python3 scripts/audit-v2.py
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v5
         with:

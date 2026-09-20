@@ -1,0 +1,93 @@
+/* Motion is progressive: the unenhanced document is always fully visible. */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: v2-page-out 170ms ease-in both; }
+::view-transition-new(root) { animation: v2-page-in 360ms cubic-bezier(.2,.7,.2,1) both; }
+@keyframes v2-page-out { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes v2-page-in { from { opacity: 0; transform: translateY(12px); } }
+
+.v2-hero h1 > .v2-hero-line {
+  display: block;
+  overflow: clip;
+  padding-bottom: .095em;
+  margin-bottom: -.095em;
+  color: inherit;
+}
+.v2-hero-line > span { display: block; transform-origin: 0 100%; }
+.v2-hero-line:last-child > span { color: var(--v2-copper); }
+.v2-hero-object { perspective: 1100px; }
+.v2-hero-object .v2-cad-stage {
+  transform: translate3d(0, var(--hero-drift, 0px), 0) rotateZ(var(--hero-turn, 0deg));
+  transform-origin: 50% 55%;
+}
+.v2-hero-object[data-cad-state="ready"] .v2-cad-stage { transform: none; }
+.v2-object-topline { position: relative; }
+.v2-object-topline::after {
+  content: '';
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 20px;
+  width: calc(100% - 40px);
+  height: 1px;
+  transform: scaleX(var(--hero-rule, 1));
+  transform-origin: left;
+  background: linear-gradient(90deg, #e3a48070, #94a08c1c 70%, transparent);
+}
+.v2-nav a { position: relative; }
+.v2-nav a:not(.v2-nav-contact)::after {
+  content: '';
+  position: absolute;
+  height: 1px;
+  left: 0;
+  right: 0;
+  bottom: 5px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform .3s cubic-bezier(.2,.7,.2,1);
+}
+.v2-nav a:hover::after, .v2-nav a[aria-current="page"]::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+.v2-system-tabs { position: relative; }
+.v2-signal-diagram > button { overflow: visible; }
+.v2-signal-diagram > button::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: -1px;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: #70855e;
+  transition: transform .5s cubic-bezier(.2,.7,.2,1);
+}
+.v2-signal-diagram > button[aria-pressed="true"]::before { transform: scaleX(1); }
+.v2-feature { isolation: isolate; }
+.v2-feature::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 2;
+  opacity: 0;
+  background: radial-gradient(550px circle at var(--card-light-x, 50%) var(--card-light-y, 0%), #ffffff14, transparent 65%);
+  box-shadow: inset 0 0 0 1px #ffffff10;
+  transition: opacity .4s;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .v2-feature:hover::after { opacity: 1; }
+  .v2-feature > img, .v2-feature:hover > img {
+    transform: translate3d(var(--card-x, 0px), var(--card-y, 0px), 0) scale(var(--card-scale, 1));
+    transition: transform .5s cubic-bezier(.2,.7,.2,1);
+  }
+  .v2-button { transition: transform .25s, background .2s, box-shadow .3s; }
+  .v2-button-light:hover { box-shadow: 0 6px 30px #c2d4ac18; }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .v2-hero-object .v2-cad-stage { transform: none; }
+  .v2-feature::after { display: none; }
+}

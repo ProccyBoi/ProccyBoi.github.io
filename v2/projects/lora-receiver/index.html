@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>LoRa Receiver + GNSS | Andrew Chung</title>
+  <meta name="description" content="A custom ESP32, LoRa and u-blox GNSS receiver PCB by Andrew Chung.">
+  <meta name="theme-color" content="#f5f5f2">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LoRa Receiver + GNSS | Andrew Chung">
+  <meta property="og:description" content="A custom ESP32, LoRa and u-blox GNSS receiver PCB.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/lora-receiver/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/lora-receiver-hero-1920.jpg">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/lora-receiver/">
+  <link rel="preload" as="image" href="assets/images/projects/lora-receiver-hero-960.webp" media="(max-width: 760px)" type="image/webp">
+  <link rel="preload" as="image" href="assets/images/projects/lora-receiver-hero-1920.webp" media="(min-width: 761px)" type="image/webp">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
+  <script src="assets/site.js" defer></script>
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+  <link rel="stylesheet" href="/assets/v2-motion.css">
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2-motion.js" defer></script>
+</head>
+<body class="v2 v2-case">
+  <a class="skip-link" href="/v2/projects/lora-receiver/#main">Skip to content</a>
+
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v2/">Andrew Chung <span>ENGINEERING</span></a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v2/projects/" aria-current="page">Work</a>
+        <a href="/v2/about/">About</a>
+        <a class="v2-nav-contact" href="/v2/about/#contact">Let’s talk <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">LoRa Receiver + GNSS</span><div class="v2-case-nav-links"><a href="/v2/projects/lora-receiver/#overview" data-v2-section>Overview</a><a href="/v2/projects/lora-receiver/#details" data-v2-section>Engineering</a><a href="/v2/projects/lora-receiver/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+<main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><p class="v2-case-number">Selected work <span>05 / 14</span></p><div>
+            <p class="eyebrow">Custom PCB</p>
+            <h1 id="project-title">LoRa Receiver + GNSS</h1>
+            <p>A receiver PCB using an ESP32-WROOM-32E, u-blox NEO-M9N and LoRa module.</p>
+          </div><div class="project-hero-actions"><a href="/v2/projects/lora-receiver/#details">Read the story <span aria-hidden="true">↓</span></a></div></div><div class="project-hero-media contain-media">
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/lora-receiver-hero-960.webp 960w, assets/images/projects/lora-receiver-hero-1920.webp 1920w" sizes="(max-width: 900px) 100vw, 64vw">
+            <img src="assets/images/projects/lora-receiver-hero-1920.jpg" srcset="assets/images/projects/lora-receiver-hero-960.jpg 960w, assets/images/projects/lora-receiver-hero-1920.jpg 1920w" sizes="(max-width: 900px) 100vw, 64vw" width="1920" height="1280" alt="Black LoRa Receiver and GPS Module PCB with ESP32, radio and u-blox modules">
+          </picture>
+        </div></div>
+    <div class="v2-case-specs shell"><dl class="project-meta">
+            <div><dt>Band</dt><dd>915 MHz</dd></div>
+            <div><dt>Revision</dt><dd>A</dd></div>
+            <div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div>
+            <div><dt>GNSS</dt><dd>u-blox NEO-M9N</dd></div>
+            <div><dt>Radio</dt><dd>LoRa module</dd></div>
+            <div><dt>Designer</dt><dd>Andrew Chung</dd></div>
+          </dl></div></section>
+<dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>The system</dt><dd>An ESP32 receiver combining 915 MHz LoRa with u-blox GNSS.</dd></div><div><dt>The constraint</dt><dd>Radio and navigation on one PCB, with a feedline worth measuring.</dd></div><div><dt>What I learned</dt><dd>At least 1 km in testing; VNA measurements informed the RF Test Board.</dd></div></dl>
+
+    <div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="receiver-summary">
+        <h2 id="receiver-summary">Radio and position</h2>
+        <div class="project-prose">
+          <p>I designed this board as one half of a small telemetry link. An ESP32-WROOM-32E runs the application, a 915 MHz LoRa module handles the long-range connection, and a u-blox NEO-M9N supplies position data.</p>
+          <p>Putting the radio and GNSS on one board kept the wiring simple in use. It also made the RF layout impossible to ignore, which turned out to be the more valuable part of the project.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="receiver-result">
+        <h2 id="receiver-result">The first RF lesson</h2>
+        <div class="project-prose">
+          <p>The Rev A feedline was not as close to 50 Ω as I wanted. I checked it with a VNA, took the mismatch seriously, and used what I found when I laid out the dedicated RF test board.</p>
+          <p>Even with that first-pass layout, the pair reached at least one kilometre in testing. That result was useful, but the measurement was better: it gave the next board a specific problem to fix.</p>
+        </div>
+      </section>
+
+      <h2 class="gallery-title">Photos</h2>
+      <section class="project-gallery" id="build" aria-label="LoRa Receiver photography">
+        <figure class="wide" data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/lora-receiver-system-960.webp 960w, assets/images/projects/lora-receiver-system-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 90vw">
+            <img src="assets/images/projects/lora-receiver-system-1920.jpg" srcset="assets/images/projects/lora-receiver-system-960.jpg 960w, assets/images/projects/lora-receiver-system-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 90vw" width="1920" height="1280" loading="lazy" alt="Low-angle view across the black receiver PCB and its three modules" data-zoomable data-caption="Receiver PCB / module profile">
+          </picture>
+          <figcaption><span>Receiver PCB</span><span>Module profile</span></figcaption>
+        </figure>
+        <figure data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/lora-receiver-silkscreen-960.webp 960w, assets/images/projects/lora-receiver-silkscreen-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 45vw">
+            <img src="assets/images/projects/lora-receiver-silkscreen-1920.jpg" srcset="assets/images/projects/lora-receiver-silkscreen-960.jpg 960w, assets/images/projects/lora-receiver-silkscreen-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Macro view of the Rev A LoRa Receiver and GPS Module silkscreen" data-zoomable data-caption="Rev A / silkscreen detail">
+          </picture>
+          <figcaption><span>Rev A</span><span>Silkscreen detail</span></figcaption>
+        </figure>
+        <figure data-reveal>
+          <picture>
+            <source type="image/webp" srcset="assets/images/projects/lora-receiver-antenna-960.webp 960w, assets/images/projects/lora-receiver-antenna-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 45vw">
+            <img src="assets/images/projects/lora-receiver-antenna-1920.jpg" srcset="assets/images/projects/lora-receiver-antenna-960.jpg 960w, assets/images/projects/lora-receiver-antenna-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Close view of the u-blox module and connected antenna lead" data-zoomable data-caption="u-blox module / antenna lead">
+          </picture>
+          <figcaption><span>u-blox module</span><span>Antenna lead</span></figcaption>
+        </figure>
+      </section>
+    </div>
+
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">Continue exploring</p><div>
+      <a href="/v2/projects/framework-expansion-card/"><span>← Previous case study</span><strong>Framework ESP32 Card</strong></a>
+      <a href="/v2/projects/rf-test-board/"><span>Next case study →</span><strong>RF Test Board</strong></a>
+    </div><a class="v2-all-work" href="/v2/projects/">View the complete collection <span aria-hidden="true">↗</span></a></nav>
+  </main>
+
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung.</a><div class="v2-footer-links"><a href="/v2/projects/">Work</a><a href="/v2/about/#contact">Get in touch ↗</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Electrical engineering. Sydney, Australia.</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+
+  <dialog class="lightbox" data-lightbox aria-label="Image viewer">
+    <div class="lightbox-frame">
+      <div class="lightbox-image-wrap"><img src="assets/images/projects/lora-receiver-hero-960.jpg" alt="" data-lightbox-image></div>
+      <div class="lightbox-controls">
+        <button class="button icon-button" type="button" data-lightbox-prev aria-label="Previous image">&larr;</button>
+        <p data-lightbox-caption>LoRa Receiver</p>
+        <button class="button icon-button" type="button" data-lightbox-next aria-label="Next image">&rarr;</button>
+        <button class="button icon-button" type="button" data-lightbox-close aria-label="Close image viewer">&times;</button>
+      </div>
+    </div>
+  </dialog>
+  <p class="live-region" aria-live="polite" data-live-region></p>
+</body>
+</html>
