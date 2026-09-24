@@ -36,6 +36,8 @@ REDIRECT_EXEMPTIONS = {
     "v2/lab/tramtrace/index.html": "Legacy explorer redirect",
 }
 SHARED_PREFIXES = ("/shared/", "/assets/", "/reports/", "/book/")
+ROOT_ONLY_PROJECTS = {"coaster"}
+EXPECTED_PUBLIC_PROJECT_COUNT = 15
 
 
 @dataclass
@@ -212,8 +214,11 @@ def main() -> int:
         match = re.fullmatch(r"/projects/([^/]+)/?", target[2]) if target else None
         if match:
             original_projects.add(match.group(1))
-    if len(original_projects) != 14:
-        error(original.path, f"baseline inventory changed: expected 14 public projects, found {len(original_projects)}; review scope before updating this baseline")
+    if len(original_projects) != EXPECTED_PUBLIC_PROJECT_COUNT:
+        error(original.path, f"baseline inventory changed: expected {EXPECTED_PUBLIC_PROJECT_COUNT} public projects, found {len(original_projects)}; review scope before updating this baseline")
+    missing_root_only = ROOT_ONLY_PROJECTS - original_projects
+    if missing_root_only:
+        error(original.path, f"configured root-only project(s) missing from public inventory: {', '.join(sorted(missing_root_only))}")
 
     pages = sorted((ROOT / "v2").rglob("*.html"))
     if not pages:
@@ -230,7 +235,7 @@ def main() -> int:
     }
     for slug in sorted(v2_projects - original_projects):
         error(ROOT / "v2/projects" / slug, "new project absent from existing public project inventory")
-    for slug in sorted(original_projects - v2_projects):
+    for slug in sorted(original_projects - v2_projects - ROOT_ONLY_PROJECTS):
         error(ROOT / "v2/projects" / slug, "existing project missing from /v2")
 
     for page in pages:

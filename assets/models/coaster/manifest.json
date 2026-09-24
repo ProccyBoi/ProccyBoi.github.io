@@ -1,0 +1,1044 @@
+{
+  "assets": {
+    "base": {
+      "bounds_mm": [
+        91.671622,
+        -136.020737,
+        -2.0,
+        174.671622,
+        -53.020737,
+        4.85
+      ],
+      "file": "coaster-base.stl",
+      "sha256": "8145cb6d73ca109e4fb8b0b51d4a9ac509092396934db5a1a985535fbebcda12",
+      "size_bytes": 196984,
+      "triangles": 3938
+    },
+    "j1_usb_c": {
+      "bounds_mm": [
+        128.74,
+        -60.99,
+        0.745,
+        137.68,
+        -53.09,
+        4.846
+      ],
+      "file": "coaster-j1-usbc.stl",
+      "sha256": "d1fb1ec99bf61f1518810604cc585035b6ab2e7c41a84693724bdac56ebdd9d5",
+      "size_bytes": 2065584,
+      "triangles": 41310
+    },
+    "j2_swd": {
+      "bounds_mm": [
+        125.25,
+        -81.878993,
+        0.0,
+        127.25,
+        -72.26,
+        1.51
+      ],
+      "file": "coaster-j2-swd.stl",
+      "sha256": "c8accb224f744a100f4319c538d2a9d47884e10380ae92af57c4739d0306c0a7",
+      "size_bytes": 98884,
+      "triangles": 1976
+    },
+    "led_ring": {
+      "bounds_mm": [
+        99.17,
+        -128.56,
+        1.575,
+        167.06,
+        -60.83,
+        2.415
+      ],
+      "file": "coaster-led-ring.stl",
+      "sha256": "b23b0a8a871ca7e0837e6da794cad341c4d5084f805408a491f38456c9c8dd6d",
+      "size_bytes": 3201684,
+      "triangles": 64032
+    },
+    "lid": {
+      "bounds_mm": [
+        91.671622,
+        -136.020737,
+        1.6,
+        174.671622,
+        -53.020737,
+        7.85
+      ],
+      "file": "coaster-lid.stl",
+      "sha256": "6ed310d94c88a95de6d6e843a92dc1f193bb21527cba9bd7086e87c900fcaed6",
+      "size_bytes": 201884,
+      "triangles": 4036
+    },
+    "pcb_board": {
+      "bounds_mm": [
+        93.239151,
+        -134.580211,
+        0.0,
+        173.2,
+        -54.599789,
+        1.51
+      ],
+      "file": "coaster-board.stl",
+      "sha256": "684548c6ffa7f8ebdfd7d9530f7c303b6e364428459c2d612f0eded12537dee1",
+      "size_bytes": 157684,
+      "triangles": 3152
+    },
+    "support": {
+      "bounds_mm": [
+        122.61,
+        -125.07,
+        1.595,
+        141.1,
+        -57.57,
+        3.295
+      ],
+      "file": "coaster-support.stl",
+      "sha256": "e13ceb288a9392b8809fb13eb27e9f4f948e1d8306ad589e8b7cf989d71c134c",
+      "size_bytes": 407684,
+      "triangles": 8152
+    },
+    "u1_veml7700": {
+      "bounds_mm": [
+        129.8,
+        -99.62,
+        0.595,
+        136.6,
+        -96.619163,
+        2.945
+      ],
+      "file": "coaster-u1-veml.stl",
+      "sha256": "ccff03e8d549371e9e46fdc19da7b08f9cb97b10ea6b80394e8286439e2bc7d4",
+      "size_bytes": 183484,
+      "triangles": 3668
+    },
+    "u3_mcu": {
+      "bounds_mm": [
+        129.96,
+        -86.51,
+        1.595,
+        136.46,
+        -80.11,
+        2.795
+      ],
+      "file": "coaster-u3-mcu.stl",
+      "sha256": "7ad1edb4a64a5089bbf5e0714187c894ca95134a98a299f50951566dac3ad031",
+      "size_bytes": 341884,
+      "triangles": 6836
+    },
+    "u4_sht4x": {
+      "bounds_mm": [
+        132.4725,
+        -93.2,
+        1.585,
+        133.9925,
+        -91.68,
+        2.145
+      ],
+      "file": "coaster-u4-sht.stl",
+      "sha256": "43ecf48cab928ccfd94d22ef0b672a83f85335a380249aea20ba334014ae7c5f",
+      "size_bytes": 233684,
+      "triangles": 4672
+    },
+    "u6_level_shifter": {
+      "bounds_mm": [
+        137.94,
+        -84.6275,
+        1.595,
+        140.74,
+        -81.7275,
+        3.145
+      ],
+      "file": "coaster-u6-level.stl",
+      "sha256": "214f29f05850879fed150b65e151ea241d5b0064035784b1b4536391ffb0022a",
+      "size_bytes": 84884,
+      "triangles": 1696
+    }
+  },
+  "coordinate_system": {
+    "basis": "native STEP assembly coordinates",
+    "kicad_mapping": "STEP X = KiCad X; STEP Y = -KiCad Y"
+  },
+  "generator": {
+    "angular_deflection_rad": 0.18,
+    "linear_deflection_mm": 0.08,
+    "python_packages": {
+      "cadquery": "2.8.0",
+      "cadquery-ocp": "7.9.3.1.1",
+      "trimesh": "5.1.0"
+    },
+    "script": "scripts/build_coaster_assets.py"
+  },
+  "groups": {
+    "base": {
+      "asset": "coaster-base.stl",
+      "refs": [],
+      "sources": [
+        "base_step"
+      ]
+    },
+    "j1_usb_c": {
+      "asset": "coaster-j1-usbc.stl",
+      "refs": [
+        "J1"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "USB_C_HRO_TYPE-C-31-M-12"
+    },
+    "j2_swd": {
+      "asset": "coaster-j2-swd.stl",
+      "derivation": "KiCad pad outlines/drills placed in STEP XY frame and extruded across the STEP substrate Z span",
+      "kicad": {
+        "board_thickness_mm": 1.6,
+        "footprint": "easyeda2kicad:Pogo_1x04_P2.54mm_PTH_D1.0mm",
+        "origin_mm": [
+          126.25,
+          73.26
+        ],
+        "pads": [
+          {
+            "at_mm": [
+              0.0,
+              0.0
+            ],
+            "drill_mm": 1.0,
+            "number": "1",
+            "shape": "rect",
+            "size_mm": [
+              2.0,
+              2.0
+            ],
+            "type": "thru_hole"
+          },
+          {
+            "at_mm": [
+              0.0,
+              2.54
+            ],
+            "drill_mm": 1.0,
+            "number": "2",
+            "shape": "circle",
+            "size_mm": [
+              2.0,
+              2.0
+            ],
+            "type": "thru_hole"
+          },
+          {
+            "at_mm": [
+              0.0,
+              5.08
+            ],
+            "drill_mm": 1.0,
+            "number": "3",
+            "shape": "circle",
+            "size_mm": [
+              2.0,
+              2.0
+            ],
+            "type": "thru_hole"
+          },
+          {
+            "at_mm": [
+              0.0,
+              7.62
+            ],
+            "drill_mm": 1.0,
+            "number": "4",
+            "shape": "circle",
+            "size_mm": [
+              2.0,
+              2.0
+            ],
+            "type": "thru_hole"
+          }
+        ],
+        "rotation_deg": 0.0
+      },
+      "refs": [
+        "J2"
+      ],
+      "sources": [
+        "pcb_kicad",
+        "pcb_step"
+      ]
+    },
+    "led_ring": {
+      "asset": "coaster-led-ring.stl",
+      "refs": [
+        "LED71",
+        "LED94",
+        "LED95",
+        "LED96",
+        "LED98",
+        "LED99",
+        "LED100",
+        "LED102",
+        "LED103",
+        "LED104",
+        "LED106",
+        "LED107",
+        "LED108",
+        "LED110",
+        "LED111",
+        "LED112",
+        "LED114",
+        "LED115",
+        "LED116",
+        "LED118",
+        "LED119",
+        "LED120",
+        "LED122",
+        "LED123"
+      ],
+      "sources": [
+        "pcb_step"
+      ]
+    },
+    "lid": {
+      "asset": "coaster-lid.stl",
+      "refs": [],
+      "sources": [
+        "lid_step"
+      ]
+    },
+    "pcb_board": {
+      "asset": "coaster-board.stl",
+      "refs": [
+        "=>[0:1:1:13]"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "Coaster_PCB"
+    },
+    "support": {
+      "asset": "coaster-support.stl",
+      "refs": [
+        "C1",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C14",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "D1",
+        "F1",
+        "R1",
+        "R2",
+        "R27",
+        "R28",
+        "R3",
+        "U2"
+      ],
+      "sources": [
+        "pcb_step"
+      ]
+    },
+    "u1_veml7700": {
+      "asset": "coaster-u1-veml.stl",
+      "refs": [
+        "U1"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "VEML7700-TT"
+    },
+    "u3_mcu": {
+      "asset": "coaster-u3-mcu.stl",
+      "refs": [
+        "U3"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "TSSOP-20_4.4x6.5mm_P0.65mm"
+    },
+    "u4_sht4x": {
+      "asset": "coaster-u4-sht.stl",
+      "refs": [
+        "U4"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "SHT4x_DFN-4_1.5x1.5mm"
+    },
+    "u6_level_shifter": {
+      "asset": "coaster-u6-level.stl",
+      "refs": [
+        "U6"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "SOT-23-5"
+    }
+  },
+  "pcb_step_components": [
+    {
+      "bounds_mm": [
+        132.469671,
+        -93.202829,
+        1.582171,
+        133.995329,
+        -91.677171,
+        2.147829
+      ],
+      "ref": "U4",
+      "step_product": "SHT4x_DFN-4_1.5x1.5mm"
+    },
+    {
+      "bounds_mm": [
+        132.38986,
+        -68.18014,
+        1.59486,
+        133.99014,
+        -64.97986,
+        2.14514
+      ],
+      "ref": "F1",
+      "step_product": "Fuse_1206_3216Metric"
+    },
+    {
+      "bounds_mm": [
+        165.047693,
+        -99.892307,
+        1.572693,
+        167.062307,
+        -97.887693,
+        2.417307
+      ],
+      "ref": "LED118",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        163.667693,
+        -106.612307,
+        1.572693,
+        165.682307,
+        -104.607693,
+        2.417307
+      ],
+      "ref": "LED122",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        99.627693,
+        -88.932307,
+        1.572693,
+        101.642307,
+        -86.927693,
+        2.417307
+      ],
+      "ref": "LED100",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        122.609743,
+        -83.870257,
+        1.594743,
+        124.210257,
+        -83.069743,
+        2.395257
+      ],
+      "ref": "C7",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        125.289829,
+        -58.430171,
+        1.594829,
+        126.890171,
+        -57.629829,
+        2.045171
+      ],
+      "ref": "R3",
+      "step_product": "R_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        146.797693,
+        -65.322307,
+        1.572693,
+        148.812307,
+        -63.317693,
+        2.417307
+      ],
+      "ref": "LED98",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        128.406792,
+        -61.323208,
+        0.411792,
+        138.013208,
+        -52.756792,
+        5.179208
+      ],
+      "ref": "J1",
+      "step_product": "USB_C_HRO_TYPE-C-31-M-12"
+    },
+    {
+      "bounds_mm": [
+        139.167693,
+        -62.832307,
+        1.572693,
+        141.182307,
+        -60.827693,
+        2.417307
+      ],
+      "ref": "LED94",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        137.864743,
+        -87.430257,
+        1.594743,
+        139.465257,
+        -86.629743,
+        2.395257
+      ],
+      "ref": "C8",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        139.367693,
+        -128.322307,
+        1.572693,
+        141.382307,
+        -126.317693,
+        2.417307
+      ],
+      "ref": "LED111",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        111.047693,
+        -69.372307,
+        1.572693,
+        113.062307,
+        -67.367693,
+        2.417307
+      ],
+      "ref": "LED112",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        131.509743,
+        -125.070257,
+        1.594743,
+        133.110257,
+        -124.269743,
+        2.395257
+      ],
+      "ref": "C14",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        135.532329,
+        -92.820171,
+        1.594829,
+        136.332671,
+        -91.219829,
+        2.045171
+      ],
+      "ref": "R27",
+      "step_product": "R_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        127.989743,
+        -67.940257,
+        1.594743,
+        128.790257,
+        -66.339743,
+        2.395257
+      ],
+      "ref": "C13",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        99.167693,
+        -98.212307,
+        1.572693,
+        101.182307,
+        -96.207693,
+        2.417307
+      ],
+      "ref": "LED96",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        106.007693,
+        -74.542307,
+        1.572693,
+        108.022307,
+        -72.537693,
+        2.417307
+      ],
+      "ref": "LED108",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        160.777693,
+        -113.152307,
+        1.572693,
+        162.792307,
+        -111.147693,
+        2.417307
+      ],
+      "ref": "LED123",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        158.907693,
+        -75.172307,
+        1.572693,
+        160.922307,
+        -73.167693,
+        2.417307
+      ],
+      "ref": "LED106",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        102.007693,
+        -81.022307,
+        1.572693,
+        104.022307,
+        -79.017693,
+        2.417307
+      ],
+      "ref": "LED104",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        122.619743,
+        -85.740257,
+        1.594743,
+        124.220257,
+        -84.939743,
+        2.395257
+      ],
+      "ref": "C10",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        109.587693,
+        -120.472307,
+        1.572693,
+        111.602307,
+        -118.467693,
+        2.417307
+      ],
+      "ref": "LED99",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        134.589743,
+        -104.330257,
+        1.594743,
+        136.190257,
+        -103.529743,
+        2.395257
+      ],
+      "ref": "C1",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        130.589743,
+        -104.310257,
+        1.594743,
+        132.190257,
+        -103.509743,
+        2.395257
+      ],
+      "ref": "C2",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        153.707693,
+        -69.742307,
+        1.572693,
+        155.722307,
+        -67.737693,
+        2.417307
+      ],
+      "ref": "LED102",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        117.377693,
+        -65.452307,
+        1.572693,
+        119.392307,
+        -63.447693,
+        2.417307
+      ],
+      "ref": "LED116",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        137.149829,
+        -65.400171,
+        1.594829,
+        137.950171,
+        -63.799829,
+        2.045171
+      ],
+      "ref": "R1",
+      "step_product": "R_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        103.897693,
+        -113.552307,
+        1.572693,
+        105.912307,
+        -111.547693,
+        2.417307
+      ],
+      "ref": "LED95",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        117.017693,
+        -125.552307,
+        1.572693,
+        119.032307,
+        -123.547693,
+        2.417307
+      ],
+      "ref": "LED103",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        129.797885,
+        -99.622115,
+        0.592885,
+        136.602115,
+        -96.617047,
+        2.947115
+      ],
+      "ref": "U1",
+      "step_product": "VEML7700-TT"
+    },
+    {
+      "bounds_mm": [
+        100.567693,
+        -106.182307,
+        1.572693,
+        102.582307,
+        -104.177693,
+        2.417307
+      ],
+      "ref": "LED71",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        155.477693,
+        -119.912307,
+        1.572693,
+        157.492307,
+        -117.907693,
+        2.417307
+      ],
+      "ref": "LED119",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        139.499829,
+        -58.370171,
+        1.594829,
+        141.100171,
+        -57.569829,
+        2.045171
+      ],
+      "ref": "R2",
+      "step_product": "R_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        125.047693,
+        -62.872307,
+        1.572693,
+        127.062307,
+        -60.867693,
+        2.417307
+      ],
+      "ref": "LED120",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        138.099743,
+        -78.670257,
+        1.594743,
+        139.700257,
+        -77.869743,
+        2.395257
+      ],
+      "ref": "C6",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        137.917162,
+        -84.650338,
+        1.572162,
+        140.762838,
+        -81.704662,
+        3.167838
+      ],
+      "ref": "U6",
+      "step_product": "SOT-23-5"
+    },
+    {
+      "bounds_mm": [
+        129.88327,
+        -77.18673,
+        1.54827,
+        136.47673,
+        -70.09327,
+        3.34173
+      ],
+      "ref": "U2",
+      "step_product": "SOT-223"
+    },
+    {
+      "bounds_mm": [
+        137.864743,
+        -89.460257,
+        1.594743,
+        139.465257,
+        -88.659743,
+        2.395257
+      ],
+      "ref": "C9",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        164.937693,
+        -90.612307,
+        1.572693,
+        166.952307,
+        -88.607693,
+        2.417307
+      ],
+      "ref": "LED114",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        128.532243,
+        -91.710257,
+        1.594743,
+        130.132757,
+        -90.909743,
+        2.395257
+      ],
+      "ref": "C3",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        134.889743,
+        -125.040257,
+        1.594743,
+        136.490257,
+        -124.239743,
+        2.395257
+      ],
+      "ref": "C11",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        129.934759,
+        -86.535241,
+        1.569759,
+        136.485241,
+        -80.084759,
+        2.820241
+      ],
+      "ref": "U3",
+      "step_product": "TSSOP-20_4.4x6.5mm_P0.65mm"
+    },
+    {
+      "bounds_mm": [
+        126.737693,
+        -128.562307,
+        1.572693,
+        128.752307,
+        -126.557693,
+        2.417307
+      ],
+      "ref": "LED107",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        128.542243,
+        -93.320257,
+        1.594743,
+        130.142757,
+        -92.519743,
+        2.395257
+      ],
+      "ref": "C4",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        129.868533,
+        -68.351467,
+        1.563533,
+        131.531467,
+        -64.788533,
+        2.726467
+      ],
+      "ref": "D1",
+      "step_product": "D_SOD-123FL"
+    },
+    {
+      "bounds_mm": [
+        138.099743,
+        -77.080257,
+        1.594743,
+        139.700257,
+        -76.279743,
+        2.395257
+      ],
+      "ref": "C5",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        162.967693,
+        -82.502307,
+        1.572693,
+        164.982307,
+        -80.497693,
+        2.417307
+      ],
+      "ref": "LED110",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        148.717693,
+        -124.902307,
+        1.572693,
+        150.732307,
+        -122.897693,
+        2.417307
+      ],
+      "ref": "LED115",
+      "step_product": "RGB_LED_2020_2.0x2.0"
+    },
+    {
+      "bounds_mm": [
+        126.569743,
+        -70.070257,
+        1.594743,
+        128.170257,
+        -69.269743,
+        2.395257
+      ],
+      "ref": "C12",
+      "step_product": "C_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        127.129829,
+        -86.750171,
+        1.594829,
+        128.730171,
+        -85.949829,
+        2.045171
+      ],
+      "ref": "R28",
+      "step_product": "R_0603_1608Metric"
+    },
+    {
+      "bounds_mm": [
+        93.2,
+        -134.619362,
+        -0.039151,
+        173.239151,
+        -54.560638,
+        1.549151
+      ],
+      "ref": "=>[0:1:1:13]",
+      "step_product": "Coaster_PCB"
+    }
+  ],
+  "schema_version": 1,
+  "sources": {
+    "base_step": {
+      "file": "Coaster Base.step",
+      "sha256": "269105f585809925785f22f82d4cf498876608b314f3a5b3da08f688b817d675",
+      "size_bytes": 30080
+    },
+    "lid_step": {
+      "file": "Coaster Lid.step",
+      "sha256": "149c08645c2c9554a94ddb8228ab7267dfc78ea1bf31b0639c0d5781e1c60237",
+      "size_bytes": 27906
+    },
+    "pcb_kicad": {
+      "file": "Coaster.kicad_pcb",
+      "sha256": "38364fe34ceb80bb8593fe3493d2d294342f8922a202a25c10380c2543f6bc39",
+      "size_bytes": 557735
+    },
+    "pcb_step": {
+      "file": "Coaster.step",
+      "sha256": "a4c00baad1b7f61afa350ac92af305a30b76c10a09a0d88aae83c839702a2701",
+      "size_bytes": 4770617
+    }
+  },
+  "uncertainties": [
+    "The KiCad-exported board occurrence is named '=>[0:1:1:13]' in Coaster.step; it is assigned to pcb_board by its STEP product name 'Coaster_PCB'.",
+    "J2 is a four-pad pogo/SWD footprint with no 3D occurrence in Coaster.step. coaster-j2-swd.stl therefore represents the exact KiCad pad outer sizes, drill sizes and positions as a visual envelope spanning the STEP substrate Z range; it is not a connector body or literal copper-volume model.",
+    "Coaster.kicad_pcb declares 1.600 mm board thickness while the exported STEP substrate Z span is 1.588 mm; J2 uses the STEP Z span so it aligns with the browser PCB model.",
+    "coaster-support.stl groups all remaining STEP component occurrences (passives, protection and regulator/support parts) after the requested board/LED/U3/U4/U1/J1/U6 groups are removed."
+  ],
+  "units": "millimetres"
+}
