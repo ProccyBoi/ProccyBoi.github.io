@@ -14,8 +14,16 @@
   const partDetail = root.querySelector('[data-coaster-part-detail]');
   const liveRegion = document.querySelector('[data-coaster-live]');
   const announce = (message) => { if (liveRegion) liveRegion.textContent = message; };
+  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let reducedMotion = motionQuery.matches;
+  const scriptUrl = document.currentScript?.src ? new URL(document.currentScript.src, window.location.href) : null;
+  const assetVersion = scriptUrl?.searchParams.get('v') || 'dev';
+  const versionedAsset = (file) => `${file}?v=${encodeURIComponent(assetVersion)}`;
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const renderer = window.PortfolioExplorer?.createRenderer
+    ? window.PortfolioExplorer.createRenderer(THREE, { canvas, antialias: true, alpha: true })
+    : new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  if (!renderer) return;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -36,8 +44,8 @@
 
   const mat = {
     base: new THREE.MeshPhysicalMaterial({ color: 0xb7c8c5, roughness: 0.20, metalness: 0, transparent: true, opacity: 0.16, transmission: 0.05, clearcoat: 0.46, clearcoatRoughness: 0.20, side: THREE.DoubleSide, depthWrite: false }),
-    lid: new THREE.MeshPhysicalMaterial({ color: 0xc9d8d5, roughness: 0.16, metalness: 0, transparent: true, opacity: 0.095, transmission: 0.04, clearcoat: 0.48, clearcoatRoughness: 0.18, side: THREE.DoubleSide, depthWrite: false }),
-    board: new THREE.MeshPhysicalMaterial({ color: 0x173b2b, roughness: 0.50, metalness: 0.015, clearcoat: 0.08, clearcoatRoughness: 0.66 }),
+    lid: new THREE.MeshPhysicalMaterial({ color: 0xc9d8d5, roughness: 0.16, metalness: 0, transparent: true, opacity: 0.055, transmission: 0.025, clearcoat: 0.48, clearcoatRoughness: 0.18, side: THREE.DoubleSide, depthWrite: false }),
+    board: new THREE.MeshBasicMaterial({ color: 0x030404, side: THREE.DoubleSide }),
     leds: new THREE.MeshStandardMaterial({ color: 0xe6f4ec, roughness: 0.31, emissive: 0x55ffd4, emissiveIntensity: 0.52 }),
     chip: new THREE.MeshStandardMaterial({ color: 0x151718, roughness: 0.48, metalness: 0.03 }),
     ceramic: new THREE.MeshStandardMaterial({ color: 0xe2dfd8, roughness: 0.38, metalness: 0.01 }),
@@ -49,7 +57,7 @@
 
   const partSpecs = [
     { key: 'base', file: 'coaster-base.stl', material: mat.base, name: 'Bottom enclosure', detail: 'Exact Coaster Base.step geometry.', offset: [0, 0, -9], delay: 0.00 },
-    { key: 'board', file: 'coaster-board.stl', material: mat.board, name: '80 mm PCB', detail: 'PCB substrate from the KiCad-exported Coaster.step assembly.', offset: [0, 0, 0], delay: 0.00 },
+    { key: 'board', file: 'coaster-board.stl', material: mat.board, name: '80 mm PCB', detail: 'Black solder mask with exact KiCad F.Mask openings and F.SilkS artwork over the STEP board geometry.', offset: [0, 0, 0], delay: 0.00 },
     { key: 'support', file: 'coaster-support.stl', material: mat.support, name: 'Support components', detail: 'Passives, regulator and remaining fitted components grouped from the KiCad STEP assembly.', offset: [0, 0, 5.0], delay: 0.18 },
     { key: 'leds', file: 'coaster-led-ring.stl', material: mat.leds, name: '24 × RGB LEDs', detail: 'WS2812C-2020 ring using the exact fitted LED solids and board positions.', offset: [0, 0, 6.0], delay: 0.13 },
     { key: 'mcu', file: 'coaster-u3-mcu.stl', material: mat.chip, name: 'U3 · STM32C011F6P', detail: '48 MHz Cortex-M0+ MCU in TSSOP-20.', offset: [0, -2.5, 12.5], delay: 0.25 },
@@ -88,9 +96,123 @@
   const wrappers = new Map();
   const pickMeshes = [];
   let loaded = 0;
+  let surfaceLoaded = 0;
+  let surfaceSetupStarted = false;
+  let backSurfaceSetupStarted = false;
+  let ensureBackSurface = () => {};
   let lidVisible = true;
   let explodeTarget = 0;
   let explodeProgress = 0;
+  let needsRender = true;
+
+  const invalidate = () => { needsRender = true; };
+  motionQuery.addEventListener?.('change', (event) => {
+    reducedMotion = event.matches;
+    if (reducedMotion) {
+      yaw = targetYaw;
+      pitch = targetPitch;
+      distance = targetDistance;
+      explodeProgress = explodeTarget;
+    }
+    invalidate();
+  });
+
+  const maybeReady = () => {
+    if (loaded !== partSpecs.length || surfaceLoaded !== 2) return;
+    status.textContent = 'STEP + KiCad board surfaces loaded';
+    status.classList.add('is-ready');
+    announce('Coaster source-derived 3D model ready');
+  };
+  mat.board.toneMapped = false;
+
+  const attachBoardSurface = (manifest) => {
+    if (surfaceSetupStarted) return;
+    const boardWrapper = wrappers.get('board');
+    const registration = manifest?.surface_registration;
+    const assets = manifest?.surface_assets;
+    if (!boardWrapper || !registration || !assets) return;
+    surfaceSetupStarted = true;
+
+    const [vx, vy, vw, vh] = registration.svg_viewbox_mm;
+    const [boardCx, boardCy] = registration.board_center_svg_mm;
+    const pageCx = vx + vw / 2;
+    const pageCy = vy + vh / 2;
+    const localX = pageCx - boardCx;
+    const localY = boardCy - pageCy;
+    const boardBottom = registration.board_bottom_z_mm;
+    const boardTop = registration.board_top_z_mm;
+
+    const addSurface = (asset, zPosition, renderOrder, label, countForReady) => {
+      if (!asset?.file) {
+        console.warn(`Coaster ${label} asset metadata missing`);
+        return;
+      }
+      const material = new THREE.MeshBasicMaterial({
+        transparent: true,
+        alphaTest: 0.004,
+        depthTest: true,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      material.toneMapped = false;
+      const overlay = new THREE.Mesh(new THREE.PlaneGeometry(vw, vh), material);
+      overlay.position.set(localX, localY, zPosition);
+      overlay.renderOrder = renderOrder;
+      overlay.frustumCulled = false;
+      overlay.raycast = () => {};
+      boardWrapper.add(overlay);
+
+      new THREE.TextureLoader().load(
+        `${assetBase}${asset.file}?v=${asset.sha256?.slice(0, 16) || assetVersion}`,
+        (texture) => {
+          texture.encoding = THREE.sRGBEncoding;
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+          texture.generateMipmaps = true;
+          texture.minFilter = THREE.LinearMipmapLinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          material.map = texture;
+          material.needsUpdate = true;
+          invalidate();
+          if (countForReady) {
+            surfaceLoaded += 1;
+            maybeReady();
+          }
+        },
+        undefined,
+        (error) => {
+          status.textContent = `KiCad ${label} unavailable`;
+          status.classList.remove('is-ready');
+          console.warn(`Coaster ${label} texture failed to load`, error);
+        }
+      );
+    };
+
+    // The generated opening texture combines exact F.Mask with F.Cu: copper-backed
+    // openings use the representative plated-copper finish while copper-clearance
+    // openings show laminate.  F.SilkS sits above that with mask subtraction
+    // already applied by KiCad's plotter.
+    addSurface(assets.front_mask_openings, boardTop + 0.020, 105, 'front solder-mask openings', true);
+    addSurface(assets.front_silkscreen, boardTop + 0.050, 110, 'front silkscreen', true);
+    ensureBackSurface = () => {
+      if (backSurfaceSetupStarted) return;
+      backSurfaceSetupStarted = true;
+      addSurface(assets.back_mask_openings, boardBottom - 0.020, 105, 'back solder-mask openings', false);
+      addSurface(assets.back_silkscreen, boardBottom - 0.050, 110, 'back silkscreen', false);
+    };
+  };
+
+  let surfaceManifest = null;
+  fetch(versionedAsset('assets/models/coaster/manifest.json'))
+    .then((response) => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
+    .then((manifest) => {
+      surfaceManifest = manifest;
+      attachBoardSurface(manifest);
+      invalidate();
+    })
+    .catch((error) => {
+      status.textContent = 'KiCad board surface metadata unavailable';
+      console.warn('Coaster surface manifest failed to load', error);
+    });
 
   const setPartPanel = (spec) => {
     if (!partPanel || !partName || !partDetail) return;
@@ -107,7 +229,7 @@
 
   const assetBase = 'assets/models/coaster/';
   partSpecs.forEach((spec) => {
-    fetch(assetBase + spec.file)
+    fetch(versionedAsset(assetBase + spec.file))
       .then((response) => { if (!response.ok) throw new Error(`${spec.file}: HTTP ${response.status}`); return response.arrayBuffer(); })
       .then((buffer) => {
         const geometry = parseBinarySTL(buffer);
@@ -125,11 +247,9 @@
         wrappers.set(spec.key, wrapper);
         if (!spec.transparent) pickMeshes.push(mesh);
         loaded += 1;
-        if (loaded === partSpecs.length) {
-          status.textContent = 'STEP + KiCad assembly loaded';
-          status.classList.add('is-ready');
-          announce('Coaster source-derived 3D model ready');
-        }
+        invalidate();
+        if (spec.key === 'board' && surfaceManifest) attachBoardSurface(surfaceManifest);
+        maybeReady();
       })
       .catch((error) => {
         console.warn('Coaster source mesh failed to load', error);
@@ -140,6 +260,7 @@
   const presets = {
     iso: { yaw: -36, pitch: 29, distance: 142 },
     top: { yaw: 0, pitch: 86, distance: 132 },
+    bottom: { yaw: 180, pitch: -84, distance: 132 },
     side: { yaw: -90, pitch: 9, distance: 136 }
   };
   let yaw = THREE.MathUtils.degToRad(presets.iso.yaw);
@@ -153,6 +274,13 @@
     targetYaw = THREE.MathUtils.degToRad(preset.yaw);
     targetPitch = THREE.MathUtils.degToRad(preset.pitch);
     targetDistance = preset.distance;
+    if (key === 'bottom') ensureBackSurface();
+    if (reducedMotion) {
+      yaw = targetYaw;
+      pitch = targetPitch;
+      distance = targetDistance;
+    }
+    invalidate();
     viewButtons.forEach((button) => {
       const active = button.dataset.coasterView === key;
       button.classList.toggle('is-active', active);
@@ -167,6 +295,7 @@
     lidVisible = !lidVisible;
     const lid = wrappers.get('lid');
     if (lid) lid.visible = lidVisible;
+    invalidate();
     lidButton.setAttribute('aria-pressed', String(lidVisible));
     lidButton.textContent = lidVisible ? 'Hide lid' : 'Show lid';
     announce(lidVisible ? 'Clear lid shown' : 'Clear lid hidden');
@@ -174,6 +303,8 @@
 
   explodeButton?.addEventListener('click', () => {
     explodeTarget = explodeTarget > 0.5 ? 0 : 1;
+    if (reducedMotion) explodeProgress = explodeTarget;
+    invalidate();
     explodeButton.setAttribute('aria-pressed', String(explodeTarget > 0.5));
     explodeButton.textContent = explodeTarget > 0.5 ? 'Assemble' : 'Explode';
     announce(explodeTarget > 0.5 ? 'Exploding coaster assembly' : 'Assembling coaster');
@@ -181,6 +312,7 @@
 
   resetButton?.addEventListener('click', () => {
     explodeTarget = 0;
+    if (reducedMotion) explodeProgress = 0;
     explodeButton?.setAttribute('aria-pressed', 'false');
     if (explodeButton) explodeButton.textContent = 'Explode';
     lidVisible = true;
@@ -190,10 +322,11 @@
     if (lidButton) lidButton.textContent = 'Hide lid';
     setPreset('iso', false);
     setPartPanel(null);
+    invalidate();
     announce('Coaster 3D view reset');
   });
 
-  const clampPitch = (value) => THREE.MathUtils.clamp(value, THREE.MathUtils.degToRad(-5), THREE.MathUtils.degToRad(88));
+  const clampPitch = (value) => THREE.MathUtils.clamp(value, THREE.MathUtils.degToRad(-88), THREE.MathUtils.degToRad(88));
   stage.addEventListener('pointerdown', (event) => {
     dragging = true; lastX = event.clientX; lastY = event.clientY;
     stage.classList.add('is-dragging');
@@ -203,6 +336,7 @@
     if (!dragging) return;
     targetYaw -= (event.clientX - lastX) * 0.008;
     targetPitch = clampPitch(targetPitch + (event.clientY - lastY) * 0.006);
+    invalidate();
     lastX = event.clientX; lastY = event.clientY;
   });
   const stopDrag = (event) => {
@@ -214,7 +348,32 @@
   stage.addEventListener('wheel', (event) => {
     event.preventDefault();
     targetDistance = THREE.MathUtils.clamp(targetDistance + event.deltaY * 0.06, 92, 205);
+    invalidate();
   }, { passive: false });
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const identifyNdc = (x, y, speak = false) => {
+    if (!pickMeshes.length) return;
+    pointer.x = x;
+    pointer.y = y;
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObjects(pickMeshes, false)[0];
+    const spec = hit?.object?.userData?.spec || null;
+    setPartPanel(spec);
+    if (speak && spec) announce(`${spec.name}. ${spec.detail}`);
+  };
+  const identifyAt = (event) => {
+    if (dragging) return;
+    const rect = canvas.getBoundingClientRect();
+    identifyNdc(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+  };
+  stage.addEventListener('pointermove', identifyAt);
+  stage.addEventListener('click', identifyAt);
+  stage.addEventListener('pointerleave', () => { if (!dragging) setPartPanel(null); });
 
   stage.addEventListener('keydown', (event) => {
     const step = THREE.MathUtils.degToRad(4);
@@ -222,24 +381,19 @@
     else if (event.key === 'ArrowRight') targetYaw -= step;
     else if (event.key === 'ArrowUp') targetPitch = clampPitch(targetPitch + step);
     else if (event.key === 'ArrowDown') targetPitch = clampPitch(targetPitch - step);
-    else return;
+    else if (event.key === 'Enter' || event.key === ' ') {
+      identifyNdc(0, 0, true);
+      event.preventDefault();
+      return;
+    } else return;
+    if (targetPitch < THREE.MathUtils.degToRad(-20)) ensureBackSurface();
+    if (reducedMotion) {
+      yaw = targetYaw;
+      pitch = targetPitch;
+    }
+    invalidate();
     event.preventDefault();
   });
-
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-  const identifyAt = (event) => {
-    if (dragging || !pickMeshes.length) return;
-    const rect = canvas.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(pickMeshes, false)[0];
-    setPartPanel(hit?.object?.userData?.spec || null);
-  };
-  stage.addEventListener('pointermove', identifyAt);
-  stage.addEventListener('click', identifyAt);
-  stage.addEventListener('pointerleave', () => { if (!dragging) setPartPanel(null); });
 
   const resize = () => {
     const rect = stage.getBoundingClientRect();
@@ -247,21 +401,38 @@
     renderer.setSize(rect.width, rect.height, false);
     camera.aspect = rect.width / rect.height;
     camera.updateProjectionMatrix();
+    invalidate();
   };
   new ResizeObserver(resize).observe(stage);
   resize();
 
   const smoothstep = (t) => { const x = THREE.MathUtils.clamp(t, 0, 1); return x * x * (3 - 2 * x); };
-  const clock = new THREE.Clock();
-  const animate = () => {
-    requestAnimationFrame(animate);
-    const dt = Math.min(clock.getDelta(), 0.05);
-    const smoothing = 1 - Math.pow(0.001, dt);
-    yaw += (targetYaw - yaw) * smoothing;
-    pitch += (targetPitch - pitch) * smoothing;
-    distance += (targetDistance - distance) * smoothing;
-    explodeProgress += (explodeTarget - explodeProgress) * (1 - Math.pow(0.018, dt));
+  let lastFrameTime = performance.now();
+  const renderFrame = () => {
+    const now = performance.now();
+    const dt = Math.min((now - lastFrameTime) / 1000, 0.05);
+    lastFrameTime = now;
+    const animating = !reducedMotion && (
+      Math.abs(targetYaw - yaw) > 0.0001 ||
+      Math.abs(targetPitch - pitch) > 0.0001 ||
+      Math.abs(targetDistance - distance) > 0.01 ||
+      Math.abs(explodeTarget - explodeProgress) > 0.0001
+    );
+    if (!needsRender && !animating) return;
+    if (reducedMotion) {
+      yaw = targetYaw;
+      pitch = targetPitch;
+      distance = targetDistance;
+      explodeProgress = explodeTarget;
+    } else {
+      const smoothing = 1 - Math.pow(0.001, dt);
+      yaw += (targetYaw - yaw) * smoothing;
+      pitch += (targetPitch - pitch) * smoothing;
+      distance += (targetDistance - distance) * smoothing;
+      explodeProgress += (explodeTarget - explodeProgress) * (1 - Math.pow(0.018, dt));
+    }
     if (Math.abs(explodeTarget - explodeProgress) < 0.0001) explodeProgress = explodeTarget;
+    if (pitch < THREE.MathUtils.degToRad(-20)) ensureBackSurface();
 
     partSpecs.forEach((spec) => {
       const wrapper = wrappers.get(spec.key);
@@ -279,9 +450,14 @@
     );
     camera.lookAt(target);
     renderer.render(scene, camera);
+    needsRender = false;
   };
 
   setPartPanel(null);
   setPreset('iso', false);
-  animate();
+  if (window.PortfolioExplorer?.start) window.PortfolioExplorer.start(renderFrame, stage);
+  else {
+    const animate = () => { requestAnimationFrame(animate); renderFrame(); };
+    animate();
+  }
 })();

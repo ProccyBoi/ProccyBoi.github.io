@@ -1034,11 +1034,94 @@
       "size_bytes": 4770617
     }
   },
+  "surface_assets": {
+    "back_mask_openings": {
+      "color": "#c99b43",
+      "file": "coaster-b-mask-openings.svg",
+      "intrinsic_pixels": [
+        1933,
+        1704
+      ],
+      "sha256": "864aeaecefae771282f9527478954804abc04fcfbaba6b1bd591805f93e145b4",
+      "size_bytes": 33064,
+      "source_layers": [
+        "B.Mask",
+        "B.Cu"
+      ],
+      "substrate_color": "#5a4932"
+    },
+    "back_silkscreen": {
+      "color": "#f2f1e9",
+      "file": "coaster-b-silkscreen.svg",
+      "intrinsic_pixels": [
+        1933,
+        1704
+      ],
+      "sha256": "62f6f1131d505d1c8dcda6c080da8b2cd0f4c02b4b002a36c866e1dc7fbcbc78",
+      "size_bytes": 65733,
+      "source_layers": [
+        "B.SilkS",
+        "B.Mask"
+      ]
+    },
+    "front_mask_openings": {
+      "color": "#c99b43",
+      "file": "coaster-f-mask-openings.svg",
+      "intrinsic_pixels": [
+        1933,
+        1704
+      ],
+      "sha256": "49a9dad6d1c2b03f75a053e3e41460c1d682c59164060fc4115141a9efef740b",
+      "size_bytes": 289475,
+      "source_layers": [
+        "F.Mask",
+        "F.Cu"
+      ],
+      "substrate_color": "#5a4932"
+    },
+    "front_silkscreen": {
+      "color": "#f2f1e9",
+      "file": "coaster-f-silkscreen.svg",
+      "intrinsic_pixels": [
+        1933,
+        1704
+      ],
+      "sha256": "c65a3f007265993584eca9843d77a0911e85b1a33fa8a997b52b5431f6aa1293",
+      "size_bytes": 56400,
+      "source_layers": [
+        "F.SilkS",
+        "F.Mask"
+      ]
+    }
+  },
+  "surface_registration": {
+    "board_bottom_z_mm": -0.039151,
+    "board_center_svg_mm": [
+      48.6,
+      43.0
+    ],
+    "board_radius_mm": 40.0,
+    "board_top_z_mm": 1.549151,
+    "mapping": "SVG +X maps STEP +X; SVG +Y maps STEP -Y",
+    "page_size_mm": [
+      96.6724,
+      85.217
+    ],
+    "svg_viewbox_mm": [
+      0.0,
+      0.0,
+      96.6724,
+      85.217
+    ],
+    "texture_pixels_per_mm": 20
+  },
   "uncertainties": [
     "The KiCad-exported board occurrence is named '=>[0:1:1:13]' in Coaster.step; it is assigned to pcb_board by its STEP product name 'Coaster_PCB'.",
     "J2 is a four-pad pogo/SWD footprint with no 3D occurrence in Coaster.step. coaster-j2-swd.stl therefore represents the exact KiCad pad outer sizes, drill sizes and positions as a visual envelope spanning the STEP substrate Z range; it is not a connector body or literal copper-volume model.",
     "Coaster.kicad_pcb declares 1.600 mm board thickness while the exported STEP substrate Z span is 1.588 mm; J2 uses the STEP Z span so it aligns with the browser PCB model.",
-    "coaster-support.stl groups all remaining STEP component occurrences (passives, protection and regulator/support parts) after the requested board/LED/U3/U4/U1/J1/U6 groups are removed."
+    "coaster-support.stl groups all remaining STEP component occurrences (passives, protection and regulator/support parts) after the requested board/LED/U3/U4/U1/J1/U6 groups are removed.",
+    "Coaster.kicad_pcb does not encode a solder-mask colour. The black solder-mask field is the specified manufacturing/product finish; the KiCad-derived SVGs provide the exact mask-opening and silkscreen geometry.",
+    "The mask-opening surface textures intersect exact F.Mask/B.Mask geometry with F.Cu/B.Cu. Copper-backed openings are visualised as #c99b43 and copper-clearance openings as representative laminate #5a4932; these display colours are not encoded in the KiCad file."
   ],
   "units": "millimetres"
 }

@@ -35,7 +35,7 @@ window.PortfolioExplorer = {
     } catch {
       const canvas = options.canvas;
       const stage = canvas.parentElement;
-      const root = canvas.closest("[data-pcb-object], [data-framework-inspector], [data-dual-usb-inspector]") || stage;
+      const root = canvas.closest("[data-pcb-object], [data-framework-inspector], [data-dual-usb-inspector], [data-coaster-inspector]") || stage;
       root.dataset.explorerUnavailable = "true";
       canvas.hidden = true;
       canvas.setAttribute("tabindex", "-1");
@@ -43,11 +43,11 @@ window.PortfolioExplorer = {
       stage.removeAttribute("tabindex");
       stage.removeAttribute("aria-label");
       // Only retire this 3D viewer; TramTrace's adjacent 2D inspector stays usable.
-      root.querySelectorAll(".pcb-object-toolbar, .framework-3d-toolbar, .framework-dual-3d-toolbar").forEach((toolbar) => {
+      root.querySelectorAll(".pcb-object-toolbar, .framework-3d-toolbar, .framework-dual-3d-toolbar, .coaster-3d-toolbar").forEach((toolbar) => {
         toolbar.querySelectorAll("button").forEach((button) => { button.disabled = true; });
         toolbar.hidden = true;
       });
-      root.querySelectorAll("[data-framework-status], [data-dual-usb-status], [data-dual-usb-part], .pcb-object-readout, .object-drag-hint, .pcb-object-stage-label").forEach((element) => {
+      root.querySelectorAll("[data-framework-status], [data-dual-usb-status], [data-dual-usb-part], [data-coaster-status], [data-coaster-part], .pcb-object-readout, .object-drag-hint, .pcb-object-stage-label").forEach((element) => {
         element.hidden = true;
       });
       const message = document.createElement("p");

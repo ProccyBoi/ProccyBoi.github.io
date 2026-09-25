@@ -14,7 +14,10 @@ import importlib.metadata
 import json
 import math
 import re
+import shutil
 import struct
+import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -70,6 +73,22 @@ ASSET_NAMES = {
     "j1_usb_c": "coaster-j1-usbc.stl",
     "j2_swd": "coaster-j2-swd.stl",
 }
+
+SURFACE_ASSET_NAMES = {
+    "front_silkscreen": "coaster-f-silkscreen.svg",
+    "front_mask_openings": "coaster-f-mask-openings.svg",
+    "back_silkscreen": "coaster-b-silkscreen.svg",
+    "back_mask_openings": "coaster-b-mask-openings.svg",
+}
+
+SURFACE_COLORS = {
+    "front_silkscreen": "#f2f1e9",
+    "front_mask_openings": "#c99b43",
+    "back_silkscreen": "#f2f1e9",
+    "back_mask_openings": "#c99b43",
+}
+SURFACE_SUBSTRATE_COLOR = "#5a4932"
+SURFACE_PIXELS_PER_MM = 20
 
 NAMED_COMPONENT_GROUPS = {
     "u3_mcu": "U3",
@@ -410,6 +429,242 @@ def package_version(distribution: str) -> str:
         return "unknown"
 
 
+def find_kicad_cli() -> Path:
+    discovered = shutil.which("kicad-cli")
+    if discovered:
+        return Path(discovered)
+    candidates = [
+        Path(r"C:\Program Files\KiCad\9.0\bin\kicad-cli.exe"),
+        Path(r"C:\Program Files\KiCad\8.0\bin\kicad-cli.exe"),
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise RuntimeError("kicad-cli was not found; required for source-derived PCB surface SVGs")
+
+
+def clean_svg_text(text: str) -> str:
+    """Normalise generated SVG text and strip per-line trailing whitespace."""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    return "\n".join(line.rstrip() for line in normalized.split("\n")).rstrip() + "\n"
+
+
+def normalize_plot_svg(
+    raw: str,
+    *,
+    title: str,
+    color: str,
+    pixel_size: tuple[int, int],
+) -> str:
+    """Make KiCad's SVG output deterministic and assign the browser surface colour."""
+    normalized = re.sub(r"<title>.*?</title>", f"<title>{title}</title>", raw, count=1, flags=re.S)
+    normalized = re.sub(
+        r'width="[0-9.]+mm"\s+height="[0-9.]+mm"',
+        f'width="{pixel_size[0]}px" height="{pixel_size[1]}px"',
+        normalized,
+        count=1,
+    )
+    normalized = normalized.replace("#000000", color).replace("#000", color)
+    return clean_svg_text(normalized)
+
+
+def svg_body(svg_text: str) -> str:
+    """Return only the drawable content from a KiCad SVG plot."""
+    match = re.search(r"<svg\b[^>]*>(.*)</svg>", svg_text, flags=re.S)
+    if not match:
+        raise RuntimeError("unable to extract KiCad SVG body")
+    body = match.group(1)
+    body = re.sub(r"<title>.*?</title>", "", body, flags=re.S)
+    body = re.sub(r"<desc>.*?</desc>", "", body, flags=re.S)
+    return body.strip()
+
+
+def recolor_svg_body(body: str, color: str) -> str:
+    """Recolour KiCad's black-and-white plot geometry without changing opacity."""
+    return body.replace("#000000", color).replace("#000", color)
+
+
+def build_opening_surface_svg(
+    *,
+    mask_svg: str,
+    copper_svg: str,
+    title: str,
+    pixel_size: tuple[int, int],
+    viewbox: list[float],
+    copper_color: str,
+    substrate_color: str,
+) -> str:
+    """Compose a physical solder-mask opening texture from exact KiCad plots.
+
+    F.Mask/B.Mask define where solder mask is absent.  The opening is rendered as
+    bare laminate first, then exact copper is drawn only where the Cu plot and the
+    mask opening overlap.  This prevents copper-clearance regions from being
+    incorrectly presented as ENIG/gold.
+    """
+    mask_body = svg_body(mask_svg)
+    copper_body = svg_body(copper_svg)
+    mask_white = recolor_svg_body(mask_body, "#ffffff")
+    openings_substrate = recolor_svg_body(mask_body, substrate_color)
+    copper_gold = recolor_svg_body(copper_body, copper_color)
+    x, y, width, height = viewbox
+    return clean_svg_text(
+        '<?xml version="1.0" standalone="no"?>\n'
+        '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" '
+        f'width="{pixel_size[0]}px" height="{pixel_size[1]}px" '
+        f'viewBox="{x:.4f} {y:.4f} {width:.4f} {height:.4f}">\n'
+        f'<title>{title}</title>\n'
+        '<defs>\n'
+        f'<mask id="coaster-mask-openings" maskUnits="userSpaceOnUse" x="{x:.4f}" y="{y:.4f}" width="{width:.4f}" height="{height:.4f}">\n'
+        f'{mask_white}\n'
+        '</mask>\n'
+        '</defs>\n'
+        f'{openings_substrate}\n'
+        '<g mask="url(#coaster-mask-openings)">\n'
+        f'{copper_gold}\n'
+        '</g>\n'
+        '</svg>\n'
+    )
+
+
+def svg_geometry(svg_text: str) -> tuple[list[float], list[float]]:
+    viewbox_match = re.search(
+        r'viewBox="([\-0-9.]+)\s+([\-0-9.]+)\s+([\-0-9.]+)\s+([\-0-9.]+)"',
+        svg_text,
+    )
+    size_match = re.search(r'width="([0-9.]+)mm"\s+height="([0-9.]+)mm"', svg_text)
+    if not viewbox_match or not size_match:
+        raise RuntimeError("unable to read KiCad SVG dimensions")
+    return (
+        [float(viewbox_match.group(i)) for i in range(1, 5)],
+        [float(size_match.group(1)), float(size_match.group(2))],
+    )
+
+
+def largest_edge_circle(svg_text: str) -> list[float]:
+    circles = [
+        (float(cx), float(cy), float(radius))
+        for cx, cy, radius in re.findall(
+            r'<circle\s+cx="([\-0-9.]+)"\s+cy="([\-0-9.]+)"\s+r="([\-0-9.]+)"',
+            svg_text,
+        )
+    ]
+    if not circles:
+        raise RuntimeError("Edge.Cuts SVG did not contain a registration circle")
+    cx, cy, radius = max(circles, key=lambda item: item[2])
+    return [cx, cy, radius]
+
+
+def build_surface_assets(pcb_path: Path, board_shape: TopoDS_Shape) -> tuple[dict[str, object], dict[str, dict[str, object]]]:
+    """Plot exact front silkscreen and solder-mask openings from KiCad.
+
+    The black board mesh represents the solder-mask field.  F.Mask is plotted as
+    the openings in that field (including the HALO mask artwork), then coloured
+    as exposed ENIG/copper for the browser.  F.SilkS is plotted separately after
+    subtracting solder-mask openings so the two source layers do not overlap.
+    """
+    kicad_cli = find_kicad_cli()
+    with tempfile.TemporaryDirectory(prefix="coaster-surface-") as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+        plot_specs = {
+            "front_silkscreen": ("F.SilkS", True),
+            "front_mask_openings": ("F.Mask", False),
+            "front_copper": ("F.Cu", False),
+            "back_silkscreen": ("B.SilkS", True),
+            "back_mask_openings": ("B.Mask", False),
+            "back_copper": ("B.Cu", False),
+            "edge_registration": ("Edge.Cuts", False),
+        }
+        plotted: dict[str, str] = {}
+        for key, (layers, subtract_mask) in plot_specs.items():
+            output = temp_dir / f"{key}.svg"
+            command = [
+                str(kicad_cli),
+                "pcb",
+                "export",
+                "svg",
+                str(pcb_path),
+                "--output",
+                str(output),
+                "--layers",
+                layers,
+                "--black-and-white",
+                "--fit-page-to-board",
+                "--exclude-drawing-sheet",
+                "--mode-single",
+            ]
+            if subtract_mask:
+                command.append("--subtract-soldermask")
+            subprocess.run(command, check=True, capture_output=True, text=True)
+            plotted[key] = output.read_text(encoding="utf-8")
+
+    viewbox, page_size = svg_geometry(plotted["edge_registration"])
+    edge_cx, edge_cy, edge_radius = largest_edge_circle(plotted["edge_registration"])
+    board_bounds = shape_bounds(board_shape)
+    registration = {
+        "svg_viewbox_mm": viewbox,
+        "page_size_mm": page_size,
+        "board_center_svg_mm": [round(edge_cx, 6), round(edge_cy, 6)],
+        "board_radius_mm": round(edge_radius, 6),
+        "board_bottom_z_mm": round(float(board_bounds[2]), 6),
+        "board_top_z_mm": round(float(board_bounds[5]), 6),
+        "texture_pixels_per_mm": SURFACE_PIXELS_PER_MM,
+        "mapping": "SVG +X maps STEP +X; SVG +Y maps STEP -Y",
+    }
+
+    pixel_size = (
+        int(round(page_size[0] * SURFACE_PIXELS_PER_MM)),
+        int(round(page_size[1] * SURFACE_PIXELS_PER_MM)),
+    )
+
+    surface_assets: dict[str, dict[str, object]] = {}
+    for key, filename in SURFACE_ASSET_NAMES.items():
+        color = SURFACE_COLORS[key]
+        titles = {
+            "front_silkscreen": "Coaster front silkscreen",
+            "front_mask_openings": "Coaster front solder-mask openings",
+            "back_silkscreen": "Coaster back silkscreen",
+            "back_mask_openings": "Coaster back solder-mask openings",
+        }
+        title = titles[key]
+        if key.endswith("mask_openings"):
+            side = "front" if key.startswith("front") else "back"
+            payload_text = build_opening_surface_svg(
+                mask_svg=plotted[key],
+                copper_svg=plotted[f"{side}_copper"],
+                title=title,
+                pixel_size=pixel_size,
+                viewbox=viewbox,
+                copper_color=color,
+                substrate_color=SURFACE_SUBSTRATE_COLOR,
+            )
+        else:
+            payload_text = normalize_plot_svg(
+                plotted[key],
+                title=title,
+                color=color,
+                pixel_size=pixel_size,
+            )
+        payload = payload_text.encode("utf-8")
+        path = OUTPUT_DIR / filename
+        path.write_bytes(payload)
+        surface_assets[key] = {
+            "file": filename,
+            "sha256": sha256_bytes(payload),
+            "size_bytes": len(payload),
+            "color": color,
+            "source_layers": {
+                "front_silkscreen": ["F.SilkS", "F.Mask"],
+                "front_mask_openings": ["F.Mask", "F.Cu"],
+                "back_silkscreen": ["B.SilkS", "B.Mask"],
+                "back_mask_openings": ["B.Mask", "B.Cu"],
+            }[key],
+            "intrinsic_pixels": list(pixel_size),
+        }
+        if key.endswith("mask_openings"):
+            surface_assets[key]["substrate_color"] = SURFACE_SUBSTRATE_COLOR
+    return registration, surface_assets
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -493,6 +748,10 @@ def main() -> None:
         path = OUTPUT_DIR / ASSET_NAMES[group]
         assets[group] = export_binary_stl(asset_shapes[group], path)
 
+    surface_registration, surface_assets = build_surface_assets(
+        source_paths["pcb_kicad"], board_component.shape
+    )
+
     source_manifest = {
         key: {
             "file": path.name,
@@ -564,6 +823,8 @@ def main() -> None:
         },
         "sources": source_manifest,
         "assets": assets,
+        "surface_assets": surface_assets,
+        "surface_registration": surface_registration,
         "groups": group_manifest,
         "pcb_step_components": [component_manifest(component) for component in components],
         "uncertainties": [
@@ -571,6 +832,8 @@ def main() -> None:
             "J2 is a four-pad pogo/SWD footprint with no 3D occurrence in Coaster.step. coaster-j2-swd.stl therefore represents the exact KiCad pad outer sizes, drill sizes and positions as a visual envelope spanning the STEP substrate Z range; it is not a connector body or literal copper-volume model.",
             f"Coaster.kicad_pcb declares {j2['board_thickness_mm']:.3f} mm board thickness while the exported STEP substrate Z span is {shape_bounds(board_component.shape)[5] - shape_bounds(board_component.shape)[2]:.3f} mm; J2 uses the STEP Z span so it aligns with the browser PCB model.",
             "coaster-support.stl groups all remaining STEP component occurrences (passives, protection and regulator/support parts) after the requested board/LED/U3/U4/U1/J1/U6 groups are removed.",
+            "Coaster.kicad_pcb does not encode a solder-mask colour. The black solder-mask field is the specified manufacturing/product finish; the KiCad-derived SVGs provide the exact mask-opening and silkscreen geometry.",
+            f"The mask-opening surface textures intersect exact F.Mask/B.Mask geometry with F.Cu/B.Cu. Copper-backed openings are visualised as {SURFACE_COLORS['front_mask_openings']} and copper-clearance openings as representative laminate {SURFACE_SUBSTRATE_COLOR}; these display colours are not encoded in the KiCad file.",
         ],
     }
 
@@ -581,12 +844,18 @@ def main() -> None:
         newline="\n",
     )
 
-    print(f"Wrote {len(assets)} binary STL assets and {manifest_path.relative_to(WEBSITE_ROOT)}")
+    print(
+        f"Wrote {len(assets)} binary STL assets, {len(surface_assets)} PCB surface SVGs and "
+        f"{manifest_path.relative_to(WEBSITE_ROOT)}"
+    )
     for group in ASSET_NAMES:
         info = assets[group]
         print(
             f"{info['file']}: {info['triangles']} triangles, {info['size_bytes']} bytes, {info['sha256']}"
         )
+    for key in SURFACE_ASSET_NAMES:
+        info = surface_assets[key]
+        print(f"{info['file']}: {info['size_bytes']} bytes, {info['sha256']}")
 
 
 if __name__ == "__main__":
