@@ -60,9 +60,7 @@
     optical: new THREE.MeshPhysicalMaterial({ color: 0x263b35, roughness: 0.2, metalness: 0.02, clearcoat: 0.28, clearcoatRoughness: 0.18 }),
     metal: new THREE.MeshStandardMaterial({ color: 0xb9bec0, roughness: 0.27, metalness: 0.78 }),
     mockCup: new THREE.MeshPhysicalMaterial({ color: 0xe7e0d5, roughness: 0.48, metalness: 0.01, clearcoat: 0.16, clearcoatRoughness: 0.34, side: THREE.DoubleSide }),
-    mockDrink: new THREE.MeshPhysicalMaterial({ color: 0x4c2114, roughness: 0.32, metalness: 0, clearcoat: 0.22, clearcoatRoughness: 0.28 }),
-    mockCan: new THREE.MeshPhysicalMaterial({ color: 0xb61622, roughness: 0.31, metalness: 0.34, clearcoat: 0.52, clearcoatRoughness: 0.20 }),
-    mockCanMetal: new THREE.MeshStandardMaterial({ color: 0xc8cccd, roughness: 0.22, metalness: 0.84 })
+    mockDrink: new THREE.MeshPhysicalMaterial({ color: 0x4c2114, roughness: 0.32, metalness: 0, clearcoat: 0.22, clearcoatRoughness: 0.28 })
   };
 
   const partSpecs = [
@@ -87,17 +85,12 @@
   const vesselSpecs = {
     cup: {
       name: 'Mock cup',
-      detail: 'Procedural visualiser mockup, not source CAD. It simulates a warm drink shadowing the VEML7700 and warming the local SHT4x reading.'
-    },
-    can: {
-      name: 'Mock Coke can',
-      detail: 'Procedural visualiser mockup, not source CAD. It simulates a cold can shadowing the VEML7700 and cooling the local SHT4x reading.'
+      detail: 'Procedural visualiser mockup, not source CAD. It drives the documented VEML7700 occupancy and SHT4x temperature-delta behaviour used by the current calm firmware.'
     }
   };
   const vesselStates = {
-    none: { label: 'Empty', lux: 320, temp: 23.0, mode: 'Idle · uncovered', ledColor: 0x55ffd4, ledBase: 0.22, ledPulse: 0, ledSpeed: 0, focusY: 2.7, camera: { iso: 142, top: 132, side: 136 } },
-    cup: { label: 'Warm cup', lux: 72, temp: 28.8, mode: 'Occupied · warm response', ledColor: 0xff7a35, ledBase: 0.64, ledPulse: 0.42, ledSpeed: 1.08, focusY: 42, camera: { iso: 184, top: 144, side: 190 } },
-    can: { label: 'Coke can', lux: 48, temp: 17.6, mode: 'Occupied · cool response', ledColor: 0x4acfff, ledBase: 0.68, ledPulse: 0.38, ledSpeed: 1.34, focusY: 60, camera: { iso: 220, top: 145, side: 230 } }
+    none: { label: 'Empty', lux: 320, temp: 23.0, focusY: 2.7, camera: { iso: 142, top: 132, side: 136 } },
+    cup: { label: 'Warm cup', lux: 72, temp: 28.8, focusY: 42, camera: { iso: 205, top: 158, side: 205 } }
   };
   const VESSEL_BASE_Z = 7.95;
   const vesselRoot = new THREE.Group();
@@ -124,33 +117,6 @@
   addVesselMesh(cupGroup, new THREE.TorusGeometry(11, 2.2, 10, 32), mat.mockCup, vesselSpecs.cup, { x: 30, z: VESSEL_BASE_Z + 44, rx: Math.PI / 2 });
   cupGroup.visible = false;
   vesselRoot.add(cupGroup);
-
-  const canGroup = new THREE.Group();
-  canGroup.name = 'Mock Coke can';
-  addVesselMesh(canGroup, new THREE.CylinderGeometry(33, 33, 115, 64), mat.mockCan, vesselSpecs.can, { z: VESSEL_BASE_Z + 57.5, rx: Math.PI / 2 });
-  addVesselMesh(canGroup, new THREE.CylinderGeometry(32.6, 32.6, 1.6, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 0.8, rx: Math.PI / 2 });
-  addVesselMesh(canGroup, new THREE.CylinderGeometry(32.6, 32.6, 1.6, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 114.2, rx: Math.PI / 2 });
-  addVesselMesh(canGroup, new THREE.TorusGeometry(31.8, 1.1, 8, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 115.1 });
-  addVesselMesh(canGroup, new THREE.TorusGeometry(31.8, 1.0, 8, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 0.1 });
-  addVesselMesh(canGroup, new THREE.BoxGeometry(10, 4, 0.9), mat.mockCanMetal, vesselSpecs.can, { y: -5, z: VESSEL_BASE_Z + 115.7, rz: -0.18 });
-
-  const canLabelCanvas = document.createElement('canvas');
-  canLabelCanvas.width = 512;
-  canLabelCanvas.height = 192;
-  const canLabelContext = canLabelCanvas.getContext('2d');
-  canLabelContext.clearRect(0, 0, canLabelCanvas.width, canLabelCanvas.height);
-  canLabelContext.fillStyle = '#ffffff';
-  canLabelContext.font = '700 104px Arial, sans-serif';
-  canLabelContext.textAlign = 'center';
-  canLabelContext.textBaseline = 'middle';
-  canLabelContext.fillText('COKE', 256, 100);
-  const canLabelTexture = new THREE.CanvasTexture(canLabelCanvas);
-  canLabelTexture.encoding = THREE.sRGBEncoding;
-  const canLabelMaterial = new THREE.MeshBasicMaterial({ map: canLabelTexture, transparent: true, depthWrite: false, side: THREE.FrontSide });
-  canLabelMaterial.toneMapped = false;
-  addVesselMesh(canGroup, new THREE.PlaneGeometry(44, 16), canLabelMaterial, vesselSpecs.can, { y: -33.18, z: VESSEL_BASE_Z + 64, rx: Math.PI / 2 });
-  canGroup.visible = false;
-  vesselRoot.add(canGroup);
 
   const parseBinarySTL = (buffer) => {
     if (buffer.byteLength < 84) throw new Error('Invalid STL');
@@ -189,27 +155,121 @@
   let needsRender = true;
   let vesselState = 'none';
   let sensorLux = vesselStates.none.lux;
-  let targetSensorLux = sensorLux;
   let sensorTemp = vesselStates.none.temp;
-  let targetSensorTemp = sensorTemp;
+  let tempReference = vesselStates.none.temp;
+  let occupied = false;
+  let occupancyCandidate = null;
+  let occupancyCandidateSince = 0;
+  let nextSensorSampleAt = 0;
+  let nextLedFrameAt = 0;
   let vesselLift = 0;
-  let lastSimUiUpdate = 0;
+  let firmwareLedSetupStarted = false;
+  const ledPixelMaterials = [];
+  const firmwareColour = new THREE.Color();
+  const firmwareCool = new THREE.Color(0x4aa9ff);
+  const firmwareNeutral = new THREE.Color(0x55ffd4);
+  const firmwareWarm = new THREE.Color(0xff7838);
+  const LIGHT_REFERENCE_LUX = vesselStates.none.lux;
+  const LIGHT_OCCUPIED_RATIO = 0.65;
+  const LIGHT_EMPTY_RATIO = 0.85;
+  const OCCUPANCY_HOLD_MS = 500;
+  const SENSOR_PERIOD_MS = 250;
+  const LED_FRAME_MS = 25;
+  const HIGHLIGHT_PERIOD_MS = 6000;
 
-  const updateSimulationReadout = () => {
+  const updateSimulationReadout = (now = performance.now()) => {
     const state = vesselStates[vesselState];
+    const ratio = LIGHT_REFERENCE_LUX > 0 ? sensorLux / LIGHT_REFERENCE_LUX : 0;
+    const delta = sensorTemp - tempReference;
+    let firmwareMode = occupied ? 'Calm highlight · 6.0 s/lap' : 'Empty · LEDs off';
+    if (occupancyCandidate === 'occupied') firmwareMode = 'Cup debounce · ' + Math.min(OCCUPANCY_HOLD_MS, Math.max(0, Math.round(now - occupancyCandidateSince))) + ' / 500 ms';
+    else if (occupancyCandidate === 'empty') firmwareMode = 'Removal debounce · ' + Math.min(OCCUPANCY_HOLD_MS, Math.max(0, Math.round(now - occupancyCandidateSince))) + ' / 500 ms';
     if (simVessel) simVessel.textContent = state.label;
-    if (simLux) simLux.textContent = Math.round(sensorLux) + ' lx';
-    if (simTemp) simTemp.textContent = sensorTemp.toFixed(1) + ' °C';
-    if (simMode) simMode.textContent = state.mode;
+    if (simLux) simLux.textContent = Math.round(sensorLux) + ' lx · ' + Math.round(ratio * 100) + '% ref';
+    if (simTemp) simTemp.textContent = sensorTemp.toFixed(1) + ' °C' + (occupied ? ' · Δ ' + (delta >= 0 ? '+' : '') + delta.toFixed(1) + ' °C' : '');
+    if (simMode) simMode.textContent = firmwareMode;
+    stage.dataset.coasterVessel = vesselState;
+    stage.dataset.coasterOccupied = String(occupied);
+    stage.dataset.coasterLedMode = occupied ? 'calm-highlight' : 'off';
+    stage.dataset.coasterCamera = currentView || 'iso';
+    stage.dataset.coasterTargetDistance = Number.isFinite(targetDistance) ? targetDistance.toFixed(1) : '';
   };
 
-  const updateLedAppearance = (now) => {
+  const setOccupancyCandidate = (candidate, now) => {
+    if (occupancyCandidate === candidate) return;
+    occupancyCandidate = candidate;
+    occupancyCandidateSince = now;
+  };
+
+  const sampleFirmwareSensors = (now) => {
+    if (now < nextSensorSampleAt) return;
+    nextSensorSampleAt = now + SENSOR_PERIOD_MS;
     const state = vesselStates[vesselState];
-    const pulse = vesselState === 'none' || reducedMotion
-      ? 0
-      : 0.5 + 0.5 * Math.sin(now * 0.004 * state.ledSpeed);
-    mat.leds.emissive.setHex(state.ledColor);
-    mat.leds.emissiveIntensity = state.ledBase + state.ledPulse * pulse;
+    sensorLux = state.lux;
+    sensorTemp = state.temp;
+    const ratio = sensorLux / LIGHT_REFERENCE_LUX;
+
+    if (!occupied) {
+      if (ratio <= LIGHT_OCCUPIED_RATIO) {
+        setOccupancyCandidate('occupied', now);
+        if (now - occupancyCandidateSince >= OCCUPANCY_HOLD_MS) {
+          occupied = true;
+          occupancyCandidate = null;
+          occupancyCandidateSince = 0;
+          announce('Cup detected. Calm firmware highlight active.');
+        }
+      } else {
+        occupancyCandidate = null;
+        occupancyCandidateSince = 0;
+        if (vesselState === 'none') tempReference += (sensorTemp - tempReference) * 0.02;
+      }
+    } else if (ratio >= LIGHT_EMPTY_RATIO) {
+      setOccupancyCandidate('empty', now);
+      if (now - occupancyCandidateSince >= OCCUPANCY_HOLD_MS) {
+        occupied = false;
+        occupancyCandidate = null;
+        occupancyCandidateSince = 0;
+        tempReference = sensorTemp;
+        announce('Cup removed. LEDs off.');
+      }
+    } else {
+      occupancyCandidate = null;
+      occupancyCandidateSince = 0;
+    }
+    updateSimulationReadout(now);
+  };
+
+  const firmwareColourForDelta = (delta) => {
+    if (delta >= 0) return firmwareColour.copy(firmwareNeutral).lerp(firmwareWarm, THREE.MathUtils.clamp(delta / 6, 0, 1));
+    return firmwareColour.copy(firmwareNeutral).lerp(firmwareCool, THREE.MathUtils.clamp(-delta / 6, 0, 1));
+  };
+
+  const updateFirmwareLedFrame = (now, force = false) => {
+    if (!force && now < nextLedFrameAt) return;
+    if (force || nextLedFrameAt === 0) nextLedFrameAt = now + LED_FRAME_MS;
+    else {
+      nextLedFrameAt += LED_FRAME_MS;
+      if (nextLedFrameAt <= now - LED_FRAME_MS) nextLedFrameAt = now + LED_FRAME_MS;
+    }
+    if (!occupied) {
+      mat.leds.emissiveIntensity = 0;
+      ledPixelMaterials.forEach((material) => {
+        material.color.setHex(0x000000);
+        material.opacity = 0.015;
+      });
+      return;
+    }
+
+    const colour = firmwareColourForDelta(sensorTemp - tempReference);
+    mat.leds.emissive.copy(colour);
+    mat.leds.emissiveIntensity = 0.12;
+    const head = reducedMotion ? 0 : (now % HIGHLIGHT_PERIOD_MS) / HIGHLIGHT_PERIOD_MS * ledPixelMaterials.length;
+    ledPixelMaterials.forEach((material, index) => {
+      const trail = (head - index + ledPixelMaterials.length) % ledPixelMaterials.length;
+      const intensity = trail < 6 ? Math.max(0.10, Math.exp(-0.72 * trail)) : 0.035;
+      material.color.copy(colour);
+      material.opacity = intensity;
+    });
   };
 
   const invalidate = () => { needsRender = true; };
@@ -221,11 +281,10 @@
       distance = targetDistance;
       explodeProgress = explodeTarget;
       target.y = targetTargetY;
-      sensorLux = targetSensorLux;
-      sensorTemp = targetSensorTemp;
       vesselLift = 0;
+      sampleFirmwareSensors(performance.now());
+      updateFirmwareLedFrame(performance.now(), true);
       updateSimulationReadout();
-      updateLedAppearance(performance.now());
     }
     invalidate();
   });
@@ -314,12 +373,51 @@
     };
   };
 
+  const attachFirmwareLedPixels = (manifest) => {
+    if (firmwareLedSetupStarted) return;
+    const ledWrapper = wrappers.get('leds');
+    const components = manifest?.pcb_step_components?.filter((component) => /^LED\d+$/.test(component.ref)) || [];
+    if (!ledWrapper || components.length !== 24) return;
+    const localCentre = (component) => {
+      const [x0, y0, z0, x1, y1] = component.bounds_mm;
+      return { x: (x0 + x1) / 2 - 133.2, y: (y0 + y1) / 2 + 94.59 };
+    };
+    firmwareLedSetupStarted = true;
+    components.sort((a, b) => {
+      const ca = localCentre(a), cb = localCentre(b);
+      return Math.atan2(ca.y, ca.x) - Math.atan2(cb.y, cb.x);
+    });
+    components.forEach((component) => {
+      const [x0, y0, z0, x1, y1, z1] = component.bounds_mm;
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.015,
+        depthTest: true,
+        depthWrite: false,
+        side: THREE.FrontSide,
+        blending: THREE.AdditiveBlending
+      });
+      material.toneMapped = false;
+      const pixel = new THREE.Mesh(new THREE.PlaneGeometry(1.72, 1.72), material);
+      pixel.position.set((x0 + x1) / 2 - 133.2, (y0 + y1) / 2 + 94.59, z1 + 0.16);
+      pixel.renderOrder = 130;
+      pixel.raycast = () => {};
+      ledWrapper.add(pixel);
+      ledPixelMaterials.push(material);
+    });
+    stage.dataset.coasterLedPixels = String(ledPixelMaterials.length);
+    updateFirmwareLedFrame(performance.now(), true);
+    invalidate();
+  };
+
   let surfaceManifest = null;
   fetch(versionedAsset('assets/models/coaster/manifest.json'))
     .then((response) => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
     .then((manifest) => {
       surfaceManifest = manifest;
       attachBoardSurface(manifest);
+      attachFirmwareLedPixels(manifest);
       invalidate();
     })
     .catch((error) => {
@@ -362,6 +460,7 @@
         loaded += 1;
         invalidate();
         if (spec.key === 'board' && surfaceManifest) attachBoardSurface(surfaceManifest);
+        if (spec.key === 'leds' && surfaceManifest) attachFirmwareLedPixels(surfaceManifest);
         maybeReady();
       })
       .catch((error) => {
@@ -389,8 +488,8 @@
     targetYaw = THREE.MathUtils.degToRad(preset.yaw);
     targetPitch = THREE.MathUtils.degToRad(preset.pitch);
     targetDistance = preset.distance;
-    if (vesselState !== 'none' && key !== 'bottom') {
-      const vessel = vesselStates[vesselState];
+    if (vesselState === 'cup' && key !== 'bottom') {
+      const vessel = vesselStates.cup;
       targetDistance = Math.max(targetDistance, vessel.camera[key] || vessel.camera.iso);
       targetTargetY = vessel.focusY;
     } else {
@@ -415,43 +514,43 @@
   viewButtons.forEach((button) => button.addEventListener('click', () => setPreset(button.dataset.coasterView)));
 
   const setVessel = (nextState, speak = true) => {
-    const stateKey = vesselStates[nextState] ? nextState : 'none';
+    const stateKey = nextState === 'cup' ? 'cup' : 'none';
     vesselState = stateKey;
     const state = vesselStates[stateKey];
     cupGroup.visible = stateKey === 'cup';
-    canGroup.visible = stateKey === 'can';
     vesselButtons.forEach((button) => {
       const active = button.dataset.coasterVessel === stateKey;
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-pressed', String(active));
     });
-    targetSensorLux = state.lux;
-    targetSensorTemp = state.temp;
-    if (stateKey !== 'none') {
+    nextSensorSampleAt = 0;
+
+    if (stateKey === 'cup') {
       vesselLift = reducedMotion ? 0 : 12;
-      if (currentView === 'bottom') setPreset('iso', false);
-      else {
-        targetTargetY = state.focusY;
-        targetDistance = Math.max(targetDistance, state.camera[currentView] || state.camera.iso);
-      }
+      setPreset('iso', false);
+      targetTargetY = state.focusY;
+      targetDistance = state.camera.iso;
     } else {
+      setPreset('iso', false);
       targetTargetY = 2.7;
-      if (currentView === 'iso' && targetDistance > presets.iso.distance) targetDistance = presets.iso.distance;
+      targetDistance = presets.iso.distance;
     }
+
     if (reducedMotion) {
-      sensorLux = targetSensorLux;
-      sensorTemp = targetSensorTemp;
+      yaw = targetYaw;
+      pitch = targetPitch;
+      distance = targetDistance;
       target.y = targetTargetY;
       vesselLift = 0;
     }
+    sampleFirmwareSensors(performance.now());
+    updateFirmwareLedFrame(performance.now(), true);
     updateSimulationReadout();
-    updateLedAppearance(performance.now());
     invalidate();
-    if (speak) {
-      announce(stateKey === 'none'
-        ? 'Drink simulation cleared. Coaster uncovered.'
-        : state.label + ' placed. Simulated ' + Math.round(state.lux) + ' lux and ' + state.temp.toFixed(1) + ' degrees Celsius.');
-    }
+    window.setTimeout(() => { invalidate(); }, OCCUPANCY_HOLD_MS + SENSOR_PERIOD_MS + 40);
+    if (speak) announce(stateKey === 'cup'
+      ? 'Mock cup placed. Camera zoomed out; firmware shadow debounce started.'
+      : 'Drink simulation cleared. Firmware removal debounce started.');
   };
 
   vesselButtons.forEach((button) => button.addEventListener('click', () => setVessel(button.dataset.coasterVessel)));
@@ -550,7 +649,6 @@
   stage.addEventListener('keydown', (event) => {
     if (event.key === '1') { setVessel('none'); event.preventDefault(); return; }
     if (event.key === '2') { setVessel('cup'); event.preventDefault(); return; }
-    if (event.key === '3') { setVessel('can'); event.preventDefault(); return; }
     const step = THREE.MathUtils.degToRad(4);
     if (event.key === 'ArrowLeft') targetYaw += step;
     else if (event.key === 'ArrowRight') targetYaw -= step;
@@ -592,11 +690,9 @@
       Math.abs(targetPitch - pitch) > 0.0001 ||
       Math.abs(targetDistance - distance) > 0.01 ||
       Math.abs(targetTargetY - target.y) > 0.01 ||
-      Math.abs(targetSensorLux - sensorLux) > 0.2 ||
-      Math.abs(targetSensorTemp - sensorTemp) > 0.02 ||
       Math.abs(vesselLift) > 0.01 ||
       Math.abs(explodeTarget - explodeProgress) > 0.0001 ||
-      vesselState !== 'none'
+      (!reducedMotion && (vesselState === 'cup' || occupied || occupancyCandidate !== null))
     );
     if (!needsRender && !animating) return;
     if (reducedMotion) {
@@ -605,8 +701,6 @@
       distance = targetDistance;
       explodeProgress = explodeTarget;
       target.y = targetTargetY;
-      sensorLux = targetSensorLux;
-      sensorTemp = targetSensorTemp;
       vesselLift = 0;
     } else {
       const smoothing = 1 - Math.pow(0.001, dt);
@@ -614,12 +708,11 @@
       pitch += (targetPitch - pitch) * smoothing;
       distance += (targetDistance - distance) * smoothing;
       target.y += (targetTargetY - target.y) * smoothing;
-      sensorLux += (targetSensorLux - sensorLux) * (1 - Math.pow(0.004, dt));
-      sensorTemp += (targetSensorTemp - sensorTemp) * (1 - Math.pow(0.010, dt));
       vesselLift += (0 - vesselLift) * (1 - Math.pow(0.006, dt));
       explodeProgress += (explodeTarget - explodeProgress) * (1 - Math.pow(0.018, dt));
     }
     if (Math.abs(explodeTarget - explodeProgress) < 0.0001) explodeProgress = explodeTarget;
+    sampleFirmwareSensors(now);
     if (pitch < THREE.MathUtils.degToRad(-20)) ensureBackSurface();
 
     partSpecs.forEach((spec) => {
@@ -631,11 +724,8 @@
     });
     const lidRaw = THREE.MathUtils.clamp((explodeProgress - 0.04) / 0.96, 0, 1);
     vesselRoot.position.z = 18 * smoothstep(lidRaw) + vesselLift;
-    updateLedAppearance(now);
-    if (now - lastSimUiUpdate > 90 || reducedMotion) {
-      updateSimulationReadout();
-      lastSimUiUpdate = now;
-    }
+    updateFirmwareLedFrame(now);
+    updateSimulationReadout(now);
 
     const cp = Math.cos(pitch);
     camera.position.set(
