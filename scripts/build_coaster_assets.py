@@ -12,7 +12,6 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
-import math
 import re
 import shutil
 import struct
@@ -24,10 +23,8 @@ from pathlib import Path
 import numpy as np
 import trimesh
 from OCP.BRep import BRep_Builder, BRep_Tool
-from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut
 from OCP.BRepBndLib import BRepBndLib
 from OCP.BRepMesh import BRepMesh_IncrementalMesh
-from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCylinder
 from OCP.Bnd import Bnd_Box
 from OCP.IFSelect import IFSelect_ReturnStatus
 from OCP.STEPCAFControl import STEPCAFControl_Reader
@@ -42,7 +39,6 @@ from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS, TopoDS_Compound, TopoDS_Shape
 from OCP.XCAFApp import XCAFApp_Application
 from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ShapeTool
-from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt
 
 
 WEBSITE_ROOT = Path(__file__).resolve().parents[1]
@@ -58,21 +54,31 @@ SOURCE_FILES = {
 
 LINEAR_DEFLECTION_MM = 0.08
 ANGULAR_DEFLECTION_RAD = 0.18
+COMPONENT_LINEAR_DEFLECTION_MM = 0.05
+COMPONENT_ANGULAR_DEFLECTION_RAD = 0.12
 EXPECTED_LED_COUNT = 24
 
 ASSET_NAMES = {
     "base": "coaster-base.stl",
     "lid": "coaster-lid.stl",
     "pcb_board": "coaster-board.stl",
-    "support": "coaster-support.stl",
     "led_ring": "coaster-led-ring.stl",
+    "capacitors": "coaster-capacitors.stl",
+    "resistors": "coaster-resistors.stl",
+    "f1_fuse": "coaster-f1-fuse.stl",
+    "d1_diode": "coaster-d1-diode.stl",
+    "u2_regulator": "coaster-u2-regulator.stl",
     "u3_mcu": "coaster-u3-mcu.stl",
     "u4_sht4x": "coaster-u4-sht.stl",
     "u1_veml7700": "coaster-u1-veml.stl",
     "u6_level_shifter": "coaster-u6-level.stl",
     "j1_usb_c": "coaster-j1-usbc.stl",
-    "j2_swd": "coaster-j2-swd.stl",
 }
+
+LEGACY_ASSET_NAMES = (
+    "coaster-support.stl",
+    "coaster-j2-swd.stl",
+)
 
 SURFACE_ASSET_NAMES = {
     "front_silkscreen": "coaster-f-silkscreen.svg",
@@ -202,12 +208,17 @@ def compound(shapes: list[TopoDS_Shape]) -> TopoDS_Compound:
     return result
 
 
-def shape_to_mesh(shape: TopoDS_Shape) -> trimesh.Trimesh:
+def shape_to_mesh(
+    shape: TopoDS_Shape,
+    *,
+    linear_deflection_mm: float = LINEAR_DEFLECTION_MM,
+    angular_deflection_rad: float = ANGULAR_DEFLECTION_RAD,
+) -> trimesh.Trimesh:
     mesher = BRepMesh_IncrementalMesh(
         shape,
-        LINEAR_DEFLECTION_MM,
+        linear_deflection_mm,
         False,
-        ANGULAR_DEFLECTION_RAD,
+        angular_deflection_rad,
         True,
     )
     mesher.Perform()
@@ -245,8 +256,18 @@ def shape_to_mesh(shape: TopoDS_Shape) -> trimesh.Trimesh:
     )
 
 
-def export_binary_stl(shape: TopoDS_Shape, path: Path) -> dict[str, object]:
-    mesh = shape_to_mesh(shape)
+def export_binary_stl(
+    shape: TopoDS_Shape,
+    path: Path,
+    *,
+    linear_deflection_mm: float = LINEAR_DEFLECTION_MM,
+    angular_deflection_rad: float = ANGULAR_DEFLECTION_RAD,
+) -> dict[str, object]:
+    mesh = shape_to_mesh(
+        shape,
+        linear_deflection_mm=linear_deflection_mm,
+        angular_deflection_rad=angular_deflection_rad,
+    )
     payload = trimesh.exchange.stl.export_stl(mesh)
     triangle_count = struct.unpack_from("<I", payload, 80)[0]
     expected_size = 84 + 50 * triangle_count
@@ -355,63 +376,6 @@ def kicad_j2(path: Path) -> dict[str, object]:
             "pads": pads,
         }
     raise ValueError("J2 footprint not found in Coaster.kicad_pcb")
-
-
-def j2_visual_shape(j2: dict[str, object], board_shape: TopoDS_Shape) -> TopoDS_Compound:
-    """Build a source-derived visual envelope for J2's through-hole SWD pads.
-
-    KiCad has no 3D model on J2.  The pad centre/size/drill data are exact; the
-    visual volume spans the STEP substrate Z range so the target can be moved as
-    its own exploded group without inventing connector hardware.
-    """
-
-    bx0, by0, bz0, bx1, by1, bz1 = shape_bounds(board_shape)
-    del bx0, by0, bx1, by1
-    height = bz1 - bz0
-    if height <= 0:
-        raise RuntimeError("invalid PCB substrate Z span")
-
-    origin_x, origin_y = (float(value) for value in j2["origin_mm"])
-    rotation = math.radians(float(j2["rotation_deg"]))
-    cos_a, sin_a = math.cos(rotation), math.sin(rotation)
-    pad_shapes: list[TopoDS_Shape] = []
-
-    for pad in j2["pads"]:
-        local_x, local_y = (float(value) for value in pad["at_mm"])
-        kicad_x = origin_x + local_x * cos_a - local_y * sin_a
-        kicad_y = origin_y + local_x * sin_a + local_y * cos_a
-        world_x, world_y = kicad_x, -kicad_y
-        size_x, size_y = (float(value) for value in pad["size_mm"])
-        drill_radius = float(pad["drill_mm"]) / 2.0
-
-        if pad["shape"] == "circle":
-            if not math.isclose(size_x, size_y, rel_tol=0.0, abs_tol=1e-9):
-                raise RuntimeError(f"J2 circular pad {pad['number']} has non-circular size")
-            outer = BRepPrimAPI_MakeCylinder(
-                gp_Ax2(gp_Pnt(world_x, world_y, bz0), gp_Dir(0, 0, 1)),
-                size_x / 2.0,
-                height,
-            ).Shape()
-        elif pad["shape"] in {"rect", "roundrect"}:
-            outer = BRepPrimAPI_MakeBox(
-                gp_Pnt(world_x - size_x / 2.0, world_y - size_y / 2.0, bz0),
-                size_x,
-                size_y,
-                height,
-            ).Shape()
-        else:
-            raise RuntimeError(f"unsupported J2 pad shape: {pad['shape']}")
-
-        hole = BRepPrimAPI_MakeCylinder(
-            gp_Ax2(gp_Pnt(world_x, world_y, bz0), gp_Dir(0, 0, 1)),
-            drill_radius,
-            height,
-        ).Shape()
-        ring = BRepAlgoAPI_Cut(outer, hole).Shape()
-        if ring.IsNull():
-            raise RuntimeError(f"failed to derive J2 pad {pad['number']} geometry")
-        pad_shapes.append(ring)
-    return compound(pad_shapes)
 
 
 def component_manifest(component: StepComponent) -> dict[str, object]:
@@ -681,6 +645,10 @@ def main() -> None:
         raise SystemExit("missing source file(s): " + ", ".join(missing))
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    for legacy_name in LEGACY_ASSET_NAMES:
+        legacy_path = OUTPUT_DIR / legacy_name
+        if legacy_path.exists():
+            legacy_path.unlink()
 
     base_shape = load_step_shape(source_paths["base_step"])
     lid_shape = load_step_shape(source_paths["lid_step"])
@@ -717,28 +685,47 @@ def main() -> None:
         )
     board_component = board_candidates[0]
 
-    consumed_refs = {component.ref for component in led_components}
-    consumed_refs.update(NAMED_COMPONENT_GROUPS.values())
-    consumed_refs.add(board_component.ref)
-    support_components = sorted(
-        (component for component in components if component.ref not in consumed_refs),
-        key=lambda component: component.ref,
-    )
-    if not support_components:
-        raise RuntimeError("support-component group unexpectedly empty")
-
     j2 = kicad_j2(source_paths["pcb_kicad"])
     if len(j2["pads"]) != 4:
         raise RuntimeError(f"expected four J2 pads, found {len(j2['pads'])}")
-    j2_shape = j2_visual_shape(j2, board_component.shape)
+
+    capacitor_components = sorted(
+        (component for component in components if re.fullmatch(r"C\d+", component.ref)),
+        key=lambda component: int(component.ref[1:]),
+    )
+    resistor_components = sorted(
+        (component for component in components if re.fullmatch(r"R\d+", component.ref)),
+        key=lambda component: int(component.ref[1:]),
+    )
+    if not capacitor_components or not resistor_components:
+        raise RuntimeError("expected source STEP capacitor and resistor groups")
+    for ref in ("F1", "D1", "U2"):
+        if ref not in by_ref:
+            raise RuntimeError(f"required detailed STEP ref missing: {ref}")
+
+    consumed_refs = {component.ref for component in led_components}
+    consumed_refs.update(component.ref for component in capacitor_components)
+    consumed_refs.update(component.ref for component in resistor_components)
+    consumed_refs.update(NAMED_COMPONENT_GROUPS.values())
+    consumed_refs.update({"F1", "D1", "U2", board_component.ref})
+    unexpected_refs = sorted(
+        component.ref for component in components if component.ref not in consumed_refs
+    )
+    if unexpected_refs:
+        raise RuntimeError(
+            "unclassified STEP component refs: " + ", ".join(unexpected_refs)
+        )
 
     asset_shapes: dict[str, TopoDS_Shape] = {
         "base": base_shape,
         "lid": lid_shape,
         "pcb_board": board_component.shape,
         "led_ring": compound([component.shape for component in led_components]),
-        "j2_swd": j2_shape,
-        "support": compound([component.shape for component in support_components]),
+        "capacitors": compound([component.shape for component in capacitor_components]),
+        "resistors": compound([component.shape for component in resistor_components]),
+        "f1_fuse": by_ref["F1"].shape,
+        "d1_diode": by_ref["D1"].shape,
+        "u2_regulator": by_ref["U2"].shape,
     }
     for group, ref in NAMED_COMPONENT_GROUPS.items():
         asset_shapes[group] = by_ref[ref].shape
@@ -746,7 +733,17 @@ def main() -> None:
     assets: dict[str, dict[str, object]] = {}
     for group in ASSET_NAMES:
         path = OUTPUT_DIR / ASSET_NAMES[group]
-        assets[group] = export_binary_stl(asset_shapes[group], path)
+        high_detail = group not in {"base", "lid", "pcb_board", "led_ring", "j1_usb_c"}
+        assets[group] = export_binary_stl(
+            asset_shapes[group],
+            path,
+            linear_deflection_mm=(
+                COMPONENT_LINEAR_DEFLECTION_MM if high_detail else LINEAR_DEFLECTION_MM
+            ),
+            angular_deflection_rad=(
+                COMPONENT_ANGULAR_DEFLECTION_RAD if high_detail else ANGULAR_DEFLECTION_RAD
+            ),
+        )
 
     surface_registration, surface_assets = build_surface_assets(
         source_paths["pcb_kicad"], board_component.shape
@@ -783,17 +780,33 @@ def main() -> None:
             "sources": ["pcb_step"],
             "refs": [component.ref for component in led_components],
         },
-        "j2_swd": {
-            "asset": ASSET_NAMES["j2_swd"],
-            "sources": ["pcb_kicad", "pcb_step"],
-            "refs": ["J2"],
-            "derivation": "KiCad pad outlines/drills placed in STEP XY frame and extruded across the STEP substrate Z span",
-            "kicad": j2,
-        },
-        "support": {
-            "asset": ASSET_NAMES["support"],
+        "capacitors": {
+            "asset": ASSET_NAMES["capacitors"],
             "sources": ["pcb_step"],
-            "refs": [component.ref for component in support_components],
+            "refs": [component.ref for component in capacitor_components],
+        },
+        "resistors": {
+            "asset": ASSET_NAMES["resistors"],
+            "sources": ["pcb_step"],
+            "refs": [component.ref for component in resistor_components],
+        },
+        "f1_fuse": {
+            "asset": ASSET_NAMES["f1_fuse"],
+            "sources": ["pcb_step"],
+            "refs": ["F1"],
+            "step_product": by_ref["F1"].product_name,
+        },
+        "d1_diode": {
+            "asset": ASSET_NAMES["d1_diode"],
+            "sources": ["pcb_step"],
+            "refs": ["D1"],
+            "step_product": by_ref["D1"].product_name,
+        },
+        "u2_regulator": {
+            "asset": ASSET_NAMES["u2_regulator"],
+            "sources": ["pcb_step"],
+            "refs": ["U2"],
+            "step_product": by_ref["U2"].product_name,
         },
     }
     for group, ref in NAMED_COMPONENT_GROUPS.items():
@@ -815,6 +828,8 @@ def main() -> None:
             "script": "scripts/build_coaster_assets.py",
             "linear_deflection_mm": LINEAR_DEFLECTION_MM,
             "angular_deflection_rad": ANGULAR_DEFLECTION_RAD,
+            "component_linear_deflection_mm": COMPONENT_LINEAR_DEFLECTION_MM,
+            "component_angular_deflection_rad": COMPONENT_ANGULAR_DEFLECTION_RAD,
             "python_packages": {
                 "cadquery": package_version("cadquery"),
                 "cadquery-ocp": package_version("cadquery-ocp"),
@@ -826,12 +841,24 @@ def main() -> None:
         "surface_assets": surface_assets,
         "surface_registration": surface_registration,
         "groups": group_manifest,
+        "board_features": {
+            "j2_swd": {
+                "sources": ["pcb_kicad"],
+                "refs": ["J2"],
+                "rendering": (
+                    "Exact plated targets, drills and mask clearances are carried by the "
+                    "KiCad-derived board surface textures. J2 has no fitted STEP component "
+                    "and therefore does not explode away from the PCB."
+                ),
+                "kicad": j2,
+            }
+        },
         "pcb_step_components": [component_manifest(component) for component in components],
         "uncertainties": [
             "The KiCad-exported board occurrence is named '=>[0:1:1:13]' in Coaster.step; it is assigned to pcb_board by its STEP product name 'Coaster_PCB'.",
-            "J2 is a four-pad pogo/SWD footprint with no 3D occurrence in Coaster.step. coaster-j2-swd.stl therefore represents the exact KiCad pad outer sizes, drill sizes and positions as a visual envelope spanning the STEP substrate Z range; it is not a connector body or literal copper-volume model.",
-            f"Coaster.kicad_pcb declares {j2['board_thickness_mm']:.3f} mm board thickness while the exported STEP substrate Z span is {shape_bounds(board_component.shape)[5] - shape_bounds(board_component.shape)[2]:.3f} mm; J2 uses the STEP Z span so it aligns with the browser PCB model.",
-            "coaster-support.stl groups all remaining STEP component occurrences (passives, protection and regulator/support parts) after the requested board/LED/U3/U4/U1/J1/U6 groups are removed.",
+            "J2 is a four-pad pogo/SWD footprint with no 3D occurrence in Coaster.step. It is intentionally not exported as a separate 3D component: its exact plated targets, drills and mask clearances remain part of the source-derived PCB surfaces and stay attached to the board during explode.",
+            "Capacitors, resistors, F1, D1 and U2 are exported as separate source-STEP groups rather than one generic support-component mesh so their package geometry and material treatment remain visually distinct.",
+            f"Small IC/passive component meshes use a finer {COMPONENT_LINEAR_DEFLECTION_MM:.3f} mm / {COMPONENT_ANGULAR_DEFLECTION_RAD:.3f} rad tessellation than the enclosure/board meshes to retain small package detail.",
             "Coaster.kicad_pcb does not encode a solder-mask colour. The black solder-mask field is the specified manufacturing/product finish; the KiCad-derived SVGs provide the exact mask-opening and silkscreen geometry.",
             f"The mask-opening surface textures intersect exact F.Mask/B.Mask geometry with F.Cu/B.Cu. Copper-backed openings are visualised as {SURFACE_COLORS['front_mask_openings']} and copper-clearance openings as representative laminate {SURFACE_SUBSTRATE_COLOR}; these display colours are not encoded in the KiCad file.",
         ],

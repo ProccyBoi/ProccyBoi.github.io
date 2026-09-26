@@ -43,29 +43,32 @@
   scene.add(cadRoot);
 
   const mat = {
-    base: new THREE.MeshPhysicalMaterial({ color: 0xb7c8c5, roughness: 0.20, metalness: 0, transparent: true, opacity: 0.16, transmission: 0.05, clearcoat: 0.46, clearcoatRoughness: 0.20, side: THREE.DoubleSide, depthWrite: false }),
-    lid: new THREE.MeshPhysicalMaterial({ color: 0xc9d8d5, roughness: 0.16, metalness: 0, transparent: true, opacity: 0.055, transmission: 0.025, clearcoat: 0.48, clearcoatRoughness: 0.18, side: THREE.DoubleSide, depthWrite: false }),
+    base: new THREE.MeshPhysicalMaterial({ color: 0xb7c8c5, roughness: 0.20, metalness: 0, transparent: true, opacity: 0.16, transmission: 0.05, clearcoat: 0.46, clearcoatRoughness: 0.20, side: THREE.FrontSide, depthWrite: false }),
+    lid: new THREE.MeshPhysicalMaterial({ color: 0xc9d8d5, roughness: 0.16, metalness: 0, transparent: true, opacity: 0.055, transmission: 0.025, clearcoat: 0.48, clearcoatRoughness: 0.18, side: THREE.FrontSide, depthWrite: false }),
     board: new THREE.MeshBasicMaterial({ color: 0x030404, side: THREE.DoubleSide }),
     leds: new THREE.MeshStandardMaterial({ color: 0xe6f4ec, roughness: 0.31, emissive: 0x55ffd4, emissiveIntensity: 0.52 }),
     chip: new THREE.MeshStandardMaterial({ color: 0x151718, roughness: 0.48, metalness: 0.03 }),
     ceramic: new THREE.MeshStandardMaterial({ color: 0xe2dfd8, roughness: 0.38, metalness: 0.01 }),
+    resistor: new THREE.MeshStandardMaterial({ color: 0x3b3935, roughness: 0.55, metalness: 0.02 }),
+    fuse: new THREE.MeshStandardMaterial({ color: 0xd7d2c7, roughness: 0.42, metalness: 0.02 }),
     optical: new THREE.MeshPhysicalMaterial({ color: 0x263b35, roughness: 0.2, metalness: 0.02, clearcoat: 0.28, clearcoatRoughness: 0.18 }),
     metal: new THREE.MeshStandardMaterial({ color: 0xb9bec0, roughness: 0.27, metalness: 0.78 }),
-    gold: new THREE.MeshStandardMaterial({ color: 0xc99637, roughness: 0.28, metalness: 0.68 }),
-    support: new THREE.MeshStandardMaterial({ color: 0x4c514f, roughness: 0.52, metalness: 0.16 })
   };
 
   const partSpecs = [
     { key: 'base', file: 'coaster-base.stl', material: mat.base, name: 'Bottom enclosure', detail: 'Exact Coaster Base.step geometry.', offset: [0, 0, -9], delay: 0.00 },
     { key: 'board', file: 'coaster-board.stl', material: mat.board, name: '80 mm PCB', detail: 'Black solder mask with exact KiCad F.Mask openings and F.SilkS artwork over the STEP board geometry.', offset: [0, 0, 0], delay: 0.00 },
-    { key: 'support', file: 'coaster-support.stl', material: mat.support, name: 'Support components', detail: 'Passives, regulator and remaining fitted components grouped from the KiCad STEP assembly.', offset: [0, 0, 5.0], delay: 0.18 },
     { key: 'leds', file: 'coaster-led-ring.stl', material: mat.leds, name: '24 × RGB LEDs', detail: 'WS2812C-2020 ring using the exact fitted LED solids and board positions.', offset: [0, 0, 6.0], delay: 0.13 },
+    { key: 'capacitors', file: 'coaster-capacitors.stl', material: mat.ceramic, name: 'Ceramic capacitors', detail: 'All fitted C-designators split from the source STEP assembly so the 0603 package geometry remains distinct.', offset: [0, 0, 5.0], delay: 0.17 },
+    { key: 'resistors', file: 'coaster-resistors.stl', material: mat.resistor, name: 'Resistors', detail: 'All fitted R-designators using their exact source STEP package geometry.', offset: [0, 0, 5.8], delay: 0.19 },
+    { key: 'fuse', file: 'coaster-f1-fuse.stl', material: mat.fuse, name: 'F1 · input fuse', detail: 'Source STEP Fuse_1206_3216Metric package.', offset: [-3.0, 1.5, 8.0], delay: 0.22 },
+    { key: 'diode', file: 'coaster-d1-diode.stl', material: mat.chip, name: 'D1 · protection diode', detail: 'Source STEP SOD-123FL package.', offset: [-2.0, -2.0, 8.5], delay: 0.23 },
+    { key: 'regulator', file: 'coaster-u2-regulator.stl', material: mat.chip, name: 'U2 · regulator', detail: 'Source STEP SOT-223 package with finer component tessellation.', offset: [2.0, -3.0, 10.0], delay: 0.24 },
     { key: 'mcu', file: 'coaster-u3-mcu.stl', material: mat.chip, name: 'U3 · STM32C011F6P', detail: '48 MHz Cortex-M0+ MCU in TSSOP-20.', offset: [0, -2.5, 12.5], delay: 0.25 },
     { key: 'sht', file: 'coaster-u4-sht.stl', material: mat.ceramic, name: 'U4 · SHT4x', detail: 'Temperature and humidity sensor under the centre of the resin lid.', offset: [3.5, 2.5, 13.0], delay: 0.30 },
     { key: 'veml', file: 'coaster-u1-veml.stl', material: mat.optical, name: 'U1 · VEML7700', detail: 'Ambient-light sensor used for cup-shadow detection and brightness control.', offset: [-3.5, 4.5, 12.5], delay: 0.29 },
     { key: 'level', file: 'coaster-u6-level.stl', material: mat.chip, name: 'U6 · SN74LV1T34', detail: '3.3 V to 5 V logic buffer for the RGB data line.', offset: [7.5, -2.0, 10.5], delay: 0.31 },
     { key: 'usb', file: 'coaster-j1-usbc.stl', material: mat.metal, name: 'J1 · USB-C power', detail: '5 V power input; USB data pins are not connected.', offset: [0, 12.0, 6.5], delay: 0.10 },
-    { key: 'swd', file: 'coaster-j2-swd.stl', material: mat.gold, name: 'J2 · SWD pogo pads', detail: 'Four plated programming targets: GND, SWDIO, SWCLK and 3.3 V reference. The PCB has no fitted J2 connector body.', offset: [0, 5.0, 10.0], delay: 0.26 },
     { key: 'lid', file: 'coaster-lid.stl', material: mat.lid, name: 'Clear resin lid', detail: 'Exact Coaster Lid.step geometry; the central cup-contact region is 3 mm thick.', offset: [0, 0, 18.0], delay: 0.04, transparent: true }
   ];
 
@@ -142,7 +145,7 @@
     const boardBottom = registration.board_bottom_z_mm;
     const boardTop = registration.board_top_z_mm;
 
-    const addSurface = (asset, zPosition, renderOrder, label, countForReady) => {
+    const addSurface = (asset, zPosition, renderOrder, label, countForReady, side) => {
       if (!asset?.file) {
         console.warn(`Coaster ${label} asset metadata missing`);
         return;
@@ -152,7 +155,7 @@
         alphaTest: 0.004,
         depthTest: true,
         depthWrite: false,
-        side: THREE.DoubleSide
+        side
       });
       material.toneMapped = false;
       const overlay = new THREE.Mesh(new THREE.PlaneGeometry(vw, vh), material);
@@ -191,13 +194,13 @@
     // openings use the representative plated-copper finish while copper-clearance
     // openings show laminate.  F.SilkS sits above that with mask subtraction
     // already applied by KiCad's plotter.
-    addSurface(assets.front_mask_openings, boardTop + 0.020, 105, 'front solder-mask openings', true);
-    addSurface(assets.front_silkscreen, boardTop + 0.050, 110, 'front silkscreen', true);
+    addSurface(assets.front_mask_openings, boardTop + 0.020, 105, 'front solder-mask openings', true, THREE.FrontSide);
+    addSurface(assets.front_silkscreen, boardTop + 0.050, 110, 'front silkscreen', true, THREE.FrontSide);
     ensureBackSurface = () => {
       if (backSurfaceSetupStarted) return;
       backSurfaceSetupStarted = true;
-      addSurface(assets.back_mask_openings, boardBottom - 0.020, 105, 'back solder-mask openings', false);
-      addSurface(assets.back_silkscreen, boardBottom - 0.050, 110, 'back silkscreen', false);
+      addSurface(assets.back_mask_openings, boardBottom - 0.020, 105, 'back solder-mask openings', false, THREE.BackSide);
+      addSurface(assets.back_silkscreen, boardBottom - 0.050, 110, 'back silkscreen', false, THREE.BackSide);
     };
   };
 

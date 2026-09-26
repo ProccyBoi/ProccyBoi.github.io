@@ -14,6 +14,48 @@
       "size_bytes": 196984,
       "triangles": 3938
     },
+    "capacitors": {
+      "bounds_mm": [
+        122.61,
+        -125.07,
+        1.595,
+        139.7,
+        -66.34,
+        2.395
+      ],
+      "file": "coaster-capacitors.stl",
+      "sha256": "3f8fd18e094811a0b4c3f611f4e622dd1cab315c8d8304848d20be33c0cb591b",
+      "size_bytes": 366884,
+      "triangles": 7336
+    },
+    "d1_diode": {
+      "bounds_mm": [
+        129.9,
+        -68.32,
+        1.595,
+        131.5,
+        -64.82,
+        2.695
+      ],
+      "file": "coaster-d1-diode.stl",
+      "sha256": "4460cb054c994f5d8de71505791a644502cb324a4bb6bf95facbf8a3158ed946",
+      "size_bytes": 3484,
+      "triangles": 68
+    },
+    "f1_fuse": {
+      "bounds_mm": [
+        132.39,
+        -68.18,
+        1.595,
+        133.99,
+        -64.98,
+        2.145
+      ],
+      "file": "coaster-f1-fuse.stl",
+      "sha256": "b138eadabaf9708014ee97dca73d919187f0051d38c00d8ccf262e5c412caafa",
+      "size_bytes": 31484,
+      "triangles": 628
+    },
     "j1_usb_c": {
       "bounds_mm": [
         128.74,
@@ -27,20 +69,6 @@
       "sha256": "d1fb1ec99bf61f1518810604cc585035b6ab2e7c41a84693724bdac56ebdd9d5",
       "size_bytes": 2065584,
       "triangles": 41310
-    },
-    "j2_swd": {
-      "bounds_mm": [
-        125.25,
-        -81.878993,
-        0.0,
-        127.25,
-        -72.26,
-        1.51
-      ],
-      "file": "coaster-j2-swd.stl",
-      "sha256": "c8accb224f744a100f4319c538d2a9d47884e10380ae92af57c4739d0306c0a7",
-      "size_bytes": 98884,
-      "triangles": 1976
     },
     "led_ring": {
       "bounds_mm": [
@@ -84,19 +112,19 @@
       "size_bytes": 157684,
       "triangles": 3152
     },
-    "support": {
+    "resistors": {
       "bounds_mm": [
-        122.61,
-        -125.07,
+        125.29,
+        -92.82,
         1.595,
         141.1,
         -57.57,
-        3.295
+        2.045
       ],
-      "file": "coaster-support.stl",
-      "sha256": "e13ceb288a9392b8809fb13eb27e9f4f948e1d8306ad589e8b7cf989d71c134c",
-      "size_bytes": 407684,
-      "triangles": 8152
+      "file": "coaster-resistors.stl",
+      "sha256": "a119834a1addc76e0c07dfe331a5fe427f7e263d3dee026d5bea7310e7cd5c3b",
+      "size_bytes": 133084,
+      "triangles": 2660
     },
     "u1_veml7700": {
       "bounds_mm": [
@@ -104,13 +132,27 @@
         -99.62,
         0.595,
         136.6,
-        -96.619163,
+        -96.619249,
         2.945
       ],
       "file": "coaster-u1-veml.stl",
-      "sha256": "ccff03e8d549371e9e46fdc19da7b08f9cb97b10ea6b80394e8286439e2bc7d4",
-      "size_bytes": 183484,
-      "triangles": 3668
+      "sha256": "e710008232e396f703f10b486847af49b0e9373dca2b39414a3e0a0fb510f501",
+      "size_bytes": 255884,
+      "triangles": 5116
+    },
+    "u2_regulator": {
+      "bounds_mm": [
+        129.93,
+        -77.14,
+        1.595,
+        136.43,
+        -70.14,
+        3.295
+      ],
+      "file": "coaster-u2-regulator.stl",
+      "sha256": "22985d6752193bd5046da2b9bbcfb7938e0d7b2f35633eee8f1c8f176c9b865e",
+      "size_bytes": 95484,
+      "triangles": 1908
     },
     "u3_mcu": {
       "bounds_mm": [
@@ -122,9 +164,9 @@
         2.795
       ],
       "file": "coaster-u3-mcu.stl",
-      "sha256": "7ad1edb4a64a5089bbf5e0714187c894ca95134a98a299f50951566dac3ad031",
-      "size_bytes": 341884,
-      "triangles": 6836
+      "sha256": "5030c46412c614ee02c99ab427f35eb968115c6d3966dfa4621f378699c69d39",
+      "size_bytes": 492884,
+      "triangles": 9856
     },
     "u4_sht4x": {
       "bounds_mm": [
@@ -136,9 +178,9 @@
         2.145
       ],
       "file": "coaster-u4-sht.stl",
-      "sha256": "43ecf48cab928ccfd94d22ef0b672a83f85335a380249aea20ba334014ae7c5f",
-      "size_bytes": 233684,
-      "triangles": 4672
+      "sha256": "fa1495679209a34d32262aad5e52048e5a2d853900be7e57330a7b41c81b034f",
+      "size_bytes": 451084,
+      "triangles": 9020
     },
     "u6_level_shifter": {
       "bounds_mm": [
@@ -150,46 +192,13 @@
         3.145
       ],
       "file": "coaster-u6-level.stl",
-      "sha256": "214f29f05850879fed150b65e151ea241d5b0064035784b1b4536391ffb0022a",
-      "size_bytes": 84884,
-      "triangles": 1696
+      "sha256": "8d2947b3da5a511aa13d068839fa6d2d944243c23f069d425cfd5892e48575aa",
+      "size_bytes": 120884,
+      "triangles": 2416
     }
   },
-  "coordinate_system": {
-    "basis": "native STEP assembly coordinates",
-    "kicad_mapping": "STEP X = KiCad X; STEP Y = -KiCad Y"
-  },
-  "generator": {
-    "angular_deflection_rad": 0.18,
-    "linear_deflection_mm": 0.08,
-    "python_packages": {
-      "cadquery": "2.8.0",
-      "cadquery-ocp": "7.9.3.1.1",
-      "trimesh": "5.1.0"
-    },
-    "script": "scripts/build_coaster_assets.py"
-  },
-  "groups": {
-    "base": {
-      "asset": "coaster-base.stl",
-      "refs": [],
-      "sources": [
-        "base_step"
-      ]
-    },
-    "j1_usb_c": {
-      "asset": "coaster-j1-usbc.stl",
-      "refs": [
-        "J1"
-      ],
-      "sources": [
-        "pcb_step"
-      ],
-      "step_product": "USB_C_HRO_TYPE-C-31-M-12"
-    },
+  "board_features": {
     "j2_swd": {
-      "asset": "coaster-j2-swd.stl",
-      "derivation": "KiCad pad outlines/drills placed in STEP XY frame and extruded across the STEP substrate Z span",
       "kicad": {
         "board_thickness_mm": 1.6,
         "footprint": "easyeda2kicad:Pogo_1x04_P2.54mm_PTH_D1.0mm",
@@ -260,10 +269,87 @@
       "refs": [
         "J2"
       ],
+      "rendering": "Exact plated targets, drills and mask clearances are carried by the KiCad-derived board surface textures. J2 has no fitted STEP component and therefore does not explode away from the PCB.",
       "sources": [
-        "pcb_kicad",
+        "pcb_kicad"
+      ]
+    }
+  },
+  "coordinate_system": {
+    "basis": "native STEP assembly coordinates",
+    "kicad_mapping": "STEP X = KiCad X; STEP Y = -KiCad Y"
+  },
+  "generator": {
+    "angular_deflection_rad": 0.18,
+    "component_angular_deflection_rad": 0.12,
+    "component_linear_deflection_mm": 0.05,
+    "linear_deflection_mm": 0.08,
+    "python_packages": {
+      "cadquery": "2.8.0",
+      "cadquery-ocp": "7.9.3.1.1",
+      "trimesh": "5.1.0"
+    },
+    "script": "scripts/build_coaster_assets.py"
+  },
+  "groups": {
+    "base": {
+      "asset": "coaster-base.stl",
+      "refs": [],
+      "sources": [
+        "base_step"
+      ]
+    },
+    "capacitors": {
+      "asset": "coaster-capacitors.stl",
+      "refs": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C14"
+      ],
+      "sources": [
         "pcb_step"
       ]
+    },
+    "d1_diode": {
+      "asset": "coaster-d1-diode.stl",
+      "refs": [
+        "D1"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "D_SOD-123FL"
+    },
+    "f1_fuse": {
+      "asset": "coaster-f1-fuse.stl",
+      "refs": [
+        "F1"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "Fuse_1206_3216Metric"
+    },
+    "j1_usb_c": {
+      "asset": "coaster-j1-usbc.stl",
+      "refs": [
+        "J1"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "USB_C_HRO_TYPE-C-31-M-12"
     },
     "led_ring": {
       "asset": "coaster-led-ring.stl",
@@ -314,31 +400,14 @@
       ],
       "step_product": "Coaster_PCB"
     },
-    "support": {
-      "asset": "coaster-support.stl",
+    "resistors": {
+      "asset": "coaster-resistors.stl",
       "refs": [
-        "C1",
-        "C10",
-        "C11",
-        "C12",
-        "C13",
-        "C14",
-        "C2",
-        "C3",
-        "C4",
-        "C5",
-        "C6",
-        "C7",
-        "C8",
-        "C9",
-        "D1",
-        "F1",
         "R1",
         "R2",
-        "R27",
-        "R28",
         "R3",
-        "U2"
+        "R27",
+        "R28"
       ],
       "sources": [
         "pcb_step"
@@ -353,6 +422,16 @@
         "pcb_step"
       ],
       "step_product": "VEML7700-TT"
+    },
+    "u2_regulator": {
+      "asset": "coaster-u2-regulator.stl",
+      "refs": [
+        "U2"
+      ],
+      "sources": [
+        "pcb_step"
+      ],
+      "step_product": "SOT-223"
     },
     "u3_mcu": {
       "asset": "coaster-u3-mcu.stl",
@@ -388,24 +467,24 @@
   "pcb_step_components": [
     {
       "bounds_mm": [
-        132.469671,
-        -93.202829,
-        1.582171,
-        133.995329,
-        -91.677171,
-        2.147829
+        132.471033,
+        -93.201467,
+        1.583533,
+        133.993967,
+        -91.678533,
+        2.146467
       ],
       "ref": "U4",
       "step_product": "SHT4x_DFN-4_1.5x1.5mm"
     },
     {
       "bounds_mm": [
-        132.38986,
-        -68.18014,
-        1.59486,
-        133.99014,
-        -64.97986,
-        2.14514
+        132.389948,
+        -68.180052,
+        1.594948,
+        133.990052,
+        -64.979948,
+        2.145052
       ],
       "ref": "F1",
       "step_product": "Fuse_1206_3216Metric"
@@ -448,24 +527,24 @@
     },
     {
       "bounds_mm": [
-        122.609743,
-        -83.870257,
-        1.594743,
-        124.210257,
-        -83.069743,
-        2.395257
+        122.609907,
+        -83.870093,
+        1.594907,
+        124.210093,
+        -83.069907,
+        2.395093
       ],
       "ref": "C7",
       "step_product": "C_0603_1608Metric"
     },
     {
       "bounds_mm": [
-        125.289829,
-        -58.430171,
-        1.594829,
-        126.890171,
-        -57.629829,
-        2.045171
+        125.289938,
+        -58.430062,
+        1.594938,
+        126.890062,
+        -57.629938,
+        2.045062
       ],
       "ref": "R3",
       "step_product": "R_0603_1608Metric"
@@ -508,12 +587,12 @@
     },
     {
       "bounds_mm": [
-        137.864743,
-        -87.430257,
-        1.594743,
-        139.465257,
-        -86.629743,
-        2.395257
+        137.864907,
+        -87.430093,
+        1.594907,
+        139.465093,
+        -86.629907,
+        2.395093
       ],
       "ref": "C8",
       "step_product": "C_0603_1608Metric"
@@ -544,36 +623,36 @@
     },
     {
       "bounds_mm": [
-        131.509743,
-        -125.070257,
-        1.594743,
-        133.110257,
-        -124.269743,
-        2.395257
+        131.509907,
+        -125.070093,
+        1.594907,
+        133.110093,
+        -124.269907,
+        2.395093
       ],
       "ref": "C14",
       "step_product": "C_0603_1608Metric"
     },
     {
       "bounds_mm": [
-        135.532329,
-        -92.820171,
-        1.594829,
-        136.332671,
-        -91.219829,
-        2.045171
+        135.532438,
+        -92.820062,
+        1.594938,
+        136.332562,
+        -91.219938,
+        2.045062
       ],
       "ref": "R27",
       "step_product": "R_0603_1608Metric"
     },
     {
       "bounds_mm": [
-        127.989743,
-        -67.940257,
-        1.594743,
-        128.790257,
-        -66.339743,
-        2.395257
+        127.989907,
+        -67.940093,
+        1.594907,
+        128.790093,
+        -66.339907,
+        2.395093
       ],
       "ref": "C13",
       "step_product": "C_0603_1608Metric"
@@ -640,12 +719,12 @@
     },
     {
       "bounds_mm": [
-        122.619743,
-        -85.740257,
-        1.594743,
-        124.220257,
-        -84.939743,
-        2.395257
+        122.619907,
+        -85.740093,
+        1.594907,
+        124.220093,
+        -84.939907,
+        2.395093
       ],
       "ref": "C10",
       "step_product": "C_0603_1608Metric"
@@ -664,24 +743,24 @@
     },
     {
       "bounds_mm": [
-        134.589743,
-        -104.330257,
-        1.594743,
-        136.190257,
-        -103.529743,
-        2.395257
+        134.589907,
+        -104.330093,
+        1.594907,
+        136.190093,
+        -103.529907,
+        2.395093
       ],
       "ref": "C1",
       "step_product": "C_0603_1608Metric"
     },
     {
       "bounds_mm": [
-        130.589743,
-        -104.310257,
-        1.594743,
-        132.190257,
-        -103.509743,
-        2.395257
+        130.589907,
+        -104.310093,
+        1.594907,
+        132.190093,
+        -103.509907,
+        2.395093
       ],
       "ref": "C2",
       "step_product": "C_0603_1608Metric"
@@ -712,12 +791,12 @@
     },
     {
       "bounds_mm": [
-        137.149829,
-        -65.400171,
-        1.594829,
-        137.950171,
-        -63.799829,
-        2.045171
+        137.149938,
+        -65.400062,
+        1.594938,
+        137.950062,
+        -63.799938,
+        2.045062
       ],
       "ref": "R1",
       "step_product": "R_0603_1608Metric"
@@ -748,12 +827,12 @@
     },
     {
       "bounds_mm": [
-        129.797885,
-        -99.622115,
-        0.592885,
-        136.602115,
-        -96.617047,
-        2.947115
+        129.798878,
+        -99.621122,
+        0.593878,
+        136.601122,
+        -96.618127,
+        2.946122
       ],
       "ref": "U1",
       "step_product": "VEML7700-TT"
@@ -784,12 +863,12 @@
     },
     {
       "bounds_mm": [
-        139.499829,
-        -58.370171,
-        1.594829,
-        141.100171,
-        -57.569829,
-        2.045171
+        139.499938,
+        -58.370062,
+        1.594938,
+        141.100062,
+        -57.569938,
+        2.045062
       ],
       "ref": "R2",
       "step_product": "R_0603_1608Metric"
@@ -808,12 +887,12 @@
     },
     {
       "bounds_mm": [
-        138.099743,
-        -78.670257,
-        1.594743,
-        139.700257,
-        -77.869743,
-        2.395257
+        138.099907,
+        -78.670093,
+        1.594907,
+        139.700093,
+        -77.869907,
+        2.395093
       ],
       "ref": "C6",
       "step_product": "C_0603_1608Metric"
@@ -844,12 +923,12 @@
     },
     {
       "bounds_mm": [
-        137.864743,
-        -89.460257,
-        1.594743,
-        139.465257,
-        -88.659743,
-        2.395257
+        137.864907,
+        -89.460093,
+        1.594907,
+        139.465093,
+        -88.659907,
+        2.395093
       ],
       "ref": "C9",
       "step_product": "C_0603_1608Metric"
@@ -868,24 +947,24 @@
     },
     {
       "bounds_mm": [
-        128.532243,
-        -91.710257,
-        1.594743,
-        130.132757,
-        -90.909743,
-        2.395257
+        128.532407,
+        -91.710093,
+        1.594907,
+        130.132593,
+        -90.909907,
+        2.395093
       ],
       "ref": "C3",
       "step_product": "C_0603_1608Metric"
     },
     {
       "bounds_mm": [
-        134.889743,
-        -125.040257,
-        1.594743,
-        136.490257,
-        -124.239743,
-        2.395257
+        134.889907,
+        -125.040093,
+        1.594907,
+        136.490093,
+        -124.239907,
+        2.395093
       ],
       "ref": "C11",
       "step_product": "C_0603_1608Metric"
@@ -916,12 +995,12 @@
     },
     {
       "bounds_mm": [
-        128.542243,
-        -93.320257,
-        1.594743,
-        130.142757,
-        -92.519743,
-        2.395257
+        128.542407,
+        -93.320093,
+        1.594907,
+        130.142593,
+        -92.519907,
+        2.395093
       ],
       "ref": "C4",
       "step_product": "C_0603_1608Metric"
@@ -940,12 +1019,12 @@
     },
     {
       "bounds_mm": [
-        138.099743,
-        -77.080257,
-        1.594743,
-        139.700257,
-        -76.279743,
-        2.395257
+        138.099907,
+        -77.080093,
+        1.594907,
+        139.700093,
+        -76.279907,
+        2.395093
       ],
       "ref": "C5",
       "step_product": "C_0603_1608Metric"
@@ -976,24 +1055,24 @@
     },
     {
       "bounds_mm": [
-        126.569743,
-        -70.070257,
-        1.594743,
-        128.170257,
-        -69.269743,
-        2.395257
+        126.569907,
+        -70.070093,
+        1.594907,
+        128.170093,
+        -69.269907,
+        2.395093
       ],
       "ref": "C12",
       "step_product": "C_0603_1608Metric"
     },
     {
       "bounds_mm": [
-        127.129829,
-        -86.750171,
-        1.594829,
-        128.730171,
-        -85.949829,
-        2.045171
+        127.129938,
+        -86.750062,
+        1.594938,
+        128.730062,
+        -85.949938,
+        2.045062
       ],
       "ref": "R28",
       "step_product": "R_0603_1608Metric"
@@ -1117,9 +1196,9 @@
   },
   "uncertainties": [
     "The KiCad-exported board occurrence is named '=>[0:1:1:13]' in Coaster.step; it is assigned to pcb_board by its STEP product name 'Coaster_PCB'.",
-    "J2 is a four-pad pogo/SWD footprint with no 3D occurrence in Coaster.step. coaster-j2-swd.stl therefore represents the exact KiCad pad outer sizes, drill sizes and positions as a visual envelope spanning the STEP substrate Z range; it is not a connector body or literal copper-volume model.",
-    "Coaster.kicad_pcb declares 1.600 mm board thickness while the exported STEP substrate Z span is 1.588 mm; J2 uses the STEP Z span so it aligns with the browser PCB model.",
-    "coaster-support.stl groups all remaining STEP component occurrences (passives, protection and regulator/support parts) after the requested board/LED/U3/U4/U1/J1/U6 groups are removed.",
+    "J2 is a four-pad pogo/SWD footprint with no 3D occurrence in Coaster.step. It is intentionally not exported as a separate 3D component: its exact plated targets, drills and mask clearances remain part of the source-derived PCB surfaces and stay attached to the board during explode.",
+    "Capacitors, resistors, F1, D1 and U2 are exported as separate source-STEP groups rather than one generic support-component mesh so their package geometry and material treatment remain visually distinct.",
+    "Small IC/passive component meshes use a finer 0.050 mm / 0.120 rad tessellation than the enclosure/board meshes to retain small package detail.",
     "Coaster.kicad_pcb does not encode a solder-mask colour. The black solder-mask field is the specified manufacturing/product finish; the KiCad-derived SVGs provide the exact mask-opening and silkscreen geometry.",
     "The mask-opening surface textures intersect exact F.Mask/B.Mask geometry with F.Cu/B.Cu. Copper-backed openings are visualised as #c99b43 and copper-clearance openings as representative laminate #5a4932; these display colours are not encoded in the KiCad file."
   ],
