@@ -96,8 +96,8 @@
   };
   const vesselStates = {
     none: { label: 'Empty', lux: 320, temp: 23.0, mode: 'Idle · uncovered', ledColor: 0x55ffd4, ledBase: 0.22, ledPulse: 0, ledSpeed: 0, focusY: 2.7, camera: { iso: 142, top: 132, side: 136 } },
-    cup: { label: 'Warm cup', lux: 72, temp: 28.8, mode: 'Occupied · warm response', ledColor: 0xff7a35, ledBase: 0.64, ledPulse: 0.42, ledSpeed: 1.08, focusY: 28, camera: { iso: 174, top: 144, side: 184 } },
-    can: { label: 'Coke can', lux: 48, temp: 17.6, mode: 'Occupied · cool response', ledColor: 0x4acfff, ledBase: 0.68, ledPulse: 0.38, ledSpeed: 1.34, focusY: 43, camera: { iso: 190, top: 145, side: 204 } }
+    cup: { label: 'Warm cup', lux: 72, temp: 28.8, mode: 'Occupied · warm response', ledColor: 0xff7a35, ledBase: 0.64, ledPulse: 0.42, ledSpeed: 1.08, focusY: 42, camera: { iso: 184, top: 144, side: 190 } },
+    can: { label: 'Coke can', lux: 48, temp: 17.6, mode: 'Occupied · cool response', ledColor: 0x4acfff, ledBase: 0.68, ledPulse: 0.38, ledSpeed: 1.34, focusY: 60, camera: { iso: 220, top: 145, side: 230 } }
   };
   const VESSEL_BASE_Z = 7.95;
   const vesselRoot = new THREE.Group();
