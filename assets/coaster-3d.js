@@ -9,6 +9,11 @@
   const explodeButton = root.querySelector('[data-coaster-explode]');
   const resetButton = root.querySelector('[data-coaster-reset]');
   const viewButtons = [...root.querySelectorAll('[data-coaster-view]')];
+  const vesselButtons = [...root.querySelectorAll('[data-coaster-vessel]')];
+  const simVessel = root.querySelector('[data-coaster-sim-vessel]');
+  const simLux = root.querySelector('[data-coaster-sim-lux]');
+  const simTemp = root.querySelector('[data-coaster-sim-temp]');
+  const simMode = root.querySelector('[data-coaster-sim-mode]');
   const partPanel = root.querySelector('[data-coaster-part]');
   const partName = root.querySelector('[data-coaster-part-name]');
   const partDetail = root.querySelector('[data-coaster-part-detail]');
@@ -32,6 +37,7 @@
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(31, 1, 3, 500);
   const target = new THREE.Vector3(0, 2.7, 0);
+  let targetTargetY = target.y;
 
   scene.add(new THREE.HemisphereLight(0xe6ebe8, 0x121513, 1.18));
   const key = new THREE.DirectionalLight(0xfffcf6, 1.48); key.position.set(-55, 75, 42); scene.add(key);
@@ -53,6 +59,10 @@
     fuse: new THREE.MeshStandardMaterial({ color: 0xd7d2c7, roughness: 0.42, metalness: 0.02 }),
     optical: new THREE.MeshPhysicalMaterial({ color: 0x263b35, roughness: 0.2, metalness: 0.02, clearcoat: 0.28, clearcoatRoughness: 0.18 }),
     metal: new THREE.MeshStandardMaterial({ color: 0xb9bec0, roughness: 0.27, metalness: 0.78 }),
+    mockCup: new THREE.MeshPhysicalMaterial({ color: 0xe7e0d5, roughness: 0.48, metalness: 0.01, clearcoat: 0.16, clearcoatRoughness: 0.34, side: THREE.DoubleSide }),
+    mockDrink: new THREE.MeshPhysicalMaterial({ color: 0x4c2114, roughness: 0.32, metalness: 0, clearcoat: 0.22, clearcoatRoughness: 0.28 }),
+    mockCan: new THREE.MeshPhysicalMaterial({ color: 0xb61622, roughness: 0.31, metalness: 0.34, clearcoat: 0.52, clearcoatRoughness: 0.20 }),
+    mockCanMetal: new THREE.MeshStandardMaterial({ color: 0xc8cccd, roughness: 0.22, metalness: 0.84 })
   };
 
   const partSpecs = [
@@ -71,6 +81,76 @@
     { key: 'usb', file: 'coaster-j1-usbc.stl', material: mat.metal, name: 'J1 · USB-C power', detail: '5 V power input; USB data pins are not connected.', offset: [0, 12.0, 6.5], delay: 0.10 },
     { key: 'lid', file: 'coaster-lid.stl', material: mat.lid, name: 'Clear resin lid', detail: 'Exact Coaster Lid.step geometry; the central cup-contact region is 3 mm thick.', offset: [0, 0, 18.0], delay: 0.04, transparent: true }
   ];
+
+  // These vessels are intentionally procedural visualiser mockups, not source CAD.
+  // They demonstrate how the real VEML7700/SHT4x firmware inputs affect the LED state.
+  const vesselSpecs = {
+    cup: {
+      name: 'Mock cup',
+      detail: 'Procedural visualiser mockup, not source CAD. It simulates a warm drink shadowing the VEML7700 and warming the local SHT4x reading.'
+    },
+    can: {
+      name: 'Mock Coke can',
+      detail: 'Procedural visualiser mockup, not source CAD. It simulates a cold can shadowing the VEML7700 and cooling the local SHT4x reading.'
+    }
+  };
+  const vesselStates = {
+    none: { label: 'Empty', lux: 320, temp: 23.0, mode: 'Idle · uncovered', ledColor: 0x55ffd4, ledBase: 0.22, ledPulse: 0, ledSpeed: 0, focusY: 2.7, camera: { iso: 142, top: 132, side: 136 } },
+    cup: { label: 'Warm cup', lux: 72, temp: 28.8, mode: 'Occupied · warm response', ledColor: 0xff7a35, ledBase: 0.64, ledPulse: 0.42, ledSpeed: 1.08, focusY: 28, camera: { iso: 174, top: 144, side: 184 } },
+    can: { label: 'Coke can', lux: 48, temp: 17.6, mode: 'Occupied · cool response', ledColor: 0x4acfff, ledBase: 0.68, ledPulse: 0.38, ledSpeed: 1.34, focusY: 43, camera: { iso: 190, top: 145, side: 204 } }
+  };
+  const VESSEL_BASE_Z = 7.95;
+  const vesselRoot = new THREE.Group();
+  vesselRoot.name = 'Drink simulation';
+  cadRoot.add(vesselRoot);
+  const vesselPickMeshes = [];
+
+  const addVesselMesh = (group, geometry, material, spec, transform = {}) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(transform.x || 0, transform.y || 0, transform.z || 0);
+    mesh.rotation.set(transform.rx || 0, transform.ry || 0, transform.rz || 0);
+    mesh.userData.spec = spec;
+    group.add(mesh);
+    vesselPickMeshes.push(mesh);
+    return mesh;
+  };
+
+  const cupGroup = new THREE.Group();
+  cupGroup.name = 'Mock cup';
+  addVesselMesh(cupGroup, new THREE.CylinderGeometry(34, 28, 82, 48, 1, true), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 41, rx: Math.PI / 2 });
+  addVesselMesh(cupGroup, new THREE.CylinderGeometry(28, 28, 2, 48), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 1, rx: Math.PI / 2 });
+  addVesselMesh(cupGroup, new THREE.TorusGeometry(34, 1.6, 10, 48), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 82 });
+  addVesselMesh(cupGroup, new THREE.CylinderGeometry(31, 31, 1.4, 48), mat.mockDrink, vesselSpecs.cup, { z: VESSEL_BASE_Z + 78.2, rx: Math.PI / 2 });
+  addVesselMesh(cupGroup, new THREE.TorusGeometry(11, 2.2, 10, 32), mat.mockCup, vesselSpecs.cup, { x: 30, z: VESSEL_BASE_Z + 44, rx: Math.PI / 2 });
+  cupGroup.visible = false;
+  vesselRoot.add(cupGroup);
+
+  const canGroup = new THREE.Group();
+  canGroup.name = 'Mock Coke can';
+  addVesselMesh(canGroup, new THREE.CylinderGeometry(33, 33, 115, 64), mat.mockCan, vesselSpecs.can, { z: VESSEL_BASE_Z + 57.5, rx: Math.PI / 2 });
+  addVesselMesh(canGroup, new THREE.CylinderGeometry(32.6, 32.6, 1.6, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 0.8, rx: Math.PI / 2 });
+  addVesselMesh(canGroup, new THREE.CylinderGeometry(32.6, 32.6, 1.6, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 114.2, rx: Math.PI / 2 });
+  addVesselMesh(canGroup, new THREE.TorusGeometry(31.8, 1.1, 8, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 115.1 });
+  addVesselMesh(canGroup, new THREE.TorusGeometry(31.8, 1.0, 8, 64), mat.mockCanMetal, vesselSpecs.can, { z: VESSEL_BASE_Z + 0.1 });
+  addVesselMesh(canGroup, new THREE.BoxGeometry(10, 4, 0.9), mat.mockCanMetal, vesselSpecs.can, { y: -5, z: VESSEL_BASE_Z + 115.7, rz: -0.18 });
+
+  const canLabelCanvas = document.createElement('canvas');
+  canLabelCanvas.width = 512;
+  canLabelCanvas.height = 192;
+  const canLabelContext = canLabelCanvas.getContext('2d');
+  canLabelContext.clearRect(0, 0, canLabelCanvas.width, canLabelCanvas.height);
+  canLabelContext.fillStyle = '#ffffff';
+  canLabelContext.font = '700 104px Arial, sans-serif';
+  canLabelContext.textAlign = 'center';
+  canLabelContext.textBaseline = 'middle';
+  canLabelContext.fillText('COKE', 256, 100);
+  const canLabelTexture = new THREE.CanvasTexture(canLabelCanvas);
+  canLabelTexture.encoding = THREE.sRGBEncoding;
+  const canLabelMaterial = new THREE.MeshBasicMaterial({ map: canLabelTexture, transparent: true, depthWrite: false, side: THREE.FrontSide });
+  canLabelMaterial.toneMapped = false;
+  addVesselMesh(canGroup, new THREE.PlaneGeometry(44, 16), canLabelMaterial, vesselSpecs.can, { y: -33.18, z: VESSEL_BASE_Z + 64, rx: Math.PI / 2 });
+  canGroup.visible = false;
+  vesselRoot.add(canGroup);
 
   const parseBinarySTL = (buffer) => {
     if (buffer.byteLength < 84) throw new Error('Invalid STL');
@@ -97,7 +177,7 @@
   };
 
   const wrappers = new Map();
-  const pickMeshes = [];
+  const pickMeshes = [...vesselPickMeshes];
   let loaded = 0;
   let surfaceLoaded = 0;
   let surfaceSetupStarted = false;
@@ -107,6 +187,30 @@
   let explodeTarget = 0;
   let explodeProgress = 0;
   let needsRender = true;
+  let vesselState = 'none';
+  let sensorLux = vesselStates.none.lux;
+  let targetSensorLux = sensorLux;
+  let sensorTemp = vesselStates.none.temp;
+  let targetSensorTemp = sensorTemp;
+  let vesselLift = 0;
+  let lastSimUiUpdate = 0;
+
+  const updateSimulationReadout = () => {
+    const state = vesselStates[vesselState];
+    if (simVessel) simVessel.textContent = state.label;
+    if (simLux) simLux.textContent = Math.round(sensorLux) + ' lx';
+    if (simTemp) simTemp.textContent = sensorTemp.toFixed(1) + ' °C';
+    if (simMode) simMode.textContent = state.mode;
+  };
+
+  const updateLedAppearance = (now) => {
+    const state = vesselStates[vesselState];
+    const pulse = vesselState === 'none' || reducedMotion
+      ? 0
+      : 0.5 + 0.5 * Math.sin(now * 0.004 * state.ledSpeed);
+    mat.leds.emissive.setHex(state.ledColor);
+    mat.leds.emissiveIntensity = state.ledBase + state.ledPulse * pulse;
+  };
 
   const invalidate = () => { needsRender = true; };
   motionQuery.addEventListener?.('change', (event) => {
@@ -116,6 +220,12 @@
       pitch = targetPitch;
       distance = targetDistance;
       explodeProgress = explodeTarget;
+      target.y = targetTargetY;
+      sensorLux = targetSensorLux;
+      sensorTemp = targetSensorTemp;
+      vesselLift = 0;
+      updateSimulationReadout();
+      updateLedAppearance(performance.now());
     }
     invalidate();
   });
@@ -222,7 +332,7 @@
     if (!spec) {
       partPanel.classList.remove('is-active');
       partName.textContent = 'Assembly map';
-      partDetail.textContent = 'Point to or tap the enclosure, PCB or a component group to identify it.';
+      partDetail.textContent = 'Point to or tap the enclosure, PCB, a component group or a simulated drink to identify it.';
       return;
     }
     partPanel.classList.add('is-active');
@@ -270,18 +380,28 @@
   let pitch = THREE.MathUtils.degToRad(presets.iso.pitch);
   let distance = presets.iso.distance;
   let targetYaw = yaw, targetPitch = pitch, targetDistance = distance;
+  let currentView = 'iso';
   let dragging = false, lastX = 0, lastY = 0;
 
   const setPreset = (key, speak = true) => {
     const preset = presets[key] || presets.iso;
+    currentView = key;
     targetYaw = THREE.MathUtils.degToRad(preset.yaw);
     targetPitch = THREE.MathUtils.degToRad(preset.pitch);
     targetDistance = preset.distance;
+    if (vesselState !== 'none' && key !== 'bottom') {
+      const vessel = vesselStates[vesselState];
+      targetDistance = Math.max(targetDistance, vessel.camera[key] || vessel.camera.iso);
+      targetTargetY = vessel.focusY;
+    } else {
+      targetTargetY = 2.7;
+    }
     if (key === 'bottom') ensureBackSurface();
     if (reducedMotion) {
       yaw = targetYaw;
       pitch = targetPitch;
       distance = targetDistance;
+      target.y = targetTargetY;
     }
     invalidate();
     viewButtons.forEach((button) => {
@@ -293,6 +413,48 @@
   };
 
   viewButtons.forEach((button) => button.addEventListener('click', () => setPreset(button.dataset.coasterView)));
+
+  const setVessel = (nextState, speak = true) => {
+    const stateKey = vesselStates[nextState] ? nextState : 'none';
+    vesselState = stateKey;
+    const state = vesselStates[stateKey];
+    cupGroup.visible = stateKey === 'cup';
+    canGroup.visible = stateKey === 'can';
+    vesselButtons.forEach((button) => {
+      const active = button.dataset.coasterVessel === stateKey;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    targetSensorLux = state.lux;
+    targetSensorTemp = state.temp;
+    if (stateKey !== 'none') {
+      vesselLift = reducedMotion ? 0 : 12;
+      if (currentView === 'bottom') setPreset('iso', false);
+      else {
+        targetTargetY = state.focusY;
+        targetDistance = Math.max(targetDistance, state.camera[currentView] || state.camera.iso);
+      }
+    } else {
+      targetTargetY = 2.7;
+      if (currentView === 'iso' && targetDistance > presets.iso.distance) targetDistance = presets.iso.distance;
+    }
+    if (reducedMotion) {
+      sensorLux = targetSensorLux;
+      sensorTemp = targetSensorTemp;
+      target.y = targetTargetY;
+      vesselLift = 0;
+    }
+    updateSimulationReadout();
+    updateLedAppearance(performance.now());
+    invalidate();
+    if (speak) {
+      announce(stateKey === 'none'
+        ? 'Drink simulation cleared. Coaster uncovered.'
+        : state.label + ' placed. Simulated ' + Math.round(state.lux) + ' lux and ' + state.temp.toFixed(1) + ' degrees Celsius.');
+    }
+  };
+
+  vesselButtons.forEach((button) => button.addEventListener('click', () => setVessel(button.dataset.coasterVessel)));
 
   lidButton?.addEventListener('click', () => {
     lidVisible = !lidVisible;
@@ -323,6 +485,7 @@
     if (lid) lid.visible = true;
     lidButton?.setAttribute('aria-pressed', 'true');
     if (lidButton) lidButton.textContent = 'Hide lid';
+    setVessel('none', false);
     setPreset('iso', false);
     setPartPanel(null);
     invalidate();
@@ -356,12 +519,18 @@
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
+  const isVisibleForPick = (object) => {
+    for (let node = object; node; node = node.parent) {
+      if (!node.visible) return false;
+    }
+    return true;
+  };
   const identifyNdc = (x, y, speak = false) => {
     if (!pickMeshes.length) return;
     pointer.x = x;
     pointer.y = y;
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(pickMeshes, false)[0];
+    const hit = raycaster.intersectObjects(pickMeshes.filter(isVisibleForPick), false)[0];
     const spec = hit?.object?.userData?.spec || null;
     setPartPanel(spec);
     if (speak && spec) announce(`${spec.name}. ${spec.detail}`);
@@ -379,6 +548,9 @@
   stage.addEventListener('pointerleave', () => { if (!dragging) setPartPanel(null); });
 
   stage.addEventListener('keydown', (event) => {
+    if (event.key === '1') { setVessel('none'); event.preventDefault(); return; }
+    if (event.key === '2') { setVessel('cup'); event.preventDefault(); return; }
+    if (event.key === '3') { setVessel('can'); event.preventDefault(); return; }
     const step = THREE.MathUtils.degToRad(4);
     if (event.key === 'ArrowLeft') targetYaw += step;
     else if (event.key === 'ArrowRight') targetYaw -= step;
@@ -419,7 +591,12 @@
       Math.abs(targetYaw - yaw) > 0.0001 ||
       Math.abs(targetPitch - pitch) > 0.0001 ||
       Math.abs(targetDistance - distance) > 0.01 ||
-      Math.abs(explodeTarget - explodeProgress) > 0.0001
+      Math.abs(targetTargetY - target.y) > 0.01 ||
+      Math.abs(targetSensorLux - sensorLux) > 0.2 ||
+      Math.abs(targetSensorTemp - sensorTemp) > 0.02 ||
+      Math.abs(vesselLift) > 0.01 ||
+      Math.abs(explodeTarget - explodeProgress) > 0.0001 ||
+      vesselState !== 'none'
     );
     if (!needsRender && !animating) return;
     if (reducedMotion) {
@@ -427,11 +604,19 @@
       pitch = targetPitch;
       distance = targetDistance;
       explodeProgress = explodeTarget;
+      target.y = targetTargetY;
+      sensorLux = targetSensorLux;
+      sensorTemp = targetSensorTemp;
+      vesselLift = 0;
     } else {
       const smoothing = 1 - Math.pow(0.001, dt);
       yaw += (targetYaw - yaw) * smoothing;
       pitch += (targetPitch - pitch) * smoothing;
       distance += (targetDistance - distance) * smoothing;
+      target.y += (targetTargetY - target.y) * smoothing;
+      sensorLux += (targetSensorLux - sensorLux) * (1 - Math.pow(0.004, dt));
+      sensorTemp += (targetSensorTemp - sensorTemp) * (1 - Math.pow(0.010, dt));
+      vesselLift += (0 - vesselLift) * (1 - Math.pow(0.006, dt));
       explodeProgress += (explodeTarget - explodeProgress) * (1 - Math.pow(0.018, dt));
     }
     if (Math.abs(explodeTarget - explodeProgress) < 0.0001) explodeProgress = explodeTarget;
@@ -444,6 +629,13 @@
       const t = smoothstep(raw);
       wrapper.position.set(spec.offset[0] * t, spec.offset[1] * t, spec.offset[2] * t);
     });
+    const lidRaw = THREE.MathUtils.clamp((explodeProgress - 0.04) / 0.96, 0, 1);
+    vesselRoot.position.z = 18 * smoothstep(lidRaw) + vesselLift;
+    updateLedAppearance(now);
+    if (now - lastSimUiUpdate > 90 || reducedMotion) {
+      updateSimulationReadout();
+      lastSimUiUpdate = now;
+    }
 
     const cp = Math.cos(pitch);
     camera.position.set(
@@ -457,6 +649,7 @@
   };
 
   setPartPanel(null);
+  setVessel('none', false);
   setPreset('iso', false);
   if (window.PortfolioExplorer?.start) window.PortfolioExplorer.start(renderFrame, stage);
   else {

@@ -78,6 +78,76 @@
 }
 
 .coaster-3d-hint { bottom: 1rem; }
+
+.coaster-vessel-list {
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid var(--object-line);
+}
+
+.coaster-vessel-list .object-tool {
+  min-width: 5.4rem;
+  border-left: 0;
+}
+
+.coaster-sim {
+  position: absolute;
+  z-index: 8;
+  top: 3.65rem;
+  left: 1rem;
+  width: min(15rem, calc(50% - 2rem));
+  padding: 0.72rem 0.8rem;
+  border: 1px solid var(--object-line);
+  background: rgba(3, 5, 6, 0.76);
+  pointer-events: none;
+}
+
+.coaster-sim strong {
+  display: block;
+  color: var(--object-text);
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.coaster-sim strong::after {
+  content: " · simulated";
+  color: var(--object-accent);
+  font-weight: 500;
+}
+
+.coaster-sim dl {
+  display: grid;
+  gap: 0.26rem;
+  margin: 0.52rem 0 0;
+}
+
+.coaster-sim dl div {
+  display: grid;
+  grid-template-columns: 5.8rem 1fr;
+  gap: 0.65rem;
+}
+
+.coaster-sim dt,
+.coaster-sim dd {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.coaster-sim dt {
+  color: var(--object-muted);
+  font-family: var(--mono);
+  text-transform: uppercase;
+}
+
+.coaster-sim dd {
+  color: var(--object-text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .coaster-3d-toolbar .object-tool { margin-left: 0; }
 .coaster-3d-toolbar .object-tool:first-of-type { border-left: 1px solid var(--object-line); }
 
@@ -90,8 +160,15 @@
 @media (max-width: 720px) {
   .coaster-3d-stage { min-height: 28rem; aspect-ratio: 4 / 5; }
   .coaster-3d-toolbar .object-view-list { width: 100%; flex-basis: 100%; }
+  .coaster-vessel-list { width: 100%; flex-basis: 100%; border-left: 0; border-top: 1px solid var(--object-line); }
+  .coaster-vessel-list .object-tool { min-width: 0; flex: 1; }
   .coaster-3d-toolbar .object-tool { min-width: 50%; flex: 1; border-left: 0; }
   .coaster-3d-toolbar .object-tool:first-of-type { border-left: 0; }
+  .coaster-sim {
+    top: 3.35rem;
+    left: 0.75rem;
+    width: min(14rem, calc(100% - 1.5rem));
+  }
   .coaster-part {
     top: auto;
     right: 0.75rem;
@@ -104,6 +181,8 @@
 @media (max-width: 430px) {
   .coaster-3d-stage { min-height: 25rem; }
   .coaster-3d-hint { font-size: 0.55rem; }
+  .coaster-sim { width: calc(100% - 1.5rem); }
+  .coaster-sim dl div { grid-template-columns: 5.4rem 1fr; }
   .coaster-part span { font-size: 0.7rem; }
 }
 
