@@ -13,9 +13,9 @@
   const selectors = [...root.querySelectorAll('[data-assembly-select]')];
   const progressBar = root.querySelector('[data-assembly-progress]');
   const projects = [
+    {name:'tramtrace', title:'TramTrace', kind:'Live light-rail display', description:'116 pixels following Sydney’s light-rail network.', href:'/v2/projects/tramtrace/'},
     {name:'esp32', title:'ESP32', kind:'Framework expansion card', description:'A wireless development board, built into a laptop bay.', href:'/v2/projects/framework-expansion-card/'},
-    {name:'pi', title:'Raspberry Pi', kind:'Framework expansion card', description:'An RP2354B microcontroller in the same compact format.', href:'/v2/projects/framework-raspberry-pi/'},
-    {name:'tramtrace', title:'TramTrace', kind:'Live light-rail display', description:'116 pixels following Sydney’s light-rail network.', href:'/v2/projects/tramtrace/'}
+    {name:'pi', title:'Raspberry Pi', kind:'Framework expansion card', description:'An RP2354B microcontroller in the same compact format.', href:'/v2/projects/framework-raspberry-pi/'}
   ];
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
   const smooth = value => { const p = clamp(value); return p*p*(3-2*p); };
@@ -79,12 +79,14 @@
     const scale = small ? Math.min(4.7,half*1.7) : Math.min(5.65,half*.82)*Math.min(1,(height-100)/800);
     const tramScale = small ? Math.min(5.1,half*1.83) : Math.min(9.4,half*1.21);
     const startScale = small ? Math.min(3.6,half*1.45)*(width<360?.9:1) : Math.min(4.15,half*.6);
-    const left = small ? -half*.82 : -half*.72;
-    const right = small ? half*.86 : half*.69;
+    const left = small ? -half*.53 : -half*.72;
+    const right = small ? half*.53 : half*.69;
+    const leadStart=startScale*(small?1.2:1.7);
+    const sideStart=startScale*(small?.57:.8);
     poses = [
-      [pose(0,0,-1.9,startScale,1.04,-.22,-.38),pose(.135,focusX,focusY,scale,1.02,-.15,-.28),pose(.265,focusX,focusY-.35,scale,.83,.18,-.23,1),pose(.34,focusX,focusY,scale,1.12,.35,-.1),pose(.405,-off,1,scale,.92,.65,-.35),pose(1,-off,1,scale,.92,.65,-.35)],
-      [pose(0,right,small ? -.85 : -1.65,startScale*.74,1.08,.28,.24),pose(.10,off,-1,startScale*.74,1.08,.28,.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale,.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
-      [pose(0,left,small ? -.9 : -1.65,startScale*1.26,1.05,.22,.32),pose(.11,-off,-1,startScale*1.26,1.05,.22,.32),pose(.65,off,-.2,tramScale,1.1,.1,-.05),pose(.76,focusX,focusY,tramScale,1.12,.05,-.1),pose(.88,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(1,focusX,focusY,tramScale,1.3,0,0)]
+      [pose(0,0,-1.9,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.405,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
+      [pose(0,left,small ? -.2 : -1.65,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale,.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
+      [pose(0,right,small ? -.25 : -1.65,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-.35,scale,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
     updateProgress();
     request();
@@ -114,7 +116,7 @@
       group.scale.setScalar(transform.s*(.94+settle*.06));
       group.rotation.set(transform.rx,transform.ry,transform.rz+(1-settle)*.11);
       model.parts.forEach((part,partIndex) => {
-        const stagger=index===2 ? .04*Math.sin(partIndex*.45) : 0;
+        const stagger=projects[index].name==='tramtrace' ? .04*Math.sin(partIndex*.45) : 0;
         const exploded=clamp(transform.e*(1+stagger));
         part.object.position.copy(part.base).addScaledVector(part.offset,exploded);
       });

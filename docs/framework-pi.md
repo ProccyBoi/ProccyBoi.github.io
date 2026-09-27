@@ -42,6 +42,14 @@ The finishing script requires Pillow. It verifies the 1600 × 1200 RGBA WebP bef
 
 The board GLB uses **metres, +Y up, source KiCad X → +X and Y → +Z**. To put it in a millimetre scene, scale by 1000 and translate `(-140, 0, -142)`. The board is 26 × 30 × 0.8 mm. Assembly mode raises its underside to Y = 3.1 mm, matching the enclosure's mounting bosses.
 
+### Tactile-switch model registration
+
+The supplied switch WRL uses the footprint origin, but its STEP companion uses a different origin. Substitution without registration shifted each switch 2.35 mm sideways and 1.2339 mm along the board, leaving its terminals away from their pads. The exporter applies the STEP-local translation `(2.35, 1.2339, -0.050313)` mm to `SW1` and `SW2` in a temporary PCB copy. Their source footprints and 180° rotations are retained; both side actuators point toward the exposed card edge. No geometry is reshaped.
+
+The build checks the resulting GLB against all eight original electrical pads. It requires terminal vertices at soldering height inside every pad, switch-body centring within 0.001 mm, and the actuator extending 2.4339 mm toward the card edge. The previous unregistered GLB fails this check. The corrected export has 27–64 terminal vertices within each pad and a lateral centring error below 0.000001 mm. `assembly.json` records the correction, original WRL/STEP hashes and measured checks. The PCB, enclosure and both library files are hash-checked after export.
+
+The hero and standalone inspector consume this same corrected GLB. Their explode/reassemble transforms start from the registered positions, so a browser-specific correction is unnecessary.
+
 The enclosure retains its native millimetre coordinates and rotation, translated `(0, 0, 15)`. Its source bounds are `[-15, 0, -32]` to `[15, 6.8, 0]`. The bosses align with the PCB holes at X = ±11.3 mm, Z = 4.5 mm.
 
 Detach the connector node `P1`, scale by 1000, rotate X by −π/2, and place at `(0, 0.8, -16.4)` in board coordinates or `(0, 3.9, -16.4)` in the assembly. The front SVG's viewBox is `127 127 26 30`. Its 26 × 30 mm textured plane sits 0.02 mm above the board and rotates X by −π/2, with geometry cutouts at both 2.2 mm mounting holes. Native GLB materials are pads `mat_18`, silk `mat_19`, solder mask `mat_20`, core `mat_21`; the display substitutes the original SVG for the tessellated silk.

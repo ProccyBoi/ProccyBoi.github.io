@@ -138,7 +138,7 @@ def common(source, body_class, active='work'):
     source = replace_nodes(source, changes)
     source = re.sub(r'<body(?: class="([^"]*)")?>', lambda match: '<body class="v2 ' + body_class + (' ' + match[1] if match[1] else '') + '">', source, count=1)
     source = re.sub(r'<script[^>]+src="assets/site-enhancements.js"[^>]*></script>', '', source)
-    source = source.replace('content="#111210"', 'content="#f5f5f2"')
+    source = re.sub(r'(<meta name="theme-color" content=")[^"]*(">)', r'\g<1>#090b0d\2', source)
     if '<base' not in source:
         source = source.replace('<head>', '<head>\n<base href="/">', 1)
     source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css">
@@ -321,7 +321,6 @@ def make_case(path, slug=None, source=None):
     if slug == 'skylabs/flight-review':
         return source
     if slug in ('lithography-animation', 'mosfet-operating-regions'):
-        source = source.replace('<meta name="theme-color" content="#2b6cb0">', '<meta name="theme-color" content="#f5f5f2">')
         source = common(source, 'v2-lab')
         source = source.replace('<a class="lab-skip" href="#lab-main">', f'<a class="lab-skip" href="/v2/projects/{slug}/#lab-main">')
         source = source.replace(FOOTER, continuation(slug) + FOOTER)
@@ -387,7 +386,7 @@ def make_pi_case():
   <base href="/">
   <title>Raspberry Pi Expansion Card | Andrew Chung</title>
   <meta name="description" content="An RP2354B microcontroller board designed for the Framework expansion-card format. Explore the board and enclosure in 3D.">
-  <meta name="theme-color" content="#f5f5f2">
+  <meta name="theme-color" content="#090b0d">
   <meta property="og:type" content="website"><meta property="og:title" content="Raspberry Pi Expansion Card | Andrew Chung">
   <meta property="og:description" content="An RP2354B microcontroller board in the Framework expansion-card format.">
   <meta property="og:url" content="https://proccyboi.github.io/v2/projects/framework-raspberry-pi/">
@@ -424,7 +423,7 @@ def make_hardware_case(record):
         sections += f'<p class="v2-hardware-credit">Based on the <a href="{escape(attribution["url"])}">{escape(attribution["name"])}</a> template, licensed under <a href="{escape(attribution["license_url"])}">{escape(attribution["license"])}</a>.</p>'
     source = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/">
-  <title>{title} | Andrew Chung</title><meta name="description" content="{escape(record['summary'])}"><meta name="theme-color" content="#f5f5f2">
+  <title>{title} | Andrew Chung</title><meta name="description" content="{escape(record['summary'])}"><meta name="theme-color" content="#090b0d">
   <meta property="og:type" content="website"><meta property="og:title" content="{title} | Andrew Chung"><meta property="og:description" content="{escape(record['summary'])}">
   <meta property="og:url" content="https://proccyboi.github.io/v2/projects/{slug}/"><meta property="og:image" content="https://proccyboi.github.io{poster}">
   <link rel="canonical" href="https://proccyboi.github.io/v2/projects/{slug}/"><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">

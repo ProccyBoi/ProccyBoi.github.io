@@ -21,8 +21,8 @@
       "metadataUrl": "/assets/models/hardware/lora-receiver/assembly.json",
       "source": "LoRa Reciever/LoRa Reciever.kicad_pcb",
       "sourceHash": "0a37dfb8db75f9cd0e529e67b86542424861a38694a1854ec73266f47f5cf8f3",
-      "missingModelCount": 3,
-      "modelBytes": 3380408
+      "missingModelCount": 0,
+      "modelBytes": 5159616
     },
     {
       "slug": "rf-test-board",
@@ -76,7 +76,7 @@
       "source": "Framework Expansion Card - Logic Analyser/ExpansionCards-main/Electrical/KiCad_templates/Expansion_Card/Expansion_Card.kicad_pcb",
       "sourceHash": "ec67cc46d5da9fc4ac3f88ce1a029d4ae0db95685438da4dbd55a59ed2fb1c34",
       "missingModelCount": 0,
-      "modelBytes": 4902892
+      "modelBytes": 7818648
     }
   ]
 }

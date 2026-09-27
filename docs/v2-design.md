@@ -4,9 +4,9 @@ Revised 27 September 2026. The portfolio lives at `/v2/` and contains 18 project
 
 ## Visual direction
 
-The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses near-white surfaces, graphite text and blue links. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections follows the same principle as separation between parts: enough space to see their relationship.
+The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses deep charcoal, soft white text and pale blue links. Dark image surfaces suit the original black-background photographs. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections leaves enough space to see how the parts relate.
 
-The opening is a full-screen, scroll-controlled scene featuring the ESP32 card, Raspberry Pi card and TramTrace. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their real positions; reverse scrolling reconstructs the same assembly.
+The opening is a full-screen, scroll-controlled scene led by TramTrace, followed by the ESP32 and Raspberry Pi cards. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their registered positions; reverse scrolling reconstructs the same assembly.
 
 Project names and concise descriptions carry the interface. CAD provenance belongs in development documentation, not repeated as decorative captions. Titles should identify work or explain a real design decision. Technical specifications belong where they help someone understand a project.
 

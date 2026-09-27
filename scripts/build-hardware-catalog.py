@@ -99,6 +99,30 @@ def register_manufacturer_models(path, footprints, resolutions):
     for footprint in footprints:
         for original in footprint['models']:
             resolved = resolutions.get(original)
+            if resolved and resolved.parent.name == 'source-cad' and resolved.name in ('ublox_NEO.step','USB_C_Receptacle_HRO_TYPE-C-31-M-12.step'):
+                node = next((node for node in gltf['nodes'] if node.get('name') == footprint['ref']), None)
+                if node is None:
+                    raise ValueError('Registered manufacturer part was not exported')
+                if resolved.name == 'ublox_NEO.step':
+                    # Official u-blox assembly origin is far from the package.
+                    # Its 3 mm contact gap has opposite polarity to KiCad Y.
+                    translation = [-.047527640752106436,.0004475,-.018112416107382553]
+                    proof = 'Official NEO package, 12.2 x 16 mm; rotate 180 degrees after centring. Both contact rows match the authored 1.1 mm pitch and the asymmetric -0.4/+2.6 mm pad gap.'
+                    url = 'https://github.com/u-blox/3D-Step-Models-Library/blob/master/POS/NEO.STEP'
+                else:
+                    translation = [0,0,.00105]
+                    proof = 'Exact HRO TYPE-C-31-M-12 model. Rotated 180 degrees with +1.05 mm KiCad Y registration: shell matches F.Fab +/-3.65 mm, bosses match +/-2.89,-2.60 mm and contact row matches -4.045 mm.'
+                    url = None
+                children_indices = node.pop('children', [])
+                if 'mesh' in node:
+                    child_index = len(gltf['nodes'])
+                    gltf['nodes'].append({'mesh':node.pop('mesh')})
+                    children_indices.append(child_index)
+                wrapper = len(gltf['nodes'])
+                gltf['nodes'].append({'name':footprint['ref']+'_manufacturer_registration','children':children_indices,'rotation':[0,1,0,0],'translation':translation})
+                node['children'] = [wrapper]
+                adjustments.append({'ref':footprint['ref'],'file':resolved.name,'sourceHash':sha256(resolved),'nativeGlbRotationRadians':[0,math.pi,0],'nativeGlbTranslationMm':[value*1000 for value in translation],'registration':proof,'manufacturerUrl':url})
+                continue
             if not resolved or resolved.parent.name != 'kyocera' or resolved.name != 'SD_Kyocera_145638009511859+.step':
                 continue
             node = next((node for node in gltf['nodes'] if node.get('name') == footprint['ref']), None)
@@ -168,6 +192,154 @@ def append_literal_vrml_boxes(path, footprints, sources, thickness):
     return additions
 
 
+def preserve_authored_vrml_meshes(path, footprints, board, libraries):
+    """Use the selected EasyEDA WRL frame, not a differently centred STEP companion.
+
+    KiCad's exported reference node already contains the exact footprint side,
+    rotation and model offset. Replace only its local mesh. The supported source
+    format is a flat set of literal IndexedFaceSet shapes; reject transforms and
+    unsupported geometry rather than guessing their meaning.
+    """
+    gltf, raw = read_glb(path)
+    binary = bytearray(raw)
+    records = []
+    number = r'[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?'
+
+    def attribute(values):
+        binary.extend(b'\0' * (-len(binary) % 4))
+        offset = len(binary)
+        binary.extend(struct.pack('<' + 'f' * len(values), *values))
+        view = len(gltf['bufferViews'])
+        gltf['bufferViews'].append({'buffer':0,'byteOffset':offset,'byteLength':len(values)*4,'target':34962})
+        accessor = len(gltf['accessors'])
+        gltf['accessors'].append({'bufferView':view,'componentType':5126,'count':len(values)//3,'type':'VEC3','min':[min(values[i::3]) for i in range(3)],'max':[max(values[i::3]) for i in range(3)]})
+        return accessor
+
+    for footprint in footprints:
+        if len(footprint['models']) != 1 or 'easyeda' not in footprint['models'][0].lower():
+            continue
+        original = footprint['models'][0]
+        candidates = [Path(original), board.parent / original]
+        candidates += [root / Path(original).name for root in libraries.roots]
+        source = next((candidate for candidate in candidates if candidate.suffix.lower() == '.wrl' and candidate.is_file()), None)
+        if source is None:
+            continue
+        source_text = source.read_text(encoding='utf-8')
+        if re.search(r'\bTransform\s*\{', source_text):
+            continue
+        blocks = re.split(r'\bShape\s*\{', source_text)[1:]
+        if not blocks or any('IndexedFaceSet' not in block for block in blocks):
+            continue
+        node = next((node for node in gltf['nodes'] if node.get('name') == footprint['ref']), None)
+        if node is None or 'mesh' not in node:
+            continue
+        primitives, source_points = [], []
+        for block in blocks:
+            points_match = re.search(r'\bpoint\s*\[([^]]+)\]', block, re.S)
+            indices_match = re.search(r'\bcoordIndex\s*\[([^]]+)\]', block, re.S)
+            color_match = re.search(r'\bdiffuseColor\s+(' + number + r')\s+(' + number + r')\s+(' + number + r')', block)
+            if not points_match or not indices_match or not color_match:
+                raise ValueError('Unsupported authored VRML shape in ' + source.name)
+            values = [float(value) for value in re.findall(number, points_match[1])]
+            if len(values) % 3:
+                raise ValueError('Invalid VRML coordinate count')
+            vertices = [(values[i]*.00254, values[i+2]*.00254, -values[i+1]*.00254) for i in range(0,len(values),3)]
+            source_points.extend(vertices)
+            positions, normals, face = [], [], []
+            reverse_winding = bool(re.search(r'\bccw\s+FALSE', block))
+            for index in map(int, re.findall(r'-?\d+', indices_match[1])):
+                if index >= 0:
+                    face.append(index)
+                    continue
+                for i in range(1,len(face)-1):
+                    tri = [vertices[j] for j in (face[0],face[i],face[i+1])]
+                    if reverse_winding:
+                        tri.reverse()
+                    a,b,c = tri
+                    u,v = [b[k]-a[k] for k in range(3)],[c[k]-a[k] for k in range(3)]
+                    normal = [u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]
+                    length = math.sqrt(sum(value*value for value in normal))
+                    if length < 1e-20:
+                        continue
+                    for point in tri:
+                        positions.extend(point)
+                        normals.extend(value/length for value in normal)
+                face = []
+            if not positions:
+                continue
+            # Match KiCad's sRGB-to-linear colour conversion for glTF PBR.
+            color = [float(value) for value in color_match.groups()]
+            color = [value/12.92 if value <= .04045 else ((value+.055)/1.055)**2.4 for value in color]
+            material = len(gltf['materials'])
+            gltf['materials'].append({'name':f'authored_wrl_{footprint["ref"]}_{material}','doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':color+[1],'metallicFactor':0,'roughnessFactor':.55}})
+            primitives.append({'attributes':{'POSITION':attribute(positions),'NORMAL':attribute(normals)},'material':material,'mode':4})
+        if not primitives:
+            raise ValueError('Authored WRL mesh has no faces')
+        previous = [gltf['accessors'][primitive['attributes']['POSITION']] for primitive in gltf['meshes'][node['mesh']]['primitives']]
+        prior_bounds = [[round(op(accessor[key][axis] for accessor in previous)*1000,5) for axis in range(3)] for op,key in [(min,'min'),(max,'max')]]
+        gltf['meshes'][node['mesh']]['primitives'] = primitives
+        authored_bounds = [[round(op(point[axis] for point in source_points)*1000,5) for axis in range(3)] for op in (min,max)]
+        records.append({'ref':footprint['ref'],'file':source.name,'sha256':sha256(source),'conversion':'Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved','priorStepLocalBoundsMm':prior_bounds,'authoredLocalBoundsMm':authored_bounds})
+    if records:
+        write_glb(path,gltf,binary)
+    return records
+
+
+def append_dimensioned_renata(path, footprints, thickness):
+    """Documented envelope only; no claim that manufacturer CAD was recovered."""
+    footprint = next((part for part in footprints if part['footprint'] == 'Battery:BatteryHolder_Renata_SMTU2032-LF_1x2032'), None)
+    drawing = path.parent / 'source-cad/SMTU2032-LF-drawing.pdf'
+    if footprint is None or not drawing.is_file():
+        return []
+    gltf, raw = read_glb(path)
+    if any(node.get('name') == footprint['ref'] for node in gltf['nodes']):
+        return []
+    binary = bytearray(raw)
+    def attribute(values):
+        binary.extend(b'\0' * (-len(binary) % 4))
+        offset = len(binary);binary.extend(struct.pack('<'+'f'*len(values),*values))
+        view = len(gltf['bufferViews']);gltf['bufferViews'].append({'buffer':0,'byteOffset':offset,'byteLength':len(values)*4,'target':34962})
+        accessor=len(gltf['accessors']);gltf['accessors'].append({'bufferView':view,'componentType':5126,'count':len(values)//3,'type':'VEC3','min':[min(values[i::3]) for i in range(3)],'max':[max(values[i::3]) for i in range(3)]})
+        return accessor
+    primitives=[]
+    def solid(faces,color,metal):
+        positions,normals=[],[]
+        for face in faces:
+            for i in range(1,len(face)-1):
+                tri=[face[0],face[i],face[i+1]]
+                a,b,c=tri;u=[b[k]-a[k] for k in range(3)];v=[c[k]-a[k] for k in range(3)]
+                n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]]
+                length=math.sqrt(sum(x*x for x in n))
+                if length<1e-10:continue
+                for p in tri:positions.extend(x/1000 for x in p);normals.extend(x/length for x in n)
+        material=len(gltf['materials']);gltf['materials'].append({'name':'dimensioned_renata_'+str(material),'doubleSided':True,'pbrMetallicRoughness':{'baseColorFactor':color+[1],'metallicFactor':metal,'roughnessFactor':.55}})
+        primitives.append({'attributes':{'POSITION':attribute(positions),'NORMAL':attribute(normals)},'material':material,'mode':4})
+    def extrude(poly,height,bottom=0):
+        a=[(x,bottom,z) for x,z in poly];b=[(x,bottom+height,z) for x,z in poly]
+        return [list(reversed(a)),b]+[[a[i],a[(i+1)%len(a)],b[(i+1)%len(a)],b[i]] for i in range(len(a))]
+    # KiCad's fabrication outline supplies the R11 profile and +/-8.050001
+    # limits. The official drawing gives 28.5, 5.4, 2.6, 3.5 and 0.15 mm.
+    # Keep only side-wall envelopes and solder tabs, omitting undocumented
+    # spring detail. The 20 mm opening is the documented CR2032 envelope.
+    faces=[]
+    stops=sorted(set([-8.050001+i*16.100002/64 for i in range(65)]+[-3.5,3.5]))
+    for sign in (-1,1):
+        for za,zb in zip(stops,stops[1:]):
+            outer=lambda z:14.25 if abs((za+zb)/2)<=3.5 else math.sqrt(121-z*z)
+            inner=lambda z:math.sqrt(100-z*z)
+            faces.extend(extrude([(sign*inner(za),za),(sign*outer(za),za),(sign*outer(zb),zb),(sign*inner(zb),zb)],5.4))
+    solid(faces,[.89,.88,.83],0)
+    faces=[]
+    for x in (-14.7,14.7):faces.extend(extrude([(x-1.3,-1.75),(x+1.3,-1.75),(x+1.3,1.75),(x-1.3,1.75)],.15))
+    solid(faces,[.68,.7,.71],1)
+    mesh=len(gltf['meshes']);gltf['meshes'].append({'name':footprint['ref'],'primitives':primitives})
+    angle=math.radians(footprint['atMm'][2] if len(footprint['atMm'])>2 else 0)
+    node=len(gltf['nodes']);gltf['nodes'].append({'name':footprint['ref'],'mesh':mesh,'translation':[footprint['atMm'][0]/1000,(thickness-.005)/1000,footprint['atMm'][1]/1000],'rotation':[0,math.sin(angle/2),0,math.cos(angle/2)]})
+    gltf['nodes'][gltf['scenes'][gltf.get('scene',0)]['nodes'][0]].setdefault('children',[]).append(node)
+    write_glb(path,gltf,binary)
+    return [{'ref':footprint['ref'],'kind':'Dimensioned holder envelope and solder contacts; not manufacturer CAD','drawing':'source-cad/SMTU2032-LF-drawing.pdf','drawingHash':sha256(drawing),'sourceUrl':'https://www.renata.com/en/downloads/?product=smtu2032-lf&fileid=6a9833a4d49dfb7b550194fe0f','drawingNumber':'3.87600.446, revision 6','dimensionsMm':{'bodyLength':28.5,'height':5.4,'outerRadius':11,'cellDiameter':20,'contactPitch':29.4,'contactSize':[2.6,3.5,.15]},'detailScope':'Authored F.Fab side envelope and manufacturer-dimensioned solder tabs. Spring internals and retention details are intentionally omitted.'}]
+
+
 def inspect_glb(path):
     model, binary = read_glb(path)
     roles = {}
@@ -182,7 +354,7 @@ def inspect_glb(path):
     core_index = roles["core"]["index"]
     # KiCad appends pads/silk/mask/core after component materials. A custom
     # project palette can give silk a different metallic coefficient.
-    if core_index == len(model['materials']) - 1 and core_index >= 3:
+    if core_index >= 3:
         for role, offset in [('pads', 3), ('silk', 2), ('mask', 1)]:
             index = core_index - offset
             roles[role] = {'index':index,'name':model['materials'][index].get('name',f'material_{index}')}
@@ -322,6 +494,9 @@ def export(slug, relative, root, destination, cli, libraries):
             general = child(tree, "general", [])
             registrations = register_manufacturer_models(out / "board.glb", footprints, resolutions)
             additions = append_literal_vrml_boxes(out / "board.glb", footprints, vrml, float(child(general, 'thickness', [None,'1.6'])[1]))
+            authored_vrml = preserve_authored_vrml_meshes(out / "board.glb", footprints, board, libraries)
+            dimensioned = append_dimensioned_renata(out / "board.glb", footprints, float(child(general,'thickness',[None,'1.6'])[1]))
+            missing = [item for item in missing if item['ref'] not in {entry['ref'] for entry in dimensioned}]
             missing = [item for item in missing if item['ref'] not in {entry['ref'] for entry in additions}]
             gltf, materials, bounds, height, triangles = inspect_glb(out / "board.glb")
             names = {node.get("name") for node in gltf["nodes"]}
@@ -351,6 +526,8 @@ def export(slug, relative, root, destination, cli, libraries):
         metadata["copperIncluded"] = unpopulated or slug == "business-card"
         metadata["materialProperties"] = {role: next(material["pbrMetallicRoughness"] for material in gltf["materials"] if material.get("name") == name) for role, name in materials.items()}
         metadata["literalVrmlModels"] = additions
+        metadata["authoredVrmlMeshes"] = authored_vrml
+        metadata["dimensionedRepresentations"] = dimensioned
         metadata["modelRegistrations"] = registrations
         used_libraries = []
         library_root = destination / '_libraries'
@@ -366,7 +543,12 @@ def export(slug, relative, root, destination, cli, libraries):
             metadata['dimensionedLedFallback'] = {'value':'WS2812B-2020','bodySizeMm':[2,.72,2],'windowSizeMm':[1.12,.035,1.12],'padSizeMm':[.56,.035,.68],'notchSizeMm':[.26,.028,.26],'source':'/assets/pcb-object-explorer.js','placementsSource':'/assets/metroboard-3d.js','kind':'Existing published package representation; not supplier CAD'}
         if slug == "framework-logic-analyser":
             connector = Path(__file__).resolve().parents[1] / 'assets/models/framework-esp32/framework-usbc.glb'
-            metadata['connector'] = {'modelUrl':'/assets/models/framework-esp32/framework-usbc.glb','node':'P1','ref':'P1','scaleToMillimetres':1000,'rotationRadians':[-math.pi/2,0,0],'positionBoardLocalMm':[0,.8,-16.4],'sourceHash':sha256(connector),'provenance':'Existing exact Molex 105444 connector geometry; same part and placement as the Framework reference card'}
+            plug_footprint = next(item for item in footprints if item['ref'] == 'P1')
+            # The exact plug straddles the edge, so its contact-row midplane
+            # belongs at the PCB midplane, not at the component top surface.
+            # Its native mating-axis origin is 3.4 mm ahead of the footprint.
+            plug_position = [plug_footprint['atMm'][0]-(bounds[0]+bounds[2])/2,(height[0]+height[1])/2,plug_footprint['atMm'][1]-(bounds[1]+bounds[3])/2-3.4]
+            metadata['connector'] = {'modelUrl':'/assets/models/framework-esp32/framework-usbc.glb','node':'P1','ref':'P1','scaleToMillimetres':1000,'rotationRadians':[-math.pi/2,0,0],'positionBoardLocalMm':plug_position,'sourceHash':sha256(connector),'provenance':'Existing exact Molex 105444 geometry; actual P1 footprint XY and PCB contact-row midplane','registration':{'sourceFootprintAtMm':plug_footprint['atMm'],'nativeMatingAxisOffsetMm':-3.4,'seating':'Symmetric edge-mount contact rows centred on exported PCB core; prior top-surface placement lifted the connector by 0.445 mm'}}
             metadata['missingModels'] = [item for item in metadata['missingModels'] if item['ref'] != 'P1']
             entry = next(item for item in footprints if item['ref'] == 'P1')
             entry.update({'providedBy':'connector','modelExported':True,'boardModelExported':False})
@@ -401,7 +583,7 @@ def main():
     standard = args.kicad_models
     if not standard and args.kicad_cli.is_file():
         standard = args.kicad_cli.resolve().parents[1] / "share/kicad/3dmodels"
-    libraries = Libraries(args.model_library + [destination / '_libraries'] + ([standard] if standard else []) + [source], standard)
+    libraries = Libraries(args.model_library + [destination / slug / 'source-cad' for slug in selected] + [destination / '_libraries'] + ([standard] if standard else []) + [source], standard)
     catalog = {"schemaVersion": 1, "boards": []}
     existing = destination / "catalog.json"
     if existing.exists():

@@ -178,7 +178,7 @@
       "hasModel": true,
       "dnp": false,
       "excludeFromBom": false,
-      "modelExported": false
+      "modelExported": true
     },
     {
       "ref": "C3",
@@ -414,7 +414,7 @@
       "hasModel": true,
       "dnp": false,
       "excludeFromBom": false,
-      "modelExported": false
+      "modelExported": true
     },
     {
       "ref": "C16",
@@ -518,7 +518,7 @@
       "hasModel": true,
       "dnp": false,
       "excludeFromBom": false,
-      "modelExported": false
+      "modelExported": true
     },
     {
       "ref": "R15",
@@ -611,10 +611,10 @@
     }
   ],
   "materials": {
-    "pads": "mat_17",
-    "silk": "mat_18",
-    "mask": "mat_19",
-    "core": "mat_20"
+    "pads": "mat_26",
+    "silk": "mat_27",
+    "mask": "mat_28",
+    "core": "mat_29"
   },
   "silk": {
     "frontUrl": "/assets/models/hardware/lora-receiver/silk-front.svg",
@@ -628,29 +628,15 @@
   },
   "source": "LoRa Reciever/LoRa Reciever.kicad_pcb",
   "sourceHash": "0a37dfb8db75f9cd0e529e67b86542424861a38694a1854ec73266f47f5cf8f3",
-  "missingModels": [
-    {
-      "ref": "BT2",
-      "reason": "Referenced physical model could not be resolved",
-      "model": "BatteryHolder_Renata_SMTU2032-LF_1x2032.step"
-    },
-    {
-      "ref": "J1",
-      "reason": "Referenced physical model could not be resolved",
-      "model": "USB_C_Receptacle_HRO_TYPE-C-31-M-12.step"
-    },
-    {
-      "ref": "U7",
-      "reason": "Referenced physical model could not be resolved",
-      "model": "ublox_NEO.step"
-    }
-  ],
+  "missingModels": [],
   "unmodeledFootprints": [],
-  "modelledComponentCount": 37,
-  "triangleCount": 60884,
-  "modelBytes": 3380408,
-  "resolvedLibraryModelCount": 10,
+  "modelledComponentCount": 40,
+  "triangleCount": 83050,
+  "modelBytes": 5159616,
+  "resolvedLibraryModelCount": 12,
   "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "unpopulated": false,
+  "copperIncluded": false,
   "materialProperties": {
     "pads": {
       "baseColorFactor": [
@@ -693,5 +679,97 @@
       "roughnessFactor": 0.800000011920929
     }
   },
+  "literalVrmlModels": [],
+  "authoredVrmlMeshes": [
+    {
+      "ref": "U1",
+      "file": "WIRELM-SMD_L16.0-W16.0-H2.0-SX1278S165SY-T-X1.wrl",
+      "sha256": "1b0b7cf3b53bbcf18078721b3be17023627dcfaadbb6ad35e29f9eb08e559e04",
+      "conversion": "Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved",
+      "priorStepLocalBoundsMm": [
+        [
+          -8.0,
+          0.0,
+          -8.0
+        ],
+        [
+          8.0,
+          1.801,
+          8.0
+        ]
+      ],
+      "authoredLocalBoundsMm": [
+        [
+          -7.99998,
+          0.0,
+          -7.99998
+        ],
+        [
+          7.99998,
+          1.8001,
+          7.99998
+        ]
+      ]
+    }
+  ],
+  "dimensionedRepresentations": [
+    {
+      "ref": "BT2",
+      "kind": "Dimensioned holder envelope and solder contacts; not manufacturer CAD",
+      "drawing": "source-cad/SMTU2032-LF-drawing.pdf",
+      "drawingHash": "bbd0beb4dc96cc7076755d1436bf7e3c938df084a09ecdfc432f8addf072ec83",
+      "sourceUrl": "https://www.renata.com/en/downloads/?product=smtu2032-lf&fileid=6a9833a4d49dfb7b550194fe0f",
+      "drawingNumber": "3.87600.446, revision 6",
+      "dimensionsMm": {
+        "bodyLength": 28.5,
+        "height": 5.4,
+        "outerRadius": 11,
+        "cellDiameter": 20,
+        "contactPitch": 29.4,
+        "contactSize": [
+          2.6,
+          3.5,
+          0.15
+        ]
+      },
+      "detailScope": "Authored F.Fab side envelope and manufacturer-dimensioned solder tabs. Spring internals and retention details are intentionally omitted."
+    }
+  ],
+  "modelRegistrations": [
+    {
+      "ref": "J1",
+      "file": "USB_C_Receptacle_HRO_TYPE-C-31-M-12.step",
+      "sourceHash": "b083e67ce4d06850a2c3835a6366f4012b2def64f8f2781636381ebcaa33e9a0",
+      "nativeGlbRotationRadians": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "nativeGlbTranslationMm": [
+        0,
+        0,
+        1.05
+      ],
+      "registration": "Exact HRO TYPE-C-31-M-12 model. Rotated 180 degrees with +1.05 mm KiCad Y registration: shell matches F.Fab +/-3.65 mm, bosses match +/-2.89,-2.60 mm and contact row matches -4.045 mm.",
+      "manufacturerUrl": null
+    },
+    {
+      "ref": "U7",
+      "file": "ublox_NEO.step",
+      "sourceHash": "0098bb461adb7deeafb428b9189f127324ee004ad2b9f0ee813f78608aacecd0",
+      "nativeGlbRotationRadians": [
+        0,
+        3.141592653589793,
+        0
+      ],
+      "nativeGlbTranslationMm": [
+        -47.527640752106436,
+        0.4475,
+        -18.112416107382554
+      ],
+      "registration": "Official NEO package, 12.2 x 16 mm; rotate 180 degrees after centring. Both contact rows match the authored 1.1 mm pitch and the asymmetric -0.4/+2.6 mm pad gap.",
+      "manufacturerUrl": "https://github.com/u-blox/3D-Step-Models-Library/blob/master/POS/NEO.STEP"
+    }
+  ],
   "additionalLibraryModels": []
 }

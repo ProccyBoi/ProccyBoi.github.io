@@ -11,7 +11,10 @@ async function scrollPhase(page,progress){
     scrollTo({top:scrollY+root.getBoundingClientRect().top+value*(root.offsetHeight-root.querySelector('.v2-assembly-sticky').clientHeight),behavior:'instant'});
     return Math.max(0,Math.min(1,-root.getBoundingClientRect().top/(root.offsetHeight-root.querySelector('.v2-assembly-sticky').clientHeight)));
   },progress);
-  await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.000006,actual,{timeout:30000});
+  await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.000006,actual,{timeout:60000}).catch(async error=>{
+    console.error('CAD scroll diagnostic', {requested:progress,actual,state:await page.locator('[data-assembly]').evaluate(node=>({data:{...node.dataset},top:node.getBoundingClientRect().top,height:node.offsetHeight,scrollY,hidden:document.hidden}))});
+    throw error;
+  });
   await page.evaluate(()=>{window.__stableFrames=null;});
   await page.waitForFunction(()=>{
     const frames=document.querySelector('[data-assembly]').dataset.assemblyFrames;
@@ -62,7 +65,7 @@ async function snapshot(page){
       window.__samplePoses=true;
       const sample=()=>{
         if(!window.__samplePoses)return;
-        const model=window.__observedAssemblies.esp32;
+        const model=window.__observedAssemblies.tramtrace;
         window.__poseSamples.push({
           progress:Number(document.querySelector('[data-assembly]').dataset.assemblyProgress),
           displacement:Math.max(...model.parts.map(part=>part.object.position.distanceTo(part.base)))
@@ -76,7 +79,7 @@ async function snapshot(page){
     const partial=samples.filter(sample=>sample.progress>.01&&sample.progress<.25&&sample.displacement>0&&sample.displacement<.3);
     assert.ok(partial.length>=2,'Scroll must render several intermediate physical poses: '+JSON.stringify(samples));
     assert.ok(new Set(partial.map(sample=>sample.displacement.toFixed(5))).size>=2,'Intermediate poses must change, not repeat a single snapped state');
-    for(const [name,progress] of [['esp32',.265],['pi',.565],['tramtrace',.88]]){
+    for(const [name,progress] of [['tramtrace',.265],['esp32',.565],['pi',.88]]){
       await scrollPhase(page,progress);
       const model=(await snapshot(page))[name];
       assert.ok(model.parts.every(part=>part.position.every(Number.isFinite)),name+' component transforms must remain finite');

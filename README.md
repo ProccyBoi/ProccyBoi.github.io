@@ -70,7 +70,7 @@ The site is plain HTML, CSS and JavaScript. Pushes to `main` publish automatical
 
 The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It contains 18 projects, including the expanded electronics collection and Coaster, while leaving the original public routes intact.
 
-The fullscreen opening presents the ESP32 card, Raspberry Pi card and TramTrace, with their physical components assembling and separating as the reader scrolls. The model factory merges the original CAD faces within component groups for efficient rendering. `assets/v2-assembly-models.js`, `assets/v2-assembly.js` and `assets/v2-assembly.css` own this scene. The surrounding light gallery uses `assets/v2.css` and `assets/v2.js`; case-study styles/controllers are `assets/v2-case.css` and `assets/v2-cases.js`.
+The fullscreen opening presents TramTrace, the ESP32 card and Raspberry Pi card, with their physical components assembling and separating as the reader scrolls. The model factory merges the original CAD faces within component groups for efficient rendering. `assets/v2-assembly-models.js`, `assets/v2-assembly.js` and `assets/v2-assembly.css` own this scene. The surrounding charcoal gallery uses `assets/v2.css` and `assets/v2.js`; case-study styles/controllers are `assets/v2-case.css` and `assets/v2-cases.js`.
 
 The Raspberry Pi page includes an on-demand 3D inspector with its exact board, a reference Framework enclosure, camera presets and component separation. Rendering pauses offscreen and when idle. Reduced motion, Save Data, unavailable WebGL and JavaScript-disabled browsing retain still images and project navigation. Finite section transitions use `assets/v2-motion.css` / `.js`.
 

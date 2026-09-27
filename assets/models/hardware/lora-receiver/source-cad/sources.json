@@ -1,0 +1,28 @@
+[
+  {
+    "file": "SMTU2032-LF-drawing.pdf",
+    "sha256": "bbd0beb4dc96cc7076755d1436bf7e3c938df084a09ecdfc432f8addf072ec83",
+    "source": "https://www.renata.com/en/downloads/?product=smtu2032-lf&fileid=6a9833a4d49dfb7b550194fe0f",
+    "kind": "Manufacturer dimensioned drawing 3.87600.446 revision 6; used for explicitly limited envelope representation"
+  },
+  {
+    "file": "ublox_NEO.step",
+    "sha256": "0098bb461adb7deeafb428b9189f127324ee004ad2b9f0ee813f78608aacecd0",
+    "originalFilename": "NEO.STEP",
+    "source": "https://github.com/u-blox/3D-Step-Models-Library/blob/e4089752d21f3ace69baa9417c33f68140553339/POS/NEO.STEP",
+    "kind": "Manufacturer NEO package CAD; native frame registered to authored pad rows"
+  },
+  {
+    "file": "USB_C_Receptacle_HRO_TYPE-C-31-M-12.step",
+    "sha256": "b083e67ce4d06850a2c3835a6366f4012b2def64f8f2781636381ebcaa33e9a0",
+    "originalFilename": "J1_HRO_TYPE-C-31-M-12.step",
+    "source": "Original local component library",
+    "kind": "Exact HRO TYPE-C-31-M-12 part; registration checked against locating bosses, contacts and fabrication outline"
+  },
+  {
+    "file": "WIRELM-SMD_L16.0-W16.0-H2.0-SX1278S165SY-T-X1.wrl",
+    "sha256": "1b0b7cf3b53bbcf18078721b3be17023627dcfaadbb6ad35e29f9eb08e559e04",
+    "source": "Original board-selected EasyEDA VRML model",
+    "kind": "Unmodified authored mesh, including original local frame"
+  }
+]

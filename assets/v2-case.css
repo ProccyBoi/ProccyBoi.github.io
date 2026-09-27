@@ -1,12 +1,12 @@
 /* The case-study and collection layer. Interactive board coordinates stay in
    their original component stylesheets; this file owns the surrounding story. */
 body.v2 {
-  --bg: var(--v2-bg, #f5f5f2);
-  --text: var(--v2-ink, #111619);
-  --muted: var(--v2-muted, #61686c);
-  --surface: #eeeFEB;
-  --rule: #daddda;
-  --rule-strong: #bfc5c6;
+  --bg: var(--v2-bg, #090b0d);
+  --text: var(--v2-ink, #eef3f7);
+  --muted: var(--v2-muted, #a4adb5);
+  --surface: var(--v2-panel);
+  --rule: var(--v2-line);
+  --rule-strong: #44515c;
   --red-text: var(--v2-accent, #2863da);
   --copper: var(--v2-accent, #2863da);
   --red: var(--v2-accent, #2863da);
@@ -25,9 +25,9 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2 [data-reveal] { opacity: 1; transform: none; }
 .v2-footer-name { font-size: 1.1rem; font-weight: 600; letter-spacing: -.04em; }
 .v2 .button { border-radius: 3rem; padding: .8rem 1.2rem; font-size: .86rem; min-height: 2.8rem; text-transform: none; letter-spacing: 0; box-shadow: none; }
-.v2 .button-primary { background: var(--v2-ink); color: white; border-color: var(--v2-ink); }
+.v2 .button-primary { background: var(--v2-ink); color: var(--v2-bg); border-color: var(--v2-ink); }
 .v2 :is(.button, .project-hero-actions a):hover { transform: translateY(-2px); }
-.v2-case-nav { position: sticky; top: var(--header-height); z-index: 60; background: #f5f5f2f2; backdrop-filter: blur(18px); border-bottom: 1px solid var(--rule); }
+.v2-case-nav { position: sticky; top: var(--header-height); z-index: 60; background: #090b0df2; backdrop-filter: blur(18px); border-bottom: 1px solid var(--rule); }
 .v2-case-nav > .shell { display: flex; align-items: center; min-height: 3.4rem; gap: 1.5rem; }
 .v2-case-back { font-size: .8rem; color: var(--muted); text-decoration: none; white-space: nowrap; }
 .v2-case-nav-title { font-size: .78rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 28ch; }
@@ -40,7 +40,7 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-case .project-hero-copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2rem; }
 .v2-case .project-hero-copy h1 { margin: 0 0 1.6rem; max-width: 13ch; font-size: clamp(3rem, 5.5vw, 6.2rem); line-height: .99; letter-spacing: -.065em; font-weight: 500; text-wrap: balance; }
 .v2-case .project-hero-copy > div > p:not(.eyebrow) { font-size: clamp(1.1rem, 1.55vw, 1.4rem); line-height: 1.55; max-width: 31ch; color: var(--muted); }
-.v2-case .project-hero-media { position: relative; min-width: 0; width: 100%; margin: 0; align-self: center; background: #eeefec; border-radius: 0; overflow: hidden; }
+.v2-case .project-hero-media { position: relative; min-width: 0; width: 100%; margin: 0; align-self: center; background: #050608; border-radius: 0; overflow: hidden; }
 .v2-case .project-hero-media :is(picture, img) { width: 100%; height: auto; }
 .v2-case .project-hero-media img { object-fit: contain; max-height: 590px; }
 .v2-case .project-hero-media.v2-cad-media { background: transparent; }
@@ -58,7 +58,7 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-case .engineering-brief > div + div::before { content: ""; position: absolute; left: -2rem; top: 0; bottom: 0; width: 1px; background: var(--rule); }
 .v2-case .engineering-brief dt { font: 500 .8rem/1.5 var(--sans); text-transform: none; letter-spacing: 0; margin-bottom: .9rem; }
 .v2-case .engineering-brief dd { font-size: 1.08rem; line-height: 1.6; color: var(--muted); }
-.v2-case .project-interactive { --object-bg: #111619; --object-panel: #1b2226; --object-accent: #a7bfea; padding-block: clamp(3rem, 5vw, 5rem); }
+.v2-case .project-interactive { --object-bg: #0f1419; --object-panel: #1b2226; --object-accent: #a7bfea; padding-block: clamp(3rem, 5vw, 5rem); }
 .v2-case .project-interactive-header { gap: 3rem; margin-bottom: 2.8rem; align-items: start; }
 .v2-case .project-interactive-header h2 { font-size: clamp(2.1rem, 3.7vw, 3.7rem); font-weight: 500; max-width: 20ch; }
 .v2-case .project-interactive-header > p { max-width: 48ch; justify-self: end; color: #b1bac0; }
@@ -99,7 +99,7 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-case .project-gallery { gap: 2.5rem; border-top: 0; padding-top: 0; }
 .v2-case .project-gallery figure { padding: 0; background: none; transform: none; border: 0; box-shadow: none; }
 .v2-case .project-gallery :is(picture, img) { border-radius: 0; overflow: hidden; }
-.v2-case .project-gallery img { background: #eeefec; }
+.v2-case .project-gallery img { background: #050608; }
 .v2-case .project-gallery figcaption { border: 0; padding-top: .9rem; color: var(--muted); font: 400 .65rem/1.5 var(--mono); letter-spacing: .03em; }
 .v2-case .board-row { padding-block: 2rem; border-color: var(--rule); }
 .v2-case .board-row h3 { font-size: 1.6rem; }
@@ -119,17 +119,17 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-collection-hero > .eyebrow { margin-bottom: 2.5rem; }
 .v2-collection-hero > div { display: grid; grid-template-columns: 1.5fr 1fr; align-items: end; gap: 4rem; }
 .v2-collection-hero h1 { margin: 0; font-size: clamp(3.2rem, 6.3vw, 7rem); font-weight: 500; line-height: .98; letter-spacing: -.065em; }
-.v2-collection-hero h1 span { color: #8f968b; }
+.v2-collection-hero h1 span { color: var(--muted); }
 .v2-collection-hero p:not(.eyebrow) { margin: 0; max-width: 36ch; color: var(--muted); font-size: 1.2rem; line-height: 1.65; }
 .v2-collection-hero > a { display: inline-flex; gap: 2rem; text-decoration: none; margin-top: 3rem; font-size: .8rem; }
-.v2-collection-controls { border-block: 1px solid var(--rule); background: #f5f5f2f0; backdrop-filter: blur(16px); position: sticky; top: var(--header-height); z-index: 50; }
+.v2-collection-controls { border-block: 1px solid var(--rule); background: #090b0df0; backdrop-filter: blur(16px); position: sticky; top: var(--header-height); z-index: 50; }
 .v2-collection-controls > .shell { display: flex; justify-content: space-between; align-items: center; min-height: 5rem; gap: 2rem; }
 .v2-collection-categories { display: flex; align-self: stretch; align-items: stretch; gap: 1.8rem; overflow-x: auto; scrollbar-width: none; }
 .v2-collection-categories a { display: inline-flex; align-items: center; gap: .55rem; white-space: nowrap; text-decoration: none; font-size: .8rem; color: var(--muted); padding-top: 2px; border-bottom: 2px solid transparent; }
 .v2-collection-categories a[aria-current] { border-color: var(--v2-accent); color: var(--text); }
-.v2-collection-categories span { font: 400 .6rem/1 var(--mono); color: #8a9384; }
+.v2-collection-categories span { font: 400 .6rem/1 var(--mono); color: var(--muted); }
 .v2-project-search label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.v2-project-search input { appearance: none; border: 1px solid var(--rule); border-radius: 2rem; background: #ffffff55; width: 12rem; padding: .7rem 1rem; color: var(--text); font-size: .8rem; }
+.v2-project-search input { appearance: none; border: 1px solid var(--rule); border-radius: 2rem; background: #171e26; width: 12rem; padding: .7rem 1rem; color: var(--text); font-size: .8rem; }
 .v2-project-search input:focus { outline: 2px solid var(--v2-accent); outline-offset: 2px; }
 .v2-search-status { margin-top: 1rem; font-size: .8rem; color: var(--muted); }
 .v2-collection .project-index-section { padding-block: 4rem 2rem; }
@@ -139,7 +139,7 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-collection .index-section-heading > p { color: var(--muted); font-size: .9rem; max-width: 34ch; }
 .v2-collection .project-catalog { gap: 3.5rem 2rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .v2-collection .catalog-card { min-width: 0; background: none; box-shadow: none; border: 0; border-radius: 0; }
-.v2-collection .catalog-card-media, .v2-collection .catalog-card.wide .catalog-card-media { overflow: hidden; border: 0; border-radius: 0; background: #eeefec; aspect-ratio: 1.5; }
+.v2-collection .catalog-card-media, .v2-collection .catalog-card.wide .catalog-card-media { overflow: hidden; border: 0; border-radius: 0; background: #050608; aspect-ratio: 1.5; }
 .v2-collection .catalog-card-media img { object-fit: contain; transform: none; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
 .v2-collection .catalog-card:hover .catalog-card-media img { transform: scale(1.035); }
 .v2-collection .catalog-card-copy { padding-top: 1.35rem; gap: 1.5rem; }
@@ -147,11 +147,11 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-collection .catalog-card-copy p { max-width: 45ch; font-size: .96rem; line-height: 1.65; color: var(--muted); }
 .v2-collection .catalog-card-copy small { font: 400 .75rem/1.7 var(--sans); color: var(--muted); }
 .v2-collection .catalog-card-copy > span { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border: 1px solid var(--rule); border-radius: 50%; color: var(--text); margin-top: 1.7rem; }
-.v2-collection .catalog-card:hover .catalog-card-copy > span { background: var(--text); border-color: var(--text); color: white; }
+.v2-collection .catalog-card:hover .catalog-card-copy > span { background: var(--text); border-color: var(--text); color: var(--bg); }
 .v2-collection .catalog-card:hover h3 { text-decoration: none; }
 .v2-collection .project-catalog-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .v2-collection .project-catalog-tools .catalog-card-copy h3 { font-size: 1.55rem; }
-.v2-collection .project-catalog-tools .catalog-card-media { background: #eeefec; }
+.v2-collection .project-catalog-tools .catalog-card-media { background: #050608; }
 .v2-collection .project-list { border-color: var(--rule-strong); }
 .v2-collection .project-list-row { grid-template-columns: minmax(0, 1.5fr) minmax(9rem, .55fr) auto; padding-block: 2rem; gap: 2rem; }
 .v2-collection .project-list-row h3 { font-size: 1.9rem; font-weight: 500; letter-spacing: -.04em; }
@@ -194,15 +194,25 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-about .contact-actions { margin-top: 2rem; }
 
 /* Preserve the teaching applications' controls and plots inside the v2 shell. */
-.v2-lab { --paper: var(--v2-bg); --ink: var(--v2-ink); --card: #fff; --font: var(--v2-font, Archivo), Arial, sans-serif; }
+.v2-lab { --paper: var(--v2-bg); --ink: var(--v2-ink); --card: var(--v2-panel); --panel: var(--v2-panel); --line: var(--v2-line); --hair: var(--v2-line); --blue: var(--v2-accent); --faint: var(--v2-muted); --font: var(--v2-font, Archivo), Arial, sans-serif; }
 .v2-lab .wrap { max-width: 1440px; padding-top: 3rem; }
 .v2-lab .masthead { border-top: 0; padding-block: 1rem 2rem; }
 .v2-lab .masthead h1 { font-size: clamp(2.5rem, 4.3vw, 4.5rem); letter-spacing: -.055em; line-height: 1.05; font-weight: 500; }
+.v2-lab :is(.masthead h1, .note p) { font-family: var(--v2-font), Arial, sans-serif; }
+.v2-lab :is(.seg, .axis-toggle) button[aria-pressed=true] { background: var(--v2-accent); color: var(--v2-on-accent); border-color: var(--v2-accent); }
+.v2-lab input[type=range] { accent-color: var(--v2-accent); }
+.v2-lab :is(.app, .wrap) :is(button, select) { background: var(--v2-raised); color: var(--v2-ink); border-color: #44515c; }
+.v2-lab :is(.app, .wrap) :is(button.active, button[aria-pressed=true]) { background: var(--v2-accent); color: var(--v2-on-accent); border-color: var(--v2-accent); }
+.v2-lab :is(.metric, .insight, .eq) { background: var(--v2-panel); border-color: var(--v2-line); }
+.v2-lab .stage-title span, .v2-lab .pill.saturation { background: #172e49; color: #b8d5ff; }
+.v2-lab .pill.triode { background: #17372b; color: #8cddb0; }
+.v2-lab .pill.cutoff { background: #26313c; color: #d1d9e1; }
+.v2-lab .grid > *, .v2-lab .plots > * { min-width: 0; }
 .v2-lab main h2 { font-size: 1.1rem; line-height: 1.35; letter-spacing: -.02em; margin-bottom: .8rem; }
 .v2-lab .app { max-width: 1500px; margin-inline: auto; }
 .v2-lab .lab-skip { z-index: 1000; }
 .v2-lab .v2-continue { margin-top: 3rem; }
-.v2-lab .v2-continue > div { border-color: #daddd5; }
+.v2-lab .v2-continue > div { border-color: var(--v2-line); }
 
 @media (min-width: 1600px) { .v2-case .project-hero-grid { min-height: 720px; } }
 @media (max-width: 1100px) {

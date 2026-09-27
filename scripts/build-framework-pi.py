@@ -8,11 +8,19 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import struct
 import tempfile
+
+
+SWITCH_MODEL = "SW-SMD_L4.7-W3.5-H1.9-P3.35-EH.wrl"
+# The WRL is registered to the footprint; its STEP companion has a corner
+# origin. Apply this rigid registration only to the temporary export board.
+SWITCH_STEP_OFFSET_MM = [2.35, 1.2339, -0.050313]
 
 
 def sha256(path: Path) -> str:
@@ -39,6 +47,63 @@ def parse_sexpr(text: str) -> list:
 
 def child(node: list, key: str) -> list | None:
     return next((part for part in node if isinstance(part, list) and part[0] == key), None)
+
+
+def verify_switch_registration(path: Path, tree: list) -> dict:
+    """Check exported terminal geometry against the unchanged PCB land pattern."""
+    data = path.read_bytes()
+    json_length = struct.unpack_from("<I", data, 12)[0]
+    document = json.loads(data[20:20 + json_length])
+    binary_start = 28 + json_length
+    source = {}
+    for footprint in tree:
+        if not isinstance(footprint, list) or footprint[0] != "footprint":
+            continue
+        props = {item[1]: item[2] for item in footprint if isinstance(item, list) and item[0] == "property"}
+        if props.get("Reference") in {"SW1", "SW2"}:
+            source[props["Reference"]] = footprint
+    checks = {}
+    for node in document["nodes"]:
+        reference = node.get("name")
+        if reference not in source:
+            continue
+        x, y, z, w = node["rotation"]
+        rotation = ((1 - 2*(y*y + z*z), 2*(x*y - z*w), 2*(x*z + y*w)),
+                    (2*(x*y + z*w), 1 - 2*(x*x + z*z), 2*(y*z - x*w)),
+                    (2*(x*z - y*w), 2*(y*z + x*w), 1 - 2*(x*x + y*y)))
+        vertices = []
+        for primitive in document["meshes"][node["mesh"]]["primitives"]:
+            accessor = document["accessors"][primitive["attributes"]["POSITION"]]
+            view = document["bufferViews"][accessor["bufferView"]]
+            assert accessor["componentType"] == 5126 and accessor["type"] == "VEC3"
+            start = binary_start + view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
+            for index in range(accessor["count"]):
+                point = struct.unpack_from("<3f", data, start + index*view.get("byteStride", 12))
+                vertices.append(tuple(1000*(sum(rotation[axis][k]*point[k] for k in range(3)) + node["translation"][axis]) for axis in range(3)))
+        footprint = source[reference]
+        fx, fy, angle = map(float, child(footprint, "at")[1:])
+        if angle != 180:
+            raise ValueError(f"Review {reference}'s changed actuator orientation before export.")
+        centre_error = abs((min(p[0] for p in vertices) + max(p[0] for p in vertices))/2 - fx)
+        outward = max(p[2] for p in vertices) - fy
+        contacts = [p for p in vertices if .70 < p[1] < .83]
+        pad_coverage = {}
+        for pad in footprint:
+            if not isinstance(pad, list) or pad[0] != "pad" or not pad[1]:
+                continue
+            px, py = map(float, child(pad, "at")[1:3])
+            width, height = map(float, child(pad, "size")[1:3])
+            count = sum(abs(p[0] - (fx-px)) <= width/2 and abs(p[2] - (fy-py)) <= height/2 for p in contacts)
+            if count < 2:
+                raise ValueError(f"{reference} terminal does not overlap source pad {pad[1]}.")
+            pad_coverage[pad[1]] = count
+        if centre_error > .001 or not math.isclose(outward, 2.4339, abs_tol=.001):
+            raise ValueError(f"{reference} is not centred or its actuator faces away from the card edge.")
+        checks[reference] = {"centreErrorMm": centre_error, "outwardActuatorMm": outward,
+                             "terminalVerticesWithinPads": pad_coverage}
+    if set(checks) != {"SW1", "SW2"}:
+        raise ValueError("The exported board is missing a switch.")
+    return checks
 
 
 def main() -> None:
@@ -68,6 +133,29 @@ def main() -> None:
     if not any(item["value"] == "RP2354B_C39843328" for item in footprints):
         raise ValueError("The selected board is not the RP2354B design. The legacy Microcontroller folder contains an unrelated SAMD21 board.")
 
+    switches = []
+    for part in tree:
+        if not isinstance(part, list) or part[0] != "footprint":
+            continue
+        props = {item[1]: item[2] for item in part if isinstance(item, list) and item[0] == "property"}
+        if props.get("Reference") not in {"SW1", "SW2"}:
+            continue
+        model = child(part, "model")
+        if not model or Path(model[1]).name != SWITCH_MODEL:
+            raise ValueError("The switch model changed; its STEP registration must be reviewed.")
+        for key, expected in (("offset", [0., 0., 0.]), ("rotate", [0., 0., 0.]), ("scale", [1., 1., 1.])):
+            values = child(child(model, key) or [], "xyz")
+            if not values or [float(value) for value in values[1:]] != expected:
+                raise ValueError(f"{props['Reference']} has a new {key}; review the STEP registration before exporting.")
+        model_path = args.custom_models / SWITCH_MODEL if args.custom_models else Path(model[1])
+        originals[model_path] = sha256(model_path)
+        originals[model_path.with_suffix(".step")] = sha256(model_path.with_suffix(".step"))
+        switches.append({"reference": props["Reference"], "model": SWITCH_MODEL,
+                         "stepOffsetMm": SWITCH_STEP_OFFSET_MM,
+                         "wrlSha256": sha256(model_path), "stepSha256": sha256(model_path.with_suffix(".step"))})
+    if {item["reference"] for item in switches} != {"SW1", "SW2"}:
+        raise ValueError("Both expected tactile switches are required.")
+
     with tempfile.TemporaryDirectory(prefix="framework-pi-export-") as directory:
         export_board = Path(directory) / "Expansion_Card.kicad_pcb"
         export_text = text
@@ -81,12 +169,19 @@ def main() -> None:
                     raise FileNotFoundError(f"The original model and STEP companion are required: {model.name}")
                 return '(model "' + model.as_posix() + '"'
             export_text = re.sub(r'\(model "([^"]+)"', relocate, export_text)
+        switch_pattern = (r'(\(model\s+"[^\"]*/' + re.escape(SWITCH_MODEL)
+                          + r'"\s*\(offset\s*\(xyz)\s+[^)]*(\)\s*\))')
+        offset_text = " ".join(str(value) for value in SWITCH_STEP_OFFSET_MM)
+        export_text, corrected = re.subn(switch_pattern, lambda match: match[1] + " " + offset_text + match[2], export_text)
+        if corrected != 2:
+            raise ValueError(f"Expected two switch STEP registrations, found {corrected}.")
         export_board.write_text(export_text, encoding="utf-8")
         command = [args.kicad_cli, "pcb", "export", "glb", "--force", "--subst-models", "--include-pads", "--include-silkscreen", "--include-soldermask", "--output", str(output / "framework-pi-board.glb"), str(export_board)]
         result = subprocess.run(command, text=True, capture_output=True, check=True)
         missing = re.findall(r"Could not add 3D model to ([^.]+)\.", result.stdout + result.stderr)
         if set(missing) - {"P1"}:
             raise RuntimeError(f"Missing component CAD: {missing}. Supply the original STEP libraries before publishing.")
+        registration_checks = verify_switch_registration(output / "framework-pi-board.glb", tree)
         print(result.stdout)
         for side, layer in (("front", "F.SilkS"), ("back", "B.SilkS")):
             svg = output / f"framework-pi-silk-{side}.svg"
@@ -107,6 +202,8 @@ def main() -> None:
         "silk": {"front": "framework-pi-silk-front.svg", "back": "framework-pi-silk-back.svg", "viewBoxMm": [127, 127, 26, 30], "planeSizeMm": [26, 30]},
         "materials": {"pads": "mat_18", "silk": "mat_19", "mask": "mat_20", "core": "mat_21"},
         "footprints": footprints,
+        "modelRegistrations": switches,
+        "switchRegistrationChecks": registration_checks,
         "provenance": [{"file": board_rel, "sha256": originals[board]}, {"file": shell_rel, "sha256": originals[shell]}, {"file": "assets/models/framework-esp32/framework-usbc.glb", "sha256": sha256(connector)}],
         "attribution": "Framework reference outline and enclosure: Framework Computer Inc, CC BY 4.0. Component geometry follows the supplied project model references."
     }

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "CRYSTAL-SMD_4P-L3.2-W2.5-BL.wrl",
+    "sha256": "3143cecb767381493dc0d7220abf2f4449dce64be4768e38e949544f26752aef",
+    "source": "Original board-selected EasyEDA VRML model",
+    "kind": "Unmodified authored mesh, including original local frame"
+  },
+  {
+    "file": "HDR-SMD_7P-P2.54-H-F-W8.5.wrl",
+    "sha256": "cd15ff9c61eb33749580d6c31ad9aade187740b20f25562f079c97060e5c7db8",
+    "source": "Original board-selected EasyEDA VRML model",
+    "kind": "Unmodified authored mesh, including original local frame"
+  },
+  {
+    "file": "SOT-23-8_L2.9-W1.6-H1.5-LS2.8-P0.65.wrl",
+    "sha256": "a28f8e24d28fa78a38306e02d086fcc9614d3d24105a6d02aaead761a2d73352",
+    "source": "Original board-selected EasyEDA VRML model",
+    "kind": "Unmodified authored mesh, including original local frame"
+  },
+  {
+    "file": "TQFN-20_L5.0-W5.0-P0.65-TL-EP3.1.wrl",
+    "sha256": "bbb1230845648ab7389eb6dd4ebf2f3730b671e198480b4be7852032df2e8a7a",
+    "source": "Original board-selected EasyEDA VRML model",
+    "kind": "Unmodified authored mesh, including original local frame"
+  },
+  {
+    "file": "VQFN-24_L4.0-W4.0-P0.50-TL-EP2.7.wrl",
+    "sha256": "e184e2598d4a64ddfa26f4c34e2c5190d3037bcc8c4af9d8fbd0eaeca57d8e1a",
+    "source": "Original board-selected EasyEDA VRML model",
+    "kind": "Unmodified authored mesh, including original local frame"
+  }
+]

@@ -12,9 +12,9 @@ const shots=process.env.V2_SCREENSHOTS;
 const lifecycleOnly=process.argv.includes('--lifecycle-only');
 if(shots)fs.mkdirSync(shots,{recursive:true});
 const phases=[
-  {progress:.265,name:'esp32',title:'ESP32',href:'/v2/projects/framework-expansion-card/'},
-  {progress:.565,name:'pi',title:'Raspberry Pi',href:'/v2/projects/framework-raspberry-pi/'},
-  {progress:.88,name:'tramtrace',title:'TramTrace',href:'/v2/projects/tramtrace/'}
+  {progress:.265,name:'tramtrace',title:'TramTrace',href:'/v2/projects/tramtrace/'},
+  {progress:.565,name:'esp32',title:'ESP32',href:'/v2/projects/framework-expansion-card/'},
+  {progress:.88,name:'pi',title:'Raspberry Pi',href:'/v2/projects/framework-raspberry-pi/'}
 ];
 async function scrollPhase(page,progress){
   await page.evaluate(value=>{
@@ -22,7 +22,10 @@ async function scrollPhase(page,progress){
     const stage=root.querySelector('.v2-assembly-sticky');
     scrollTo({top:scrollY+root.getBoundingClientRect().top+value*(root.offsetHeight-stage.clientHeight),behavior:'instant'});
   },progress);
-  await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.001,progress,{timeout:30000});
+  await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.001,progress,{timeout:30000}).catch(async error=>{
+    console.error('Scroll diagnostic',await page.locator('[data-assembly]').evaluate(node=>({state:{...node.dataset},bounds:node.getBoundingClientRect().toJSON(),scrollY,hidden:document.hidden,viewport:[innerWidth,innerHeight]})));
+    throw error;
+  });
   await page.waitForTimeout(500);
 }
 async function framesStop(page,label){
@@ -52,6 +55,7 @@ async function inViewport(locator,width,height,label){
     await framesStop(page,'Entrance must finish and stop rendering');
     for(const viewport of lifecycleOnly?[]:[{width:1440,height:1000},{width:1366,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:740}]){
       await page.setViewportSize(viewport);
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await scrollPhase(page,0);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Hero overflow at '+JSON.stringify(viewport));
       await inViewport(page.locator('[data-assembly-intro] h1'),viewport.width,viewport.height,'Intro fits '+JSON.stringify(viewport));
@@ -92,7 +96,7 @@ async function inViewport(locator,width,height,label){
     await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
     await framesStop(page,'Offscreen hero must not render');
     await scrollPhase(page,.265);
-    assert.equal(await hero.getAttribute('data-assembly-active'),'esp32','Hero resumes after returning onscreen');
+    assert.equal(await hero.getAttribute('data-assembly-active'),'tramtrace','Hero resumes after returning onscreen');
     console.log('PASS '+(lifecycleOnly?'':'keyboard project selection, ')+'finite motion, idle/offscreen suspension and resume');
     await page.emulateMedia({reducedMotion:'reduce'});
     // Check what visitors experience, not only an internal mode class. During
@@ -108,7 +112,7 @@ async function inViewport(locator,width,height,label){
     await page.emulateMedia({reducedMotion:'no-preference'});
     await page.waitForFunction(()=>!matchMedia('(prefers-reduced-motion: reduce)').matches&&getComputedStyle(document.querySelector('.v2-assembly-sticky')).position==='sticky',null,{polling:100,timeout:30000});
     await scrollPhase(page,.565);
-    assert.equal(await hero.getAttribute('data-assembly-active'),'pi');
+    assert.equal(await hero.getAttribute('data-assembly-active'),'esp32');
     console.log('PASS live reduced-motion preference and restoration');
     const extension=await page.locator('[data-assembly-canvas]').evaluate(canvas=>{
       const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');

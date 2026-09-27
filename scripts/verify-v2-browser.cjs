@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright');
 const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
-const routes = ['/v2/projects/framework-expansion-card/','/v2/projects/framework-raspberry-pi/','/v2/projects/tramtrace/'];
+const routes = ['/v2/projects/tramtrace/','/v2/projects/framework-expansion-card/','/v2/projects/framework-raspberry-pi/'];
 const primary = '[data-v2-project][href^="/v2/projects/"]';
 async function posters(page) {
   assert.equal(await page.locator('[data-assembly-posters]').isVisible(),true);
@@ -106,7 +106,7 @@ async function posters(page) {
     assert.equal(await failedPage.locator('[data-assembly]').evaluate(node=>node.classList.contains('is-static')&&!node.classList.contains('is-enhanced')),true);
     await posters(failedPage);
     assert.equal(await failedPage.locator('[data-assembly-canvas]').evaluate(node=>Number(getComputedStyle(node).opacity)),0);
-    await failedPage.locator('[data-assembly-select="1"]').click();
+    await failedPage.locator('[data-assembly-select="2"]').click();
     await failedPage.waitForURL('**/v2/projects/framework-raspberry-pi/');
     await failedPage.waitForLoadState('networkidle');
     await failedPage.waitForFunction(()=>document.getAnimations().every(animation=>animation.playState!=='running'));

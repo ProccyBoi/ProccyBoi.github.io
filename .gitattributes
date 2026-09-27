@@ -1,2 +1,4 @@
 # Preserve vendor CAD exactly so the recorded source hashes remain reproducible.
 assets/models/hardware/_libraries/**/*.step binary
+assets/models/hardware/**/source-cad/*.step binary
+assets/models/hardware/**/source-cad/*.wrl binary

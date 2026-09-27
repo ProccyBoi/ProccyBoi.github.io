@@ -730,8 +730,8 @@
     "J1"
   ],
   "modelledComponentCount": 42,
-  "triangleCount": 71834,
-  "modelBytes": 4902892,
+  "triangleCount": 86567,
+  "modelBytes": 7818648,
   "resolvedLibraryModelCount": 11,
   "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
   "unpopulated": false,
@@ -779,7 +779,196 @@
     }
   },
   "literalVrmlModels": [],
+  "authoredVrmlMeshes": [
+    {
+      "ref": "X1",
+      "file": "CRYSTAL-SMD_4P-L3.2-W2.5-BL.wrl",
+      "sha256": "3143cecb767381493dc0d7220abf2f4449dce64be4768e38e949544f26752aef",
+      "conversion": "Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved",
+      "priorStepLocalBoundsMm": [
+        [
+          -1.6,
+          0.0,
+          -1.25
+        ],
+        [
+          1.6,
+          0.701,
+          1.25
+        ]
+      ],
+      "authoredLocalBoundsMm": [
+        [
+          -1.59995,
+          0.0,
+          -1.24993
+        ],
+        [
+          1.59995,
+          0.70104,
+          1.24993
+        ]
+      ]
+    },
+    {
+      "ref": "U1",
+      "file": "VQFN-24_L4.0-W4.0-P0.50-TL-EP2.7.wrl",
+      "sha256": "e184e2598d4a64ddfa26f4c34e2c5190d3037bcc8c4af9d8fbd0eaeca57d8e1a",
+      "conversion": "Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved",
+      "priorStepLocalBoundsMm": [
+        [
+          -2.0,
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          1.001,
+          2.0
+        ]
+      ],
+      "authoredLocalBoundsMm": [
+        [
+          -2.0,
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          1.0,
+          2.0
+        ]
+      ]
+    },
+    {
+      "ref": "U4",
+      "file": "SOT-23-8_L2.9-W1.6-H1.5-LS2.8-P0.65.wrl",
+      "sha256": "a28f8e24d28fa78a38306e02d086fcc9614d3d24105a6d02aaead761a2d73352",
+      "conversion": "Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved",
+      "priorStepLocalBoundsMm": [
+        [
+          -1.4063,
+          -0.04908,
+          -1.45
+        ],
+        [
+          1.4063,
+          1.601,
+          1.45
+        ]
+      ],
+      "authoredLocalBoundsMm": [
+        [
+          -1.4064,
+          0.0,
+          -1.45009
+        ],
+        [
+          1.4064,
+          1.64897,
+          1.45009
+        ]
+      ]
+    },
+    {
+      "ref": "U5",
+      "file": "TQFN-20_L5.0-W5.0-P0.65-TL-EP3.1.wrl",
+      "sha256": "bbb1230845648ab7389eb6dd4ebf2f3730b671e198480b4be7852032df2e8a7a",
+      "conversion": "Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved",
+      "priorStepLocalBoundsMm": [
+        [
+          -2.5,
+          -0.025,
+          -2.5
+        ],
+        [
+          2.5,
+          0.581,
+          2.5
+        ]
+      ],
+      "authoredLocalBoundsMm": [
+        [
+          -2.50012,
+          0.0,
+          -2.50012
+        ],
+        [
+          2.50012,
+          0.60503,
+          2.50012
+        ]
+      ]
+    },
+    {
+      "ref": "U6",
+      "file": "TQFN-20_L5.0-W5.0-P0.65-TL-EP3.1.wrl",
+      "sha256": "bbb1230845648ab7389eb6dd4ebf2f3730b671e198480b4be7852032df2e8a7a",
+      "conversion": "Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved",
+      "priorStepLocalBoundsMm": [
+        [
+          -2.5,
+          -0.025,
+          -2.5
+        ],
+        [
+          2.5,
+          0.581,
+          2.5
+        ]
+      ],
+      "authoredLocalBoundsMm": [
+        [
+          -2.50012,
+          0.0,
+          -2.50012
+        ],
+        [
+          2.50012,
+          0.60503,
+          2.50012
+        ]
+      ]
+    },
+    {
+      "ref": "J3",
+      "file": "HDR-SMD_7P-P2.54-H-F-W8.5.wrl",
+      "sha256": "cd15ff9c61eb33749580d6c31ad9aade187740b20f25562f079c97060e5c7db8",
+      "conversion": "Literal authored VRML IndexedFaceSet triangles; original KiCad reference transform preserved",
+      "priorStepLocalBoundsMm": [
+        [
+          -9.14,
+          -1.27,
+          -7.45
+        ],
+        [
+          9.15,
+          1.25,
+          4.25
+        ]
+      ],
+      "authoredLocalBoundsMm": [
+        [
+          -9.27202,
+          0.0,
+          -11.4521
+        ],
+        [
+          9.01802,
+          2.51993,
+          0.2479
+        ]
+      ]
+    }
+  ],
+  "dimensionedRepresentations": [],
   "modelRegistrations": [],
+  "additionalLibraryModels": [
+    {
+      "file": "kicad/Package_DFN_QFN.3dshapes/QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm.step",
+      "sha256": "ba30b82fac313a906167a8e5739f396cae47472c2ef885c0975be7ea93235b26"
+    }
+  ],
   "connector": {
     "modelUrl": "/assets/models/framework-esp32/framework-usbc.glb",
     "node": "P1",
@@ -791,17 +980,19 @@
       0
     ],
     "positionBoardLocalMm": [
-      0,
-      0.8,
-      -16.4
+      0.0,
+      0.355,
+      -16.400004999999986
     ],
     "sourceHash": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa",
-    "provenance": "Existing exact Molex 105444 connector geometry; same part and placement as the Framework reference card"
-  },
-  "additionalLibraryModels": [
-    {
-      "file": "kicad/Package_DFN_QFN.3dshapes/QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm.step",
-      "sha256": "ba30b82fac313a906167a8e5739f396cae47472c2ef885c0975be7ea93235b26"
+    "provenance": "Existing exact Molex 105444 geometry; actual P1 footprint XY and PCB contact-row midplane",
+    "registration": {
+      "sourceFootprintAtMm": [
+        140.0,
+        129.0
+      ],
+      "nativeMatingAxisOffsetMm": -3.4,
+      "seating": "Symmetric edge-mount contact rows centred on exported PCB core; prior top-surface placement lifted the connector by 0.445 mm"
     }
-  ]
+  }
 }
