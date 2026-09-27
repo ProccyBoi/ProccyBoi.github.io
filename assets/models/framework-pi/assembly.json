@@ -1,0 +1,505 @@
+{
+  "name": "Raspberry Pi Expansion Card",
+  "controller": "RP2354B",
+  "board": {
+    "file": "framework-pi-board.glb",
+    "units": "metres",
+    "upAxis": "+Y",
+    "kicadXAxis": "+X",
+    "kicadYAxis": "+Z",
+    "scaleToMillimetres": 1000,
+    "sourceCentreMm": [
+      140,
+      0,
+      142
+    ],
+    "centredTranslationMm": [
+      -140,
+      0,
+      -142
+    ],
+    "sizeMm": [
+      26,
+      0.8,
+      30
+    ],
+    "assemblyBottomMm": 3.1
+  },
+  "connector": {
+    "file": "framework-pi-usbc.glb",
+    "node": "P1",
+    "scaleToMillimetres": 1000,
+    "rotationRadians": [
+      -1.5707963267948966,
+      0,
+      0
+    ],
+    "positionBoardLocalMm": [
+      0,
+      0.8,
+      -16.4
+    ]
+  },
+  "enclosure": {
+    "file": "framework-pi-enclosure.stl",
+    "units": "millimetres",
+    "rotationRadians": [
+      0,
+      0,
+      0
+    ],
+    "translationMm": [
+      0,
+      0,
+      15
+    ],
+    "sourceBoundsMm": [
+      [
+        -15,
+        0,
+        -32
+      ],
+      [
+        15,
+        6.8,
+        0
+      ]
+    ],
+    "kind": "Framework reference housing with threaded inserts"
+  },
+  "silk": {
+    "front": "framework-pi-silk-front.svg",
+    "back": "framework-pi-silk-back.svg",
+    "viewBoxMm": [
+      127,
+      127,
+      26,
+      30
+    ],
+    "planeSizeMm": [
+      26,
+      30
+    ]
+  },
+  "materials": {
+    "pads": "mat_18",
+    "silk": "mat_19",
+    "mask": "mat_20",
+    "core": "mat_21"
+  },
+  "footprints": [
+    {
+      "ref": "P1",
+      "value": "USB_C_Plug_USB2.0",
+      "footprint": "Expansion_Card:USB_C_Plug_Molex_105444",
+      "atMm": [
+        140.0,
+        129.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "H1",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "atMm": [
+        128.7,
+        146.5
+      ],
+      "hasModel": false
+    },
+    {
+      "ref": "H2",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "atMm": [
+        151.3,
+        146.5
+      ],
+      "hasModel": false
+    },
+    {
+      "ref": "C11",
+      "value": "15pF",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        137.143675,
+        154.520845,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C5",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        141.25,
+        132.53,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R7",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        145.13,
+        153.51,
+        180.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R1",
+      "value": "5.1k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        137.765,
+        131.79,
+        180.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C8",
+      "value": "4.7uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        145.45,
+        144.15,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "U5",
+      "value": "RP2354B_C39843328",
+      "footprint": "easyeda2kicad:QFN-80_L10.0-W10.0-P0.40-TL-EP3.4",
+      "atMm": [
+        139.21,
+        145.75
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "U2",
+      "value": "AMS1117-3.3",
+      "footprint": "Package_TO_SOT_SMD:SOT-223-3_TabPin2",
+      "atMm": [
+        148.347501,
+        131.51,
+        90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C14",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        132.37,
+        144.85,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C12",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        145.45,
+        147.18,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C10",
+      "value": "4.7uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        142.69,
+        139.5,
+        180.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R6",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        132.38,
+        141.82,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "G***",
+      "value": "LOGO",
+      "footprint": "Expansion_Card:Framework-Logo_1.5mm_SilkScreen",
+      "atMm": [
+        147.574,
+        145.67,
+        90.0
+      ],
+      "hasModel": false
+    },
+    {
+      "ref": "C7",
+      "value": "15pF",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        142.863676,
+        154.390845,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R8",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        134.71,
+        154.12,
+        90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C2",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        148.35,
+        137.5,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C17",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        145.45,
+        150.23,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C1",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        150.65,
+        137.5,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R4",
+      "value": "27",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        139.4,
+        134.36,
+        90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "G***",
+      "value": "LOGO",
+      "footprint": "Raspberry Pi Logo:Raspberry Pi Logo",
+      "atMm": [
+        129.37,
+        141.08
+      ],
+      "hasModel": false
+    },
+    {
+      "ref": "C4",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        133.14,
+        130.61,
+        90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C9",
+      "value": "4.7uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        142.76,
+        135.83
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C15",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        146.81,
+        137.505,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "SW1",
+      "value": "GT-TC018A-H0375-L1",
+      "footprint": "easyeda2kicad:SW-SMD_L4.7-W3.5-P3.35-EH",
+      "atMm": [
+        149.46,
+        154.3325,
+        180.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R3",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        140.3,
+        151.95
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "SW2",
+      "value": "GT-TC018A-H0375-L1",
+      "footprint": "easyeda2kicad:SW-SMD_L4.7-W3.5-P3.35-EH",
+      "atMm": [
+        130.56,
+        154.33,
+        180.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R5",
+      "value": "27",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        140.34,
+        137.365,
+        90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "U1",
+      "value": "ABM8-272-T3_C20625731",
+      "footprint": "easyeda2kicad:CRYSTAL-SMD_4P-L3.2-W2.5-BL",
+      "atMm": [
+        139.858675,
+        154.505845,
+        180.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "U3",
+      "value": "W25Q128JVS",
+      "footprint": "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm",
+      "atMm": [
+        132.78,
+        135.27
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C16",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        137.285,
+        151.95
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "R2",
+      "value": "33",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        145.45,
+        141.13,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C13",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        132.36,
+        148.32,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C3",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        134.66,
+        130.61,
+        90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "C6",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        142.78,
+        132.53,
+        -90.0
+      ],
+      "hasModel": true
+    },
+    {
+      "ref": "L2",
+      "value": "AOTA-B201610S3R3-101-T",
+      "footprint": "easyeda2kicad:IND-SMD_L2.0-W1.6_AOTA-B201610S3R3-101-T",
+      "atMm": [
+        142.74,
+        137.66,
+        180.0
+      ],
+      "hasModel": true
+    }
+  ],
+  "provenance": [
+    {
+      "file": "ExpansionCards-main/Electrical/KiCad_templates/Expansion_Card/Expansion_Card.kicad_pcb",
+      "sha256": "6fb8e5f762e23a4695ded3de624a448b4dd2bc0349f904ef64a323fcbea6e619"
+    },
+    {
+      "file": "ExpansionCards-main/Mechanical/Printable/3D/ExpansionCard_ThreadedInsert.stl",
+      "sha256": "92c401b4880ed1262ebc939911455b1c9da729dd594b2892c98ab40baf44e16a"
+    },
+    {
+      "file": "assets/models/framework-esp32/framework-usbc.glb",
+      "sha256": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa"
+    }
+  ],
+  "attribution": "Framework reference outline and enclosure: Framework Computer Inc, CC BY 4.0. Component geometry follows the supplied project model references."
+}

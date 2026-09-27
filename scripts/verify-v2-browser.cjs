@@ -1,85 +1,87 @@
-/* Optional browser acceptance checks. Requires Playwright and a running static
- * server at V2_BASE_URL (default http://127.0.0.1:8080). Run from the repo root.
- * CHROMIUM_EXECUTABLE can point at an existing browser. No dependencies are
- * needed to serve or use the website itself. */
+/* Acceptance checks for v2. Requires Playwright and a static server.
+ * Optional environment: V2_BASE_URL, CHROMIUM_EXECUTABLE. */
+'use strict';
 const assert = require('node:assert/strict');
-const { chromium } = require('playwright');
+const {chromium} = require('playwright');
 const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
-const executablePath = process.env.CHROMIUM_EXECUTABLE || undefined;
-
-(async () => {
-  const browser = await chromium.launch({headless:true, executablePath, args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-  const errors = [];
+const routes = ['/v2/projects/framework-expansion-card/','/v2/projects/framework-raspberry-pi/','/v2/projects/tramtrace/'];
+const primary = '[data-v2-project][href^="/v2/projects/"]';
+async function posters(page) {
+  assert.equal(await page.locator('[data-assembly-posters]').isVisible(),true);
+  const images = page.locator('[data-assembly-posters] img');
+  assert.equal(await images.count(),3);
+  await images.evaluateAll(items => Promise.all(items.map(item => item.decode())));
+  assert.equal(await images.evaluateAll(items => items.every(item => item.naturalWidth > 0 && item.alt.trim())),true);
+  assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items => items.map(item => item.getAttribute('href'))),routes);
+}
+(async()=>{
+  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+  const errors=[],badResponses=[];
+  const observe=page=>{
+    page.on('pageerror',error=>errors.push(page.url()+': '+error.message));
+    page.on('response',response=>{if(response.status()>=400)badResponses.push(response.status()+' '+response.url());});
+  };
   try {
-    const context = await browser.newContext({viewport:{width:1440,height:1000}});
-    const page = await context.newPage();
-    page.on('pageerror', error => errors.push(error.message));
-    const requests = [];
-    page.on('request', request => requests.push(request.url()));
-    await page.goto(base + '/v2/', {waitUntil:'networkidle'});
-    assert.equal(requests.some(url => /\.glb(?:\?|$)|three\.min\.js/.test(url)), false, 'CAD must stay off the initial network path');
-    assert.equal(await page.locator('[data-cad-poster]').evaluate(img => img.complete && img.naturalWidth > 0), true, 'CAD poster must load');
-    for (const width of [1440,768,390,320]) {
-      await page.setViewportSize({width,height:900});
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `Homepage overflows at ${width}px`);
-    }
+    const context=await browser.newContext({viewport:{width:1440,height:1000}});
+    const page=await context.newPage();observe(page);
+    const requests=[];page.on('request',request=>requests.push(request.url()));
+    await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
+    await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
+    assert.ok(requests.some(url=>/\.glb(?:\?|$)/.test(url)),'Hero must automatically load CAD');
+    assert.equal(await page.locator('[data-assembly-canvas]').isVisible(),true);
+    assert.equal(await page.locator('[data-assembly-canvas]').getAttribute('role'),'img');
+    assert.ok((await page.locator('[data-assembly-canvas]').getAttribute('aria-label')).trim());
+    assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items=>items.map(item=>item.getAttribute('href'))),routes);
+    assert.equal(await page.locator('h1').count(),1);
+    const skip=await page.locator('.v2-skip').getAttribute('href');
+    assert.equal(await page.locator(skip).count(),1,'Skip target must exist');
+    await page.locator('.v2-skip').focus();await page.keyboard.press('Enter');
+    assert.equal(new URL(page.url()).hash,skip);
     await page.setViewportSize({width:390,height:844});
-    await page.locator('[data-v2-menu]').click();
+    await page.locator('[data-v2-menu]').focus();await page.keyboard.press('Enter');
     assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'true');
     assert.equal(await page.locator('[data-v2-nav]').isVisible(),true);
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'false');
-    assert.equal(await page.locator('[data-v2-menu]').evaluate(node => node === document.activeElement),true);
-    await page.locator('[data-system="tramtrace"]').click();
-    await page.locator('[data-system-step="2"]').click();
-    assert.match(await page.locator('[data-system-detail-text]').textContent(), /116 WS2812C/);
-    await page.locator('[data-system="framework"]').click();
-    assert.equal(await page.locator('[data-system-link]').getAttribute('href'),'/v2/projects/framework-expansion-card/');
-    assert.match(await page.locator('[data-system-detail-text]').textContent(), /0.6 mm/);
-    await page.setViewportSize({width:1440,height:1000});
-    await page.locator('[data-cad-start]').click();
-    await page.locator('[data-cad-state="ready"]').waitFor({timeout:30000});
-    assert.equal(await page.locator('[data-cad-canvas]').isVisible(),true);
-    assert.equal(await page.locator('[data-cad-poster]').isVisible(),false);
-    await page.locator('[data-cad-view="top"]').click();
-    assert.equal(await page.locator('[data-cad-view="top"]').getAttribute('aria-pressed'),'true');
-    await page.locator('[data-cad-canvas]').focus();
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await page.locator('[data-cad-hero]').getAttribute('data-cad-angle'),'custom');
-    await page.keyboard.press('Home');
-    assert.equal(await page.locator('[data-cad-hero]').getAttribute('data-cad-angle'),'iso');
-    await page.waitForTimeout(1500);
-    const frames = await page.locator('[data-cad-hero]').getAttribute('data-cad-frames');
-    await page.waitForTimeout(800);
-    assert.equal(await page.locator('[data-cad-hero]').getAttribute('data-cad-frames'), frames, 'CAD should not render continually when idle');
-    console.log('PASS homepage: four widths, delayed CAD loading, menu, signal paths, 3D controls and idle rendering');
-
-    await page.goto(base + '/v2/projects/', {waitUntil:'networkidle'});
-    const search = page.locator('[data-v2-search]');
+    assert.equal(await page.locator('[data-v2-menu]').evaluate(node=>node===document.activeElement),true);
+    await page.locator('[data-v2-menu]').click();
+    await page.locator('[data-v2-nav] a[href="/v2/projects/"]').click();
+    await page.waitForURL('**/v2/projects/');
+    assert.equal(await page.locator(primary).count(),15,'15 primary projects');
+    assert.equal(await page.locator('.v2-related-tool [data-v2-project]').count(),1,'Flight Review remains related to Skylabs');
+    const search=page.locator('[data-v2-search]');
     await search.fill('Framework');
-    assert.equal(await page.locator('[data-v2-project]:visible').count(),2);
-    assert.match(await page.locator('[data-v2-search-status]').textContent(),/2 projects/);
+    assert.equal(await page.locator(primary+':visible').count(),3);
+    assert.match(await page.locator('[data-v2-search-status]').textContent(),/3 projects/);
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await search.inputValue(),'Framework');
-    assert.equal(await page.locator('[data-v2-project]:visible').count(),2);
+    assert.equal(await page.locator(primary+':visible').count(),3);
     await search.fill('NoSuchBoard7654321');
     assert.equal(await page.locator('[data-v2-project]:visible').count(),0);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/No projects match/);
     await search.press('Escape');
+    assert.equal(await page.locator(primary+':visible').count(),15);
     await page.locator('[data-v2-category="interactive"]').click();
-    assert.match(await page.locator('[data-v2-search-status]').textContent(),/3 projects/);
+    assert.equal(await page.locator(primary+':visible').count(),3);
+    assert.match(await page.locator('[data-v2-search-status]').textContent(),/3 projects and 1 related tool/);
     await page.setViewportSize({width:320,height:900});
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Project index overflows at320px');
-    console.log('PASS collection: search, empty state, URL persistence, keyboard clear, categories and 320px reflow');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
+    console.log('PASS automatic CAD loading, keyboard/menu navigation, 15 projects, three Framework cards, search and categories');
     await page.setViewportSize({width:1280,height:900});
-    for (const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]) {
-      await page.goto(base + `/v2/projects/${route}/`,{waitUntil:'networkidle'});
-      await page.locator(`[data-${prefix}-view="top"]`).click();
-      assert.equal(await page.locator(`[data-${prefix}-view="top"]`).getAttribute('aria-pressed'),'true');
-      await page.locator(`[data-${prefix}-shell]`).click();
-      assert.equal(await page.locator(`[data-${prefix}-shell]`).getAttribute('aria-pressed'),'false');
-      await page.locator(`[data-${prefix}-explode]`).click();
-      assert.equal(await page.locator(`[data-${prefix}-explode]`).getAttribute('aria-pressed'),'true');
+    for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
+      await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
+      await page.locator('[data-'+prefix+'-stage]').scrollIntoViewIfNeeded();
+      await page.locator('[data-'+prefix+'-status].is-ready').waitFor({state:'attached',timeout:60000});
+      await page.locator('[data-'+prefix+'-view="top"]').click();
+      assert.equal(await page.locator('[data-'+prefix+'-view="top"]').getAttribute('aria-pressed'),'true');
+      await page.locator('[data-'+prefix+'-shell]').click();
+      assert.equal(await page.locator('[data-'+prefix+'-shell]').getAttribute('aria-pressed'),'false');
+      await page.locator('[data-'+prefix+'-explode]').click();
+      assert.equal(await page.locator('[data-'+prefix+'-explode]').getAttribute('aria-pressed'),'true');
+      await page.locator('[data-'+prefix+'-reset]').click();
+      assert.equal(await page.locator('[data-'+prefix+'-view="iso"]').getAttribute('aria-pressed'),'true');
+      assert.equal(await page.locator('[data-'+prefix+'-shell]').getAttribute('aria-pressed'),'true');
+      assert.equal(await page.locator('[data-'+prefix+'-explode]').getAttribute('aria-pressed'),'false');
     }
     await page.goto(base+'/v2/projects/skylabs/',{waitUntil:'networkidle'});
     await page.locator('[data-object-board="ground"]').click();
@@ -88,41 +90,47 @@ const executablePath = process.env.CHROMIUM_EXECUTABLE || undefined;
     await page.locator('[data-object-view="inspect"]').click();
     assert.equal(await page.locator('[data-object-view="inspect"]').getAttribute('aria-pressed'),'true');
     await page.goto(base+'/v2/projects/tramtrace/',{waitUntil:'networkidle'});
-    await page.locator('[data-inspector-mode="copper"]').click();
-    assert.equal(await page.locator('[data-inspector-mode="copper"]').getAttribute('aria-pressed'),'true');
-    await page.locator('[data-inspector-mode="data"]').click();
-    assert.equal(await page.locator('[data-inspector-mode="data"]').getAttribute('aria-pressed'),'true');
-    console.log('PASS case integrations: both Framework 3D inspectors, Skylabs board switching and v2 links, TramTrace copper/data views');
+    for(const mode of ['copper','data']){
+      await page.locator('[data-inspector-mode="'+mode+'"]').click();
+      assert.equal(await page.locator('[data-inspector-mode="'+mode+'"]').getAttribute('aria-pressed'),'true');
+    }
     await context.close();
-
-    const fallback = await browser.newContext({viewport:{width:1280,height:900}});
-    await fallback.route('**/*.glb', route=>route.abort());
-    const fallbackPage=await fallback.newPage();
-    await fallbackPage.goto(base+'/v2/',{waitUntil:'networkidle'});
-    await fallbackPage.locator('[data-cad-start]').click();
-    await fallbackPage.locator('[data-cad-state="unavailable"]').waitFor();
-    assert.equal(await fallbackPage.locator('[data-cad-poster]').isVisible(),true);
-    assert.equal(await fallbackPage.locator('[data-cad-canvas]').isVisible(),false);
-    assert.equal(await fallbackPage.getByRole('link',{name:'Framework ESP32 Card'}).isVisible(),true);
+    console.log('PASS ESP32/Dual USB view, shell, explode and reset; Skylabs switching; TramTrace copper/data');
+    const fallback=await browser.newContext({viewport:{width:1280,height:900}});
+    await fallback.route('**/*.glb',route=>route.abort());
+    const failedPage=await fallback.newPage();observe(failedPage);
+    await failedPage.goto(base+'/v2/',{waitUntil:'networkidle'});
+    await failedPage.locator('[data-assembly-state="unavailable"]').waitFor({timeout:30000});
+    assert.equal(await failedPage.locator('[data-assembly]').evaluate(node=>node.classList.contains('is-static')&&!node.classList.contains('is-enhanced')),true);
+    await posters(failedPage);
+    assert.equal(await failedPage.locator('[data-assembly-canvas]').evaluate(node=>Number(getComputedStyle(node).opacity)),0);
+    await failedPage.locator('[data-assembly-select="1"]').click();
+    await failedPage.waitForURL('**/v2/projects/framework-raspberry-pi/');
+    await failedPage.waitForLoadState('networkidle');
+    await failedPage.waitForFunction(()=>document.getAnimations().every(animation=>animation.playState!=='running'));
     await fallback.close();
-    console.log('PASS CAD failure: still image and project link remain available');
-
-    const noJS = await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});
-    const staticPage=await noJS.newPage();
+    console.log('PASS failed model loading restores posters and normal project links');
+    const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});
+    const staticPage=await noJS.newPage();observe(staticPage);
     await staticPage.goto(base+'/v2/',{waitUntil:'networkidle'});
     assert.equal(await staticPage.locator('h1').isVisible(),true);
     assert.equal(await staticPage.locator('[data-v2-nav]').isVisible(),true);
-    assert.equal(await staticPage.locator('[data-cad-poster]').isVisible(),true);
-    assert.equal(await staticPage.locator('[data-cad-start]').isVisible(),false);
+    await posters(staticPage);
+    assert.equal(await staticPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await staticPage.goto(base+'/v2/projects/',{waitUntil:'networkidle'});
-    assert.ok(await staticPage.locator('[data-v2-project]:visible').count()>=14);
+    assert.equal(await staticPage.locator(primary+':visible').count(),15);
     await noJS.close();
-    const reduced=await browser.newContext({reducedMotion:'reduce'});
-    const reducedPage=await reduced.newPage();
-    await reducedPage.goto(base+'/v2/');
+    const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
+    const reducedPage=await reduced.newPage();observe(reducedPage);
+    const reducedRequests=[];reducedPage.on('request',request=>reducedRequests.push(request.url()));
+    await reducedPage.goto(base+'/v2/',{waitUntil:'networkidle'});
+    assert.equal(await reducedPage.locator('[data-assembly]').getAttribute('data-assembly-state'),'static');
+    assert.equal(reducedRequests.some(url=>/\.glb(?:\?|$)|three\.min\.js/.test(url)),false,'Initial reduced motion must not download CAD or Three.js');
+    await posters(reducedPage);
     assert.equal(await reducedPage.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior),'auto');
     await reduced.close();
     assert.deepEqual(errors,[],'Browser JavaScript errors');
-    console.log('PASS no-JavaScript navigation/content and reduced-motion scrolling');
-  } finally { await browser.close(); }
+    assert.deepEqual(badResponses,[],'Failed HTTP resources');
+    console.log('PASS no-JavaScript content and initial reduced-motion posters without CAD downloads');
+  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

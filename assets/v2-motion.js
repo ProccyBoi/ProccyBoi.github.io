@@ -50,7 +50,7 @@
   enter();
 
   const revealTargets = [...document.querySelectorAll([
-    '.v2-intro > div', '.v2-section-heading', '.v2-feature', '.v2-small-project',
+    '.v2-intro > div', '.v2-section-heading', '.v2-feature', '.v2-small-project', '.v2-project-card',
     '.v2-about-preview > div', '.v2-contact .v2-shell',
     '.v2-case .engineering-brief > div', '.v2-case .project-summary',
     '.v2-case .project-gallery figure', '.v2-continue',

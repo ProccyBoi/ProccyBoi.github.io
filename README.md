@@ -68,15 +68,15 @@ The site is plain HTML, CSS and JavaScript. Pushes to `main` publish automatical
 
 ## New portfolio at `/v2/`
 
-The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It keeps the existing fourteen projects and their interactive hardware/software, while leaving the original public routes intact.
+The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It includes the original fourteen projects and the Raspberry Pi RP2354B expansion card, while leaving the original public routes intact.
 
-The new presentation uses source-derived CAD studio renders, an optional on-demand 3D hero, a system-path explorer, searchable project collection and redesigned case-study layouts. Shared styles/controllers are `assets/v2.css` and `assets/v2.js`; case-study styles/controllers are `assets/v2-case.css` and `assets/v2-cases.js`. The CAD enhancement is `assets/v2-cad.js`.
+The fullscreen opening presents the ESP32 card, Raspberry Pi card and TramTrace, with their physical components assembling and separating as the reader scrolls. The model factory merges the original CAD faces within component groups for efficient rendering. `assets/v2-assembly-models.js`, `assets/v2-assembly.js` and `assets/v2-assembly.css` own this scene. The surrounding light gallery uses `assets/v2.css` and `assets/v2.js`; case-study styles/controllers are `assets/v2-case.css` and `assets/v2-cases.js`.
 
-The second pass adds a scroll-controlled TramTrace fabrication story (`assets/v2-process.css` / `.js`), finite entrance and section choreography (`assets/v2-motion.css` / `.js`), and smooth 3D camera presets. All motion respects reduced-motion preferences. Mobile keeps the board story unpinned, with buttons and keyboard alternatives to scrolling.
+The Raspberry Pi page includes an on-demand 3D inspector with its exact board, a reference Framework enclosure, camera presets and component separation. Rendering pauses offscreen and when idle. Reduced motion, Save Data, unavailable WebGL and JavaScript-disabled browsing retain still images and project navigation. Finite section transitions use `assets/v2-motion.css` / `.js`.
 
 - Run `python scripts/build-v2-cases.py` to regenerate the case-study, collection and about pages from the original factual material.
 - Run `python scripts/audit-v2.py` to check every v2 page, project inventory, linked assets, metadata and fragments, including untracked files.
 - With Playwright installed, run `node scripts/verify-v2-browser.cjs` against the running preview for mobile, keyboard, search, CAD, fallback and reduced-motion acceptance checks. Optional environment variables: `V2_BASE_URL`, `CHROMIUM_EXECUTABLE`.
-- Also run `node scripts/verify-v2-motion.cjs` and `node scripts/verify-v2-cad-motion.cjs` for scroll-story and camera-animation acceptance checks. The motion check optionally saves review frames to `V2_SCREENSHOTS`.
+- Also run `node scripts/verify-v2-motion.cjs` and `node scripts/verify-v2-cad-motion.cjs` for responsive assembly choreography, idle/offscreen rendering, component-pose continuity and reverse scrolling. The motion check optionally saves review frames to `V2_SCREENSHOTS`.
 - Serve the repository root (for example `python -m http.server 8080`) and open `http://localhost:8080/v2/`.
 - Design direction, image provenance and references are in [docs/v2-design.md](docs/v2-design.md).

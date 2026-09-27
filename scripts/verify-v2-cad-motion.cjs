@@ -1,121 +1,99 @@
-/* CAD camera acceptance tests. Requires Playwright and a local static server.
- * Optional: V2_BASE_URL and CHROMIUM_EXECUTABLE, as in render-v2-cad.cjs. */
+/* CAD motion acceptance for the fullscreen hero. The old homepage inspector
+ * was replaced; this checks real rendered object poses, not obsolete controls.
+ * Requires Playwright. Optional: V2_BASE_URL and CHROMIUM_EXECUTABLE. */
 'use strict';
-const assert = require('node:assert/strict');
-const { chromium } = require('playwright');
-const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
-
-async function main() {
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath: process.env.CHROMIUM_EXECUTABLE || undefined,
-    args: ['--enable-unsafe-swiftshader']
-  });
-  const errors = [];
-  try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference' });
-    page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto(base + '/v2/');
-    const hero = page.locator('[data-cad-hero]');
-    const canvas = page.locator('[data-cad-canvas]');
-    const idle = () => page.waitForFunction(() => document.querySelector('[data-cad-hero]').dataset.cadMotion === 'idle');
-    const pose = async () => (await hero.getAttribute('data-cad-orbit')).split(',').map(Number);
-    await page.locator('[data-cad-start]').click();
-    await page.waitForFunction(() => document.querySelector('[data-cad-hero]').dataset.cadState === 'ready', null, { timeout: 60000 });
-    await page.waitForFunction(() => Boolean(document.querySelector('[data-cad-hero]').dataset.cadOrbit));
-
-    const initial = await pose();
-    const initialFrames = Number(await hero.getAttribute('data-cad-frames'));
-    const selection = await page.evaluate(() => {
-      document.querySelector('[data-cad-view="top"]').click();
-      return { motion: document.querySelector('[data-cad-hero]').dataset.cadMotion, reduced: matchMedia('(prefers-reduced-motion: reduce)').matches };
-    });
-    assert.equal(await hero.getAttribute('data-cad-angle'), 'top', 'Preset selection updates synchronously');
-    assert.equal(selection.motion, 'transition', JSON.stringify(selection));
-    const intermediate = await page.waitForFunction(() => {
-      const root = document.querySelector('[data-cad-hero]');
-      const pose = root.dataset.cadOrbit.split(',').map(Number);
-      return root.dataset.cadMotion === 'transition' && pose[1] > 45 && pose[1] < 88 ? pose : false;
-    });
-    const middle = await intermediate.jsonValue();
-    assert.ok(middle[1] > initial[1] && middle[1] < 89.8, 'Intermediate camera pose is rendered');
-    await idle();
-    const top = await pose();
-    assert.equal(top[1], 89.8);
-    assert.ok(Number(await hero.getAttribute('data-cad-frames')) > initialFrames + 2);
-    const settledFrames = await hero.getAttribute('data-cad-frames');
-    await page.waitForTimeout(850);
-    assert.equal(await hero.getAttribute('data-cad-frames'), settledFrames, 'No frames are rendered after the transition settles');
-    console.log('PASS: smooth intermediate poses, exact final preset, synchronous selection, idle rendering stops');
-
-    // Rotate past a full revolution, then ask for the top view. The orbit must
-    // take the short route to the equivalent angle rather than unwind 400°.
-    await canvas.focus();
-    await canvas.evaluate((element) => {
-      for (let index = 0; index < 40; index += 1) element.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
-    });
-    await page.waitForFunction(() => Number(document.querySelector('[data-cad-hero]').dataset.cadOrbit.split(',')[0]) > 390);
-    const rotated = await pose();
-    await page.locator('[data-cad-view="top"]').click();
-    await idle();
-    const shortest = await pose();
-    assert.ok(Math.abs(shortest[0] - rotated[0]) < 180, 'Preset uses the shortest yaw path');
-    assert.equal(shortest[0] % 360, 0);
-
-    await page.locator('[data-cad-view="side"]').click();
-    await canvas.dispatchEvent('keydown', { key: 'ArrowRight' });
-    assert.equal(await hero.getAttribute('data-cad-motion'), 'idle', 'Direct keyboard input cancels the preset move');
-    assert.equal(await hero.getAttribute('data-cad-angle'), 'custom');
-    await page.waitForTimeout(100);
-    const interrupted = await pose();
-    await page.waitForTimeout(850);
-    assert.deepEqual(await pose(), interrupted, 'Canceled move cannot resume behind direct input');
-    console.log('PASS: shortest orbit after accumulated rotations, immediate input takeover, no residual movement');
-
-    // Start and scroll away in one event task so even a slow software GPU
-    // cannot finish the complete animation before the offscreen observation.
-    await page.evaluate(() => {
-      document.querySelector('[data-cad-view="iso"]').click();
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
-    });
-    await page.waitForFunction(() => document.querySelector('[data-cad-hero]').dataset.cadMotion === 'paused');
-    const pausedFrames = await hero.getAttribute('data-cad-frames');
-    const pausedPose = await pose();
-    await page.waitForTimeout(850);
-    assert.equal(await hero.getAttribute('data-cad-frames'), pausedFrames);
-    assert.deepEqual(await pose(), pausedPose);
-    await canvas.scrollIntoViewIfNeeded();
-    await idle();
-    assert.equal((await pose())[1], 43);
-    console.log('PASS: offscreen move pauses without frames and completes after returning');
-
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.locator('[data-cad-view="top"]').click();
-    assert.equal(await hero.getAttribute('data-cad-motion'), 'idle');
-    await page.waitForFunction(() => Number(document.querySelector('[data-cad-hero]').dataset.cadOrbit.split(',')[1]) === 89.8);
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await page.locator('[data-cad-view="side"]').click();
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await idle();
-    await page.waitForFunction(() => Number(document.querySelector('[data-cad-hero]').dataset.cadOrbit.split(',')[1]) === 12);
-    console.log('PASS: reduced motion gives instant presets and settles an in-progress transition');
-
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await page.locator('[data-cad-view="top"]').click();
-    await canvas.evaluate((element) => {
-      const gl = element.getContext('webgl2') || element.getContext('webgl');
-      gl.getExtension('WEBGL_lose_context').loseContext();
-    });
-    await page.waitForFunction(() => document.querySelector('[data-cad-hero]').dataset.cadState === 'unavailable');
-    const lostFrames = await hero.getAttribute('data-cad-frames');
-    await canvas.dispatchEvent('keydown', { key: 'ArrowLeft' });
-    await page.waitForTimeout(850);
-    assert.equal(await hero.getAttribute('data-cad-frames'), lostFrames);
-    assert.equal(await page.locator('[data-cad-poster]').isVisible(), true);
-    assert.deepEqual(errors, []);
-    console.log('PASS: context loss cancels an active transition and restores the poster without browser errors');
-  } finally {
-    await browser.close();
-  }
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
+async function scrollPhase(page,progress){
+  const actual=await page.evaluate(value=>{
+    const root=document.querySelector('[data-assembly]');
+    scrollTo({top:scrollY+root.getBoundingClientRect().top+value*(root.offsetHeight-root.querySelector('.v2-assembly-sticky').clientHeight),behavior:'instant'});
+    return Math.max(0,Math.min(1,-root.getBoundingClientRect().top/(root.offsetHeight-root.querySelector('.v2-assembly-sticky').clientHeight)));
+  },progress);
+  await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.000006,actual,{timeout:30000});
+  await page.evaluate(()=>{window.__stableFrames=null;});
+  await page.waitForFunction(()=>{
+    const frames=document.querySelector('[data-assembly]').dataset.assemblyFrames;
+    if(!window.__stableFrames||window.__stableFrames.frames!==frames)window.__stableFrames={frames,time:performance.now()};
+    return performance.now()-window.__stableFrames.time>500;
+  },null,{polling:100,timeout:30000});
 }
-main().catch((error) => { console.error(error); process.exitCode = 1; });
+async function snapshot(page){
+  return page.evaluate(()=>Object.fromEntries(Object.entries(window.__observedAssemblies).map(([name,model])=>[name,{
+    pose:model.group.matrixWorld.elements.slice(),
+    local:{position:model.group.position.toArray(),rotation:model.group.rotation.toArray(),scale:model.group.scale.toArray(),visible:model.group.visible},
+    parts:model.parts.map(part=>({name:part.object.name,position:part.object.position.toArray(),displacement:part.object.position.distanceTo(part.base)}))
+  }])));
+}
+(async()=>{
+  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+  try{
+    const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
+    const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    // Observe the public factory results without replacing geometry, transforms,
+    // rendering, scroll handlers or requestAnimationFrame in production code.
+    await page.addInitScript(()=>{
+      window.__observedAssemblies={};
+      let observed;
+      Object.defineProperty(window,'V2AssemblyModels',{configurable:true,get:()=>observed,set:factory=>{
+        observed={load:async(...args)=>{
+          const assembly=await factory.load(...args);
+          window.__observedAssemblies[args[0]]=assembly;
+          return assembly;
+        }};
+      }});
+    });
+    await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
+    await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
+    await page.waitForTimeout(1800);
+    // Establish the baseline after a complete scroll roundtrip so the finite
+    // entrance animation cannot be mistaken for part of the scroll state.
+    await scrollPhase(page,.135);
+    await scrollPhase(page,0);
+    const initial=await snapshot(page);
+    assert.deepEqual(Object.keys(initial).sort(),['esp32','pi','tramtrace']);
+    for(const [name,model] of Object.entries(initial)){
+      assert.ok(model.parts.length>1,name+' must contain movable physical components');
+      assert.ok(model.parts.every(part=>part.displacement<1e-10),name+' starts assembled');
+    }
+    await page.evaluate(()=>{
+      window.__poseSamples=[];
+      window.__samplePoses=true;
+      const sample=()=>{
+        if(!window.__samplePoses)return;
+        const model=window.__observedAssemblies.esp32;
+        window.__poseSamples.push({
+          progress:Number(document.querySelector('[data-assembly]').dataset.assemblyProgress),
+          displacement:Math.max(...model.parts.map(part=>part.object.position.distanceTo(part.base)))
+        });
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await scrollPhase(page,.265);
+    const samples=await page.evaluate(()=>{window.__samplePoses=false;return window.__poseSamples;});
+    const partial=samples.filter(sample=>sample.progress>.01&&sample.progress<.25&&sample.displacement>0&&sample.displacement<.3);
+    assert.ok(partial.length>=2,'Scroll must render several intermediate physical poses: '+JSON.stringify(samples));
+    assert.ok(new Set(partial.map(sample=>sample.displacement.toFixed(5))).size>=2,'Intermediate poses must change, not repeat a single snapped state');
+    for(const [name,progress] of [['esp32',.265],['pi',.565],['tramtrace',.88]]){
+      await scrollPhase(page,progress);
+      const model=(await snapshot(page))[name];
+      assert.ok(model.parts.every(part=>part.position.every(Number.isFinite)),name+' component transforms must remain finite');
+      assert.ok(model.parts.every(part=>part.displacement>.001),name+' physical groups must separate in the exploded chapter');
+      assert.ok(Math.max(...model.parts.map(part=>part.displacement))>.05,name+' must visibly disassemble');
+      assert.ok(model.pose.every(Number.isFinite),name+' scene transform must remain finite');
+      console.log('PASS '+name+': '+model.parts.length+' physical groups visibly separate with finite transforms');
+    }
+    await scrollPhase(page,0);
+    const returned=await snapshot(page);
+    for(const name of Object.keys(initial)){
+      assert.ok(returned[name].parts.every(part=>part.displacement<1e-10),name+' must exactly reassemble when scrolling back');
+      const error=Math.max(...returned[name].pose.map((value,index)=>Math.abs(value-initial[name].pose[index])));
+      assert.ok(error<1e-3,name+' must return to the original scene pose; maximum error '+error+'; initial '+JSON.stringify(initial[name].local)+'; returned '+JSON.stringify(returned[name].local));
+      assert.deepEqual(returned[name].parts.map(part=>part.position),initial[name].parts.map(part=>part.position));
+    }
+    assert.deepEqual(errors,[],'Browser JavaScript errors');
+    console.log('PASS continuous rendered component motion and exact reversal to all three original assemblies');
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

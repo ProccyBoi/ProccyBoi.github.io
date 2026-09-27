@@ -82,19 +82,20 @@ def replace_nodes(source, changes):
 
 def header(active='work'):
     return f'''<header class="v2-header"><div class="v2-nav-shell">
-      <a class="v2-brand" href="/v2/">Andrew Chung <span>ENGINEERING</span></a>
+      <a class="v2-brand" href="/v2/">Andrew Chung</a>
       <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
-        <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Work</a>
+        <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Projects</a>
         <a href="/v2/about/"{' aria-current="page"' if active == 'about' else ''}>About</a>
-        <a class="v2-nav-contact" href="/v2/about/#contact">Let’s talk <span aria-hidden="true">↗</span></a>
+        <a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>'''
 
 
-FOOTER = '''<footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung.</a><div class="v2-footer-links"><a href="/v2/projects/">Work</a><a href="/v2/about/#contact">Get in touch ↗</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Electrical engineering. Sydney, Australia.</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>'''
+FOOTER = '''<footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung</a><div class="v2-footer-links"><a href="/v2/projects/">Projects</a><a href="/v2/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>'''
 
-ORDER = ['tramtrace', 'skylabs', 'framework-dual-usb', 'framework-expansion-card', 'lora-receiver', 'rf-test-board', 'metroboard', 'switch-mode-power-supplies', 'scopelab', 'lithography-animation', 'mosfet-operating-regions', 'runswift', 'lora-talkie', 'dash']
+ORDER = ['tramtrace', 'skylabs', 'framework-dual-usb', 'framework-expansion-card', 'framework-raspberry-pi', 'lora-receiver', 'rf-test-board', 'metroboard', 'switch-mode-power-supplies', 'scopelab', 'lithography-animation', 'mosfet-operating-regions', 'runswift', 'lora-talkie', 'dash']
 LABELS = {'tramtrace': 'TramTrace', 'skylabs': 'Skylabs', 'framework-dual-usb': 'Dual USB-C Framework Card', 'framework-expansion-card': 'Framework ESP32 Card', 'lora-receiver': 'LoRa Receiver + GNSS', 'rf-test-board': 'RF Test Board', 'metroboard': 'Metroboard', 'switch-mode-power-supplies': 'Switchmode Power Supplies', 'scopelab': 'ScopeLab', 'lithography-animation': 'Lithography Animation', 'mosfet-operating-regions': 'MOSFET Region Explorer', 'runswift': 'rUNSWift', 'lora-talkie': 'LoRa Talkie', 'dash': 'Dash'}
+LABELS['framework-raspberry-pi'] = 'Raspberry Pi Expansion Card'
 BRIEFS = {
  'lora-receiver': [('The system', 'An ESP32 receiver combining 915 MHz LoRa with u-blox GNSS.'), ('The constraint', 'Radio and navigation on one PCB, with a feedline worth measuring.'), ('What I learned', 'At least 1 km in testing; VNA measurements informed the RF Test Board.')],
  'metroboard': [('The interface', 'A physical Sydney rail map with 291 individually addressable LEDs.'), ('The hardware', 'A 300 × 305.7 mm PCB driven by an ESP32.'), ('The connection', 'Live transport data becomes something visible across a room.')],
@@ -137,7 +138,69 @@ def common(source, body_class, active='work'):
 </head>''')
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
-    return route_links(source)
+    return route_links(clean_display_copy(source))
+
+
+def clean_display_copy(source):
+    """Keep useful operating instructions and specifications, without UI boilerplate."""
+    tree = Tree(source)
+    changes = []
+    for node in tree.nodes:
+        if node.tag == 'p' and node.has('eyebrow'):
+            ancestor = node.parent
+            in_viewer = False
+            while ancestor:
+                in_viewer = in_viewer or ancestor.has('project-interactive')
+                ancestor = ancestor.parent
+            if in_viewer:
+                if 'data-board-eyebrow' in node.attrs:
+                    changes.append((node, node.outer(source).replace('<p ', '<p hidden ', 1)))
+                else:
+                    changes.append((node, ''))
+        if node.has('tramtrace-3d-source'):
+            changes.append((node, '<div class="tramtrace-3d-source"><span>116 RGB pixels</span><span>28 controller and support parts</span></div>'))
+        if node.tag == 'span' and node.parent and node.parent.has('project-list-row'):
+            changes.append((node, ''))
+        if node.tag == 'span' and node.parent and node.parent.tag == 'figcaption' and re.fullmatch(r'\d+\s*/\s*\d+', text(node.inner(source))):
+            changes.append((node, ''))
+    source = replace_nodes(source, changes)
+    replacements = {
+        'Continue exploring': 'More projects',
+        'Previous case study': 'Previous project',
+        'Next case study': 'Next project',
+        'View the complete collection': 'All projects',
+        'Explore the production board.': 'TramTrace in 3D',
+        'Orbit the production board.': 'Assembly',
+        'Inside the ESP32 card.': 'ESP32 card assembly',
+        'Inside the dual USB-C card.': 'Dual USB-C assembly',
+        'Explore the RF test structures.': 'RF test structures',
+        'Explore the rail-map PCB.': 'Metroboard in 3D',
+        'Explore the flight hardware.': 'Flight hardware',
+        'The assembled view, copper layers and LED order come from the production KiCad source. Inspect a part, rotate the board or play one frame through its real electrical path.': 'Inspect the assembly, copper layers and LED order. Select a component or follow a data frame through the board.',
+        'Drag through a full 360&deg; orbit, inspect the underside, or separate the populated assembly. <strong>The assembly comes from the production KiCad design, including all 144 physical parts.</strong>': 'Drag to rotate, inspect the underside or separate the 144-part assembly.',
+        'Hover a component to inspect its source reference, package and exact KiCad placement.': 'Hover a component to see its reference and package.',
+        'TramTrace production board': 'TramTrace',
+        '<span>Production board</span><span>KiCad source / Rev 1</span>': '<span>TramTrace</span><span>Rev 1</span>',
+        '<span>Exported directly from the fabrication layers</span>': '',
+        '<span>Populated render from the production board</span>': '',
+        'A board for questions': 'Test setup',
+        'A map, not another app': 'Sydney rail display',
+        'Why two?': 'Two ports in one bay',
+        'Flight data starts here.': 'Aircraft telemetry',
+        'The other end of the link.': 'Ground station',
+        'The other end of the link': 'Ground station receiver',
+        'Sensors with somewhere to go': 'Sensors and logging',
+        'The firmware underneath': 'Firmware',
+        'The finished object.': 'Assembly',
+        'Two layers carry the map.': 'Copper layers',
+        'Position becomes address.': 'LED data order',
+        'Start with the board as it was designed to be seen. Select a marked component to find out what it contributes.': 'Select a marked component to see its role in the circuit.',
+        "The enclosure is Framework's mechanical STL and the populated PCB is exported from the working KiCad design. Orbit the assembly, remove the shell or pull the two apart.": 'Rotate the card, remove its Framework enclosure or separate the assembly.',
+        'The PCB outline, drilled features, pads, silkscreen and footprint positions come from the working KiCad board. Orbit it in the real Framework enclosure, identify a part or separate the assembly.': 'Rotate the card in its Framework enclosure, identify a part or separate the assembly.',
+    }
+    for old, new in replacements.items():
+        source = source.replace(old, new)
+    return source
 
 
 def case_navigation(source, slug, title):
@@ -146,7 +209,7 @@ def case_navigation(source, slug, title):
     if 'id="explore"' in source:
         links.append(('explore', 'Interactive'))
     if 'id="details"' in source:
-        links.append(('details', 'Engineering'))
+        links.append(('details', 'Details'))
     if 'id="build"' in source:
         links.append(('build', 'Build'))
     if slug == 'skylabs':
@@ -176,9 +239,9 @@ def continuation(slug):
     </div><a class="v2-all-work" href="/v2/projects/">View the complete collection <span aria-hidden="true">↗</span></a></nav>'''
 
 
-def make_case(path):
-    slug = path.parent.relative_to(ROOT / 'projects').as_posix()
-    source = path.read_text(encoding='utf-8')
+def make_case(path, slug=None, source=None):
+    slug = slug or path.parent.relative_to(ROOT / 'projects').as_posix()
+    source = source if source is not None else path.read_text(encoding='utf-8')
     if slug == 'skylabs/flight-review':
         return source
     if slug in ('lithography-animation', 'mosfet-operating-regions'):
@@ -192,7 +255,7 @@ def make_case(path):
     title = text(tree.find('h1').inner(source))
     copy_intro = copy.children[0].inner(source)
     copy_intro = re.sub(r'<ol class="crumbs".*?</ol>', '', copy_intro, flags=re.S)
-    project_number = ORDER.index(slug.split('/')[0]) + 1
+    copy_intro = re.sub(r'<p class="eyebrow"[^>]*>.*?</p>', '', copy_intro, flags=re.S)
     cad_assets = {
         'tramtrace': ('tramtrace-cad.webp', 'Source-derived KiCad rendering of the TramTrace light-rail display PCB'),
         'framework-expansion-card': ('framework-cad.webp', 'Source-derived CAD rendering of the populated Framework ESP32 card'),
@@ -200,21 +263,23 @@ def make_case(path):
     hero_media = media.outer(source)
     if slug in cad_assets:
         asset, alt = cad_assets[slug]
-        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/{asset}" width="1600" height="1200" alt="{alt}" fetchpriority="high"><figcaption class="v2-cad-caption">Source-derived geometry / engineering render</figcaption></figure>'
+        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/{asset}" width="1600" height="1200" alt="{alt}" fetchpriority="high"></figure>'
     elif slug.startswith('skylabs'):
         board = 'ground' if slug.endswith('ground-station') else 'telemetry'
         width, height = (1376, 984) if board == 'telemetry' else (1400, 1000)
-        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/interactive/skylabs/skylabs-{board}-turn-02.webp" width="{width}" height="{height}" alt="KiCad rendering of the assembled Skylabs {board} board" fetchpriority="high"><figcaption class="v2-cad-caption">Working KiCad design / assembled board</figcaption></figure>'
+        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/interactive/skylabs/skylabs-{board}-turn-02.webp" width="{width}" height="{height}" alt="KiCad rendering of the assembled Skylabs {board} board" fetchpriority="high"></figure>'
     has_explorer = 'id="explore"' in source
-    hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{"explore" if has_explorer else "details"}">{"Explore the hardware" if has_explorer else "Read the story"} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Engineering details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Read the story <span aria-hidden="true">↓</span></a></div>'
+    hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
-    <div class="project-hero-grid"><div class="project-hero-copy"><p class="v2-case-number">Selected work <span>{project_number:02d} / {len(ORDER):02d}</span></p><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
+    <div class="project-hero-grid"><div class="project-hero-copy"><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
     <div class="v2-case-specs shell">{meta.outer(source) if meta else ''}</div></section>'''
     changes = [(hero, new_hero)]
     old_next = tree.find('a', 'next-project')
     if old_next:
         changes.append((old_next, continuation(slug)))
     source = replace_nodes(source, changes)
+    if not old_next:
+        source = source.replace('</main>', continuation(slug) + '\n</main>', 1)
     if slug in cad_assets:
         source = re.sub(r'<link rel="preload" as="image"[^>]*>', '', source)
         source = source.replace('</head>', f'<link rel="preload" as="image" href="/assets/images/v2/{cad_assets[slug][0]}" type="image/webp">\n</head>')
@@ -228,14 +293,77 @@ def make_case(path):
     return case_navigation(source, slug, title)
 
 
+def make_pi_case():
+    """The new card has a maintained content record rather than an original page."""
+    fragment = (ROOT / 'scripts/content/framework-raspberry-pi.html').read_text(encoding='utf-8')
+    fragment = fragment.replace('Raspberry Pi silicon, in a laptop expansion slot. A compact RP2354B controller board designed around the Framework card format.', 'An RP2354B microcontroller board designed for a Framework laptop expansion bay.')
+    fragment = fragment.replace('A closer look.', 'RP2354B assembly').replace('A small board with a defined place.', 'Board layout').replace('Designed as an assembly.', 'Mechanical fit')
+    fragment_tree = Tree(fragment)
+    fragment = replace_nodes(fragment, [(node, '') for node in fragment_tree.nodes if node.has('engineering-brief') or node.has('pi-viewer-topline')])
+    source = '''<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Raspberry Pi Expansion Card | Andrew Chung</title>
+  <meta name="description" content="An RP2354B microcontroller board designed for the Framework expansion-card format. Explore the board and enclosure in 3D.">
+  <meta name="theme-color" content="#f5f5f2">
+  <meta property="og:type" content="website"><meta property="og:title" content="Raspberry Pi Expansion Card | Andrew Chung">
+  <meta property="og:description" content="An RP2354B microcontroller board in the Framework expansion-card format.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/framework-raspberry-pi/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/v2/framework-pi-cad.webp">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/framework-raspberry-pi/">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="/assets/project-integrated.css">
+  <link rel="stylesheet" href="/assets/v2-pi.css">
+  <link rel="preload" as="image" href="/assets/images/v2/framework-pi-cad.webp" type="image/webp">
+  <script src="/assets/site.js" defer></script>
+  <script src="/assets/v2-pi.js" defer></script>
+</head><body class="project-page v2-pi-page">
+  <a class="skip-link" href="/v2/projects/framework-raspberry-pi/#main">Skip to content</a>
+  <header class="site-header"></header>
+  <main id="main">''' + fragment + '''
+  </main><footer class="site-footer"></footer>
+</body></html>'''
+    return make_case(None, 'framework-raspberry-pi', source)
+
+
 def make_index():
     source = (ROOT / 'projects/index.html').read_text(encoding='utf-8')
     tree = Tree(source)
+    source = replace_nodes(source, [(node, '') for node in tree.nodes
+        if node.tag == 'a' and node.has('catalog-card')
+        and node.attrs.get('href', '').lstrip('/') == 'projects/coaster/'])
+    tree = Tree(source)
     hero = tree.find('section', 'page-hero')
-    new_hero = '''<section class="v2-collection-hero shell"><p class="eyebrow">The work / 14 projects</p><div><h1>Made to work.<br><span>Built to explore.</span></h1><p>Custom boards, connected systems and tools for understanding them. A collection of things I have designed, built and tested.</p></div><a href="/v2/projects/#hardware">Explore the collection <span aria-hidden="true">↓</span></a></section>'''
+    new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems, robotics and engineering tools.</p></div></section>'''
     jump = tree.find('nav', 'project-jumpbar')
-    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>14</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>8</span></a><a href="/v2/projects/#interactive" data-v2-category="interactive">Tools <span>3</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search work…" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
+    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>15</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>9</span></a><a href="/v2/projects/#interactive" data-v2-category="interactive">Tools <span>3</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
     source = replace_nodes(source, [(hero, new_hero), (jump, controls)])
+    hardware_catalog = Tree(source).find('div', 'project-catalog')
+    pi_card = '''<a class="catalog-card v2-pi-card" href="projects/framework-raspberry-pi/">
+      <div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/framework-pi-cad.webp" width="1600" height="1200" alt="Raspberry Pi RP2354B expansion card for a Framework laptop" loading="lazy"></div>
+      <div class="catalog-card-copy"><div><span class="catalog-category">Framework / microcontroller</span><h3>Raspberry Pi Expansion Card</h3><p>An RP2354B microcontroller board in the Framework expansion-card format.</p><small>RP2354B · 26 × 30 mm</small></div><span aria-hidden="true">↗</span></div></a>'''
+    source = source[:hardware_catalog.open_end] + '\n' + pi_card + source[hardware_catalog.open_end:]
+    # Let the hardware occupy the full gallery area without thumbnail framing.
+    tree = Tree(source)
+    media_changes = []
+    card_images = {
+        'projects/tramtrace/': ('v2/tramtrace-cad.webp', 1600, 1200, 'TramTrace light-rail display PCB'),
+        'projects/framework-expansion-card/': ('v2/framework-cad.webp', 1600, 1200, 'Framework ESP32 expansion card'),
+        'projects/skylabs/': ('interactive/skylabs/skylabs-telemetry-turn-02.webp', 1376, 984, 'Skylabs aircraft telemetry PCB'),
+    }
+    for node in tree.nodes:
+        if node.has('catalog-card-media') and node.parent and node.parent.attrs.get('href') in card_images:
+            filename, width, height, alt = card_images[node.parent.attrs['href']]
+            media_changes.append((node, f'<div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/{filename}" width="{width}" height="{height}" alt="{alt}" loading="lazy"></div>'))
+    source = replace_nodes(source, media_changes)
+    source = re.sub(r'<p class="eyebrow">0[1-4] / (?:Hardware|Tools|Robotics|Archive)</p>', '', source)
+    source = source.replace('Boards and systems', 'Hardware').replace('Software meets hardware', 'Robotics').replace('Earlier builds', 'Earlier projects')
+    source = source.replace('207.81 × 94.55 mm &middot; Interactive PCB + copper', '207.81 × 94.55 mm &middot; 116 RGB pixels')
+    source = source.replace('Two boards &middot; Interactive boards', 'STM32 + ESP32 &middot; LoRa telemetry')
+    source = source.replace('CH334F &middot; Interactive 3D assembly', 'CH334F &middot; USB 2.0')
+    source = source.replace('ESP32-S3-MINI-1 &middot; Interactive 3D assembly', 'ESP32-S3-MINI-1 &middot; 0.6 mm PCB')
     source = source.replace('id="hardware"', 'id="hardware" data-v2-project-group="hardware"', 1).replace('id="interactive"', 'id="interactive" data-v2-project-group="interactive"', 1).replace('id="robotics"', 'id="robotics" data-v2-project-group="robotics"', 1).replace('id="archive"', 'id="archive" data-v2-project-group="archive"', 1)
     source = re.sub(r'(<a class="(?:catalog-card|project-list-row)[^"]*")', r'\1 data-v2-project', source)
     source = source.replace('href="shared/flight-review/"', 'href="/shared/flight-review/"')
@@ -247,17 +375,18 @@ def make_index():
 
 def make_about():
     source = (ROOT / 'about/index.html').read_text(encoding='utf-8')
-    source = source.replace('Andrew Chung / background', 'Andrew Chung / Sydney, Australia')
-    source = source.replace('Engineering, in practice.', 'Curiosity.<br>Made tangible.')
+    source = source.replace('Andrew Chung / background', 'Electrical engineering · Sydney')
+    source = source.replace('Engineering, in practice.', 'Andrew Chung')
     source = source.replace('My projects cover PCB design, embedded software, telemetry and robotics.', 'I work across the boundary between hardware and software: from a schematic and PCB layout to the firmware, measurements and interface that make a system useful.')
-    source = source.replace('Contact sheet', 'Start a conversation')
-    source = source.replace('Let&rsquo;s talk hardware.', 'Let’s build something<br>worth understanding.')
-    source = source.replace('<h2 id="experience-title">Experience</h2>', '<div class="v2-about-section-label"><p class="eyebrow">01 / In practice</p><h2 id="experience-title">Experience.</h2><p>At the bench, in the classroom and out in the field.</p></div>')
-    source = source.replace('<h2 id="education-title">Education</h2>', '<div class="v2-about-section-label"><p class="eyebrow">02 / Foundations</p><h2 id="education-title">Education.</h2></div>')
-    source = source.replace('<h2 id="tools-title">Tools</h2>', '<div class="v2-about-section-label"><p class="eyebrow">03 / The toolkit</p><h2 id="tools-title">Across the stack.</h2></div>')
-    source = source.replace('<h2 id="other-title">Awards and music</h2>', '<div class="v2-about-section-label"><p class="eyebrow">04 / Beyond the bench</p><h2 id="other-title">Awards &amp; music.</h2></div>')
+    source = source.replace('<p class="eyebrow">Contact sheet</p>', '')
+    source = source.replace('Let&rsquo;s talk hardware.', 'Contact')
+    source = source.replace('<h2 id="experience-title">Experience</h2>', '<div class="v2-about-section-label"><h2 id="experience-title">Experience</h2></div>')
+    source = source.replace('<h2 id="education-title">Education</h2>', '<div class="v2-about-section-label"><h2 id="education-title">Education</h2></div>')
+    source = source.replace('<h2 id="tools-title">Tools</h2>', '<div class="v2-about-section-label"><h2 id="tools-title">Tools</h2></div>')
+    source = source.replace('<h2 id="other-title">Awards and music</h2>', '<div class="v2-about-section-label"><h2 id="other-title">Awards &amp; music</h2></div>')
     source = source.replace('</figure>', '<figcaption>Skylabs aircraft telemetry / component detail</figcaption></figure>', 1)
-    source = source.replace('Download my CV', 'View my CV ↗')
+    source = source.replace('Download my CV', 'View CV ↗')
+    source = source.replace('I’m Andrew. I study', 'I study')
     return common(source, 'v2-about', 'about')
 
 
@@ -270,11 +399,14 @@ def main():
     for path in sorted((ROOT / 'projects').rglob('index.html')):
         if path.parent == ROOT / 'projects':
             continue
+        # Coaster is maintained separately on the original site.
+        if path.relative_to(ROOT / 'projects').parts[0] == 'coaster':
+            continue
         output = ROOT / 'v2' / path.relative_to(ROOT)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(normalized(make_case(path)), encoding='utf-8')
         generated.append(output.relative_to(ROOT))
-    for relative, content in [('projects/index.html', make_index()), ('about/index.html', make_about())]:
+    for relative, content in [('projects/framework-raspberry-pi/index.html', make_pi_case()), ('projects/index.html', make_index()), ('about/index.html', make_about())]:
         output = ROOT / 'v2' / relative
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(normalized(content), encoding='utf-8')

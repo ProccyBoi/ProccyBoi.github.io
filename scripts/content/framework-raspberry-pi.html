@@ -1,0 +1,31 @@
+<section class="project-hero" id="overview" aria-labelledby="project-title">
+  <div class="project-hero-grid">
+    <div class="project-hero-copy">
+      <div><p class="eyebrow">Hardware / Microcontrollers</p><h1 id="project-title">Raspberry Pi Expansion Card</h1><p>Raspberry Pi silicon, in a laptop expansion slot. A compact RP2354B controller board designed around the Framework card format.</p></div>
+      <div class="project-hero-actions"><a href="#explore">Explore the assembly ↗</a><a href="#details">Design details ↓</a></div>
+    </div>
+    <figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/framework-pi-cad.webp" alt="Raspberry Pi expansion card showing its RP2354B controller, USB-C plug and compact green circuit board" width="1600" height="1200" fetchpriority="high"></figure>
+  </div>
+  <div class="v2-case-specs shell"><dl class="project-meta"><div><dt>Controller</dt><dd>RP2354B</dd></div><div><dt>Board</dt><dd>26 × 30 mm</dd></div><div><dt>Interface</dt><dd>USB-C</dd></div><div><dt>Thickness</dt><dd>0.8 mm</dd></div></dl></div>
+</section>
+<dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>The idea</dt><dd>A microcontroller that travels inside the laptop.</dd></div><div><dt>The constraint</dt><dd>Fit the controller, power circuit and controls into an expansion card.</dd></div><div><dt>The focus</dt><dd>Board layout, component placement and mechanical fit.</dd></div></dl>
+<section class="project-interactive" id="explore" aria-labelledby="pi-explore-title">
+  <div class="project-interactive-inner">
+    <header class="project-interactive-header"><div><h2 id="pi-explore-title">A closer look.</h2></div><p>Turn the card, separate the layers, and follow the components that make it work.</p></header>
+    <figure data-pi-inspector>
+      <div class="pi-stage" data-pi-stage><img data-pi-poster src="/assets/images/v2/framework-pi-cad.webp" alt="Isometric view of the Raspberry Pi expansion card" width="1600" height="1200" loading="lazy"><canvas data-pi-canvas hidden></canvas></div>
+      <div class="pi-start-wrap"><button type="button" data-pi-start>Explore in 3D ↗</button></div>
+      <div class="pi-controls" aria-label="Assembly controls">
+        <div class="pi-view-group" role="group" aria-label="Camera angle"><button type="button" data-pi-view="iso" aria-pressed="true">Perspective</button><button type="button" data-pi-view="top" aria-pressed="false">Top</button><button type="button" data-pi-view="bottom" aria-pressed="false">Underside</button><button type="button" data-pi-view="side" aria-pressed="false">Side</button></div>
+        <button type="button" data-pi-explode aria-pressed="false">Explode</button><button type="button" data-pi-shell aria-pressed="true">Hide housing</button><button type="button" data-pi-reset>Reset</button>
+      </div>
+      <p class="pi-status" data-pi-status role="status" aria-live="polite"></p>
+      <div class="pi-parts" role="group" aria-label="Explore components"><button type="button" data-pi-part="U5" aria-pressed="false">RP2354B</button><button type="button" data-pi-part="U3" aria-pressed="false">Flash</button><button type="button" data-pi-part="U2" aria-pressed="false">Power</button><button type="button" data-pi-part="U1" aria-pressed="false">Clock</button><button type="button" data-pi-part="SW1" aria-pressed="false">Controls</button><button type="button" data-pi-part="P1" aria-pressed="false">USB-C</button></div>
+      <figcaption class="pi-part-detail" aria-live="polite" hidden><strong data-pi-part-name></strong><p data-pi-part-detail></p></figcaption>
+    </figure>
+  </div>
+</section>
+<div class="project-body shell" id="details">
+  <section class="project-summary"><h2>A small board with a defined place.</h2><div class="project-prose"><p>The expansion-card format gives the design its boundaries: a compact outline, a straddle-mount USB-C plug and mounting points that line up with the reference enclosure. The board is 0.8 mm thick, leaving room for the components above it.</p><p>The RP2354B sits at the centre of the layout, with external flash, a crystal and the power circuit arranged around it. Two tactile controls sit at the outer end of the card.</p></div></section>
+  <section class="project-summary"><h2>Designed as an assembly.</h2><div class="project-prose"><p>Component height and connector position matter as much as the copper layout. The interactive view brings the board and reference housing together, then separates the parts to make the arrangement easier to read.</p><p>The straddle-mount connector sits at one end of the board, while the two tactile controls occupy the opposite edge.</p></div></section>
+</div>

@@ -36,6 +36,7 @@ REDIRECT_EXEMPTIONS = {
     "v2/lab/tramtrace/index.html": "Legacy explorer redirect",
 }
 SHARED_PREFIXES = ("/shared/", "/assets/", "/reports/", "/book/")
+V2_ADDITIONS = {"framework-raspberry-pi"}  # Requested alongside the September 2026 redesign.
 
 
 @dataclass
@@ -228,9 +229,9 @@ def main() -> int:
         for path in pages
         if path.is_relative_to(ROOT / "v2/projects") and len(path.relative_to(ROOT / "v2/projects").parts) > 1
     }
-    for slug in sorted(v2_projects - original_projects):
+    for slug in sorted(v2_projects - original_projects - V2_ADDITIONS):
         error(ROOT / "v2/projects" / slug, "new project absent from existing public project inventory")
-    for slug in sorted(original_projects - v2_projects):
+    for slug in sorted((original_projects | V2_ADDITIONS) - v2_projects):
         error(ROOT / "v2/projects" / slug, "existing project missing from /v2")
 
     for page in pages:
@@ -315,7 +316,7 @@ def main() -> int:
                 error(page, "refresh redirect has no resolvable URL", refresh.line)
 
     unique_errors = list(dict.fromkeys(errors))
-    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects)}/{len(original_projects)} existing projects; "
+    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects)} projects ({len(original_projects)} existing + {len(V2_ADDITIONS)} requested); "
                f"{stats['images']} images; {stats['references']} URL references; {stats['fragments']} fragments; "
                f"{len(checked_css)} stylesheets; {len(checked_targets)} distinct local targets; "
                f"{stats['explicit utility/redirect exemptions']} explicit utility/redirect exemptions; "
