@@ -261,5 +261,6 @@
     group.userData.componentCount = parts.length;
     return { group, parts, span };
   }
+  window.V2CadGeometry = Object.freeze({ mergeReference, disposeSource });
   window.V2AssemblyModels = Object.freeze({ load });
 })();

@@ -68,7 +68,7 @@ The site is plain HTML, CSS and JavaScript. Pushes to `main` publish automatical
 
 ## New portfolio at `/v2/`
 
-The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It includes the original fourteen projects and the Raspberry Pi RP2354B expansion card, while leaving the original public routes intact.
+The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It contains 22 projects, including the expanded electronics collection and Coaster, while leaving the original public routes intact.
 
 The fullscreen opening presents the ESP32 card, Raspberry Pi card and TramTrace, with their physical components assembling and separating as the reader scrolls. The model factory merges the original CAD faces within component groups for efficient rendering. `assets/v2-assembly-models.js`, `assets/v2-assembly.js` and `assets/v2-assembly.css` own this scene. The surrounding light gallery uses `assets/v2.css` and `assets/v2.js`; case-study styles/controllers are `assets/v2-case.css` and `assets/v2-cases.js`.
 
@@ -78,5 +78,6 @@ The Raspberry Pi page includes an on-demand 3D inspector with its exact board, a
 - Run `python scripts/audit-v2.py` to check every v2 page, project inventory, linked assets, metadata and fragments, including untracked files.
 - With Playwright installed, run `node scripts/verify-v2-browser.cjs` against the running preview for mobile, keyboard, search, CAD, fallback and reduced-motion acceptance checks. Optional environment variables: `V2_BASE_URL`, `CHROMIUM_EXECUTABLE`.
 - Also run `node scripts/verify-v2-motion.cjs` and `node scripts/verify-v2-cad-motion.cjs` for responsive assembly choreography, idle/offscreen rendering, component-pose continuity and reverse scrolling. The motion check optionally saves review frames to `V2_SCREENSHOTS`.
+- Run `node scripts/verify-hardware-catalog.cjs` for the shared electronics viewers, Kiku product assembly, exact reassembly, selection, keyboard, mobile layout and failure recovery. Export and source notes are in [docs/hardware-catalog.md](docs/hardware-catalog.md).
 - Serve the repository root (for example `python -m http.server 8080`) and open `http://localhost:8080/v2/`.
 - Design direction, image provenance and references are in [docs/v2-design.md](docs/v2-design.md).

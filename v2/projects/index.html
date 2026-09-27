@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="/assets/v2.css">
   <link rel="stylesheet" href="/assets/v2-case.css">
   <link rel="stylesheet" href="/assets/v2-motion.css">
-  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2.js" defer blocking="render"></script><script src="/assets/v2-cases.js" defer></script>
   <script src="/assets/v2-motion.js" defer></script>
 </head>
 <body class="v2 v2-collection">
@@ -37,7 +37,7 @@
   <main id="main">
     <section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems, robotics and engineering tools.</p></div></section>
 
-    <div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>15</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>9</span></a><a href="/v2/projects/#interactive" data-v2-category="interactive">Tools <span>3</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>
+    <div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>22</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>16</span></a><a href="/v2/projects/#interactive" data-v2-category="interactive">Tools <span>3</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>
 
     <section class="project-index-section shell" id="hardware" data-v2-project-group="hardware" aria-labelledby="hardware-title">
       <div class="index-section-heading"><div><h2 id="hardware-title">Hardware</h2></div><p>Personal builds, team avionics and industry PCB work.</p></div>
@@ -60,15 +60,18 @@
           <div class="catalog-card-copy"><div><span class="catalog-category">Hardware / USB</span><h3>Dual USB-C Framework Card</h3><p>One laptop expansion bay turned into two USB 2.0 Type-C ports.</p><small>CH334F &middot; USB 2.0</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
-
+        <a class="catalog-card" data-v2-project href="/v2/projects/coaster/">
+          <div class="catalog-card-media contain-media"><picture><source type="image/webp" srcset="assets/images/projects/coaster-hero-960.webp?v=20260926b 960w, assets/images/projects/coaster-hero-1920.webp?v=20260926b 1920w" sizes="(max-width: 820px) 100vw, 45vw"><img src="assets/images/projects/coaster-hero-1920.jpg?v=20260926b" srcset="assets/images/projects/coaster-hero-960.jpg?v=20260926b 960w, assets/images/projects/coaster-hero-1920.jpg?v=20260926b 1920w" sizes="(max-width: 820px) 100vw, 45vw" width="1920" height="1280" alt="Black circular RGB drink coaster PCB inside its clear resin enclosure" loading="lazy"></picture></div>
+          <div class="catalog-card-copy"><div><h3>RGB Drink Coaster</h3><p>A 24-pixel STM32 coaster that reacts to cup shadow and local temperature change.</p><small>STM32C011F6 &middot; SHT4x + VEML7700</small></div><span aria-hidden="true">&rarr;</span></div>
+        </a>
 
         <a class="catalog-card" data-v2-project href="/v2/projects/lora-receiver/">
-          <div class="catalog-card-media pcb-thumbnail pcb-thumbnail-lora"><picture><source type="image/webp" srcset="assets/images/projects/lora-receiver-system-960.webp 960w, assets/images/projects/lora-receiver-system-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 45vw"><img src="assets/images/projects/lora-receiver-system-1920.jpg" srcset="assets/images/projects/lora-receiver-system-960.jpg 960w, assets/images/projects/lora-receiver-system-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 45vw" width="1920" height="1280" alt="Complete black LoRa Receiver and GPS Module PCB" loading="lazy"></picture></div>
+          <div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/lora-receiver.webp" width="1600" height="1200" alt="LoRa Receiver + GNSS circuit board assembly" loading="lazy"></div>
           <div class="catalog-card-copy"><div><span class="catalog-category">Embedded / radio + GNSS</span><h3>LoRa Receiver + GNSS</h3><p>An ESP32 receiver board with a u-blox NEO-M9N and 915 MHz LoRa.</p><small>Rev A &middot; Tested beyond 1 km</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
         <a class="catalog-card" data-v2-project href="/v2/projects/rf-test-board/">
-          <div class="catalog-card-media contain-media"><picture><source type="image/webp" srcset="assets/images/projects/rf-test-hero-960.webp 960w, assets/images/projects/rf-test-hero-1920.webp 1920w" sizes="(max-width: 820px) 100vw, 45vw"><img src="assets/images/projects/rf-test-hero-1920.jpg" srcset="assets/images/projects/rf-test-hero-960.jpg 960w, assets/images/projects/rf-test-hero-1920.jpg 1920w" sizes="(max-width: 820px) 100vw, 45vw" width="1920" height="1280" alt="RF test board with u.FL and SMA feedlines" loading="lazy"></picture></div>
+          <div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/rf-test-board.webp" width="1600" height="1200" alt="RF Test Board circuit board assembly" loading="lazy"></div>
           <div class="catalog-card-copy"><div><span class="catalog-category">Hardware / RF measurement</span><h3>RF Test Board</h3><p>Feedlines and filter footprints made to be compared on a VNA.</p><small>50 Ω target &middot; u.FL and SMA</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
 
@@ -83,10 +86,17 @@
         </a>
 
         <a class="catalog-card" data-v2-project href="/v2/projects/metroboard/">
-          <div class="catalog-card-media"><img src="assets/images/projects/metroboard1-web.jpg" width="1600" height="900" alt="Metroboard Sydney rail indicator illuminated in a dark room" loading="lazy"></div>
+          <div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/metroboard.webp" width="1600" height="1200" alt="Metroboard circuit board assembly" loading="lazy"></div>
           <div class="catalog-card-copy"><div><span class="catalog-category">Embedded / transport</span><h3>Metroboard</h3><p>A 300 × 305.7 mm Sydney rail map driven by live data and 291 LEDs.</p><small>Personal project &middot; ESP32</small></div><span aria-hidden="true">&rarr;</span></div>
         </a>
-      </div>
+
+<a class="catalog-card" data-v2-project href="/v2/projects/framework-logic-analyser/"><div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/framework-logic-analyser.webp" width="1600" height="1200" alt="Framework Logic Analyser" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">Framework / instrumentation</span><h3>Framework Logic Analyser</h3><p>An STM32 logic analyser with logic, serial-bus and passive CAN capture in a Framework expansion card.</p><small>STM32G474 · 4 layers · 10 MS/s</small></div><span aria-hidden="true">↗</span></div></a>
+<a class="catalog-card" data-v2-project href="/v2/projects/usense/"><div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/usense.webp" width="1600" height="1200" alt="uSense" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">Sensors / lighting</span><h3>uSense</h3><p>A compact STM32 sensor board with ambient-light sensing, temperature and humidity measurement, and eight RGB LEDs.</p><small>STM32L031 · OPT3001 · AHT20</small></div><span aria-hidden="true">↗</span></div></a>
+<a class="catalog-card" data-v2-project href="/v2/projects/tamagotchi-sd-card/"><div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" width="1600" height="1200" alt="Tamagotchi SD Card" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">Embedded / storage</span><h3>Tamagotchi SD Card</h3><p>An STM32F072 board combining a full-size SD-card socket, USB-C and a seven-pin interface.</p><small>STM32F072 · SD card · USB-C</small></div><span aria-hidden="true">↗</span></div></a>
+<a class="catalog-card" data-v2-project href="/v2/projects/business-card/"><div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/business-card.webp" width="1600" height="1200" alt="NFC Business Card" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">NFC / PCB artwork</span><h3>NFC Business Card</h3><p>A business-card PCB with an NFC interface, copper antenna, two LEDs and COMP6441 artwork.</p><small>NT3H1101/1201 · 89.6 × 51.2 mm</small></div><span aria-hidden="true">↗</span></div></a>
+<a class="catalog-card" data-v2-project href="/v2/projects/kiku/"><div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/kiku-product.webp" width="1600" height="1200" alt="Kiku" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">Audio / portable hardware</span><h3>Kiku</h3><p>A portable audio design combining Bluetooth, FM radio, microSD storage and an STM32 controller.</p><small>STM32H523 · Bluetooth · FM · microSD</small></div><span aria-hidden="true">↗</span></div></a>
+<a class="catalog-card" data-v2-project href="/v2/projects/pcb-notebook/"><div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/hardware/pcb-notebook-front.webp" width="1600" height="1200" alt="PCB Notebook" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">PCB artwork / reference</span><h3>PCB Notebook</h3><p>A pair of spiral-bound notebook covers made from PCBs, with component references and circuit artwork.</p><small>Front + back covers · approximately 151 × 216 mm</small></div><span aria-hidden="true">↗</span></div></a>
+</div>
     </section>
 
     <section class="project-index-section project-index-subsection shell" id="interactive" data-v2-project-group="interactive" aria-labelledby="tools-title">

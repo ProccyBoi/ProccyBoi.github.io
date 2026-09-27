@@ -1,0 +1,6691 @@
+{
+  "slug": "metroboard",
+  "modelUrl": "/assets/models/hardware/metroboard/board.glb",
+  "boundsMm": [
+    228.655,
+    183.019,
+    528.65499,
+    488.71899
+  ],
+  "thicknessMm": 1.6,
+  "coreHeightMm": [
+    0.0,
+    1.51
+  ],
+  "scaleToMillimetres": 1000,
+  "upAxis": "+Y",
+  "kicadXAxis": "+X",
+  "kicadYAxis": "+Z",
+  "translationMm": [
+    -378.654995,
+    -0.0,
+    -335.86899500000004
+  ],
+  "footprints": [
+    {
+      "ref": "D140",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        397.755,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C86",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        398.9,
+        442.95,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D136",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        377.555,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D153",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        470.355,
+        327.469
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D108",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.555,
+        347.919,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D217",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        457.605,
+        351.004,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D118",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        277.355,
+        418.219,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D148",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        453.095,
+        329.219,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D206",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        404.755,
+        388.419,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D77",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        255.255,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D48",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        436.255,
+        272.619,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D258",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        360.855,
+        335.119
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D158",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        334.755,
+        364.519,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D141",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        402.755,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "Q1",
+      "value": "BC817",
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "atMm": [
+        395.8125,
+        456.879
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D29",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        416.913094,
+        256.754911,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D87",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        220.319,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C4",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        419.675,
+        478.829
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D68",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        303.755,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D144",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        417.955,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D105",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        333.990911,
+        316.119,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D47",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        431.955,
+        268.219,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R10",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        394.875,
+        460.5165,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R3",
+      "value": "5k1",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        380.075,
+        475.3415,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D218",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        458.195,
+        329.219,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D115",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.555,
+        409.719,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D97",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.690911,
+        278.077094,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D20",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        448.055,
+        308.519,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D230",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        473.155,
+        459.219
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D121",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        389.119,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D198",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        340.255,
+        404.319,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D26",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        430.155,
+        270.019,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D41",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        405.655,
+        241.819,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D134",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        360.855,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D291",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        267.055,
+        415.669
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D284",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        402.655,
+        371.254911,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D112",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.505,
+        380.934,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D44",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        418.690911,
+        254.977094,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D209",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        436.253959,
+        357.040876,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D98",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        298.655,
+        300.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D288",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        377.955,
+        374.819
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D50",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        444.990911,
+        281.277094,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D239",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        424.319,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R5",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        399.975,
+        460.459,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D107",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        314.519089,
+        339.577094,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D3",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        229.119,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D183",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        470.365,
+        324.939
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D155",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        380.919,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D175",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        422.955,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D71",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        285.455,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D139",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        392.64,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D157",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        328.055,
+        364.519,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D174",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        417.955,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D6",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        248.619,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D122",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        380.919,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D231",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        466.955,
+        459.219
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C89",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        352.15,
+        469.4,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D80",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        263.499,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D164",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        360.855,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D42",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        409.955,
+        246.319,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D199",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        349.07,
+        404.319,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D237",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        436.619,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D137",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        382.64,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D75",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        265.455,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D147",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        449.355,
+        336.919,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R2",
+      "value": "5k1",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        377.075,
+        475.429,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D95",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        263.519,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D120",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        399.404,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D24",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        438.790911,
+        278.777094,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D123",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        372.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D223",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        470.355,
+        322.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D178",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        455.645,
+        329.219,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D194",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        432.319,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D126",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        347.919,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D261",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        310.14,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "J1",
+      "value": "USB_C_Receptacle_USB2.0_16P",
+      "footprint": "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+      "atMm": [
+        378.275,
+        484.589
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "U2",
+      "value": "MC14504BDR2G",
+      "footprint": "MC14504BDR2G:SOIC127P600X175-16N",
+      "atMm": [
+        407.45,
+        446.5,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D72",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        280.255,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D119",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        409.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D185",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        367.205,
+        369.619,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D18",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        448.055,
+        329.219,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D64",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        327.112053,
+        305.591129,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D156",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        372.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D55",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        450.595,
+        329.219,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D263",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        326.455,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "U3",
+      "value": "ESP32-WROOM-32E",
+      "footprint": "RF_Module:ESP32-WROOM-32E",
+      "atMm": [
+        408.075,
+        475.539,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C83",
+      "value": "47uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        378.8,
+        472.35
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D203",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        383.955,
+        404.319,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D187",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        360.855,
+        358.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D286",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        389.155,
+        374.819
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D260",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        301.855,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D190",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        465.219,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D13",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        309.019,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D90",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        232.704,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D161",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        354.455,
+        364.519,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C91",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        363.9,
+        471.3
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D102",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        320.613094,
+        302.654911,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D184",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        370.955,
+        373.319,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D128",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        319.782871,
+        337.859865,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D195",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        424.119,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D188",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        360.855,
+        351.319,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D36",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        383.055,
+        216.119,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D100",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        308.87,
+        300.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D11",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        291.919,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D51",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        449.713094,
+        286.054911,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D45",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        422.990911,
+        259.277094,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D200",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        357.755,
+        404.319,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D83",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        244.934,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "Q2",
+      "value": "BC817",
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "atMm": [
+        395.875,
+        464.229
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D290",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        421.8,
+        464.05,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "G***",
+      "value": "LOGO",
+      "footprint": "Transport NSW:Transport NSW Logo",
+      "atMm": [
+        476.855,
+        202.919
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "D78",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        275.490911,
+        276.277094,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D19",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        448.055,
+        319.419,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D58",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        360.855,
+        337.619
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "U5",
+      "value": "MC14504BDR2G",
+      "footprint": "MC14504BDR2G:SOIC127P600X175-16N",
+      "atMm": [
+        358.275,
+        475.895
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D23",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        443.213094,
+        283.054911,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D132",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        344.091952,
+        326.240876,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D277",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        463.195,
+        329.199,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D61",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        342.296906,
+        320.883089,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D269",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        405.955,
+        262.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D49",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        440.590911,
+        276.977094,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D5",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.515,
+        242.119,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D276",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        464.255,
+        319.419,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D285",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        394.755,
+        374.819
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C84",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        399.099999,
+        448.0,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D247",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        374.919,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D267",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        378.055,
+        257.819,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D207",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        411.155,
+        382.019,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D154",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        389.119,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D110",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.555,
+        364.504,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D240",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        418.119,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D142",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        407.855,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D17",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        445.709312,
+        333.30413,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D243",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        399.619,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D181",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        465.965,
+        300.239,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D127",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        316.319089,
+        341.377094,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D279",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        439.853959,
+        360.582782,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D114",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.505,
+        399.419,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D91",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        238.819,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D219",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        458.145,
+        319.414,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D125",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        356.104,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D99",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        303.755,
+        300.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D171",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        402.755,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D196",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        409.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D236",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        442.819,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D210",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        440.055,
+        353.019,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D228",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        485.455,
+        459.219
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D235",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        448.919,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D109",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.555,
+        356.119,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D245",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        387.319,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D1",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        216.119,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D67",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        308.855,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D257",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        367.155,
+        312.519,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D162",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        358.355,
+        358.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D39",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        397.055,
+        233.119,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D117",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        267.055,
+        418.169,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D33",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        383.055,
+        197.119,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D104",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        330.313094,
+        312.454911,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C87",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        400.909999,
+        442.95,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D250",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        454.755,
+        342.319,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D106",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        318.019089,
+        336.077094,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D254",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        485.255,
+        315.419,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D182",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        478.015,
+        318.939,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D31",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        408.155,
+        248.119,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D150",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        453.105,
+        308.519,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C85",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        401.1,
+        448.0,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D145",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        422.955,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D151",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        465.955,
+        297.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D229",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        479.355,
+        459.219
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D221",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        465.97,
+        302.769,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D101",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        314.07,
+        300.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D81",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        257.334,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D213",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        437.055,
+        372.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D22",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        447.935277,
+        287.832728,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D124",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        315.055,
+        364.489,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D214",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        452.890911,
+        371.360906,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D244",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        393.519,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D234",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        455.119,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D268",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        396.405,
+        262.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D242",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        405.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D259",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        291.755,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R4",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        399.975,
+        458.309
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D66",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        314.055,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D12",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        300.419,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D53",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        450.555,
+        308.519,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D43",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        414.419089,
+        250.660906,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D149",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        453.145,
+        319.414,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D56",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        447.555,
+        335.119,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D252",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        460.645,
+        319.414,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D57",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        382.64,
+        337.569
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C88",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        352.15,
+        471.4,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D7",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        257.819,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D54",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        450.595,
+        319.419,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D103",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        325.313094,
+        307.354911,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C1",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        381.075,
+        465.229
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D30",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        412.613094,
+        252.454911,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D177",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        451.155,
+        338.719,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C90",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        363.9,
+        469.3
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D172",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        407.855,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D197",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        331.555,
+        404.319,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D93",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        251.219,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D70",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        290.555,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D111",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.555,
+        372.719,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C2",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        381.075,
+        467.629
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D2",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        222.619,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D96",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        269.519,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D275",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        464.255,
+        312.619,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D193",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        440.619,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D74",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.655,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D215",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        456.313094,
+        367.783089,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D46",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        427.555,
+        263.819,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D160",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        347.855,
+        364.519,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D38",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        392.655,
+        228.819,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D225",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        475.719,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D262",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        318.255,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D180",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        455.605,
+        308.519,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D251",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        460.695,
+        329.199,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D52",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        452.355,
+        292.219,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D168",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        387.655,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D88",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        220.319,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D73",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        275.255,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D14",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        317.019,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D94",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        257.334,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D170",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        397.755,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D129",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        328.555,
+        314.219,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C6",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        385.235,
+        477.079,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D204",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        392.15,
+        400.9,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D216",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        457.605,
+        358.004,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D63",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        332.090911,
+        310.677094,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D89",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        226.534,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D59",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        349.690911,
+        328.277094,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D201",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        366.555,
+        404.319,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C5",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        383.075,
+        477.079,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D176",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        427.955,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D40",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        401.455,
+        237.519,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D232",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        460.855,
+        459.219
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D138",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        387.64,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D222",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        475.505,
+        318.934,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D227",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        463.319,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D202",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        375.255,
+        404.319,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D273",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        444.555,
+        288.019,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D9",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        274.819,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D226",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        469.519,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D79",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        269.534,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D274",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        448.005,
+        301.734,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D167",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        382.64,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D282",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        411.255,
+        362.819,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D265",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        343.055,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C3",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        419.675,
+        480.829
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D165",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        372.605,
+        342.669,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D82",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        251.219,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D256",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        495.355,
+        317.119,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D143",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        412.855,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D211",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        445.455,
+        347.819,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D208",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        417.455,
+        375.719,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D241",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        412.019,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D130",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        332.190911,
+        317.919,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D270",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        415.455,
+        262.919,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D60",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        345.890911,
+        324.477094,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D264",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        334.755,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D191",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        456.919,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D62",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        335.790911,
+        314.319,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D85",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        232.704,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D271",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        424.013094,
+        267.354911,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D249",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        438.055,
+        358.819,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D34",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        383.055,
+        203.204,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R9",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        392.675,
+        460.5415,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D255",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        490.255,
+        315.419,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D133",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        347.913094,
+        330.054911,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D4",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        235.619,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D69",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        298.655,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D163",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        358.355,
+        351.319,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D189",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        360.855,
+        345.619,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D266",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        351.255,
+        252.719,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D159",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        341.255,
+        364.519,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D131",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        340.497947,
+        322.646871,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D192",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        317.555,
+        448.819,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D86",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        226.534,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D76",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        260.355,
+        298.419
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D37",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        388.296906,
+        224.383089,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D272",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        277.819,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D84",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        273.105,
+        238.819,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D212",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        452.913094,
+        340.483089,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D278",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        463.155,
+        334.604,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D65",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        322.412053,
+        300.891129,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D283",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        407.155,
+        366.819,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D205",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        398.513094,
+        394.683089,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D152",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        480.555,
+        318.939,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "U4",
+      "value": "CH340C",
+      "footprint": "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm",
+      "atMm": [
+        390.2,
+        473.794,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D220",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        458.105,
+        308.519,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D113",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        312.555,
+        389.119,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D233",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        454.655,
+        459.219
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D8",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        266.319,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C7",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        395.075,
+        473.479,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D280",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        424.755,
+        359.519
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D21",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        449.855,
+        292.215,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R1",
+      "value": "1M",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        373.875,
+        477.3415,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D186",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        363.655,
+        366.019,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D116",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        277.355,
+        415.719
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D32",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        383.055,
+        191.019,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D135",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        372.655,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D248",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        368.819,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D27",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        425.777183,
+        265.596817,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D169",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        392.64,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D281",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        419.155,
+        359.519
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D179",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        455.645,
+        319.414,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D173",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        412.855,
+        342.619,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D253",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        464.855,
+        315.419,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D92",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        270.555,
+        244.954,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D246",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        381.119,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D35",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        383.055,
+        209.519,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D289",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        372.955,
+        375.319,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D10",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        380.555,
+        283.419,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D166",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        377.555,
+        342.669,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D25",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.449005,
+        274.413005,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D238",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        430.519,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D15",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        382.655,
+        335.019,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D16",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        387.655,
+        335.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D28",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        421.213094,
+        261.054911,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "U1",
+      "value": "LM1117DT-3.3",
+      "footprint": "Package_TO_SOT_SMD:SOT-223",
+      "atMm": [
+        374.675,
+        467.629,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D224",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        434.255,
+        482.019,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D146",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        427.955,
+        340.119,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "D287",
+      "value": "WS2812B-2020",
+      "footprint": "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm",
+      "atMm": [
+        383.555,
+        374.819
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    }
+  ],
+  "materials": {
+    "pads": "mat_10",
+    "silk": "mat_11",
+    "mask": "mat_12",
+    "core": "mat_13"
+  },
+  "silk": {
+    "frontUrl": "/assets/models/hardware/metroboard/silk-front.svg",
+    "backUrl": "/assets/models/hardware/metroboard/silk-back.svg",
+    "viewBoxMm": [
+      228.655,
+      183.019,
+      299.99999,
+      305.69999
+    ]
+  },
+  "source": "Metroboard/Metroboard V3/Metroboard.kicad_pcb",
+  "sourceHash": "22febbfe4e604a485bd3fb92228714a5f0dcd08ef17f26da9fd0a37fda3f51dd",
+  "missingModels": [
+    {
+      "ref": "D140",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D136",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D153",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D108",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D217",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D118",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D148",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D206",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D77",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D48",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D258",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D158",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D141",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D29",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D87",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D68",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D144",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D105",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D47",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D218",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D115",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D97",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D20",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D230",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D121",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D198",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D26",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D41",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D134",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D291",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D284",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D112",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D44",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D209",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D98",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D288",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D50",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D239",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D107",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D3",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D183",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D155",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D175",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D71",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D139",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D157",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D174",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D6",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D122",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D231",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D80",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D164",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D42",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D199",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D237",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D137",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D75",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D147",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D95",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D120",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D24",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D123",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D223",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D178",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D194",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D126",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D261",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "J1",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "USB_C_Receptacle_HRO_TYPE-C-31-M-12.step"
+    },
+    {
+      "ref": "D72",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D119",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D185",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D18",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D64",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D156",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D55",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D263",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D203",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D187",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D286",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D260",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D190",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D13",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D90",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D161",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D102",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D184",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D128",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D195",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D188",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D36",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D100",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D11",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D51",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D45",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D200",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D83",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D290",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D78",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D19",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D58",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D23",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D132",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D277",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D61",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D269",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D49",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D5",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D276",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D285",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D247",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D267",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D207",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D154",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D110",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D240",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D142",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D17",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D243",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D181",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D127",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D279",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D114",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D91",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D219",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D125",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D99",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D171",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D196",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D236",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D210",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D228",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D235",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D109",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D245",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D1",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D67",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D257",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D162",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D39",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D117",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D33",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D104",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D250",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D106",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D254",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D182",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D31",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D150",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D145",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D151",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D229",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D221",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D101",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D81",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D213",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D22",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D124",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D214",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D244",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D234",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D268",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D242",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D259",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D66",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D12",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D53",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D43",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D149",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D56",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D252",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D57",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D7",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D54",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D103",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D30",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D177",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D172",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D197",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D93",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D70",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D111",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D2",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D96",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D275",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D193",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D74",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D215",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D46",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D160",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D38",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D225",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D262",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D180",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D251",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D52",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D168",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D88",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D73",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D14",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D94",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D170",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D129",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D204",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D216",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D63",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D89",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D59",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D201",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D176",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D40",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D232",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D138",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D222",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D227",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D202",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D273",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D9",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D226",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D79",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D274",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D167",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D282",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D265",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D165",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D82",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D256",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D143",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D211",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D208",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D241",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D130",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D270",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D60",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D264",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D191",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D62",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D85",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D271",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D249",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D34",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D255",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D133",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D4",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D69",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D163",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D189",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D266",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D159",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D131",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D192",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D86",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D76",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D37",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D272",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D84",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D212",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D278",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D65",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D283",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D205",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D152",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D220",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D113",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D233",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D8",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D280",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D21",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D186",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D116",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D32",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D135",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D248",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D27",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D169",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D281",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D179",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D173",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D253",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D92",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D246",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D35",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D289",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D10",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D166",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D25",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D238",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D15",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D16",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D28",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D224",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D146",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    },
+    {
+      "ref": "D287",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "LED_WS2812B-2020_PLCC4_2.0x2.0mm.step"
+    }
+  ],
+  "unmodeledFootprints": [
+    "U2",
+    "G***",
+    "U5"
+  ],
+  "modelledComponentCount": 28,
+  "triangleCount": 195712,
+  "modelBytes": 11609852,
+  "resolvedLibraryModelCount": 6,
+  "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "materialProperties": {
+    "pads": {
+      "baseColorFactor": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "metallicFactor": 1.0,
+      "roughnessFactor": 0.4000000059604645
+    },
+    "silk": {
+      "baseColorFactor": [
+        1.0,
+        1.0,
+        1.0,
+        0.8999999761581421
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.8999999761581421
+    },
+    "mask": {
+      "baseColorFactor": [
+        0.0345098040997982,
+        0.0345098040997982,
+        0.0345098040997982,
+        0.8299999833106995
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.6000000238418579
+    },
+    "core": {
+      "baseColorFactor": [
+        0.30000001192092896,
+        0.30000001192092896,
+        0.30000001192092896,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.800000011920929
+    }
+  },
+  "geometryFallbacks": [
+    {
+      "refs": [
+        "D140",
+        "D136",
+        "D153",
+        "D108",
+        "D217",
+        "D118",
+        "D148",
+        "D206",
+        "D77",
+        "D48",
+        "D258",
+        "D158",
+        "D141",
+        "D29",
+        "D87",
+        "D68",
+        "D144",
+        "D105",
+        "D47",
+        "D218",
+        "D115",
+        "D97",
+        "D20",
+        "D230",
+        "D121",
+        "D198",
+        "D26",
+        "D41",
+        "D134",
+        "D291",
+        "D284",
+        "D112",
+        "D44",
+        "D209",
+        "D98",
+        "D288",
+        "D50",
+        "D239",
+        "D107",
+        "D3",
+        "D183",
+        "D155",
+        "D175",
+        "D71",
+        "D139",
+        "D157",
+        "D174",
+        "D6",
+        "D122",
+        "D231",
+        "D80",
+        "D164",
+        "D42",
+        "D199",
+        "D237",
+        "D137",
+        "D75",
+        "D147",
+        "D95",
+        "D120",
+        "D24",
+        "D123",
+        "D223",
+        "D178",
+        "D194",
+        "D126",
+        "D261",
+        "D72",
+        "D119",
+        "D185",
+        "D18",
+        "D64",
+        "D156",
+        "D55",
+        "D263",
+        "D203",
+        "D187",
+        "D286",
+        "D260",
+        "D190",
+        "D13",
+        "D90",
+        "D161",
+        "D102",
+        "D184",
+        "D128",
+        "D195",
+        "D188",
+        "D36",
+        "D100",
+        "D11",
+        "D51",
+        "D45",
+        "D200",
+        "D83",
+        "D290",
+        "D78",
+        "D19",
+        "D58",
+        "D23",
+        "D132",
+        "D277",
+        "D61",
+        "D269",
+        "D49",
+        "D5",
+        "D276",
+        "D285",
+        "D247",
+        "D267",
+        "D207",
+        "D154",
+        "D110",
+        "D240",
+        "D142",
+        "D17",
+        "D243",
+        "D181",
+        "D127",
+        "D279",
+        "D114",
+        "D91",
+        "D219",
+        "D125",
+        "D99",
+        "D171",
+        "D196",
+        "D236",
+        "D210",
+        "D228",
+        "D235",
+        "D109",
+        "D245",
+        "D1",
+        "D67",
+        "D257",
+        "D162",
+        "D39",
+        "D117",
+        "D33",
+        "D104",
+        "D250",
+        "D106",
+        "D254",
+        "D182",
+        "D31",
+        "D150",
+        "D145",
+        "D151",
+        "D229",
+        "D221",
+        "D101",
+        "D81",
+        "D213",
+        "D22",
+        "D124",
+        "D214",
+        "D244",
+        "D234",
+        "D268",
+        "D242",
+        "D259",
+        "D66",
+        "D12",
+        "D53",
+        "D43",
+        "D149",
+        "D56",
+        "D252",
+        "D57",
+        "D7",
+        "D54",
+        "D103",
+        "D30",
+        "D177",
+        "D172",
+        "D197",
+        "D93",
+        "D70",
+        "D111",
+        "D2",
+        "D96",
+        "D275",
+        "D193",
+        "D74",
+        "D215",
+        "D46",
+        "D160",
+        "D38",
+        "D225",
+        "D262",
+        "D180",
+        "D251",
+        "D52",
+        "D168",
+        "D88",
+        "D73",
+        "D14",
+        "D94",
+        "D170",
+        "D129",
+        "D204",
+        "D216",
+        "D63",
+        "D89",
+        "D59",
+        "D201",
+        "D176",
+        "D40",
+        "D232",
+        "D138",
+        "D222",
+        "D227",
+        "D202",
+        "D273",
+        "D9",
+        "D226",
+        "D79",
+        "D274",
+        "D167",
+        "D282",
+        "D265",
+        "D165",
+        "D82",
+        "D256",
+        "D143",
+        "D211",
+        "D208",
+        "D241",
+        "D130",
+        "D270",
+        "D60",
+        "D264",
+        "D191",
+        "D62",
+        "D85",
+        "D271",
+        "D249",
+        "D34",
+        "D255",
+        "D133",
+        "D4",
+        "D69",
+        "D163",
+        "D189",
+        "D266",
+        "D159",
+        "D131",
+        "D192",
+        "D86",
+        "D76",
+        "D37",
+        "D272",
+        "D84",
+        "D212",
+        "D278",
+        "D65",
+        "D283",
+        "D205",
+        "D152",
+        "D220",
+        "D113",
+        "D233",
+        "D8",
+        "D280",
+        "D21",
+        "D186",
+        "D116",
+        "D32",
+        "D135",
+        "D248",
+        "D27",
+        "D169",
+        "D281",
+        "D179",
+        "D173",
+        "D253",
+        "D92",
+        "D246",
+        "D35",
+        "D289",
+        "D10",
+        "D166",
+        "D25",
+        "D238",
+        "D15",
+        "D16",
+        "D28",
+        "D224",
+        "D146",
+        "D287"
+      ],
+      "sourceUrl": "/assets/metroboard-3d.js",
+      "kind": "Existing published package geometry",
+      "note": "Exact supplier CAD is unavailable; the existing Metroboard viewer LED representation uses the authored package dimensions and PCB positions.",
+      "geometrySourceUrl": "/assets/pcb-object-explorer.js",
+      "bodySizeMm": [
+        2,
+        0.72,
+        2
+      ]
+    }
+  ],
+  "additionalLibraryModels": [],
+  "dimensionedLedFallback": {
+    "value": "WS2812B-2020",
+    "bodySizeMm": [
+      2,
+      0.72,
+      2
+    ],
+    "windowSizeMm": [
+      1.12,
+      0.035,
+      1.12
+    ],
+    "padSizeMm": [
+      0.56,
+      0.035,
+      0.68
+    ],
+    "notchSizeMm": [
+      0.26,
+      0.028,
+      0.26
+    ],
+    "source": "/assets/pcb-object-explorer.js",
+    "placementsSource": "/assets/metroboard-3d.js",
+    "kind": "Existing published package representation; not supplier CAD"
+  }
+}

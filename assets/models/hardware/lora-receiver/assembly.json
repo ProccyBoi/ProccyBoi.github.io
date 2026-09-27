@@ -1,0 +1,697 @@
+{
+  "slug": "lora-receiver",
+  "modelUrl": "/assets/models/hardware/lora-receiver/board.glb",
+  "boundsMm": [
+    63.44,
+    64.81,
+    133.49,
+    111.88
+  ],
+  "thicknessMm": 1.6,
+  "coreHeightMm": [
+    0.0,
+    1.51
+  ],
+  "scaleToMillimetres": 1000,
+  "upAxis": "+Y",
+  "kicadXAxis": "+X",
+  "kicadYAxis": "+Z",
+  "translationMm": [
+    -98.465,
+    -0.0,
+    -88.345
+  ],
+  "footprints": [
+    {
+      "ref": "R14",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        68.29,
+        101.5625,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C1",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        94.185,
+        101.36
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R2",
+      "value": "5k1",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        75.2025,
+        69.69
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C4",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        94.59,
+        66.7
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C17",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        102.084999,
+        82.91,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C30",
+      "value": "~",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        115.2,
+        105.78
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C5",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        98.03,
+        66.7
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R3",
+      "value": "5k1",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        75.21,
+        72.7,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R7",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        71.17,
+        78.11,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "Q2",
+      "value": "BC817",
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "atMm": [
+        95.5,
+        73.9375
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "BT2",
+      "value": "Battery_Cell",
+      "footprint": "Battery:BatteryHolder_Renata_SMTU2032-LF_1x2032",
+      "atMm": [
+        116.515,
+        74.18
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C3",
+      "value": "~",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        85.85,
+        103.52
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R4",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        78.82,
+        78.1,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U2",
+      "value": "AMS1117-3.3",
+      "footprint": "Package_TO_SOT_SMD:SOT-223-3_TabPin2",
+      "atMm": [
+        80.9125,
+        70.3,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R8",
+      "value": "0",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        103.9475,
+        80.93,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C22",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        65.510001,
+        100.87,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R24",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        102.129998,
+        102.1075,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D5",
+      "value": "R LED",
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "atMm": [
+        103.9,
+        102.229999,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C7",
+      "value": "~",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        85.85,
+        105.55
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R5",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        77.53,
+        101.4325,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R9",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        94.5975,
+        70.88
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C19",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        104.915,
+        84.109999,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "AE1",
+      "value": "Antenna_Shield",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        114.61,
+        109.07,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C21",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        65.53,
+        102.85,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U3",
+      "value": "ESP32-WROOM-32E",
+      "footprint": "RF_Module:ESP32-WROOM-32E",
+      "atMm": [
+        70.09,
+        89.875,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C2",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        94.185,
+        103.38
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J1",
+      "value": "USB_C_Receptacle_USB2.0_16P",
+      "footprint": "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+      "atMm": [
+        68.0,
+        70.945,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C16",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        102.085,
+        84.92,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R10",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        94.5925,
+        68.93,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J2",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        85.23,
+        109.08,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C18",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        106.925001,
+        84.109999,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U4",
+      "value": "CH340C",
+      "footprint": "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm",
+      "atMm": [
+        89.1,
+        71.125
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C6",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        84.13,
+        76.690001,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U7",
+      "value": "NEO-M9N",
+      "footprint": "RF_GPS:ublox_NEO",
+      "atMm": [
+        108.695,
+        93.14,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R15",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        81.35,
+        78.1075,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "Q1",
+      "value": "BC817",
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "atMm": [
+        98.1775,
+        75.49,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R1",
+      "value": "1M",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        65.22,
+        78.1125,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U1",
+      "value": "SX1262S9S+T-X1",
+      "footprint": "easyeda2kicad:WIRELM-SMD_SX1278S165SY-T-X1",
+      "atMm": [
+        92.23,
+        90.8,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C29",
+      "value": "~",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        115.2,
+        103.81
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R6",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        67.37,
+        78.11,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    }
+  ],
+  "materials": {
+    "pads": "mat_17",
+    "silk": "mat_18",
+    "mask": "mat_19",
+    "core": "mat_20"
+  },
+  "silk": {
+    "frontUrl": "/assets/models/hardware/lora-receiver/silk-front.svg",
+    "backUrl": "/assets/models/hardware/lora-receiver/silk-back.svg",
+    "viewBoxMm": [
+      63.44,
+      64.81,
+      70.05000000000001,
+      47.06999999999999
+    ]
+  },
+  "source": "LoRa Reciever/LoRa Reciever.kicad_pcb",
+  "sourceHash": "0a37dfb8db75f9cd0e529e67b86542424861a38694a1854ec73266f47f5cf8f3",
+  "missingModels": [
+    {
+      "ref": "BT2",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "BatteryHolder_Renata_SMTU2032-LF_1x2032.step"
+    },
+    {
+      "ref": "J1",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "USB_C_Receptacle_HRO_TYPE-C-31-M-12.step"
+    },
+    {
+      "ref": "U7",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "ublox_NEO.step"
+    }
+  ],
+  "unmodeledFootprints": [],
+  "modelledComponentCount": 37,
+  "triangleCount": 60884,
+  "modelBytes": 3380408,
+  "resolvedLibraryModelCount": 10,
+  "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "materialProperties": {
+    "pads": {
+      "baseColorFactor": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "metallicFactor": 1.0,
+      "roughnessFactor": 0.4000000059604645
+    },
+    "silk": {
+      "baseColorFactor": [
+        1.0,
+        1.0,
+        1.0,
+        0.8999999761581421
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.8999999761581421
+    },
+    "mask": {
+      "baseColorFactor": [
+        0.07999999821186066,
+        0.20000000298023224,
+        0.14000000059604645,
+        0.8299999833106995
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.6000000238418579
+    },
+    "core": {
+      "baseColorFactor": [
+        0.30000001192092896,
+        0.30000001192092896,
+        0.30000001192092896,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.800000011920929
+    }
+  },
+  "additionalLibraryModels": []
+}

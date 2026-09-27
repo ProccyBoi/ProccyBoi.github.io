@@ -13,15 +13,18 @@
   <meta property="og:url" content="https://proccyboi.github.io/v2/projects/lora-receiver/">
   <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/lora-receiver-hero-1920.jpg">
   <link rel="canonical" href="https://proccyboi.github.io/v2/projects/lora-receiver/">
-  <link rel="preload" as="image" href="assets/images/projects/lora-receiver-hero-960.webp" media="(max-width: 760px)" type="image/webp">
-  <link rel="preload" as="image" href="assets/images/projects/lora-receiver-hero-1920.webp" media="(min-width: 761px)" type="image/webp">
+
+
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
+<link rel="preload" as="image" href="/assets/images/v2/hardware/lora-receiver.webp" type="image/webp">
 <link rel="stylesheet" href="/assets/v2.css">
   <link rel="stylesheet" href="/assets/v2-case.css">
   <link rel="stylesheet" href="/assets/v2-motion.css">
-  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2.js" defer blocking="render"></script><script src="/assets/v2-cases.js" defer></script>
   <script src="/assets/v2-motion.js" defer></script>
+<link rel="stylesheet" href="/assets/v2-hardware.css">
+<script src="/assets/v2-hardware.js" defer></script>
 </head>
 <body class="v2 v2-case">
   <a class="skip-link" href="/v2/projects/lora-receiver/#main">Skip to content</a>
@@ -35,19 +38,14 @@
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>
 
-  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">LoRa Receiver + GNSS</span><div class="v2-case-nav-links"><a href="/v2/projects/lora-receiver/#overview" data-v2-section>Overview</a><a href="/v2/projects/lora-receiver/#details" data-v2-section>Details</a><a href="/v2/projects/lora-receiver/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">LoRa Receiver + GNSS</span><div class="v2-case-nav-links"><a href="/v2/projects/lora-receiver/#overview" data-v2-section>Overview</a><a href="/v2/projects/lora-receiver/#explore" data-v2-section>Interactive</a><a href="/v2/projects/lora-receiver/#details" data-v2-section>Details</a><a href="/v2/projects/lora-receiver/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
 <main id="main">
     <section class="project-hero" id="overview" aria-labelledby="project-title">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>
 
             <h1 id="project-title">LoRa Receiver + GNSS</h1>
             <p>A receiver PCB using an ESP32-WROOM-32E, u-blox NEO-M9N and LoRa module.</p>
-          </div><div class="project-hero-actions"><a href="/v2/projects/lora-receiver/#details">Project details <span aria-hidden="true">↓</span></a></div></div><div class="project-hero-media contain-media">
-          <picture>
-            <source type="image/webp" srcset="assets/images/projects/lora-receiver-hero-960.webp 960w, assets/images/projects/lora-receiver-hero-1920.webp 1920w" sizes="(max-width: 900px) 100vw, 64vw">
-            <img src="assets/images/projects/lora-receiver-hero-1920.jpg" srcset="assets/images/projects/lora-receiver-hero-960.jpg 960w, assets/images/projects/lora-receiver-hero-1920.jpg 1920w" sizes="(max-width: 900px) 100vw, 64vw" width="1920" height="1280" alt="Black LoRa Receiver and GPS Module PCB with ESP32, radio and u-blox modules">
-          </picture>
-        </div></div>
+          </div><div class="project-hero-actions"><a href="/v2/projects/lora-receiver/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/lora-receiver/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/lora-receiver.webp" width="1600" height="1200" alt="LoRa Receiver + GNSS circuit board assembly" fetchpriority="high"></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Band</dt><dd>915 MHz</dd></div>
             <div><dt>Revision</dt><dd>A</dd></div>
@@ -58,7 +56,18 @@
           </dl></div></section>
 <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>The system</dt><dd>An ESP32 receiver combining 915 MHz LoRa with u-blox GNSS.</dd></div><div><dt>The constraint</dt><dd>Radio and navigation on one PCB, with a feedline worth measuring.</dd></div><div><dt>What I learned</dt><dd>At least 1 km in testing; VNA measurements informed the RF Test Board.</dd></div></dl>
 
-    <div class="project-body shell" id="details">
+    <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="explore-title"><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="explore-title">LoRa receiver assembly</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      <figure data-hardware="/assets/models/hardware/lora-receiver/assembly.json" data-hardware-title="LoRa receiver assembly">
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/lora-receiver.webp" width="1600" height="1200" alt="LoRa receiver assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
+      <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
+      <div class="hardware-controls"><div class="hardware-views" role="group" aria-label="Camera"><button type="button" data-hardware-view="iso" aria-pressed="true">Perspective</button><button type="button" data-hardware-view="top" aria-pressed="false">Top</button><button type="button" data-hardware-view="bottom" aria-pressed="false">Underside</button></div><button type="button" data-hardware-explode aria-pressed="false">Explode</button><button type="button" data-hardware-scroll aria-pressed="false">Follow scroll</button><button type="button" data-hardware-reset>Reset</button><label class="hardware-range">Assembled <input data-hardware-range type="range" min="0" max="100" value="0" aria-label="Assembly separation"> Exploded</label></div>
+      <div class="hardware-parts"><label for="explore-parts">Component</label><select id="explore-parts" data-hardware-selection><option value="">All components</option></select></div>
+      <p data-hardware-part hidden></p><p data-hardware-status role="status" aria-live="polite"></p>
+    </figure>
+
+    </div></section>
+<div class="project-body shell" id="details">
       <section class="project-summary" aria-labelledby="receiver-summary">
         <h2 id="receiver-summary">Radio and position</h2>
         <div class="project-prose">

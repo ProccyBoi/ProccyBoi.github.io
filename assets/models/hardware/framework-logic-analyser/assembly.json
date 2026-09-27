@@ -1,0 +1,807 @@
+{
+  "slug": "framework-logic-analyser",
+  "modelUrl": "/assets/models/hardware/framework-logic-analyser/board.glb",
+  "boundsMm": [
+    127.0,
+    127.0,
+    153.0,
+    157.00001
+  ],
+  "thicknessMm": 0.8,
+  "coreHeightMm": [
+    0.0,
+    0.71
+  ],
+  "scaleToMillimetres": 1000,
+  "upAxis": "+Y",
+  "kicadXAxis": "+X",
+  "kicadYAxis": "+Z",
+  "translationMm": [
+    -140.0,
+    -0.0,
+    -142.000005
+  ],
+  "footprints": [
+    {
+      "ref": "P1",
+      "value": "USB_C_Plug_USB2.0",
+      "footprint": "Expansion_Card:USB_C_Plug_Molex_105444",
+      "atMm": [
+        140.0,
+        129.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true,
+      "providedBy": "connector",
+      "boardModelExported": false
+    },
+    {
+      "ref": "H1",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "atMm": [
+        128.7,
+        146.5
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "H2",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "atMm": [
+        151.3,
+        146.5
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C27",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        135.36,
+        141.85,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C21",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        135.36,
+        140.320001,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C25",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        138.87,
+        151.29,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R2",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        152.0,
+        152.82,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C11",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        148.12,
+        142.41,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C4",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        150.39,
+        138.18,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C13",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        147.31,
+        147.66575,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C7",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        134.76,
+        147.68,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C2",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        151.94,
+        138.18,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "X1",
+      "value": "X322516MMB4SI",
+      "footprint": "easyeda2kicad:CRYSTAL-SMD_4P-L3.2-W2.5-BL",
+      "atMm": [
+        140.015,
+        142.305,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C1",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        134.27,
+        128.74,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C18",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        147.1,
+        137.66,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U7",
+      "value": "TS5A3166DBVR",
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "atMm": [
+        132.22,
+        140.514999,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U1",
+      "value": "THVD4411RGER",
+      "footprint": "easyeda2kicad:VQFN-24_L4.0-W4.0-P0.50-TL-EP2.7",
+      "atMm": [
+        144.88,
+        143.27425,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C12",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        149.64,
+        142.41,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U4",
+      "value": "TCAN3413DDFR_C30111221",
+      "footprint": "easyeda2kicad:SOT-23-8_L2.9-W1.6-P0.65-LS2.8-BR",
+      "atMm": [
+        135.05,
+        144.51
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C24",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        140.409999,
+        151.29,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C23",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        141.46,
+        155.75,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "TP1",
+      "value": "TestPoint",
+      "footprint": "TestPoint:TestPoint_Pad_D1.0mm",
+      "atMm": [
+        134.64,
+        137.55
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C30",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        128.7,
+        142.1
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C29",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        131.26,
+        136.8,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C19",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        151.33,
+        142.43,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C5",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        148.63,
+        137.66,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C20",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        139.47,
+        147.23,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U2",
+      "value": "AMS1117-3.3",
+      "footprint": "Package_TO_SOT_SMD:SOT-223-3_TabPin2",
+      "atMm": [
+        148.35,
+        131.54,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C8",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        133.24,
+        147.68,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C28",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        132.799999,
+        136.8,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C22",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        138.39,
+        155.75
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C6",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        132.66,
+        128.74,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C26",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        141.13,
+        148.22,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U5",
+      "value": "MAX14778ETP+T",
+      "footprint": "easyeda2kicad:TQFN-20_L5.0-W5.0-P0.65-TL-EP3.1",
+      "atMm": [
+        133.99,
+        152.37,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R1",
+      "value": "5.1k",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        133.53,
+        131.33,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R3",
+      "value": "120",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        132.22,
+        144.072499,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C14",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        147.16,
+        140.02
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J1",
+      "value": "Conn_01x04_Pin",
+      "footprint": "easyeda2kicad:Pogo_1x04_P2.54mm_PTH_D1.0mm",
+      "atMm": [
+        128.7,
+        132.17
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "C9",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        145.79,
+        147.66575,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C16",
+      "value": "15pF",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        140.01,
+        144.93
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C10",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        144.25,
+        147.66575,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C15",
+      "value": "15pF",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        137.48,
+        142.15,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U6",
+      "value": "MAX14778ETP+T",
+      "footprint": "easyeda2kicad:TQFN-20_L5.0-W5.0-P0.65-TL-EP3.1",
+      "atMm": [
+        145.13,
+        152.36075,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C3",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0603_1608Metric",
+      "atMm": [
+        137.92,
+        147.22,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U3",
+      "value": "STM32G474CEUx",
+      "footprint": "Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm",
+      "atMm": [
+        140.51,
+        135.77,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J3",
+      "value": "Conn_01x07_Socket",
+      "footprint": "easyeda2kicad:HDR-SMD_7P-P2.54-H-F-W8.5",
+      "atMm": [
+        139.95,
+        145.0975
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    }
+  ],
+  "materials": {
+    "pads": "mat_21",
+    "silk": "mat_22",
+    "mask": "mat_23",
+    "core": "mat_24"
+  },
+  "silk": {
+    "frontUrl": "/assets/models/hardware/framework-logic-analyser/silk-front.svg",
+    "backUrl": "/assets/models/hardware/framework-logic-analyser/silk-back.svg",
+    "viewBoxMm": [
+      127.0,
+      127.0,
+      26.0,
+      30.000010000000003
+    ]
+  },
+  "source": "Framework Expansion Card - Logic Analyser/ExpansionCards-main/Electrical/KiCad_templates/Expansion_Card/Expansion_Card.kicad_pcb",
+  "sourceHash": "ec67cc46d5da9fc4ac3f88ce1a029d4ae0db95685438da4dbd55a59ed2fb1c34",
+  "missingModels": [],
+  "unmodeledFootprints": [
+    "H1",
+    "H2",
+    "TP1",
+    "J1"
+  ],
+  "modelledComponentCount": 42,
+  "triangleCount": 71834,
+  "modelBytes": 4902892,
+  "resolvedLibraryModelCount": 11,
+  "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "unpopulated": false,
+  "copperIncluded": false,
+  "materialProperties": {
+    "pads": {
+      "baseColorFactor": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "metallicFactor": 1.0,
+      "roughnessFactor": 0.4000000059604645
+    },
+    "silk": {
+      "baseColorFactor": [
+        1.0,
+        1.0,
+        1.0,
+        0.8999999761581421
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.8999999761581421
+    },
+    "mask": {
+      "baseColorFactor": [
+        0.07999999821186066,
+        0.20000000298023224,
+        0.14000000059604645,
+        0.8299999833106995
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.6000000238418579
+    },
+    "core": {
+      "baseColorFactor": [
+        0.30000001192092896,
+        0.30000001192092896,
+        0.30000001192092896,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.800000011920929
+    }
+  },
+  "literalVrmlModels": [],
+  "modelRegistrations": [],
+  "connector": {
+    "modelUrl": "/assets/models/framework-esp32/framework-usbc.glb",
+    "node": "P1",
+    "ref": "P1",
+    "scaleToMillimetres": 1000,
+    "rotationRadians": [
+      -1.5707963267948966,
+      0,
+      0
+    ],
+    "positionBoardLocalMm": [
+      0,
+      0.8,
+      -16.4
+    ],
+    "sourceHash": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa",
+    "provenance": "Existing exact Molex 105444 connector geometry; same part and placement as the Framework reference card"
+  },
+  "additionalLibraryModels": [
+    {
+      "file": "kicad/Package_DFN_QFN.3dshapes/QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm.step",
+      "sha256": "ba30b82fac313a906167a8e5739f396cae47472c2ef885c0975be7ea93235b26"
+    }
+  ]
+}

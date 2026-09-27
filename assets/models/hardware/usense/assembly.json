@@ -1,0 +1,959 @@
+{
+  "slug": "usense",
+  "modelUrl": "/assets/models/hardware/usense/board.glb",
+  "boundsMm": [
+    109.12511,
+    66.90279,
+    139.19544,
+    97.00722
+  ],
+  "thicknessMm": 1.6,
+  "coreHeightMm": [
+    0.0,
+    1.51
+  ],
+  "scaleToMillimetres": 1000,
+  "upAxis": "+Y",
+  "kicadXAxis": "+X",
+  "kicadYAxis": "+Z",
+  "translationMm": [
+    -124.160275,
+    -0.0,
+    -81.955005
+  ],
+  "footprints": [
+    {
+      "ref": "R6",
+      "value": "5.1k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        129.86,
+        69.065,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C14",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        136.0,
+        75.66,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R9",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        133.57275,
+        78.295,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C8",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        118.32,
+        76.115,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C6",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        114.41,
+        74.175,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U4",
+      "value": "BQ25170JDSGR",
+      "footprint": "easyeda2kicad:WSON-8_L2.0-W2.0-P0.50-BL-EP0.9",
+      "atMm": [
+        135.725,
+        77.5675,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C3",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        118.05,
+        74.185,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U6",
+      "value": "TPS22917DBV",
+      "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+      "atMm": [
+        112.59,
+        77.825,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U2",
+      "value": "STM32L031G6Ux",
+      "footprint": "Package_DFN_QFN:QFN-28_4x4mm_P0.5mm",
+      "atMm": [
+        132.16,
+        73.705,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D2",
+      "value": "LED",
+      "footprint": "LED_SMD:LED_0201_0603Metric",
+      "atMm": [
+        133.56,
+        76.775,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J1",
+      "value": "USB_C_Receptacle_USB2.0_16P",
+      "footprint": "Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal",
+      "atMm": [
+        124.13,
+        70.745,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R16",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        110.53,
+        78.765,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C9",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        111.32,
+        75.615,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C11",
+      "value": "600pF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        111.666274,
+        79.901274,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C12",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        132.53,
+        70.625
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R15",
+      "value": "0",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        135.98,
+        74.125,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": true,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R11",
+      "value": "480",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        114.01,
+        79.936048,
+        -135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U7",
+      "value": "CH343P",
+      "footprint": "Package_DFN_QFN:WCH_QFN-16-1EP_3x3mm_P0.5mm_EP1.8x1.8mm",
+      "atMm": [
+        116.21,
+        72.321396,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "H1",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad",
+      "atMm": [
+        124.03,
+        94.56
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "R10",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        132.45,
+        77.095,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D1",
+      "value": "LED",
+      "footprint": "LED_SMD:LED_0201_0603Metric",
+      "atMm": [
+        133.565,
+        77.535,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R12",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        135.21,
+        73.04,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R4",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        137.88,
+        78.15,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U5",
+      "value": "XC6206P332MR_C5148692",
+      "footprint": "easyeda2kicad:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+      "atMm": [
+        115.71542,
+        76.34042,
+        -45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R7",
+      "value": "5.1k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        130.62,
+        69.485,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C4",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        133.57,
+        79.0525,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R8",
+      "value": "27k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        135.77725,
+        79.035
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R14",
+      "value": "0",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        130.23,
+        70.625,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": true,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R5",
+      "value": "1M",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        118.37,
+        69.085,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C7",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        117.99,
+        75.335,
+        45.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C13",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        135.21,
+        74.605,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "BT1",
+      "value": "MY-2032-12",
+      "footprint": "easyeda2kicad:BAT-SMD_MY-2032-12",
+      "atMm": [
+        124.12,
+        85.92
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C16",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        117.56,
+        69.49,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R13",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        131.39,
+        70.29,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C5",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        113.87,
+        74.715,
+        135.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C15",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        131.335,
+        76.775,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J2",
+      "value": "Conn_ARM_SWD_TagConnect_TC2030-NL",
+      "footprint": "Connector:Tag-Connect_TC2030-IDC-NL_2x03_P1.27mm_Vertical",
+      "atMm": [
+        136.89,
+        81.445,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "LED7",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        134.133473,
+        85.154001,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R1",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        123.329999,
+        78.930001,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C18",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        135.288474,
+        78.344001
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R3",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        124.95,
+        78.92,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "LED6",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        131.273473,
+        88.864,
+        45.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C19",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        121.88,
+        72.03,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U3",
+      "value": "AHT20-F",
+      "footprint": "easyeda2kicad:SENSOR-SMD-6_AHT20",
+      "atMm": [
+        127.3,
+        79.87,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "LED1",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        112.793473,
+        80.344,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U1",
+      "value": "OPT3001DNPR",
+      "footprint": "easyeda2kicad:USON6_L2.1-W2.1-P0.65-BL-EP",
+      "atMm": [
+        121.489999,
+        79.900001,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "LED8",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        135.281096,
+        80.244001,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "LED2",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        113.743473,
+        84.714,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "LED5",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        126.7,
+        91.16
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C2",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        129.62,
+        80.28,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C1",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        119.66,
+        79.91,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "LED3",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        116.553472,
+        88.644,
+        -45.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "LED4",
+      "value": "WS2816B-2121",
+      "footprint": "easyeda2kicad:LED-SMD_6P-L2.2-W2.2-TR",
+      "atMm": [
+        121.36,
+        91.160001
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U8",
+      "value": "BX-TS-26-373705T",
+      "footprint": "easyeda2kicad:SW-SMD_4P-L3.7-W3.7-P2.75-S2.95",
+      "atMm": [
+        124.17,
+        72.03,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R2",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        124.14,
+        78.92,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R17",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        126.46,
+        72.03,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C17",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0201_0603Metric",
+      "atMm": [
+        112.803474,
+        78.444001,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    }
+  ],
+  "materials": {
+    "pads": "mat_23",
+    "silk": "mat_24",
+    "mask": "mat_25",
+    "core": "mat_26"
+  },
+  "silk": {
+    "frontUrl": "/assets/models/hardware/usense/silk-front.svg",
+    "backUrl": "/assets/models/hardware/usense/silk-back.svg",
+    "viewBoxMm": [
+      109.12511,
+      66.90279,
+      30.070329999999984,
+      30.104430000000008
+    ]
+  },
+  "source": "uSense/uSense.kicad_pcb",
+  "sourceHash": "d149d6417ea07a36b8bb874cf23e5bb3c1c25005acf6867a1b9a26c1a54be811",
+  "missingModels": [
+    {
+      "ref": "U7",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "WCH_QFN-16-1EP_3x3mm_P0.5mm_EP1.8x1.8mm.step"
+    }
+  ],
+  "unmodeledFootprints": [
+    "H1",
+    "J2"
+  ],
+  "modelledComponentCount": 52,
+  "triangleCount": 76740,
+  "modelBytes": 4928908,
+  "resolvedLibraryModelCount": 13,
+  "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "unpopulated": false,
+  "copperIncluded": false,
+  "materialProperties": {
+    "pads": {
+      "baseColorFactor": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "metallicFactor": 1.0,
+      "roughnessFactor": 0.4000000059604645
+    },
+    "silk": {
+      "baseColorFactor": [
+        1.0,
+        1.0,
+        1.0,
+        0.8999999761581421
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.8999999761581421
+    },
+    "mask": {
+      "baseColorFactor": [
+        0.07999999821186066,
+        0.20000000298023224,
+        0.14000000059604645,
+        0.8299999833106995
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.6000000238418579
+    },
+    "core": {
+      "baseColorFactor": [
+        0.30000001192092896,
+        0.30000001192092896,
+        0.30000001192092896,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.800000011920929
+    }
+  },
+  "literalVrmlModels": [],
+  "additionalLibraryModels": [
+    {
+      "file": "kicad/Package_DFN_QFN.3dshapes/QFN-28_4x4mm_P0.5mm.step",
+      "sha256": "6cbec437816f6723d3995076e73e9da699851962be20c6c954cf6a9c8f3ddf84"
+    }
+  ]
+}

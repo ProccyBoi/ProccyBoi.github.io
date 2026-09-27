@@ -399,7 +399,7 @@
   const fallbackBoard = Object.prototype.hasOwnProperty.call(boards, inspector.dataset.board) ? inspector.dataset.board : "telemetry";
   const initialBoard = Object.prototype.hasOwnProperty.call(boards, requestedBoard) ? requestedBoard : fallbackBoard;
   setBoard(initialBoard, false);
-  setView(requestedView === "inspect" ? "inspect" : "rotate");
+  setView((requestedView || inspector.dataset.view) === "inspect" ? "inspect" : "rotate");
   if (requestedExplode === "1") setExploded(true, false);
   const firstCompanionFrame = new Image();
   firstCompanionFrame.src = frameImage(initialBoard === "ground" ? "telemetry" : "ground", 0);

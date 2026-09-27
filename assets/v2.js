@@ -1,6 +1,13 @@
 /* V2's small shared controller. All page content is available without JavaScript. */
 (() => {
   'use strict';
+  const observeNavigationTransition = event => {
+    // A new navigation or a hidden page can skip the optional visual transition.
+    // Its ready promise rejects even though the destination loaded successfully.
+    event.viewTransition?.ready.catch(() => {});
+  };
+  addEventListener('pagereveal', observeNavigationTransition);
+  addEventListener('pageswap', observeNavigationTransition);
   document.body.classList.add('v2-ready');
   document.querySelectorAll('[data-v2-year]').forEach(node => { node.textContent = new Date().getFullYear(); });
   const menu = document.querySelector('[data-v2-menu]');

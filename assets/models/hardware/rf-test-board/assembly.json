@@ -1,0 +1,531 @@
+{
+  "slug": "rf-test-board",
+  "modelUrl": "/assets/models/hardware/rf-test-board/board.glb",
+  "boundsMm": [
+    54.1,
+    32.0,
+    96.4,
+    133.49999
+  ],
+  "thicknessMm": 1.6,
+  "coreHeightMm": [
+    0.0,
+    1.51
+  ],
+  "scaleToMillimetres": 1000,
+  "upAxis": "+Y",
+  "kicadXAxis": "+X",
+  "kicadYAxis": "+Z",
+  "translationMm": [
+    -75.25,
+    -0.0,
+    -82.749995
+  ],
+  "footprints": [
+    {
+      "ref": "C3",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        69.5325,
+        73.13,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "L4",
+      "value": "L",
+      "footprint": "Inductor_SMD:L_0201_0603Metric_Pad0.64x0.40mm_HandSolder",
+      "atMm": [
+        75.3425,
+        124.6,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J1",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        58.6,
+        36.6,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J10",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        91.8057,
+        84.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J8",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        91.7825,
+        72.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "L1",
+      "value": "L",
+      "footprint": "Inductor_SMD:L_0201_0603Metric_Pad0.64x0.40mm_HandSolder",
+      "atMm": [
+        75.05,
+        72.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J3",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        58.6,
+        48.6,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U3",
+      "value": "HL-SMA-KE-02",
+      "footprint": "easyeda2kicad:SMA-TH_HL-SMA-KHD2",
+      "atMm": [
+        89.95,
+        124.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J12",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        91.825,
+        96.625
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "L2",
+      "value": "L",
+      "footprint": "Inductor_SMD:L_0201_0603Metric_Pad0.64x0.40mm_HandSolder",
+      "atMm": [
+        75.2732,
+        84.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J2",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        91.8,
+        36.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C8",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        81.06,
+        97.15,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "L3",
+      "value": "L",
+      "footprint": "Inductor_SMD:L_0201_0603Metric_Pad0.64x0.40mm_HandSolder",
+      "atMm": [
+        75.2725,
+        96.625
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J9",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        58.6057,
+        84.6,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C5",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        69.46,
+        85.2,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C4",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        81.0825,
+        73.13,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C9",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        81.19,
+        125.125,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J5",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        58.6,
+        60.6,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C10",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        69.49,
+        125.13,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J6",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        91.8,
+        60.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U1",
+      "value": "HL-SMA-KE-02",
+      "footprint": "easyeda2kicad:SMA-TH_HL-SMA-KHD2",
+      "atMm": [
+        90.0,
+        110.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C7",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        69.505,
+        97.155,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J7",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        58.5575,
+        72.6,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J11",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        58.605,
+        96.625,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C1",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        81.35,
+        61.13,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C2",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        69.3,
+        61.13,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J4",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        91.8,
+        48.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U4",
+      "value": "HL-SMA-KE-02",
+      "footprint": "easyeda2kicad:SMA-TH_HL-SMA-KHD2",
+      "atMm": [
+        60.65,
+        124.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U2",
+      "value": "HL-SMA-KE-02",
+      "footprint": "easyeda2kicad:SMA-TH_HL-SMA-KHD2",
+      "atMm": [
+        60.8,
+        110.6
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C6",
+      "value": "C",
+      "footprint": "Capacitor_SMD:C_0402_1005Metric",
+      "atMm": [
+        81.1557,
+        85.19,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    }
+  ],
+  "materials": {
+    "pads": "mat_9",
+    "silk": "mat_10",
+    "mask": "mat_11",
+    "core": "mat_12"
+  },
+  "silk": {
+    "frontUrl": "/assets/models/hardware/rf-test-board/silk-front.svg",
+    "backUrl": "/assets/models/hardware/rf-test-board/silk-back.svg",
+    "viewBoxMm": [
+      54.1,
+      32.0,
+      42.300000000000004,
+      101.49999
+    ]
+  },
+  "source": "RF Test Board/RF Test Board.kicad_pcb",
+  "sourceHash": "9c086695322ffa022b703101a6600d7c3943afc87b3b9b5082e88df31cb6022d",
+  "missingModels": [],
+  "unmodeledFootprints": [],
+  "modelledComponentCount": 30,
+  "triangleCount": 91823,
+  "modelBytes": 3001180,
+  "resolvedLibraryModelCount": 4,
+  "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "materialProperties": {
+    "pads": {
+      "baseColorFactor": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "metallicFactor": 1.0,
+      "roughnessFactor": 0.4000000059604645
+    },
+    "silk": {
+      "baseColorFactor": [
+        1.0,
+        1.0,
+        1.0,
+        0.8999999761581421
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.8999999761581421
+    },
+    "mask": {
+      "baseColorFactor": [
+        0.07999999821186066,
+        0.20000000298023224,
+        0.14000000059604645,
+        0.8299999833106995
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.6000000238418579
+    },
+    "core": {
+      "baseColorFactor": [
+        0.30000001192092896,
+        0.30000001192092896,
+        0.30000001192092896,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.800000011920929
+    }
+  },
+  "additionalLibraryModels": []
+}

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "boards": [
+    {
+      "slug": "microphone",
+      "source": "Microphone/Microphone.kicad_pcb",
+      "sourceHash": "3e491cd8085eff0d6c95f0a11a135421cbcfce4c5620e6356c3896e122f1772b",
+      "exported": false,
+      "reason": "No populated board content"
+    },
+    {
+      "slug": "nixie-clock",
+      "source": "Nixie Tube Clock/Nixie Tube Clock.kicad_pcb",
+      "sourceHash": "048fc43cce34b7469d121f67c89d4fa5027aab19f1f76cdf45d3d5aa9a2e2f01",
+      "exported": false,
+      "reason": "No physical board outline"
+    },
+    {
+      "slug": "kiku",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/kiku/assembly.json",
+      "source": "Walkman - Blobject/Walkman - Blobject.kicad_pcb",
+      "sourceHash": "47b584e878b46823cc84702f4f22526b34a1e79018acd23f38f4ea501376e3d2",
+      "missingModelCount": 1,
+      "modelBytes": 16039348
+    },
+    {
+      "slug": "lora-receiver",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/lora-receiver/assembly.json",
+      "source": "LoRa Reciever/LoRa Reciever.kicad_pcb",
+      "sourceHash": "0a37dfb8db75f9cd0e529e67b86542424861a38694a1854ec73266f47f5cf8f3",
+      "missingModelCount": 3,
+      "modelBytes": 3380408
+    },
+    {
+      "slug": "rf-test-board",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/rf-test-board/assembly.json",
+      "source": "RF Test Board/RF Test Board.kicad_pcb",
+      "sourceHash": "9c086695322ffa022b703101a6600d7c3943afc87b3b9b5082e88df31cb6022d",
+      "missingModelCount": 0,
+      "modelBytes": 3001180
+    },
+    {
+      "slug": "metroboard",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/metroboard/assembly.json",
+      "source": "Metroboard/Metroboard V3/Metroboard.kicad_pcb",
+      "sourceHash": "22febbfe4e604a485bd3fb92228714a5f0dcd08ef17f26da9fd0a37fda3f51dd",
+      "missingModelCount": 292,
+      "modelBytes": 11609852
+    },
+    {
+      "slug": "skylabs-ground-station",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/skylabs-ground-station/assembly.json",
+      "source": "../Skylabs/Mission Systems/Ground Station PCB/Ground Station v1.0/Ground Station v1.0.kicad_pcb",
+      "sourceHash": "3768f5e35b69f56fdc82fd579557923e1e854c736ef5d01c959ae335b238855b",
+      "missingModelCount": 0,
+      "modelBytes": 5316848
+    },
+    {
+      "slug": "business-card",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/business-card/assembly.json",
+      "source": "Business Card/Business Card V4 - COMP6441/business card.kicad_pcb",
+      "sourceHash": "eb37bd90e12732a42aac71c94239432fe96540dbabd63d75e94ae2667b274522",
+      "missingModelCount": 0,
+      "modelBytes": 2171444
+    },
+    {
+      "slug": "skylabs-telemetry",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/skylabs-telemetry/assembly.json",
+      "source": "../Skylabs/Mission Systems/Telemetry PCB/Mission Systems PCB v4.0/Mission Systems.kicad_pcb",
+      "sourceHash": "9d1778533696fd7769bbf6e319cb2fa98f06c17642adf4866df7223c072c7358",
+      "missingModelCount": 2,
+      "modelBytes": 13527660
+    },
+    {
+      "slug": "usense",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/usense/assembly.json",
+      "source": "uSense/uSense.kicad_pcb",
+      "sourceHash": "d149d6417ea07a36b8bb874cf23e5bb3c1c25005acf6867a1b9a26c1a54be811",
+      "missingModelCount": 1,
+      "modelBytes": 4928908
+    },
+    {
+      "slug": "pcb-notebook-front",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/pcb-notebook-front/assembly.json",
+      "source": "Spiral-bound Book Cover/Spiral-bound Book Cover.kicad_pcb",
+      "sourceHash": "d3f12ed7ceb42d29769125918ce5900ad3d2cca2c7d9dfab8e2f6862833a3ae8",
+      "missingModelCount": 0,
+      "modelBytes": 5301588
+    },
+    {
+      "slug": "pcb-notebook-back",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/pcb-notebook-back/assembly.json",
+      "source": "Spiral-bound Book Cover/Spiral-bound Book Back.kicad_pcb",
+      "sourceHash": "58a4f24400759ca0bf8aab1af5ceeec0142d30e52def07f0bcdaa7f3a50d8918",
+      "missingModelCount": 0,
+      "modelBytes": 4468272
+    },
+    {
+      "slug": "tamagotchi-sd-card",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/tamagotchi-sd-card/assembly.json",
+      "source": "Tamagotchi SD Card/Tamagotchi SD Card.kicad_pcb",
+      "sourceHash": "036ad8685fb3b24a8f084228b50bb878f5b2039cc9ea3b2c6ba93a43e5d1e421",
+      "missingModelCount": 0,
+      "modelBytes": 3921412
+    },
+    {
+      "slug": "framework-logic-analyser",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/framework-logic-analyser/assembly.json",
+      "source": "Framework Expansion Card - Logic Analyser/ExpansionCards-main/Electrical/KiCad_templates/Expansion_Card/Expansion_Card.kicad_pcb",
+      "sourceHash": "ec67cc46d5da9fc4ac3f88ce1a029d4ae0db95685438da4dbd55a59ed2fb1c34",
+      "missingModelCount": 0,
+      "modelBytes": 4902892
+    }
+  ]
+}

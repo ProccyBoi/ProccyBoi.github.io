@@ -1,0 +1,2442 @@
+{
+  "slug": "skylabs-telemetry",
+  "modelUrl": "/assets/models/hardware/skylabs-telemetry/board.glb",
+  "boundsMm": [
+    167.62,
+    54.28,
+    240.65,
+    111.33
+  ],
+  "thicknessMm": 1.6,
+  "coreHeightMm": [
+    0.0,
+    1.51
+  ],
+  "scaleToMillimetres": 1000,
+  "upAxis": "+Y",
+  "kicadXAxis": "+X",
+  "kicadYAxis": "+Z",
+  "translationMm": [
+    -204.135,
+    -0.0,
+    -82.805
+  ],
+  "footprints": [
+    {
+      "ref": "R44",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        211.9175,
+        98.525
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R24",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        231.43,
+        69.65,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R34",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        201.86,
+        76.91,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C32",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        199.125,
+        74.279998,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D4",
+      "value": "R LED",
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "atMm": [
+        192.517499,
+        103.05,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C4",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        196.445,
+        101.290002,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C49",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        217.94,
+        74.395
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C18",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        214.28,
+        66.62,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C14",
+      "value": "22uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        190.147499,
+        97.629999,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C10",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        175.5725,
+        97.022501,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R20",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        185.965,
+        73.92,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J3",
+      "value": "Micro_SD_Card",
+      "footprint": "Connector_Card:microSD_HC_Hirose_DM3AT-SF-PEJM5",
+      "atMm": [
+        185.255,
+        63.365,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C37",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        187.12,
+        78.73,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R42",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        203.4025,
+        66.15
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J8",
+      "value": "Conn_ARM_JTAG_SWD_10",
+      "footprint": "Connector_PinHeader_1.27mm:PinHeader_2x05_P1.27mm_Vertical",
+      "atMm": [
+        196.985,
+        104.22
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U2",
+      "value": "DW01A",
+      "footprint": "Package_TO_SOT_SMD:SOT-23-6",
+      "atMm": [
+        182.347501,
+        94.085,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R18",
+      "value": "4.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        211.36,
+        60.37,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R21",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        188.915,
+        73.92,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U1",
+      "value": "TP4056-42-ESOP8",
+      "footprint": "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.3mm_ThermalVias",
+      "atMm": [
+        182.54,
+        101.0875,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J6",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        221.62,
+        108.79,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J4",
+      "value": "SG_L",
+      "footprint": "Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical",
+      "atMm": [
+        212.18,
+        109.13,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R46",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        208.5125,
+        100.485,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C25",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        196.294999,
+        88.900001,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "H3",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "atMm": [
+        171.63,
+        107.32
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "C35",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        187.81,
+        84.13,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R55",
+      "value": "120",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        232.230001,
+        74.325,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D2",
+      "value": "G LED",
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "atMm": [
+        173.815,
+        100.2325,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R13",
+      "value": "22k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        188.257499,
+        107.66,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R22",
+      "value": "47k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        182.064999,
+        73.9225,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R37",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        203.54,
+        68.96,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J10",
+      "value": "U.FL",
+      "footprint": "Connector_Coaxial:U.FL_Hirose_U.FL-R-SMT-1_Vertical",
+      "atMm": [
+        238.24,
+        57.14
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U16",
+      "value": "SN65HVD232",
+      "footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+      "atMm": [
+        227.330001,
+        74.115
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D8",
+      "value": "SMF5.0A",
+      "footprint": "Diode_SMD:D_SMF",
+      "atMm": [
+        177.0175,
+        79.85,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R16",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        194.317499,
+        102.8325,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U11",
+      "value": "HX711",
+      "footprint": "Package_SO:SOP-16_3.9x9.9mm_P1.27mm",
+      "atMm": [
+        196.12,
+        81.285
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "MPXV7002DP2",
+      "value": "Conn_01x03_Pin",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+      "atMm": [
+        208.6,
+        109.16,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R52",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        228.5325,
+        81.14,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C13",
+      "value": "1uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        189.987498,
+        102.95,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R17",
+      "value": "2.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        211.36,
+        56.95,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C15",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        208.73,
+        92.835,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "Q4",
+      "value": "MMBT4403",
+      "footprint": "MMBT4403:P200_SOT-23",
+      "atMm": [
+        189.57,
+        79.304999,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "R48",
+      "value": "0",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        176.85,
+        88.7225,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U10",
+      "value": "BNO085",
+      "footprint": "BNO085:IC_BNO085",
+      "atMm": [
+        196.16,
+        92.8025
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C51",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        216.85,
+        85.895
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R29",
+      "value": "2.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        200.75,
+        94.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R40",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        211.925,
+        100.485
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "Breakout1",
+      "value": "Conn_01x08_Pin",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical",
+      "atMm": [
+        169.61,
+        56.26
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C7",
+      "value": "0.1u",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        186.595,
+        104.9225
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C6",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        175.13,
+        62.970001,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R36",
+      "value": "8.2k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        190.63,
+        84.615,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R28",
+      "value": "2.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        213.5675,
+        63.9
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R19",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        184.015,
+        73.92,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J2",
+      "value": "SG_R",
+      "footprint": "Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical",
+      "atMm": [
+        204.88,
+        61.349999,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R9",
+      "value": "0",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        210.26,
+        68.329999,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J1",
+      "value": "USB_C_Receptacle_USB2.0_16P",
+      "footprint": "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+      "atMm": [
+        170.53,
+        84.65,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R1",
+      "value": "1M",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        173.65,
+        77.5775,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "G***",
+      "value": "LOGO",
+      "footprint": "UNSW Logo:UNSW Logo",
+      "atMm": [
+        217.41,
+        97.92,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "SW2",
+      "value": "SW_Push",
+      "footprint": "easyeda2kicad:SW-SMD_L3.9-W3.0-P4.45",
+      "atMm": [
+        200.66,
+        69.29,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C26",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        194.28,
+        88.900001,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "Airspeed1",
+      "value": "Conn_01x04_Pin",
+      "footprint": "Connector_JST:JST_GH_BM04B-GHS-TBT_1x04-1MP_P1.25mm_Vertical",
+      "atMm": [
+        198.33,
+        57.81
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C39",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        191.5,
+        87.33,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "MPXV7002DP1",
+      "value": "Conn_01x03_Pin",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+      "atMm": [
+        208.52,
+        61.349999,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C19",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        212.26,
+        66.62,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C27",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        176.565,
+        73.57,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C50",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        217.94,
+        72.375
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C12",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        170.03,
+        96.580001,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C3",
+      "value": "0.1u",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        184.164999,
+        97.3225
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C28",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        176.565,
+        75.59
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C34",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        195.09,
+        74.284999,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "H4",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "atMm": [
+        236.65,
+        107.34
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "R23",
+      "value": "47k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        190.865,
+        73.9225,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "SW1",
+      "value": "SW_Push",
+      "footprint": "easyeda2kicad:SW-SMD_L3.9-W3.0-P4.45",
+      "atMm": [
+        206.06,
+        92.875,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R11",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        177.58,
+        93.55,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C33",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        193.06,
+        74.285,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R3",
+      "value": "5k1",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        169.72,
+        77.58,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R31",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        192.17,
+        93.98,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C11",
+      "value": "22uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        194.297499,
+        106.280001,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "SW3",
+      "value": "SW_Push",
+      "footprint": "easyeda2kicad:SW-SMD_L3.9-W3.0-P4.45",
+      "atMm": [
+        195.34,
+        69.45,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C47",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        198.01,
+        70.5,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C46",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        198.01,
+        67.039999,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C45",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        225.730002,
+        77.855,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R54",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        173.115,
+        73.57,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D6",
+      "value": "R LED",
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "atMm": [
+        203.46,
+        91.495,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C22",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        205.73,
+        72.575,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R30",
+      "value": "2.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        200.75,
+        92.05
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R27",
+      "value": "2.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        214.29,
+        61.2075,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U6",
+      "value": "LTC3525-5",
+      "footprint": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+      "atMm": [
+        189.9475,
+        100.29,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D5",
+      "value": "R LED",
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "atMm": [
+        231.25,
+        67.86,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "H1",
+      "value": "MountingHole",
+      "footprint": "MountingHole:MountingHole_2.2mm_M2",
+      "atMm": [
+        174.28,
+        58.27
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "R39",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        208.51,
+        96.57,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C31",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        197.11,
+        74.284999,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R32",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        203.45,
+        94.7575,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C5",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        198.485,
+        101.290001,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J7",
+      "value": "Conn_01x04_Pin",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
+      "atMm": [
+        238.68,
+        76.795,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R45",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        208.515,
+        98.525,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R47",
+      "value": "0",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        193.147498,
+        100.09
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U13",
+      "value": "DS3231MZ",
+      "footprint": "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm",
+      "atMm": [
+        174.445,
+        68.84,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C52",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        216.85,
+        87.915
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C21",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        203.71,
+        72.575,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C36",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        187.120001,
+        80.755,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C23",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        186.19,
+        94.469999,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U8",
+      "value": "TPS62A01ADRL",
+      "footprint": "Package_TO_SOT_SMD:SOT-563",
+      "atMm": [
+        190.472499,
+        106.95,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D10",
+      "value": "SMF5.0A",
+      "footprint": "Diode_SMD:D_SMF",
+      "atMm": [
+        178.25,
+        85.81
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R5",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        177.09,
+        102.0175
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C20",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        188.21,
+        94.469999,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R49",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        196.16,
+        96.7,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R57",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        195.25,
+        65.45,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R35",
+      "value": "20k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        190.63,
+        82.655
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R33",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        203.88,
+        88.805,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R50",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        198.12,
+        96.7,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "L2",
+      "value": "10uH",
+      "footprint": "Inductor_SMD:L_0603_1608Metric",
+      "atMm": [
+        187.737499,
+        100.26,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J9",
+      "value": "Conn_01x04_Pin",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
+      "atMm": [
+        235.06,
+        76.79,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R26",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        188.79,
+        87.77,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "L1",
+      "value": "470nH",
+      "footprint": "Inductor_SMD:L_0603_1608Metric",
+      "atMm": [
+        192.517499,
+        106.070001,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C44",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        229.190001,
+        77.855
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "Q3",
+      "value": "DMP3099L",
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "atMm": [
+        172.7725,
+        96.800001,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C2",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        177.05,
+        104.02,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C43",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        230.564999,
+        104.085
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D3",
+      "value": "MBRS130LT3G",
+      "footprint": "Diode_SMD:D_SMB",
+      "atMm": [
+        171.84,
+        92.39
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R10",
+      "value": "2.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        205.73,
+        99.44,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "Airspeed2",
+      "value": "Conn_01x04_Pin",
+      "footprint": "Connector_JST:JST_GH_BM04B-GHS-TBT_1x04-1MP_P1.25mm_Vertical",
+      "atMm": [
+        203.44,
+        106.22,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R14",
+      "value": "4.7k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        203.745,
+        99.455,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C17",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        212.265,
+        70.085,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "J5",
+      "value": "Tribunus ESC",
+      "footprint": "Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical",
+      "atMm": [
+        238.66,
+        85.47,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "L4",
+      "value": "3.3uH",
+      "footprint": "Inductor_SMD:L_0603_1608Metric",
+      "atMm": [
+        190.822499,
+        80.915
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "BT1",
+      "value": "Battery_Cell",
+      "footprint": "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical",
+      "atMm": [
+        178.22,
+        107.86
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R51",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        200.080001,
+        96.7,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C48",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        203.92,
+        84.785,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U12",
+      "value": "SX1262S9S+T-X1",
+      "footprint": "easyeda2kicad:WIRELM-SMD_SX1278S165SY-T-X1",
+      "atMm": [
+        228.62,
+        91.57,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C29",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        203.91,
+        86.805,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R2",
+      "value": "5k1",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        171.69,
+        77.58,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R43",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        203.4025,
+        64.19
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C1",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        183.82,
+        105.67,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R25",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        190.2,
+        94.4525,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C38",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        200.92,
+        85.11,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R38",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        198.77,
+        62.27,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C8",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        171.29,
+        101.13,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C16",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        214.28,
+        70.09,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C42",
+      "value": "10uF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        230.564999,
+        102.065
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U7",
+      "value": "NEO-M9N",
+      "footprint": "RF_GPS:ublox_NEO",
+      "atMm": [
+        222.46,
+        63.02,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D7",
+      "value": "R LED",
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "atMm": [
+        207.19,
+        87.845,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R41",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        198.7675,
+        64.23,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C24",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        194.17,
+        96.72,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U5",
+      "value": "8205A",
+      "footprint": "8205A:SOT95P285X140-6N",
+      "atMm": [
+        182.347501,
+        89.795,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U9",
+      "value": "BME280",
+      "footprint": "Package_LGA:Bosch_LGA-8_2.5x2.5mm_P0.65mm_ClockwisePinNumbering",
+      "atMm": [
+        189.4575,
+        91.1725
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R4",
+      "value": "1k2",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        185.84,
+        107.6375,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "U14",
+      "value": "STM32G474RETx",
+      "footprint": "Package_QFP:LQFP-64_10x10mm_P0.5mm",
+      "atMm": [
+        210.93,
+        79.595
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D1",
+      "value": "R LED",
+      "footprint": "LED_SMD:LED_0603_1608Metric",
+      "atMm": [
+        173.815,
+        101.8525,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R53",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        224.71,
+        81.14
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R8",
+      "value": "100",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        180.71,
+        97.3575
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "C9",
+      "value": "100nF",
+      "footprint": "Capacitor_SMD:C_0805_2012Metric",
+      "atMm": [
+        177.5975,
+        97.0175,
+        -90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R7",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        179.5875,
+        94.5575,
+        90.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "D9",
+      "value": "SMF5.0A",
+      "footprint": "Diode_SMD:D_SMF",
+      "atMm": [
+        178.25,
+        83.46
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R12",
+      "value": "100k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        190.037499,
+        104.95,
+        180.0
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R56",
+      "value": "10k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        202.39,
+        78.845
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "R6",
+      "value": "1k",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        177.0875,
+        100.0575
+      ],
+      "side": "front",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": true
+    },
+    {
+      "ref": "BT2",
+      "value": "Battery_Cell",
+      "footprint": "Battery:BatteryHolder_Renata_SMTU2032-LF_1x2032",
+      "atMm": [
+        209.83,
+        81.9,
+        -90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "G***",
+      "value": "LOGO",
+      "footprint": "Skylabs Logo:Skylabs Logo",
+      "atMm": [
+        182.79696,
+        100.910491,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    }
+  ],
+  "materials": {
+    "pads": "mat_46",
+    "silk": "mat_47",
+    "mask": "mat_48",
+    "core": "mat_49"
+  },
+  "silk": {
+    "frontUrl": "/assets/models/hardware/skylabs-telemetry/silk-front.svg",
+    "backUrl": "/assets/models/hardware/skylabs-telemetry/silk-back.svg",
+    "viewBoxMm": [
+      167.62,
+      54.28,
+      73.03,
+      57.05
+    ]
+  },
+  "source": "../Skylabs/Mission Systems/Telemetry PCB/Mission Systems PCB v4.0/Mission Systems.kicad_pcb",
+  "sourceHash": "9d1778533696fd7769bbf6e319cb2fa98f06c17642adf4866df7223c072c7358",
+  "missingModels": [
+    {
+      "ref": "Q4",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "p200_SOT-23.stp"
+    },
+    {
+      "ref": "BT2",
+      "reason": "Referenced physical model could not be resolved",
+      "model": "BatteryHolder_Renata_SMTU2032-LF_1x2032.step"
+    }
+  ],
+  "unmodeledFootprints": [
+    "H3",
+    "G***",
+    "H4",
+    "H1",
+    "G***"
+  ],
+  "modelledComponentCount": 151,
+  "triangleCount": 238247,
+  "modelBytes": 13527660,
+  "resolvedLibraryModelCount": 30,
+  "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "unpopulated": false,
+  "copperIncluded": false,
+  "materialProperties": {
+    "pads": {
+      "baseColorFactor": [
+        0.5,
+        0.5,
+        0.5,
+        1.0
+      ],
+      "metallicFactor": 1.0,
+      "roughnessFactor": 0.4000000059604645
+    },
+    "silk": {
+      "baseColorFactor": [
+        0.04313725605607033,
+        0.04313725605607033,
+        0.04313725605607033,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.8999999761581421
+    },
+    "mask": {
+      "baseColorFactor": [
+        0.07999999821186066,
+        0.20000000298023224,
+        0.14000000059604645,
+        0.8299999833106995
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.6000000238418579
+    },
+    "core": {
+      "baseColorFactor": [
+        0.30000001192092896,
+        0.30000001192092896,
+        0.30000001192092896,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.800000011920929
+    }
+  },
+  "additionalLibraryModels": []
+}

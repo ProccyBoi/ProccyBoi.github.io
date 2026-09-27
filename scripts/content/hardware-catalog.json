@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "projects": [
+    {
+      "slug": "framework-logic-analyser",
+      "title": "Framework Logic Analyser",
+      "category": "Framework / instrumentation",
+      "model": "framework-logic-analyser",
+      "summary": "An STM32 logic analyser with logic, serial-bus and passive CAN capture in a Framework expansion card.",
+      "card_specs": "STM32G474 · 4 layers · 10 MS/s",
+      "metadata": [["Controller", "STM32G474CEU6"], ["Board", "26 × 30 mm · 4 layers"], ["Logic capture", "4 channels"], ["Capture limit", "10 MS/s · 32,768 samples"]],
+      "sections": [
+        {"title": "Capture interfaces", "paragraphs": ["The card brings logic and serial-bus capture into a Framework expansion bay. Its STM32G474 supports four-channel logic and SPI capture, two-channel UART and I²C capture, and passive monitoring of CAN, RS-485 and RS-422.", "The firmware documents a maximum capture rate of 10 MS/s and a buffer of 32,768 samples. Those limits describe the acquisition modes; they do not imply that every protocol runs at the maximum rate."]},
+        {"title": "Signal routing", "paragraphs": ["Two MAX14778 multiplexers route the inputs. A TCAN3413 handles the CAN interface, while a THVD4411 provides the multiprotocol transceiver. A seven-pin connector brings the signals and power to the edge of the card.", "The four-layer PCB measures 26 × 30 mm."]}
+      ],
+      "evidence": ["D:/Electronics Projects/Framework Expansion Card - Logic Analyser/ExpansionCards-main/Electrical/KiCad_templates/Expansion_Card/Expansion_Card.kicad_pcb", "D:/Electronics Projects/Framework Expansion Card - Logic Analyser/Framework-Logic-Analyser-Firmware/README.md", "D:/Electronics Projects/Framework Expansion Card - Logic Analyser/Framework-Logic-Analyser-Firmware/docs/HARDWARE.md"]
+    },
+    {
+      "slug": "usense",
+      "title": "uSense",
+      "category": "Sensors / lighting",
+      "model": "usense",
+      "summary": "A compact STM32 sensor board with ambient-light sensing, temperature and humidity measurement, and eight RGB LEDs.",
+      "card_specs": "STM32L031 · OPT3001 · AHT20",
+      "metadata": [["Controller", "STM32L031G6"], ["Board", "Approximately 30 mm diameter"], ["Sensors", "OPT3001 + AHT20"], ["Lighting", "8 × WS2816B"]],
+      "sections": [
+        {"title": "Sensing and light", "paragraphs": ["uSense places an OPT3001 ambient-light sensor and an AHT20 temperature and humidity sensor around an STM32L031 microcontroller. Eight WS2816B RGB LEDs share the board.", "The circular four-layer PCB is approximately 30 mm in diameter."]},
+        {"title": "Power and connection", "paragraphs": ["The board includes USB-C, a CH343P USB-to-UART bridge, a BQ25170 charger and a battery holder."]}
+      ],
+      "evidence": ["D:/Electronics Projects/uSense/uSense.kicad_pcb: four layers, component references and approximately 30 mm board"]
+    },
+    {
+      "slug": "tamagotchi-sd-card",
+      "title": "Tamagotchi SD Card",
+      "category": "Embedded / storage",
+      "model": "tamagotchi-sd-card",
+      "summary": "An STM32F072 board combining a full-size SD-card socket, USB-C and a seven-pin interface.",
+      "card_specs": "STM32F072 · SD card · USB-C",
+      "metadata": [["Controller", "STM32F072C8"], ["Board", "44.88 × 39.27 mm"], ["Storage", "Full-size SD card"], ["Connection", "USB-C + 7-pin header"]],
+      "sections": [
+        {"title": "Storage interface", "paragraphs": ["The board pairs an STM32F072C8 with a full-size SD-card socket. USB-C and a seven-pin header provide the external connections, with reset and boot switches available on the PCB.", "The two-layer board measures 44.88 × 39.27 mm."]}
+      ],
+      "evidence": ["D:/Electronics Projects/Tamagotchi SD Card/Tamagotchi SD Card.kicad_pcb: two layers, board outline and fitted component references"],
+      "limitations": ["No firmware or functional documentation found; do not infer game, emulation or tested behaviour."]
+    },
+    {
+      "slug": "business-card",
+      "title": "NFC Business Card",
+      "category": "NFC / PCB artwork",
+      "model": "business-card",
+      "summary": "A business-card PCB with an NFC interface, copper antenna, two LEDs and COMP6441 artwork.",
+      "card_specs": "NT3H1101/1201 · 89.6 × 51.2 mm",
+      "metadata": [["Revision", "V4 · COMP6441"], ["Board", "89.6 × 51.2 mm · 2 layers"], ["NFC", "NT3H1101/1201"], ["Details", "Copper antenna + 2 LEDs"]],
+      "sections": [
+        {"title": "NFC and copper", "paragraphs": ["The V4 board places an NT3H1101/1201 NFC device and a copper antenna into a business-card outline. Two LEDs share the layout with the Andrew Chung and COMP6441 artwork.", "At approximately 89.6 × 51.2 mm, the two-layer board uses its copper, mask and lettering as both electronics and the surface of the card."]}
+      ],
+      "evidence": ["D:/Electronics Projects/Business Card/Business Card V4 - COMP6441/business card.kicad_pcb", "Business Card inherited README and licence: salvagedcircuitry, CC BY-NC-SA 4.0"],
+      "attribution": {"name": "Salvaged Circuitry / Brian D. Carlton", "url": "https://salvagedcircuitry.com/pcb-business-card", "license": "CC BY-NC-SA 4.0", "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"},
+      "limitations": ["Inherited photographs are not evidence of a personally manufactured build."]
+    },
+    {
+      "slug": "kiku",
+      "title": "Kiku",
+      "category": "Audio / portable hardware",
+      "model": "kiku",
+      "hero_poster": "/assets/images/v2/hardware/kiku-product.webp",
+      "explore_label": "Explore the assembly",
+      "models": [{"slug": "kiku-product", "title": "Enclosure", "manifest": "/assets/models/kiku-p2/assembly.json", "poster": "/assets/images/v2/hardware/kiku-product.webp"}, {"slug": "kiku", "title": "Circuit board"}],
+      "viewer_title": "Enclosure and circuit board",
+      "viewer_intro": "Inspect the P2 enclosure, then explore the populated circuit board.",
+      "summary": "A portable audio design combining Bluetooth, FM radio, microSD storage and an STM32 controller.",
+      "card_specs": "STM32H523 · Bluetooth · FM · microSD",
+      "metadata": [["Controller", "STM32H523VET6"], ["Board", "60 × 105 mm · 4 layers"], ["Audio", "BM83 + TLV320AIC3104"], ["Enclosure", "P2 mechanical revision"]],
+      "sections": [
+        {"title": "Audio hardware", "paragraphs": ["Kiku combines an STM32H523VET6 controller with a BM83 Bluetooth module, TLV320AIC3104 audio codec, MAX98357A amplifier and SI4705 FM receiver. A microSD socket provides removable storage.", "An ST7789 display, rotary encoder and two buttons form the local controls. The board also includes a headphone jack."]},
+        {"title": "Power and programming", "paragraphs": ["A BQ25895 charger and MAX17048 fuel gauge handle the battery power circuit. The USB data connections feed the charger rather than the STM32; programming uses SWD.", "The four-layer PCB has a nominal 60 × 105 mm outline, with component height and connector placement informing the surrounding enclosure."]},
+        {"title": "Mechanical fit", "paragraphs": ["The P2 enclosure follows a printed P1 revision. Its main body is approximately 77.1 × 120.9 mm with a nominal skin depth of 33.2 mm; the collapsed antenna and stand bring the overall envelope to approximately 79.1 × 126.7 × 56.1 mm.", "Battery, display and antenna fit still require qualification for P2."]}
+      ],
+      "evidence": ["D:/Electronics Projects/Walkman - Blobject/Walkman - Blobject.kicad_pcb", "D:/Electronics Projects/Walkman - Blobject/Mechanical/P2_DESIGN_REPORT.md", "D:/Electronics Projects/Walkman - Blobject/Mechanical/exports/P2"]
+    },
+    {
+      "slug": "pcb-notebook",
+      "title": "PCB Notebook",
+      "explore_label": "Explore the covers",
+      "category": "PCB artwork / reference",
+      "model": "pcb-notebook-front",
+      "models": [{"slug": "pcb-notebook-front", "title": "Front cover"}, {"slug": "pcb-notebook-back", "title": "Back cover"}],
+      "viewer_title": "The covers",
+      "viewer_intro": "Turn each cover to inspect its artwork and layout.",
+      "summary": "A pair of spiral-bound notebook covers made from PCBs, with component references and circuit artwork.",
+      "card_specs": "Front + back covers · approximately 151 × 216 mm",
+      "metadata": [["Format", "Spiral-bound notebook"], ["Covers", "Front + back PCBs"], ["Size", "Approximately 151 × 216 mm"], ["Layers", "2 per cover"]],
+      "sections": [
+        {"title": "Front cover", "paragraphs": ["The front cover turns the board surface into an electronics reference. It includes package-size examples, a trace-width gauge labelled from 0.2 to 20 mm, op-amp artwork and fields for a title, author and revision.", "The package outlines are printed references on the cover. They are not populated components."]},
+        {"title": "Back cover", "paragraphs": ["The rear cover uses copper and mask artwork for circuit symbols, including MOSFETs, bipolar transistors, diodes, switches, logic gates, passives and transducers.", "Both covers are two-layer PCBs, approximately 151 × 216 mm."]}
+      ],
+      "evidence": ["D:/Electronics Projects/Spiral-bound Book Cover/Spiral-bound Book Cover.kicad_pcb", "D:/Electronics Projects/Spiral-bound Book Cover/Spiral-bound Book Back.kicad_pcb", "Spiral-bound Book Cover fabrication Gerbers and ZIP exports"]
+    }
+  ],
+  "assemblies": [
+    {"route": "lora-receiver", "model": "lora-receiver", "title": "LoRa receiver assembly", "mode": "add"},
+    {"route": "rf-test-board", "model": "rf-test-board", "title": "RF test board assembly", "mode": "replace", "remove_scripts": ["assets/rf-test-board-3d.js", "assets/pcb-object-explorer.js", "assets/vendor/three.min.js", "assets/explorer-runtime.js"]},
+    {"route": "metroboard", "model": "metroboard", "title": "Metroboard assembly", "mode": "replace", "remove_scripts": ["assets/metroboard-3d.js", "assets/pcb-object-explorer.js", "assets/vendor/three.min.js", "assets/explorer-runtime.js"]},
+    {"route": "skylabs/boards/telemetry", "model": "skylabs-telemetry", "title": "Aircraft telemetry assembly", "mode": "add"},
+    {"route": "skylabs/boards/ground-station", "model": "skylabs-ground-station", "title": "Ground station assembly", "mode": "add"}
+  ]
+}

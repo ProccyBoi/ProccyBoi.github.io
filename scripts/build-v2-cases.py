@@ -7,9 +7,15 @@ modules and media while using an independent navigation and design layer.
 from html import escape, unescape
 from html.parser import HTMLParser
 from pathlib import Path
+import json
 import re
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
+HARDWARE_CATALOG = json.loads((ROOT / 'scripts/content/hardware-catalog.json').read_text(encoding='utf-8'))
+HARDWARE_PROJECTS = HARDWARE_CATALOG['projects']
+HARDWARE_PROJECT_BY_SLUG = {record['slug']: record for record in HARDWARE_PROJECTS}
+HARDWARE_ASSEMBLIES = {record['route']: record for record in HARDWARE_CATALOG['assemblies']}
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'}
 
 
@@ -96,6 +102,11 @@ FOOTER = '''<footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-
 ORDER = ['tramtrace', 'skylabs', 'framework-dual-usb', 'framework-expansion-card', 'framework-raspberry-pi', 'lora-receiver', 'rf-test-board', 'metroboard', 'switch-mode-power-supplies', 'scopelab', 'lithography-animation', 'mosfet-operating-regions', 'runswift', 'lora-talkie', 'dash']
 LABELS = {'tramtrace': 'TramTrace', 'skylabs': 'Skylabs', 'framework-dual-usb': 'Dual USB-C Framework Card', 'framework-expansion-card': 'Framework ESP32 Card', 'lora-receiver': 'LoRa Receiver + GNSS', 'rf-test-board': 'RF Test Board', 'metroboard': 'Metroboard', 'switch-mode-power-supplies': 'Switchmode Power Supplies', 'scopelab': 'ScopeLab', 'lithography-animation': 'Lithography Animation', 'mosfet-operating-regions': 'MOSFET Region Explorer', 'runswift': 'rUNSWift', 'lora-talkie': 'LoRa Talkie', 'dash': 'Dash'}
 LABELS['framework-raspberry-pi'] = 'Raspberry Pi Expansion Card'
+ORDER.insert(1, 'coaster')
+LABELS['coaster'] = 'RGB Drink Coaster'
+for record in HARDWARE_PROJECTS:
+    ORDER.insert(ORDER.index('switch-mode-power-supplies'), record['slug'])
+    LABELS[record['slug']] = record['title']
 BRIEFS = {
  'lora-receiver': [('The system', 'An ESP32 receiver combining 915 MHz LoRa with u-blox GNSS.'), ('The constraint', 'Radio and navigation on one PCB, with a feedline worth measuring.'), ('What I learned', 'At least 1 km in testing; VNA measurements informed the RF Test Board.')],
  'metroboard': [('The interface', 'A physical Sydney rail map with 291 individually addressable LEDs.'), ('The hardware', 'A 300 × 305.7 mm PCB driven by an ESP32.'), ('The connection', 'Live transport data becomes something visible across a room.')],
@@ -133,11 +144,13 @@ def common(source, body_class, active='work'):
     source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css">
   <link rel="stylesheet" href="/assets/v2-case.css">
   <link rel="stylesheet" href="/assets/v2-motion.css">
-  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2.js" defer blocking="render"></script><script src="/assets/v2-cases.js" defer></script>
   <script src="/assets/v2-motion.js" defer></script>
 </head>''')
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
+    if 'data-hardware=' in source:
+        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js" defer></script>\n</head>')
     return route_links(clean_display_copy(source))
 
 
@@ -163,6 +176,8 @@ def clean_display_copy(source):
             changes.append((node, ''))
         if node.tag == 'span' and node.parent and node.parent.tag == 'figcaption' and re.fullmatch(r'\d+\s*/\s*\d+', text(node.inner(source))):
             changes.append((node, ''))
+        if node.tag == 'p' and node.parent and node.parent.has('project-interactive-header') and 'The enclosure halves come from the supplied STEP files' in node.inner(source):
+            changes.append((node, '<p>Rotate the board and resin enclosure, or place a cup to see how the light and temperature sensors drive the 24 RGB LEDs. The drink controls simulate the sensor response.</p>'))
     source = replace_nodes(source, changes)
     replacements = {
         'Continue exploring': 'More projects',
@@ -173,6 +188,9 @@ def clean_display_copy(source):
         'Orbit the production board.': 'Assembly',
         'Inside the ESP32 card.': 'ESP32 card assembly',
         'Inside the dual USB-C card.': 'Dual USB-C assembly',
+        'Inside the RGB coaster.': 'Coaster assembly',
+        'Source-derived board surfaces': 'Board, lid and base',
+        'Black mask and source artwork': 'Black mask and HALO artwork',
         'Explore the RF test structures.': 'RF test structures',
         'Explore the rail-map PCB.': 'Metroboard in 3D',
         'Explore the flight hardware.': 'Flight hardware',
@@ -207,7 +225,9 @@ def case_navigation(source, slug, title):
     tree = Tree(source)
     links = [('overview', 'Overview')]
     if 'id="explore"' in source:
-        links.append(('explore', 'Interactive'))
+        links.append(('explore', 'Components' if 'v2-component-map' in source else 'Interactive'))
+    if 'id="assembly"' in source:
+        links.append(('assembly', 'Assembly'))
     if 'id="details"' in source:
         links.append(('details', 'Details'))
     if 'id="build"' in source:
@@ -239,9 +259,65 @@ def continuation(slug):
     </div><a class="v2-all-work" href="/v2/projects/">View the complete collection <span aria-hidden="true">↗</span></a></nav>'''
 
 
+def hardware_viewer(model, title, identifier, manifest=None, poster=None):
+    title = escape(title)
+    manifest = manifest or f'/assets/models/hardware/{model}/assembly.json'
+    poster = poster or f'/assets/images/v2/hardware/{model}.webp'
+    return f'''<figure data-hardware="{manifest}" data-hardware-title="{title}">
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="{poster}" width="1600" height="1200" alt="{title}" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
+      <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
+      <div class="hardware-controls"><div class="hardware-views" role="group" aria-label="Camera"><button type="button" data-hardware-view="iso" aria-pressed="true">Perspective</button><button type="button" data-hardware-view="top" aria-pressed="false">Top</button><button type="button" data-hardware-view="bottom" aria-pressed="false">Underside</button></div><button type="button" data-hardware-explode aria-pressed="false">Explode</button><button type="button" data-hardware-scroll aria-pressed="false">Follow scroll</button><button type="button" data-hardware-reset>Reset</button><label class="hardware-range">Assembled <input data-hardware-range type="range" min="0" max="100" value="0" aria-label="Assembly separation"> Exploded</label></div>
+      <div class="hardware-parts"><label for="{identifier}-parts">Component</label><select id="{identifier}-parts" data-hardware-selection><option value="">All components</option></select></div>
+      <p data-hardware-part hidden></p><p data-hardware-status role="status" aria-live="polite"></p>
+    </figure>'''
+
+
+def hardware_section(model, title, identifier='explore', facts='', note=''):
+    return f'''<section class="project-interactive v2-hardware-section" id="{identifier}" aria-labelledby="{identifier}-title"><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="{identifier}-title">{escape(title)}</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      {hardware_viewer(model, title, identifier)}
+      {f'<p class="v2-hardware-note">{escape(note)}</p>' if note else ''}{facts}
+    </div></section>'''
+
+
+def integrate_hardware(source, slug):
+    record = HARDWARE_ASSEMBLIES.get(slug)
+    if not record:
+        return source
+    tree = Tree(source)
+    existing = tree.find('section', 'project-interactive')
+    if existing and slug.startswith('skylabs/boards/'):
+        markup = existing.outer(source)
+        markup = re.sub(r'class="([^"]*)"', lambda match: f'class="{match[1]} v2-component-map"', markup, count=1)
+        map_tree = Tree(markup)
+        runtime_copy = next(node for node in map_tree.nodes if 'data-board-copy' in node.attrs)
+        markup = replace_nodes(markup, [(runtime_copy, runtime_copy.outer(markup).replace('<p ', '<p hidden ', 1) + '<p>Select a marked component to read its role in the circuit, or use the component index below the board.</p>')])
+        source = replace_nodes(source, [(existing, markup)])
+        source = source.replace('data-object-inspector data-view="rotate"', 'data-object-inspector data-view="inspect"', 1)
+        tree = Tree(source)
+        existing = tree.find('section', 'project-interactive')
+    identifier = 'assembly' if existing and record['mode'] == 'add' else 'explore'
+    facts = ''
+    if record['mode'] == 'replace' and existing:
+        existing_tree = Tree(existing.outer(source))
+        existing_facts = existing_tree.find('dl', 'project-interactive-facts')
+        facts = existing_facts.outer(existing.outer(source)) if existing_facts else ''
+    section = hardware_section(record['model'], record['title'], identifier, facts, record.get('note', ''))
+    if record['mode'] == 'replace' and existing:
+        source = replace_nodes(source, [(existing, section)])
+    else:
+        body = tree.find('div', 'project-body')
+        source = source[:body.start] + section + '\n' + source[body.start:]
+    tree = Tree(source)
+    obsolete_scripts = set(record.get('remove_scripts', []))
+    source = replace_nodes(source, [(node, '') for node in tree.nodes if node.tag == 'script' and node.attrs.get('src', '').split('?')[0].lstrip('/') in obsolete_scripts])
+    return source
+
+
 def make_case(path, slug=None, source=None):
     slug = slug or path.parent.relative_to(ROOT / 'projects').as_posix()
     source = source if source is not None else path.read_text(encoding='utf-8')
+    source = integrate_hardware(source, slug)
     if slug == 'skylabs/flight-review':
         return source
     if slug in ('lithography-animation', 'mosfet-operating-regions'):
@@ -260,6 +336,9 @@ def make_case(path, slug=None, source=None):
         'tramtrace': ('tramtrace-cad.webp', 'Source-derived KiCad rendering of the TramTrace light-rail display PCB'),
         'framework-expansion-card': ('framework-cad.webp', 'Source-derived CAD rendering of the populated Framework ESP32 card'),
     }
+    if slug in HARDWARE_ASSEMBLIES:
+        model = HARDWARE_ASSEMBLIES[slug]['model']
+        cad_assets[slug] = (f'hardware/{model}.webp', f'{title} circuit board assembly')
     hero_media = media.outer(source)
     if slug in cad_assets:
         asset, alt = cad_assets[slug]
@@ -269,7 +348,9 @@ def make_case(path, slug=None, source=None):
         width, height = (1376, 984) if board == 'telemetry' else (1400, 1000)
         hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/interactive/skylabs/skylabs-{board}-turn-02.webp" width="{width}" height="{height}" alt="KiCad rendering of the assembled Skylabs {board} board" fetchpriority="high"></figure>'
     has_explorer = 'id="explore"' in source
-    hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
+    explore_anchor = 'assembly' if 'id="assembly"' in source else 'explore'
+    explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board'))
+    hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
     <div class="v2-case-specs shell">{meta.outer(source) if meta else ''}</div></section>'''
@@ -328,12 +409,41 @@ def make_pi_case():
     return make_case(None, 'framework-raspberry-pi', source)
 
 
+def make_hardware_case(record):
+    slug, title = record['slug'], escape(record['title'])
+    poster = record.get('hero_poster', f'/assets/images/v2/hardware/{record["model"]}.webp')
+    metadata = ''.join(f'<div><dt>{escape(label)}</dt><dd>{escape(value)}</dd></div>' for label, value in record['metadata'])
+    if record.get('models'):
+        viewers = ''.join(f'<div class="v2-hardware-cover"><h3>{escape(model["title"])}</h3>{hardware_viewer(model["slug"], record["title"] + " — " + model["title"], model["slug"], model.get("manifest"), model.get("poster"))}</div>' for model in record['models'])
+        explorer = f'<section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="explore-title"><div class="project-interactive-inner"><header class="project-interactive-header"><div><h2 id="explore-title">{escape(record.get("viewer_title", "Assembly"))}</h2></div><p>{escape(record.get("viewer_intro", "Rotate the assembly or separate its parts."))}</p></header>{viewers}</div></section>'
+    else:
+        explorer = hardware_section(record['model'], record['title'] + ' assembly', note=record.get('viewer_note', ''))
+    sections = ''.join(f'<section class="project-summary"><h2>{escape(section["title"])}</h2><div class="project-prose">' + ''.join(f'<p>{escape(paragraph)}</p>' for paragraph in section['paragraphs']) + '</div></section>' for section in record['sections'])
+    attribution = record.get('attribution')
+    if attribution:
+        sections += f'<p class="v2-hardware-credit">Based on the <a href="{escape(attribution["url"])}">{escape(attribution["name"])}</a> template, licensed under <a href="{escape(attribution["license_url"])}">{escape(attribution["license"])}</a>.</p>'
+    source = f'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/">
+  <title>{title} | Andrew Chung</title><meta name="description" content="{escape(record['summary'])}"><meta name="theme-color" content="#f5f5f2">
+  <meta property="og:type" content="website"><meta property="og:title" content="{title} | Andrew Chung"><meta property="og:description" content="{escape(record['summary'])}">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/{slug}/"><meta property="og:image" content="https://proccyboi.github.io{poster}">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/{slug}/"><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/project-integrated.css">
+  <link rel="preload" as="image" href="{poster}" type="image/webp">
+</head><body class="project-page v2-hardware-page"><a class="skip-link" href="/v2/projects/{slug}/#main">Skip to content</a><header class="site-header"></header><main id="main">
+  <section class="project-hero" id="overview" aria-labelledby="project-title"><div class="project-hero-grid"><div class="project-hero-copy"><div><h1 id="project-title">{title}</h1><p>{escape(record['summary'])}</p></div><dl class="project-meta">{metadata}</dl></div><figure class="project-hero-media v2-cad-media"><img src="{poster}" width="1600" height="1200" alt="{title}" fetchpriority="high"></figure></div></section>
+  {explorer}<div class="project-body shell" id="details">{sections}</div>
+</main><footer class="site-footer"></footer></body></html>'''
+    return make_case(None, slug, source)
+
+
+def hardware_card(record):
+    poster = record.get('hero_poster', f'/assets/images/v2/hardware/{record["model"]}.webp')
+    return f'''<a class="catalog-card" href="projects/{record['slug']}/"><div class="catalog-card-media v2-catalog-cad"><img src="{poster}" width="1600" height="1200" alt="{escape(record['title'])}" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">{escape(record['category'])}</span><h3>{escape(record['title'])}</h3><p>{escape(record['summary'])}</p><small>{escape(record['card_specs'])}</small></div><span aria-hidden="true">↗</span></div></a>'''
+
+
 def make_index():
     source = (ROOT / 'projects/index.html').read_text(encoding='utf-8')
-    tree = Tree(source)
-    source = replace_nodes(source, [(node, '') for node in tree.nodes
-        if node.tag == 'a' and node.has('catalog-card')
-        and node.attrs.get('href', '').lstrip('/') == 'projects/coaster/'])
     tree = Tree(source)
     hero = tree.find('section', 'page-hero')
     new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems, robotics and engineering tools.</p></div></section>'''
@@ -345,6 +455,8 @@ def make_index():
       <div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/v2/framework-pi-cad.webp" width="1600" height="1200" alt="Raspberry Pi RP2354B expansion card for a Framework laptop" loading="lazy"></div>
       <div class="catalog-card-copy"><div><span class="catalog-category">Framework / microcontroller</span><h3>Raspberry Pi Expansion Card</h3><p>An RP2354B microcontroller board in the Framework expansion-card format.</p><small>RP2354B · 26 × 30 mm</small></div><span aria-hidden="true">↗</span></div></a>'''
     source = source[:hardware_catalog.open_end] + '\n' + pi_card + source[hardware_catalog.open_end:]
+    hardware_catalog = Tree(source).find('div', 'project-catalog')
+    source = source[:hardware_catalog.close_start] + '\n' + '\n'.join(hardware_card(record) for record in HARDWARE_PROJECTS) + '\n' + source[hardware_catalog.close_start:]
     # Let the hardware occupy the full gallery area without thumbnail framing.
     tree = Tree(source)
     media_changes = []
@@ -353,6 +465,9 @@ def make_index():
         'projects/framework-expansion-card/': ('v2/framework-cad.webp', 1600, 1200, 'Framework ESP32 expansion card'),
         'projects/skylabs/': ('interactive/skylabs/skylabs-telemetry-turn-02.webp', 1376, 984, 'Skylabs aircraft telemetry PCB'),
     }
+    for route, record in HARDWARE_ASSEMBLIES.items():
+        if '/' not in route:
+            card_images[f'projects/{route}/'] = (f'v2/hardware/{record["model"]}.webp', 1600, 1200, LABELS[route] + ' circuit board assembly')
     for node in tree.nodes:
         if node.has('catalog-card-media') and node.parent and node.parent.attrs.get('href') in card_images:
             filename, width, height, alt = card_images[node.parent.attrs['href']]
@@ -370,6 +485,18 @@ def make_index():
     source = source.replace('<small>Skylabs / browser tool</small>', '<small>Part of Skylabs / browser tool ↗</small>')
     source = source.replace('class="catalog-card wide"', 'class="catalog-card wide v2-featured-card"', 2)
     source = source.replace('class="project-list tool-list"', 'class="project-list tool-list v2-related-tool"')
+    tree = Tree(source)
+    counts = {name: 0 for name in ['all', 'hardware', 'interactive', 'robotics', 'archive']}
+    for node in tree.nodes:
+        if 'data-v2-project' not in node.attrs or not re.fullmatch(r'/?(?:v2/)?projects/[^/]+/', node.attrs.get('href', '')):
+            continue
+        ancestor = node.parent
+        while ancestor and 'data-v2-project-group' not in ancestor.attrs:
+            ancestor = ancestor.parent
+        if ancestor:
+            counts[ancestor.attrs['data-v2-project-group']] += 1
+            counts['all'] += 1
+    source = replace_nodes(source, [(node, re.sub(r'<span>\d+</span>', f'<span>{counts[node.attrs["data-v2-category"]]}</span>', node.outer(source))) for node in tree.nodes if 'data-v2-category' in node.attrs])
     return common(source, 'v2-collection')
 
 
@@ -394,23 +521,33 @@ def normalized(content):
     return '\n'.join(line.rstrip() for line in content.splitlines()).rstrip() + '\n'
 
 
+def update_sitemap(generated):
+    path = ROOT / 'sitemap.xml'
+    source = path.read_text(encoding='utf-8')
+    existing = {node.text for node in ET.fromstring(source).iter() if node.tag.rsplit('}', 1)[-1] == 'loc'}
+    urls = ['https://proccyboi.github.io/' + name.as_posix().removesuffix('index.html') for name in generated if name.as_posix() != 'v2/projects/skylabs/flight-review/index.html']
+    additions = [f'  <url><loc>{url}</loc></url>' for url in urls if url not in existing]
+    if additions:
+        source = source.replace('</urlset>', '\n'.join(additions) + '\n</urlset>')
+        path.write_text(normalized(source), encoding='utf-8')
+
+
 def main():
     generated = []
     for path in sorted((ROOT / 'projects').rglob('index.html')):
         if path.parent == ROOT / 'projects':
             continue
-        # Coaster is maintained separately on the original site.
-        if path.relative_to(ROOT / 'projects').parts[0] == 'coaster':
-            continue
         output = ROOT / 'v2' / path.relative_to(ROOT)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(normalized(make_case(path)), encoding='utf-8')
         generated.append(output.relative_to(ROOT))
-    for relative, content in [('projects/framework-raspberry-pi/index.html', make_pi_case()), ('projects/index.html', make_index()), ('about/index.html', make_about())]:
+    new_pages = [(f'projects/{record["slug"]}/index.html', make_hardware_case(record)) for record in HARDWARE_PROJECTS]
+    for relative, content in [('projects/framework-raspberry-pi/index.html', make_pi_case()), *new_pages, ('projects/index.html', make_index()), ('about/index.html', make_about())]:
         output = ROOT / 'v2' / relative
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(normalized(content), encoding='utf-8')
         generated.append(output.relative_to(ROOT))
+    update_sitemap(generated)
     print('Generated', len(generated), 'v2 pages:')
     print('\n'.join(str(path) for path in generated))
 

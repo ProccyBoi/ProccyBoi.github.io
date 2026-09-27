@@ -19,9 +19,11 @@
   <link rel="stylesheet" href="/assets/v2.css">
   <link rel="stylesheet" href="/assets/v2-assembly.css">
   <link rel="stylesheet" href="/assets/v2-motion.css">
-  <script src="/assets/v2.js" defer></script>
+  <link rel="stylesheet" href="/assets/v2-hardware.css">
+  <script src="/assets/v2.js" defer blocking="render"></script>
   <script src="/assets/v2-assembly.js" defer></script>
   <script src="/assets/v2-motion.js" defer></script>
+  <script src="/assets/v2-hardware.js" defer></script>
 </head>
 <body class="v2 v2-home">
   <a class="v2-skip" href="#main">Skip to content</a>
@@ -67,11 +69,26 @@
     </section>
     <section class="v2-work v2-shell" id="work" aria-labelledby="work-title">
       <div class="v2-section-heading"><h2 id="work-title">Selected projects.</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
+      <div class="v2-product-feature">
+        <div class="v2-product-heading"><div><h3>kiku.</h3><p>FM and Bluetooth, in a custom enclosure.</p></div><a class="v2-text-link" href="/v2/projects/kiku/">Explore kiku <span aria-hidden="true">↗</span></a></div>
+        <figure data-hardware="/assets/models/kiku-p2/assembly.json" data-hardware-title="Kiku radio" data-hardware-auto>
+          <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/kiku-product.webp" width="1600" height="1200" alt="Kiku radio with a pale enclosure, orange button and green tuning knob" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
+          <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
+          <div class="hardware-controls"><div class="hardware-views" role="group" aria-label="Camera angle"><button type="button" data-hardware-view="iso" aria-pressed="true">Perspective</button><button type="button" data-hardware-view="top" aria-pressed="false">Front</button><button type="button" data-hardware-view="bottom" aria-pressed="false">Rear</button></div><button type="button" data-hardware-explode aria-pressed="false">Explode</button><button type="button" data-hardware-scroll aria-pressed="false">Follow scroll</button><button type="button" data-hardware-reset>Reset</button><label class="hardware-range">Assembled <input data-hardware-range type="range" min="0" max="100" value="0" aria-label="Assembly separation"> Exploded</label></div>
+          <div class="hardware-parts"><label for="home-kiku-parts">Component</label><select id="home-kiku-parts" data-hardware-selection><option value="">All components</option></select></div><p data-hardware-part hidden></p><p data-hardware-status role="status" aria-live="polite"></p>
+        </figure>
+      </div>
       <div class="v2-project-grid">
+        <a class="v2-project-card" href="/v2/projects/framework-logic-analyser/"><div class="v2-project-image is-board"><img src="/assets/images/v2/hardware/framework-logic-analyser.webp" alt="STM32 logic analyser expansion card" width="1600" height="1200" loading="lazy"></div><h3>Logic analyser <span aria-hidden="true">↗</span></h3><p>Logic and serial-bus capture in a Framework expansion card.</p></a>
+        <a class="v2-project-card" href="/v2/projects/usense/"><div class="v2-project-image is-board"><img src="/assets/images/v2/hardware/usense.webp" alt="Circular uSense sensor board" width="1600" height="1200" loading="lazy"></div><h3>uSense <span aria-hidden="true">↗</span></h3><p>Light, temperature and humidity sensing, with eight RGB LEDs.</p></a>
+        <a class="v2-project-card" href="/v2/projects/tamagotchi-sd-card/"><div class="v2-project-image is-board"><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy"></div><h3>Tamagotchi SD Card <span aria-hidden="true">↗</span></h3><p>An STM32, an SD-card socket and a seven-pin interface.</p></a>
+        <a class="v2-project-card" href="/v2/projects/coaster/"><div class="v2-project-image"><img src="/assets/images/projects/coaster-hero-960.webp" alt="Coaster circuit board and enclosure" width="960" height="640" loading="lazy"></div><h3>Coaster <span aria-hidden="true">↗</span></h3><p>A light-sensing coaster with an RGB ring and printed enclosure.</p></a>
         <a class="v2-project-card" href="/v2/projects/skylabs/"><div class="v2-project-image is-board"><img src="/assets/images/interactive/skylabs/skylabs-telemetry-turn-02.webp" alt="Skylabs aircraft telemetry board" width="1376" height="984" loading="lazy"></div><h3>Skylabs <span aria-hidden="true">↗</span></h3><p>Aircraft telemetry, a ground station, and the software to review a flight.</p></a>
         <a class="v2-project-card" href="/v2/projects/framework-dual-usb/"><div class="v2-project-image"><img src="/assets/images/projects/framework-dual-hero-960.webp" alt="Dual USB-C expansion card in a clear enclosure" width="960" height="640" loading="lazy"></div><h3>Dual USB-C <span aria-hidden="true">↗</span></h3><p>Two USB-C ports in one Framework expansion bay.</p></a>
         <a class="v2-project-card" href="/v2/projects/tramtrace/"><div class="v2-project-image"><img src="/assets/images/projects/tramtrace-hero-960.webp" alt="TramTrace displaying light-rail positions" width="960" height="640" loading="lazy"></div><h3>TramTrace <span aria-hidden="true">↗</span></h3><p>Sydney’s light-rail network, displayed live on 116 RGB pixels.</p></a>
         <a class="v2-project-card" href="/v2/projects/rf-test-board/"><div class="v2-project-image"><img src="/assets/images/projects/rf-test-hero-960.webp" alt="RF test board with transmission-line structures" width="960" height="640" loading="lazy"></div><h3>RF test board <span aria-hidden="true">↗</span></h3><p>Transmission lines, test structures, and time at the bench.</p></a>
+        <a class="v2-project-card" href="/v2/projects/business-card/"><div class="v2-project-image is-board"><img src="/assets/images/v2/hardware/business-card.webp" alt="NFC business-card PCB and antenna artwork" width="1600" height="1200" loading="lazy"></div><h3>NFC business card <span aria-hidden="true">↗</span></h3><p>An NFC antenna and personal artwork in two layers of copper.</p></a>
+        <a class="v2-project-card" href="/v2/projects/pcb-notebook/"><div class="v2-project-image is-board"><img src="/assets/images/v2/hardware/pcb-notebook-front.webp" alt="PCB notebook cover with electronic reference artwork" width="1600" height="1200" loading="lazy"></div><h3>PCB notebook <span aria-hidden="true">↗</span></h3><p>Package sizes, trace widths and circuit symbols on a pair of PCB covers.</p></a>
       </div>
     </section>
     <section class="v2-about-preview v2-shell" aria-labelledby="about-title"><h2 id="about-title">A bit about me.</h2><div class="v2-about-copy"><p>I’m an electrical engineering student at UNSW, working in power electronics and leading avionics and payload work at UNSW Skylabs.</p><p>I like building the whole thing: the board, the code, and the tools that make it useful.</p><a class="v2-text-link" href="/v2/about/">More about me <span aria-hidden="true">↗</span></a></div></section>

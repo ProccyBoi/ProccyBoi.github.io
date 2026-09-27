@@ -47,26 +47,26 @@ async function posters(page) {
     await page.locator('[data-v2-menu]').click();
     await page.locator('[data-v2-nav] a[href="/v2/projects/"]').click();
     await page.waitForURL('**/v2/projects/');
-    assert.equal(await page.locator(primary).count(),15,'15 primary projects');
+    assert.equal(await page.locator(primary).count(),22,'22 primary projects');
     assert.equal(await page.locator('.v2-related-tool [data-v2-project]').count(),1,'Flight Review remains related to Skylabs');
     const search=page.locator('[data-v2-search]');
     await search.fill('Framework');
-    assert.equal(await page.locator(primary+':visible').count(),3);
-    assert.match(await page.locator('[data-v2-search-status]').textContent(),/3 projects/);
+    assert.equal(await page.locator(primary+':visible').count(),4);
+    assert.match(await page.locator('[data-v2-search-status]').textContent(),/4 projects/);
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await search.inputValue(),'Framework');
-    assert.equal(await page.locator(primary+':visible').count(),3);
+    assert.equal(await page.locator(primary+':visible').count(),4);
     await search.fill('NoSuchBoard7654321');
     assert.equal(await page.locator('[data-v2-project]:visible').count(),0);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/No projects match/);
     await search.press('Escape');
-    assert.equal(await page.locator(primary+':visible').count(),15);
+    assert.equal(await page.locator(primary+':visible').count(),22);
     await page.locator('[data-v2-category="interactive"]').click();
     assert.equal(await page.locator(primary+':visible').count(),3);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/3 projects and 1 related tool/);
     await page.setViewportSize({width:320,height:900});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
-    console.log('PASS automatic CAD loading, keyboard/menu navigation, 15 projects, three Framework cards, search and categories');
+    console.log('PASS automatic CAD loading, keyboard/menu navigation, 22 projects, four Framework cards, search and categories');
     await page.setViewportSize({width:1280,height:900});
     for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
@@ -108,8 +108,20 @@ async function posters(page) {
     await failedPage.waitForURL('**/v2/projects/framework-raspberry-pi/');
     await failedPage.waitForLoadState('networkidle');
     await failedPage.waitForFunction(()=>document.getAnimations().every(animation=>animation.playState!=='running'));
+    // Browsers may omit an optional cross-document transition under load. Feed
+    // an actual cancelled transition to both lifecycle handlers deterministically.
+    await failedPage.evaluate(async()=>{
+      for(const type of ['pagereveal','pageswap']){
+        const transition=document.startViewTransition(()=>{});
+        const event=new Event(type);
+        Object.defineProperty(event,'viewTransition',{value:transition});
+        dispatchEvent(event);
+        transition.skipTransition();
+        await transition.finished;
+      }
+    });
     await fallback.close();
-    console.log('PASS failed model loading restores posters and normal project links');
+    console.log('PASS failed model loading restores posters and normal links; skipped navigation transitions are handled');
     const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});
     const staticPage=await noJS.newPage();observe(staticPage);
     await staticPage.goto(base+'/v2/',{waitUntil:'networkidle'});
@@ -118,7 +130,7 @@ async function posters(page) {
     await posters(staticPage);
     assert.equal(await staticPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await staticPage.goto(base+'/v2/projects/',{waitUntil:'networkidle'});
-    assert.equal(await staticPage.locator(primary+':visible').count(),15);
+    assert.equal(await staticPage.locator(primary+':visible').count(),22);
     await noJS.close();
     const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
     const reducedPage=await reduced.newPage();observe(reducedPage);

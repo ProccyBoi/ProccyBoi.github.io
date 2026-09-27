@@ -1,0 +1,14 @@
+[
+  {
+    "file": "Package_DFN_QFN.3dshapes/QFN-28_4x4mm_P0.5mm.step",
+    "url": "https://gitlab.com/api/v4/projects/21604637/repository/files/Package_DFN_QFN.3dshapes%2FQFN-28_4x4mm_P0.5mm.step/raw?ref=5.1.10",
+    "sha256": "6cbec437816f6723d3995076e73e9da699851962be20c6c954cf6a9c8f3ddf84",
+    "bytes": 303816
+  },
+  {
+    "file": "Package_DFN_QFN.3dshapes/QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm.step",
+    "url": "https://gitlab.com/api/v4/projects/21604637/repository/files/Package_DFN_QFN.3dshapes%2FQFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm.step/raw?ref=5.1.10",
+    "sha256": "ba30b82fac313a906167a8e5739f396cae47472c2ef885c0975be7ea93235b26",
+    "bytes": 528922
+  }
+]

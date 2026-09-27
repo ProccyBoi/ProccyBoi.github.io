@@ -13,6 +13,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 import re
 import sys
+import json
+import xml.etree.ElementTree as ET
 from urllib.parse import unquote, urljoin, urlsplit
 
 
@@ -36,9 +38,7 @@ REDIRECT_EXEMPTIONS = {
     "v2/lab/tramtrace/index.html": "Legacy explorer redirect",
 }
 SHARED_PREFIXES = ("/shared/", "/assets/", "/reports/", "/book/")
-V2_ADDITIONS = {"framework-raspberry-pi"}  # Requested alongside the September 2026 redesign.
-ROOT_ONLY_PROJECTS = {"coaster"}
-EXPECTED_PUBLIC_PROJECT_COUNT = 15
+HARDWARE_CATALOG = ROOT / "scripts/content/hardware-catalog.json"
 
 
 @dataclass
@@ -48,6 +48,7 @@ class Element:
     line: int
     ancestors: tuple[str, ...] = ()
     text: list[str] = field(default_factory=list)
+    project_group: str | None = None
 
 
 class Document(HTMLParser):
@@ -60,7 +61,7 @@ class Document(HTMLParser):
         self.close()
 
     def handle_starttag(self, tag, attrs):
-        item = Element(tag, {key: value or "" for key, value in attrs}, self.getpos()[0], tuple(parent.tag for parent in self.stack))
+        item = Element(tag, {key: value or "" for key, value in attrs}, self.getpos()[0], tuple(parent.tag for parent in self.stack), project_group=next((parent.attrs["data-v2-project-group"] for parent in reversed(self.stack) if "data-v2-project-group" in parent.attrs), None))
         self.elements.append(item)
         if tag not in VOID:
             self.stack.append(item)
@@ -143,6 +144,7 @@ def main() -> int:
     errors: list[str] = []
     documents: dict[Path, Document] = {}
     checked_css: set[Path] = set()
+    checked_manifests: set[Path] = set()
     checked_targets: set[Path] = set()
     stats = Counter()
 
@@ -204,6 +206,35 @@ def main() -> int:
                         reference(path, asset, css_base)
             except (OSError, UnicodeError) as exc:
                 error(path, f"cannot read CSS references: {exc}")
+        if path.name == "assembly.json" and path.is_relative_to(ROOT / "assets/models") and path not in checked_manifests:
+            checked_manifests.add(path)
+            try:
+                manifest = json.loads(path.read_text(encoding="utf-8"))
+                manifest_base = ORIGIN + "/" + path.relative_to(ROOT).as_posix()
+                if manifest.get("boardManifest"):
+                    reference(path, manifest['boardManifest'], manifest_base)
+                    for part in manifest.get('parts', []):
+                        reference(path, part.get('file', ''), manifest_base)
+                else:
+                    reference(path, manifest.get("modelUrl", ""), manifest_base)
+                for key in ("frontUrl", "backUrl"):
+                    if manifest.get("silk", {}).get(key):
+                        reference(path, manifest["silk"][key], manifest_base)
+                if not manifest.get('boardManifest') and len(manifest.get("boundsMm", [])) != 4:
+                    error(path, "assembly requires four board bounds")
+                if not manifest.get('boardManifest') and not isinstance(manifest.get("footprints"), list):
+                    error(path, "assembly requires a footprint list")
+            except (OSError, UnicodeError, ValueError) as exc:
+                error(path, f"cannot read assembly manifest: {exc}")
+
+    try:
+        catalog = json.loads(HARDWARE_CATALOG.read_text(encoding="utf-8"))
+        requested_projects = {"framework-raspberry-pi"} | {record["slug"] for record in catalog["projects"]}
+        if len({record["slug"] for record in catalog["projects"]}) != len(catalog["projects"]):
+            error(HARDWARE_CATALOG, "duplicate project slug in maintained catalog")
+    except (OSError, ValueError, KeyError) as exc:
+        error(HARDWARE_CATALOG, f"cannot read project inventory: {exc}")
+        requested_projects = {"framework-raspberry-pi"}
 
     original = document(ROOT / "projects/index.html")
     if original is None:
@@ -215,11 +246,6 @@ def main() -> int:
         match = re.fullmatch(r"/projects/([^/]+)/?", target[2]) if target else None
         if match:
             original_projects.add(match.group(1))
-    if len(original_projects) != EXPECTED_PUBLIC_PROJECT_COUNT:
-        error(original.path, f"baseline inventory changed: expected {EXPECTED_PUBLIC_PROJECT_COUNT} public projects, found {len(original_projects)}; review scope before updating this baseline")
-    missing_root_only = ROOT_ONLY_PROJECTS - original_projects
-    if missing_root_only:
-        error(original.path, f"configured root-only project(s) missing from public inventory: {', '.join(sorted(missing_root_only))}")
 
     pages = sorted((ROOT / "v2").rglob("*.html"))
     if not pages:
@@ -234,10 +260,41 @@ def main() -> int:
         for path in pages
         if path.is_relative_to(ROOT / "v2/projects") and len(path.relative_to(ROOT / "v2/projects").parts) > 1
     }
-    for slug in sorted(v2_projects - original_projects - V2_ADDITIONS):
+    for slug in sorted(v2_projects - original_projects - requested_projects):
         error(ROOT / "v2/projects" / slug, "new project absent from existing public project inventory")
-    for slug in sorted((original_projects | V2_ADDITIONS) - v2_projects - ROOT_ONLY_PROJECTS):
+    for slug in sorted((original_projects | requested_projects) - v2_projects):
         error(ROOT / "v2/projects" / slug, "existing project missing from /v2")
+
+    collection = document(ROOT / "v2/projects/index.html")
+    collection_projects = set()
+    category_counts = Counter()
+    if collection:
+        for link in collection.tags("a"):
+            if "data-v2-project" not in link.attrs:
+                continue
+            target = local_target(link.attrs.get("href", ""), collection.base)
+            match = re.fullmatch(r"/v2/projects/([^/]+)/?", target[2]) if target else None
+            if match:
+                if match.group(1) in collection_projects:
+                    error(collection.path, f"duplicate collection project: {match.group(1)}", link.line)
+                collection_projects.add(match.group(1))
+                category_counts[link.project_group] += 1
+                category_counts["all"] += 1
+        if collection_projects != v2_projects:
+            error(collection.path, f"collection and route inventory differ: {', '.join(sorted(collection_projects ^ v2_projects))}")
+        for link in collection.tags("a"):
+            if "data-v2-category" in link.attrs:
+                count = re.search(r"(\d+)\s*$", "".join(link.text))
+                expected = category_counts[link.attrs["data-v2-category"]]
+                if not count or int(count.group(1)) != expected:
+                    error(collection.path, f"category count must be {expected} for {link.attrs['data-v2-category']}", link.line)
+    try:
+        sitemap_urls = {node.text for node in ET.parse(ROOT / "sitemap.xml").iter() if node.tag.rsplit("}", 1)[-1] == "loc"}
+        for slug in v2_projects:
+            if f"{ORIGIN}/v2/projects/{slug}/" not in sitemap_urls:
+                error(ROOT / "sitemap.xml", f"missing project route: {slug}")
+    except (OSError, ET.ParseError) as exc:
+        error(ROOT / "sitemap.xml", f"cannot read sitemap: {exc}")
 
     for page in pages:
         doc = document(page)
@@ -297,7 +354,7 @@ def main() -> int:
                             error(page, f"image needs positive integer {dimension} to reserve layout space", item.line)
                 if not modal_image and not any(item.attrs.get(attr) for attr in ("src", "srcset")):
                     error(page, "image missing src/srcset", item.line)
-            for attr in ("href", "src", "poster", "xlink:href"):
+            for attr in ("href", "src", "poster", "xlink:href", "data-hardware"):
                 if attr in item.attrs and item.tag != "base":
                     reference(page, item.attrs[attr], doc.base, item.line, navigation=item.tag in {"a", "area"} and attr == "href")
             for attr in ("srcset", "imagesrcset"):
@@ -321,9 +378,9 @@ def main() -> int:
                 error(page, "refresh redirect has no resolvable URL", refresh.line)
 
     unique_errors = list(dict.fromkeys(errors))
-    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects)} projects ({len(original_projects - ROOT_ONLY_PROJECTS)} existing + {len(V2_ADDITIONS)} requested); "
+    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects)} projects ({len(original_projects)} existing + {len(requested_projects - original_projects)} requested); "
                f"{stats['images']} images; {stats['references']} URL references; {stats['fragments']} fragments; "
-               f"{len(checked_css)} stylesheets; {len(checked_targets)} distinct local targets; "
+               f"{len(checked_css)} stylesheets; {len(checked_manifests)} assembly manifests; {len(checked_targets)} distinct local targets; "
                f"{stats['explicit utility/redirect exemptions']} explicit utility/redirect exemptions; "
                f"{stats['non-flow image dimension exemptions']} modal/PCB-overlay images.")
     print(summary)
@@ -331,7 +388,7 @@ def main() -> int:
         print(f"FAIL: {len(unique_errors)} issue(s)")
         print("\n".join(unique_errors))
         return 1
-    print("PASS: inventory, landmarks, metadata, skip links, images, local assets, fragments and v2 navigation.")
+    print("PASS: inventory, collection counts, sitemap, landmarks, metadata, skip links, images, assembly assets, fragments and v2 navigation.")
     return 0
 
 

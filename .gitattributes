@@ -1,0 +1,2 @@
+# Preserve vendor CAD exactly so the recorded source hashes remain reproducible.
+assets/models/hardware/_libraries/**/*.step binary

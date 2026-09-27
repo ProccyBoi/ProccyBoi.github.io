@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/">
+  <title>Tamagotchi SD Card | Andrew Chung</title><meta name="description" content="An STM32F072 board combining a full-size SD-card socket, USB-C and a seven-pin interface."><meta name="theme-color" content="#f5f5f2">
+  <meta property="og:type" content="website"><meta property="og:title" content="Tamagotchi SD Card | Andrew Chung"><meta property="og:description" content="An STM32F072 board combining a full-size SD-card socket, USB-C and a seven-pin interface.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/tamagotchi-sd-card/"><meta property="og:image" content="https://proccyboi.github.io/assets/images/v2/hardware/tamagotchi-sd-card.webp">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/tamagotchi-sd-card/"><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/project-integrated.css">
+  <link rel="preload" as="image" href="/assets/images/v2/hardware/tamagotchi-sd-card.webp" type="image/webp">
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+  <link rel="stylesheet" href="/assets/v2-motion.css">
+  <script src="/assets/v2.js" defer blocking="render"></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2-motion.js" defer></script>
+<link rel="stylesheet" href="/assets/v2-hardware.css">
+<script src="/assets/v2-hardware.js" defer></script>
+</head><body class="v2 v2-case project-page v2-hardware-page"><a class="skip-link" href="/v2/projects/tamagotchi-sd-card/#main">Skip to content</a><header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v2/">Andrew Chung</a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v2/projects/" aria-current="page">Projects</a>
+        <a href="/v2/about/">About</a>
+        <a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header><nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Tamagotchi SD Card</span><div class="v2-case-nav-links"><a href="/v2/projects/tamagotchi-sd-card/#overview" data-v2-section>Overview</a><a href="/v2/projects/tamagotchi-sd-card/#explore" data-v2-section>Interactive</a><a href="/v2/projects/tamagotchi-sd-card/#details" data-v2-section>Details</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+<main id="main">
+  <section class="project-hero" id="overview" aria-labelledby="project-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><div><h1 id="project-title">Tamagotchi SD Card</h1><p>An STM32F072 board combining a full-size SD-card socket, USB-C and a seven-pin interface.</p></div><div class="project-hero-actions"><a href="/v2/projects/tamagotchi-sd-card/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/tamagotchi-sd-card/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" width="1600" height="1200" alt="Tamagotchi SD Card" fetchpriority="high"></figure></div>
+    <div class="v2-case-specs shell"><dl class="project-meta"><div><dt>Controller</dt><dd>STM32F072C8</dd></div><div><dt>Board</dt><dd>44.88 × 39.27 mm</dd></div><div><dt>Storage</dt><dd>Full-size SD card</dd></div><div><dt>Connection</dt><dd>USB-C + 7-pin header</dd></div></dl></div></section>
+  <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="explore-title"><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="explore-title">Tamagotchi SD Card assembly</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      <figure data-hardware="/assets/models/hardware/tamagotchi-sd-card/assembly.json" data-hardware-title="Tamagotchi SD Card assembly">
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" width="1600" height="1200" alt="Tamagotchi SD Card assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
+      <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
+      <div class="hardware-controls"><div class="hardware-views" role="group" aria-label="Camera"><button type="button" data-hardware-view="iso" aria-pressed="true">Perspective</button><button type="button" data-hardware-view="top" aria-pressed="false">Top</button><button type="button" data-hardware-view="bottom" aria-pressed="false">Underside</button></div><button type="button" data-hardware-explode aria-pressed="false">Explode</button><button type="button" data-hardware-scroll aria-pressed="false">Follow scroll</button><button type="button" data-hardware-reset>Reset</button><label class="hardware-range">Assembled <input data-hardware-range type="range" min="0" max="100" value="0" aria-label="Assembly separation"> Exploded</label></div>
+      <div class="hardware-parts"><label for="explore-parts">Component</label><select id="explore-parts" data-hardware-selection><option value="">All components</option></select></div>
+      <p data-hardware-part hidden></p><p data-hardware-status role="status" aria-live="polite"></p>
+    </figure>
+
+    </div></section><div class="project-body shell" id="details"><section class="project-summary"><h2>Storage interface</h2><div class="project-prose"><p>The board pairs an STM32F072C8 with a full-size SD-card socket. USB-C and a seven-pin header provide the external connections, with reset and boot switches available on the PCB.</p><p>The two-layer board measures 44.88 × 39.27 mm.</p></div></section></div>
+<nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">More projects</p><div>
+      <a href="/v2/projects/usense/"><span>← Previous project</span><strong>uSense</strong></a>
+      <a href="/v2/projects/business-card/"><span>Next project →</span><strong>NFC Business Card</strong></a>
+    </div><a class="v2-all-work" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></nav>
+</main><footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung</a><div class="v2-footer-links"><a href="/v2/projects/">Projects</a><a href="/v2/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer></body></html>

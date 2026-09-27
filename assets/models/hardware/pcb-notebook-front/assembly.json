@@ -1,0 +1,563 @@
+{
+  "slug": "pcb-notebook-front",
+  "modelUrl": "/assets/models/hardware/pcb-notebook-front/board.glb",
+  "boundsMm": [
+    39.72,
+    33.75,
+    190.72001,
+    249.75
+  ],
+  "thicknessMm": 1.6,
+  "coreHeightMm": [
+    0.0,
+    1.51
+  ],
+  "scaleToMillimetres": 1000,
+  "upAxis": "+Y",
+  "kicadXAxis": "+X",
+  "kicadYAxis": "+Z",
+  "translationMm": [
+    -115.220005,
+    -0.0,
+    -141.75
+  ],
+  "footprints": [
+    {
+      "ref": "G***",
+      "value": "LOGO",
+      "footprint": "Op Amp:Op Amp (Cu)",
+      "atMm": [
+        116.4844,
+        112.3442
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "G***",
+      "value": "LOGO",
+      "footprint": "Op Amp:Op Amp (Mask)",
+      "atMm": [
+        116.4844,
+        112.3442
+      ],
+      "side": "front",
+      "hasModel": false,
+      "dnp": false,
+      "excludeFromBom": true,
+      "modelExported": false
+    },
+    {
+      "ref": "SOP-8",
+      "value": "SOP-8_3.9x4.9mm_P1.27mm",
+      "footprint": "Package_SO:SOP-8_3.9x4.9mm_P1.27mm",
+      "atMm": [
+        120.3225,
+        166.44,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SOT89-3",
+      "value": "SOT-89-3",
+      "footprint": "Package_TO_SOT_SMD:SOT-89-3",
+      "atMm": [
+        117.8625,
+        146.2,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "TSSOP-8",
+      "value": "TSSOP-8_3x3mm_P0.65mm",
+      "footprint": "Package_SO:TSSOP-8_3x3mm_P0.65mm",
+      "atMm": [
+        73.6975,
+        166.225,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SOT223-3",
+      "value": "SOT-223",
+      "footprint": "Package_TO_SOT_SMD:SOT-223",
+      "atMm": [
+        77.8875,
+        145.825,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "MSOP-8",
+      "value": "MSOP-8-1EP_3x3mm_P0.65mm_EP1.68x1.88mm",
+      "footprint": "Package_SO:MSOP-8-1EP_3x3mm_P0.65mm_EP1.68x1.88mm",
+      "atMm": [
+        150.6725,
+        166.725,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "LFCSP-16",
+      "value": "LFCSP-16-1EP_3x3mm_P0.5mm_EP1.3x1.3mm",
+      "footprint": "Package_CSP:LFCSP-16-1EP_3x3mm_P0.5mm_EP1.3x1.3mm",
+      "atMm": [
+        86.895,
+        190.355,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SOT23-5",
+      "value": "SOT-23-5",
+      "footprint": "Package_TO_SOT_SMD:SOT-23-5",
+      "atMm": [
+        137.475,
+        147.0,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "1206",
+      "value": "R_1206_3216Metric",
+      "footprint": "Resistor_SMD:R_1206_3216Metric",
+      "atMm": [
+        89.2625,
+        61.175,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "LQFP-32",
+      "value": "LQFP-32_7x7mm_P0.8mm",
+      "footprint": "Package_QFP:LQFP-32_7x7mm_P0.8mm",
+      "atMm": [
+        158.645,
+        190.005,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "0402",
+      "value": "R_0402_1005Metric",
+      "footprint": "Resistor_SMD:R_0402_1005Metric",
+      "atMm": [
+        133.8625,
+        61.95,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SOT23-3",
+      "value": "SOT-23",
+      "footprint": "Package_TO_SOT_SMD:SOT-23",
+      "atMm": [
+        156.075,
+        146.65,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "0603",
+      "value": "R_0603_1608Metric",
+      "footprint": "Resistor_SMD:R_0603_1608Metric",
+      "atMm": [
+        119.1875,
+        61.7,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "0805",
+      "value": "R_0805_2012Metric",
+      "footprint": "Resistor_SMD:R_0805_2012Metric",
+      "atMm": [
+        104.0375,
+        61.475,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SSO-8",
+      "value": "SSO-8_6.8x5.9mm_P1.27mm_Clearance7mm",
+      "footprint": "Package_SO:SSO-8_6.8x5.9mm_P1.27mm_Clearance7mm",
+      "atMm": [
+        103.5975,
+        166.165,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SOIC-8",
+      "value": "SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm",
+      "footprint": "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm",
+      "atMm": [
+        136.2725,
+        166.755,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "TQFN-32",
+      "value": "TQFN-32-1EP_5x5mm_P0.5mm_EP2.1x2.1mm",
+      "footprint": "Package_DFN_QFN:TQFN-32-1EP_5x5mm_P0.5mm_EP2.1x2.1mm",
+      "atMm": [
+        118.97,
+        190.33,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SOT143-4",
+      "value": "SOT-143",
+      "footprint": "Package_TO_SOT_SMD:SOT-143",
+      "atMm": [
+        97.925,
+        147.5,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "PQFP-64",
+      "value": "PQFP-64_14x14mm_P0.8mm",
+      "footprint": "Package_QFP:PQFP-64_14x14mm_P0.8mm",
+      "atMm": [
+        122.46,
+        217.4575,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "01005",
+      "value": "R_01005_0402Metric",
+      "footprint": "Resistor_SMD:R_01005_0402Metric",
+      "atMm": [
+        164.6375,
+        62.175,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "PLCC-28",
+      "value": "PLCC-28",
+      "footprint": "Package_LCC:PLCC-28",
+      "atMm": [
+        97.1875,
+        217.5775,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "2010",
+      "value": "R_2010_5025Metric",
+      "footprint": "Resistor_SMD:R_2010_5025Metric",
+      "atMm": [
+        74.625,
+        60.675,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "LGA-16",
+      "value": "LGA-16_3x3mm_P0.5mm",
+      "footprint": "Package_LGA:LGA-16_3x3mm_P0.5mm",
+      "atMm": [
+        73.87,
+        190.23,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "SSOP-8",
+      "value": "SSOP-8_3.9x5.05mm_P1.27mm",
+      "footprint": "Package_SO:SSOP-8_3.9x5.05mm_P1.27mm",
+      "atMm": [
+        87.1975,
+        166.415,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "TQFP-32",
+      "value": "TQFP-32_7x7mm_P0.8mm",
+      "footprint": "Package_QFP:TQFP-32_7x7mm_P0.8mm",
+      "atMm": [
+        75.1725,
+        217.55,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "EQFP-144",
+      "value": "EQFP-144-1EP_20x20mm_P0.5mm_EP4x4mm",
+      "footprint": "Package_QFP:EQFP-144-1EP_20x20mm_P0.5mm_EP4x4mm",
+      "atMm": [
+        153.84,
+        217.5325,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "BGA-25",
+      "value": "BGA-25_6.35x6.35mm_Layout5x5_P1.27mm",
+      "footprint": "Package_BGA:BGA-25_6.35x6.35mm_Layout5x5_P1.27mm",
+      "atMm": [
+        137.345,
+        190.305,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "0201",
+      "value": "R_0201_0603Metric",
+      "footprint": "Resistor_SMD:R_0201_0603Metric",
+      "atMm": [
+        149.1875,
+        62.025,
+        180.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "QFN-32",
+      "value": "QFN-32-1EP_4x4mm_P0.4mm_EP2.9x2.9mm",
+      "footprint": "Package_DFN_QFN:QFN-32-1EP_4x4mm_P0.4mm_EP2.9x2.9mm",
+      "atMm": [
+        102.095,
+        190.505,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    },
+    {
+      "ref": "DFN-8",
+      "value": "DFN-8-1EP_1.5x1.5mm_P0.4mm_EP0.7x1.2mm",
+      "footprint": "Package_DFN_QFN:DFN-8-1EP_1.5x1.5mm_P0.4mm_EP0.7x1.2mm",
+      "atMm": [
+        164.0475,
+        166.775,
+        90.0
+      ],
+      "side": "back",
+      "hasModel": true,
+      "dnp": false,
+      "excludeFromBom": false,
+      "modelExported": false
+    }
+  ],
+  "materials": {
+    "pads": "mat_1",
+    "silk": "mat_2",
+    "mask": "mat_3",
+    "core": "mat_4"
+  },
+  "silk": {
+    "frontUrl": "/assets/models/hardware/pcb-notebook-front/silk-front.svg",
+    "backUrl": "/assets/models/hardware/pcb-notebook-front/silk-back.svg",
+    "viewBoxMm": [
+      39.72,
+      33.75,
+      151.00001,
+      216.0
+    ]
+  },
+  "source": "Spiral-bound Book Cover/Spiral-bound Book Cover.kicad_pcb",
+  "sourceHash": "d3f12ed7ceb42d29769125918ce5900ad3d2cca2c7d9dfab8e2f6862833a3ae8",
+  "missingModels": [],
+  "unmodeledFootprints": [
+    "G***",
+    "G***"
+  ],
+  "modelledComponentCount": 0,
+  "triangleCount": 88628,
+  "modelBytes": 5301588,
+  "resolvedLibraryModelCount": 0,
+  "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "unpopulated": true,
+  "copperIncluded": true,
+  "materialProperties": {
+    "pads": {
+      "baseColorFactor": [
+        0.699999988079071,
+        0.6100000143051147,
+        0.0,
+        1.0
+      ],
+      "metallicFactor": 1.0,
+      "roughnessFactor": 0.4000000059604645
+    },
+    "silk": {
+      "baseColorFactor": [
+        0.9607843160629272,
+        0.9607843160629272,
+        0.9607843160629272,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.8999999761581421
+    },
+    "mask": {
+      "baseColorFactor": [
+        0.0345098040997982,
+        0.0345098040997982,
+        0.0345098040997982,
+        0.8299999833106995
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.6000000238418579
+    },
+    "core": {
+      "baseColorFactor": [
+        0.4274509847164154,
+        0.45490196347236633,
+        0.29411765933036804,
+        1.0
+      ],
+      "metallicFactor": 0.0,
+      "roughnessFactor": 0.800000011920929
+    }
+  },
+  "literalVrmlModels": [],
+  "additionalLibraryModels": []
+}
