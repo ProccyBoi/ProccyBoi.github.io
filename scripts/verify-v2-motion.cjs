@@ -1,6 +1,7 @@
 /* Responsive and motion acceptance checks for the actual assembly hero.
  * Requires Playwright. Optional: V2_BASE_URL, CHROMIUM_EXECUTABLE,
- * V2_SCREENSHOTS directory for review images. */
+ * V2_SCREENSHOTS directory for review images. --lifecycle-only skips the
+ * breakpoint/keyboard sweep for focused preference/context-loss diagnosis. */
 'use strict';
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -8,6 +9,7 @@ const path=require('node:path');
 const {chromium}=require('playwright');
 const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
 const shots=process.env.V2_SCREENSHOTS;
+const lifecycleOnly=process.argv.includes('--lifecycle-only');
 if(shots)fs.mkdirSync(shots,{recursive:true});
 const phases=[
   {progress:.265,name:'esp32',title:'ESP32',href:'/v2/projects/framework-expansion-card/'},
@@ -48,7 +50,7 @@ async function inViewport(locator,width,height,label){
     await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
     await page.waitForTimeout(1800);
     await framesStop(page,'Entrance must finish and stop rendering');
-    for(const viewport of [{width:1440,height:1000},{width:1366,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:740}]){
+    for(const viewport of lifecycleOnly?[]:[{width:1440,height:1000},{width:1366,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:740}]){
       await page.setViewportSize(viewport);
       await scrollPhase(page,0);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Hero overflow at '+JSON.stringify(viewport));
@@ -77,9 +79,9 @@ async function inViewport(locator,width,height,label){
       }
       console.log('PASS hero viewport '+viewport.width+'x'+viewport.height+': all three chapters, caption links and controls');
     }
-    console.log('PASS three scroll chapters at desktop, 768px-high laptop, tablet, 390px and 320px; captions/controls fit and draw calls stay bounded');
+    if(!lifecycleOnly)console.log('PASS three scroll chapters at desktop, 768px-high laptop, tablet, 390px and 320px; captions/controls fit and draw calls stay bounded');
     await page.setViewportSize({width:1440,height:1000});
-    for(let index=0;index<phases.length;index++){
+    for(let index=0;index<(lifecycleOnly?0:phases.length);index++){
       await page.locator('[data-assembly-select="'+index+'"]').focus();
       await page.keyboard.press('Enter');
       await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.001,phases[index].progress);
@@ -91,14 +93,20 @@ async function inViewport(locator,width,height,label){
     await framesStop(page,'Offscreen hero must not render');
     await scrollPhase(page,.265);
     assert.equal(await hero.getAttribute('data-assembly-active'),'esp32','Hero resumes after returning onscreen');
-    console.log('PASS keyboard project selection, finite motion, idle/offscreen suspension and resume');
+    console.log('PASS '+(lifecycleOnly?'':'keyboard project selection, ')+'finite motion, idle/offscreen suspension and resume');
     await page.emulateMedia({reducedMotion:'reduce'});
-    await page.waitForFunction(()=>document.querySelector('[data-assembly]').classList.contains('is-static'));
-    assert.equal(await hero.evaluate(node=>node.classList.contains('is-enhanced')),false);
+    // Check what visitors experience, not only an internal mode class. During
+    // active software rendering Chromium can update the media query and CSS
+    // before the matching MediaQueryList callback is observed.
+    await page.waitForFunction(()=>matchMedia('(prefers-reduced-motion: reduce)').matches&&getComputedStyle(document.querySelector('.v2-assembly-sticky')).position!=='sticky',null,{polling:100,timeout:30000});
+    assert.equal(await hero.evaluate(node=>node.offsetHeight<=innerHeight+1),true,'Reduced motion must remove the long pinned scroll section');
+    assert.equal(await page.locator('[data-assembly-caption]').isVisible(),false,'Reduced motion hides scroll-only captions');
     assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior),'auto');
     await framesStop(page,'Live reduced-motion preference must stop animation');
+    const reducedState=await hero.evaluate(node=>({className:node.className,state:node.dataset.assemblyState,frames:node.dataset.assemblyFrames,progress:node.dataset.assemblyProgress}));
+    console.log('PASS live reduced motion: unpinned, compact, idle; diagnostic '+JSON.stringify(reducedState));
     await page.emulateMedia({reducedMotion:'no-preference'});
-    await page.waitForFunction(()=>document.querySelector('[data-assembly]').classList.contains('is-enhanced'));
+    await page.waitForFunction(()=>!matchMedia('(prefers-reduced-motion: reduce)').matches&&getComputedStyle(document.querySelector('.v2-assembly-sticky')).position==='sticky',null,{polling:100,timeout:30000});
     await scrollPhase(page,.565);
     assert.equal(await hero.getAttribute('data-assembly-active'),'pi');
     console.log('PASS live reduced-motion preference and restoration');
