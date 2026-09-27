@@ -37,6 +37,8 @@ REDIRECT_EXEMPTIONS = {
 }
 SHARED_PREFIXES = ("/shared/", "/assets/", "/reports/", "/book/")
 V2_ADDITIONS = {"framework-raspberry-pi"}  # Requested alongside the September 2026 redesign.
+ROOT_ONLY_PROJECTS = {"coaster"}
+EXPECTED_PUBLIC_PROJECT_COUNT = 15
 
 
 @dataclass
@@ -213,8 +215,11 @@ def main() -> int:
         match = re.fullmatch(r"/projects/([^/]+)/?", target[2]) if target else None
         if match:
             original_projects.add(match.group(1))
-    if len(original_projects) != 14:
-        error(original.path, f"baseline inventory changed: expected 14 public projects, found {len(original_projects)}; review scope before updating this baseline")
+    if len(original_projects) != EXPECTED_PUBLIC_PROJECT_COUNT:
+        error(original.path, f"baseline inventory changed: expected {EXPECTED_PUBLIC_PROJECT_COUNT} public projects, found {len(original_projects)}; review scope before updating this baseline")
+    missing_root_only = ROOT_ONLY_PROJECTS - original_projects
+    if missing_root_only:
+        error(original.path, f"configured root-only project(s) missing from public inventory: {', '.join(sorted(missing_root_only))}")
 
     pages = sorted((ROOT / "v2").rglob("*.html"))
     if not pages:
@@ -231,7 +236,7 @@ def main() -> int:
     }
     for slug in sorted(v2_projects - original_projects - V2_ADDITIONS):
         error(ROOT / "v2/projects" / slug, "new project absent from existing public project inventory")
-    for slug in sorted((original_projects | V2_ADDITIONS) - v2_projects):
+    for slug in sorted((original_projects | V2_ADDITIONS) - v2_projects - ROOT_ONLY_PROJECTS):
         error(ROOT / "v2/projects" / slug, "existing project missing from /v2")
 
     for page in pages:
@@ -316,7 +321,7 @@ def main() -> int:
                 error(page, "refresh redirect has no resolvable URL", refresh.line)
 
     unique_errors = list(dict.fromkeys(errors))
-    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects)} projects ({len(original_projects)} existing + {len(V2_ADDITIONS)} requested); "
+    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects)} projects ({len(original_projects - ROOT_ONLY_PROJECTS)} existing + {len(V2_ADDITIONS)} requested); "
                f"{stats['images']} images; {stats['references']} URL references; {stats['fragments']} fragments; "
                f"{len(checked_css)} stylesheets; {len(checked_targets)} distinct local targets; "
                f"{stats['explicit utility/redirect exemptions']} explicit utility/redirect exemptions; "
