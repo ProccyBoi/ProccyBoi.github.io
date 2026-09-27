@@ -1,12 +1,12 @@
 # V2 — hardware, inside and out
 
-Revised 27 September 2026. The portfolio lives at `/v2/` and contains 22 projects, including the expanded electronics collection and Coaster.
+Revised 27 September 2026. The portfolio lives at `/v2/` and contains 18 projects, including the expanded electronics collection and Coaster.
 
 ## Visual direction
 
 The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses near-white surfaces, graphite text and blue links. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections follows the same principle as separation between parts: enough space to see their relationship.
 
-The opening is a full-screen, scroll-controlled scene featuring the ESP32 card, Raspberry Pi card and TramTrace. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their real positions; reverse scrolling reconstructs the same assembly. Kiku follows as a separate product assembly: its enclosure, controls, display, PCB and battery separate as the reader moves through the gallery. The opening sequence stays the same length.
+The opening is a full-screen, scroll-controlled scene featuring the ESP32 card, Raspberry Pi card and TramTrace. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their real positions; reverse scrolling reconstructs the same assembly.
 
 Project names and concise descriptions carry the interface. CAD provenance belongs in development documentation, not repeated as decorative captions. Titles should identify work or explain a real design decision. Technical specifications belong where they help someone understand a project.
 
@@ -18,8 +18,7 @@ Project names and concise descriptions carry the interface. CAD provenance belon
 - Physical CAD faces are merged by material within moving components. TramTrace’s LEDs form one bank for the hero, retaining all 116 source geometries.
 - Reduced motion and Save Data start with still images and direct project links; JavaScript/WebGL failure retains the same navigation. No loading gate blocks the page.
 - The standalone Raspberry Pi inspector adds orbiting, camera presets, component identification, shell visibility and assembly separation.
-- The shared hardware inspector adds on-demand component selection, front/back views, assembly separation and optional scroll control across the electronics collection. Notebook covers remain unpopulated. Kiku has separate enclosure and PCB inspectors.
-- Kiku's homepage assembly loads near the viewport. Reduced motion and Save Data retain its poster until explicitly opened. The assembled PCB is batched by material inside the product view; its separate circuit-board view preserves individual components.
+- The shared hardware inspector adds on-demand component selection, front/back views, assembly separation and optional scroll control across the electronics collection.
 
 ## Reference and scope
 
@@ -33,7 +32,7 @@ The Pi card is based on `D:/Electronics Projects/Framework Expansion Card - Rasp
 - `assets/v2-assembly.js`: scene lighting, responsive composition and deterministic scroll poses.
 - `assets/v2-assembly.css`: fullscreen scene and static fallback.
 - `assets/v2.css`, `assets/v2-case.css`: shared gallery theme and interior pages.
-- `assets/v2-hardware.js`, `assets/v2-hardware.css`: shared model factory, source mechanical assembly and finite inspector lifecycle.
+- `assets/v2-hardware.js`, `assets/v2-hardware.css`: shared model factory and finite inspector lifecycle.
 - `scripts/content/hardware-catalog.json`: factual content, sources, new routes and existing-page assembly integrations.
 - `scripts/build-v2-cases.py`: reproducible case/collection/About generation, including the Pi source fragment.
 - `scripts/audit-v2.py`: all route, local asset, inventory and document checks.

@@ -21,18 +21,13 @@ import tempfile
 TARGETS = {
     "microphone": "Microphone/Microphone.kicad_pcb",
     "nixie-clock": "Nixie Tube Clock/Nixie Tube Clock.kicad_pcb",
-    "usense": "uSense/uSense.kicad_pcb",
     "tamagotchi-sd-card": "Tamagotchi SD Card/Tamagotchi SD Card.kicad_pcb",
-    "business-card": "Business Card/Business Card V4 - COMP6441/business card.kicad_pcb",
     "framework-logic-analyser": "Framework Expansion Card - Logic Analyser/ExpansionCards-main/Electrical/KiCad_templates/Expansion_Card/Expansion_Card.kicad_pcb",
     "lora-receiver": "LoRa Reciever/LoRa Reciever.kicad_pcb",
     "rf-test-board": "RF Test Board/RF Test Board.kicad_pcb",
-    "kiku": "Walkman - Blobject/Walkman - Blobject.kicad_pcb",
     "metroboard": "Metroboard/Metroboard V3/Metroboard.kicad_pcb",
     "skylabs-telemetry": "../Skylabs/Mission Systems/Telemetry PCB/Mission Systems PCB v4.0/Mission Systems.kicad_pcb",
     "skylabs-ground-station": "../Skylabs/Mission Systems/Ground Station PCB/Ground Station v1.0/Ground Station v1.0.kicad_pcb",
-    "pcb-notebook-front": "Spiral-bound Book Cover/Spiral-bound Book Cover.kicad_pcb",
-    "pcb-notebook-back": "Spiral-bound Book Cover/Spiral-bound Book Back.kicad_pcb",
 }
 
 

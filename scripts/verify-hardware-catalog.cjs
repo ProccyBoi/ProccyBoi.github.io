@@ -87,8 +87,8 @@ async function settled(root){
   await root.locator('canvas').evaluate(canvas=>{const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');gl.getExtension('WEBGL_lose_context').loseContext();});
   await page.locator('[data-hardware-state="unavailable"]').waitFor();assert.equal(await root.locator('[data-hardware-poster]').isVisible(),true);
   await page.close();
-  const fail=await browser.newPage();await fail.route('**/hardware/usense/board.glb',route=>route.abort());await fail.goto(base+'/v2/projects/usense/');await fail.locator('[data-hardware-start]').click();await fail.locator('[data-hardware-state="unavailable"]').waitFor();assert.equal(await fail.locator('[data-hardware-poster]').isVisible(),true);await fail.close();
-  const noJS=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:844}});await noJS.goto(base+'/v2/projects/kiku/');assert.equal(await noJS.locator('[data-hardware-start]').first().isVisible(),false);assert.equal(await noJS.locator('[data-hardware-poster]').count(),2);await noJS.close();
+  const fail=await browser.newPage();await fail.route('**/hardware/framework-logic-analyser/board.glb',route=>route.abort());await fail.goto(base+'/v2/projects/framework-logic-analyser/');await fail.locator('[data-hardware-start]').click();await fail.locator('[data-hardware-state="unavailable"]').waitFor();assert.equal(await fail.locator('[data-hardware-poster]').isVisible(),true);await fail.close();
+  const noJS=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:844}});await noJS.goto(base+'/v2/projects/framework-logic-analyser/');assert.equal(await noJS.locator('[data-hardware-start]').first().isVisible(),false);assert.equal(await noJS.locator('[data-hardware-poster]').count(),1);await noJS.close();
   assert.deepEqual(errors,[],'Browser errors');assert.deepEqual(failed,[],'HTTP failures');
   console.log('PASS shared reduced-motion, offscreen, context-loss, failed-model and no-JavaScript behaviour');
  }finally{await browser.close();}

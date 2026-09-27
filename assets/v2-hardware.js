@@ -12,40 +12,10 @@
     return scripts.get(url);
   };
   const clamp=(value,min=0,max=1)=>Math.max(min,Math.min(max,value));
-  async function loadProduct(metadata){
-    const T=window.THREE,pcb=await loadAssembly(metadata.boardManifest);
-    pcb.group.updateMatrixWorld(true);
-    const board=window.V2CadGeometry.mergeReference(T,[pcb.group],new T.Vector3(),1,material=>material,'');
-    pcb.group.traverse(object=>object.geometry?.dispose());
-    const group=new T.Group();group.add(board);
-    const parts=[{object:board,base:new T.Vector3(),offset:new T.Vector3(),ref:'PCB',value:'Populated circuit board'}];
-    await Promise.all(metadata.parts.map(async part=>{
-      const response=await fetch(part.file);if(!response.ok)throw new Error('Mechanical part unavailable');
-      const buffer=await response.arrayBuffer(),view=new DataView(buffer),count=view.getUint32(80,true);
-      if(84+count*50!==buffer.byteLength)throw new Error('Invalid binary STL');
-      const positions=new Float32Array(count*9),normals=new Float32Array(count*9);
-      for(let i=0;i<count;i++){
-        const start=84+i*50;
-        for(let vertex=0;vertex<3;vertex++)for(let axis=0;axis<3;axis++){
-          positions[i*9+vertex*3+axis]=view.getFloat32(start+12+vertex*12+axis*4,true);
-          normals[i*9+vertex*3+axis]=view.getFloat32(start+axis*4,true);
-        }
-      }
-      const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.BufferAttribute(positions,3));geometry.setAttribute('normal',new T.BufferAttribute(normals,3));
-      geometry.rotateX(metadata.mechanicalToBoard.rotationX);geometry.translate(...metadata.mechanicalToBoard.translationMm);geometry.scale(1/metadata.unitsMm,1/metadata.unitsMm,1/metadata.unitsMm);
-      const colour=new T.Color(...part.colour).convertSRGBToLinear();
-      const material=new T.MeshStandardMaterial({color:colour,roughness:part.ref==='lens'?.25:.62,metalness:.02,envMapIntensity:.12,side:T.DoubleSide});
-      const mesh=new T.Mesh(geometry,material);mesh.name=part.ref;mesh.userData.partRef=part.ref;mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);
-      parts.push({object:mesh,base:new T.Vector3(),offset:new T.Vector3(0,part.explodeMm/metadata.unitsMm,0),ref:part.ref,value:part.value});
-    }));
-    group.updateMatrixWorld(true);const bounds=new T.Box3().setFromObject(group),size=bounds.getSize(new T.Vector3());
-    return {group,parts,metadata,span:Math.max(size.x,size.y,size.z),centre:bounds.getCenter(new T.Vector3())};
-  }
   async function loadAssembly(url) {
     const T=window.THREE;
     const response=await fetch(url); if(!response.ok)throw new Error('Assembly unavailable');
     const metadata=await response.json();
-    if(metadata.kind==='kiku-p2')return loadProduct(metadata);
     const source=await new Promise((resolve,reject)=>new T.GLTFLoader().load(metadata.modelUrl,gltf=>resolve(gltf.scene),undefined,reject));
     const [x1,z1,x2,z2]=metadata.boundsMm;
     const units=Math.max(x2-x1,z2-z1);
@@ -182,7 +152,6 @@
       for(const part of model.parts){
         part.object.position.copy(part.base).addScaledVector(part.offset,current);
       }
-      if(model.metadata.kind==='kiku-p2')frameCamera();
       model.group.updateMatrixWorld(true);
       const box=scene.getObjectByName('selection-outline');
       box.visible=Boolean(selected);
@@ -200,8 +169,7 @@
     };
     const frameCamera=()=>{
       const width=stage.clientWidth,height=stage.clientHeight,aspect=width/Math.max(1,height);
-      const pullback=model.metadata.kind==='kiku-p2'?1+.22*current:1;
-      const half=Math.max(.77,model.span*.7)*pullback/zoom;
+      const half=Math.max(.77,model.span*.7)/zoom;
       camera.left=-half*Math.max(1,aspect);camera.right=-camera.left;
       camera.top=half*Math.max(1,1/aspect);camera.bottom=-camera.top;camera.updateProjectionMatrix();
     };

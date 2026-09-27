@@ -33,6 +33,8 @@ async function posters(page) {
     assert.ok((await page.locator('[data-assembly-canvas]').getAttribute('aria-label')).trim());
     assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items=>items.map(item=>item.getAttribute('href'))),routes);
     assert.equal(await page.locator('h1').count(),1);
+    assert.equal(await page.locator('.v2-project-grid > .v2-project-card').count(),7,'Seven public homepage cards');
+    assert.equal(await page.locator('.v2-project-grid > .v2-project-card').first().getAttribute('href'),'/v2/projects/framework-logic-analyser/');
     const skip=await page.locator('.v2-skip').getAttribute('href');
     assert.equal(await page.locator(skip).count(),1,'Skip target must exist');
     await page.locator('.v2-skip').focus();await page.keyboard.press('Enter');
@@ -47,7 +49,7 @@ async function posters(page) {
     await page.locator('[data-v2-menu]').click();
     await page.locator('[data-v2-nav] a[href="/v2/projects/"]').click();
     await page.waitForURL('**/v2/projects/');
-    assert.equal(await page.locator(primary).count(),22,'22 primary projects');
+    assert.equal(await page.locator(primary).count(),18,'18 primary projects');
     assert.equal(await page.locator('.v2-related-tool [data-v2-project]').count(),1,'Flight Review remains related to Skylabs');
     const search=page.locator('[data-v2-search]');
     await search.fill('Framework');
@@ -60,13 +62,13 @@ async function posters(page) {
     assert.equal(await page.locator('[data-v2-project]:visible').count(),0);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/No projects match/);
     await search.press('Escape');
-    assert.equal(await page.locator(primary+':visible').count(),22);
+    assert.equal(await page.locator(primary+':visible').count(),18);
     await page.locator('[data-v2-category="interactive"]').click();
     assert.equal(await page.locator(primary+':visible').count(),3);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/3 projects and 1 related tool/);
     await page.setViewportSize({width:320,height:900});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
-    console.log('PASS automatic CAD loading, keyboard/menu navigation, 22 projects, four Framework cards, search and categories');
+    console.log('PASS automatic CAD loading, keyboard/menu navigation, 18 projects, four Framework cards, search and categories');
     await page.setViewportSize({width:1280,height:900});
     for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
@@ -130,7 +132,7 @@ async function posters(page) {
     await posters(staticPage);
     assert.equal(await staticPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await staticPage.goto(base+'/v2/projects/',{waitUntil:'networkidle'});
-    assert.equal(await staticPage.locator(primary+':visible').count(),22);
+    assert.equal(await staticPage.locator(primary+':visible').count(),18);
     await noJS.close();
     const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
     const reducedPage=await reduced.newPage();observe(reducedPage);

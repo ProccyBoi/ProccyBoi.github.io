@@ -16,15 +16,6 @@
       "reason": "No physical board outline"
     },
     {
-      "slug": "kiku",
-      "exported": true,
-      "metadataUrl": "/assets/models/hardware/kiku/assembly.json",
-      "source": "Walkman - Blobject/Walkman - Blobject.kicad_pcb",
-      "sourceHash": "47b584e878b46823cc84702f4f22526b34a1e79018acd23f38f4ea501376e3d2",
-      "missingModelCount": 1,
-      "modelBytes": 16039348
-    },
-    {
       "slug": "lora-receiver",
       "exported": true,
       "metadataUrl": "/assets/models/hardware/lora-receiver/assembly.json",
@@ -61,15 +52,6 @@
       "modelBytes": 5316848
     },
     {
-      "slug": "business-card",
-      "exported": true,
-      "metadataUrl": "/assets/models/hardware/business-card/assembly.json",
-      "source": "Business Card/Business Card V4 - COMP6441/business card.kicad_pcb",
-      "sourceHash": "eb37bd90e12732a42aac71c94239432fe96540dbabd63d75e94ae2667b274522",
-      "missingModelCount": 0,
-      "modelBytes": 2171444
-    },
-    {
       "slug": "skylabs-telemetry",
       "exported": true,
       "metadataUrl": "/assets/models/hardware/skylabs-telemetry/assembly.json",
@@ -77,33 +59,6 @@
       "sourceHash": "9d1778533696fd7769bbf6e319cb2fa98f06c17642adf4866df7223c072c7358",
       "missingModelCount": 2,
       "modelBytes": 13527660
-    },
-    {
-      "slug": "usense",
-      "exported": true,
-      "metadataUrl": "/assets/models/hardware/usense/assembly.json",
-      "source": "uSense/uSense.kicad_pcb",
-      "sourceHash": "d149d6417ea07a36b8bb874cf23e5bb3c1c25005acf6867a1b9a26c1a54be811",
-      "missingModelCount": 1,
-      "modelBytes": 4928908
-    },
-    {
-      "slug": "pcb-notebook-front",
-      "exported": true,
-      "metadataUrl": "/assets/models/hardware/pcb-notebook-front/assembly.json",
-      "source": "Spiral-bound Book Cover/Spiral-bound Book Cover.kicad_pcb",
-      "sourceHash": "d3f12ed7ceb42d29769125918ce5900ad3d2cca2c7d9dfab8e2f6862833a3ae8",
-      "missingModelCount": 0,
-      "modelBytes": 5301588
-    },
-    {
-      "slug": "pcb-notebook-back",
-      "exported": true,
-      "metadataUrl": "/assets/models/hardware/pcb-notebook-back/assembly.json",
-      "source": "Spiral-bound Book Cover/Spiral-bound Book Back.kicad_pcb",
-      "sourceHash": "58a4f24400759ca0bf8aab1af5ceeec0142d30e52def07f0bcdaa7f3a50d8918",
-      "missingModelCount": 0,
-      "modelBytes": 4468272
     },
     {
       "slug": "tamagotchi-sd-card",

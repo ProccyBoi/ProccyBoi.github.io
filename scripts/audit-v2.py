@@ -232,6 +232,16 @@ def main() -> int:
         requested_projects = {"framework-raspberry-pi"} | {record["slug"] for record in catalog["projects"]}
         if len({record["slug"] for record in catalog["projects"]}) != len(catalog["projects"]):
             error(HARDWARE_CATALOG, "duplicate project slug in maintained catalog")
+        public_models = {model['slug'] for record in catalog['projects'] for model in record.get('models', [{'slug': record['model']}])}
+        public_models.update(record['model'] for record in catalog['assemblies'])
+        for manifest in (ROOT / 'assets/models/hardware').glob('*/assembly.json'):
+            if manifest.parent.name not in public_models:
+                error(manifest, 'model is not in the public project catalog')
+        model_catalog_path = ROOT / 'assets/models/hardware/catalog.json'
+        model_catalog = json.loads(model_catalog_path.read_text(encoding='utf-8'))
+        for record in model_catalog.get('boards', []):
+            if record.get('exported') and record['slug'] not in public_models:
+                error(model_catalog_path, f"exported model is not in the public project catalog: {record['slug']}")
     except (OSError, ValueError, KeyError) as exc:
         error(HARDWARE_CATALOG, f"cannot read project inventory: {exc}")
         requested_projects = {"framework-raspberry-pi"}
@@ -293,6 +303,11 @@ def main() -> int:
         for slug in v2_projects:
             if f"{ORIGIN}/v2/projects/{slug}/" not in sitemap_urls:
                 error(ROOT / "sitemap.xml", f"missing project route: {slug}")
+        for url in sitemap_urls:
+            if url and url.startswith(f'{ORIGIN}/v2/projects/'):
+                relative = url.removeprefix(ORIGIN).strip('/')
+                if not (ROOT / relative / 'index.html').is_file():
+                    error(ROOT / 'sitemap.xml', f'sitemap points to an unpublished route: {relative}')
     except (OSError, ET.ParseError) as exc:
         error(ROOT / "sitemap.xml", f"cannot read sitemap: {exc}")
 

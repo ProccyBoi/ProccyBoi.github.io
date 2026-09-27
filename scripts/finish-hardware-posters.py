@@ -7,7 +7,11 @@ ROOT = Path(__file__).resolve().parents[1]
 source = ROOT / '.codex-temp/hardware-posters'
 output = ROOT / 'assets/images/v2/hardware'
 output.mkdir(parents=True, exist_ok=True)
-paths = [source / (slug + '.png') for slug in sys.argv[1:]] or sorted(source.glob('*.png'))
+public = {p.parent.name for p in (ROOT / 'assets/models/hardware').glob('*/assembly.json')}
+selected = sys.argv[1:] or sorted(public)
+if not set(selected) <= public:
+    raise ValueError('Only published assemblies can be encoded.')
+paths = [source / (slug + '.png') for slug in selected]
 for path in paths:
     image = Image.open(path).convert('RGBA')
     if image.size != (1600, 1200):

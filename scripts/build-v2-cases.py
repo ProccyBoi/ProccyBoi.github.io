@@ -524,12 +524,13 @@ def normalized(content):
 def update_sitemap(generated):
     path = ROOT / 'sitemap.xml'
     source = path.read_text(encoding='utf-8')
-    existing = {node.text for node in ET.fromstring(source).iter() if node.tag.rsplit('}', 1)[-1] == 'loc'}
     urls = ['https://proccyboi.github.io/' + name.as_posix().removesuffix('index.html') for name in generated if name.as_posix() != 'v2/projects/skylabs/flight-review/index.html']
+    source = re.sub(r'\s*<url>\s*<loc>(https://proccyboi\.github\.io/v2/projects/[^<]*)</loc>.*?</url>', lambda match: match[0] if match[1] in urls else '', source, flags=re.S)
+    existing = {node.text for node in ET.fromstring(source).iter() if node.tag.rsplit('}', 1)[-1] == 'loc'}
     additions = [f'  <url><loc>{url}</loc></url>' for url in urls if url not in existing]
     if additions:
         source = source.replace('</urlset>', '\n'.join(additions) + '\n</urlset>')
-        path.write_text(normalized(source), encoding='utf-8')
+    path.write_text(normalized(source), encoding='utf-8')
 
 
 def main():
