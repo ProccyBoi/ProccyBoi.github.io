@@ -182,6 +182,7 @@
       for(const part of model.parts){
         part.object.position.copy(part.base).addScaledVector(part.offset,current);
       }
+      if(model.metadata.kind==='kiku-p2')frameCamera();
       model.group.updateMatrixWorld(true);
       const box=scene.getObjectByName('selection-outline');
       box.visible=Boolean(selected);
@@ -197,13 +198,16 @@
       if(ready&&current!==target)root.dataset.hardwareMotion='transition';
       explode.textContent=target>.5?'Assemble':'Explode';explode.setAttribute('aria-pressed',String(target>.5));request();
     };
+    const frameCamera=()=>{
+      const width=stage.clientWidth,height=stage.clientHeight,aspect=width/Math.max(1,height);
+      const pullback=model.metadata.kind==='kiku-p2'?1+.22*current:1;
+      const half=Math.max(.77,model.span*.7)*pullback/zoom;
+      camera.left=-half*Math.max(1,aspect);camera.right=-camera.left;
+      camera.top=half*Math.max(1,1/aspect);camera.bottom=-camera.top;camera.updateProjectionMatrix();
+    };
     const layout=()=>{
       if(!renderer||!ready)return;
-      const width=stage.clientWidth,height=stage.clientHeight,aspect=width/Math.max(1,height);
-      renderer.setSize(width,height,false);
-      const half=Math.max(.77,model.span*.7)/zoom;
-      camera.left=-half*Math.max(1,aspect);camera.right=-camera.left;
-      camera.top=half*Math.max(1,1/aspect);camera.bottom=-camera.top;camera.updateProjectionMatrix();request();
+      renderer.setSize(stage.clientWidth,stage.clientHeight,false);frameCamera();request();
     };
     const releaseGroup=group=>group?.traverse(object=>{object.geometry?.dispose();const list=Array.isArray(object.material)?object.material:[object.material];list.forEach(material=>{material?.map?.dispose();material?.dispose();});});
     const dispose=()=>{
