@@ -13,7 +13,7 @@ const lifecycleOnly=process.argv.includes('--lifecycle-only');
 if(shots)fs.mkdirSync(shots,{recursive:true});
 const phases=[
   {progress:.265,name:'tramtrace',title:'TramTrace',href:'/v2/projects/tramtrace/'},
-  {progress:.565,name:'esp32',title:'ESP32',href:'/v2/projects/framework-expansion-card/'},
+  {progress:.565,name:'telemetry',title:'Telemetry',href:'/v2/projects/skylabs/boards/telemetry/'},
   {progress:.88,name:'pi',title:'Raspberry Pi',href:'/v2/projects/framework-raspberry-pi/'}
 ];
 async function scrollPhase(page,progress){
@@ -112,7 +112,7 @@ async function inViewport(locator,width,height,label){
     await page.emulateMedia({reducedMotion:'no-preference'});
     await page.waitForFunction(()=>!matchMedia('(prefers-reduced-motion: reduce)').matches&&getComputedStyle(document.querySelector('.v2-assembly-sticky')).position==='sticky',null,{polling:100,timeout:30000});
     await scrollPhase(page,.565);
-    assert.equal(await hero.getAttribute('data-assembly-active'),'esp32');
+    assert.equal(await hero.getAttribute('data-assembly-active'),'telemetry');
     console.log('PASS live reduced-motion preference and restoration');
     const extension=await page.locator('[data-assembly-canvas]').evaluate(canvas=>{
       const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');

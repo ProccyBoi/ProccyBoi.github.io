@@ -81,10 +81,7 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 .v2-hardware-cover h3 { font-size: 1.45rem; font-weight: 500; letter-spacing: -.03em; margin: 0 0 1.5rem; }
 .v2-hardware-note, .v2-hardware-credit { max-width: 72ch; margin-top: 1.5rem; color: var(--muted); font-size: .82rem; line-height: 1.7; }
 .v2 .v2-hardware-credit a { color: var(--v2-accent); text-decoration: underline; text-underline-offset: .2em; }
-.v2-component-map :is([data-object-view="rotate"], [data-object-explode], .object-rotation-bar, .object-drag-hint) { display: none !important; }
-@media (max-width: 600px) {
-  .v2-component-map .object-hotspot span { display: none; }
-}
+.v2-anchor-alias { display: block; position: relative; top: calc(-1 * (var(--header-height) + 4.4rem)); }
 .v2-case .project-body { padding-block: clamp(3.5rem, 6vw, 6rem); }
 .v2-case .project-summary { grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr); gap: clamp(3rem, 8vw, 9rem); padding-block: clamp(2.5rem, 5vw, 5rem); }
 .v2-case .project-summary:first-child { border-top: 0; padding-top: 0; }

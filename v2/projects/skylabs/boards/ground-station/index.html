@@ -17,15 +17,15 @@
 
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
-  <link rel="stylesheet" href="assets/skylabs-object.css?v=20260903b">
+
   <link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
   <script src="assets/site.js" defer></script>
-  <script src="assets/skylabs-object.js?v=20260903b" defer></script>
+
 <link rel="preload" as="image" href="/assets/images/v2/hardware/skylabs-ground-station.webp" type="image/webp">
 <link rel="stylesheet" href="/assets/v2.css">
   <link rel="stylesheet" href="/assets/v2-case.css">
   <link rel="stylesheet" href="/assets/v2-motion.css">
-  <script src="/assets/v2.js" defer blocking="render"></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
   <script src="/assets/v2-motion.js" defer></script>
 <link rel="stylesheet" href="/assets/v2-hardware.css">
 <script src="/assets/v2-hardware.js" defer></script>
@@ -42,16 +42,16 @@
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>
 
-  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Ground station</span><div class="v2-case-nav-links"><a href="/v2/projects/skylabs/boards/ground-station/#overview" data-v2-section>Overview</a><a href="/v2/projects/skylabs/boards/ground-station/#explore" data-v2-section>Components</a><a href="/v2/projects/skylabs/boards/ground-station/#assembly" data-v2-section>Assembly</a><a href="/v2/projects/skylabs/boards/ground-station/#details" data-v2-section>Details</a><a href="/v2/projects/skylabs/boards/ground-station/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Ground station</span><div class="v2-case-nav-links"><a href="/v2/projects/skylabs/boards/ground-station/#overview" data-v2-section>Overview</a><a href="/v2/projects/skylabs/boards/ground-station/#explore" data-v2-section>Assembly</a><a href="/v2/projects/skylabs/boards/ground-station/#details" data-v2-section>Details</a><a href="/v2/projects/skylabs/boards/ground-station/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
 
-  <main id="main" class="object-main" data-object-inspector data-view="inspect" data-board="ground" data-annotations="visible">
+  <main id="main">
     <section class="project-hero" id="overview" aria-labelledby="ground-station-title">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>
 
 
             <h1 id="ground-station-title">Ground station</h1>
             <p>A receiver, field display and second flight recorder in one board.</p>
-          </div><div class="project-hero-actions"><a href="/v2/projects/skylabs/boards/ground-station/#assembly">Explore the assembly <span aria-hidden="true">↗</span></a><a href="/v2/projects/skylabs/boards/ground-station/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/skylabs-ground-station.webp" width="1600" height="1200" alt="Ground station circuit board assembly" fetchpriority="high"></figure></div>
+          </div><div class="project-hero-actions"><a href="/v2/projects/skylabs/boards/ground-station/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/skylabs/boards/ground-station/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/skylabs-ground-station.webp" width="1600" height="1200" alt="Ground station circuit board assembly" fetchpriority="high"></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div>
             <div><dt>Radio</dt><dd>SX1262 / 915 MHz</dd></div>
@@ -59,29 +59,19 @@
             <div><dt>Display</dt><dd>128 × 64 OLED</dd></div>
           </dl></div></section>
 
-    <section class="project-interactive v2-component-map" id="explore" aria-labelledby="ground-explore-title">
-      <div class="project-interactive-inner">
-        <header class="project-interactive-header"><div><p hidden class="eyebrow" data-board-eyebrow>Ground station / Rev 1.0</p><h2 id="ground-explore-title" data-board-heading>Ground station</h2></div><p hidden data-board-copy>Drag left or right to rotate the board. Choose Parts to identify components, or Explode to separate the assembly. The arrow keys also rotate the view.</p><p>Select a marked component to read its role in the circuit, or use the component index below the board.</p></header>
-        <div class="object-toolbar" aria-label="Board view controls"><div class="object-view-list" aria-label="Board view"><button type="button" class="object-view" data-object-view="inspect" aria-pressed="false">Parts</button><button type="button" class="object-view is-active" data-object-view="rotate" aria-pressed="true">360&deg;</button></div><button type="button" class="object-tool object-explode" data-object-explode aria-pressed="false">Explode</button><button type="button" class="object-tool" data-annotation-toggle aria-pressed="true" hidden>Hide annotations</button></div>
-        <div class="object-rotation-bar" data-rotation-bar aria-label="Board angle controls"><div class="object-angle-presets" aria-label="Preset angles"><button type="button" data-angle-preset="0" aria-pressed="true">Front</button><button type="button" data-angle-preset="6" aria-pressed="false">Side</button><button type="button" data-angle-preset="12" aria-pressed="false">Back</button></div><div class="object-angle-steps"><button type="button" data-rotation-previous aria-label="Rotate 15 degrees left">&larr; 15&deg;</button><button type="button" data-rotation-reset>Reset</button><button type="button" data-rotation-next aria-label="Rotate 15 degrees right">15&deg; &rarr;</button></div></div>
-        <div class="object-stage" data-object-stage tabindex="0" aria-label="Skylabs ground-station board. Drag left or right to rotate."><img src="assets/images/interactive/skylabs/skylabs-ground-turn-00.webp" width="1400" height="1000" alt="Rotatable KiCad rendering of the assembled blue Skylabs ground-station PCB" data-object-image draggable="false"><div class="object-explode-layer" data-object-explode-layer hidden aria-hidden="true"></div><div class="object-hotspots" data-object-hotspots aria-label="Selectable board components"></div><p class="object-drag-hint" data-drag-hint><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p><p class="object-angle" data-object-angle>000&deg;</p></div>
-        <div class="object-readout is-empty" data-object-readout aria-live="polite" aria-atomic="true"><p data-object-ref>BOARD</p><h3 data-object-name>Ground-station receiver</h3><p data-object-copy>Select a marker to see how radio, compute, storage and USB fit onto the ground board. Select it again to clear the view.</p></div><details class="component-directory" data-object-directory-wrap><summary>Component index <span data-object-directory-count>8 selectable parts</span></summary><div class="component-directory-list" data-object-directory></div></details>
-        <dl class="project-interactive-facts"><div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div><div><dt>Storage</dt><dd>microSD backup</dd></div><div><dt>Field link</dt><dd>USB + Wi-Fi</dd></div></dl>
-      </div>
-    </section>
+    <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="skylabs-assembly-title"><span id="assembly" class="v2-anchor-alias" aria-hidden="true"></span><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="skylabs-assembly-title">Ground station</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      <figure data-skylabs-inspector data-hardware-board-key="ground" data-hardware="/assets/models/hardware/skylabs-ground-station/assembly.json" data-hardware-title="Ground station">
 
-    <section class="project-interactive v2-hardware-section" id="assembly" aria-labelledby="assembly-title"><div class="project-interactive-inner">
-      <header class="project-interactive-header"><div><h2 id="assembly-title">Ground station assembly</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
-      <figure data-hardware="/assets/models/hardware/skylabs-ground-station/assembly.json" data-hardware-title="Ground station assembly">
-      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/skylabs-ground-station.webp" width="1600" height="1200" alt="Ground station assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/skylabs-ground-station.webp" width="1600" height="1200" alt="Ground station" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
       <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
       <div class="hardware-controls"><div class="hardware-views" role="group" aria-label="Camera"><button type="button" data-hardware-view="iso" aria-pressed="true">Perspective</button><button type="button" data-hardware-view="top" aria-pressed="false">Top</button><button type="button" data-hardware-view="bottom" aria-pressed="false">Underside</button></div><button type="button" data-hardware-explode aria-pressed="false">Explode</button><button type="button" data-hardware-scroll aria-pressed="false">Follow scroll</button><button type="button" data-hardware-reset>Reset</button><label class="hardware-range">Assembled <input data-hardware-range type="range" min="0" max="100" value="0" aria-label="Assembly separation"> Exploded</label></div>
-      <div class="hardware-parts"><label for="assembly-parts">Component</label><select id="assembly-parts" data-hardware-selection><option value="">All components</option></select></div>
+      <div class="hardware-parts"><label for="skylabs-parts">Component</label><select id="skylabs-parts" data-hardware-selection><option value="">All components</option></select></div>
       <p data-hardware-part hidden></p><p data-hardware-status role="status" aria-live="polite"></p>
-    </figure>
-
+    <section class="hardware-components" data-hardware-components="ground" aria-labelledby="components-ground"><h3 id="components-ground">Ground station components</h3><div><details data-hardware-component data-hardware-refs="U3"><summary><span>U3</span><strong>ESP32-WROOM-32E</strong></summary><p>Receives telemetry packets, manages local logging, serves the field dashboard and forwards data over USB.</p></details><details data-hardware-component data-hardware-refs="U1"><summary><span>U1</span><strong>SX1262 LoRa module</strong></summary><p>Receives aircraft telemetry and sends short command bursts back over the 915 MHz link.</p></details><details data-hardware-component data-hardware-refs="J3"><summary><span>J3</span><strong>microSD socket</strong></summary><p>Stores received packets as CSV or indexed, CRC-protected binary records.</p></details><details data-hardware-component data-hardware-refs="J2"><summary><span>J2</span><strong>U.FL antenna connector</strong></summary><p>Connects the receiver to its external 915 MHz antenna.</p></details><details data-hardware-component data-hardware-refs="J1"><summary><span>J1</span><strong>USB-C receptacle</strong></summary><p>Powers the board and carries firmware uploads and the live serial telemetry stream.</p></details><details data-hardware-component data-hardware-refs="U4"><summary><span>U4</span><strong>CH340C USB bridge</strong></summary><p>Connects the ESP32 UART to USB for programming and live monitoring.</p></details><details data-hardware-component data-hardware-refs="Q1 Q2"><summary><span>Q1 / Q2</span><strong>Automatic upload circuit</strong></summary><p>Controls ESP32 EN and IO0 from the USB bridge so firmware can be uploaded without a manual button sequence.</p></details><details data-hardware-component data-hardware-refs="U2"><summary><span>U2</span><strong>3.3 V regulator</strong></summary><p>The AMS1117-3.3 converts the incoming 5 V supply for the ESP32, radio and board logic.</p></details></div></section></figure>
     </div></section>
-<div class="project-body shell" id="details">
+
+    <div class="project-body shell" id="details">
       <section class="project-summary" aria-labelledby="ground-station-purpose">
         <h2 id="ground-station-purpose">Ground station receiver</h2>
         <div class="project-prose">
@@ -164,6 +154,6 @@
 
   <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung</a><div class="v2-footer-links"><a href="/v2/projects/">Projects</a><a href="/v2/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
 
-  <p class="live-region" aria-live="polite" data-live-region data-object-live></p>
+  <p class="live-region" aria-live="polite" data-live-region></p>
 </body>
 </html>

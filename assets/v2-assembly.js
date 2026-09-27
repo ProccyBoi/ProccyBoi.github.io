@@ -14,7 +14,7 @@
   const progressBar = root.querySelector('[data-assembly-progress]');
   const projects = [
     {name:'tramtrace', title:'TramTrace', kind:'Live light-rail display', description:'116 pixels following Sydney’s light-rail network.', href:'/v2/projects/tramtrace/'},
-    {name:'esp32', title:'ESP32', kind:'Framework expansion card', description:'A wireless development board, built into a laptop bay.', href:'/v2/projects/framework-expansion-card/'},
+    {name:'telemetry', title:'Telemetry', kind:'Skylabs avionics', description:'Navigation, sensing and a radio link to the ground.', href:'/v2/projects/skylabs/boards/telemetry/'},
     {name:'pi', title:'Raspberry Pi', kind:'Framework expansion card', description:'An RP2354B microcontroller in the same compact format.', href:'/v2/projects/framework-raspberry-pi/'}
   ];
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
@@ -79,7 +79,7 @@
     const scale = small ? Math.min(4.7,half*1.7) : Math.min(5.65,half*.82)*Math.min(1,(height-100)/800);
     const tramScale = small ? Math.min(5.1,half*1.83) : Math.min(9.4,half*1.21);
     const startScale = small ? Math.min(3.6,half*1.45)*(width<360?.9:1) : Math.min(4.15,half*.6);
-    const left = small ? -half*.53 : -half*.72;
+    const left = small ? -half*.47 : -half*.72;
     const right = small ? half*.53 : half*.69;
     const leadStart=startScale*(small?1.2:1.7);
     const sideStart=startScale*(small?.57:.8);
@@ -155,6 +155,7 @@
       if(!window.THREE) await loadScript('/assets/vendor/three.min.js');
       if(!window.THREE.GLTFLoader) await loadScript('/assets/vendor/GLTFLoader.js');
       if(!window.V2AssemblyModels) await loadScript('/assets/v2-assembly-models.js');
+      if(!window.V2HardwareModels) await loadScript('/assets/v2-hardware-models.js');
       const T=window.THREE;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75));

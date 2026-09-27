@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright');
 const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
-const routes = ['/v2/projects/tramtrace/','/v2/projects/framework-expansion-card/','/v2/projects/framework-raspberry-pi/'];
+const routes = ['/v2/projects/tramtrace/','/v2/projects/skylabs/boards/telemetry/','/v2/projects/framework-raspberry-pi/'];
 const primary = '[data-v2-project][href^="/v2/projects/"]';
 async function posters(page) {
   assert.equal(await page.locator('[data-assembly-posters]').isVisible(),true);
@@ -86,11 +86,15 @@ async function posters(page) {
       assert.equal(await page.locator('[data-'+prefix+'-explode]').getAttribute('aria-pressed'),'false');
     }
     await page.goto(base+'/v2/projects/skylabs/',{waitUntil:'networkidle'});
-    await page.locator('[data-object-board="ground"]').click();
-    assert.equal(await page.locator('[data-object-board="ground"]').getAttribute('aria-pressed'),'true');
-    assert.match(await page.locator('[data-object-project-link]').getAttribute('href'),/^\/v2\/projects\/skylabs\/boards\/ground-station\//);
-    await page.locator('[data-object-view="inspect"]').click();
-    assert.equal(await page.locator('[data-object-view="inspect"]').getAttribute('aria-pressed'),'true');
+    assert.equal(await page.locator('[data-hardware]').count(),1);
+    await page.locator('[data-hardware-board="ground"]').click();
+    assert.equal(await page.locator('[data-hardware-board="ground"]').getAttribute('aria-current'),'true');
+    assert.match(await page.locator('[data-hardware-board="ground"]').getAttribute('href'),/^\/v2\/projects\/skylabs\/boards\/ground-station\//);
+    assert.equal(await page.locator('[data-hardware]').getAttribute('data-hardware-board-key'),'ground');
+    await page.locator('[data-hardware-start]').click();
+    await page.locator('[data-hardware-state="ready"]').waitFor({timeout:60000});
+    await page.locator('select[data-hardware-selection]').selectOption('U3');
+    assert.match(await page.locator('[data-hardware-part]').textContent(),/ESP32.*field dashboard/);
     await page.goto(base+'/v2/projects/tramtrace/',{waitUntil:'networkidle'});
     for(const mode of ['copper','data']){
       await page.locator('[data-inspector-mode="'+mode+'"]').click();
@@ -110,20 +114,8 @@ async function posters(page) {
     await failedPage.waitForURL('**/v2/projects/framework-raspberry-pi/');
     await failedPage.waitForLoadState('networkidle');
     await failedPage.waitForFunction(()=>document.getAnimations().every(animation=>animation.playState!=='running'));
-    // Browsers may omit an optional cross-document transition under load. Feed
-    // an actual cancelled transition to both lifecycle handlers deterministically.
-    await failedPage.evaluate(async()=>{
-      for(const type of ['pagereveal','pageswap']){
-        const transition=document.startViewTransition(()=>{});
-        const event=new Event(type);
-        Object.defineProperty(event,'viewTransition',{value:transition});
-        dispatchEvent(event);
-        transition.skipTransition();
-        await transition.finished;
-      }
-    });
     await fallback.close();
-    console.log('PASS failed model loading restores posters and normal links; skipped navigation transitions are handled');
+    console.log('PASS failed model loading restores posters and normal links');
     const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});
     const staticPage=await noJS.newPage();observe(staticPage);
     await staticPage.goto(base+'/v2/',{waitUntil:'networkidle'});

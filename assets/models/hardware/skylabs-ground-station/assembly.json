@@ -713,9 +713,11 @@
   ],
   "modelledComponentCount": 43,
   "triangleCount": 91736,
-  "modelBytes": 5316848,
+  "modelBytes": 2976356,
   "resolvedLibraryModelCount": 13,
   "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask",
+  "unpopulated": false,
+  "copperIncluded": false,
   "materialProperties": {
     "pads": {
       "baseColorFactor": [
@@ -757,6 +759,42 @@
       "metallicFactor": 0.0,
       "roughnessFactor": 0.800000011920929
     }
+  },
+  "literalVrmlModels": [],
+  "authoredVrmlMeshes": [],
+  "dimensionedRepresentations": [],
+  "modelRegistrations": [
+    {
+      "ref": "J1",
+      "file": "USB-C_SMD-TYPE-C-31-M-12_1.step",
+      "sourceHash": "b083e67ce4d06850a2c3835a6366f4012b2def64f8f2781636381ebcaa33e9a0",
+      "worldTranslationCorrectionMm": [
+        0.34,
+        0,
+        -0.0
+      ],
+      "sourceModelOffsetMm": [
+        0,
+        -1.39,
+        0
+      ],
+      "registeredModelOffsetMm": [
+        0,
+        -1.05,
+        0
+      ],
+      "registration": "Exact authored HRO model retained. Its bosses at native X +/-2.89 and Z 3.65 mm register to footprint NPTH centres X +/-2.89, Y -2.60 mm; source offset missed the holes by 0.34 mm."
+    }
+  ],
+  "packageLibraryFallbacks": [],
+  "losslessCompaction": {
+    "method": "Same-material face batching and byte-identical vertex interning; no decimation",
+    "beforeBytes": 5316016,
+    "afterBytes": 2976356,
+    "beforePrimitives": 6528,
+    "afterPrimitives": 142,
+    "expandedTriangleAttributesVerified": true,
+    "triangleStreamHash": "61a4efd9055e0b10efb5f248056dc5392cf3a06b4c23e1103a4681a0862b3ea3"
   },
   "additionalLibraryModels": []
 }

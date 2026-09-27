@@ -43,6 +43,20 @@ Tamagotchi's socket uses [Kyocera's CAD for 145638009511859+](https://ele.kyocer
 
 Tamagotchi's two switches preserve the exact four Box primitives of the project's existing VRML model. The exporter converts their original 0.1-inch VRML units and maintains the single-root GLB structure. `literalVrmlModels` records the source hashes. No replacement shape is inferred.
 
+## Skylabs revision and registration audit
+
+The telemetry asset uses `Mission Systems PCB v4.0/Mission Systems.kicad_pcb` (158 footprints, four copper layers). Ground station uses `Ground Station v1.0/Ground Station v1.0.kicad_pcb` (45 footprints, two copper layers). Both were verified as the latest board revisions in the supplied Mission Systems directory. The manifests retain the exact board hashes, physical bounds and authored component reference/side/rotation data.
+
+Both J1 connectors retain their explicitly selected local `USB-C_SMD-TYPE-C-31-M-12_1.step` geometry. The original -1.39 mm model offset missed the locating holes by 0.34 mm. Registration changes the offset to -1.05 mm, aligning the model bosses with the footprint's +/-2.89,-2.60 mm NPTH centres. The original board files are untouched. `modelRegistrations` records the correction and CAD hash.
+
+Telemetry Q4's Diotec `p200_SOT-23.stp` reference points to an unavailable removable drive. The export uses the actual KiCad SOT-23 package model corresponding to the hidden alternate already present in the footprint. It is a **package-library fallback, not recovered Diotec CAD**. Diotec's MMBT4403 datasheet confirms SOT-23. The custom footprint is referenced to pad 1, so the package is centred at local (1.2,1.025) mm and rotated with the footprint to align all three leads. `packageLibraryFallbacks` records this separately.
+
+Telemetry BT2 uses the same Renata SMTU2032-LF footprint as LoRa. It therefore uses the same explicitly limited manufacturer-dimensioned holder envelope and solder contacts described above, with its own authored placement on the back of the board. It seats at Y=0.005 mm and extends down to Y=-5.395 mm, retaining the authored -90-degree rotation. The drawing and hash are retained in `skylabs-telemetry/source-cad`. This remains a **dimensioned representation, not manufacturer CAD**; the cell, springs and retention detail are omitted.
+
+The other custom models were checked in their authored frames: telemetry's centred tactile switches, radio and sensor packages, and ground's project-specific 12 mm tall switches. The tall switch terminals overlap the actual pad rows at +/-3.81 mm. These are the explicitly selected source STEP files; no differently registered WRL companion is silently substituted.
+
+The Skylabs exports batch faces by material inside each original mesh and intern only byte-identical position/normal pairs. Every expanded triangle's float32 position and normal bytes are hashed before and after, with equality required before saving. This reduces KiCad's many single-face primitives without decimation, changed transforms, merged references or removed detail. `losslessCompaction` records primitive counts, byte sizes and the verified triangle-stream hash.
+
 ## Remaining coverage
 
 `missingModels` describes unresolved assigned physical models. `unmodeledFootprints` also records footprints without an assigned model; mounting holes, logos and test points commonly need no separate body.
@@ -52,7 +66,7 @@ Tamagotchi's two switches preserve the exact four Box primitives of the project'
 | Logic analyser | J1 is the authored four-hole pogo contact footprint with no selected body model; no conventional header is inferred. P1 is supplied by `connector`. |
 | LoRa receiver | All 40 assigned physical parts represented; BT2 covers only the documented holder envelope and solder tabs. |
 | Metroboard | J1 USB-C receptacle; U2/U5 level shifters have no assigned models |
-| Skylabs telemetry | Q4 transistor and BT2 battery holder |
+| Skylabs telemetry | All 153 assigned physical parts represented; Q4 uses the documented KiCad package fallback, BT2 the limited dimensioned holder envelope. Three mounting holes and two logos have no assigned bodies. |
 | RF test board / Skylabs ground station / Tamagotchi | No unresolved assigned models |
 
 Metroboard's exact WS2812B-2020 STEP/WRL reference is absent from the supplied and installed libraries. `geometryFallbacks` explicitly authorizes the existing published `assets/metroboard-3d.js` LED package representation at all 291 original board positions. It is a package representation, not supplier CAD. TramTrace uses a different WS2812C part and is not substituted.

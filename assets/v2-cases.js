@@ -84,30 +84,16 @@
     });
     apply();
   }
-  // The existing Skylabs viewer changes the per-board project link dynamically.
-  // Keep that link inside the new portfolio without changing the shared viewer.
-  const boardLink = document.querySelector('[data-object-project-link]');
-  if (boardLink) {
-    const keepV2 = () => {
-      const href = boardLink.getAttribute('href');
-      if (/^\/?projects\//.test(href || '')) boardLink.setAttribute('href', '/v2/' + href.replace(/^\//, ''));
-    };
-    keepV2();
-    new MutationObserver(keepV2).observe(boardLink, {attributes: true, attributeFilter: ['href']});
-  }
   // Shared viewers also supply copy when a board or component changes. Keep
   // their facts and controls while giving the v2 pages the same direct wording.
   const displayNodes = [...document.querySelectorAll('[data-board-heading], [data-board-copy], [data-pcb-name], [data-pcb-copy], [data-object-copy], [data-mode-title], [data-mode-copy]')];
   if (displayNodes.length) {
     const clean = value => value
-      .replace('Flight data starts here.', 'Aircraft telemetry')
-      .replace('The other end of the link.', 'Ground station')
       .replace('The finished object.', 'Assembly')
       .replace('Two layers carry the map.', 'Copper layers')
       .replace('Position becomes address.', 'LED data order')
       .replace('Start with the board as it was designed to be seen. Select a marked component to find out what it contributes.', 'Select a marked component to see its role in the circuit.')
       .replace('The bright front layer and burnished back layer are direct fabrication exports. Pads, vias, pours and every routed segment retain their actual board geometry.', 'Switch between front and back copper to inspect the routed signal paths, pads, vias and ground pours.')
-      .replace('Drag the corrected source-rendered assembly through a full turn, switch to Parts for a guided map, or separate the major populated hardware with Explode.', 'Drag to rotate. Choose Parts to identify a component, or Explode to separate the assembly. The arrow keys also rotate the view.')
       .replace('TramTrace production board', 'TramTrace')
       .replace('Rev 1 · exact KiCad outline and 144 physical placements. G*** TfNSW logo remains part of the source-derived board artwork.', 'Rev 1 · 207.81 × 94.55 mm · 144 physical components.')
       .replace('Metroboard V3 · 300 × 305.7 × 1.6 mm black PCB. All 291 WS2812B-2020 pixels and 31 physical controller/support packages use their exact KiCad centres and rotations; the 323rd source footprint is board-art logo geometry.', 'Metroboard V3 · 300 × 305.7 × 1.6 mm PCB, with 291 RGB pixels and 31 controller and support parts.')

@@ -3,8 +3,12 @@
  * Requires Playwright. Optional: V2_BASE_URL and CHROMIUM_EXECUTABLE. */
 'use strict';
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const {chromium}=require('playwright');
 const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
+const shots=process.env.V2_SCREENSHOTS;
+if(shots)fs.mkdirSync(shots,{recursive:true});
 async function scrollPhase(page,progress){
   const actual=await page.evaluate(value=>{
     const root=document.querySelector('[data-assembly]');
@@ -55,7 +59,15 @@ async function snapshot(page){
     await scrollPhase(page,.135);
     await scrollPhase(page,0);
     const initial=await snapshot(page);
-    assert.deepEqual(Object.keys(initial).sort(),['esp32','pi','tramtrace']);
+    assert.deepEqual(Object.keys(initial).sort(),['pi','telemetry','tramtrace']);
+    const telemetryCoverage=await page.evaluate(()=>{
+      const model=window.__observedAssemblies.telemetry;
+      return {
+        expected:model.metadata.footprints.filter(part=>part.modelExported).map(part=>part.ref).sort(),
+        actual:model.parts.flatMap(part=>part.object.userData.componentRefs||[part.object.name]).sort()
+      };
+    });
+    assert.deepEqual(telemetryCoverage.actual,telemetryCoverage.expected,'Hero batching must retain every exported telemetry component');
     for(const [name,model] of Object.entries(initial)){
       assert.ok(model.parts.length>1,name+' must contain movable physical components');
       assert.ok(model.parts.every(part=>part.displacement<1e-10),name+' starts assembled');
@@ -79,7 +91,7 @@ async function snapshot(page){
     const partial=samples.filter(sample=>sample.progress>.01&&sample.progress<.25&&sample.displacement>0&&sample.displacement<.3);
     assert.ok(partial.length>=2,'Scroll must render several intermediate physical poses: '+JSON.stringify(samples));
     assert.ok(new Set(partial.map(sample=>sample.displacement.toFixed(5))).size>=2,'Intermediate poses must change, not repeat a single snapped state');
-    for(const [name,progress] of [['tramtrace',.265],['esp32',.565],['pi',.88]]){
+    for(const [name,progress] of [['tramtrace',.265],['telemetry',.565],['pi',.88]]){
       await scrollPhase(page,progress);
       const model=(await snapshot(page))[name];
       assert.ok(model.parts.every(part=>part.position.every(Number.isFinite)),name+' component transforms must remain finite');
@@ -87,6 +99,7 @@ async function snapshot(page){
       assert.ok(Math.max(...model.parts.map(part=>part.displacement))>.05,name+' must visibly disassemble');
       assert.ok(model.pose.every(Number.isFinite),name+' scene transform must remain finite');
       console.log('PASS '+name+': '+model.parts.length+' physical groups visibly separate with finite transforms');
+      if(shots)await page.screenshot({path:path.join(shots,'final-'+name+'.png')});
     }
     await scrollPhase(page,0);
     const returned=await snapshot(page);
@@ -98,5 +111,11 @@ async function snapshot(page){
     }
     assert.deepEqual(errors,[],'Browser JavaScript errors');
     console.log('PASS continuous rendered component motion and exact reversal to all three original assemblies');
+    if(shots)for(const viewport of [{width:390,height:844},{width:320,height:740}]){
+      await page.setViewportSize(viewport);
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await scrollPhase(page,0);
+      await page.screenshot({path:path.join(shots,'final-intro-'+viewport.width+'.png')});
+    }
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

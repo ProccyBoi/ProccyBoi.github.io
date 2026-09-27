@@ -19,6 +19,10 @@ Only projects approved for public release belong in the maintained catalog. Loca
 
 ## Runtime
 
-The factory retains reference-named physical groups and applies one reversible separation value. Rendering stops when settled, offscreen or hidden. Camera rotation supports pointer and keyboard, and native vertical scrolling remains available. Static posters and project details survive missing assets, disabled JavaScript and context loss, including a graphics failure during an asynchronous load.
+The DOM-free factory in `assets/v2-hardware-models.js` is shared by the inspectors and the telemetry hero. It retains reference-named physical groups and applies one reversible separation value. Rendering stops when settled, offscreen or hidden. Camera rotation supports pointer and keyboard, and native vertical scrolling remains available. Static posters and project details survive missing assets, disabled JavaScript and context loss, including a graphics failure during an asynchronous load.
 
 KiCad mask/core palette values are converted from display RGB into the renderer's linear working space. Mask opacity remains source-derived, allowing the original copper artwork to remain visible through the finish.
+
+## Skylabs
+
+The v2 Skylabs page uses one shared inspector with aircraft/ground-station switching. The nested board pages use the same controls and model factory. The previous image turntables remain only in the original portfolio. Curated component explanations in `scripts/content/skylabs-components.json` select the corresponding physical reference groups, including paired circuits. Static descriptions and board links remain usable without JavaScript; `#assembly` remains an alias for the consolidated `#explore` section.

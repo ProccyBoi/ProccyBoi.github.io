@@ -1,0 +1,35 @@
+{
+  "telemetry": {
+    "model": "skylabs-telemetry",
+    "title": "Aircraft telemetry",
+    "route": "skylabs/boards/telemetry",
+    "components": [
+      {"refs": ["U14"], "name": "STM32G474", "description": "Acquires sensor measurements, maintains their validity state, writes the aircraft log and prepares the live telemetry packet."},
+      {"refs": ["U7"], "name": "NEO-M9N GNSS", "description": "Provides position, velocity and GPS time. Its time-pulse output gives the logger a timing reference."},
+      {"refs": ["U10"], "name": "BNO085 IMU", "description": "Measures acceleration, angular velocity and orientation for the flight record."},
+      {"refs": ["U9"], "name": "BME280 barometer", "description": "Measures pressure and temperature, including the pressure input used to estimate barometric altitude."},
+      {"refs": ["U11"], "name": "HX711 strain interface", "description": "Digitises the strain-gauge bridge input for structural or load measurements."},
+      {"refs": ["J3"], "name": "microSD socket", "description": "Stores the aircraft's binary flight record, including sensor validity, estimator output and event markers."},
+      {"refs": ["U12"], "name": "SX1262 LoRa module", "description": "Sends the live telemetry subset to the ground station and receives logging, marker and radio-profile commands."},
+      {"refs": ["J10", "J6"], "name": "GNSS and LoRa antenna ports", "description": "Separate U.FL connectors attach the GNSS and 915 MHz antennas."},
+      {"refs": ["J1"], "name": "USB-C interface", "description": "Provides wired power, firmware access and aircraft-side diagnostics."},
+      {"refs": ["U1"], "name": "TP4056 battery charger", "description": "Charges the single-cell Li-ion battery from USB-C with a constant-current, constant-voltage cycle."},
+      {"refs": ["U2", "U5"], "name": "Battery protection", "description": "The DW01A monitors the cell and controls the 8205A dual MOSFET to disconnect it during overcharge, overdischarge or a short circuit."}
+    ]
+  },
+  "ground": {
+    "model": "skylabs-ground-station",
+    "title": "Ground station",
+    "route": "skylabs/boards/ground-station",
+    "components": [
+      {"refs": ["U3"], "name": "ESP32-WROOM-32E", "description": "Receives telemetry packets, manages local logging, serves the field dashboard and forwards data over USB."},
+      {"refs": ["U1"], "name": "SX1262 LoRa module", "description": "Receives aircraft telemetry and sends short command bursts back over the 915 MHz link."},
+      {"refs": ["J3"], "name": "microSD socket", "description": "Stores received packets as CSV or indexed, CRC-protected binary records."},
+      {"refs": ["J2"], "name": "U.FL antenna connector", "description": "Connects the receiver to its external 915 MHz antenna."},
+      {"refs": ["J1"], "name": "USB-C receptacle", "description": "Powers the board and carries firmware uploads and the live serial telemetry stream."},
+      {"refs": ["U4"], "name": "CH340C USB bridge", "description": "Connects the ESP32 UART to USB for programming and live monitoring."},
+      {"refs": ["Q1", "Q2"], "name": "Automatic upload circuit", "description": "Controls ESP32 EN and IO0 from the USB bridge so firmware can be uploaded without a manual button sequence."},
+      {"refs": ["U2"], "name": "3.3 V regulator", "description": "The AMS1117-3.3 converts the incoming 5 V supply for the ESP32, radio and board logic."}
+    ]
+  }
+}

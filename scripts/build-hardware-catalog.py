@@ -93,12 +93,122 @@ def write_glb(path, model, binary):
     path.write_bytes(struct.pack('<4sII', b'glTF', 2, 28 + len(encoded) + len(binary)) + struct.pack('<I4s', len(encoded), b'JSON') + encoded + struct.pack('<I4s', len(binary), b'BIN\0') + binary)
 
 
-def register_manufacturer_models(path, footprints, resolutions):
+def compact_source_geometry(path):
+    """Batch identical-material STEP faces without changing a single vertex.
+
+    KiCad emits one primitive per CAD face. Combining those primitives and
+    interning byte-identical position/normal pairs preserves the expanded
+    triangle stream, while removing thousands of accessor/JSON objects.
+    """
+    gltf, raw = read_glb(path)
+    if any(gltf.get(key) for key in ('images', 'skins', 'animations')):
+        raise ValueError('Face batching only supports static, untextured CAD')
+    sizes = {5121: 1, 5123: 2, 5125: 4, 5126: 4}
+    formats = {5121: 'B', 5123: 'H', 5125: 'I'}
+    widths = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4}
+
+    def rows(model, binary, index):
+        accessor = model['accessors'][index]
+        if accessor.get('sparse') or accessor.get('normalized'):
+            raise ValueError('Unexpected sparse/normalised CAD accessor')
+        view = model['bufferViews'][accessor['bufferView']]
+        width = sizes[accessor['componentType']] * widths[accessor['type']]
+        offset = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+        stride = view.get('byteStride', width)
+        return [bytes(binary[offset + n * stride:offset + n * stride + width]) for n in range(accessor['count'])]
+
+    def groups(model, binary, mesh):
+        result = {}
+        for primitive in mesh['primitives']:
+            if set(primitive) - {'attributes', 'indices', 'material', 'mode'} or primitive.get('mode', 4) != 4:
+                raise ValueError('Unexpected CAD primitive in lossless batching')
+            names = tuple(sorted(primitive['attributes']))
+            if names != ('NORMAL', 'POSITION'):
+                raise ValueError('Expected position and normal CAD attributes')
+            if any(model['accessors'][index]['componentType'] != 5126 or model['accessors'][index]['type'] != 'VEC3' for index in primitive['attributes'].values()):
+                raise ValueError('Expected float32 CAD attributes')
+            key = (primitive.get('material'), names)
+            arrays = [rows(model, binary, primitive['attributes'][name]) for name in names]
+            records = list(zip(*arrays))
+            if 'indices' in primitive:
+                accessor = model['accessors'][primitive['indices']]
+                indices = [struct.unpack('<' + formats[accessor['componentType']], value)[0] for value in rows(model, binary, primitive['indices'])]
+            else:
+                indices = range(len(records))
+            group = result.setdefault(key, {'records': [], 'indices': [], 'lookup': {}, 'hash': hashlib.sha256()})
+            for index in indices:
+                record = records[index]
+                group['hash'].update(b''.join(record))
+                mapped = group['lookup'].get(record)
+                if mapped is None:
+                    mapped = len(group['records'])
+                    group['lookup'][record] = mapped
+                    group['records'].append(record)
+                group['indices'].append(mapped)
+        return result
+
+    before_bytes = path.stat().st_size
+    before_primitives = sum(len(mesh['primitives']) for mesh in gltf['meshes'])
+    meshes = [groups(gltf, raw, mesh) for mesh in gltf['meshes']]
+    signatures = [[(key, group['hash'].hexdigest(), len(group['indices'])) for key, group in entries.items()] for entries in meshes]
+    binary = bytearray()
+    gltf['accessors'], gltf['bufferViews'] = [], []
+
+    def accessor(data, component, kind, count, target, bounds=None):
+        binary.extend(b'\0' * (-len(binary) % 4))
+        view = len(gltf['bufferViews'])
+        gltf['bufferViews'].append({'buffer': 0, 'byteOffset': len(binary), 'byteLength': len(data), 'target': target})
+        binary.extend(data)
+        index = len(gltf['accessors'])
+        entry = {'bufferView': view, 'componentType': component, 'count': count, 'type': kind}
+        if bounds:
+            entry.update({'min': bounds[0], 'max': bounds[1]})
+        gltf['accessors'].append(entry)
+        return index
+
+    for mesh, entries in zip(gltf['meshes'], meshes):
+        mesh['primitives'] = []
+        for (material, names), group in entries.items():
+            attributes = {}
+            for axis, name in enumerate(names):
+                data = b''.join(record[axis] for record in group['records'])
+                values = list(struct.iter_unpack('<fff', data))
+                bounds = [[min(value[i] for value in values) for i in range(3)], [max(value[i] for value in values) for i in range(3)]]
+                attributes[name] = accessor(data, 5126, 'VEC3', len(values), 34962, bounds)
+            code, component = ('H', 5123) if len(group['records']) <= 65536 else ('I', 5125)
+            indices = accessor(struct.pack('<' + code * len(group['indices']), *group['indices']), component, 'SCALAR', len(group['indices']), 34963)
+            primitive = {'attributes': attributes, 'indices': indices, 'mode': 4}
+            if material is not None:
+                primitive['material'] = material
+            mesh['primitives'].append(primitive)
+    verified = [[(key, group['hash'].hexdigest(), len(group['indices'])) for key, group in groups(gltf, binary, mesh).items()] for mesh in gltf['meshes']]
+    if signatures != verified:
+        raise ValueError('Lossless batching altered source triangle attributes')
+    write_glb(path, gltf, binary)
+    return {'method': 'Same-material face batching and byte-identical vertex interning; no decimation', 'beforeBytes': before_bytes, 'afterBytes': path.stat().st_size, 'beforePrimitives': before_primitives, 'afterPrimitives': sum(len(mesh['primitives']) for mesh in gltf['meshes']), 'expandedTriangleAttributesVerified': True, 'triangleStreamHash': hashlib.sha256(json.dumps(signatures).encode()).hexdigest()}
+
+
+def register_manufacturer_models(path, footprints, resolutions, slug=None, thickness=1.6):
     gltf, binary = read_glb(path)
     adjustments = []
     for footprint in footprints:
         for original in footprint['models']:
             resolved = resolutions.get(original)
+            if slug in ('skylabs-telemetry', 'skylabs-ground-station') and resolved and resolved.name == 'USB-C_SMD-TYPE-C-31-M-12_1.step':
+                node = next(node for node in gltf['nodes'] if node.get('name') == footprint['ref'])
+                angle = math.radians(footprint['atMm'][2] if len(footprint['atMm']) > 2 else 0)
+                delta = [math.sin(angle) * -.00034, 0, math.cos(angle) * -.00034]
+                node['translation'] = [value + offset for value, offset in zip(node['translation'], delta)]
+                adjustments.append({'ref': footprint['ref'], 'file': resolved.name, 'sourceHash': sha256(resolved), 'worldTranslationCorrectionMm': [round(value * 1000, 9) for value in delta], 'sourceModelOffsetMm': [0,-1.39,0], 'registeredModelOffsetMm': [0,-1.05,0], 'registration': 'Exact authored HRO model retained. Its bosses at native X +/-2.89 and Z 3.65 mm register to footprint NPTH centres X +/-2.89, Y -2.60 mm; source offset missed the holes by 0.34 mm.'})
+                continue
+            if slug == 'skylabs-telemetry' and footprint['ref'] == 'Q4' and resolved and resolved.name == 'SOT-23.step':
+                node = next(node for node in gltf['nodes'] if node.get('name') == footprint['ref'])
+                angle = math.radians(footprint['atMm'][2] if len(footprint['atMm']) > 2 else 0)
+                x, y = 1.2, 1.025
+                node['translation'] = [(footprint['atMm'][0] + math.cos(angle)*x + math.sin(angle)*y)/1000, (thickness-.005)/1000, (footprint['atMm'][1] - math.sin(angle)*x + math.cos(angle)*y)/1000]
+                node['rotation'] = [0,math.sin(angle/2),0,math.cos(angle/2)]
+                adjustments.append({'ref': 'Q4', 'file': resolved.name, 'sourceHash': sha256(resolved), 'registeredPackageCentreInFootprintMm': [1.2,1.025], 'registration': 'The custom P200_SOT-23 footprint origin is pad 1. Centre the KiCad SOT-23 package between pads at (0,0), (0,2.05), (2.4,1.03) mm, retaining the footprint rotation. The original hidden library alternate confirms the package family.', 'manufacturerUrl': 'https://diotec.com/files/diotec/productfiles/datasheet/mmbt4403.pdf'})
+                continue
             if resolved and resolved.parent.name == 'source-cad' and resolved.name in ('ublox_NEO.step','USB_C_Receptacle_HRO_TYPE-C-31-M-12.step'):
                 node = next((node for node in gltf['nodes'] if node.get('name') == footprint['ref']), None)
                 if node is None:
@@ -334,10 +444,12 @@ def append_dimensioned_renata(path, footprints, thickness):
     solid(faces,[.68,.7,.71],1)
     mesh=len(gltf['meshes']);gltf['meshes'].append({'name':footprint['ref'],'primitives':primitives})
     angle=math.radians(footprint['atMm'][2] if len(footprint['atMm'])>2 else 0)
-    node=len(gltf['nodes']);gltf['nodes'].append({'name':footprint['ref'],'mesh':mesh,'translation':[footprint['atMm'][0]/1000,(thickness-.005)/1000,footprint['atMm'][1]/1000],'rotation':[0,math.sin(angle/2),0,math.cos(angle/2)]})
+    backside = footprint['side'] == 'back'
+    rotation = [math.cos(angle/2),0,-math.sin(angle/2),0] if backside else [0,math.sin(angle/2),0,math.cos(angle/2)]
+    node=len(gltf['nodes']);gltf['nodes'].append({'name':footprint['ref'],'mesh':mesh,'translation':[footprint['atMm'][0]/1000,(.005 if backside else thickness-.005)/1000,footprint['atMm'][1]/1000],'rotation':rotation})
     gltf['nodes'][gltf['scenes'][gltf.get('scene',0)]['nodes'][0]].setdefault('children',[]).append(node)
     write_glb(path,gltf,binary)
-    return [{'ref':footprint['ref'],'kind':'Dimensioned holder envelope and solder contacts; not manufacturer CAD','drawing':'source-cad/SMTU2032-LF-drawing.pdf','drawingHash':sha256(drawing),'sourceUrl':'https://www.renata.com/en/downloads/?product=smtu2032-lf&fileid=6a9833a4d49dfb7b550194fe0f','drawingNumber':'3.87600.446, revision 6','dimensionsMm':{'bodyLength':28.5,'height':5.4,'outerRadius':11,'cellDiameter':20,'contactPitch':29.4,'contactSize':[2.6,3.5,.15]},'detailScope':'Authored F.Fab side envelope and manufacturer-dimensioned solder tabs. Spring internals and retention details are intentionally omitted.'}]
+    return [{'ref':footprint['ref'],'side':footprint['side'],'kind':'Dimensioned holder envelope and solder contacts; not manufacturer CAD','drawing':'source-cad/SMTU2032-LF-drawing.pdf','drawingHash':sha256(drawing),'sourceUrl':'https://www.renata.com/en/downloads/?product=smtu2032-lf&fileid=6a9833a4d49dfb7b550194fe0f','drawingNumber':'3.87600.446, revision 6','dimensionsMm':{'bodyLength':28.5,'height':5.4,'outerRadius':11,'cellDiameter':20,'contactPitch':29.4,'contactSize':[2.6,3.5,.15]},'detailScope':'Authored F.Fab side envelope and manufacturer-dimensioned solder tabs. Spring internals and retention details are intentionally omitted.'}]
 
 
 def inspect_glb(path):
@@ -459,14 +571,26 @@ def export(slug, relative, root, destination, cli, libraries):
         return {"slug": slug, "source": relative, "sourceHash": original_hash, "exported": False, "reason": "No physical board outline"}
     out = destination / slug
     out.mkdir(parents=True, exist_ok=True)
-    unpopulated = slug.startswith("pcb-notebook-")
-    resolutions, missing, vrml = {}, [], {}
+    unpopulated = False
+    resolutions, missing, vrml, package_fallbacks = {}, [], {}, []
     for footprint in footprints:
         if unpopulated:
             continue
         for model in footprint["models"]:
             if model not in resolutions:
-                resolutions[model] = libraries.resolve(model, board)
+                audited_q4_fallback = slug == 'skylabs-telemetry' and footprint['ref'] == 'Q4' and model.endswith('/p200_SOT-23.stp') and libraries.standard
+                audited_holder = slug == 'skylabs-telemetry' and footprint['footprint'] == 'Battery:BatteryHolder_Renata_SMTU2032-LF_1x2032' and (out / 'source-cad/SMTU2032-LF-drawing.pdf').is_file()
+                # This original removable-drive reference was audited as absent.
+                # Do not probe a disconnected F: volume on every rebuild.
+                resolutions[model] = None if audited_q4_fallback or audited_holder else libraries.resolve(model, board)
+                if audited_holder and libraries.standard:
+                    exact_holder = libraries.standard / 'Battery.3dshapes/BatteryHolder_Renata_SMTU2032-LF_1x2032.step'
+                    resolutions[model] = exact_holder if exact_holder.is_file() else None
+                if audited_q4_fallback:
+                    alternate = libraries.standard / 'Package_TO_SOT_SMD.3dshapes/SOT-23.step'
+                    if alternate.is_file():
+                        resolutions[model] = alternate
+                        package_fallbacks.append({'ref': 'Q4', 'kind': 'KiCad package-library fallback; not recovered Diotec CAD', 'originalModel': 'p200_SOT-23.stp', 'sourceAlternate': '${KICAD6_3DMODEL_DIR}/Package_TO_SOT_SMD.3dshapes/SOT-23.wrl (hidden in original footprint)', 'resolvedModel': 'Package_TO_SOT_SMD.3dshapes/SOT-23.step', 'sourceHash': sha256(alternate), 'package': 'SOT-23', 'manufacturerDatasheet': 'https://diotec.com/files/diotec/productfiles/datasheet/mmbt4403.pdf'})
             if resolutions[model] is None:
                 missing.append({"ref": footprint["ref"], "reason": "Referenced physical model could not be resolved", "model": Path(model).name})
                 for library in libraries.roots:
@@ -486,16 +610,17 @@ def export(slug, relative, root, destination, cli, libraries):
             command = [str(cli), "pcb", "export", "glb", "--force", "--subst-models", "--no-dnp", "--include-pads", "--include-silkscreen", "--include-soldermask", "--output", str(out / "board.glb"), str(temporary_board)]
             if unpopulated:
                 command.insert(-1, "--no-components")
-            if unpopulated or slug == "business-card":
+            if unpopulated:
                 command[-1:-1] = ["--include-tracks", "--include-zones"]
             result = subprocess.run(command, capture_output=True, text=True, timeout=600)
             if result.returncode:
                 raise RuntimeError((result.stdout + result.stderr)[-2000:])
             general = child(tree, "general", [])
-            registrations = register_manufacturer_models(out / "board.glb", footprints, resolutions)
+            registrations = register_manufacturer_models(out / "board.glb", footprints, resolutions, slug, float(child(general, 'thickness', [None,'1.6'])[1]))
             additions = append_literal_vrml_boxes(out / "board.glb", footprints, vrml, float(child(general, 'thickness', [None,'1.6'])[1]))
             authored_vrml = preserve_authored_vrml_meshes(out / "board.glb", footprints, board, libraries)
             dimensioned = append_dimensioned_renata(out / "board.glb", footprints, float(child(general,'thickness',[None,'1.6'])[1]))
+            compaction = compact_source_geometry(out / 'board.glb') if slug.startswith('skylabs-') else None
             missing = [item for item in missing if item['ref'] not in {entry['ref'] for entry in dimensioned}]
             missing = [item for item in missing if item['ref'] not in {entry['ref'] for entry in additions}]
             gltf, materials, bounds, height, triangles = inspect_glb(out / "board.glb")
@@ -523,12 +648,15 @@ def export(slug, relative, root, destination, cli, libraries):
         thickness = float(child(general, "thickness", [None, str(height[1] - height[0])])[1])
         metadata = {"slug": slug, "modelUrl": base + "board.glb", "boundsMm": bounds, "thicknessMm": thickness, "coreHeightMm": height, "scaleToMillimetres": 1000, "upAxis": "+Y", "kicadXAxis": "+X", "kicadYAxis": "+Z", "translationMm": [-(bounds[0] + bounds[2]) / 2, -height[0], -(bounds[1] + bounds[3]) / 2], "footprints": footprints, "materials": materials, "silk": {"frontUrl": base + "silk-front.svg", "backUrl": base + "silk-back.svg", "viewBoxMm": [bounds[0], bounds[1], width, depth]}, "source": relative, "sourceHash": original_hash, "missingModels": missing, "unmodeledFootprints": [item["ref"] for item in footprints if not item["hasModel"] and not item["dnp"]], "modelledComponentCount": sum(item["modelExported"] for item in footprints), "triangleCount": triangles, "modelBytes": (out / "board.glb").stat().st_size, "resolvedLibraryModelCount": len([entry for entry in resolutions.values() if entry]), "exportedWith": "KiCad CLI GLB export; original component geometry, pads, silk and soldermask"}
         metadata["unpopulated"] = unpopulated
-        metadata["copperIncluded"] = unpopulated or slug == "business-card"
+        metadata["copperIncluded"] = unpopulated
         metadata["materialProperties"] = {role: next(material["pbrMetallicRoughness"] for material in gltf["materials"] if material.get("name") == name) for role, name in materials.items()}
         metadata["literalVrmlModels"] = additions
         metadata["authoredVrmlMeshes"] = authored_vrml
         metadata["dimensionedRepresentations"] = dimensioned
         metadata["modelRegistrations"] = registrations
+        metadata['packageLibraryFallbacks'] = package_fallbacks
+        if compaction:
+            metadata['losslessCompaction'] = compaction
         used_libraries = []
         library_root = destination / '_libraries'
         for resolved in {item for item in resolutions.values() if item}:

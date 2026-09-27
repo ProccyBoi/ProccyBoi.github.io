@@ -1,10 +1,4 @@
 /* Motion is progressive: the unenhanced document is always fully visible. */
-@view-transition { navigation: auto; }
-::view-transition-old(root) { animation: v2-page-out 170ms ease-in both; }
-::view-transition-new(root) { animation: v2-page-in 360ms cubic-bezier(.2,.7,.2,1) both; }
-@keyframes v2-page-out { to { opacity: 0; transform: translateY(-6px); } }
-@keyframes v2-page-in { from { opacity: 0; transform: translateY(12px); } }
-
 .v2-hero h1 > .v2-hero-line {
   display: block;
   overflow: clip;
@@ -87,7 +81,6 @@
   .v2-button-light:hover { box-shadow: 0 6px 30px #c2d4ac18; }
 }
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .v2-hero-object .v2-cad-stage { transform: none; }
   .v2-feature::after { display: none; }
 }

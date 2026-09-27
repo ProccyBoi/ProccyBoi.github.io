@@ -16,6 +16,7 @@ HARDWARE_CATALOG = json.loads((ROOT / 'scripts/content/hardware-catalog.json').r
 HARDWARE_PROJECTS = HARDWARE_CATALOG['projects']
 HARDWARE_PROJECT_BY_SLUG = {record['slug']: record for record in HARDWARE_PROJECTS}
 HARDWARE_ASSEMBLIES = {record['route']: record for record in HARDWARE_CATALOG['assemblies']}
+SKYLABS_BOARDS = json.loads((ROOT / 'scripts/content/skylabs-components.json').read_text(encoding='utf-8'))
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'}
 
 
@@ -144,7 +145,7 @@ def common(source, body_class, active='work'):
     source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css">
   <link rel="stylesheet" href="/assets/v2-case.css">
   <link rel="stylesheet" href="/assets/v2-motion.css">
-  <script src="/assets/v2.js" defer blocking="render"></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
   <script src="/assets/v2-motion.js" defer></script>
 </head>''')
     if not old_footer:
@@ -225,8 +226,8 @@ def case_navigation(source, slug, title):
     tree = Tree(source)
     links = [('overview', 'Overview')]
     if 'id="explore"' in source:
-        links.append(('explore', 'Components' if 'v2-component-map' in source else 'Interactive'))
-    if 'id="assembly"' in source:
+        links.append(('explore', 'Assembly' if 'data-skylabs-inspector' in source else 'Interactive'))
+    if 'id="assembly"' in source and 'data-skylabs-inspector' not in source:
         links.append(('assembly', 'Assembly'))
     if 'id="details"' in source:
         links.append(('details', 'Details'))
@@ -280,22 +281,50 @@ def hardware_section(model, title, identifier='explore', facts='', note=''):
     </div></section>'''
 
 
+def skylabs_section(slug):
+    selected = 'ground' if slug.endswith('ground-station') else 'telemetry'
+    board = SKYLABS_BOARDS[selected]
+    keys = list(SKYLABS_BOARDS) if slug == 'skylabs' else [selected]
+    selector = ''
+    if slug == 'skylabs':
+        selector = '<nav class="hardware-boards" aria-label="Skylabs board">' + ''.join(
+            f'<a href="/v2/projects/{record["route"]}/" data-hardware-board="{key}" data-hardware-model="/assets/models/hardware/{record["model"]}/assembly.json" data-hardware-poster-src="/assets/images/v2/hardware/{record["model"]}.webp" data-hardware-title="{escape(record["title"])}"{chr(32) + "aria-current=\"true\"" if key == selected else ""}>{escape(record["title"])}</a>'
+            for key, record in SKYLABS_BOARDS.items()) + '</nav>'
+    components = ''
+    for key in keys:
+        record = SKYLABS_BOARDS[key]
+        items = ''.join(f'<details data-hardware-component data-hardware-refs="{escape(" ".join(part["refs"]))}"><summary><span>{escape(" / ".join(part["refs"]))}</span><strong>{escape(part["name"])}</strong></summary><p>{escape(part["description"])}</p></details>' for part in record['components'])
+        components += f'<section class="hardware-components" data-hardware-components="{key}" aria-labelledby="components-{key}"><h3 id="components-{key}">{escape(record["title"])} components</h3><div>{items}</div></section>'
+    viewer = hardware_viewer(board['model'], board['title'], 'skylabs')
+    viewer = viewer.replace('<figure ', f'<figure data-skylabs-inspector data-hardware-board-key="{selected}" ', 1)
+    viewer = viewer.replace('>\n      <div class="hardware-stage"', '>\n' + selector + '\n      <div class="hardware-stage"', 1)
+    viewer = viewer.replace('</figure>', components + '</figure>')
+    return f'''<section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="skylabs-assembly-title"><span id="assembly" class="v2-anchor-alias" aria-hidden="true"></span><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="skylabs-assembly-title">{'Flight hardware' if slug == 'skylabs' else escape(board['title'])}</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      {viewer}
+    </div></section>'''
+
+
+def integrate_skylabs(source, slug):
+    tree = Tree(source)
+    existing = tree.find('section', 'project-interactive')
+    source = replace_nodes(source, [(existing, skylabs_section(slug))])
+    tree = Tree(source)
+    obsolete = {'assets/skylabs-object.js', 'assets/skylabs-object.css'}
+    source = replace_nodes(source, [(node, '') for node in tree.nodes if node.tag in ('script', 'link') and (node.attrs.get('src') or node.attrs.get('href', '')).split('?')[0].lstrip('/') in obsolete])
+    source = re.sub(r' data-object-(?:inspector|live)| data-(?:view|board|annotations)="[^"]*"', '', source)
+    source = source.replace(' class="object-main"', '')
+    return source
+
+
 def integrate_hardware(source, slug):
+    if slug == 'skylabs' or slug.startswith('skylabs/boards/'):
+        return integrate_skylabs(source, slug)
     record = HARDWARE_ASSEMBLIES.get(slug)
     if not record:
         return source
     tree = Tree(source)
     existing = tree.find('section', 'project-interactive')
-    if existing and slug.startswith('skylabs/boards/'):
-        markup = existing.outer(source)
-        markup = re.sub(r'class="([^"]*)"', lambda match: f'class="{match[1]} v2-component-map"', markup, count=1)
-        map_tree = Tree(markup)
-        runtime_copy = next(node for node in map_tree.nodes if 'data-board-copy' in node.attrs)
-        markup = replace_nodes(markup, [(runtime_copy, runtime_copy.outer(markup).replace('<p ', '<p hidden ', 1) + '<p>Select a marked component to read its role in the circuit, or use the component index below the board.</p>')])
-        source = replace_nodes(source, [(existing, markup)])
-        source = source.replace('data-object-inspector data-view="rotate"', 'data-object-inspector data-view="inspect"', 1)
-        tree = Tree(source)
-        existing = tree.find('section', 'project-interactive')
     identifier = 'assembly' if existing and record['mode'] == 'add' else 'explore'
     facts = ''
     if record['mode'] == 'replace' and existing:
@@ -334,6 +363,7 @@ def make_case(path, slug=None, source=None):
     cad_assets = {
         'tramtrace': ('tramtrace-cad.webp', 'Source-derived KiCad rendering of the TramTrace light-rail display PCB'),
         'framework-expansion-card': ('framework-cad.webp', 'Source-derived CAD rendering of the populated Framework ESP32 card'),
+        'skylabs': ('hardware/skylabs-telemetry.webp', 'Skylabs aircraft telemetry circuit board'),
     }
     if slug in HARDWARE_ASSEMBLIES:
         model = HARDWARE_ASSEMBLIES[slug]['model']
@@ -347,7 +377,7 @@ def make_case(path, slug=None, source=None):
         width, height = (1376, 984) if board == 'telemetry' else (1400, 1000)
         hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/interactive/skylabs/skylabs-{board}-turn-02.webp" width="{width}" height="{height}" alt="KiCad rendering of the assembled Skylabs {board} board" fetchpriority="high"></figure>'
     has_explorer = 'id="explore"' in source
-    explore_anchor = 'assembly' if 'id="assembly"' in source else 'explore'
+    explore_anchor = 'assembly' if 'id="assembly"' in source and 'data-skylabs-inspector' not in source else 'explore'
     explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board'))
     hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
@@ -462,7 +492,7 @@ def make_index():
     card_images = {
         'projects/tramtrace/': ('v2/tramtrace-cad.webp', 1600, 1200, 'TramTrace light-rail display PCB'),
         'projects/framework-expansion-card/': ('v2/framework-cad.webp', 1600, 1200, 'Framework ESP32 expansion card'),
-        'projects/skylabs/': ('interactive/skylabs/skylabs-telemetry-turn-02.webp', 1376, 984, 'Skylabs aircraft telemetry PCB'),
+        'projects/skylabs/': ('v2/hardware/skylabs-telemetry.webp', 1600, 1200, 'Skylabs aircraft telemetry PCB'),
     }
     for route, record in HARDWARE_ASSEMBLIES.items():
         if '/' not in route:

@@ -6,7 +6,7 @@ Revised 27 September 2026. The portfolio lives at `/v2/` and contains 18 project
 
 The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses deep charcoal, soft white text and pale blue links. Dark image surfaces suit the original black-background photographs. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections leaves enough space to see how the parts relate.
 
-The opening is a full-screen, scroll-controlled scene led by TramTrace, followed by the ESP32 and Raspberry Pi cards. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their registered positions; reverse scrolling reconstructs the same assembly.
+The opening is a full-screen, scroll-controlled scene led by TramTrace, followed by Skylabs telemetry and the Raspberry Pi card. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their registered positions; reverse scrolling reconstructs the same assembly.
 
 Project names and concise descriptions carry the interface. CAD provenance belongs in development documentation, not repeated as decorative captions. Titles should identify work or explain a real design decision. Technical specifications belong where they help someone understand a project.
 
@@ -15,7 +15,7 @@ Project names and concise descriptions carry the interface. CAD provenance belon
 - Native scrolling controls the hero. The page never intercepts wheel/touch input.
 - The project selector moves to a project in the sequence; its caption links to the full case study. “View projects” skips the sequence.
 - Rendering runs only while a pose changes, a viewport resizes, or the scene enters view. Hidden tabs and offscreen scenes stop rendering.
-- Physical CAD faces are merged by material within moving components. TramTrace’s LEDs form one bank for the hero, retaining all 116 source geometries.
+- Physical CAD faces are merged by material within moving components. TramTrace’s LEDs form one bank for the hero, retaining all 116 source geometries. Telemetry’s resistors and capacitors are batched by their shared displacement; every original part and position remains present.
 - Reduced motion and Save Data start with still images and direct project links; JavaScript/WebGL failure retains the same navigation. No loading gate blocks the page.
 - The standalone Raspberry Pi inspector adds orbiting, camera presets, component identification, shell visibility and assembly separation.
 - The shared hardware inspector adds on-demand component selection, front/back views, assembly separation and optional scroll control across the electronics collection.
@@ -32,7 +32,8 @@ The Pi card is based on `D:/Electronics Projects/Framework Expansion Card - Rasp
 - `assets/v2-assembly.js`: scene lighting, responsive composition and deterministic scroll poses.
 - `assets/v2-assembly.css`: fullscreen scene and static fallback.
 - `assets/v2.css`, `assets/v2-case.css`: shared gallery theme and interior pages.
-- `assets/v2-hardware.js`, `assets/v2-hardware.css`: shared model factory and finite inspector lifecycle.
+- `assets/v2-hardware-models.js`: shared source-CAD loading, materials and reference groups for inspectors and the telemetry hero.
+- `assets/v2-hardware.js`, `assets/v2-hardware.css`: shared controls and finite inspector lifecycle.
 - `scripts/content/hardware-catalog.json`: factual content, sources, new routes and existing-page assembly integrations.
 - `scripts/build-v2-cases.py`: reproducible case/collection/About generation, including the Pi source fragment.
 - `scripts/audit-v2.py`: all route, local asset, inventory and document checks.

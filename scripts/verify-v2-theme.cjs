@@ -55,7 +55,7 @@ function inspectTheme(){
   if(light>.18&&!bg.gradient)surfaces.push({selector:selector(element),background:bg.color.map(Math.round),luminance:Number(light.toFixed(3))});
  }
  const contrast=[];let checkedText=0;
- const textSelector='h1,h2,h3,p,label,button,select,input[type="search"],input[type="text"],output,.v2-nav a,.v2-case-nav a,.project-hero-actions a,.project-meta dd,.row .val,.cell .k,.cell .v,.metric b,.metric span,.metric small,.stage-title>span,.equations code,.sub,.pill,.flag';
+ const textSelector='h1,h2,h3,p,label,button,select,input[type="search"],input[type="text"],output,.v2-nav a,.v2-case-nav a,.project-hero-actions a,.project-meta dd,.hardware-boards a,.hardware-components summary,.hardware-components summary span,.hardware-components summary strong,.row .val,.cell .k,.cell .v,.metric b,.metric span,.metric small,.stage-title>span,.equations code,.sub,.pill,.flag';
  for(const element of document.querySelectorAll(textSelector)){
   if(!visible(element)||element.disabled||element.getAttribute('aria-disabled')==='true')continue;
   const text=(element.innerText||element.value||element.getAttribute('placeholder')||'').trim().replace(/\s+/g,' ');
@@ -107,7 +107,7 @@ function inspectTheme(){
     const filename=route.replace(/^\/|\/$/g,'').replaceAll('/','-')+'-'+width;
     if(representative.has(route))await page.screenshot({path:path.join(output,filename+'-top.png')});
     const toggles=route.includes('/tramtrace/')?['[data-inspector-mode="copper"]','[data-inspector-mode="data"]']:
-      route==='/v2/projects/skylabs/'?['[data-object-view="inspect"]']:
+      route==='/v2/projects/skylabs/'?['[data-hardware-components="telemetry"] [data-hardware-component]:first-child summary']:
       route.includes('/mosfet-operating-regions/')?['.seg button[data-mode="continuous"]','[data-preset="cutoff"]','[data-preset="triode"]','[data-preset="saturation"]']:
       route.includes('/lithography-animation/')?['#negativeTone']:[];
     for(const selector of toggles){

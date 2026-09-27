@@ -125,13 +125,13 @@
       "route": "skylabs/boards/telemetry",
       "model": "skylabs-telemetry",
       "title": "Aircraft telemetry assembly",
-      "mode": "add"
+      "mode": "replace"
     },
     {
       "route": "skylabs/boards/ground-station",
       "model": "skylabs-ground-station",
       "title": "Ground station assembly",
-      "mode": "add"
+      "mode": "replace"
     }
   ]
 }

@@ -9,6 +9,9 @@
 (() => {
   'use strict';
   const definitions = {
+    telemetry: {
+      manifest: '/assets/models/hardware/skylabs-telemetry/assembly.json'
+    },
     esp32: {
       model: '/assets/models/framework-esp32/framework-board.glb',
       silk: '/assets/models/framework-esp32/framework-markings-silk.svg',
@@ -190,10 +193,47 @@
     return mesh;
   }
 
+  // The hero lifts each side's passive parts together. Merge only groups with
+  // the same displacement; their original geometry and assembled positions stay
+  // exact. The standalone inspector keeps every reference individually selectable.
+  function batchHeroPassives(T, assembly) {
+    const batches = new Map();
+    assembly.group.updateMatrixWorld(true);
+    assembly.group.userData.componentCount = assembly.parts.length;
+    for (const part of assembly.parts) {
+      if (!/^[RC]\d+$/.test(part.ref)) continue;
+      const key = part.offset.toArray().join(',');
+      if (!batches.has(key)) batches.set(key, []);
+      batches.get(key).push(part);
+    }
+    for (const parts of batches.values()) {
+      if (parts.length < 2) continue;
+      const base = new T.Vector3();
+      const object = mergeReference(T, parts.map(part => part.object), base, 1, material => material, '');
+      object.name = parts[0].offset.y < 0 ? 'Back passives' : 'Front passives';
+      object.userData.componentRefs = parts.map(part => part.ref);
+      for (const part of parts) {
+        assembly.group.remove(part.object);
+        part.object.traverse(node => node.geometry?.dispose());
+      }
+      assembly.group.add(object);
+      const removed = new Set(parts);
+      assembly.parts = assembly.parts.filter(part => !removed.has(part));
+      assembly.parts.push({ object, base, offset: parts[0].offset.clone() });
+    }
+    return assembly;
+  }
+
   async function load(name) {
     const T = window.THREE, definition = definitions[name];
     if (!T?.GLTFLoader) throw new Error('V2AssemblyModels requires THREE and GLTFLoader');
     if (!definition) throw new Error(`Unknown assembly: ${name}`);
+    if (definition.manifest) {
+      if (!window.V2HardwareModels) throw new Error('Shared hardware model factory unavailable');
+      const assembly = await window.V2HardwareModels.load(definition.manifest);
+      assembly.group.name = name;
+      return batchHeroPassives(T, assembly);
+    }
     const loader = new T.GLTFLoader();
     const loadGLB = path => new Promise((resolve, reject) => loader.load(path, gltf => resolve(gltf.scene), undefined, reject));
     const loadTexture = path => new Promise((resolve, reject) => new T.TextureLoader().load(path, resolve, undefined, reject));

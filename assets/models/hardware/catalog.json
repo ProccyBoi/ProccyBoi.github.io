@@ -49,7 +49,7 @@
       "source": "../Skylabs/Mission Systems/Ground Station PCB/Ground Station v1.0/Ground Station v1.0.kicad_pcb",
       "sourceHash": "3768f5e35b69f56fdc82fd579557923e1e854c736ef5d01c959ae335b238855b",
       "missingModelCount": 0,
-      "modelBytes": 5316848
+      "modelBytes": 2976356
     },
     {
       "slug": "skylabs-telemetry",
@@ -57,8 +57,8 @@
       "metadataUrl": "/assets/models/hardware/skylabs-telemetry/assembly.json",
       "source": "../Skylabs/Mission Systems/Telemetry PCB/Mission Systems PCB v4.0/Mission Systems.kicad_pcb",
       "sourceHash": "9d1778533696fd7769bbf6e319cb2fa98f06c17642adf4866df7223c072c7358",
-      "missingModelCount": 2,
-      "modelBytes": 13527660
+      "missingModelCount": 0,
+      "modelBytes": 8534724
     },
     {
       "slug": "tamagotchi-sd-card",
