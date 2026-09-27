@@ -16,9 +16,9 @@ const root = '[data-pi-inspector]';
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, reducedMotion: 'no-preference' });
     const errors = [], requests = []; page.on('pageerror', e => errors.push(e.message)); page.on('request', r => { if (/framework-pi.*\.(glb|stl)/.test(r.url())) requests.push(r.url()); });
-    await page.goto(url); assert.equal(requests.length, 0, 'Geometry must remain on demand');
-    assert.equal((await state(page)).piState, 'poster');
-    await page.locator('[data-pi-start]').click(); await ready(page); await settle(page);
+    await page.goto(url); await page.locator('[data-pi-stage]').scrollIntoViewIfNeeded();
+    await ready(page); await settle(page);
+    assert.equal(await page.locator('[data-pi-start]').isVisible(), false, 'No activation button is needed');
     assert.equal(requests.length, 3); assert.equal((await state(page)).piComponents, '33');
     await page.locator(root).screenshot({ path: path.join(output, 'assembled.png') });
     assert.equal(await page.locator('[data-pi-explode]').evaluate(button => { button.click(); return button.closest('[data-pi-inspector]').dataset.piMotion; }), 'transition');
@@ -40,16 +40,16 @@ const root = '[data-pi-inspector]';
     await page.close();
 
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
-    await mobile.goto(url); await mobile.locator('[data-pi-start]').click(); await ready(mobile); await settle(mobile);
+    await mobile.goto(url); await mobile.locator('[data-pi-stage]').scrollIntoViewIfNeeded(); await ready(mobile); await settle(mobile);
     assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'No mobile overflow');
     assert.match(await mobile.locator('[data-pi-canvas]').evaluate(el => getComputedStyle(el).touchAction), /pan-y/);
     await mobile.locator('[data-pi-explode]').click(); await mobile.waitForTimeout(70); assert.equal((await state(mobile)).piMotion, 'idle'); assert.equal((await state(mobile)).piProgress, '1.000'); await settle(mobile);
     await mobile.locator(root).screenshot({ path: path.join(output, 'mobile.png') }); await mobile.close();
 
     const failure = await browser.newPage(); await failure.route('**/framework-pi-board.glb', r => r.abort());
-    await failure.goto(url); await failure.locator('[data-pi-start]').click(); await failure.waitForFunction(() => document.querySelector('[data-pi-inspector]').dataset.piState === 'unavailable');
+    await failure.goto(url); await failure.locator('[data-pi-stage]').scrollIntoViewIfNeeded(); await failure.waitForFunction(() => document.querySelector('[data-pi-inspector]').dataset.piState === 'unavailable');
     assert.equal(await failure.locator('[data-pi-poster]').isVisible(), true); await failure.close();
-    console.log('PASS: on-demand geometry; 33 components; explode/reassemble; idle; camera; keyboard; component selection; shell; offscreen pause/resume; context loss; mobile; reduced motion; failed model fallback.');
+    console.log('PASS: automatic geometry; 33 components; explode/reassemble; idle; camera; keyboard; component selection; shell; offscreen pause/resume; context loss; mobile; reduced motion; failed model fallback.');
     console.log(`Visual checks: ${output}`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

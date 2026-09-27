@@ -39,6 +39,7 @@ REDIRECT_EXEMPTIONS = {
 }
 SHARED_PREFIXES = ("/shared/", "/assets/", "/reports/", "/book/")
 HARDWARE_CATALOG = ROOT / "scripts/content/hardware-catalog.json"
+STANDALONE_TOOLS = {"scopelab", "lithography-animation", "mosfet-operating-regions"}
 
 
 @dataclass
@@ -290,8 +291,9 @@ def main() -> int:
                 collection_projects.add(match.group(1))
                 category_counts[link.project_group] += 1
                 category_counts["all"] += 1
-        if collection_projects != v2_projects:
-            error(collection.path, f"collection and route inventory differ: {', '.join(sorted(collection_projects ^ v2_projects))}")
+        expected_projects = v2_projects - STANDALONE_TOOLS
+        if collection_projects != expected_projects:
+            error(collection.path, f"collection and project inventory differ: {', '.join(sorted(collection_projects ^ expected_projects))}")
         for link in collection.tags("a"):
             if "data-v2-category" in link.attrs:
                 count = re.search(r"(\d+)\s*$", "".join(link.text))
@@ -393,7 +395,7 @@ def main() -> int:
                 error(page, "refresh redirect has no resolvable URL", refresh.line)
 
     unique_errors = list(dict.fromkeys(errors))
-    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects)} projects ({len(original_projects)} existing + {len(requested_projects - original_projects)} requested); "
+    summary = (f"V2 audit: {len(pages)} HTML pages; {len(v2_projects - STANDALONE_TOOLS)} projects and {len(v2_projects & STANDALONE_TOOLS)} standalone tools; "
                f"{stats['images']} images; {stats['references']} URL references; {stats['fragments']} fragments; "
                f"{len(checked_css)} stylesheets; {len(checked_manifests)} assembly manifests; {len(checked_targets)} distinct local targets; "
                f"{stats['explicit utility/redirect exemptions']} explicit utility/redirect exemptions; "

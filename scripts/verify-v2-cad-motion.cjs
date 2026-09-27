@@ -52,7 +52,7 @@ async function snapshot(page){
       }});
     });
     await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
-    await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
+    await page.locator('[data-assembly-models-ready="3"]').waitFor({timeout:60000});
     await page.waitForTimeout(1800);
     // Establish the baseline after a complete scroll roundtrip so the finite
     // entrance animation cannot be mistaken for part of the scroll state.

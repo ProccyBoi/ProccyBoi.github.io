@@ -305,7 +305,9 @@
       else { if (motion) { motion.last = null; root.dataset.piMotion = 'transition'; } invalidate(); }
     };
     observer = new ResizeObserver(resize); observer.observe(stage);
-    visibilityObserver = new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; visibility(); }); visibilityObserver.observe(stage);
+    if ('IntersectionObserver' in window) {
+      visibilityObserver = new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; visibility(); }); visibilityObserver.observe(stage);
+    }
     listen(document, 'visibilitychange', visibility);
     listen(reduced, 'change', () => { if (reduced.matches && motion) { stop(true); invalidate(); } });
     canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Raspberry Pi expansion card. Drag to rotate, use arrow keys to turn, plus and minus to zoom, Home to reset.');
@@ -320,24 +322,38 @@
     root.dataset.piMounted = 'true'; root.dataset.piState = 'poster';
     const start = root.querySelector('[data-pi-start]'), canvas = root.querySelector('[data-pi-canvas]'), poster = root.querySelector('[data-pi-poster]'), status = root.querySelector('[data-pi-status]');
     if (!start || !canvas) return;
+    const startWrap = start.closest('.pi-start-wrap') || start;
+    const showRetry = show => { start.hidden = !show; startWrap.hidden = !show; };
+    let generation = 0;
+    showRetry(false);
     canvas.hidden = true;
     const unavailable = () => {
+      generation++;
       root.dispatchEvent(new Event('pi-dispose')); root.dataset.piState = 'unavailable'; canvas.hidden = true;
-      if (poster) poster.hidden = false; start.disabled = true; start.hidden = false; start.textContent = '3D unavailable';
-      if (status) status.textContent = 'The card preview is still available.';
+      if (poster) poster.hidden = false; start.disabled = false; start.textContent = 'Retry 3D'; showRetry(true);
+      if (status) status.textContent = 'The 3D view could not load. The card preview is still available.';
     };
     root.addEventListener('pi-unavailable', unavailable);
-    start.addEventListener('click', async () => {
-      if (root.dataset.piState !== 'poster') return;
-      root.dataset.piState = 'loading'; start.disabled = true; start.textContent = 'Opening the card…';
+    const initialize = async () => {
+      if (!['poster', 'unavailable'].includes(root.dataset.piState)) return;
+      const token = ++generation;
+      root.dataset.piState = 'loading'; start.disabled = true; showRetry(false);
       if (status) status.textContent = 'Preparing the assembly';
       try {
-        await create(root); canvas.hidden = false; if (poster) poster.hidden = true;
+        await create(root); if (token !== generation) return;
+        canvas.hidden = false; if (poster) poster.hidden = true;
         start.hidden = true; root.dataset.piState = 'ready';
         if (status) status.textContent = 'Drag to rotate · arrow keys to turn · + / − to zoom';
-        if (!root.hasAttribute('data-pi-capture')) canvas.focus({ preventScroll: true });
-      } catch (error) { console.warn('Pi card viewer unavailable', error); unavailable(); }
-    });
+      } catch (error) { if (token === generation) { console.warn('Pi card viewer unavailable', error); unavailable(); } }
+    };
+    start.addEventListener('click', initialize);
+    if ('IntersectionObserver' in window) {
+      const preload = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) { preload.disconnect(); initialize(); }
+      }, { rootMargin: '400px 0px' });
+      preload.observe(root.querySelector('[data-pi-stage]'));
+    } else initialize();
+    if (root.hasAttribute('data-pi-capture')) initialize();
   }
   window.PiCardStudio = Object.freeze({ mount });
   document.querySelectorAll('[data-pi-inspector]').forEach(mount);

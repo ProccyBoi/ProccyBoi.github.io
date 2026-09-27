@@ -15,11 +15,14 @@
     const {mergeReference,disposeSource}=window.V2CadGeometry;
     const group=new T.Group(),parts=[],materials=new Map();
     const footprints=new Map(metadata.footprints.map(part=>[part.ref,part]));
+    // The manufactured Skylabs boards use blue soldermask. Keep this finish
+    // separate from the untouched CAD palette and from component substrates.
+    const skylabsBlue=metadata.slug==='skylabs-telemetry'||metadata.slug==='skylabs-ground-station';
     const style=original=>{
       if(materials.has(original.name))return materials.get(original.name);
       const material=original.clone(),roles=metadata.materials||{};
       material.transparent=false;material.opacity=1;material.depthWrite=true;
-      if(original.name===roles.mask){material.color.convertSRGBToLinear();material.roughness=.58;material.metalness=.03;material.side=T.DoubleSide;material.transparent=true;material.opacity=original.opacity;}
+      if(original.name===roles.mask){if(skylabsBlue)material.color.setHex(0x043b7b);material.color.convertSRGBToLinear();material.roughness=.58;material.metalness=.03;material.side=T.DoubleSide;material.transparent=true;material.opacity=original.opacity;}
       else if(original.name===roles.core){material.color.convertSRGBToLinear();material.roughness=.86;material.metalness=0;}
       else if(original.name===roles.pads){material.roughness=.31;material.metalness=.8;}
       else {

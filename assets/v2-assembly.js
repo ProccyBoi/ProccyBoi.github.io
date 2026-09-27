@@ -12,6 +12,7 @@
   const projectLink = root.querySelector('[data-assembly-link]');
   const selectors = [...root.querySelectorAll('[data-assembly-select]')];
   const progressBar = root.querySelector('[data-assembly-progress]');
+  const posters = [...root.querySelectorAll('[data-assembly-posters] img')];
   const projects = [
     {name:'tramtrace', title:'TramTrace', kind:'Live light-rail display', description:'116 pixels following Sydney’s light-rail network.', href:'/v2/projects/tramtrace/'},
     {name:'telemetry', title:'Telemetry', kind:'Skylabs avionics', description:'Navigation, sensing and a radio link to the ground.', href:'/v2/projects/skylabs/boards/telemetry/'},
@@ -20,10 +21,13 @@
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
   const smooth = value => { const p = clamp(value); return p*p*(3-2*p); };
   const ramp = (value, start, end) => smooth((value-start)/(end-start));
-  let renderer, scene, camera, models, environment;
+  let renderer, scene, camera, environment;
+  const models = Array(projects.length).fill(null);
+  const shadows = Array(projects.length).fill(null);
+  const modelStates = Array(projects.length).fill('pending');
   let frame = 0, frames = 0, visible = true, ready = false, loading = false, failed = false;
   let target = 0, current = 0, active = -1, width = 0, height = 0, entry = 0;
-  let poses = [], shadows = [];
+  let poses = [];
   const motionAllowed = () => !reduced.matches && !navigator.connection?.saveData;
   const loadScript = source => new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -66,13 +70,15 @@
   const pose = (t,x,y,s,rx,ry,rz,e=0) => ({t,x,y,s,rx,ry,rz,e});
   const layout = () => {
     width = stage.clientWidth; height = stage.clientHeight;
-    if(!renderer || !height || !width) return;
-    renderer.setSize(width,height,false);
-    camera.top=5; camera.bottom=-5;
-    camera.right=5*width/height; camera.left=-camera.right;
-    camera.updateProjectionMatrix();
+    if(!height || !width) return;
+    const half = 5*width/height;
+    if(renderer) {
+      renderer.setSize(width,height,false);
+      camera.top=5; camera.bottom=-5;
+      camera.right=half; camera.left=-half;
+      camera.updateProjectionMatrix();
+    }
     const small = width<=900;
-    const half = camera.right;
     const off = half+9;
     const focusX = small ? 0 : half*.33;
     const focusY = small ? .75 : -.72;
@@ -101,17 +107,35 @@
   };
   const render = timestamp => {
     frame=0;
-    if(!ready || !visible || document.hidden) return;
+    if(!ready || !visible || document.hidden || !motionAllowed()) return;
     const moving=motionAllowed();
     if(moving) current += (target-current)*.19;
     else current=0;
     if(Math.abs(target-current)<.00008) current=target;
     const settle=entry ? ramp(timestamp-entry,0,1250) : 1;
-    models.forEach((model,index) => {
+    projects.forEach((project,index) => {
       const transform=interpolate(poses[index],current);
-      const group=model.group;
       const inScene=index===0 ? current<.405 : index===1 ? current<.105 || (current>=.345 && current<.725) : current<.115 || current>=.65;
-      group.visible=inScene && Math.abs(transform.x)<camera.right+transform.s;
+      const inView=inScene && Math.abs(transform.x)<5*width/height+transform.s;
+      const poster=posters[index];
+      if(poster) {
+        // Posters follow the same scroll poses before their CAD is available,
+        // so a slow model never leaves an empty or frozen chapter.
+        const pixels=height/10;
+        poster.style.setProperty('--assembly-poster-width',`${transform.s*pixels*1.4}px`);
+        poster.style.setProperty('--assembly-poster-height',`${transform.s*pixels*1.05}px`);
+        poster.style.setProperty('--assembly-poster-left',`${width/2+transform.x*pixels}px`);
+        poster.style.setProperty('--assembly-poster-top',`${height/2-(transform.y-(1-settle)*.6)*pixels}px`);
+        poster.style.setProperty('--assembly-poster-transform',`translate(-50%,-50%) rotate(${-transform.rz*.4}rad)`);
+        poster.style.setProperty('--assembly-poster-opacity',inView&&!models[index]?'1':'0');
+        poster.style.setProperty('--assembly-poster-visibility',inView?'visible':'hidden');
+      }
+      const model=models[index];
+      if(!model) return;
+      const group=model.group;
+      group.visible=inView;
+      const shadow=shadows[index];
+      shadow.visible=group.visible;
       group.position.set(transform.x,transform.y-(1-settle)*.6,0);
       group.scale.setScalar(transform.s*(.94+settle*.06));
       group.rotation.set(transform.rx,transform.ry,transform.rz+(1-settle)*.11);
@@ -120,8 +144,6 @@
         const exploded=clamp(transform.e*(1+stagger));
         part.object.position.copy(part.base).addScaledVector(part.offset,exploded);
       });
-      const shadow=shadows[index];
-      shadow.visible=group.visible;
       shadow.position.set(transform.x,transform.y-transform.s*.43,-3);
       shadow.scale.set(transform.s*.9,transform.s*.18,1);
       shadow.material.opacity=.085*(1-transform.e*.6);
@@ -131,10 +153,10 @@
     intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
     captionAt(current);
     progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
-    renderer.render(scene,camera);
+    if(renderer) renderer.render(scene,camera);
     root.dataset.assemblyFrames=String(++frames);
     root.dataset.assemblyProgress=current.toFixed(5);
-    root.dataset.assemblyDraws=String(renderer.info.render.calls);
+    root.dataset.assemblyDraws=String(renderer?.info.render.calls||0);
     if(moving && (Math.abs(target-current)>.00008 || settle<1)) frame=requestAnimationFrame(render);
   };
   function request(){if(!frame && ready && visible && !document.hidden) frame=requestAnimationFrame(render);}
@@ -142,8 +164,9 @@
     root.classList.remove('is-enhanced'); root.classList.add('is-static');
     if(frame) cancelAnimationFrame(frame); frame=0; target=0; current=0;
     intro.style.removeProperty('opacity'); intro.style.removeProperty('transform');
+    posters.forEach(poster=>poster.removeAttribute('style'));
     selectors.forEach(link=>link.removeAttribute('aria-current'));
-    caption.style.opacity='0'; caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;
+    caption.classList.remove('is-active');caption.style.opacity='0'; caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;
     if(ready) {entry=0; layout(); request();}
     else root.dataset.assemblyState='static';
   };
@@ -151,11 +174,21 @@
     if(loading || ready || failed || !motionAllowed()) return;
     loading=true; root.dataset.assemblyState='loading';
     root.classList.add('is-enhanced'); root.classList.remove('is-static');
+    // Start the complete scroll scene using the lightweight posters. Neither
+    // script download nor CAD parsing gates captions, navigation or movement.
+    ready=true;entry=performance.now();layout();current=target;request();
     try {
-      if(!window.THREE) await loadScript('/assets/vendor/three.min.js');
-      if(!window.THREE.GLTFLoader) await loadScript('/assets/vendor/GLTFLoader.js');
-      if(!window.V2AssemblyModels) await loadScript('/assets/v2-assembly-models.js');
-      if(!window.V2HardwareModels) await loadScript('/assets/v2-hardware-models.js');
+      // The factories only read THREE when load() is called. Their downloads
+      // can overlap Three.js; GLTFLoader still executes after Three.js.
+      const factories=Promise.all([
+        window.V2AssemblyModels?Promise.resolve():loadScript('/assets/v2-assembly-models.js'),
+        window.V2HardwareModels?Promise.resolve():loadScript('/assets/v2-hardware-models.js')
+      ]);
+      const loaders=(async()=>{
+        if(!window.THREE) await loadScript('/assets/vendor/three.min.js');
+        if(!window.THREE.GLTFLoader) await loadScript('/assets/vendor/GLTFLoader.js');
+      })();
+      await Promise.all([factories,loaders]);
       const T=window.THREE;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75));
@@ -173,25 +206,68 @@
       });
       const pmrem=new T.PMREMGenerator(renderer);environment=pmrem.fromScene(room,.06);
       scene.environment=environment.texture;pmrem.dispose();room.traverse(object=>{object.geometry?.dispose();object.material?.dispose();});
-      models=await Promise.all(projects.map(project=>window.V2AssemblyModels.load(project.name)));
       const shadowCanvas=document.createElement('canvas');shadowCanvas.width=128;shadowCanvas.height=128;
       const ctx=shadowCanvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,4,64,64,64);
       gradient.addColorStop(0,'#182d24');gradient.addColorStop(.5,'#182d2480');gradient.addColorStop(1,'#182d2400');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
       const shadowTexture=new T.CanvasTexture(shadowCanvas);
-      shadows=models.map(model=>{
-        scene.add(model.group);
-        const shadow=new T.Mesh(new T.PlaneGeometry(1.5,1.5),new T.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false,opacity:.08}));
-        scene.add(shadow);return shadow;
-      });
-      ready=true;root.dataset.assemblyState='ready';
-      entry=performance.now();layout();current=target;
-      renderer.compile(scene,camera);
-      render(performance.now());root.classList.add('is-loaded');
+      layout();
+      const loadModel=async index=>{
+        modelStates[index]='loading';posters[index].dataset.assemblyModelState='loading';
+        try {
+          const model=await window.V2AssemblyModels.load(projects[index].name);
+          if(failed) return;
+          const shadow=new T.Mesh(new T.PlaneGeometry(1.5,1.5),new T.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false,opacity:.08}));
+          models[index]=model;shadows[index]=shadow;scene.add(model.group);scene.add(shadow);
+          modelStates[index]='ready';posters[index].dataset.assemblyModelState='ready';
+          // A late model adopts the current scroll pose without resetting the
+          // scene or waiting for any other project's download/parse/compile.
+          if(frame) cancelAnimationFrame(frame);
+          render(performance.now());root.classList.add('is-loaded');request();
+          root.dataset.assemblyModelsReady=String(models.filter(Boolean).length);
+          root.dataset.assemblyState='ready';
+          if(!root.dataset.assemblyFirstModel) {
+            root.dataset.assemblyFirstModel=projects[index].name;
+            root.dataset.assemblyFirstModelMs=performance.now().toFixed(1);
+          }
+        } catch(error) {
+          // A first-render failure must roll back the installed slot too;
+          // otherwise its truthy model would keep its fallback poster hidden.
+          if(models[index]) {
+            scene.remove(models[index].group);
+            models[index].group.traverse(object=>{
+              object.geometry?.dispose();
+              const materials=Array.isArray(object.material)?object.material:[object.material];
+              materials.forEach(material=>material?.dispose());
+            });
+            models[index]=null;
+          }
+          if(shadows[index]) {
+            scene.remove(shadows[index]);shadows[index].geometry.dispose();shadows[index].material.dispose();shadows[index]=null;
+          }
+          modelStates[index]='unavailable';posters[index].dataset.assemblyModelState='unavailable';
+          root.dataset.assemblyModelsReady=String(models.filter(Boolean).length);
+          if(!models.some(Boolean)) root.classList.remove('is-loaded');
+          console.warn(`${projects[index].title} CAD unavailable; its scroll poster remains available.`,error);
+          request();
+        }
+      };
+      // Give the lead board the first download/parse opportunity. Queue the
+      // supporting models after the browser can paint its initial scene.
+      const lead=loadModel(0);
+      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+      const supporting=projects.slice(1).map((_,index)=>loadModel(index+1));
+      await Promise.allSettled([lead,...supporting]);
+      if(!models.some(Boolean)) root.dataset.assemblyState='unavailable';
+      root.dataset.assemblyModelsSettled=String(modelStates.filter(state=>state!=='pending'&&state!=='loading').length);
       if(!motionAllowed()) staticMode();
     } catch(error) {
       failed=true;root.dataset.assemblyState='unavailable';
-      staticMode();root.dataset.assemblyState='unavailable';root.classList.remove('is-loaded');
+      modelStates.fill('unavailable');
+      posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});
+      root.dataset.assemblyModelsReady='0';root.dataset.assemblyModelsSettled=String(projects.length);
+      root.classList.remove('is-loaded');
       renderer?.dispose();
+      renderer=null;
       console.warn('Hardware gallery unavailable; project images remain available.',error);
     } finally {loading=false;}
   }
@@ -212,7 +288,13 @@
     else if(ready){root.classList.add('is-enhanced');root.classList.remove('is-static');entry=0;layout();}
     else initialize();
   });
-  canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();failed=true;ready=false;staticMode();root.classList.remove('is-loaded');root.dataset.assemblyState='unavailable';});
+  canvas.addEventListener('webglcontextlost',event=>{
+    event.preventDefault();failed=true;renderer=null;models.fill(null);shadows.fill(null);
+    modelStates.fill('unavailable');
+    root.classList.remove('is-loaded');root.dataset.assemblyState='unavailable';root.dataset.assemblyModelsReady='0';
+    root.dataset.assemblyModelsSettled=String(projects.length);
+    posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});request();
+  });
   addEventListener('pagehide',()=>{cancelAnimationFrame(frame);frame=0;});
   addEventListener('pageshow',()=>{updateProgress();request();});
   if(motionAllowed()) initialize(); else staticMode();

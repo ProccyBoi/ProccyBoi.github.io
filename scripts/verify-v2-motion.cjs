@@ -51,6 +51,7 @@ async function inViewport(locator,width,height,label){
     await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     const hero=page.locator('[data-assembly]');
     await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
+    await page.locator('[data-assembly-models-settled="3"]').waitFor({timeout:60000});
     await page.waitForTimeout(1800);
     await framesStop(page,'Entrance must finish and stop rendering');
     for(const viewport of lifecycleOnly?[]:[{width:1440,height:1000},{width:1366,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:740}]){
@@ -107,6 +108,8 @@ async function inViewport(locator,width,height,label){
     assert.equal(await page.locator('[data-assembly-caption]').isVisible(),false,'Reduced motion hides scroll-only captions');
     assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior),'auto');
     await framesStop(page,'Live reduced-motion preference must stop animation');
+    assert.equal(await page.locator('[data-assembly-posters] img').evaluateAll(images=>images.every(image=>!image.hasAttribute('style')&&getComputedStyle(image).visibility==='visible'&&getComputedStyle(image).opacity==='1')),true,'Reduced motion must restore every original poster without scroll styles');
+    assert.equal(await page.locator('[data-assembly-canvas]').evaluate(canvas=>getComputedStyle(canvas).opacity),'0','Reduced motion uses the compact static poster composition');
     const reducedState=await hero.evaluate(node=>({className:node.className,state:node.dataset.assemblyState,frames:node.dataset.assemblyFrames,progress:node.dataset.assemblyProgress}));
     console.log('PASS live reduced motion: unpinned, compact, idle; diagnostic '+JSON.stringify(reducedState));
     await page.emulateMedia({reducedMotion:'no-preference'});
@@ -122,10 +125,15 @@ async function inViewport(locator,width,height,label){
     });
     assert.equal(extension,true,'Test browser must support simulated context loss');
     await page.locator('[data-assembly-state="unavailable"]').waitFor();
-    assert.equal(await hero.evaluate(node=>node.classList.contains('is-static')&&!node.classList.contains('is-enhanced')),true);
+    assert.equal(await hero.evaluate(node=>node.classList.contains('is-enhanced')&&!node.classList.contains('is-static')),true);
     assert.equal(await page.locator('[data-assembly-posters]').isVisible(),true);
+    await page.waitForFunction(()=>getComputedStyle(document.querySelectorAll('[data-assembly-posters] img')[1]).opacity==='1');
     await framesStop(page,'Lost WebGL context must not keep scheduling renders');
+    await scrollPhase(page,.88);
+    assert.equal(await hero.getAttribute('data-assembly-active'),'pi','Poster scene retains chapter navigation after context loss');
+    await page.waitForFunction(()=>getComputedStyle(document.querySelectorAll('[data-assembly-posters] img')[2]).opacity==='1');
+    await framesStop(page,'Poster chapter must stop rendering when settled');
     assert.deepEqual(errors,[],'Browser JavaScript errors');
-    console.log('PASS context loss returns to static project images and stops rendering');
+    console.log('PASS context loss retains navigable poster chapters and stops rendering when settled');
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

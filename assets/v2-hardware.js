@@ -27,7 +27,10 @@
     let scrollEnabled=false,lastTime=0;
     const abort=new AbortController(),listen=(node,event,callback,options={})=>node.addEventListener(event,callback,{...options,signal:abort.signal});
     const showStatus=text=>{status.textContent=text;};
+    const startWrap=start.closest('.hardware-start')||start;
+    const showRetry=show=>{start.hidden=!show;startWrap.hidden=!show;};
     root.dataset.hardwareState='poster';root.dataset.hardwareMounted='true';
+    showRetry(false);
     const setSelection=(refs,syncDetails=false)=>{
       selectionIntent=(Array.isArray(refs)?refs:String(refs).split(' ')).filter(Boolean);
       if(!ready)return;
@@ -54,7 +57,7 @@
       const box=scene.getObjectByName('selection-outline');
       box.visible=Boolean(selected.length);box.box.makeEmpty();
       for(const ref of selected){const part=model.parts.find(item=>item.ref===ref);if(part)box.box.expandByObject(part.object);}
-      renderer.render(scene,camera);root.dataset.hardwareFrames=String(++frames);
+      renderer.render(scene,camera);root.querySelector('[data-hardware-poster]').hidden=true;root.dataset.hardwareFrames=String(++frames);
       root.dataset.hardwareProgress=current.toFixed(4);root.dataset.hardwareDraws=String(renderer.info.render.calls);
       root.dataset.hardwareMotion=current===target?'idle':'transition';
       if(current!==target)request();
@@ -91,11 +94,11 @@
     };
     const unavailable=()=>{
       dispose();root.dataset.hardwareState='unavailable';canvas.hidden=true;
-      root.querySelector('[data-hardware-poster]').hidden=false;start.disabled=true;
-      showStatus('The 3D view is unavailable. You can still view the board and project details.');
+      root.querySelector('[data-hardware-poster]').hidden=false;start.disabled=false;start.textContent='Retry 3D';showRetry(true);
+      showStatus('The 3D view could not load. The board preview and project details remain available.');
     };
     const initialize=async()=>{
-      if(loading||ready)return;loading=true;start.disabled=true;showStatus('Loading assembly…');root.dataset.hardwareState='loading';
+      if(loading||ready)return;loading=true;start.disabled=true;showRetry(false);showStatus('Loading assembly…');root.dataset.hardwareState='loading';
       const token=++generation;
       try{
         if(!window.THREE)await script('/assets/vendor/three.min.js');
@@ -125,12 +128,11 @@
         selection.replaceChildren(new Option('All components',''));
         model.parts.slice().sort((a,b)=>a.ref.localeCompare(b.ref,undefined,{numeric:true})).forEach(part=>{const option=document.createElement('option');option.value=part.ref;option.textContent=`${part.ref} · ${part.value}`;selection.append(option);});
         canvas.hidden=false;canvas.tabIndex=0;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',root.dataset.hardwareTitle+'. Drag to rotate; use arrow keys to turn, plus and minus to zoom, or Home to reset.');
-        root.querySelector('[data-hardware-poster]').hidden=true;
         ready=true;root.dataset.hardwareState='ready';root.dataset.hardwareComponents=String(model.parts.length);showStatus('');
         setSelection(selectionIntent);
         layout();request();
-        if(root.hasAttribute('data-hardware-auto')&&!reduced.matches){scrollEnabled=true;root.querySelector('[data-hardware-scroll]').setAttribute('aria-pressed','true');syncScroll();}
         if(!model.parts.length){explode.disabled=true;range.disabled=true;selection.disabled=true;}
+        else{explode.disabled=false;range.disabled=false;selection.disabled=false;}
       }catch(error){if(token===generation){console.warn('Assembly view unavailable.',error);unavailable();}}
       finally{if(token===generation)loading=false;}
     };
@@ -145,7 +147,7 @@
       root.dataset.hardwareTitle=link.dataset.hardwareTitle;
       root.dataset.hardwareBoardKey=link.dataset.hardwareBoard;
       root.dataset.hardwareState='poster';root.dataset.hardwareSelection='';
-      canvas.hidden=true;start.disabled=false;
+      canvas.hidden=true;start.disabled=false;showRetry(false);
       const poster=root.querySelector('[data-hardware-poster]');
       poster.src=link.dataset.hardwarePosterSrc;poster.alt=link.dataset.hardwareTitle;poster.hidden=false;
       root.querySelector('[data-hardware-part]').hidden=true;showStatus('');
@@ -195,11 +197,15 @@
       if(event.key==='+'||event.key==='=')zoom=clamp(zoom+.1,.6,1.5);if(event.key==='-')zoom=clamp(zoom-.1,.6,1.5);layout();
     });
     listen(canvas,'webglcontextlost',event=>{event.preventDefault();unavailable();});
-    const observer=new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;if(visible){lastTime=0;request();}else{cancelAnimationFrame(frame);frame=0;root.dataset.hardwareMotion='paused';}});observer.observe(stage);
-    const resize=new ResizeObserver(layout);resize.observe(stage);
-    if(root.hasAttribute('data-hardware-auto')){
-      const preload=new IntersectionObserver(([entry])=>{if(entry.isIntersecting&&!reduced.matches&&!navigator.connection?.saveData){preload.disconnect();initialize();}},{rootMargin:'250px 0px'});preload.observe(stage);
+    if('IntersectionObserver' in window){
+      const observer=new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;if(visible){lastTime=0;request();}else{cancelAnimationFrame(frame);frame=0;root.dataset.hardwareMotion='paused';}});observer.observe(stage);
     }
+    const resize=new ResizeObserver(layout);resize.observe(stage);
+    // Loading the model does not opt the visitor into scroll-driven motion.
+    // Reduced-motion users get the same controls with instantaneous poses.
+    if('IntersectionObserver' in window){
+      const preload=new IntersectionObserver(([entry])=>{if(entry.isIntersecting){preload.disconnect();initialize();}},{rootMargin:'400px 0px'});preload.observe(stage);
+    }else initialize();
     listen(document,'visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{lastTime=0;request();}});
     listen(reduced,'change',()=>{if(reduced.matches)disableScroll();request();});
     listen(window,'pagehide',()=>{cancelAnimationFrame(frame);frame=0;});listen(window,'pageshow',()=>{lastTime=0;request();});

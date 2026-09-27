@@ -49,8 +49,11 @@ async function posters(page) {
     await page.locator('[data-v2-menu]').click();
     await page.locator('[data-v2-nav] a[href="/v2/projects/"]').click();
     await page.waitForURL('**/v2/projects/');
-    assert.equal(await page.locator(primary).count(),18,'18 primary projects');
-    assert.equal(await page.locator('.v2-related-tool [data-v2-project]').count(),1,'Flight Review remains related to Skylabs');
+    assert.equal(await page.locator(primary).count(),15,'15 primary projects');
+    assert.equal(await page.locator('[data-v2-category="interactive"], #interactive, .v2-related-tool').count(),0,'Tools are not listed as projects');
+    for(const tool of ['scopelab','lithography-animation','mosfet-operating-regions']){
+      assert.equal(await page.locator(primary+'[href="/v2/projects/'+tool+'/"]').count(),0);
+    }
     const search=page.locator('[data-v2-search]');
     await search.fill('Framework');
     assert.equal(await page.locator(primary+':visible').count(),4);
@@ -62,13 +65,13 @@ async function posters(page) {
     assert.equal(await page.locator('[data-v2-project]:visible').count(),0);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/No projects match/);
     await search.press('Escape');
-    assert.equal(await page.locator(primary+':visible').count(),18);
-    await page.locator('[data-v2-category="interactive"]').click();
-    assert.equal(await page.locator(primary+':visible').count(),3);
-    assert.match(await page.locator('[data-v2-search-status]').textContent(),/3 projects and 1 related tool/);
+    assert.equal(await page.locator(primary+':visible').count(),15);
+    await page.locator('[data-v2-category="hardware"]').click();
+    assert.equal(await page.locator(primary+':visible').count(),12);
+    assert.match(await page.locator('[data-v2-search-status]').textContent(),/12 projects/);
     await page.setViewportSize({width:320,height:900});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
-    console.log('PASS automatic CAD loading, keyboard/menu navigation, 18 projects, four Framework cards, search and categories');
+    console.log('PASS automatic CAD loading, keyboard/menu navigation, 15 projects without tools, four Framework cards, search and categories');
     await page.setViewportSize({width:1280,height:900});
     for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
@@ -91,7 +94,7 @@ async function posters(page) {
     assert.equal(await page.locator('[data-hardware-board="ground"]').getAttribute('aria-current'),'true');
     assert.match(await page.locator('[data-hardware-board="ground"]').getAttribute('href'),/^\/v2\/projects\/skylabs\/boards\/ground-station\//);
     assert.equal(await page.locator('[data-hardware]').getAttribute('data-hardware-board-key'),'ground');
-    await page.locator('[data-hardware-start]').click();
+    await page.locator('[data-hardware]').scrollIntoViewIfNeeded();
     await page.locator('[data-hardware-state="ready"]').waitFor({timeout:60000});
     await page.locator('select[data-hardware-selection]').selectOption('U3');
     assert.match(await page.locator('[data-hardware-part]').textContent(),/ESP32.*field dashboard/);
@@ -107,15 +110,17 @@ async function posters(page) {
     const failedPage=await fallback.newPage();observe(failedPage);
     await failedPage.goto(base+'/v2/',{waitUntil:'networkidle'});
     await failedPage.locator('[data-assembly-state="unavailable"]').waitFor({timeout:30000});
-    assert.equal(await failedPage.locator('[data-assembly]').evaluate(node=>node.classList.contains('is-static')&&!node.classList.contains('is-enhanced')),true);
+    assert.equal(await failedPage.locator('[data-assembly]').evaluate(node=>node.classList.contains('is-enhanced')&&!node.classList.contains('is-loaded')),true);
     await posters(failedPage);
     assert.equal(await failedPage.locator('[data-assembly-canvas]').evaluate(node=>Number(getComputedStyle(node).opacity)),0);
     await failedPage.locator('[data-assembly-select="2"]').click();
+    await failedPage.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyActive==='pi');
+    await failedPage.locator('[data-assembly-link]').click();
     await failedPage.waitForURL('**/v2/projects/framework-raspberry-pi/');
     await failedPage.waitForLoadState('networkidle');
     await failedPage.waitForFunction(()=>document.getAnimations().every(animation=>animation.playState!=='running'));
     await fallback.close();
-    console.log('PASS failed model loading restores posters and normal links');
+    console.log('PASS failed models retain a working poster sequence and project links');
     const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});
     const staticPage=await noJS.newPage();observe(staticPage);
     await staticPage.goto(base+'/v2/',{waitUntil:'networkidle'});
@@ -124,7 +129,7 @@ async function posters(page) {
     await posters(staticPage);
     assert.equal(await staticPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await staticPage.goto(base+'/v2/projects/',{waitUntil:'networkidle'});
-    assert.equal(await staticPage.locator(primary+':visible').count(),18);
+    assert.equal(await staticPage.locator(primary+':visible').count(),15);
     await noJS.close();
     const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
     const reducedPage=await reduced.newPage();observe(reducedPage);

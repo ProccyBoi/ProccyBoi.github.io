@@ -12,17 +12,24 @@ const variants=[['telemetry',11,'U14'],['ground-station',8,'U3']];
 async function renderedBoardColours(page,label){
  const canvas=page.locator('[data-hardware-canvas]');
  await canvas.scrollIntoViewIfNeeded();
+ const selection=page.locator('select[data-hardware-selection]'),selected=await selection.inputValue();
+ await selection.selectOption(''); // The blue selection outline is not soldermask.
  await page.waitForFunction(()=>document.querySelector('[data-hardware]').dataset.hardwareMotion==='idle');
- const bytes=await canvas.screenshot();
+ // Neutralise the CSS stage while sampling, so its blue gradient cannot pass
+ // the soldermask assertion for a white, green or missing board.
+ const stage=page.locator('[data-hardware-stage]');
+ const originalBackground=await stage.evaluate(node=>{const value=node.style.background;node.style.background='#121212';return value;});
+ let bytes;
+ try{bytes=await canvas.screenshot();}finally{await stage.evaluate((node,value)=>{node.style.background=value;},originalBackground);await selection.selectOption(selected);}
  const sample=await page.evaluate(async encoded=>{
   const image=new Image();image.src='data:image/png;base64,'+encoded;await image.decode();
   const surface=document.createElement('canvas');surface.width=image.width;surface.height=image.height;
   const context=surface.getContext('2d');context.drawImage(image,0,0);
   const pixels=context.getImageData(0,0,surface.width,surface.height).data,colours=new Set();let boardPixels=0;
-  for(let i=0;i<pixels.length;i+=4){const [r,g,b]=pixels.slice(i,i+3);if(g>r+5&&g>b+5){boardPixels++;colours.add([r>>4,g>>4,b>>4].join(','));}}
+  for(let i=0;i<pixels.length;i+=4){const [r,g,b]=pixels.slice(i,i+3);if(b>g+15&&b>r+25&&g>r+10){boardPixels++;colours.add([r>>4,g>>4,b>>4].join(','));}}
   return {boardPixels,colours:colours.size};
  },bytes.toString('base64'));
- // Both source PCBs have a green solder mask; the blue stage is excluded.
+ // Both manufactured PCBs use blue soldermask; component colours stay intact.
  // This catches an all-white render even when geometry/state checks pass.
  assert.ok(sample.boardPixels>300&&sample.colours>3,`${label}: PCB materials lost (${JSON.stringify(sample)})`);
 }
@@ -37,19 +44,19 @@ async function renderedBoardColours(page,label){
   await page.goto(base+route,{waitUntil:'networkidle'});
   const root=page.locator('[data-hardware]');
   assert.equal(await root.count(),1);assert.equal(await page.locator('[data-object-inspector]').count(),0);
-  assert.equal(requests.some(url=>/skylabs-object|skylabs-.*-turn-|\.glb(?:\?|$)/.test(url)),false,'Static first view has no legacy turntable or CAD downloads');
+  assert.equal(requests.some(url=>/skylabs-object|skylabs-.*-turn-/.test(url)),false,'Shared inspector does not load the legacy turntable');
   const protection=page.locator('[data-hardware-components="telemetry"] [data-hardware-refs="U2 U5"]');
   await protection.locator('summary').click();assert.equal(await protection.getAttribute('open'),'');
   assert.match(await protection.locator('p').textContent(),/DW01A.*8205A/);
-  assert.equal(await root.getAttribute('data-hardware-state'),'poster','Component details work before model activation');
+  assert.equal(await root.locator('[data-hardware-start]').isVisible(),false,'Healthy inspector needs no activation button');
   await page.locator('[data-hardware-board="ground"]').click();
   assert.equal(new URL(page.url()).pathname,route);assert.equal(new URL(page.url()).searchParams.get('board'),'ground');
   assert.equal(await page.locator('[data-hardware-components="ground"]').isVisible(),true);
   assert.equal(await page.locator('[data-hardware-components="telemetry"]').isVisible(),false);
   await page.reload();assert.equal(await root.getAttribute('data-hardware-board-key'),'ground','Board query survives reload');
   await page.locator('[data-hardware-components="ground"] [data-hardware-refs="U3"] summary').click();
-  await root.locator('[data-hardware-start]').click();await page.locator('[data-hardware-state="ready"]').waitFor({timeout:90000});
-  assert.equal(await root.getAttribute('data-hardware-selection'),'U3','Pre-load component selection applies after activation');
+  await root.scrollIntoViewIfNeeded();await page.locator('[data-hardware-state="ready"]').waitFor({timeout:90000});
+  assert.equal(await root.getAttribute('data-hardware-selection'),'U3','Component selection survives automatic loading');
   await root.locator('select[data-hardware-selection]').selectOption('U3');assert.match(await root.locator('[data-hardware-part]').textContent(),/ESP32.*field dashboard/);
   await renderedBoardColours(page,'Ground station first render');
   await page.locator('[data-hardware-board="telemetry"]').click();await page.locator('[data-hardware-state="ready"]').waitFor({timeout:90000});
@@ -64,7 +71,7 @@ async function renderedBoardColours(page,label){
   await root.locator('[data-hardware-stage]').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(shots,'main-1440.png')});
   await page.setViewportSize({width:390,height:844});await root.locator('[data-hardware-stage]').scrollIntoViewIfNeeded();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:path.join(shots,'main-390.png')});
-  console.log('PASS main: one inspector, board links/query, lazy loading and grouped component descriptions');
+  console.log('PASS main: one inspector, board links/query, automatic loading and grouped component descriptions');
   for(const [slug,count,ref]of variants){
    await page.goto(base+route+'boards/'+slug+'/#assembly',{waitUntil:'networkidle'});
    assert.equal(await page.locator('[data-hardware]').count(),1);assert.equal(await page.locator('#explore #assembly').count(),1);
@@ -74,14 +81,19 @@ async function renderedBoardColours(page,label){
    await page.locator('[data-hardware-component]').first().locator('summary').click();
    await page.locator('#explore').screenshot({path:path.join(shots,slug+'-390.png')});
    await page.setViewportSize({width:1440,height:1000});
-   await page.locator('[data-hardware-start]').click();await page.locator('[data-hardware-state="ready"]').waitFor({timeout:90000});
+   await page.locator('[data-hardware]').scrollIntoViewIfNeeded();await page.locator('[data-hardware-state="ready"]').waitFor({timeout:90000});
    await page.locator('select[data-hardware-selection]').selectOption(ref);assert.match(await page.locator('[data-hardware-part]').textContent(),new RegExp(ref));
    await page.locator('[data-hardware-view="bottom"]').click();assert.equal(await page.locator('[data-hardware-view="bottom"]').getAttribute('aria-pressed'),'true');
+   await renderedBoardColours(page,slug+' underside');
+   await page.locator('[data-hardware-stage]').screenshot({path:path.join(shots,slug+'-bottom.png')});
+   await page.locator('[data-hardware-view="top"]').click();
+   await renderedBoardColours(page,slug+' top');
+   await page.locator('[data-hardware-stage]').screenshot({path:path.join(shots,slug+'-top.png')});
    await page.locator('[data-hardware-reset]').click();
    await page.locator('[data-hardware-stage]').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(shots,slug+'-1440.png')});
    await page.setViewportSize({width:390,height:844});
   }
-  await page.close();console.log('PASS nested boards: single inspector, old assembly anchor, component content and responsive controls');
+  await page.close();console.log('PASS nested boards: automatic loading, single inspector, old assembly anchor, component content and responsive controls');
 
   const race=await browser.newPage({viewport:{width:1280,height:900},reducedMotion:'reduce'});observe(race);
   await race.addInitScript(()=>{
@@ -90,7 +102,7 @@ async function renderedBoardColours(page,label){
     const model=await value.load(url);return new Promise(resolve=>window.__heldModels.push({url,release:()=>resolve(model)}));
    }};}});
   });
-  await race.goto(base+route);await race.locator('[data-hardware-start]').click();
+  await race.goto(base+route);await race.locator('[data-hardware]').scrollIntoViewIfNeeded();
   await race.waitForFunction(()=>window.__heldModels.length===1,null,{timeout:90000});
   await race.locator('[data-hardware-board="ground"]').click();
   await race.waitForFunction(()=>window.__heldModels.length===2,null,{timeout:90000});

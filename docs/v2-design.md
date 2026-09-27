@@ -1,6 +1,6 @@
 # V2 — hardware, inside and out
 
-Revised 27 September 2026. The portfolio lives at `/v2/` and contains 18 projects, including the expanded electronics collection and Coaster.
+Revised 27 September 2026. The portfolio lives at `/v2/` and contains 15 projects, including the expanded electronics collection and Coaster. The standalone browser tools are not presented as portfolio projects.
 
 ## Visual direction
 
@@ -16,9 +16,11 @@ Project names and concise descriptions carry the interface. CAD provenance belon
 - The project selector moves to a project in the sequence; its caption links to the full case study. “View projects” skips the sequence.
 - Rendering runs only while a pose changes, a viewport resizes, or the scene enters view. Hidden tabs and offscreen scenes stop rendering.
 - Physical CAD faces are merged by material within moving components. TramTrace’s LEDs form one bank for the hero, retaining all 116 source geometries. Telemetry’s resistors and capacitors are batched by their shared displacement; every original part and position remains present.
-- Reduced motion and Save Data start with still images and direct project links; JavaScript/WebGL failure retains the same navigation. No loading gate blocks the page.
+- The hero uses still images and direct project links for reduced motion and Save Data; JavaScript/WebGL failure retains the same navigation. No loading gate blocks the page.
 - The standalone Raspberry Pi inspector adds orbiting, camera presets, component identification, shell visibility and assembly separation.
-- The shared hardware inspector adds on-demand component selection, front/back views, assembly separation and optional scroll control across the electronics collection.
+- The shared hardware inspector adds component selection, front/back views, assembly separation and optional scroll control across the electronics collection.
+- Inspectors load automatically near the viewport, including for reduced motion. Loading does not start animations, enable scroll control or move keyboard focus. A failed load exposes a retry button.
+- Skylabs telemetry and ground-station solder masks use the rich blue of the fabricated boards. Copper, silkscreen, components and board cores retain their materials.
 
 ## Reference and scope
 

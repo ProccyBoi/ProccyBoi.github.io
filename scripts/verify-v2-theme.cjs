@@ -83,8 +83,10 @@ function inspectTheme(){
   page.on('response',response=>{if(response.status()>=400)resources.push({status:response.status(),url:response.url()});});
   await page.goto(base+'/v2/projects/',{waitUntil:'networkidle'});
   const projects=await page.locator('[data-v2-project][href^="/v2/projects/"]').evaluateAll(links=>links.map(link=>link.getAttribute('href')));
-  assert.equal(new Set(projects).size,18,'Current public collection must contain eighteen projects');
-  let routes=['/v2/','/v2/projects/','/v2/about/',...projects,'/v2/projects/skylabs/boards/telemetry/','/v2/projects/skylabs/boards/ground-station/'];
+  assert.equal(new Set(projects).size,15,'Current public collection must contain fifteen projects');
+  // Tools keep their routes and theme coverage even though they are no longer
+  // cards in the primary project collection.
+  let routes=['/v2/','/v2/projects/','/v2/about/',...projects,'/v2/projects/skylabs/boards/telemetry/','/v2/projects/skylabs/boards/ground-station/','/v2/projects/scopelab/','/v2/projects/mosfet-operating-regions/','/v2/projects/lithography-animation/'];
   if(process.env.V2_THEME_ROUTES)routes=routes.filter(route=>process.env.V2_THEME_ROUTES.split(',').includes(route));
   const representative=new Set(['/v2/','/v2/projects/','/v2/about/','/v2/projects/tramtrace/','/v2/projects/skylabs/','/v2/projects/mosfet-operating-regions/','/v2/projects/lithography-animation/','/v2/projects/framework-logic-analyser/','/v2/projects/framework-raspberry-pi/']);
   for(const route of routes){

@@ -36,7 +36,13 @@ const destination='/v2/projects/framework-raspberry-pi/';
         });
         await page.goto(base+'/v2/',{waitUntil:'networkidle'});
         await page.locator('[data-assembly-state="'+(test.reducedMotion?'static':'unavailable')+'"]').waitFor({timeout:30000});
-        const navigation=page.locator('[data-assembly-select="2"]').click();
+        let navigation;
+        if(test.reducedMotion) navigation=page.locator('[data-assembly-select="2"]').click();
+        else {
+          await page.locator('[data-assembly-select="2"]').click();
+          await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-.88)<.001);
+          navigation=page.locator('[data-assembly-link]').click();
+        }
         await page.waitForURL('**'+destination,{waitUntil:'commit'});
         await page.locator('h1').waitFor({state:'visible',timeout:3000});
         if(test.delay){

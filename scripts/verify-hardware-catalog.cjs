@@ -37,10 +37,8 @@ async function settled(root){
   for(const target of targets){
    await page.goto(`${base}/v2/projects/${target.route}/`,{waitUntil:'domcontentloaded'});
    const root=page.locator(`[data-hardware="${target.manifest}"]`);
-   assert.equal(await root.getAttribute('data-hardware-state'),'poster');
-   await root.scrollIntoViewIfNeeded();
+   await root.locator('[data-hardware-stage]').scrollIntoViewIfNeeded();
    await root.locator('[data-hardware-poster]').evaluate(img=>img.decode());
-   await root.locator('[data-hardware-start]').click();
    await root.locator('..').locator(`[data-hardware="${target.manifest}"][data-hardware-state="ready"]`).waitFor({timeout:90000});
    await settled(root);
    const initial=await page.evaluate(url=>window.__hardwareModels[url].parts.map(part=>({ref:part.ref,position:part.object.position.toArray(),offset:part.offset.toArray()})),target.manifest);
@@ -77,7 +75,7 @@ async function settled(root){
   }
   // Lifecycle and accessible fallback are shared by every instance.
   await page.goto(base+'/v2/projects/framework-logic-analyser/');
-  const root=page.locator('[data-hardware]');await root.locator('[data-hardware-start]').click();await page.locator('[data-hardware-state="ready"]').waitFor({timeout:90000});
+  const root=page.locator('[data-hardware]');await root.locator('[data-hardware-stage]').scrollIntoViewIfNeeded();await page.locator('[data-hardware-state="ready"]').waitFor({timeout:90000});
   await page.emulateMedia({reducedMotion:'reduce'});await root.locator('[data-hardware-explode]').click();await settled(root);
   assert.equal(await root.getAttribute('data-hardware-progress'),'1.0000');assert.equal(await root.locator('[data-hardware-scroll]').isVisible(),false);
   await page.emulateMedia({reducedMotion:'no-preference'});await root.locator('[data-hardware-reset]').click();await settled(root);
@@ -87,7 +85,7 @@ async function settled(root){
   await root.locator('canvas').evaluate(canvas=>{const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');gl.getExtension('WEBGL_lose_context').loseContext();});
   await page.locator('[data-hardware-state="unavailable"]').waitFor();assert.equal(await root.locator('[data-hardware-poster]').isVisible(),true);
   await page.close();
-  const fail=await browser.newPage();await fail.route('**/hardware/framework-logic-analyser/board.glb',route=>route.abort());await fail.goto(base+'/v2/projects/framework-logic-analyser/');await fail.locator('[data-hardware-start]').click();await fail.locator('[data-hardware-state="unavailable"]').waitFor();assert.equal(await fail.locator('[data-hardware-poster]').isVisible(),true);await fail.close();
+  const fail=await browser.newPage();await fail.route('**/hardware/framework-logic-analyser/board.glb',route=>route.abort());await fail.goto(base+'/v2/projects/framework-logic-analyser/');await fail.locator('[data-hardware-stage]').scrollIntoViewIfNeeded();await fail.locator('[data-hardware-state="unavailable"]').waitFor();assert.equal(await fail.locator('[data-hardware-poster]').isVisible(),true);await fail.close();
   const noJS=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:844}});await noJS.goto(base+'/v2/projects/framework-logic-analyser/');assert.equal(await noJS.locator('[data-hardware-start]').first().isVisible(),false);assert.equal(await noJS.locator('[data-hardware-poster]').count(),1);await noJS.close();
   assert.deepEqual(errors,[],'Browser errors');assert.deepEqual(failed,[],'HTTP failures');
   console.log('PASS shared reduced-motion, offscreen, context-loss, failed-model and no-JavaScript behaviour');

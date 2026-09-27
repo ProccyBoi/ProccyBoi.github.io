@@ -1,6 +1,6 @@
 /* Source-derived CAD studio. Geometry: the committed KiCad and Molex GLBs.
- * The studio is an optional enhancement: no model or WebGL library is fetched
- * before the visitor explicitly opens it. Rendering is input driven. */
+ * Models load near the viewport; posters remain the fallback. Rendering is
+ * input driven and reduced-motion preferences apply to camera transitions. */
 (() => {
   'use strict';
   const scriptRequests = new Map();
@@ -345,8 +345,9 @@
         invalidate();
       }
     };
-    const intersection = new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; synchronizeVisibility(); });
-    intersection.observe(canvas);
+    const intersection = 'IntersectionObserver' in window
+      ? new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; synchronizeVisibility(); }) : null;
+    intersection?.observe(canvas);
     listen(document, 'visibilitychange', synchronizeVisibility);
     listen(reducedMotion, 'change', () => { if (reducedMotion.matches && transition) { stopTransition(true); invalidate(); } });
     listen(canvas, 'webglcontextlost', (event) => { event.preventDefault(); root.dispatchEvent(new Event('cad-unavailable')); });
@@ -356,7 +357,7 @@
       interaction.abort();
       if (pendingFrame) cancelAnimationFrame(pendingFrame);
       pendingFrame = 0; pending = false; drag = null;
-      observer.disconnect(); intersection.disconnect();
+      observer.disconnect(); intersection?.disconnect();
     }, { once: true });
     resize(); setPreset('iso', false);
     // Draw once before replacing the still: no blank intermediate state.
@@ -375,36 +376,47 @@
     const status = root.querySelector('[data-cad-status]');
     if (!button || !canvas) return;
     root.dataset.cadState = 'poster';
+    let generation = 0;
+    button.hidden = true;
     canvas.hidden = true;
     root.querySelectorAll('[data-cad-view]').forEach((view) => { view.disabled = true; });
     const unavailable = () => {
+      generation++;
       root.dispatchEvent(new Event('cad-dispose'));
       root.dataset.cadState = 'unavailable';
       canvas.hidden = true;
       if (poster) poster.hidden = false;
-      button.hidden = false; button.disabled = true;
-      button.textContent = '3D unavailable';
+      button.hidden = false; button.disabled = false;
+      button.textContent = 'Retry 3D';
       root.querySelectorAll('[data-cad-view]').forEach((view) => { view.disabled = true; });
       if (status) status.textContent = 'The CAD still remains available. Explore the project for more detail.';
     };
     root.addEventListener('cad-unavailable', unavailable);
-    button.addEventListener('click', async () => {
-      if (root.dataset.cadState !== 'poster') return;
+    const initialize = async () => {
+      if (!['poster', 'unavailable'].includes(root.dataset.cadState)) return;
+      const token = ++generation;
       root.dataset.cadState = 'loading';
-      button.disabled = true; button.textContent = 'Opening CAD…';
+      button.disabled = true; button.hidden = true;
       if (status) status.textContent = 'Loading the original board geometry…';
       try {
         await createStudio(root);
+        if (token !== generation) return;
         canvas.hidden = false;
         if (poster) poster.hidden = true;
         button.hidden = true;
         root.dataset.cadState = 'ready';
         if (status) status.textContent = 'Drag to rotate · arrow keys to inspect · Home to reset';
-        if (!root.hasAttribute('data-cad-capture')) canvas.focus({ preventScroll: true });
       } catch (error) {
-        console.warn('CAD studio could not open:', error);
-        unavailable();
+        if (token === generation) { console.warn('CAD studio could not open:', error); unavailable(); }
       }
-    });
+    };
+    button.addEventListener('click', initialize);
+    if ('IntersectionObserver' in window) {
+      const preload = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) { preload.disconnect(); initialize(); }
+      }, { rootMargin: '400px 0px' });
+      preload.observe(canvas.parentElement);
+    } else initialize();
+    if (root.hasAttribute('data-cad-capture')) initialize();
   });
 })();

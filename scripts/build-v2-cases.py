@@ -108,6 +108,8 @@ LABELS['coaster'] = 'RGB Drink Coaster'
 for record in HARDWARE_PROJECTS:
     ORDER.insert(ORDER.index('switch-mode-power-supplies'), record['slug'])
     LABELS[record['slug']] = record['title']
+TOOL_ROUTES = {'scopelab', 'lithography-animation', 'mosfet-operating-regions'}
+PROJECT_ORDER = [slug for slug in ORDER if slug not in TOOL_ROUTES]
 BRIEFS = {
  'lora-receiver': [('The system', 'An ESP32 receiver combining 915 MHz LoRa with u-blox GNSS.'), ('The constraint', 'Radio and navigation on one PCB, with a feedline worth measuring.'), ('What I learned', 'At least 1 km in testing; VNA measurements informed the RF Test Board.')],
  'metroboard': [('The interface', 'A physical Sydney rail map with 291 individually addressable LEDs.'), ('The hardware', 'A 300 × 305.7 mm PCB driven by an ESP32.'), ('The connection', 'Live transport data becomes something visible across a room.')],
@@ -246,13 +248,15 @@ def case_navigation(source, slug, title):
 
 
 def continuation(slug):
+    if slug in TOOL_ROUTES:
+        return '<nav class="v2-continue shell" aria-label="Portfolio"><a class="v2-all-work" href="/v2/projects/">View projects <span aria-hidden="true">↗</span></a></nav>'
     if slug == 'skylabs/boards/telemetry':
         prev, nxt = 'skylabs', 'skylabs/boards/ground-station'
     elif slug == 'skylabs/boards/ground-station':
         prev, nxt = 'skylabs/boards/telemetry', 'skylabs'
     else:
-        index = ORDER.index(slug)
-        prev, nxt = ORDER[(index - 1) % len(ORDER)], ORDER[(index + 1) % len(ORDER)]
+        index = PROJECT_ORDER.index(slug)
+        prev, nxt = PROJECT_ORDER[(index - 1) % len(PROJECT_ORDER)], PROJECT_ORDER[(index + 1) % len(PROJECT_ORDER)]
     labels = {**LABELS, 'skylabs/boards/telemetry': 'Aircraft telemetry', 'skylabs/boards/ground-station': 'Ground station'}
     return f'''<nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">Continue exploring</p><div>
       <a href="/v2/projects/{prev}/"><span>← Previous case study</span><strong>{escape(labels[prev])}</strong></a>
@@ -474,10 +478,13 @@ def hardware_card(record):
 def make_index():
     source = (ROOT / 'projects/index.html').read_text(encoding='utf-8')
     tree = Tree(source)
+    tools = next(node for node in tree.nodes if node.tag == 'section' and node.attrs.get('id') == 'interactive')
+    source = replace_nodes(source, [(tools, '')])
+    tree = Tree(source)
     hero = tree.find('section', 'page-hero')
-    new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems, robotics and engineering tools.</p></div></section>'''
+    new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems and robotics.</p></div></section>'''
     jump = tree.find('nav', 'project-jumpbar')
-    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>15</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>9</span></a><a href="/v2/projects/#interactive" data-v2-category="interactive">Tools <span>3</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
+    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>15</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>12</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
     source = replace_nodes(source, [(hero, new_hero), (jump, controls)])
     hardware_catalog = Tree(source).find('div', 'project-catalog')
     pi_card = '''<a class="catalog-card v2-pi-card" href="projects/framework-raspberry-pi/">

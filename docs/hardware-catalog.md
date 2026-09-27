@@ -21,7 +21,7 @@ Only projects approved for public release belong in the maintained catalog. Loca
 
 The DOM-free factory in `assets/v2-hardware-models.js` is shared by the inspectors and the telemetry hero. It retains reference-named physical groups and applies one reversible separation value. Rendering stops when settled, offscreen or hidden. Camera rotation supports pointer and keyboard, and native vertical scrolling remains available. Static posters and project details survive missing assets, disabled JavaScript and context loss, including a graphics failure during an asynchronous load.
 
-KiCad mask/core palette values are converted from display RGB into the renderer's linear working space. Mask opacity remains source-derived, allowing the original copper artwork to remain visible through the finish.
+KiCad mask/core palette values are converted from display RGB into the renderer's linear working space. Both Skylabs boards use a shared blue soldermask finish, matched visually to the manufactured boards in the project photographs rather than KiCad's default green palette. This is a display approximation of the specified JLCPCB blue, not a manufacturer colour specification. Only the board mask material changes; substrate, pads, white silkscreen and component colours retain their own materials. Mask opacity remains source-derived, allowing the original copper artwork to remain visible through the finish. The live hero, inspectors and regenerated posters use the same factory; source CAD and GLBs remain unchanged.
 
 ## Skylabs
 
