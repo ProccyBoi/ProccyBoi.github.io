@@ -110,11 +110,11 @@
 
   const cupGroup = new THREE.Group();
   cupGroup.name = 'Mock cup';
-  addVesselMesh(cupGroup, new THREE.CylinderGeometry(34, 28, 82, 48, 1, true), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 41, rx: Math.PI / 2 });
-  addVesselMesh(cupGroup, new THREE.CylinderGeometry(28, 28, 2, 48), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 1, rx: Math.PI / 2 });
-  addVesselMesh(cupGroup, new THREE.TorusGeometry(34, 1.6, 10, 48), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 82 });
-  addVesselMesh(cupGroup, new THREE.CylinderGeometry(31, 31, 1.4, 48), mat.mockDrink, vesselSpecs.cup, { z: VESSEL_BASE_Z + 78.2, rx: Math.PI / 2 });
-  addVesselMesh(cupGroup, new THREE.TorusGeometry(11, 2.2, 10, 32), mat.mockCup, vesselSpecs.cup, { x: 30, z: VESSEL_BASE_Z + 44, rx: Math.PI / 2 });
+  addVesselMesh(cupGroup, new THREE.CylinderGeometry(30, 25, 82, 48, 1, true), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 41, rx: Math.PI / 2 });
+  addVesselMesh(cupGroup, new THREE.CylinderGeometry(25, 25, 2, 48), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 1, rx: Math.PI / 2 });
+  addVesselMesh(cupGroup, new THREE.TorusGeometry(30, 1.6, 10, 48), mat.mockCup, vesselSpecs.cup, { z: VESSEL_BASE_Z + 82 });
+  addVesselMesh(cupGroup, new THREE.CylinderGeometry(27.5, 27.5, 1.4, 48), mat.mockDrink, vesselSpecs.cup, { z: VESSEL_BASE_Z + 78.2, rx: Math.PI / 2 });
+  addVesselMesh(cupGroup, new THREE.TorusGeometry(10.5, 2.2, 10, 32), mat.mockCup, vesselSpecs.cup, { x: 27, z: VESSEL_BASE_Z + 44, rx: Math.PI / 2 });
   cupGroup.visible = false;
   vesselRoot.add(cupGroup);
 
@@ -164,7 +164,7 @@
   let nextLedFrameAt = 0;
   let vesselLift = 0;
   let firmwareLedSetupStarted = false;
-  const ledPixelMaterials = [];
+  const ledPixels = [];
   const firmwareColour = new THREE.Color();
   const firmwareCool = new THREE.Color(0x4aa9ff);
   const firmwareNeutral = new THREE.Color(0x55ffd4);
@@ -253,23 +253,35 @@
     }
     if (!occupied) {
       mat.leds.emissiveIntensity = 0;
-      ledPixelMaterials.forEach((material) => {
-        material.color.setHex(0x000000);
-        material.opacity = 0.015;
+      ledPixels.forEach(({ core, halo }) => {
+        core.opacity = 0;
+        halo.opacity = 0;
       });
+      stage.dataset.coasterLitPixels = '0';
+      stage.dataset.coasterLedPeak = '0.000';
       return;
     }
 
     const colour = firmwareColourForDelta(sensorTemp - tempReference);
     mat.leds.emissive.copy(colour);
     mat.leds.emissiveIntensity = 0.12;
-    const head = reducedMotion ? 0 : (now % HIGHLIGHT_PERIOD_MS) / HIGHLIGHT_PERIOD_MS * ledPixelMaterials.length;
-    ledPixelMaterials.forEach((material, index) => {
-      const trail = (head - index + ledPixelMaterials.length) % ledPixelMaterials.length;
-      const intensity = trail < 6 ? Math.max(0.10, Math.exp(-0.72 * trail)) : 0.035;
-      material.color.copy(colour);
-      material.opacity = intensity;
+    const head = reducedMotion ? 0 : (now % HIGHLIGHT_PERIOD_MS) / HIGHLIGHT_PERIOD_MS * ledPixels.length;
+    let peakOpacity = 0;
+    let litPixels = 0;
+    ledPixels.forEach(({ core, halo }, index) => {
+      const trail = (head - index + ledPixels.length) % ledPixels.length;
+      const highlight = trail < 6 ? Math.exp(-0.72 * trail) : 0;
+      const coreOpacity = 0.38 + 0.62 * highlight;
+      const haloOpacity = 0.055 + 0.30 * highlight;
+      core.color.copy(colour);
+      core.opacity = coreOpacity;
+      halo.color.copy(colour);
+      halo.opacity = haloOpacity;
+      peakOpacity = Math.max(peakOpacity, coreOpacity);
+      if (coreOpacity >= 0.38) litPixels += 1;
     });
+    stage.dataset.coasterLitPixels = String(litPixels);
+    stage.dataset.coasterLedPeak = peakOpacity.toFixed(3);
   };
 
   const invalidate = () => { needsRender = true; };
@@ -389,24 +401,42 @@
     });
     components.forEach((component) => {
       const [x0, y0, z0, x1, y1, z1] = component.bounds_mm;
-      const material = new THREE.MeshBasicMaterial({
+      const coreMaterial = new THREE.MeshBasicMaterial({
         color: 0x000000,
         transparent: true,
-        opacity: 0.015,
+        opacity: 0,
+        depthTest: true,
+        depthWrite: false,
+        side: THREE.FrontSide,
+        blending: THREE.NormalBlending
+      });
+      coreMaterial.toneMapped = false;
+      const haloMaterial = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0,
         depthTest: true,
         depthWrite: false,
         side: THREE.FrontSide,
         blending: THREE.AdditiveBlending
       });
-      material.toneMapped = false;
-      const pixel = new THREE.Mesh(new THREE.PlaneGeometry(1.72, 1.72), material);
-      pixel.position.set((x0 + x1) / 2 - 133.2, (y0 + y1) / 2 + 94.59, z1 + 0.16);
-      pixel.renderOrder = 130;
-      pixel.raycast = () => {};
-      ledWrapper.add(pixel);
-      ledPixelMaterials.push(material);
+      haloMaterial.toneMapped = false;
+
+      const halo = new THREE.Mesh(new THREE.CircleGeometry(1.60, 24), haloMaterial);
+      halo.position.set((x0 + x1) / 2 - 133.2, (y0 + y1) / 2 + 94.59, z1 + 0.18);
+      halo.renderOrder = 129;
+      halo.raycast = () => {};
+      ledWrapper.add(halo);
+
+      const core = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 1.82), coreMaterial);
+      core.position.set((x0 + x1) / 2 - 133.2, (y0 + y1) / 2 + 94.59, z1 + 0.25);
+      core.renderOrder = 130;
+      core.raycast = () => {};
+      ledWrapper.add(core);
+      ledPixels.push({ core: coreMaterial, halo: haloMaterial });
     });
-    stage.dataset.coasterLedPixels = String(ledPixelMaterials.length);
+    stage.dataset.coasterLedPixels = String(ledPixels.length);
+    stage.dataset.coasterLedRenderer = 'normal-core+additive-halo';
     updateFirmwareLedFrame(performance.now(), true);
     invalidate();
   };
