@@ -22,11 +22,9 @@
   <script src="assets/site.js" defer></script>
 
 <link rel="preload" as="image" href="/assets/images/v2/hardware/skylabs-telemetry.webp" type="image/webp">
-<link rel="stylesheet" href="/assets/v2.css">
-  <link rel="stylesheet" href="/assets/v2-case.css">
-  <link rel="stylesheet" href="/assets/v2-motion.css">
+<link rel="stylesheet" href="/assets/v2.css?v=reel-20261003">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=reel-20261003">
   <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
-  <script src="/assets/v2-motion.js" defer></script>
 <link rel="stylesheet" href="/assets/v2-hardware.css">
 <script src="/assets/v2-hardware.js" defer></script>
 </head>
@@ -58,7 +56,7 @@
             <div><dt>Current role</dt><dd>Avionics &amp; Payload Team Lead</dd></div>
             <div><dt>Competition</dt><dd>AIAA DBF 2026 / Wichita</dd></div>
           </dl></div></section>
-    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>Aircraft logger, ground station and post-flight replay tools.</dd></div><div><dt>System constraint</dt><dd>40 Hz onboard logging; a smaller live packet at up to 10 Hz.</dd></div><div><dt>In the field</dt><dd>AIAA Design/Build/Fly 2026, Wichita; recorded flight replay.</dd></div></dl>
+
 
 
     <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="skylabs-assembly-title"><span id="assembly" class="v2-anchor-alias" aria-hidden="true"></span><div class="project-interactive-inner">
@@ -80,14 +78,14 @@
           <p>My work covers both ends of the link: the STM32 aircraft logger, the ESP32 LoRa ground station and the replay tools used after landing.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="shared/flight-review/" target="_blank" rel="noreferrer">Open Flight Review ↗</a>
-            <a class="button" href="/v2/projects/skylabs/#explore">Explore both boards</a>
+
             <a class="button" href="shared/projects/skylabs/f110211/" target="_blank" rel="noreferrer">View F110211 reference flight ↗</a>
           </div>
         </div>
       </section>
 
       <section class="project-summary" id="system" aria-labelledby="skylabs-system">
-        <h2 id="skylabs-system">One data path, three views</h2>
+        <h2 id="skylabs-system">Logging and flight replay</h2>
         <div class="project-prose">
           <p>The aircraft binary log is the high-rate record, scheduled at 40 Hz. A smaller telemetry packet crosses the 915 MHz link at up to 10 Hz, where the ground station records it again and forwards a live stream over USB or its own Wi-Fi dashboard.</p>
           <p>After the flight, the same data contract feeds a replay tool with the 3D route, attitude, artificial horizon, altitude, speed and GPS readouts kept on one timeline. Treating the boards, packet format and analysis software as one system has made faults much easier to trace.</p>

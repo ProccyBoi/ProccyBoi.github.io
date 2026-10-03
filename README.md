@@ -66,7 +66,7 @@ Each new item should be linked from its parent folder page and from `sitemap.xml
 
 The site is plain HTML, CSS and JavaScript. Pushes to `main` publish automatically through GitHub Pages.
 
-## New portfolio at `/v2/`
+## Active portfolio at `/v2/`
 
 The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It contains 15 projects, including the expanded electronics collection and Coaster. Browser tools remain accessible at their existing URLs but are excluded from the project collection and case-study navigation.
 
@@ -74,7 +74,7 @@ The fullscreen opening presents TramTrace, the Skylabs telemetry board and Raspb
 
 While CAD loads, `assets/v2-hero-loading.js` provides an interactive field sampled from the board images, with a pointer/touch magnifier and finite ripple effects. Prepared lighting removes runtime environment convolution, and lossless index-byte compression reduces the model download. These enhancements preserve the original rendered detail and disappear as each real model becomes available.
 
-Assembly viewers load near the viewport and use one Disassemble/Assemble action, with varied component paths and a compact hover/tap identification readout. Rendering pauses offscreen and when idle. Reduced motion uses instant assembly poses; unavailable WebGL and JavaScript-disabled browsing retain still images and project navigation. Finite section transitions use `assets/v2-motion.css` / `.js`.
+Assembly viewers load near the viewport and use one Disassemble/Assemble action, with varied component paths and a compact hover/tap identification readout. Rendering pauses offscreen and when idle. Reduced motion uses instant assembly poses; unavailable WebGL and JavaScript-disabled browsing retain still images and project navigation. Reading sections and project images are static; the legacy `v2-motion` assets are no longer loaded. The home leads with a working TramTrace photograph, followed by supporting photography and compact board entries.
 
 - Run `python scripts/build-v2-cases.py` to regenerate the case-study, collection and about pages from the original factual material.
 - Run `python scripts/audit-v2.py` to check every v2 page, project inventory, linked assets, metadata and fragments, including untracked files.
@@ -85,9 +85,9 @@ Assembly viewers load near the viewport and use one Disassemble/Assemble action,
 - Serve the repository root (for example `python -m http.server 8080`) and open `http://localhost:8080/v2/`.
 - Design direction, image provenance and references are in [docs/v2-design.md](docs/v2-design.md).
 
-## Conceptual portfolio at `/v3/`
+## Archived visual experiment at `/v3/`
 
-The alternative at `/v3/` uses a warm paper ground, ink typography and a floating telemetry assembly with projected component annotations. It has its own home, project collection, profile and case-study presentation. Both earlier versions remain available.
+The alternative at `/v3/` uses a warm paper ground, ink typography and a floating telemetry assembly with projected component annotations. It remains available as an archived design experiment; ongoing design work uses v2. Its generated interiors still inherit factual content updates so the shared validation checks remain useful.
 
 The hero in `assets/v3-hero.js` reuses the exact prepared telemetry geometry, lighting asset and component choreography. It renders on demand, keeps the poster until the first successful CAD frame, and supports mouse, touch and keyboard inspection. Reduced-motion and Save Data visitors choose when to load the 3D model. Existing project viewers and teaching tools retain their working controllers and model assets.
 

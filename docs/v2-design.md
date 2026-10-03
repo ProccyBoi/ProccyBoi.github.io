@@ -10,10 +10,15 @@ The opening is a full-screen, scroll-controlled scene led by TramTrace, followed
 
 Project names and concise descriptions carry the interface. CAD provenance belongs in development documentation, not repeated as decorative captions. Titles should identify work or explain a real design decision. Technical specifications belong where they help someone understand a project.
 
+The October 3 cleanup applies the Instagram reel's criticism of generic portfolio styling to v2. TramTrace leads the home with a photograph of the working display; Skylabs, Dual USB-C, Coaster and the RF board follow as photographic projects, while Logic Analyser and Tamagotchi use compact board rows. Navigation surfaces are opaque. Hero project links use a flat active underline, and catalogue arrows no longer sit inside decorative circles. The original fonts, dark palette and physical CAD animation remain.
+
+Ordinary headings, prose, project cards and gallery images no longer receive blanket entrance animations. The `v2-motion` imports are removed from both the authored home and the interior generator. Pi copy describes its layout and mechanical dimensions directly; Skylabs no longer repeats its system summary and viewer CTA. Source-rendering commentary is removed from captions and alt text without deleting testing limitations.
+
 ## Interaction
 
 - Native scrolling controls the hero. The page never intercepts wheel/touch input.
 - The project selector moves to a project in the sequence; its caption links to the full case study. “View projects” skips the sequence.
+- “View projects” targets the gallery heading, clearing the sticky navigation without leaving the hero controls above it.
 - Rendering runs only while a pose changes, a viewport resizes, or the scene enters view. Hidden tabs and offscreen scenes stop rendering.
 - Physical CAD faces are merged by material within moving components. Dense LED arrays and telemetry passives form small spatial groups, retaining every original geometry and placement. Components separate with stable stagger, different heights, lateral movement and gentle rotation; reversing the motion restores their original positions and orientations.
 - The hero uses still images and direct project links for reduced motion and Save Data; JavaScript/WebGL failure retains the same navigation. No loading gate blocks the page.
@@ -41,3 +46,5 @@ The Pi card is based on `D:/Electronics Projects/Framework Expansion Card - Rasp
 - `scripts/audit-v2.py`: all route, local asset, inventory and document checks.
 
 Original source CAD files are unchanged. Source and rendering details are in `docs/v2-cad.md`, `docs/hardware-catalog.md` and the model assembly metadata.
+
+The cleanup was reviewed in the browser at desktop, 390 px and 320 px widths. Checks covered the featured gallery, mobile navigation, the gallery jump, four Framework search results, all three hero models loading, and Skylabs board switching/disassembly. Static v2/v3 audits and the generated-interior consistency check pass. The existing browser regression's expected lead project is updated to TramTrace; no CAD engine or prepared model assets changed.

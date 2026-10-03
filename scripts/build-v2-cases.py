@@ -144,11 +144,9 @@ def common(source, body_class, active='work'):
     source = re.sub(r'(<meta name="theme-color" content=")[^"]*(">)', r'\g<1>#090b0d\2', source)
     if '<base' not in source:
         source = source.replace('<head>', '<head>\n<base href="/">', 1)
-    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css">
-  <link rel="stylesheet" href="/assets/v2-case.css">
-  <link rel="stylesheet" href="/assets/v2-motion.css">
+    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=reel-20261003">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=reel-20261003">
   <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
-  <script src="/assets/v2-motion.js" defer></script>
 </head>''')
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
@@ -193,7 +191,10 @@ def clean_display_copy(source):
         'Inside the dual USB-C card.': 'Dual USB-C assembly',
         'Inside the RGB coaster.': 'Coaster assembly',
         'Source-derived board surfaces': 'Board, lid and base',
+        'Assembly / source-derived board surfaces': 'Coaster board, lid and base',
+        'Exploded render of the black coaster PCB with KiCad mask artwork between the clear resin lid and base': 'Exploded view of the black coaster PCB between the clear resin lid and base',
         'Black mask and source artwork': 'Black mask and HALO artwork',
+        'PCB / black mask and source artwork': 'PCB / black mask and HALO artwork',
         'Explore the RF test structures.': 'RF test structures',
         'Explore the rail-map PCB.': 'Metroboard in 3D',
         'Explore the flight hardware.': 'Flight hardware',
@@ -402,6 +403,11 @@ def make_case(path, slug=None, source=None):
         source = source.replace('<a class="lab-skip" href="#lab-main">', f'<a class="lab-skip" href="/v2/projects/{slug}/#lab-main">')
         source = source.replace(FOOTER, continuation(slug) + FOOTER)
         return source
+    if slug == 'skylabs':
+        tree = Tree(source)
+        redundant = [node for node in tree.nodes if node.has('engineering-brief') or (node.tag == 'a' and text(node.inner(source)) == 'Explore both boards')]
+        source = replace_nodes(source, [(node, '') for node in redundant])
+        source = source.replace('One data path, three views', 'Logging and flight replay')
     tree = Tree(source)
     hero, copy, media, meta = (tree.find(cls=name) for name in ['project-hero', 'project-hero-copy', 'project-hero-media', 'project-meta'])
     title = text(tree.find('h1').inner(source))
@@ -409,8 +415,8 @@ def make_case(path, slug=None, source=None):
     copy_intro = re.sub(r'<ol class="crumbs".*?</ol>', '', copy_intro, flags=re.S)
     copy_intro = re.sub(r'<p class="eyebrow"[^>]*>.*?</p>', '', copy_intro, flags=re.S)
     cad_assets = {
-        'tramtrace': ('tramtrace-cad.webp', 'Source-derived KiCad rendering of the TramTrace light-rail display PCB'),
-        'framework-expansion-card': ('framework-cad.webp', 'Source-derived CAD rendering of the populated Framework ESP32 card'),
+        'tramtrace': ('tramtrace-cad.webp', 'TramTrace light-rail display PCB'),
+        'framework-expansion-card': ('framework-cad.webp', 'Populated Framework ESP32 expansion card'),
         'skylabs': ('hardware/skylabs-telemetry.webp', 'Skylabs aircraft telemetry circuit board'),
     }
     if slug in HARDWARE_ASSEMBLIES:
@@ -423,7 +429,7 @@ def make_case(path, slug=None, source=None):
     elif slug.startswith('skylabs'):
         board = 'ground' if slug.endswith('ground-station') else 'telemetry'
         width, height = (1376, 984) if board == 'telemetry' else (1400, 1000)
-        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/interactive/skylabs/skylabs-{board}-turn-02.webp" width="{width}" height="{height}" alt="KiCad rendering of the assembled Skylabs {board} board" fetchpriority="high"></figure>'
+        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/interactive/skylabs/skylabs-{board}-turn-02.webp" width="{width}" height="{height}" alt="Assembled Skylabs {board} circuit board" fetchpriority="high"></figure>'
     has_explorer = 'id="explore"' in source
     explore_anchor = 'assembly' if 'id="assembly"' in source and 'data-skylabs-inspector' not in source else 'explore'
     explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board'))
@@ -456,8 +462,16 @@ def make_pi_case():
     fragment = (ROOT / 'scripts/content/framework-raspberry-pi.html').read_text(encoding='utf-8')
     fragment = fragment.replace('Raspberry Pi silicon, in a laptop expansion slot. A compact RP2354B controller board designed around the Framework card format.', 'An RP2354B microcontroller board designed for a Framework laptop expansion bay.')
     fragment = fragment.replace('A closer look.', 'RP2354B assembly').replace('A small board with a defined place.', 'Board layout').replace('Designed as an assembly.', 'Mechanical fit')
+    fragment = fragment.replace('<p>Turn the card, separate the layers, and follow the components that make it work.</p>', '')
     fragment_tree = Tree(fragment)
-    fragment = replace_nodes(fragment, [(node, '') for node in fragment_tree.nodes if node.has('engineering-brief') or node.has('pi-viewer-topline')])
+    changes = [(node, '') for node in fragment_tree.nodes if node.has('engineering-brief') or node.has('pi-viewer-topline')]
+    for section in (node for node in fragment_tree.nodes if node.has('project-summary')):
+        heading = next((node for node in section.children if node.tag == 'h2'), None)
+        if heading and text(heading.inner(fragment)) == 'Board layout':
+            changes.append((section, '<section class="project-summary"><h2>Board layout</h2><div class="project-prose"><p>The RP2354B sits at the centre of the layout, with external flash, a crystal and the power circuit arranged around it.</p></div></section>'))
+        elif heading and text(heading.inner(fragment)) == 'Mechanical fit':
+            changes.append((section, '<section class="project-summary"><h2>Mechanical fit</h2><div class="project-prose"><p>The 26 × 30 mm board is 0.8 mm thick and uses a straddle-mount USB-C plug. Its mounting points line up with the Framework reference enclosure. Two tactile controls sit at the opposite edge from the connector.</p></div></section>'))
+    fragment = replace_nodes(fragment, changes)
     source = '''<!doctype html>
 <html lang="en"><head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
