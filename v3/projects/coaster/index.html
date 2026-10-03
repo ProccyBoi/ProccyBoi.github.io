@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>RGB Drink Coaster | Andrew Chung</title>
+  <meta name="description" content="An STM32C011 drink coaster with 24 RGB LEDs, light-based cup detection and local temperature-responsive colour.">
+  <meta name="theme-color" content="#e8e5dc">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="RGB Drink Coaster | Andrew Chung">
+  <meta property="og:description" content="A sensor-driven 24-pixel coaster that reacts to cup shadow and local temperature change.">
+  <meta property="og:url" content="https://proccyboi.github.io/v3/projects/coaster/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/coaster-hero-1920.jpg?v=20260927d">
+  <meta property="og:image:alt" content="Circular RGB drink coaster PCB inside its clear resin enclosure">
+  <link rel="canonical" href="https://proccyboi.github.io/v3/projects/coaster/">
+  <link rel="preload" as="image" href="assets/images/projects/coaster-hero-960.webp?v=20260927d" media="(max-width: 760px)" type="image/webp">
+  <link rel="preload" as="image" href="assets/images/projects/coaster-hero-1920.webp?v=20260927d" media="(min-width: 761px)" type="image/webp">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/project-flow.css?v=20260907"><link rel="stylesheet" href="assets/skylabs-object.css?v=20260831a"><link rel="stylesheet" href="assets/coaster-3d.css?v=20260927d"><link rel="stylesheet" href="assets/project-integrated.css?v=20260907"><script src="assets/site.js" defer></script><script src="assets/explorer-runtime.js?v=20260927d" defer></script><script src="assets/vendor/three.min.js" defer></script><script src="assets/coaster-3d.js?v=20260927d" defer></script>
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+
+  <link rel="stylesheet" href="/assets/v3.css">
+</head>
+<body class="v2 v2-case project-page v3 v3-interior">
+  <a class="skip-link" href="/v3/projects/coaster/#main">Skip to content</a>
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v3/">Andrew Chung</a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v3/projects/" aria-current="page">Projects</a>
+        <a href="/v3/about/">About</a>
+        <a class="v2-nav-contact" href="/v3/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v3/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Coaster</span><div class="v2-case-nav-links"><a href="/v3/projects/coaster/#overview" data-v2-section>Overview</a><a href="/v3/projects/coaster/#explore" data-v2-section>Interactive</a><a href="/v3/projects/coaster/#details" data-v2-section>Details</a><a href="/v3/projects/coaster/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+
+  <main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><div><h1 id="project-title">Coaster</h1><p>A sensor-driven 24-pixel coaster that reacts to a drink's shadow and local temperature change.</p></div><div class="project-hero-actions"><a href="/v3/projects/coaster/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v3/projects/coaster/#details">Design details <span aria-hidden="true">↓</span></a></div></div><div class="project-hero-media"><picture><source type="image/webp" srcset="assets/images/projects/coaster-hero-960.webp?v=20260927d 960w, assets/images/projects/coaster-hero-1920.webp?v=20260927d 1920w" sizes="(max-width: 900px) 100vw, 58vw"><img src="assets/images/projects/coaster-hero-1920.jpg?v=20260927d" srcset="assets/images/projects/coaster-hero-960.jpg?v=20260927d 960w, assets/images/projects/coaster-hero-1920.jpg?v=20260927d 1920w" sizes="(max-width: 900px) 100vw, 58vw" width="1920" height="1280" alt="Black circular RGB drink coaster PCB visible inside its clear resin enclosure"></picture></div></div>
+    <div class="v2-case-specs shell"><dl class="project-meta"><div><dt>MCU</dt><dd>STM32C011F6</dd></div><div><dt>Sensors</dt><dd>SHT4x + VEML7700</dd></div><div><dt>Lighting</dt><dd>24 × WS2812C</dd></div><div><dt>Enclosure</dt><dd>Clear resin</dd></div></dl></div></section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>Custom PCB, enclosure integration and STM32 firmware for a sensor-driven RGB coaster.</dd></div><div><dt>Design constraint</dt><dd>Infer cup presence and thermal change through a clear resin enclosure without adding a mechanical switch.</dd></div><div><dt>Built hardware</dt><dd>80 mm PCB with 24 RGB LEDs, SHT4x, VEML7700 and USB-C power.</dd></div></dl>
+
+    <section class="project-interactive" id="explore" aria-labelledby="coaster-explore-title" data-coaster-inspector>
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header"><div><h2 id="coaster-explore-title">Coaster assembly</h2></div><p>Rotate the board and resin enclosure, or place a cup to see how the light and temperature sensors drive the 24 RGB LEDs. The drink controls simulate the sensor response.</p></header>
+        <div class="object-toolbar coaster-3d-toolbar v2-assembly-controls" aria-label="Assembly"><button type="button" class="object-tool" data-coaster-explode aria-pressed="false">Disassemble</button></div>
+        <div class="object-stage coaster-3d-stage" data-coaster-stage tabindex="0" aria-label="Interactive 3D RGB drink coaster. Drag or use arrow keys to orbit, pinch or scroll to zoom, tap or press Enter to identify the centred object, and use 1 or 2 for Empty or Cup."><canvas data-coaster-canvas aria-hidden="true"></canvas><p class="coaster-3d-status" data-coaster-status>Loading board and enclosure…</p><output class="v2-part-readout" data-coaster-readout hidden aria-live="polite"></output></div><div class="coaster-demo"><div class="coaster-vessel-list" role="group" aria-label="Drink simulation"><button type="button" class="object-tool" data-coaster-vessel="none" aria-pressed="true">Empty</button><button type="button" class="object-tool" data-coaster-vessel="cup" aria-pressed="false">Cup</button></div><aside class="coaster-sim" data-coaster-sim aria-label="Simulated drink and sensor values"><strong>Drink simulation</strong><dl><div><dt>Vessel</dt><dd data-coaster-sim-vessel>Empty</dd></div><div><dt>VEML7700</dt><dd data-coaster-sim-lux>320 lx</dd></div><div><dt>SHT4x</dt><dd data-coaster-sim-temp>23.0 °C</dd></div><div><dt>Firmware</dt><dd data-coaster-sim-mode>Empty · LEDs off</dd></div></dl></aside></div>
+        <dl class="project-interactive-facts"><div><dt>PCB</dt><dd>80 mm diameter</dd></div><div><dt>Pixels</dt><dd>24 RGB LEDs</dd></div><div><dt>Finish</dt><dd>Black solder mask</dd></div><div><dt>Firmware sim</dt><dd>4 Hz sensors · 40 fps LEDs</dd></div></dl>
+      </div>
+    </section>
+
+    <div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="coaster-shadow"><h2 id="coaster-shadow">Detect the drink</h2><div class="project-prose"><p>The VEML7700 sits near the centre of the board and turns the cup's shadow into a placement signal. At startup the firmware learns the uncovered light level for two seconds. A drop to 65% or less of that reference for 500 ms marks the coaster occupied; light returning to at least 85% for 500 ms marks it empty again.</p><p>That makes the same sensor useful for both presence and brightness without adding a switch or load cell. The trade-off is optical: room-light changes, clear cups and RGB reflections through the lid can all affect the reading, so the firmware uses hysteresis and minimum-light thresholds rather than treating every dip as a cup.</p></div></section>
+
+      <section class="project-summary" aria-labelledby="coaster-temperature"><h2 id="coaster-temperature">Measure the change</h2><div class="project-prose"><p>An SHT4x tracks local temperature under the centre of the coaster. The sensor is separated from the cup by the enclosure: the clear lid is 3 mm thick and the CAD leaves about 2.7 mm between the package and the lid. The firmware therefore displays change at the PCB sensor instead of pretending it knows the drink's actual temperature.</p><p>While the coaster is empty, its temperature reference follows the room slowly. When a cup is placed, that reference freezes and small local changes shift the colour from cool tones through neutral to warm tones. Temperature and light are sampled four times per second while the LED frame updates at 40 fps.</p></div></section>
+
+      <section class="project-summary" aria-labelledby="coaster-firmware"><h2 id="coaster-firmware">Firmware with two moods</h2><div class="project-prose"><p>The default build keeps a calm six-second travelling highlight around the ring. A separate Drink Companion build adds a rainbow welcome, cool glints, warm embers, an aurora and a goodbye sparkle while keeping the same sensor and fault logic.</p><p>Both current images have been flash-verified on the assembled board. The fun build at source commit <code>9da0988</code> was also observed running at about 3.26 V with temperature, humidity, ambient-light, WHITE-channel and LED-frame counters advancing without recorded sensor or LED-transfer errors. Cup behaviour through the clear resin and the final thermal response still need physical tuning.</p></div></section>
+
+      <h2 class="gallery-title" id="build">Build</h2>
+      <section class="project-gallery" aria-labelledby="build">
+        <figure><picture><source type="image/webp" srcset="assets/images/projects/coaster-pcb-top-960.webp?v=20260927d 960w, assets/images/projects/coaster-pcb-top-1920.webp?v=20260927d 1920w" sizes="(max-width: 760px) 100vw, 45vw"><img src="assets/images/projects/coaster-pcb-top-1920.jpg?v=20260927d" srcset="assets/images/projects/coaster-pcb-top-960.jpg?v=20260927d 960w, assets/images/projects/coaster-pcb-top-1920.jpg?v=20260927d 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Top render of the black coaster PCB with gold HALO mask artwork and 24-pixel LED ring" data-zoomable data-caption="PCB / black mask and source artwork"></picture><figcaption><span>PCB</span><span>Black mask and HALO artwork</span></figcaption></figure>
+        <figure><picture><source type="image/webp" srcset="assets/images/projects/coaster-pcb-bottom-960.webp?v=20260927d 960w, assets/images/projects/coaster-pcb-bottom-1920.webp?v=20260927d 1920w" sizes="(max-width: 760px) 100vw, 45vw"><img src="assets/images/projects/coaster-pcb-bottom-1920.jpg?v=20260927d" srcset="assets/images/projects/coaster-pcb-bottom-960.jpg?v=20260927d 960w, assets/images/projects/coaster-pcb-bottom-1920.jpg?v=20260927d 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Underside render of the black coaster PCB showing the Rev A Halo Designed by Andrew Chung silkscreen" data-zoomable data-caption="Underside / Rev A product silkscreen"></picture><figcaption><span>Underside</span><span>Rev A product silkscreen</span></figcaption></figure>
+        <figure class="wide"><picture><source type="image/webp" srcset="assets/images/projects/coaster-exploded-960.webp?v=20260927d 960w, assets/images/projects/coaster-exploded-1920.webp?v=20260927d 1920w" sizes="(max-width: 760px) 100vw, 90vw"><img src="assets/images/projects/coaster-exploded-1920.jpg?v=20260927d" srcset="assets/images/projects/coaster-exploded-960.jpg?v=20260927d 960w, assets/images/projects/coaster-exploded-1920.jpg?v=20260927d 1920w" sizes="(max-width: 760px) 100vw, 90vw" width="1920" height="1280" loading="lazy" alt="Exploded render of the black coaster PCB with KiCad mask artwork between the clear resin lid and base" data-zoomable data-caption="Assembly / source-derived board surfaces"></picture><figcaption><span>Assembly</span><span>Board, lid and base</span></figcaption></figure>
+      </section>
+    </div>
+
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">More projects</p><div>
+      <a href="/v3/projects/tramtrace/"><span>← Previous project</span><strong>TramTrace</strong></a>
+      <a href="/v3/projects/skylabs/"><span>Next project →</span><strong>Skylabs</strong></a>
+    </div><a class="v2-all-work" href="/v3/projects/">All projects <span aria-hidden="true">↗</span></a></nav>
+  </main>
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v3/">Andrew Chung</a><div class="v2-footer-links"><a href="/v3/projects/">Projects</a><a href="/v3/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a class="v3-version-link" href="/v2/projects/coaster/" aria-label="View this page in v2">v2</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+  <dialog class="lightbox" data-lightbox aria-label="Image viewer"><div class="lightbox-frame"><div class="lightbox-image-wrap"><img src="assets/images/projects/coaster-hero-960.jpg?v=20260927d" alt="" data-lightbox-image></div><div class="lightbox-controls"><button class="button icon-button" type="button" data-lightbox-prev aria-label="Previous image">&larr;</button><p data-lightbox-caption>RGB Drink Coaster</p><button class="button icon-button" type="button" data-lightbox-next aria-label="Next image">&rarr;</button><button class="button icon-button" type="button" data-lightbox-close aria-label="Close image viewer">&times;</button></div></div></dialog><p class="live-region" aria-live="polite" data-live-region data-coaster-live></p>
+</body>
+</html>

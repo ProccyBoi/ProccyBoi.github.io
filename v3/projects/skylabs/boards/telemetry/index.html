@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Skylabs Telemetry / Avionics | Andrew Chung</title>
+  <meta name="description" content="UNSW Skylabs avionics PCB for flight-data capture, live LoRa telemetry and onboard sensing.">
+  <meta name="theme-color" content="#e8e5dc">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Skylabs Telemetry / Avionics | Andrew Chung">
+  <meta property="og:description" content="Flight-data capture and live LoRa telemetry across onboard sensing and storage.">
+  <meta property="og:url" content="https://proccyboi.github.io/v3/projects/skylabs/boards/telemetry/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/skylabs-telemetry-hero-1920.jpg">
+  <link rel="canonical" href="https://proccyboi.github.io/v3/projects/skylabs/boards/telemetry/">
+
+
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
+
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
+  <script src="assets/site.js" defer></script>
+
+<link rel="preload" as="image" href="/assets/images/v2/hardware/skylabs-telemetry.webp" type="image/webp">
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+
+<link rel="stylesheet" href="/assets/v2-hardware.css">
+<script src="/assets/v2-hardware.js" defer></script>
+  <link rel="stylesheet" href="/assets/v3.css">
+</head>
+<body class="v2 v2-case project-page v3 v3-interior">
+  <a class="skip-link" href="/v3/projects/skylabs/boards/telemetry/#main">Skip to content</a>
+
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v3/">Andrew Chung</a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v3/projects/" aria-current="page">Projects</a>
+        <a href="/v3/about/">About</a>
+        <a class="v2-nav-contact" href="/v3/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v3/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Telemetry / avionics</span><div class="v2-case-nav-links"><a href="/v3/projects/skylabs/boards/telemetry/#overview" data-v2-section>Overview</a><a href="/v3/projects/skylabs/boards/telemetry/#explore" data-v2-section>Assembly</a><a href="/v3/projects/skylabs/boards/telemetry/#details" data-v2-section>Details</a><a href="/v3/projects/skylabs/boards/telemetry/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+
+  <main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="telemetry-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><div>
+
+
+            <h1 id="telemetry-title">Telemetry / avionics</h1>
+            <p>The aircraft-side sensor, logger and radio board.</p>
+          </div><div class="project-hero-actions"><a href="/v3/projects/skylabs/boards/telemetry/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v3/projects/skylabs/boards/telemetry/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/skylabs-telemetry.webp" width="1600" height="1200" alt="Telemetry / avionics circuit board assembly" fetchpriority="high"></figure></div>
+    <div class="v2-case-specs shell"><dl class="project-meta">
+            <div><dt>Controller</dt><dd>STM32G474RET6</dd></div>
+            <div><dt>Radio</dt><dd>SX1262 / 915 MHz</dd></div>
+            <div><dt>Aircraft log</dt><dd>40 Hz binary</dd></div>
+            <div><dt>Live link</dt><dd>Up to 10 Hz</dd></div>
+          </dl></div></section>
+
+    <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="skylabs-assembly-title"><span id="assembly" class="v2-anchor-alias" aria-hidden="true"></span><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="skylabs-assembly-title">Aircraft telemetry</h2></div></header>
+      <figure data-skylabs-inspector data-hardware-board-key="telemetry" data-hardware="/assets/models/hardware/skylabs-telemetry/assembly.json" data-hardware-title="Aircraft telemetry">
+
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/skylabs-telemetry.webp" width="1600" height="1200" alt="Aircraft telemetry" loading="lazy"><canvas data-hardware-canvas hidden></canvas><output class="v2-part-readout" data-hardware-part hidden aria-live="polite"></output></div>
+      <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
+      <div class="hardware-controls"><button type="button" data-hardware-explode aria-pressed="false">Disassemble</button></div>
+      <p data-hardware-status role="status" aria-live="polite"></p>
+    <script type="application/json" data-hardware-labels>{"telemetry": {"U14": "STM32G474", "U7": "NEO-M9N GNSS", "U10": "BNO085 IMU", "U9": "BME280 barometer", "U11": "HX711 strain interface", "J3": "microSD socket", "U12": "SX1262 LoRa module", "J10": "GNSS and LoRa antenna ports", "J6": "GNSS and LoRa antenna ports", "J1": "USB-C interface", "U1": "TP4056 battery charger", "U2": "Battery protection", "U5": "Battery protection"}}</script></figure>
+    </div></section>
+
+    <div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="telemetry-purpose">
+        <h2 id="telemetry-purpose">Sensors and logging</h2>
+        <div class="project-prose">
+          <p>I developed this PCB around an STM32G474RET6. It brings together a u-blox GNSS receiver, BNO08x IMU, BME280 barometer, digital and analogue airspeed inputs, an HX711 strain interface, RTC, microSD storage and an SX1262 radio.</p>
+          <p>Each sensor has its own useful rate, failure mode and definition of “fresh”. The firmware stores presence and validity beside each measurement; missing values are NaN, not zero.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="telemetry-firmware">
+        <h2 id="telemetry-firmware">Firmware and logging</h2>
+        <div class="project-prose">
+          <p>The IMU supplies acceleration and gyro reports at 100 Hz, attitude at 50 Hz and magnetometer data at 25 Hz. GNSS runs at 10 Hz. The aircraft logger samples at a 40 Hz target, batches eight binary records into each SD transaction and syncs once a second, which avoids making every sample wait for a card write.</p>
+          <p>A compact SX1262 packet carries the live subset to the ground station. The default profile sends at 22 dBm every 100 ms using 500 kHz bandwidth and spreading factor 5. Ground commands can start or stop the aircraft log, add an event marker and change the link profile without a USB cable in the aircraft.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="telemetry-replay">
+        <h2 id="telemetry-replay">After landing</h2>
+        <div class="project-prose">
+          <p>The binary record keeps GNSS, environment, attitude, airspeed, strain and estimator output together. My replay tool reads that file into a synchronized 3D path, aircraft attitude, artificial horizon and engineering plots, while leaving the recorded values untouched.</p>
+          <div class="hero-actions"><a class="button button-primary" href="/v3/projects/skylabs/boards/telemetry/#explore">Inspect the board</a><a class="button" href="shared/flight-review/">Open Flight Review</a></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="telemetry-gallery">
+          <div class="section-heading" data-reveal><div><h2 id="telemetry-gallery"><span id="build">Build</span></h2></div></div>
+        <div class="project-gallery">
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-alt-960.webp 960w, assets/images/projects/skylabs-telemetry-alt-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-telemetry-alt-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-alt-960.jpg 960w, assets/images/projects/skylabs-telemetry-alt-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Assembled blue Skylabs avionics and payload PCB, component side" data-zoomable data-caption="Assembled avionics and payload PCB / component side" loading="lazy">
+            </picture>
+            <figcaption><span>Component side</span></figcaption>
+          </figure>
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-gnss-960.webp 960w, assets/images/projects/skylabs-telemetry-gnss-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-telemetry-gnss-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-gnss-960.jpg 960w, assets/images/projects/skylabs-telemetry-gnss-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Close view of the u-blox GNSS module on the Skylabs avionics PCB" data-zoomable data-caption="u-blox GNSS module / detail" loading="lazy">
+            </picture>
+            <figcaption><span>GNSS detail</span></figcaption>
+          </figure>
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-interface-960.webp 960w, assets/images/projects/skylabs-telemetry-interface-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-telemetry-interface-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-interface-960.jpg 960w, assets/images/projects/skylabs-telemetry-interface-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Close view of the USB-C connector and microSD socket on the Skylabs avionics PCB" data-zoomable data-caption="USB-C connector and microSD socket / detail" loading="lazy">
+            </picture>
+            <figcaption><span>Interface detail</span></figcaption>
+          </figure>
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-macro-960.webp 960w, assets/images/projects/skylabs-telemetry-macro-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-telemetry-macro-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-macro-960.jpg 960w, assets/images/projects/skylabs-telemetry-macro-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Macro view of the strain-sensing interface and controller on the Skylabs avionics PCB" data-zoomable data-caption="Strain-sensing interface and controller / macro" loading="lazy">
+            </picture>
+            <figcaption><span>Strain sensing</span></figcaption>
+          </figure>
+          <figure class="wide" data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-telemetry-reverse-960.webp 960w, assets/images/projects/skylabs-telemetry-reverse-1920.webp 1920w" sizes="100vw">
+              <img src="assets/images/projects/skylabs-telemetry-reverse-1920.jpg" srcset="assets/images/projects/skylabs-telemetry-reverse-960.jpg 960w, assets/images/projects/skylabs-telemetry-reverse-1920.jpg 1920w" sizes="100vw" width="1920" height="1280" alt="Reverse side of the blue Skylabs telemetry PCB showing routing and silkscreen" data-zoomable data-caption="PCB routing and UNSW Skylabs silkscreen / reverse side" loading="lazy">
+            </picture>
+            <figcaption><span>Reverse side</span></figcaption>
+          </figure>
+        </div>
+      </section>
+    </div>
+
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">More projects</p><div>
+      <a href="/v3/projects/skylabs/"><span>← Previous project</span><strong>Skylabs</strong></a>
+      <a href="/v3/projects/skylabs/boards/ground-station/"><span>Next project →</span><strong>Ground station</strong></a>
+    </div><a class="v2-all-work" href="/v3/projects/">All projects <span aria-hidden="true">↗</span></a></nav>
+  </main>
+
+  <dialog class="lightbox" data-lightbox aria-label="Image viewer">
+    <div class="lightbox-frame">
+      <div class="lightbox-image-wrap">
+        <img alt="" data-lightbox-image>
+      </div>
+      <div class="lightbox-controls">
+        <button class="icon-button" type="button" aria-label="Close image viewer" data-lightbox-close>×</button>
+        <p data-lightbox-caption></p>
+        <button class="icon-button" type="button" aria-label="Previous image" data-lightbox-prev>←</button>
+        <button class="icon-button" type="button" aria-label="Next image" data-lightbox-next>→</button>
+      </div>
+    </div>
+  </dialog>
+
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v3/">Andrew Chung</a><div class="v2-footer-links"><a href="/v3/projects/">Projects</a><a href="/v3/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a class="v3-version-link" href="/v2/projects/skylabs/boards/telemetry/" aria-label="View this page in v2">v2</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+
+  <p class="live-region" aria-live="polite" data-live-region></p>
+</body>
+</html>

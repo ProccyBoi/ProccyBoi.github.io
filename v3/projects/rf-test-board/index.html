@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="/">
+  <title>RF Test Board | Andrew Chung</title>
+  <meta name="description" content="A 50-ohm feedline and filter test board for comparing RF layouts with a vector network analyser.">
+  <meta name="theme-color" content="#e8e5dc"><meta property="og:type" content="website"><meta property="og:title" content="RF Test Board | Andrew Chung"><meta property="og:description" content="A board built to measure feedlines, tuning footprints and RF connector transitions."><meta property="og:url" content="https://proccyboi.github.io/v3/projects/rf-test-board/"><meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/rf-test-hero-1920.jpg"><meta property="og:image:alt" content="RF feedline test PCB with SMA and u.FL connectors">
+  <link rel="canonical" href="https://proccyboi.github.io/v3/projects/rf-test-board/"><link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/pcb-object-explorer.css?v=20260902b"><link rel="stylesheet" href="assets/project-integrated.css?v=20260907"><script src="assets/site.js" defer></script>
+<link rel="preload" as="image" href="/assets/images/v2/hardware/rf-test-board.webp" type="image/webp">
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+
+<link rel="stylesheet" href="/assets/v2-hardware.css">
+<script src="/assets/v2-hardware.js" defer></script>
+  <link rel="stylesheet" href="/assets/v3.css">
+</head>
+<body class="v2 v2-case project-page v3 v3-interior">
+  <a class="skip-link" href="/v3/projects/rf-test-board/#main">Skip to content</a><header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v3/">Andrew Chung</a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v3/projects/" aria-current="page">Projects</a>
+        <a href="/v3/about/">About</a>
+        <a class="v2-nav-contact" href="/v3/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v3/projects/">← <span>All work</span></a><span class="v2-case-nav-title">RF Test Board</span><div class="v2-case-nav-links"><a href="/v3/projects/rf-test-board/#overview" data-v2-section>Overview</a><a href="/v3/projects/rf-test-board/#explore" data-v2-section>Interactive</a><a href="/v3/projects/rf-test-board/#details" data-v2-section>Details</a><a href="/v3/projects/rf-test-board/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+<main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><div><h1 id="project-title">RF Test Board</h1><p>I kept getting feedlines wrong, so I built something I could measure.</p></div><div class="project-hero-actions"><a href="/v3/projects/rf-test-board/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v3/projects/rf-test-board/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/rf-test-board.webp" width="1600" height="1200" alt="RF Test Board circuit board assembly" fetchpriority="high"></figure></div>
+    <div class="v2-case-specs shell"><dl class="project-meta"><div><dt>Target</dt><dd>50 Ω</dd></div><div><dt>Connectors</dt><dd>u.FL and SMA</dd></div><div><dt>Stack-up</dt><dd>2-layer, 1.6 mm FR-4</dd></div><div><dt>Instrument</dt><dd>Vector network analyser</dd></div></dl></div></section>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>A two-layer coupon for comparing RF feedlines and transitions.</dd></div><div><dt>Test method</dt><dd>VNA measurements; masked and unmasked traces, u.FL and SMA.</dd></div><div><dt>Design target</dt><dd>50 Ω on the manufacturer’s 1.6 mm FR-4 process.</dd></div></dl>
+
+
+
+    <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="explore-title"><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="explore-title">RF test board assembly</h2></div></header>
+      <figure data-hardware="/assets/models/hardware/rf-test-board/assembly.json" data-hardware-title="RF test board assembly">
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/rf-test-board.webp" width="1600" height="1200" alt="RF test board assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas><output class="v2-part-readout" data-hardware-part hidden aria-live="polite"></output></div>
+      <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
+      <div class="hardware-controls"><button type="button" data-hardware-explode aria-pressed="false">Disassemble</button></div>
+      <p data-hardware-status role="status" aria-live="polite"></p>
+    </figure>
+      <dl class="project-interactive-facts"><div><dt>Board</dt><dd>42.3 × 101.5 mm</dd></div><div><dt>Target</dt><dd>50 Ω</dd></div><div><dt>Footprints</dt><dd>30 populated</dd></div></dl>
+    </div></section>
+
+<div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="rf-purpose"><h2 id="rf-purpose">Test setup</h2><div class="project-prose"><p>The useful RF advice is usually short: control the impedance, keep the return path intact, and place the matching network close. What I wanted to know was how much each detail changed the result on the inexpensive two-layer process I was actually using.</p><p>I ordered this board without impedance control and measured it with a VNA. That gave me a physical reference for the manufacturer's stack-up instead of another calculator result.</p></div></section>
+      <section class="project-summary" aria-labelledby="rf-variants"><h2 id="rf-variants">What I compared</h2><div class="project-prose"><p>The board carries straight coplanar traces, tuning-capacitor sections and split-pi filter footprints, with both u.FL and SMA transitions. It also repeats the feedline with and without solder mask.</p><p>The target was 50 Ω on 1.6 mm FR-4 with 1 oz outer copper and a 0.2 mm gap to the surrounding copper. The nominal trace widths printed on the back are 0.8877 mm with mask and 1.0244 mm without it. Keeping those numbers on the board means the sample stays useful after the design files have disappeared into an archive.</p></div></section>
+      <h2 class="gallery-title">Test structures</h2><section class="project-gallery" id="build" aria-label="RF test board photography">
+        <figure class="wide"><picture><source type="image/webp" srcset="assets/images/projects/rf-test-sma-960.webp 960w, assets/images/projects/rf-test-sma-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 90vw"><img src="assets/images/projects/rf-test-sma-1920.jpg" srcset="assets/images/projects/rf-test-sma-960.jpg 960w, assets/images/projects/rf-test-sma-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 90vw" width="1920" height="1280" loading="lazy" alt="SMA end of the RF test PCB with filter and tuning footprints" data-zoomable data-caption="SMA end / filters and tuning footprints"></picture><figcaption><span>SMA end</span><span>Filters and tuning footprints</span></figcaption></figure>
+        <figure><picture><source type="image/webp" srcset="assets/images/projects/rf-test-reverse-960.webp 960w, assets/images/projects/rf-test-reverse-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 45vw"><img src="assets/images/projects/rf-test-reverse-1920.jpg" srcset="assets/images/projects/rf-test-reverse-960.jpg 960w, assets/images/projects/rf-test-reverse-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Back of the RF test board with revision title" data-zoomable data-caption="Reverse / Rev A identification"></picture><figcaption><span>Reverse</span><span>Rev A identification</span></figcaption></figure>
+        <figure><picture><source type="image/webp" srcset="assets/images/projects/rf-test-details-960.webp 960w, assets/images/projects/rf-test-details-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 45vw"><img src="assets/images/projects/rf-test-details-1920.jpg" srcset="assets/images/projects/rf-test-details-960.jpg 960w, assets/images/projects/rf-test-details-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 45vw" width="1920" height="1280" loading="lazy" alt="Silkscreen listing the RF test board stack-up and trace dimensions" data-zoomable data-caption="Reference data / stack-up and geometry"></picture><figcaption><span>Reference data</span><span>Stack-up and geometry</span></figcaption></figure>
+      </section>
+    </div>
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">More projects</p><div>
+      <a href="/v3/projects/lora-receiver/"><span>← Previous project</span><strong>LoRa Receiver + GNSS</strong></a>
+      <a href="/v3/projects/metroboard/"><span>Next project →</span><strong>Metroboard</strong></a>
+    </div><a class="v2-all-work" href="/v3/projects/">All projects <span aria-hidden="true">↗</span></a></nav>
+  </main>
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v3/">Andrew Chung</a><div class="v2-footer-links"><a href="/v3/projects/">Projects</a><a href="/v3/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a class="v3-version-link" href="/v2/projects/rf-test-board/" aria-label="View this page in v2">v2</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+  <dialog class="lightbox" data-lightbox aria-label="Image viewer"><div class="lightbox-frame"><div class="lightbox-image-wrap"><img src="assets/images/projects/rf-test-hero-960.jpg" alt="" data-lightbox-image></div><div class="lightbox-controls"><button class="button icon-button" type="button" data-lightbox-prev aria-label="Previous image">&larr;</button><p data-lightbox-caption>RF Test Board</p><button class="button icon-button" type="button" data-lightbox-next aria-label="Next image">&rarr;</button><button class="button icon-button" type="button" data-lightbox-close aria-label="Close image viewer">&times;</button></div></div></dialog><p class="live-region" aria-live="polite" data-live-region></p>
+</body>
+</html>

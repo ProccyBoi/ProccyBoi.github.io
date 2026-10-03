@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Skylabs Ground Station | Andrew Chung</title>
+  <meta name="description" content="UNSW Skylabs ground-station PCB for the live LoRa telemetry system, developed by Andrew Chung.">
+  <meta name="theme-color" content="#e8e5dc">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Skylabs Ground Station | Andrew Chung">
+  <meta property="og:description" content="Ground-station PCB for the UNSW Skylabs live LoRa telemetry system.">
+  <meta property="og:url" content="https://proccyboi.github.io/v3/projects/skylabs/boards/ground-station/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/skylabs-ground-hero-1920.jpg">
+  <link rel="canonical" href="https://proccyboi.github.io/v3/projects/skylabs/boards/ground-station/">
+
+
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
+
+  <link rel="stylesheet" href="assets/project-integrated.css?v=20260907">
+  <script src="assets/site.js" defer></script>
+
+<link rel="preload" as="image" href="/assets/images/v2/hardware/skylabs-ground-station.webp" type="image/webp">
+<link rel="stylesheet" href="/assets/v2.css">
+  <link rel="stylesheet" href="/assets/v2-case.css">
+
+  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+
+<link rel="stylesheet" href="/assets/v2-hardware.css">
+<script src="/assets/v2-hardware.js" defer></script>
+  <link rel="stylesheet" href="/assets/v3.css">
+</head>
+<body class="v2 v2-case project-page v3 v3-interior">
+  <a class="skip-link" href="/v3/projects/skylabs/boards/ground-station/#main">Skip to content</a>
+
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v3/">Andrew Chung</a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v3/projects/" aria-current="page">Projects</a>
+        <a href="/v3/about/">About</a>
+        <a class="v2-nav-contact" href="/v3/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v3/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Ground station</span><div class="v2-case-nav-links"><a href="/v3/projects/skylabs/boards/ground-station/#overview" data-v2-section>Overview</a><a href="/v3/projects/skylabs/boards/ground-station/#explore" data-v2-section>Assembly</a><a href="/v3/projects/skylabs/boards/ground-station/#details" data-v2-section>Details</a><a href="/v3/projects/skylabs/boards/ground-station/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+
+  <main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="ground-station-title">
+    <div class="project-hero-grid"><div class="project-hero-copy"><div>
+
+
+            <h1 id="ground-station-title">Ground station</h1>
+            <p>A receiver, field display and second flight recorder in one board.</p>
+          </div><div class="project-hero-actions"><a href="/v3/projects/skylabs/boards/ground-station/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v3/projects/skylabs/boards/ground-station/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/skylabs-ground-station.webp" width="1600" height="1200" alt="Ground station circuit board assembly" fetchpriority="high"></figure></div>
+    <div class="v2-case-specs shell"><dl class="project-meta">
+            <div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div>
+            <div><dt>Radio</dt><dd>SX1262 / 915 MHz</dd></div>
+            <div><dt>Storage</dt><dd>microSD / CSV or binary</dd></div>
+            <div><dt>Display</dt><dd>128 × 64 OLED</dd></div>
+          </dl></div></section>
+
+    <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="skylabs-assembly-title"><span id="assembly" class="v2-anchor-alias" aria-hidden="true"></span><div class="project-interactive-inner">
+      <header class="project-interactive-header"><div><h2 id="skylabs-assembly-title">Ground station</h2></div></header>
+      <figure data-skylabs-inspector data-hardware-board-key="ground" data-hardware="/assets/models/hardware/skylabs-ground-station/assembly.json" data-hardware-title="Ground station">
+
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/skylabs-ground-station.webp" width="1600" height="1200" alt="Ground station" loading="lazy"><canvas data-hardware-canvas hidden></canvas><output class="v2-part-readout" data-hardware-part hidden aria-live="polite"></output></div>
+      <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
+      <div class="hardware-controls"><button type="button" data-hardware-explode aria-pressed="false">Disassemble</button></div>
+      <p data-hardware-status role="status" aria-live="polite"></p>
+    <script type="application/json" data-hardware-labels>{"ground": {"U3": "ESP32-WROOM-32E", "U1": "SX1262 LoRa module", "J3": "microSD socket", "J2": "U.FL antenna connector", "J1": "USB-C receptacle", "U4": "CH340C USB bridge", "Q1": "Automatic upload circuit", "Q2": "Automatic upload circuit", "U2": "3.3 V regulator"}}</script></figure>
+    </div></section>
+
+    <div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="ground-station-purpose">
+        <h2 id="ground-station-purpose">Ground station receiver</h2>
+        <div class="project-prose">
+          <p>I developed the ground station around an ESP32-WROOM-32E, SX1262 radio, microSD socket and a Qwiic connector for the OLED. Two buttons and two activity LEDs keep the common field actions available even when nobody has a laptop open.</p>
+          <p>Every valid aircraft packet can be stored locally, so the team gets an independent copy of the live data even if the aircraft is damaged or its card is hard to reach. The board can write readable CSV or an indexed, CRC-protected binary format that can recover past a damaged record.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="ground-station-field">
+        <h2 id="ground-station-field">Field workflow</h2>
+        <div class="project-prose">
+          <p>The OLED cycles between an artificial horizon, link figures and sensor status. It shows RSSI, GPS and SD state, heading, satellite count and IMU accuracy instead of reducing the whole system to a single “connected” light.</p>
+          <p>The ESP32 also creates a Wi-Fi access point with a captive dashboard and pre-flight checklist. From a phone, the crew can inspect fresh telemetry, name a flight, choose the log format, add a marker or change the radio profile. Start and stop commands are repeated over LoRa so the aircraft and ground logs begin together.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="ground-station-backup">
+        <h2 id="ground-station-backup">Aircraft, receiver and laptop logs</h2>
+        <div class="project-prose">
+          <p>The receiver streams a rate-limited 230400-baud feed over USB without slowing the SD logger. A PC dashboard can record that stream as another CSV backup, while the onboard dashboard remains available when the laptop is not.</p>
+          <p>Giving the aircraft, receiver and laptop separate records costs some storage, but it has made flight-day problems much less mysterious.</p>
+          <div class="hero-actions"><a class="button button-primary" href="/v3/projects/skylabs/boards/ground-station/#explore">Inspect the board</a></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="ground-station-gallery">
+          <div class="section-heading" data-reveal><div><h2 id="ground-station-gallery"><span id="build">Build</span></h2></div></div>
+        <div class="project-gallery">
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-ground-alt-960.webp 960w, assets/images/projects/skylabs-ground-alt-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-ground-alt-1920.jpg" srcset="assets/images/projects/skylabs-ground-alt-960.jpg 960w, assets/images/projects/skylabs-ground-alt-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Assembled blue Skylabs ground-station PCB, component side" data-zoomable data-caption="Assembled ground-station PCB / component side" loading="lazy">
+            </picture>
+            <figcaption><span>Component side</span></figcaption>
+          </figure>
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-ground-detail-960.webp 960w, assets/images/projects/skylabs-ground-detail-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-ground-detail-1920.jpg" srcset="assets/images/projects/skylabs-ground-detail-960.jpg 960w, assets/images/projects/skylabs-ground-detail-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Close view of components and UNSW silkscreen on the ground-station PCB" data-zoomable data-caption="Ground-station PCB components and UNSW silkscreen / detail" loading="lazy">
+            </picture>
+            <figcaption><span>Component detail</span></figcaption>
+          </figure>
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-ground-interface-960.webp 960w, assets/images/projects/skylabs-ground-interface-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-ground-interface-1920.jpg" srcset="assets/images/projects/skylabs-ground-interface-960.jpg 960w, assets/images/projects/skylabs-ground-interface-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Close view of the antenna connector and microSD socket on the Skylabs ground-station PCB" data-zoomable data-caption="Antenna connector and microSD socket / detail" loading="lazy">
+            </picture>
+            <figcaption><span>Interface detail</span></figcaption>
+          </figure>
+          <figure data-reveal>
+            <picture>
+              <source type="image/webp" srcset="assets/images/projects/skylabs-ground-reverse-960.webp 960w, assets/images/projects/skylabs-ground-reverse-1920.webp 1920w" sizes="(max-width: 760px) 100vw, 50vw">
+              <img src="assets/images/projects/skylabs-ground-reverse-1920.jpg" srcset="assets/images/projects/skylabs-ground-reverse-960.jpg 960w, assets/images/projects/skylabs-ground-reverse-1920.jpg 1920w" sizes="(max-width: 760px) 100vw, 50vw" width="1920" height="1280" alt="Reverse side of the blue Skylabs ground-station PCB showing routing and design credit" data-zoomable data-caption="Ground-station PCB routing and design credit / reverse side" loading="lazy">
+            </picture>
+            <figcaption><span>Reverse side</span></figcaption>
+          </figure>
+        </div>
+      </section>
+    </div>
+
+    <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">More projects</p><div>
+      <a href="/v3/projects/skylabs/boards/telemetry/"><span>← Previous project</span><strong>Aircraft telemetry</strong></a>
+      <a href="/v3/projects/skylabs/"><span>Next project →</span><strong>Skylabs</strong></a>
+    </div><a class="v2-all-work" href="/v3/projects/">All projects <span aria-hidden="true">↗</span></a></nav>
+  </main>
+
+  <dialog class="lightbox" data-lightbox aria-label="Image viewer">
+    <div class="lightbox-frame">
+      <div class="lightbox-image-wrap">
+        <img alt="" data-lightbox-image>
+      </div>
+      <div class="lightbox-controls">
+        <button class="icon-button" type="button" aria-label="Close image viewer" data-lightbox-close>×</button>
+        <p data-lightbox-caption></p>
+        <button class="icon-button" type="button" aria-label="Previous image" data-lightbox-prev>←</button>
+        <button class="icon-button" type="button" aria-label="Next image" data-lightbox-next>→</button>
+      </div>
+    </div>
+  </dialog>
+
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v3/">Andrew Chung</a><div class="v2-footer-links"><a href="/v3/projects/">Projects</a><a href="/v3/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a class="v3-version-link" href="/v2/projects/skylabs/boards/ground-station/" aria-label="View this page in v2">v2</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+
+  <p class="live-region" aria-live="polite" data-live-region></p>
+</body>
+</html>
