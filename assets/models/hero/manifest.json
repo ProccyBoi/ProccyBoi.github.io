@@ -4,9 +4,9 @@
   "models": {
     "tramtrace": {
       "url": "/assets/models/hero/tramtrace.bin",
-      "compressedUrl": "/assets/models/hero/tramtrace.bin.gz",
+      "compressedUrl": "/assets/models/hero/tramtrace.idx.bin.gz",
       "bytes": 3564104,
-      "gzipBytes": 830013,
+      "gzipBytes": 566940,
       "sha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb",
       "parts": 31,
       "meshes": 104,
@@ -14,13 +14,17 @@
       "textures": [
         "/assets/images/v2/tramtrace-silk.svg"
       ],
-      "paritySha256": "bac79baab53eecd452a0cd9b89b01551ce616b90fddb4d69f8c60f8d70b02cfa"
+      "paritySha256": "bac79baab53eecd452a0cd9b89b01551ce616b90fddb4d69f8c60f8d70b02cfa",
+      "transport": "index-byte-planes-v1",
+      "transportBytes": 3564120,
+      "legacyCompressedUrl": "/assets/models/hero/tramtrace.bin.gz",
+      "legacyGzipBytes": 830013
     },
     "telemetry": {
       "url": "/assets/models/hero/telemetry.bin",
-      "compressedUrl": "/assets/models/hero/telemetry.bin.gz",
+      "compressedUrl": "/assets/models/hero/telemetry.idx.bin.gz",
       "bytes": 8018412,
-      "gzipBytes": 1937278,
+      "gzipBytes": 1435034,
       "sha256": "b63e3029ff928d0273d3116bd7faf9f188de1cade33ffc19319c2fdd741bb472",
       "parts": 54,
       "meshes": 166,
@@ -29,13 +33,17 @@
         "/assets/models/hardware/skylabs-telemetry/silk-front.svg",
         "/assets/models/hardware/skylabs-telemetry/silk-back.svg"
       ],
-      "paritySha256": "87a45ca465c06d101f4ca4e9ee2f46cdb1e63006778e9021091944c0fe3b832d"
+      "paritySha256": "87a45ca465c06d101f4ca4e9ee2f46cdb1e63006778e9021091944c0fe3b832d",
+      "transport": "index-byte-planes-v1",
+      "transportBytes": 8018428,
+      "legacyCompressedUrl": "/assets/models/hero/telemetry.bin.gz",
+      "legacyGzipBytes": 1937278
     },
     "pi": {
       "url": "/assets/models/hero/pi.bin",
-      "compressedUrl": "/assets/models/hero/pi.bin.gz",
+      "compressedUrl": "/assets/models/hero/pi.idx.bin.gz",
       "bytes": 1764688,
-      "gzipBytes": 467441,
+      "gzipBytes": 364179,
       "sha256": "4dcc82d7bee2e16d770a482dd2ac996789af98e83b326c000a8505e1c17d9b76",
       "parts": 33,
       "meshes": 87,
@@ -43,7 +51,11 @@
       "textures": [
         "/assets/models/framework-pi/framework-pi-silk-front.svg"
       ],
-      "paritySha256": "4a1a83f7a071358a5b71ba604df4352a1203e0c6f67823cc4cb504d839c187a5"
+      "paritySha256": "4a1a83f7a071358a5b71ba604df4352a1203e0c6f67823cc4cb504d839c187a5",
+      "transport": "index-byte-planes-v1",
+      "transportBytes": 1764704,
+      "legacyCompressedUrl": "/assets/models/hero/pi.bin.gz",
+      "legacyGzipBytes": 467441
     }
   },
   "sources": {

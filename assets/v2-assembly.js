@@ -21,7 +21,7 @@
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
   const smooth = value => { const p = clamp(value); return p*p*(3-2*p); };
   const ramp = (value, start, end) => smooth((value-start)/(end-start));
-  let renderer, scene, camera, environment, keyLight, overviewLight, shadowBounds, shadowCorner, shadowCentre;
+  let renderer, scene, camera, environment, keyLight, overviewLight, shadowBounds, shadowCorner, shadowCentre, loadingExperience;
   const models = Array(projects.length).fill(null);
   const shadows = Array(projects.length).fill(null);
   const modelStates = Array(projects.length).fill('pending');
@@ -180,6 +180,11 @@
         poster.style.setProperty('--assembly-poster-transform',`translate(-50%,-50%) rotate(${-transform.rz*.4}rad)`);
         poster.style.setProperty('--assembly-poster-opacity',inView&&!models[index]?'1':'0');
         poster.style.setProperty('--assembly-poster-visibility',inView?'visible':'hidden');
+        loadingExperience?.setPose(index,{
+          x:width/2+transform.x*pixels,y:height/2-(transform.y-(1-settle)*.6)*pixels,
+          width:transform.s*pixels*1.4,height:transform.s*pixels*1.05,
+          rotation:-transform.rz*.4,visible:inView
+        });
       }
       const model=models[index];
       if(!model) return;
@@ -208,6 +213,7 @@
   };
   function request(){if(!frame && ready && visible && !document.hidden) frame=requestAnimationFrame(render);}
   const staticMode = () => {
+    loadingExperience?.suspend(true);
     root.classList.remove('is-enhanced'); root.classList.add('is-static');
     if(frame) cancelAnimationFrame(frame); frame=0; target=0; current=0;
     intro.style.removeProperty('opacity'); intro.style.removeProperty('transform');
@@ -221,6 +227,7 @@
     if(loading || ready || failed || !motionAllowed()) return;
     loading=true; root.dataset.assemblyState='loading';
     root.classList.add('is-enhanced'); root.classList.remove('is-static');
+    try {loadingExperience=window.V2HeroLoading?.create(root,stage,posters);} catch(error) { /* The original posters remain the fallback. */ }
     // Start the complete scroll scene using the lightweight posters. Neither
     // script download nor CAD parsing gates captions, navigation or movement.
     ready=true;entry=performance.now();layout();current=target;request();
@@ -228,11 +235,15 @@
       // Download prepared geometry alongside Three.js. Source CAD remains a
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
-        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js');
+        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=index-planes-20261003');
         projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
       })().catch(()=>{});
+      const lighting=(async()=>{
+        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js');
+        window.V2HeroEnvironment.prefetch().catch(()=>{});
+      })().catch(()=>{});
       await Promise.all([
-        assets,
+        assets,lighting,
         window.V2HeroMotion?Promise.resolve():loadScript('/assets/v2-hero-motion.js'),
         window.THREE?Promise.resolve():loadScript('/assets/vendor/three.min.js')
       ]);
@@ -257,13 +268,22 @@
       keyLight.userData.direction=keyLight.position.clone().normalize();
       scene.add(keyLight.target);
       shadowBounds=new T.Box3();shadowCorner=new T.Vector3();shadowCentre=new T.Vector3();
-      const room=new T.Scene();room.background=new T.Color(0xb6c0c2);
-      [[0xffffff,4,[-7,5,1],[0,Math.PI/2,0]],[0xffffff,3,[0,8,0],[Math.PI/2,0,0]],[0xd9e6f3,2,[7,0,0],[0,-Math.PI/2,0]]].forEach(([color,power,position,rotation])=>{
-        const material=new T.MeshBasicMaterial({color,side:T.DoubleSide});material.color.multiplyScalar(power);
-        const panel=new T.Mesh(new T.PlaneGeometry(8,12),material);panel.position.set(...position);panel.rotation.set(...rotation);room.add(panel);
-      });
-      const pmrem=new T.PMREMGenerator(renderer);environment=pmrem.fromScene(room,.06);
-      scene.environment=environment.texture;pmrem.dispose();room.traverse(object=>{object.geometry?.dispose();object.material?.dispose();});
+      try {
+        if(!window.V2HeroEnvironment) throw new Error('Prepared lighting unavailable');
+        const texture=await window.V2HeroEnvironment.load(T);
+        environment={texture,dispose:()=>texture.dispose()};
+        root.dataset.assemblyEnvironment='prepared';
+      } catch(error) {
+        const room=new T.Scene();room.background=new T.Color(0xb6c0c2);
+        [[0xffffff,4,[-7,5,1],[0,Math.PI/2,0]],[0xffffff,3,[0,8,0],[Math.PI/2,0,0]],[0xd9e6f3,2,[7,0,0],[0,-Math.PI/2,0]]].forEach(([color,power,position,rotation])=>{
+          const material=new T.MeshBasicMaterial({color,side:T.DoubleSide});material.color.multiplyScalar(power);
+          const panel=new T.Mesh(new T.PlaneGeometry(8,12),material);panel.position.set(...position);panel.rotation.set(...rotation);room.add(panel);
+        });
+        const pmrem=new T.PMREMGenerator(renderer);environment=pmrem.fromScene(room,.06);
+        pmrem.dispose();room.traverse(object=>{object.geometry?.dispose();object.material?.dispose();});
+        root.dataset.assemblyEnvironment='generated';
+      }
+      scene.environment=environment.texture;
       const shadowCanvas=document.createElement('canvas');shadowCanvas.width=128;shadowCanvas.height=128;
       const ctx=shadowCanvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,4,64,64,64);
       gradient.addColorStop(0,'#182d24');gradient.addColorStop(.5,'#182d2480');gradient.addColorStop(1,'#182d2400');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
@@ -289,6 +309,7 @@
           // scene or waiting for any other project's download/parse/compile.
           if(frame) cancelAnimationFrame(frame);
           render(performance.now());root.classList.add('is-loaded');request();
+          loadingExperience?.modelReady(index);
           root.dataset.assemblyModelsReady=String(models.filter(Boolean).length);
           root.dataset.assemblyState='ready';
           if(!root.dataset.assemblyFirstModel) {
@@ -311,6 +332,7 @@
             scene.remove(shadows[index]);shadows[index].geometry.dispose();shadows[index].material.dispose();shadows[index]=null;
           }
           modelStates[index]='unavailable';posters[index].dataset.assemblyModelState='unavailable';
+          loadingExperience?.modelFailed(index);
           root.dataset.assemblyModelsReady=String(models.filter(Boolean).length);
           if(!models.some(Boolean)) root.classList.remove('is-loaded');
           console.warn(`${projects[index].title} CAD unavailable; its scroll poster remains available.`,error);
@@ -330,6 +352,7 @@
       failed=true;root.dataset.assemblyState='unavailable';
       modelStates.fill('unavailable');
       posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});
+      projects.forEach((_,index)=>loadingExperience?.modelFailed(index));
       root.dataset.assemblyModelsReady='0';root.dataset.assemblyModelsSettled=String(projects.length);
       root.classList.remove('is-loaded');
       renderer?.dispose();
@@ -347,11 +370,12 @@
   addEventListener('scroll',()=>{updateProgress();request();},{passive:true});
   addEventListener('resize',layout,{passive:true});
   new ResizeObserver(layout).observe(stage);
-  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;if(visible){updateProgress();request();}else if(frame){cancelAnimationFrame(frame);frame=0;}},{threshold:0}).observe(root);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateProgress();request();}});
+  const syncLoadingVisibility=()=>loadingExperience?.suspend(!visible||document.hidden||!motionAllowed());
+  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;syncLoadingVisibility();if(visible){updateProgress();request();}else if(frame){cancelAnimationFrame(frame);frame=0;}},{threshold:0}).observe(root);
+  document.addEventListener('visibilitychange',()=>{syncLoadingVisibility();if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateProgress();request();}});
   reduced.addEventListener('change',()=>{
     if(!motionAllowed()) staticMode();
-    else if(ready){root.classList.add('is-enhanced');root.classList.remove('is-static');entry=0;layout();}
+    else if(ready){root.classList.add('is-enhanced');root.classList.remove('is-static');entry=0;syncLoadingVisibility();layout();}
     else initialize();
   });
   canvas.addEventListener('webglcontextlost',event=>{
@@ -360,8 +384,9 @@
     root.classList.remove('is-loaded');root.dataset.assemblyState='unavailable';root.dataset.assemblyModelsReady='0';
     root.dataset.assemblyModelsSettled=String(projects.length);
     posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});request();
+    projects.forEach((_,index)=>loadingExperience?.modelFailed(index));
   });
-  addEventListener('pagehide',()=>{cancelAnimationFrame(frame);frame=0;});
-  addEventListener('pageshow',()=>{updateProgress();request();});
+  addEventListener('pagehide',()=>{loadingExperience?.suspend(true);cancelAnimationFrame(frame);frame=0;});
+  addEventListener('pageshow',()=>{syncLoadingVisibility();updateProgress();request();});
   if(motionAllowed()) initialize(); else staticMode();
 })();

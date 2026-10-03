@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "preservation": "Every native RGBE PMREM texel byte; identical CAD render pixels before and after baking",
+  "url": "/assets/models/hero/environment.bin",
+  "compressedUrl": "/assets/models/hero/environment.bin.gz",
+  "bytes": 2359540,
+  "gzipBytes": 124717,
+  "sha256": "1f93cae0117e83a916b232e2460d1e5ebae852e40a9baac4f4220db274fd0853",
+  "sourceBuilderSha256": "4109d7dfa483dea90c6cdb6699cecde368c37d409b735d7149f5bddea9f1e9d5",
+  "threeSha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2",
+  "width": 768,
+  "height": 768,
+  "type": "UnsignedByteType",
+  "encoding": "RGBEEncoding",
+  "mapping": "CubeUVReflectionMapping",
+  "renders": [
+    {
+      "name": "tramtrace",
+      "phase": 0,
+      "changedChannels": 0,
+      "maximumChannelDifference": 0,
+      "renderedPixels": 52759
+    },
+    {
+      "name": "tramtrace",
+      "phase": 1,
+      "changedChannels": 0,
+      "maximumChannelDifference": 0,
+      "renderedPixels": 52831
+    },
+    {
+      "name": "telemetry",
+      "phase": 0,
+      "changedChannels": 0,
+      "maximumChannelDifference": 0,
+      "renderedPixels": 92857
+    },
+    {
+      "name": "telemetry",
+      "phase": 1,
+      "changedChannels": 0,
+      "maximumChannelDifference": 0,
+      "renderedPixels": 107826
+    },
+    {
+      "name": "pi",
+      "phase": 0,
+      "changedChannels": 0,
+      "maximumChannelDifference": 0,
+      "renderedPixels": 110412
+    },
+    {
+      "name": "pi",
+      "phase": 1,
+      "changedChannels": 0,
+      "maximumChannelDifference": 0,
+      "renderedPixels": 117709
+    }
+  ],
+  "sourceHashNormalization": "utf8-lf",
+  "builderFileSha256": "ad19d5fd87be708242660f6c34751257f5f8b08114d355a9a77ae8db9a7d230c"
+}

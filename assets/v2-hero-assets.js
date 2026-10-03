@@ -3,28 +3,75 @@
   'use strict';
   const names = new Set(['tramtrace', 'telemetry', 'pi']);
   const pending = new Map();
+  const headers = new Map(), images = new Map();
+  function header(buffer) {
+    if (buffer.byteLength < 16) throw new Error('Invalid hero assembly');
+    const view = new DataView(buffer), magic = new TextDecoder().decode(new Uint8Array(buffer, 0, 7));
+    if (magic !== 'V2HERO1') throw new Error('Invalid hero assembly');
+    const headerBytes = view.getUint32(8, true), dataStart = view.getUint32(12, true);
+    if (dataStart % 4 || headerBytes > dataStart - 16 || dataStart > buffer.byteLength) throw new Error('Invalid hero assembly header');
+    const data = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 16, headerBytes)), (key, value) => value?.$negativeZero === true ? -0 : value);
+    if (data.version !== 1) throw new Error('Unsupported hero assembly version');
+    return {data, dataStart};
+  }
+  function image(url) {
+    if (!images.has(url)) images.set(url, new Promise((resolve, reject) => {
+      const bitmap = new Image(); bitmap.crossOrigin = 'anonymous';
+      bitmap.onload = () => resolve(bitmap); bitmap.onerror = reject; bitmap.src = url;
+    }));
+    return images.get(url);
+  }
+  async function transport(buffer) {
+    const magic = new TextDecoder().decode(new Uint8Array(buffer, 0, Math.min(7, buffer.byteLength)));
+    if (magic !== 'V2HIDX1') return {buffer, ...header(buffer)};
+    if (buffer.byteLength < 32 || new DataView(buffer).getUint32(8, true) !== buffer.byteLength - 16) throw new Error('Invalid hero transport');
+    const restored = buffer.slice(16), parsed = header(restored);
+    const source = new Uint8Array(buffer, 16), target = new Uint8Array(restored);
+    let sliceStarted = performance.now();
+    for (const geometry of parsed.data.geometries) {
+      const index = geometry.index, width = index.arrayType === 'Uint16Array' ? 2 : index.arrayType === 'Uint32Array' ? 4 : 0;
+      const start = parsed.dataStart + index.byteOffset, count = index.byteLength / width;
+      if (!width || !Number.isInteger(count) || start < parsed.dataStart || start + index.byteLength > restored.byteLength) throw new Error('Invalid hero index transport');
+      for (let chunk = 0; chunk < count; chunk += 65536) {
+        const end = Math.min(count, chunk + 65536);
+        for (let i = chunk; i < end; i++) {
+          target[start + i*width] = source[start + i];
+          target[start + i*width + 1] = source[start + count + i];
+          if (width === 4) {
+            target[start + i*width + 2] = source[start + count*2 + i];
+            target[start + i*width + 3] = source[start + count*3 + i];
+          }
+        }
+        if (performance.now() - sliceStarted > 8) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+          sliceStarted = performance.now();
+        }
+      }
+    }
+    return {buffer:restored, ...parsed};
+  }
   function prefetch(name) {
     if (!names.has(name)) return Promise.reject(new Error('Unknown hero assembly: ' + name));
-    if (!pending.has(name)) pending.set(name, fetch('/assets/models/hero/' + name + '.bin' + (window.DecompressionStream ? '.gz' : '')).then(async response => {
+    if (!pending.has(name)) pending.set(name, fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin')).then(async response => {
       if (!response.ok) throw new Error('Hero assembly unavailable');
       const bytes = await response.arrayBuffer();
       const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
       // Explicit gzip keeps delivery small regardless of the host's MIME
       // compression policy. Browsers without native decompression use .bin.
-      if (signature[0] === 31 && signature[1] === 139) return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-      return bytes;
+      return signature[0] === 31 && signature[1] === 139 ? new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : bytes;
+    }).then(transport).then(({buffer, ...parsed}) => {
+      headers.set(name, parsed);
+      // Fetch the original full-resolution silk images while the renderer is
+      // still starting. Loading a texture later reuses these same Image objects.
+      parsed.data.textures.forEach(item => image(item.url).catch(() => {}));
+      return buffer;
     }));
     return pending.get(name);
   }
   async function load(name) {
     const buffer = await prefetch(name), T = window.THREE;
     if (!T?.BufferGeometry) throw new Error('Hero assets require THREE');
-    const view = new DataView(buffer), magic = new TextDecoder().decode(new Uint8Array(buffer, 0, Math.min(7, buffer.byteLength)));
-    if (magic !== 'V2HERO1' || buffer.byteLength < 16) throw new Error('Invalid hero assembly');
-    const headerBytes = view.getUint32(8, true), dataStart = view.getUint32(12, true);
-    if (dataStart % 4 || headerBytes > dataStart - 16 || dataStart > buffer.byteLength) throw new Error('Invalid hero assembly header');
-    const data = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 16, headerBytes)), (key, value) => value?.$negativeZero === true ? -0 : value);
-    if (data.version !== 1) throw new Error('Unsupported hero assembly version');
+    const {data, dataStart} = headers.get(name);
     const textures = [];
     const decode = value => {
       if (value === null || typeof value !== 'object') return value;
@@ -38,7 +85,7 @@
       return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, decode(item)]));
     };
     await Promise.all(data.textures.map(async (item, index) => {
-      const texture = await new Promise((resolve, reject) => new T.TextureLoader().load(item.url, resolve, undefined, reject));
+      const texture = new T.Texture(await image(item.url));
       Object.assign(texture, decode(item.properties)); texture.needsUpdate = true;
       textures[index] = texture;
     }));

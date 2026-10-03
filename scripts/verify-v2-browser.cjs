@@ -29,7 +29,7 @@ async function posters(page) {
     await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
     await page.locator('[data-assembly-models-settled="3"]').waitFor({timeout:60000});
     assert.equal(await page.locator('[data-assembly]').getAttribute('data-assembly-models-ready'),'3','All hero CAD must load');
-    for(const name of ['tramtrace','telemetry','pi'])assert.ok(requests.some(url=>new URL(url).pathname==='/assets/models/hero/'+name+'.bin.gz'),'Hero must automatically load the compressed '+name+' CAD pack');
+    for(const name of ['tramtrace','telemetry','pi'])assert.ok(requests.some(url=>new URL(url).pathname==='/assets/models/hero/'+name+'.idx.bin.gz'),'Hero must automatically load the compressed '+name+' CAD pack');
     assert.equal(requests.some(url=>/\.glb(?:\?|$)/.test(url)),false,'Normal hero loading must not download and merge the source GLBs');
     assert.equal(await page.locator('[data-assembly-canvas]').isVisible(),true);
     assert.equal(await page.locator('[data-assembly-canvas]').getAttribute('role'),'img');

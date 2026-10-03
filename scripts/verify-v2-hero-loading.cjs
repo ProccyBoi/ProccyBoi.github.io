@@ -37,7 +37,7 @@ async function posterVisible(page,index){
     page.on('pageerror',error=>errors.push(error.message));
     const dependency=gate(),pi=gate();
     await page.route('**/three.min.js',async route=>{await dependency.promise;await route.continue();});
-    await page.route(/\/models\/hero\/pi\.bin(?:\.gz)?(?:\?|$)/,async route=>{await pi.promise;await route.continue();});
+    await page.route(/\/models\/hero\/pi(?:\.idx)?\.bin(?:\.gz)?(?:\?|$)/,async route=>{await pi.promise;await route.continue();});
     await page.route('**/framework-pi-board.glb',async route=>{await pi.promise;await route.continue();});
     await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>Number(document.querySelector('[data-assembly]').dataset.assemblyFrames)>0,null,{timeout:10000});
@@ -72,7 +72,7 @@ async function posterVisible(page,index){
     const sourceFallback=await browser.newPage({viewport:{width:1280,height:900},reducedMotion:'no-preference'});
     sourceFallback.on('pageerror',error=>errors.push(error.message));
     const sourceRequests=[];sourceFallback.on('request',request=>sourceRequests.push(request.url()));
-    await sourceFallback.route(/\/models\/hero\/telemetry\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort('failed'));
+    await sourceFallback.route(/\/models\/hero\/telemetry(?:\.idx)?\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort('failed'));
     await sourceFallback.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await sourceFallback.locator('[data-assembly-models-settled="3"]').waitFor({timeout:90000});
     assert.equal(await sourceFallback.locator(root).getAttribute('data-assembly-models-ready'),'3','A missing hero pack must recover the complete source CAD');
@@ -86,7 +86,7 @@ async function posterVisible(page,index){
 
     const partial=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'no-preference'});
     partial.on('pageerror',error=>errors.push(error.message));
-    await partial.route(/\/models\/hero\/telemetry\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort('failed'));
+    await partial.route(/\/models\/hero\/telemetry(?:\.idx)?\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort('failed'));
     await partial.route('**/hardware/skylabs-telemetry/board.glb',route=>route.abort('failed'));
     await partial.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await partial.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyModelsSettled==='3',null,{timeout:60000});

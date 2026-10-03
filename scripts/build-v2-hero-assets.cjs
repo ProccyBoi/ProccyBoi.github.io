@@ -17,6 +17,33 @@ const names = ['tramtrace', 'telemetry', 'pi'];
 const verifyOnly = process.argv.includes('--verify');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
+// Byte lanes make the exact integer index stream more compressible. Float
+// attributes, triangles, vertex order and the plain compatibility pack remain
+// untouched. The transport wrapper allows old direct-gzip packs to keep loading.
+function indexTransport(bytes, restore = false) {
+  let source = bytes;
+  if (restore) {
+    if (bytes.toString('ascii', 0, 7) !== 'V2HIDX1') return bytes;
+    assert.equal(bytes.readUInt32LE(8), bytes.length - 16, 'Transport original byte length');
+    source = bytes.subarray(16);
+  }
+  const target = Buffer.from(source), dataStart = source.readUInt32LE(12);
+  const header = JSON.parse(source.subarray(16, 16 + source.readUInt32LE(8)).toString('utf8'));
+  for (const geometry of header.geometries) {
+    const index = geometry.index, width = globalThis[index.arrayType].BYTES_PER_ELEMENT;
+    assert([2, 4].includes(width), 'Supported index width');
+    const start = dataStart + index.byteOffset, count = index.byteLength / width;
+    assert(Number.isInteger(count) && start >= dataStart && start + index.byteLength <= source.length, 'Index transport range');
+    for (let lane = 0; lane < width; lane++) for (let i = 0; i < count; i++) {
+      if (restore) target[start + i*width + lane] = source[start + lane*count + i];
+      else target[start + lane*count + i] = source[start + i*width + lane];
+    }
+  }
+  if (restore) return target;
+  const prefix = Buffer.alloc(16); prefix.write('V2HIDX1'); prefix.writeUInt32LE(bytes.length, 8);
+  return Buffer.concat([prefix, target]);
+}
+
 // This serializer is also used on reconstructed packs, so parity covers the
 // actual runtime objects rather than only the build script's intermediate data.
 function captureAssembly(assembly) {
@@ -160,16 +187,22 @@ async function main() {
       console.log('Capturing source factory:', name);
       const source = await page.evaluate(async name => {const assembly = await window.V2AssemblyModels.load(name); window.__sourceAssembly = assembly; return window.__captureHero(assembly);}, name);
       const filepath = path.join(output, name + '.bin');
+      const compressedPath = path.join(output, name + '.idx.bin.gz');
       if (!verifyOnly) {
         const bytes = pack(source); fs.writeFileSync(filepath, bytes); fs.writeFileSync(filepath + '.gz', zlib.gzipSync(bytes, {level:9}));
+        fs.writeFileSync(compressedPath, zlib.gzipSync(indexTransport(bytes), {level:9}));
       }
       const restored = await page.evaluate(async name => {const assembly = await window.V2HeroAssets.load(name); const capture = window.__captureHero(assembly); for (const group of [assembly.group, window.__sourceAssembly.group]) group.traverse(node => {node.geometry?.dispose();}); return capture;}, name);
       assert.deepEqual(canonical(restored), canonical(source), name + ': runtime reconstruction must match exact source factory output');
       const bytes = fs.readFileSync(filepath);
       const triangles = source.geometries.reduce((sum, geometry) => sum + expandGeometry(geometry).position.length / (geometry.attributes.position.itemSize * globalThis[geometry.attributes.position.arrayType].BYTES_PER_ELEMENT * 3), 0);
-      const compressed = fs.readFileSync(filepath + '.gz');
-      assert.deepEqual(zlib.gunzipSync(compressed), bytes, 'Gzip and plain delivery must reconstruct identical bytes');
-      report.models[name] = {url:'/assets/models/hero/' + name + '.bin', compressedUrl:'/assets/models/hero/' + name + '.bin.gz', bytes:bytes.length, gzipBytes:compressed.length, sha256:hash(bytes), parts:source.parts.length, meshes:source.nodes.filter(node => node.type === 'Mesh').length, triangles, textures:source.textures.map(texture => texture.url), paritySha256:hash(Buffer.from(JSON.stringify(canonical(source))))};
+      const compressed = fs.readFileSync(compressedPath), legacy = fs.readFileSync(filepath + '.gz');
+      const transported = zlib.gunzipSync(compressed);
+      assert.deepEqual(indexTransport(transported, true), bytes, 'Gzip and plain delivery must reconstruct identical bytes');
+      assert.deepEqual(zlib.gunzipSync(legacy), bytes, 'Existing cached loaders retain their original gzip asset');
+      report.models[name] = {url:'/assets/models/hero/' + name + '.bin', compressedUrl:'/assets/models/hero/' + name + '.idx.bin.gz', bytes:bytes.length, gzipBytes:compressed.length,
+        transport:'index-byte-planes-v1', transportBytes:transported.length, legacyCompressedUrl:'/assets/models/hero/' + name + '.bin.gz', legacyGzipBytes:legacy.length,
+        sha256:hash(bytes), parts:source.parts.length, meshes:source.nodes.filter(node => node.type === 'Mesh').length, triangles, textures:source.textures.map(texture => texture.url), paritySha256:hash(Buffer.from(JSON.stringify(canonical(source))))};
       console.log(name + ': exact runtime parity passed; ' + bytes.length + ' bytes, ' + report.models[name].gzipBytes + ' gzip bytes; ' + triangles + ' triangles');
     }
     const sources = ['assets/v2-assembly-models.js', 'assets/v2-hardware-models.js', 'assets/vendor/three.min.js', 'assets/vendor/GLTFLoader.js',
@@ -190,4 +223,5 @@ async function main() {
     console.log('All hero packs preserve source geometry and appearance exactly.');
   } finally { await browser.close(); }
 }
-main().catch(error => {console.error(error); process.exitCode = 1;});
+module.exports = {indexTransport};
+if (require.main === module) main().catch(error => {console.error(error); process.exitCode = 1;});

@@ -143,6 +143,33 @@ def css_urls(css: str):
         yield match.group(1)
 
 
+def decode_hero_transport(compressed: bytes) -> bytes:
+    """Reverse the index-only byte arrangement; every original CAD byte stays exact."""
+    payload = gzip.decompress(compressed)
+    if not payload.startswith(b"V2HIDX1"):
+        return payload
+    if len(payload) < 32 or int.from_bytes(payload[8:12], "little") != len(payload) - 16:
+        raise ValueError("invalid hero transport length")
+    original = bytearray(payload[16:])
+    if not original.startswith(b"V2HERO1"):
+        raise ValueError("invalid wrapped hero header")
+    header_size = int.from_bytes(original[8:12], "little")
+    data_start = int.from_bytes(original[12:16], "little")
+    header = json.loads(original[16:16 + header_size])
+    for geometry in header["geometries"]:
+        index = geometry["index"]
+        width = {"Uint16Array": 2, "Uint32Array": 4}[index["arrayType"]]
+        start = data_start + index["byteOffset"]
+        length = index["byteLength"]
+        if length % width or start < data_start or start + length > len(original):
+            raise ValueError("invalid hero triangle index range")
+        count = length // width
+        encoded = original[start:start + length]
+        for lane in range(width):
+            original[start + lane:start + length:width] = encoded[lane * count:(lane + 1) * count]
+    return bytes(original)
+
+
 def main() -> int:
     errors: list[str] = []
     documents: dict[Path, Document] = {}
@@ -263,8 +290,13 @@ def main() -> int:
             compressed = local_target(model["compressedUrl"], ORIGIN)[0].read_bytes()
             if hashlib.sha256(plain).hexdigest() != model["sha256"] or len(plain) != model["bytes"]:
                 error(hero_manifest, f"prepared geometry does not match its manifest: {model['url']}")
-            if gzip.decompress(compressed) != plain or len(compressed) != model["gzipBytes"]:
+            if decode_hero_transport(compressed) != plain or len(compressed) != model["gzipBytes"]:
                 error(hero_manifest, f"compressed geometry differs from its plain asset: {model['compressedUrl']}")
+            if model.get("legacyCompressedUrl"):
+                reference(hero_manifest, model["legacyCompressedUrl"], ORIGIN)
+                legacy = local_target(model["legacyCompressedUrl"], ORIGIN)[0].read_bytes()
+                if gzip.decompress(legacy) != plain:
+                    error(hero_manifest, "legacy hero transport differs from its plain asset")
         for source, expected in hero["sources"].items():
             path = local_target("/" + source, ORIGIN)[0]
             data = path.read_bytes()
@@ -272,10 +304,28 @@ def main() -> int:
                 data = data.replace(b"\r\n", b"\n")
             if hashlib.sha256(data).hexdigest() != expected:
                 error(hero_manifest, f"source changed; rebuild the hero packs: {source}")
-        for script in ("/assets/v2-hero-assets.js", "/assets/v2-hero-motion.js"):
+        for script in ("/assets/v2-hero-assets.js", "/assets/v2-hero-motion.js", "/assets/v2-hero-environment.js"):
             reference(hero_manifest, script, ORIGIN)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         error(hero_manifest, f"cannot verify prepared hero assets: {exc}")
+
+    environment_manifest = ROOT / "assets/models/hero/environment.json"
+    try:
+        environment = json.loads(environment_manifest.read_text(encoding="utf-8"))
+        for url in (environment["url"], environment["compressedUrl"]):
+            reference(environment_manifest, url, ORIGIN)
+        plain = local_target(environment["url"], ORIGIN)[0].read_bytes()
+        compressed = local_target(environment["compressedUrl"], ORIGIN)[0].read_bytes()
+        if hashlib.sha256(plain).hexdigest() != environment["sha256"] or len(plain) != environment["bytes"]:
+            error(environment_manifest, "prepared lighting differs from its verified texture")
+        if gzip.decompress(compressed) != plain or len(compressed) != environment["gzipBytes"]:
+            error(environment_manifest, "compressed lighting differs from its plain texture")
+        for source, field in (("scripts/build-v2-hero-environment.cjs", "builderFileSha256"), ("assets/vendor/three.min.js", "threeSha256")):
+            data = (ROOT / source).read_bytes().replace(b"\r\n", b"\n")
+            if hashlib.sha256(data).hexdigest() != environment[field]:
+                error(environment_manifest, f"lighting source changed; rebuild the environment: {source}")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        error(environment_manifest, f"cannot verify prepared hero lighting: {exc}")
 
     original = document(ROOT / "projects/index.html")
     if original is None:

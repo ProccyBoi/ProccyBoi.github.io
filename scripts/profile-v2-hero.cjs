@@ -3,7 +3,8 @@
  * CHROMIUM_EXECUTABLE, and optional HERO_PROFILE_OUT / HERO_PROFILE_RUNS.
  * HERO_PROFILE_GZIP=1 serves an isolated compressed fixture on port 8188;
  * use it for fair before/after comparison. HERO_PROFILE_ROOT can point to an
- * immutable baseline snapshot. HERO_EXPECT_PACKS=1 rejects source fallback.
+ * immutable baseline snapshot. HERO_EXPECT_PACKS=1 rejects source fallback
+ * and verifies the prepared environment; leave it unset for old baselines.
  * SwiftShader makes GPU/compile durations machine-specific; compare runs on
  * the same host. Readiness is observed after the first successful CAD render,
  * not merely after download. Long-task timing includes parsing and rendering. */
@@ -53,7 +54,7 @@ async function profile(browser,index){
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(message.type()==='warning'||message.type()==='error') warnings.push(message.text());});
   await page.addInitScript(()=>{
-    const metrics=window.__heroProfile={posterMs:null,posterFramesMs:null,firstCadMs:null,leadCadMs:null,allCadMs:null,models:{},loads:[],longTasks:[],maxDraws:0};
+    const metrics=window.__heroProfile={posterMs:null,posterFramesMs:null,loadingAnimationMs:null,firstCadMs:null,leadCadMs:null,allCadMs:null,models:{},loads:[],longTasks:[],maxDraws:0};
     new PerformanceObserver(list=>{for(const entry of list.getEntries()) metrics.longTasks.push({start:entry.startTime,duration:entry.duration});}).observe({type:'longtask',buffered:true});
     for(const key of ['V2AssemblyModels','V2HeroAssets']) {
     let factory;
@@ -84,12 +85,13 @@ async function profile(browser,index){
       if(!root) return;
       const now=performance.now();
       if(metrics.posterFramesMs===null&&Number(root.dataset.assemblyFrames)>0) metrics.posterFramesMs=now;
+      if(metrics.loadingAnimationMs===null&&Number(root.dataset.heroLoadingFrames)>0) metrics.loadingAnimationMs=now;
       if(metrics.firstCadMs===null&&Number(root.dataset.assemblyModelsReady)>0){metrics.firstCadMs=now;metrics.firstModel=root.dataset.assemblyFirstModel;metrics.firstCadDraws=Number(root.dataset.assemblyDraws);}
       if(metrics.leadCadMs===null&&document.querySelector('[data-assembly-posters] img')?.dataset.assemblyModelState==='ready') metrics.leadCadMs=now;
       if(metrics.allCadMs===null&&Number(root.dataset.assemblyModelsReady)===3) metrics.allCadMs=now;
       metrics.maxDraws=Math.max(metrics.maxDraws,Number(root.dataset.assemblyDraws)||0);
     };
-    new MutationObserver(inspect).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['data-assembly-models-ready','data-assembly-model-state','data-assembly-frames']});
+    new MutationObserver(inspect).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['data-assembly-models-ready','data-assembly-model-state','data-assembly-frames','data-hero-loading-frames']});
     const posterPaint=()=>{
       const poster=document.querySelector('[data-assembly-posters] img');
       if(poster?.naturalWidth){
@@ -113,6 +115,7 @@ async function profile(browser,index){
       paints:performance.getEntriesByType('paint').map(entry=>({name:entry.name,ms:entry.startTime})),
       resources:performance.getEntriesByType('resource').map(entry=>({url:entry.name,encodedBodyBytes:entry.encodedBodySize,decodedBodyBytes:entry.decodedBodySize})),
       state:document.querySelector('[data-assembly]').dataset.assemblyState,
+      environment:document.querySelector('[data-assembly]').dataset.assemblyEnvironment,
       draws:Number(document.querySelector('[data-assembly]').dataset.assemblyDraws),
       renderer:navigator.userAgent,
     }));
@@ -156,6 +159,8 @@ async function profile(browser,index){
     if(process.env.HERO_EXPECT_PACKS==='1'){
       assert.equal(Object.keys(measured.models).length,3,'All three packed models must load');
       assert.ok(Object.values(measured.models).every(model=>model.factory==='V2HeroAssets'),'Measurements must use ready packs rather than silently falling back to original source parsing');
+      assert.equal(measured.environment,'prepared','Measurements must use the identical prepared lighting instead of silently rebuilding it');
+      assert.ok(measured.loadingAnimationMs>0&&measured.loadingAnimationMs<measured.firstCadMs,'The interactive loading animation must start before CAD is ready');
     }
     return result;
   }finally{await context.close();}
@@ -190,9 +195,9 @@ async function profile(browser,index){
     'Readiness is the first successful physical CAD render observed through DOM attributes; posterMs is the first decoded lead poster eligible for paint observed at requestAnimationFrame. First-contentful-paint is reported separately; compositor presentation can occur later.',
     'Software WebGL makes absolute compile/render timings host-specific. Compare cold runs on the same machine and avoid other rendering jobs.',
     'Encoded bytes include response headers. Use HERO_PROFILE_GZIP=1 for the identical compressed local fixture on both baseline and after; CDN gzip may differ slightly.',
-    'CAD transfer totals include geometry and model manifests; source posters and JavaScript are separate from model bytes.',
+    'Model transfer totals include geometry, prepared lighting and model manifests; source posters and JavaScript are separate from model bytes.',
     'Explicit .bin.gz payloads use the gzip ISIZE footer for modelDecodedBytes; modelHttpDecodedBytes is the Resource Timing size before application-level decompression.',
   ],runs:results};
   fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(data,null,2)+'\n');
-  console.log(JSON.stringify({output:out,runs:results.map(r=>({run:r.run,posterMs:round(r.posterMs),firstContentfulPaintMs:r.paints.find(paint=>paint.name==='first-contentful-paint')?.ms,firstModel:r.firstModel,firstCadMs:round(r.firstCadMs),leadCadMs:round(r.leadCadMs),allCadMs:round(r.allCadMs),modelBytes:r.transfer.modelBytes,modelDecodedBytes:r.transfer.modelDecodedBytes,draws:r.draws,maxDraws:r.maxDraws,blocking:r.blocking,models:r.models}))},null,2));
+  console.log(JSON.stringify({output:out,runs:results.map(r=>({run:r.run,posterMs:round(r.posterMs),loadingAnimationMs:r.loadingAnimationMs===null?null:round(r.loadingAnimationMs),environment:r.environment,firstContentfulPaintMs:r.paints.find(paint=>paint.name==='first-contentful-paint')?.ms,firstModel:r.firstModel,firstCadMs:round(r.firstCadMs),leadCadMs:round(r.leadCadMs),allCadMs:round(r.allCadMs),modelBytes:r.transfer.modelBytes,modelDecodedBytes:r.transfer.modelDecodedBytes,draws:r.draws,maxDraws:r.maxDraws,blocking:r.blocking,models:r.models}))},null,2));
 })().catch(error=>{console.error(error);process.exitCode=1;});
