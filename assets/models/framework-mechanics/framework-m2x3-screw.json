@@ -1,0 +1,40 @@
+{
+  "sourceFile": "ExpansionCards-main/Mechanical/Printable/3D/ExpansionCard_SelfTapping.stp",
+  "sourceSha256": "4d44d4fb5606a535271b522be98c48eeee4d1d05a6db9670a6ef7ca95606c3f2",
+  "sourceProduct": "STAR_SCREW_M2X3L_298_1",
+  "sourceSolidIndex": 2,
+  "registrationTranslationMm": [
+    11.3,
+    -3.95,
+    10.5
+  ],
+  "coordinateSystem": "Shaft axis +Y; head bearing plane Y=0; tip toward -Y",
+  "nominalThread": "M2",
+  "nominalLengthMm": 3,
+  "headDiameterMm": 3.5,
+  "headHeightMm": 0.8,
+  "sourceBoardTopMm": 3.9,
+  "sourceBearingPlaneMm": 3.95,
+  "boundsMm": [
+    [
+      -1.75,
+      -3.0,
+      -1.749993920326233
+    ],
+    [
+      1.75,
+      0.800000011920929,
+      1.749993920326233
+    ]
+  ],
+  "tessellation": {
+    "linearDeflection": 0.02,
+    "relativeToEdgeSize": true,
+    "angularDeflectionRadians": 0.2,
+    "triangles": 5716
+  },
+  "meshSha256": "b3149ea236c240d7317abfd51d3ba4d716eba5f5bc8982db3def92a4a62c2881",
+  "attribution": "Framework Computer Inc, CC BY 4.0. Original screw solid tessellated and rigidly registered without reshaping.",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "rebuild": "python scripts/extract-framework-fastener.py --source <ExpansionCard_SelfTapping.stp>"
+}

@@ -55,6 +55,7 @@
   boardGroup.add(mirroredCardGroup);
 
   const shellGroup = new THREE.Group();
+  shellGroup.userData.partRef = 'Enclosure';
   shellGroup.scale.x = -1;
   assembly.add(shellGroup);
 
@@ -62,7 +63,7 @@
   boardGroup.add(exactUsbGroup);
 
   const PCB_T = 0.8;
-  const PCB_BOTTOM = 3.04;
+  const PCB_BOTTOM = 3.10;
   const PCB_TOP = PCB_BOTTOM + PCB_T;
   const kc = (x, y, height = 0) => new THREE.Vector3(x - 140, PCB_BOTTOM + height, -(y - 127));
 
@@ -202,6 +203,7 @@
   boardGeometry.rotateX(-Math.PI / 2);
   boardGeometry.translate(0, PCB_BOTTOM, 0);
   const board = tagPart(new THREE.Mesh(boardGeometry, mat.board), 'BOARD');
+  board.userData.mechanicalRole = 'pcb';
   mirroredCardGroup.add(board);
 
   // Preserve the underside exactly as the base laminate renders, but give the
@@ -704,11 +706,12 @@
     screw.position.set(p.x, 0, p.z);
     mirroredCardGroup.add(screw);
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.85, 24), screwMetal); shaft.position.set(0, PCB_TOP - 0.58, 0); screw.add(shaft);
+    shaft.userData.mechanicalRole = 'screw-shaft';
     const head = new THREE.Mesh(new THREE.CylinderGeometry(1.72, 1.62, 0.58, 32), screwMetal); head.position.set(0, PCB_TOP + 0.28, 0); screw.add(head);
+    head.userData.mechanicalRole = 'screw-head';
     const slotA = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.055, 0.22), screwDrive); slotA.position.set(0, PCB_TOP + 0.585, 0); screw.add(slotA);
     const slotB = slotA.clone(); slotB.rotation.y = Math.PI / 2; screw.add(slotB);
-    screw.userData.partInfo = [`M2 mounting screw ${index + 1}`, 'Framework expansion-card PCB retention hardware.'];
-    pickRoots.push(screw);
+    tagPart(screw, `M2-${index + 1}`, [`M2 mounting screw ${index + 1}`, 'Framework expansion-card PCB retention hardware.']);
     screwAssemblies.push(screw);
   });
   const screwBases = screwAssemblies.map((screw) => screw.position.clone());

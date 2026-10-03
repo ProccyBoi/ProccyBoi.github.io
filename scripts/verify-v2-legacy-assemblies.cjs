@@ -35,15 +35,105 @@ async function frameFits(page){
   });
   assert.ok(bounds.x<=1&&bounds.y<=1,'Complete assembly fits the canvas: '+JSON.stringify(bounds));
 }
+const isFramework=config=>config.slug.startsWith('framework-');
+async function mechanicalAssembly(page,config){
+  if(!isFramework(config))return;
+  const measured=await page.evaluate(()=>{
+    const {scene}=window.__legacy,T=window.THREE,point=new T.Vector3();
+    scene.updateMatrixWorld(true);
+    const parts=[],pcb=[];
+    scene.traverseVisible(node=>{
+      if(node.userData.partRef==='Enclosure'||/^M2-\d+$/.test(node.userData.partRef||''))parts.push(node);
+      if(node.isMesh&&node.userData.mechanicalRole==='pcb')pcb.push(node);
+    });
+    const vertices=nodes=>{
+      const result=[];
+      for(const node of nodes){
+        const positions=node.geometry.attributes.position;
+        for(let index=0;index<positions.count;index++)result.push(point.fromBufferAttribute(positions,index).applyMatrix4(node.matrixWorld).toArray());
+      }
+      return result;
+    };
+    const bounds=points=>points.length?{
+      min:[0,1,2].map(axis=>points.reduce((min,value)=>Math.min(min,value[axis]),Infinity)),
+      max:[0,1,2].map(axis=>points.reduce((max,value)=>Math.max(max,value[axis]),-Infinity))
+    }:null;
+    const enclosure=parts.find(node=>node.userData.partRef==='Enclosure'),shell=[];
+    enclosure?.traverseVisible(node=>{if(node.isMesh)shell.push(node);});
+    const boardVertices=vertices(pcb),shellVertices=vertices(shell);
+    const screws=parts.filter(node=>/^M2-\d+$/.test(node.userData.partRef||'')).map(screw=>{
+      const shaft=[],head=[];
+      screw.traverseVisible(node=>{
+        if(node.isMesh&&node.userData.mechanicalRole==='screw-shaft')shaft.push(node);
+        if(node.isMesh&&node.userData.mechanicalRole==='screw-head')head.push(node);
+      });
+      const position=screw.getWorldPosition(new T.Vector3()).toArray();
+      const radial=p=>Math.hypot(p[0]-position[0],p[2]-position[2]);
+      // Read the actual cylindrical PCB edge and the source STL's boss lip.
+      // A solid board, moved screw or shifted housing cannot pass by metadata alone.
+      const hole=boardVertices.filter(p=>Math.abs(radial(p)-1.1)<.002);
+      const boss=shellVertices.filter(p=>Math.abs(radial(p)-1.85)<.002&&Math.abs(p[1]-3.1)<.002);
+      return {ref:screw.userData.partRef,position,shaft:bounds(vertices(shaft)),head:bounds(vertices(head)),hole:bounds(hole),holeVertices:hole.length,boss:bounds(boss),bossVertices:boss.length};
+    });
+    return {enclosures:parts.filter(node=>node.userData.partRef==='Enclosure').length,shellMeshes:shell.length,board:bounds(boardVertices),screws};
+  });
+  const label=config.slug+' mechanical assembly';
+  assert.equal(measured.enclosures,1,label+': one housing group');
+  assert.ok(measured.shellMeshes>0,label+': housing contains visible geometry');
+  assert.deepEqual(measured.screws.map(screw=>screw.ref).sort(),['M2-1','M2-2'],label+': two visible M2 screws');
+  assert.ok(measured.board,label+': PCB core geometry is visible');
+  const near=(actual,expected,message,tolerance=.005)=>assert.ok(Math.abs(actual-expected)<tolerance,label+': '+message+' ('+actual+' vs '+expected+')');
+  for(const screw of measured.screws){
+    assert.ok(screw.shaft&&screw.head,screw.ref+': shaft and head both present');
+    near(Math.abs(screw.position[0]),11.3,screw.ref+' reference X');
+    near(screw.position[2],-10.5,screw.ref+' reference Z');
+    assert.ok(screw.holeVertices>=16&&screw.bossVertices>=16,screw.ref+': complete PCB hole and housing boss rings');
+    for(const axis of [0,2]){
+      for(const [part,partBounds] of [['head',screw.head],['shaft',screw.shaft],['PCB hole',screw.hole],['housing boss',screw.boss]])near((partBounds.min[axis]+partBounds.max[axis])/2,screw.position[axis],screw.ref+' '+part+' axis '+axis);
+    }
+    near(measured.board.min[1],screw.boss.max[1],screw.ref+' PCB underside seats on housing');
+    near(screw.head.min[1],measured.board.max[1],screw.ref+' head seats above PCB',.08);
+    assert.ok(screw.shaft.min[1]<measured.board.min[1]-.3&&screw.shaft.max[1]>measured.board.max[1],screw.ref+': shaft passes through PCB into boss');
+    assert.ok(screw.shaft.max[0]-screw.shaft.min[0]<screw.hole.max[0]-screw.hole.min[0],screw.ref+': shaft fits mounting hole');
+    assert.ok(screw.head.max[0]-screw.head.min[0]>screw.hole.max[0]-screw.hole.min[0],screw.ref+': head retains PCB around mounting hole');
+  }
+}
+function mechanicalMotion(config,separated){
+  if(!isFramework(config))return;
+  for(const ref of ['M2-1','M2-2','Enclosure']){
+    const part=separated.find(part=>part.ref===ref);
+    assert.ok(part,config.slug+': mechanical part retained during separation: '+ref);
+    assert.ok(ref==='Enclosure'?part.d[1]<-10:part.d[1]>10,ref+': housing and screws separate in opposite directions');
+    assert.ok(part.tilt>.01,ref+': mechanical part rotates during separation');
+  }
+}
 async function point(page,config){return page.evaluate(config=>{
   const {scene,camera}=window.__legacy,T=window.THREE;
   scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
   let part;scene.traverse(node=>{if((node.userData.partRef||node.userData.ref)===config.ref){let visible=true;for(let p=node;p;p=p.parent)if(!p.visible)visible=false;if(visible)part=node;}});
   if(!part)throw Error('Part missing: '+config.ref);
+  if(config.mechanicalRole){let mesh;part.traverseVisible(node=>{if(node.userData.mechanicalRole===config.mechanicalRole)mesh=node;});if(!mesh)throw Error('Mechanical geometry missing: '+config.ref);part=mesh;}
   const position=new T.Box3().setFromObject(part).getCenter(new T.Vector3()).project(camera);
   const rect=document.querySelector(config.stage).getBoundingClientRect();
   return {x:rect.left+(position.x+1)*rect.width/2,y:rect.top+(1-position.y)*rect.height/2};
 },config);}
+async function screwPicking(page,config,touch=false){
+  if(!isFramework(config))return;
+  // The connectors and raised ICs can occlude a screw at the initial low angle.
+  // Inspect from above through the public orbit controls, then restore that view.
+  await page.locator(config.stage).focus();
+  for(let index=0;index<8;index++)await page.keyboard.press('ArrowUp');
+  await idle(page,config.root);
+  for(let index=1;index<=2;index++){
+    const hit=await point(page,{...config,ref:'M2-'+index,mechanicalRole:'screw-head'});
+    if(touch)await page.touchscreen.tap(hit.x,hit.y);else await page.mouse.move(hit.x,hit.y);
+    await page.locator(config.panel).waitFor({state:'visible'});
+    assert.match(await page.locator(config.panel).textContent(),new RegExp('M2(?:-| mounting screw )'+index),config.slug+': screw '+index+' is identifiable');
+  }
+  await page.locator(config.stage).focus();
+  for(let index=0;index<8;index++)await page.keyboard.press('ArrowDown');
+  await idle(page,config.root);
+}
 async function instrument(context){
   await context.addInitScript(()=>{
     Object.defineProperty(window,'PortfolioExplorer',{configurable:true,set(value){
@@ -84,17 +174,20 @@ function changed(before,after){
       assert.equal(await page.locator(config.root+' select, '+config.root+' input').count(),0);
       assert.equal(await page.locator(config.button).textContent(),'Disassemble');
       const original=await snapshot(page);assert.ok(original.parts.length>10);
+      await mechanicalAssembly(page,config);
       await frameFits(page);
       const hit=await point(page,config);await page.mouse.move(hit.x,hit.y);
       await page.locator(config.panel).waitFor({state:'visible'});assert.match(await page.locator(config.panel).textContent(),new RegExp(config.ref));
       const panel=await page.locator(config.panel).boundingBox(),stage=await page.locator(config.stage).boundingBox();
       assert.ok(panel.x>stage.x+stage.width*.5&&panel.y<stage.y+60,'Part identity is at top right');
+      await screwPicking(page,config);
       await page.mouse.move(1,1);assert.equal(await page.locator(config.panel).isVisible(),false);
       await page.evaluate(parts=>{window.__legacyWatch=new Map(parts.map(part=>[part.id,part]));window.__legacyStagger=false;},original.parts);
       await page.locator(config.button).click();assert.equal(await page.locator(config.button).textContent(),'Assemble');
       await page.waitForFunction(()=>window.__legacyStagger===true);
       await idle(page,config.root);
       const separated=changed(original,await snapshot(page));
+      mechanicalMotion(config,separated);
       assert.ok(new Set(separated.map(part=>part.d[1].toFixed(5))).size>3,'Varied separation heights');
       assert.ok(separated.filter(part=>Math.abs(part.d[0])+Math.abs(part.d[2])>1e-6).length>5,'Lateral component drift');
       assert.ok(separated.filter(part=>part.tilt>1e-5).length>5,'Small component rotations');
@@ -122,10 +215,13 @@ function changed(before,after){
     for(const config of process.env.LEGACY_ONLY_FALLBACK?[]:viewers){
       await phone.goto(base+'/v2/projects/'+config.slug+'/',{waitUntil:'networkidle'});await phone.locator(config.stage).scrollIntoViewIfNeeded();await phone.locator(config.ready).waitFor({state:'attached',timeout:60000});await idle(phone,config.root);
       const original=await snapshot(phone),hit=await point(phone,config);await phone.touchscreen.tap(hit.x,hit.y);
+      await mechanicalAssembly(phone,config);
       await frameFits(phone);
       await phone.locator(config.panel).waitFor({state:'visible'});assert.match(await phone.locator(config.panel).textContent(),new RegExp(config.ref));
       await phone.locator(config.stage).screenshot({path:'.codex-temp/legacy-assemblies/'+config.slug+'-mobile.png'});
+      await screwPicking(phone,config,true);
       await phone.locator(config.button).tap();await idle(phone,config.root);assert.equal(await phone.locator(config.root).getAttribute('data-explorer-progress'),'1.0000');
+      mechanicalMotion(config,changed(original,await snapshot(phone)));
       await frameFits(phone);
       await phone.locator(config.button).tap();await idle(phone,config.root);assert.deepEqual(await snapshot(phone),original);
       assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Mobile page has no horizontal overflow');

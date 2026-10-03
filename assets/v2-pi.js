@@ -95,7 +95,7 @@
     const environment = pmrem.fromScene(studio, 0.04); scene.environment = environment.texture;
     studio.traverse((object) => { object.geometry?.dispose(); object.material?.dispose(); }); pmrem.dispose();
     let disposed = false, observer, visibilityObserver, pending = 0, hoverFrame = 0, visible = true;
-    let motion = null, shellVisible = !capture, selected;
+    let motion = null, shellVisible = true, selected;
     const dispose = () => {
       if (disposed) return;
       disposed = true; controls.abort(); if (pending) cancelAnimationFrame(pending);
@@ -108,9 +108,12 @@
     listen(canvas, 'webglcontextlost', (event) => { event.preventDefault(); root.dispatchEvent(new Event('pi-unavailable')); });
     const loader = new T.GLTFLoader();
     const load = (file) => new Promise((resolve, reject) => loader.load(base + file, (gltf) => disposed ? reject(new Error('Viewer closed')) : resolve(gltf.scene), undefined, reject));
-    const [board, usb, shellBuffer, metadata] = await Promise.all([
+    const [board, usb, mechanics, metadata] = await Promise.all([
       load('framework-pi-board.glb'), load('framework-pi-usbc.glb'),
-      fetch(base + 'framework-pi-enclosure.stl').then((r) => { if (!r.ok) throw new Error('Enclosure unavailable'); return r.arrayBuffer(); }),
+      (window.FrameworkMechanics ? Promise.resolve() : script('/assets/framework-mechanics.js')).then(() => window.FrameworkMechanics.load(T, {
+        enclosureUrl: base + 'framework-pi-enclosure.stl', translationMm: [0, 0, 15],
+        holesMm: [[-11.3, 4.5], [11.3, 4.5]], boardTopMm: 3.9
+      })),
       fetch(base + 'assembly.json').then((r) => { if (!r.ok) throw new Error('Component information unavailable'); return r.json(); })
     ]);
     if (disposed) throw new Error('Viewer closed');
@@ -163,23 +166,18 @@
     for (let i = 0; i < inkPosition.count; i += 1) inkUv.setXY(i, (inkPosition.getX(i) + 13) / 26, (inkPosition.getY(i) + 15) / 30);
     const silk = new T.Mesh(inkGeometry, new T.MeshStandardMaterial({ map: silkTexture, transparent: true, alphaTest: 0.04, roughness: 1, metalness: 0, side: T.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
     silk.rotation.x = -Math.PI / 2; silk.position.y = 3.92; silk.receiveShadow = true; assembly.add(silk);
-    const view = new DataView(shellBuffer), count = view.getUint32(80, true);
-    if (84 + count * 50 > shellBuffer.byteLength) throw new Error('Invalid enclosure');
-    const positions = new Float32Array(count * 9);
-    for (let i = 0; i < count; i += 1) for (let j = 0; j < 9; j += 1) positions[i * 9 + j] = view.getFloat32(84 + i * 50 + 12 + j * 4, true);
-    const geometry = new T.BufferGeometry(); geometry.setAttribute('position', new T.BufferAttribute(positions, 3)); geometry.computeVertexNormals();
-    const shell = new T.Mesh(geometry, new T.MeshStandardMaterial({ color: 0x919ca4, metalness: 0.05, roughness: 0.42, transparent: true, opacity: 0.3, side: T.DoubleSide, depthWrite: false }));
-    shell.position.z = 15; shell.visible = shellVisible; assembly.add(shell);
-    const outline = new T.LineSegments(new T.EdgesGeometry(geometry, 35), new T.LineBasicMaterial({ color: 0x657582, transparent: true, opacity: 0.38 })); shell.add(outline);
+    const { shell, screws } = mechanics;
+    shell.visible = shellVisible; assembly.add(shell, ...screws);
+    const outline = new T.LineSegments(new T.EdgesGeometry(shell.geometry, 35), new T.LineBasicMaterial({ color: 0x657582, transparent: true, opacity: 0.38 })); shell.add(outline);
 
-    const explodedParts = [], picks = [board, plug, shell], identities = new Map();
+    const explodedParts = [], picks = [board, plug, shell, ...screws], identities = new Map();
     const registerIdentity = (object, ref, value) => {
       object.userData.piRef = ref;
       identities.set(ref, { object, value: value.replace(/_/g, ' ').replace(/^USB C Plug USB2\.0$/, 'USB-C plug · USB 2.0') });
     };
-    const registerMotion = (object, offset, angles, delay, end, arc = 0) => {
+    const registerMotion = (object, offset, angles, delay, end, arc = 0, spin = 0) => {
       const position = object.position.clone(), quaternion = object.quaternion.clone();
-      explodedParts.push({ object, position, quaternion, targetPosition: position.clone().add(offset), targetQuaternion: quaternion.clone().multiply(new T.Quaternion().setFromEuler(new T.Euler(...angles.map(T.MathUtils.degToRad)))), delay, end, arc });
+      explodedParts.push({ object, position, quaternion, targetPosition: position.clone().add(offset), targetQuaternion: quaternion.clone().multiply(new T.Quaternion().setFromEuler(new T.Euler(...angles.map(T.MathUtils.degToRad)))), delay, end, arc, spin });
     };
     const footprints = metadata.footprints.filter((part) => part.hasModel && part.ref !== 'P1').sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
     footprints.forEach((footprint, index) => {
@@ -195,7 +193,12 @@
     registerIdentity(plug, 'P1', metadata.footprints.find((part) => part.ref === 'P1')?.value || 'USB-C plug');
     registerMotion(plug, new T.Vector3(0.9, 8.2, -8.2), [-6, 5, 7.5], 0.07, 0.69, 0.8);
     registerIdentity(shell, 'Enclosure', metadata.enclosure.kind);
-    registerMotion(shell, new T.Vector3(-1.4, -12.8, 2.6), [-5.5, 2.2, 3.2], 0, 0.49);
+    registerMotion(shell, new T.Vector3(-1.4, -12.8, 2.6), [-5.5, 2.2, 3.2], 0.1, 0.59);
+    screws.forEach((screw, index) => {
+      const side = index ? 1 : -1;
+      registerIdentity(screw, screw.name, 'M2 × 3 mounting screw');
+      registerMotion(screw, new T.Vector3(side * 0.75, 10.8, -0.55), [side * 3.5, 0, side * 4.5], index * 0.035, 0.44 + index * 0.025, 0.25, side * Math.PI * 4.5);
+    });
     registerIdentity(board, 'PCB', metadata.name);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const current = { yaw: 145, pitch: 39, zoom: 1, exploded: 0 };
@@ -222,6 +225,7 @@
       else { motion = { from: { ...current }, elapsed: 0, last: null, duration }; root.dataset.piMotion = visible && !document.hidden ? 'transition' : 'paused'; }
       invalidate();
     };
+    const screwAxis = new T.Vector3(0, 1, 0), screwTurn = new T.Quaternion();
     const pose = () => {
       const t = current.exploded;
       explodedParts.forEach((part) => {
@@ -230,6 +234,7 @@
         part.object.position.lerpVectors(part.position, part.targetPosition, p);
         part.object.position.y += Math.sin(p * Math.PI) * part.arc;
         part.object.quaternion.copy(part.quaternion).slerp(part.targetQuaternion, p);
+        if (part.spin) part.object.quaternion.multiply(screwTurn.setFromAxisAngle(screwAxis, part.spin * p));
       });
       const pitch = T.MathUtils.degToRad(current.pitch), yaw = T.MathUtils.degToRad(current.yaw);
       const aim = new T.Vector3(0, 3 + t * 1.5, -4.5);

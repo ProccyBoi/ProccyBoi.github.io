@@ -27,6 +27,39 @@ if(process.argv.length>2)targets=targets.filter(target=>process.argv.slice(2).in
    await page.locator(`[data-hardware="${target.manifest}"][data-hardware-state="ready"]`).waitFor({timeout:90000});
    await settled(root);await simpleUI(root);await assertFramed(root);
    const initial=await page.evaluate(url=>window.__hardwareModels[url].parts.map(part=>({ref:part.ref,position:part.object.position.toArray(),quaternion:part.object.quaternion.toArray()})),target.manifest);
+   if(target.slug==='framework-logic-analyser'){
+    const mechanical=await page.evaluate(url=>{
+     const model=window.__hardwareModels[url],T=window.THREE,[x1,z1,x2,z2]=model.metadata.boundsMm,units=Math.max(x2-x1,z2-z1);
+     const shell=model.parts.find(part=>part.object.userData.mechanicalRole==='enclosure');
+     const screws=model.parts.filter(part=>part.object.userData.mechanicalRole==='screw');
+     const holes=model.metadata.footprints.filter(item=>item.ref==='H1'||item.ref==='H2').sort((a,b)=>a.ref.localeCompare(b.ref));
+     const result={shells:model.parts.filter(part=>part.object.userData.mechanicalRole==='enclosure').length,screws:screws.length,axes:[],bosses:[],shaftLengths:[],headHeights:[],indexed:true};
+     if(!shell||screws.length!==2)return result;
+     screws.forEach((part,index)=>{
+      const hole=holes[index].atMm,expected=new T.Vector3(hole[0]-(x1+x2)/2,model.metadata.thicknessMm,hole[1]-(z1+z2)/2);
+      result.axes.push(part.object.position.clone().multiplyScalar(units).distanceTo(expected));
+      const boss=new T.Vector3(...model.metadata.mechanics.sourceBossCentresMm[index]).add(shell.object.position.clone().multiplyScalar(units));
+      result.bosses.push(boss.distanceTo(new T.Vector3(expected.x,0,expected.z)));
+      part.object.geometry.computeBoundingBox();const bounds=part.object.geometry.boundingBox;
+      result.shaftLengths.push(-bounds.min.y*units);result.headHeights.push(bounds.max.y*units);
+      result.indexed&&=Boolean(part.object.geometry.index);
+     });
+     window.V2CadGeometry.applyMotion(model.parts,.075);
+     result.earlyScrewLift=screws.map(part=>part.object.position.y-part.base.y);
+     result.earlyShellTravel=shell.object.position.distanceTo(shell.base);
+     window.V2CadGeometry.applyMotion(model.parts,0);model.group.updateMatrixWorld(true);
+     return result;
+    },target.manifest);
+    assert.equal(mechanical.shells,1,'Logic has its source housing');
+    assert.equal(mechanical.screws,2,'Both mounting holes have their original M2 x 3 fasteners');
+    assert.ok(mechanical.axes.every(error=>error<.0001),'Fasteners seat on the unchanged PCB at H1/H2');
+    assert.ok(mechanical.bosses.every(error=>error<.0001),'Housing boss axes and support surfaces register to the board');
+    assert.ok(mechanical.shaftLengths.every(length=>Math.abs(length-3)<.0001),'Source M2 x 3 shaft geometry retained');
+    assert.ok(mechanical.headHeights.every(height=>Math.abs(height-.8)<.0001),'Source fastener head geometry retained');
+    assert.ok(mechanical.indexed,'Mechanical meshes support lossless serialization');
+    assert.ok(mechanical.earlyScrewLift.every(distance=>distance>0),'Both screws start extraction first');
+    assert.equal(mechanical.earlyShellTravel,0,'Housing waits for fastener extraction');
+   }
    const count=Number(await root.getAttribute('data-hardware-components'));
    assert.equal(count,initial.length);
    const draws=Number(await root.getAttribute('data-hardware-draws'));assert.ok(draws>0&&draws<900,`${target.slug}: excessive draws ${draws}`);
@@ -36,6 +69,10 @@ if(process.argv.length>2)targets=targets.filter(target=>process.argv.slice(2).in
     assert.equal(await root.locator('[data-hardware-explode]').textContent(),'Assemble');
     assert.equal(await root.getAttribute('data-hardware-progress'),'1.0000');await assertFramed(root);
     const moved=await page.evaluate(url=>window.__hardwareModels[url].parts.map(part=>({ref:part.ref,distance:part.object.position.distanceTo(part.base),position:part.object.position.toArray(),delta:part.object.position.clone().sub(part.base).toArray().map(value=>value.toFixed(3))})),target.manifest);
+    if(target.slug==='framework-logic-analyser'){
+     assert.ok(Number(moved.find(part=>part.ref==='Enclosure').delta[1])<-.3,'Housing separates below the PCB');
+     assert.ok(moved.filter(part=>/^M2-/.test(part.ref)).every(part=>Number(part.delta[1])>.3),'Fasteners lift clear of the board');
+    }
     assert.ok(moved.some(part=>part.distance>.08),'Physical parts visibly separate');
     assert.ok(moved.every(part=>part.position.every(Number.isFinite)),'Finite physical transforms');
     if(count>4)assert.ok(new Set(moved.map(part=>part.delta.join(','))).size>3,'Parts take different trajectories');

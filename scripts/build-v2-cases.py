@@ -130,6 +130,8 @@ def route_links(source):
 
 
 def common(source, body_class, active='work'):
+    source = re.sub(r'(assets/(?:framework-3d|framework-dual-usb-3d|v2-pi)\.js)(?:\?v=[^"\s]+)?', r'\1?v=mechanics-20261003', source)
+    source = re.sub(r'(assets/images/v2/(?:framework-pi-cad|hardware/framework-logic-analyser)\.webp)(?:\?v=[^"\s]+)?', r'\1?v=mechanics-20261003', source)
     tree = Tree(source)
     changes = []
     old_header = tree.find('header', 'site-header') or tree.find('header', 'lab-chrome')
@@ -151,7 +153,7 @@ def common(source, body_class, active='work'):
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
     if 'data-hardware=' in source:
-        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js" defer></script>\n</head>')
+        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=mechanics-20261003" defer></script>\n</head>')
     return route_links(clean_display_copy(source))
 
 

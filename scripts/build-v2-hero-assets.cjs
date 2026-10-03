@@ -205,9 +205,10 @@ async function main() {
         sha256:hash(bytes), parts:source.parts.length, meshes:source.nodes.filter(node => node.type === 'Mesh').length, triangles, textures:source.textures.map(texture => texture.url), paritySha256:hash(Buffer.from(JSON.stringify(canonical(source))))};
       console.log(name + ': exact runtime parity passed; ' + bytes.length + ' bytes, ' + report.models[name].gzipBytes + ' gzip bytes; ' + triangles + ' triangles');
     }
-    const sources = ['assets/v2-assembly-models.js', 'assets/v2-hardware-models.js', 'assets/vendor/three.min.js', 'assets/vendor/GLTFLoader.js',
+    const sources = ['assets/v2-assembly-models.js', 'assets/v2-hardware-models.js', 'assets/framework-mechanics.js', 'assets/vendor/three.min.js', 'assets/vendor/GLTFLoader.js',
       'assets/models/tramtrace/tramtrace-kicad-source.glb', 'assets/images/v2/tramtrace-silk.svg',
       'assets/models/framework-pi/framework-pi-board.glb', 'assets/models/framework-pi/framework-pi-silk-front.svg', 'assets/models/framework-esp32/framework-usbc.glb',
+      'assets/models/framework-pi/framework-pi-enclosure.stl', 'assets/models/framework-mechanics/framework-m2x3-screw.stl', 'assets/models/framework-mechanics/framework-m2x3-screw.json',
       'assets/models/hardware/skylabs-telemetry/assembly.json'];
     const metadata = JSON.parse(fs.readFileSync(path.join(root, 'assets/models/hardware/skylabs-telemetry/assembly.json')));
     sources.push(metadata.modelUrl.slice(1), metadata.silk.frontUrl.slice(1), metadata.silk.backUrl.slice(1));

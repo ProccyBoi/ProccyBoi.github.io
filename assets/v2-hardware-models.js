@@ -2,9 +2,21 @@
    Returns independent assemblies without mounting an inspector or animation loop. */
 (() => {
   'use strict';
+  let mechanicsScript;
+  const loadMechanics = () => {
+    if (window.FrameworkMechanics) return Promise.resolve();
+    if (!mechanicsScript) mechanicsScript = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/assets/framework-mechanics.js?v=mechanics-20261003';
+      script.onload = resolve; script.onerror = () => { mechanicsScript = null; script.remove(); reject(new Error('Mechanical assembly unavailable')); };
+      document.head.append(script);
+    });
+    return mechanicsScript;
+  };
   async function loadAssembly(url) {
     const T=window.THREE;
-    const response=await fetch(url); if(!response.ok)throw new Error('Assembly unavailable');
+    const manifestUrl = url.includes('/framework-logic-analyser/assembly.json') ? url + (url.includes('?') ? '&' : '?') + 'v=mechanics-20261003' : url;
+    const response=await fetch(manifestUrl); if(!response.ok)throw new Error('Assembly unavailable');
     const metadata=await response.json();
     const source=await new Promise((resolve,reject)=>new T.GLTFLoader().load(metadata.modelUrl,gltf=>resolve(gltf.scene),undefined,reject));
     const [x1,z1,x2,z2]=metadata.boundsMm;
@@ -115,6 +127,13 @@
         back.encoding=T.sRGBEncoding;back.anisotropy=4;
         const backGeo=geo.clone(),backMat=mat.clone();backMat.map=back;
         const underside=new T.Mesh(backGeo,backMat);underside.position.y=-.025/units;group.add(underside);
+      }
+    }
+    if(metadata.slug==='framework-logic-analyser' && metadata.mechanics){
+      await loadMechanics();
+      const mechanical = await window.FrameworkMechanics.load(T, {...metadata.mechanics, units});
+      for (const part of mechanical.parts) {
+        group.add(part.object); parts.push(part);
       }
     }
     disposeSource(source);group.updateMatrixWorld(true);

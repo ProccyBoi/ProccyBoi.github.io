@@ -16,13 +16,13 @@
       model: '/assets/models/framework-esp32/framework-board.glb',
       silk: '/assets/models/framework-esp32/framework-markings-silk.svg',
       width: 26, depth: 30, thickness: 0.6, origin: [140, 142], boardMaterial: 15,
-      connector: true, processor: 'U4'
+      connector: true, processor: 'U4', enclosure: '/assets/models/framework-esp32/framework-enclosure.stl'
     },
     pi: {
       model: '/assets/models/framework-pi/framework-pi-board.glb',
       silk: '/assets/models/framework-pi/framework-pi-silk-front.svg',
       width: 26, depth: 30, thickness: 0.8, origin: [140, 142], boardMaterial: 18,
-      connector: true, processor: 'U5'
+      connector: true, processor: 'U5', enclosure: '/assets/models/framework-pi/framework-pi-enclosure.stl'
     },
     tramtrace: {
       model: '/assets/models/tramtrace/tramtrace-kicad-source.glb',
@@ -32,6 +32,24 @@
     }
   };
   const referencePattern = /^(?:U|Q|R|C|J|P|LED|D|F|L|SW|X|Y)\d+$/;
+  let mechanicsScript;
+  async function loadMechanics(T, definition, units) {
+    if (!definition.enclosure) return null;
+    if (!window.FrameworkMechanics) {
+      if (!mechanicsScript) mechanicsScript = new Promise((resolve, reject) => {
+        const script = document.createElement('script'); script.src = '/assets/framework-mechanics.js';
+        script.onload = resolve; script.onerror = () => { mechanicsScript = null; script.remove(); reject(new Error('Framework mechanics unavailable')); };
+        document.head.append(script);
+      });
+      await mechanicsScript;
+    }
+    // The native housing's boss seats are at Y=3.1 and Z=-10.5 mm.
+    // Hero PCBs stay at Y=0, with holes at X=±11.3, Z=4.5 mm.
+    return window.FrameworkMechanics.load(T, {
+      enclosureUrl: definition.enclosure, translationMm: [0, -3.1, 15],
+      holesMm: [[-11.3, 4.5], [11.3, 4.5]], boardTopMm: definition.thickness, units
+    });
+  }
 
   function materialsFor(material) {
     return Array.isArray(material) ? material : [material];
@@ -181,6 +199,20 @@
     for (const part of parts) {
       if (part.motion) continue;
       const ref = part.ref || part.object.name;
+      const mechanicalRole = part.object.userData.mechanicalRole;
+      if (mechanicalRole) {
+        const screw = mechanicalRole === 'screw', side = Math.sign(part.base.x) || 1;
+        const second = ref === 'M2-2', baseQuaternion = part.object.quaternion.clone();
+        const angles = screw ? [side * 3.5, 0, side * 4.5] : [-5.5, 2.2, 3.2];
+        const targetQuaternion = baseQuaternion.clone().multiply(new T.Quaternion().setFromEuler(new T.Euler(...angles.map(T.MathUtils.degToRad))));
+        part.motion = {
+          mechanical: true, offset: part.offset.clone(), baseQuaternion, targetQuaternion,
+          delay: screw ? (second ? 0.035 : 0) : 0.1, end: screw ? (second ? 0.465 : 0.44) : 0.59,
+          spin: screw ? side * Math.PI * 4.5 : 0,
+          arc: screw ? Math.abs(part.offset.y) * 0.25 / 10.8 : 0
+        };
+        continue;
+      }
       const seed = referenceSeed(ref);
       const a = (seed & 1023) / 1023, b = ((seed >>> 10) & 1023) / 1023, c = ((seed >>> 20) & 1023) / 1023;
       const bank = Boolean(part.object.userData.componentRefs?.length > 1);
@@ -207,6 +239,14 @@
       if (phase <= 0) {
         part.object.position.copy(part.base);
         part.object.quaternion.copy(motion.baseQuaternion);
+        continue;
+      }
+      if (motion.mechanical) {
+        const p = smooth((phase - motion.delay) / (motion.end - motion.delay));
+        part.object.position.copy(part.base).addScaledVector(motion.offset, p);
+        part.object.position.y += Math.sin(p * Math.PI) * motion.arc;
+        part.object.quaternion.copy(motion.baseQuaternion).slerp(motion.targetQuaternion, p);
+        if (motion.spin) part.object.rotateY(motion.spin * p);
         continue;
       }
       const lift = smooth((phase - motion.delay) / (1 - motion.delay));
@@ -302,11 +342,12 @@
     const loader = new T.GLTFLoader();
     const loadGLB = path => new Promise((resolve, reject) => loader.load(path, gltf => resolve(gltf.scene), undefined, reject));
     const loadTexture = path => new Promise((resolve, reject) => new T.TextureLoader().load(path, resolve, undefined, reject));
-    const [source, texture, connectorSource] = await Promise.all([
-      loadGLB(definition.model), loadTexture(definition.silk),
-      definition.connector ? loadGLB('/assets/models/framework-esp32/framework-usbc.glb') : Promise.resolve(null)
-    ]);
     const units = Math.max(definition.width, definition.depth);
+    const [source, texture, connectorSource, mechanics] = await Promise.all([
+      loadGLB(definition.model), loadTexture(definition.silk),
+      definition.connector ? loadGLB('/assets/models/framework-esp32/framework-usbc.glb') : Promise.resolve(null),
+      loadMechanics(T, definition, units)
+    ]);
     source.scale.setScalar(1000);
     source.position.set(-definition.origin[0], 0, -definition.origin[1]);
     source.updateMatrixWorld(true);
@@ -355,6 +396,10 @@
       object.name = 'P1'; object.userData.partRef = 'P1'; group.add(object);
       parts.push({ object, base: base.clone(), offset: explodeOffset(T, name, 'P1', base, definition) });
       disposeSource(plug); disposeSource(connectorSource);
+    }
+    if (mechanics) {
+      group.add(mechanics.shell, ...mechanics.screws);
+      parts.push(...mechanics.parts);
     }
     disposeSource(source);
     group.updateMatrixWorld(true);

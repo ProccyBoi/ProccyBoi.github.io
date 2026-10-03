@@ -83,7 +83,7 @@
       if(loading||ready)return;loading=true;start.disabled=true;showRetry(false);showStatus('Loading assembly…');root.dataset.hardwareState='loading';const token=++generation;
       try{
         if(!window.THREE)await script('/assets/vendor/three.min.js');if(!window.THREE.GLTFLoader)await script('/assets/vendor/GLTFLoader.js');
-        if(!window.V2CadGeometry)await script('/assets/v2-assembly-models.js');if(!window.V2HardwareModels)await script('/assets/v2-hardware-models.js');
+        if(!window.V2CadGeometry)await script('/assets/v2-assembly-models.js?v=mechanics-20261003');if(!window.V2HardwareModels)await script('/assets/v2-hardware-models.js?v=mechanics-20261003');
         if(token!==generation)return;const T=window.THREE;
         if(!renderer){
           renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:capture});

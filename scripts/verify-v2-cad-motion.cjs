@@ -41,6 +41,7 @@ async function fitsStage(page,name){
     return {left:(Math.min(...points.map(p=>p.x))+1)*innerWidth/2,right:(Math.max(...points.map(p=>p.x))+1)*innerWidth/2,top:(1-Math.max(...points.map(p=>p.y)))*innerHeight/2,bottom:(1-Math.min(...points.map(p=>p.y)))*innerHeight/2,width:innerWidth,height:innerHeight,header:document.querySelector('.v2-header').getBoundingClientRect().bottom};
   },name);
   assert.ok(bounds.left>=0&&bounds.right<=bounds.width&&bounds.top>=bounds.header&&bounds.bottom<=bounds.height,name+' exploded geometry must stay on screen below navigation: '+JSON.stringify(bounds));
+  if(name==='pi'&&bounds.width>900)assert.ok(bounds.bottom<=bounds.height-70,'Pi housing must leave room for the hero project navigation');
 }
 (async()=>{
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -96,14 +97,21 @@ async function fitsStage(page,name){
       const renderer=window.__heroRenderer,scene=window.__heroScene;
       const lights=scene.children.filter(node=>node.isDirectionalLight&&node.castShadow);
       const physical=[];
-      Object.values(window.__observedAssemblies).forEach(model=>model.parts.forEach(part=>part.object.traverse(node=>{if(node.isMesh)physical.push({name:part.object.name,cast:node.castShadow,receive:node.receiveShadow});})));
+      Object.values(window.__observedAssemblies).forEach(model=>model.parts.forEach(part=>part.object.traverse(node=>{if(node.isMesh)physical.push({name:part.object.name,role:part.object.userData.mechanicalRole,cast:node.castShadow,receive:node.receiveShadow});})));
       return {enabled:renderer.shadowMap.enabled,soft:renderer.shadowMap.type===window.THREE.PCFSoftShadowMap,automatic:renderer.shadowMap.autoUpdate,lights:lights.map(light=>light.shadow.mapSize.toArray()),physical};
     });
     assert.equal(shadowState.enabled,true,'Hero must render physical shadows');
     assert.equal(shadowState.soft,true,'Hero must soften shadow edges');
     assert.equal(shadowState.automatic,false,'Shadows must only update on requested frames');
     assert.deepEqual(shadowState.lights,[[2048,2048]],'One detailed shadow map keeps rendering cost bounded');
-    assert.ok(shadowState.physical.length>0&&shadowState.physical.every(part=>part.cast&&part.receive),'All physical components must participate in assembly shadowing');
+    assert.ok(shadowState.physical.length>0&&shadowState.physical.every(part=>part.receive&&(part.cast||part.role==='enclosure')),'Opaque physical components cast shadows; the transparent reference housing receives them');
+    const mechanics=await page.evaluate(()=>window.__observedAssemblies.pi.parts.filter(part=>part.object.userData.mechanicalRole).map(part=>({ref:part.ref,role:part.object.userData.mechanicalRole,base:part.base.toArray(),seat:part.object.userData.mechanicalSeatMm,visible:part.object.visible,triangles:part.object.geometry.index.count/3})));
+    assert.deepEqual(mechanics.map(part=>part.ref).sort(),['Enclosure','M2-1','M2-2'],'Pi hero includes the housing and both physical mounting screws');
+    assert.ok(mechanics.every(part=>part.visible&&part.triangles>100),'Mechanical CAD must retain its detailed visible geometry');
+    for(const part of mechanics.filter(part=>part.role==='screw')){
+      assert.ok(Math.abs(Math.abs(part.base[0])-11.3/30)<1e-12&&Math.abs(part.base[2]-4.5/30)<1e-12,'Fasteners align with the Pi mounting holes');
+      assert.ok(Math.abs(part.base[1]-.8/30)<1e-12,'Screw bearing faces seat on the original PCB top');
+    }
     const telemetryCoverage=await page.evaluate(()=>{
       const model=window.__observedAssemblies.telemetry;
       return {

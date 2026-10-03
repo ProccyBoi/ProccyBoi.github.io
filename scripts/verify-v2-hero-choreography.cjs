@@ -8,7 +8,7 @@ const window = { THREE: T };
 for (const file of ['v2-assembly-models.js', 'v2-hero-motion.js']) {
   vm.runInNewContext(fs.readFileSync(require.resolve(`../assets/${file}`), 'utf8'), { window });
 }
-const refs = ['P1', 'J1', 'U1', 'U5', 'Q1', 'SW1', 'R1', 'R2', 'C1', 'C2', 'C3', 'LED bank LED1', 'LED bank LED70', 'Back passives R20'];
+const refs = ['P1', 'J1', 'U1', 'U5', 'Q1', 'SW1', 'R1', 'R2', 'C1', 'C2', 'C3', 'LED bank LED1', 'LED bank LED70', 'Back passives R20', 'M2-1', 'M2-2', 'Enclosure'];
 const geometry = new T.BoxGeometry(.06, .035, .04);
 const material = new T.MeshStandardMaterial({ color: 0x202525 });
 function makeParts(order = refs) {
@@ -20,7 +20,7 @@ function makeParts(order = refs) {
     const base = new T.Vector3((index % 4 - 1.5) * .20, ref.startsWith('Back') ? -.035 : .014, (Math.floor(index / 4) - 1.5) * .23);
     object.position.copy(base);
     object.quaternion.setFromEuler(new T.Euler(.02, index * .11, -.03));
-    return { ref, object, base, offset: new T.Vector3(ref === 'P1' ? 0 : .02, ref.startsWith('Back') ? -.13 : /^U/.test(ref) ? .24 : .13, ref === 'P1' ? -.25 : .016) };
+    return { ref, object, base, offset: new T.Vector3(ref === 'P1' ? 0 : .02, ref === 'Enclosure' ? -.4 : ref.startsWith('M2') ? .36 : ref.startsWith('Back') ? -.13 : /^U/.test(ref) ? .24 : .13, ref === 'P1' ? -.25 : .016) };
   });
 }
 const parts = makeParts();
@@ -56,11 +56,11 @@ for (let sample = 0; sample <= 1000; sample++) {
       assert.ok(part.object.quaternion.angleTo(part.motion.baseQuaternion) < 1e-7, 'Parts must clear the board before they rotate');
     }
     if (Math.abs(movement.x * target.z - movement.z * target.x) > .00005) observedCurve = true;
-    assert.ok(part.object.quaternion.angleTo(part.motion.baseQuaternion) < .23, 'Tilts must keep the hardware recognizable');
+    if (part.heroMotion.family !== 'screw') assert.ok(part.object.quaternion.angleTo(part.motion.baseQuaternion) < .23, 'Tilts must keep the hardware recognizable');
     const prior = previous.get(part.ref);
     if (prior) {
       assert.ok(part.object.position.distanceTo(prior.position) < .003, 'Clearance, drift and settle boundaries must be continuous');
-      assert.ok(part.object.quaternion.angleTo(prior.quaternion) < .003, 'Orientation must not snap between phases');
+      assert.ok(part.object.quaternion.angleTo(prior.quaternion) < (part.heroMotion.family === 'screw' ? .07 : .003), 'Orientation must not snap between phases');
     }
     previous.set(part.ref, { position: part.object.position.clone(), quaternion: part.object.quaternion.clone() });
   }
@@ -69,6 +69,8 @@ assert.ok(observedClearance, 'There must be a distinct normal-clearance phase');
 assert.ok(observedCurve, 'Intermediate travel must have a curved path rather than a uniform straight lift');
 assert.ok(starts.get('P1') < starts.get('LED bank LED1'), 'Connector clearance must lead the small-component wave');
 assert.ok(new Set(['C1', 'C2', 'C3'].map(ref => starts.get(ref))).size === 3, 'Same-family parts must have independently timed starts');
+assert.ok(starts.get('M2-1') < starts.get('C1') && starts.get('Enclosure') < starts.get('C1'), 'Fasteners and housing release before the small-component wave');
+assert.ok(parts.filter(part => part.heroMotion.family === 'screw').every(part => part.heroMotion.angles.y >= Math.PI * 4), 'Fasteners unwind independently as they rise');
 
 window.V2HeroMotion.apply(parts, 1);
 const exploded = pose(parts);

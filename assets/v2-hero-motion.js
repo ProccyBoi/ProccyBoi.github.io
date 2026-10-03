@@ -16,6 +16,8 @@
     return seed >>> 0;
   };
   const familyFor = (ref, bank) => {
+    if (/^M2-\d/.test(ref)) return 'screw';
+    if (/^Enclosure$/i.test(ref)) return 'enclosure';
     if (/LED/i.test(ref)) return 'led';
     if (bank || /passives|^[RCD]\d/i.test(ref)) return 'passive';
     if (/^[JP]\d/i.test(ref)) return 'connector';
@@ -24,6 +26,8 @@
     return 'component';
   };
   const timing = {
+    screw: [0, .012, .75],
+    enclosure: [.025, .015, .65],
     connector: [.015, .035, .90],
     chip: [.045, .060, .88],
     switch: [.075, .060, .91],
@@ -52,14 +56,15 @@
       const end = schedule[2] + (a - .5) * .05;
       const offset = (part.motion?.offset || part.offset).clone();
       const baseQuaternion = (part.motion?.baseQuaternion || part.object.quaternion).clone();
-      const tilt = bank ? .046 : family === 'connector' ? .115 : family === 'chip' ? .19 : .22;
+      const tilt = family === 'screw' ? .06 : family === 'enclosure' ? .12 : bank ? .046 : family === 'connector' ? .115 : family === 'chip' ? .19 : .22;
       const angles = new T.Vector3((a - .5) * tilt, (b - .5) * tilt * 1.4, (c - .5) * tilt);
+      if (family === 'screw') angles.y = Math.PI * (4 + a);
       const settle = new T.Vector3((c - .5) * tilt * .27, (a - .5) * tilt * .20, (b - .5) * tilt * .27);
       const radial = Math.hypot(part.base.x, part.base.z);
       const directionX = radial > .01 ? part.base.x / radial : Math.cos(a * Math.PI * 2);
       const directionZ = radial > .01 ? part.base.z / radial : Math.sin(a * Math.PI * 2);
       const handedness = seed & 1 ? 1 : -1;
-      const bend = (.004 + .008 * c) * (bank ? .55 : family === 'connector' ? .65 : 1);
+      const bend = (.004 + .008 * c) * (family === 'screw' || family === 'enclosure' ? .25 : bank ? .55 : family === 'connector' ? .65 : 1);
       part.heroMotion = {
         name: metadata.name || '', ref, family, bank, offset, baseQuaternion,
         delay, end, clearanceEnd: .20 + a * .045,

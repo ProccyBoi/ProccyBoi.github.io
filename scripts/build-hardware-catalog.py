@@ -681,6 +681,26 @@ def export(slug, relative, root, destination, cli, libraries):
             entry = next(item for item in footprints if item['ref'] == 'P1')
             entry.update({'providedBy':'connector','modelExported':True,'boardModelExported':False})
             metadata['modelledComponentCount'] += 1
+            enclosure = board.parents[3] / 'Mechanical/Printable/3D/ExpansionCard_SelfTapping.stl'
+            (out / 'framework-logic-enclosure.stl').write_bytes(enclosure.read_bytes())
+            holes = sorted((item for item in footprints if item['ref'] in ('H1', 'H2')), key=lambda item: item['ref'])
+            if len(holes) != 2:
+                raise ValueError('The Framework housing requires the two authored mounting holes')
+            centres = [[round(item['atMm'][0]-(bounds[0]+bounds[2])/2, 6), round(item['atMm'][1]-(bounds[1]+bounds[3])/2, 6)] for item in holes]
+            metadata['mechanics'] = {
+                'enclosureUrl': '/assets/models/hardware/framework-logic-analyser/framework-logic-enclosure.stl',
+                'translationMm': [0, -3.1, round(centres[0][1]+10.5, 6)],
+                'holesMm': centres,
+                'boardTopMm': metadata['thicknessMm'],
+                'fastenerUrl': '/assets/models/framework-mechanics/framework-m2x3-screw.stl',
+                'holeRefs': [item['ref'] for item in holes],
+                'sourceFile': 'ExpansionCards-main/Mechanical/Printable/3D/ExpansionCard_SelfTapping.stl',
+                'sourceSha256': sha256(enclosure),
+                'sourceBossCentresMm': [[-11.3, 3.1, -10.5], [11.3, 3.1, -10.5]],
+                'registration': 'Original Framework self-tapping housing; boss annuli at Y=3.1 mm seated at the unchanged PCB underside. Boss axes registered to the authored H1/H2 hole centres.',
+                'fastenerProvenance': '/assets/models/framework-mechanics/framework-m2x3-screw.json',
+                'attribution': 'Framework Computer Inc, CC BY 4.0. Original housing triangles and M2 x 3 screw CAD retained.',
+            }
         (out / "assembly.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
         print(f"{slug}: {metadata['modelledComponentCount']}/{len(footprints)} physical groups, {len(metadata['missingModels'])} missing references, {metadata['modelBytes']:,} bytes, bounds {bounds}", flush=True)
         return {"slug": slug, "exported": True, "metadataUrl": base + "assembly.json", "source": relative, "sourceHash": original_hash, "missingModelCount": len(metadata['missingModels']), "modelBytes": metadata["modelBytes"]}

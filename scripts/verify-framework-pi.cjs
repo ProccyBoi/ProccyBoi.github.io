@@ -18,7 +18,7 @@ async function observe(page) {
           renderer.render = (scene, camera) => {
             if (scene.children.some(child => child.isGroup)) {
               window.__piScene = { scene, camera };
-              if (window.__piTrace) { const frame = {}; scene.traverse(object => { if (['Enclosure','C1'].includes(object.userData.piRef)) frame[object.userData.piRef] = object.position.toArray(); }); window.__piTrace.push(frame); }
+              if (window.__piTrace) { const frame = {}; scene.traverse(object => { if (['Enclosure','M2-1','C1'].includes(object.userData.piRef)) frame[object.userData.piRef] = object.position.toArray(); }); window.__piTrace.push(frame); }
             }
             return render(scene, camera);
           };
@@ -69,23 +69,50 @@ const pickPoint = (page, ref) => page.evaluate(ref => {
   const settle = async page => { await idle(page); await page.waitForTimeout(100); const a = (await state(page)).piFrames; await page.waitForTimeout(250); assert.equal((await state(page)).piFrames, a, 'Viewer must stop rendering when idle'); };
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, reducedMotion: 'no-preference' }); await observe(page);
-    const errors = [], requests = []; page.on('pageerror', e => errors.push(e.message)); page.on('request', r => { if (/framework-pi.*\.(glb|stl)/.test(r.url())) requests.push(r.url()); });
+    const errors = [], requests = []; page.on('pageerror', e => errors.push(e.message)); page.on('request', r => { if (/\/assets\/models\/(?:framework-pi|framework-mechanics)\/.*\.(glb|stl)(?:\?|$)/.test(r.url())) requests.push(r.url()); });
     await page.goto(url); await page.locator('[data-pi-stage]').scrollIntoViewIfNeeded(); await ready(page); await settle(page);
-    assert.equal(requests.length, 3); assert.equal((await state(page)).piComponents, '33'); assert.equal((await state(page)).piPickables, '35');
+    assert.equal(requests.length, 4); assert.equal((await state(page)).piComponents, '35'); assert.equal((await state(page)).piPickables, '37');
     assert.equal(await page.locator(`${root} button:visible`).count(), 1, 'One normal assembly action');
     assert.equal(await page.locator('[data-pi-explode]').innerText(), 'Disassemble');
-    const original = await poses(page); assert.equal(Object.keys(original).length, 35);
+    const original = await poses(page); assert.equal(Object.keys(original).length, 37);
+    const mechanical = await page.evaluate(() => {
+      const result = {}, T = THREE;
+      window.__piScene.scene.updateMatrixWorld(true);
+      window.__piScene.scene.traverse(object => {
+        if (!['Enclosure', 'M2-1', 'M2-2'].includes(object.userData.piRef)) return;
+        object.geometry.computeBoundingBox();
+        const bounds = new T.Box3().setFromObject(object);
+        result[object.userData.piRef] = {
+          visible: object.visible, role: object.userData.mechanicalRole,
+          position: object.getWorldPosition(new T.Vector3()).toArray(),
+          min: bounds.min.toArray(), max: bounds.max.toArray(),
+          localMin: object.geometry.boundingBox.min.toArray(), localMax: object.geometry.boundingBox.max.toArray()
+        };
+      });
+      return result;
+    });
+    const near = (actual, expected, message) => actual.forEach((value, index) => assert.ok(Math.abs(value - expected[index]) < 1e-5, `${message}, axis ${index}: ${value}`));
+    assert.equal(mechanical.Enclosure.visible, true); assert.equal(mechanical.Enclosure.role, 'enclosure');
+    near(mechanical.Enclosure.min, [-15, 0, -17], 'Original housing minimum');
+    near(mechanical.Enclosure.max, [15, 6.8, 15], 'Original housing maximum');
+    for (const [ref, x] of [['M2-1', -11.3], ['M2-2', 11.3]]) {
+      assert.equal(mechanical[ref].visible, true); assert.equal(mechanical[ref].role, 'screw');
+      near(mechanical[ref].position, [x, 3.9, 4.5], 'M2 bearing face seats on native PCB mounting hole');
+      near(mechanical[ref].localMin, [-1.75, -3, -1.749994], 'Source screw lower bounds');
+      near(mechanical[ref].localMax, [1.75, 0.8, 1.749994], 'Source screw upper bounds');
+    }
     await page.locator(root).screenshot({ path: path.join(output, 'assembled.png') });
     await page.locator('[data-pi-explode]').evaluate(button => { window.__piTrace = []; button.click(); });
     await settle(page); assert.equal((await state(page)).piProgress, '1.000');
     const trace = await page.evaluate(() => { const trace = window.__piTrace; delete window.__piTrace; return trace; });
+    assert.ok(trace.some(frame => JSON.stringify(frame['M2-1']) !== JSON.stringify(original['M2-1'].p) && JSON.stringify(frame.Enclosure) === JSON.stringify(original.Enclosure.p)), 'Fasteners release before the housing');
     assert.ok(trace.some(frame => JSON.stringify(frame.Enclosure) !== JSON.stringify(original.Enclosure.p) && JSON.stringify(frame.C1) === JSON.stringify(original.C1.p)), 'Housing moves before passives');
     assert.equal(await page.locator('[data-pi-explode]').innerText(), 'Assemble');
     const spread = await poses(page), refs = Object.keys(original).filter(ref => ref !== 'PCB');
-    assert.equal(refs.filter(ref => JSON.stringify(spread[ref].p) !== JSON.stringify(original[ref].p)).length, 34);
+    assert.equal(refs.filter(ref => JSON.stringify(spread[ref].p) !== JSON.stringify(original[ref].p)).length, 36);
     assert.ok(refs.filter(ref => JSON.stringify(spread[ref].q) !== JSON.stringify(original[ref].q)).length > 25, 'Physical parts rotate as well as lift');
     assert.ok(new Set(refs.map(ref => spread[ref].p.map((v,i)=>+(v-original[ref].p[i]).toFixed(5)).join(','))).size > 20, 'Distinct physical displacement paths');
-    for (const ref of ['U5','R1','C5','P1']) {
+    for (const ref of ['M2-1','M2-2','Enclosure','U5','R1','C5','P1']) {
       const p = await pickPoint(page, ref); await page.mouse.move(p.x, p.y);
       await page.waitForFunction(ref => document.querySelector('[data-pi-inspector]').dataset.piSelection === ref, ref);
       assert.match(await page.locator('output[data-pi-part]').innerText(), new RegExp(ref));
@@ -125,7 +152,7 @@ const pickPoint = (page, ref) => page.evaluate(ref => {
     const failure = await browser.newPage(); await failure.route('**/framework-pi-board.glb', r => r.abort());
     await failure.goto(url); await failure.locator('[data-pi-stage]').scrollIntoViewIfNeeded(); await failure.waitForFunction(() => document.querySelector('[data-pi-inspector]').dataset.piState === 'unavailable');
     assert.equal(await failure.locator('[data-pi-poster]').isVisible(), true); assert.equal(await failure.locator('[data-pi-start]').innerText(), 'Retry 3D'); await failure.close();
-    console.log('PASS: autoload; one action; 33 components/35 identities; distinct staggered translations and rotations; exact assembly reversal; passive/major hover; touch identity; keyboard; idle/offscreen/retry; responsive/reduced-motion/fallback.');
+    console.log('PASS: autoload; one action; 35 components/37 identities; registered housing and two exact M2 × 3 screws; fasteners release first; distinct staggered translations and rotations; exact assembly reversal; mechanical/passive/major hover; touch identity; keyboard; idle/offscreen/retry; responsive/reduced-motion/fallback.');
     console.log(`Visual checks: ${output}`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

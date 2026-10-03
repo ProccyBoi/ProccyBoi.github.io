@@ -1,5 +1,6 @@
 {
   "format": 1,
+  "sourceHashNormalization": "utf8-lf",
   "preservation": "Exact expanded triangle attribute bytes, materials, textures, transforms, reference metadata and source motion",
   "models": {
     "tramtrace": {
@@ -7,6 +8,10 @@
       "compressedUrl": "/assets/models/hero/tramtrace.idx.bin.gz",
       "bytes": 3564104,
       "gzipBytes": 566940,
+      "transport": "index-byte-planes-v1",
+      "transportBytes": 3564120,
+      "legacyCompressedUrl": "/assets/models/hero/tramtrace.bin.gz",
+      "legacyGzipBytes": 830013,
       "sha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb",
       "parts": 31,
       "meshes": 104,
@@ -14,17 +19,17 @@
       "textures": [
         "/assets/images/v2/tramtrace-silk.svg"
       ],
-      "paritySha256": "bac79baab53eecd452a0cd9b89b01551ce616b90fddb4d69f8c60f8d70b02cfa",
-      "transport": "index-byte-planes-v1",
-      "transportBytes": 3564120,
-      "legacyCompressedUrl": "/assets/models/hero/tramtrace.bin.gz",
-      "legacyGzipBytes": 830013
+      "paritySha256": "bac79baab53eecd452a0cd9b89b01551ce616b90fddb4d69f8c60f8d70b02cfa"
     },
     "telemetry": {
       "url": "/assets/models/hero/telemetry.bin",
       "compressedUrl": "/assets/models/hero/telemetry.idx.bin.gz",
       "bytes": 8018412,
       "gzipBytes": 1435034,
+      "transport": "index-byte-planes-v1",
+      "transportBytes": 8018428,
+      "legacyCompressedUrl": "/assets/models/hero/telemetry.bin.gz",
+      "legacyGzipBytes": 1937278,
       "sha256": "b63e3029ff928d0273d3116bd7faf9f188de1cade33ffc19319c2fdd741bb472",
       "parts": 54,
       "meshes": 166,
@@ -33,45 +38,44 @@
         "/assets/models/hardware/skylabs-telemetry/silk-front.svg",
         "/assets/models/hardware/skylabs-telemetry/silk-back.svg"
       ],
-      "paritySha256": "87a45ca465c06d101f4ca4e9ee2f46cdb1e63006778e9021091944c0fe3b832d",
-      "transport": "index-byte-planes-v1",
-      "transportBytes": 8018428,
-      "legacyCompressedUrl": "/assets/models/hero/telemetry.bin.gz",
-      "legacyGzipBytes": 1937278
+      "paritySha256": "87a45ca465c06d101f4ca4e9ee2f46cdb1e63006778e9021091944c0fe3b832d"
     },
     "pi": {
       "url": "/assets/models/hero/pi.bin",
       "compressedUrl": "/assets/models/hero/pi.idx.bin.gz",
-      "bytes": 1764688,
-      "gzipBytes": 364179,
-      "sha256": "4dcc82d7bee2e16d770a482dd2ac996789af98e83b326c000a8505e1c17d9b76",
-      "parts": 33,
-      "meshes": 87,
-      "triangles": 49564,
+      "bytes": 2473868,
+      "gzipBytes": 539096,
+      "transport": "index-byte-planes-v1",
+      "transportBytes": 2473884,
+      "legacyCompressedUrl": "/assets/models/hero/pi.bin.gz",
+      "legacyGzipBytes": 689946,
+      "sha256": "19949162fef21690983452c54342e020553486aeb08e230d1d01fe8c00f8bf09",
+      "parts": 36,
+      "meshes": 90,
+      "triangles": 59762,
       "textures": [
         "/assets/models/framework-pi/framework-pi-silk-front.svg"
       ],
-      "paritySha256": "4a1a83f7a071358a5b71ba604df4352a1203e0c6f67823cc4cb504d839c187a5",
-      "transport": "index-byte-planes-v1",
-      "transportBytes": 1764704,
-      "legacyCompressedUrl": "/assets/models/hero/pi.bin.gz",
-      "legacyGzipBytes": 467441
+      "paritySha256": "dad2bdb1710dc566231ab89edfde90fc52ea1894c183a3d6303054d289b6b82e"
     }
   },
   "sources": {
+    "assets/framework-mechanics.js": "fd83ec09670bd045cbb6dc76a863f535c64933aa774a99156cb64e2250a60add",
     "assets/images/v2/tramtrace-silk.svg": "43c48b2f0df409be78eb5874185f840341606f8f8ba1e9b8212eb90404994059",
     "assets/models/framework-esp32/framework-usbc.glb": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa",
+    "assets/models/framework-mechanics/framework-m2x3-screw.json": "aad9a77422868ddb3fea490cd2933f4e405c859804661f243f242ac1672b6a64",
+    "assets/models/framework-mechanics/framework-m2x3-screw.stl": "b3149ea236c240d7317abfd51d3ba4d716eba5f5bc8982db3def92a4a62c2881",
     "assets/models/framework-pi/framework-pi-board.glb": "19168ad1a4d84bb61aaa2d78d6950af06bb8c0e0a85075569df362c02b0cbb1b",
+    "assets/models/framework-pi/framework-pi-enclosure.stl": "92c401b4880ed1262ebc939911455b1c9da729dd594b2892c98ab40baf44e16a",
     "assets/models/framework-pi/framework-pi-silk-front.svg": "b479d7123698e827256712b18f0ef62d7a4effd283660b30a7fca8c2977180f6",
     "assets/models/hardware/skylabs-telemetry/assembly.json": "9f908f81075a302fb189aa0e21ee7c98cce31cd5838f3f2f6d17ecaed2894120",
     "assets/models/hardware/skylabs-telemetry/board.glb": "0cf263b9d68c46c314a70ca06d4a0761e84b02229a56ce52fe52ed9bcf37f2d0",
     "assets/models/hardware/skylabs-telemetry/silk-back.svg": "4f98970be80066649b0a1f268bb30dc4e7988c56be06b6501706ff63e0cff210",
     "assets/models/hardware/skylabs-telemetry/silk-front.svg": "4fb0fad9f79d351c5a5799d40e0212bd40c75c53d0972e9e44be455bc32e551a",
     "assets/models/tramtrace/tramtrace-kicad-source.glb": "fb35ccad3efd7761b8e1b2253659aa33566f54f903945c1ecfd43612f31ec134",
-    "assets/v2-assembly-models.js": "9b1f3195513a8ddb3840ba148ed866719b601419fd23b5d97d6febb7452e7296",
-    "assets/v2-hardware-models.js": "b6ba7b8ae8fa9c7d94ab02db774367b9020f66c24a42e5a9ad7a140da7f0529f",
+    "assets/v2-assembly-models.js": "c3fc34a8c760a258015255c4c4d977711e5314ab60e1a7a4a4b2876c9eb5c19e",
+    "assets/v2-hardware-models.js": "33c48e18a116b38c1b4f7902f7d51b32e61cccb9cf840c83ffb667ffeb11f756",
     "assets/vendor/GLTFLoader.js": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6",
     "assets/vendor/three.min.js": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
-  },
-  "sourceHashNormalization": "utf8-lf"
+  }
 }

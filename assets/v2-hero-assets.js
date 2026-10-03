@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const names = new Set(['tramtrace', 'telemetry', 'pi']);
+  const versions = {pi:'mechanics-20261003'};
   const pending = new Map();
   const headers = new Map(), images = new Map();
   function header(buffer) {
@@ -52,7 +53,7 @@
   }
   function prefetch(name) {
     if (!names.has(name)) return Promise.reject(new Error('Unknown hero assembly: ' + name));
-    if (!pending.has(name)) pending.set(name, fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin')).then(async response => {
+    if (!pending.has(name)) pending.set(name, fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin') + (versions[name] ? '?v=' + versions[name] : '')).then(async response => {
       if (!response.ok) throw new Error('Hero assembly unavailable');
       const bytes = await response.arrayBuffer();
       const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));

@@ -994,5 +994,46 @@
       "nativeMatingAxisOffsetMm": -3.4,
       "seating": "Symmetric edge-mount contact rows centred on exported PCB core; prior top-surface placement lifted the connector by 0.445 mm"
     }
+  },
+  "mechanics": {
+    "enclosureUrl": "/assets/models/hardware/framework-logic-analyser/framework-logic-enclosure.stl",
+    "translationMm": [
+      0,
+      -3.1,
+      14.999995
+    ],
+    "holesMm": [
+      [
+        -11.3,
+        4.499995
+      ],
+      [
+        11.3,
+        4.499995
+      ]
+    ],
+    "boardTopMm": 0.8,
+    "fastenerUrl": "/assets/models/framework-mechanics/framework-m2x3-screw.stl",
+    "holeRefs": [
+      "H1",
+      "H2"
+    ],
+    "sourceFile": "ExpansionCards-main/Mechanical/Printable/3D/ExpansionCard_SelfTapping.stl",
+    "sourceSha256": "1c1f709830333e8fe5b1a889fc184a88fd4a51452d4caaccc8f4b450f7105d8d",
+    "sourceBossCentresMm": [
+      [
+        -11.3,
+        3.1,
+        -10.5
+      ],
+      [
+        11.3,
+        3.1,
+        -10.5
+      ]
+    ],
+    "registration": "Original Framework self-tapping housing; boss annuli at Y=3.1 mm seated at the unchanged PCB underside. Boss axes registered to the authored H1/H2 hole centres.",
+    "fastenerProvenance": "/assets/models/framework-mechanics/framework-m2x3-screw.json",
+    "attribution": "Framework Computer Inc, CC BY 4.0. Original housing triangles and M2 x 3 screw CAD retained."
   }
 }

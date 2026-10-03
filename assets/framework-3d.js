@@ -68,6 +68,7 @@
   boardGroup.add(mirroredCardGroup);
 
   const shellGroup = new THREE.Group();
+  shellGroup.userData.partRef = 'Enclosure';
   assembly.add(shellGroup);
   // The enclosure belongs to the mirrored mechanical assembly as well.
   shellGroup.scale.x = -1;
@@ -90,10 +91,11 @@
 
   const exportedBoardThickness = 0.6;
   const boardThickness = 0.46;
-  const boardBottomY = 3.04;
+  const boardBottomY = 3.10;
   const boardY = boardBottomY + boardThickness / 2;
   const boardTopY = boardBottomY + boardThickness;
   const board = new THREE.Mesh(new THREE.BoxGeometry(26, boardThickness, 30), boardMaterial);
+  board.userData.mechanicalRole = 'pcb';
   board.position.set(0, boardY, -15);
   fallbackGroup.add(board);
 
@@ -263,10 +265,12 @@
     screwGroup.add(screw);
 
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.85, 24), screwMetal);
+    shaft.userData.mechanicalRole = 'screw-shaft';
     shaft.position.set(0, boardTopY - 0.58, 0);
     screw.add(shaft);
 
     const head = new THREE.Mesh(new THREE.CylinderGeometry(1.72, 1.62, 0.58, 32), screwMetal);
+    head.userData.mechanicalRole = 'screw-head';
     head.position.set(0, boardTopY + 0.28, 0);
     screw.add(head);
 
@@ -473,6 +477,7 @@
             material.metalness = 0.01;
             material.roughness = 0.42;
           } else if (material.name === 'mat_18') {
+            object.userData.mechanicalRole = 'pcb';
             material.color.setHex(0x050506);
             material.opacity = 1;
             material.transparent = false;
@@ -537,7 +542,7 @@
         // Convert to the viewer's millimetre X/Y/Z convention while preserving
         // the board-centred coordinate system used by the mechanical assembly.
         model.scale.set(1000, 1000, -1000);
-        model.position.set(-140, 3.04, 127);
+        model.position.set(-140, boardBottomY, 127);
         styleDetailedBoard(model);
         kicadGroup.add(model);
         registerDetailedExplodeParts(model);
