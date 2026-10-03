@@ -21,7 +21,7 @@
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
   const smooth = value => { const p = clamp(value); return p*p*(3-2*p); };
   const ramp = (value, start, end) => smooth((value-start)/(end-start));
-  let renderer, scene, camera, environment;
+  let renderer, scene, camera, environment, keyLight, overviewLight, shadowBounds, shadowCorner, shadowCentre;
   const models = Array(projects.length).fill(null);
   const shadows = Array(projects.length).fill(null);
   const modelStates = Array(projects.length).fill('pending');
@@ -34,6 +34,57 @@
     script.src = source; script.onload = resolve; script.onerror = reject;
     document.head.append(script);
   });
+  let sourceFactories;
+  const loadSourceModel = async name => {
+    sourceFactories ||= Promise.all([
+      window.V2AssemblyModels ? Promise.resolve() : loadScript('/assets/v2-assembly-models.js'),
+      window.V2HardwareModels ? Promise.resolve() : loadScript('/assets/v2-hardware-models.js'),
+      window.THREE.GLTFLoader ? Promise.resolve() : loadScript('/assets/vendor/GLTFLoader.js')
+    ]);
+    await sourceFactories;
+    return window.V2AssemblyModels.load(name);
+  };
+  const fitShadows = () => {
+    if (!keyLight) return;
+    // Independent projects overlap in the opening composition. Blend in the
+    // same key light's shadows as a board takes focus, without changing its
+    // total illumination or casting one project's silhouette over another.
+    const strength=ramp(current,.115,.135);
+    keyLight.intensity=1.4*strength;
+    overviewLight.intensity=1.4*(1-strength);
+    if (!strength && keyLight.shadow.map) return;
+    shadowBounds.makeEmpty();
+    models.forEach(model => {
+      if (model?.group.visible) shadowBounds.expandByObject(model.group);
+    });
+    if (shadowBounds.isEmpty()) return;
+    shadowBounds.getCenter(shadowCentre);
+    keyLight.target.position.copy(shadowCentre);
+    keyLight.position.copy(shadowCentre).addScaledVector(keyLight.userData.direction, 25);
+    keyLight.target.updateMatrixWorld();
+    keyLight.updateMatrixWorld();
+    const view = keyLight.shadow.camera;
+    view.position.copy(keyLight.position);
+    view.lookAt(shadowCentre);
+    view.updateMatrixWorld();
+    let left=Infinity, right=-Infinity, bottom=Infinity, top=-Infinity, near=Infinity, far=-Infinity;
+    for (let corner=0; corner<8; corner++) {
+      shadowCorner.set(
+        corner&1 ? shadowBounds.max.x : shadowBounds.min.x,
+        corner&2 ? shadowBounds.max.y : shadowBounds.min.y,
+        corner&4 ? shadowBounds.max.z : shadowBounds.min.z
+      ).applyMatrix4(view.matrixWorldInverse);
+      left=Math.min(left,shadowCorner.x);right=Math.max(right,shadowCorner.x);
+      bottom=Math.min(bottom,shadowCorner.y);top=Math.max(top,shadowCorner.y);
+      near=Math.min(near,-shadowCorner.z);far=Math.max(far,-shadowCorner.z);
+    }
+    const margin=.18;
+    view.left=left-margin;view.right=right+margin;
+    view.bottom=bottom-margin;view.top=top+margin;
+    view.near=Math.max(.1,near-margin);view.far=far+margin;
+    view.updateProjectionMatrix();
+    renderer.shadowMap.needsUpdate=true;
+  };
   const captionAt = value => {
     const windows = [[.09,.365],[.405,.685],[.725,1.2]];
     let next = -1, opacity = 0;
@@ -139,7 +190,7 @@
       group.position.set(transform.x,transform.y-(1-settle)*.6,0);
       group.scale.setScalar(transform.s*(.94+settle*.06));
       group.rotation.set(transform.rx,transform.ry,transform.rz+(1-settle)*.11);
-      window.V2CadGeometry.applyMotion(model.parts,transform.e);
+      window.V2HeroMotion.apply(model.parts,transform.e);
       shadow.position.set(transform.x,transform.y-transform.s*.43,-3);
       shadow.scale.set(transform.s*.9,transform.s*.18,1);
       shadow.material.opacity=.085*(1-transform.e*.6);
@@ -149,7 +200,7 @@
     intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
     captionAt(current);
     progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
-    if(renderer) renderer.render(scene,camera);
+    if(renderer) {fitShadows();renderer.render(scene,camera);}
     root.dataset.assemblyFrames=String(++frames);
     root.dataset.assemblyProgress=current.toFixed(5);
     root.dataset.assemblyDraws=String(renderer?.info.render.calls||0);
@@ -174,27 +225,38 @@
     // script download nor CAD parsing gates captions, navigation or movement.
     ready=true;entry=performance.now();layout();current=target;request();
     try {
-      // The factories only read THREE when load() is called. Their downloads
-      // can overlap Three.js; GLTFLoader still executes after Three.js.
-      const factories=Promise.all([
-        window.V2AssemblyModels?Promise.resolve():loadScript('/assets/v2-assembly-models.js'),
-        window.V2HardwareModels?Promise.resolve():loadScript('/assets/v2-hardware-models.js')
+      // Download prepared geometry alongside Three.js. Source CAD remains a
+      // recovery path, without putting its parsing cost on the normal visit.
+      const assets=(async()=>{
+        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js');
+        projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
+      })().catch(()=>{});
+      await Promise.all([
+        assets,
+        window.V2HeroMotion?Promise.resolve():loadScript('/assets/v2-hero-motion.js'),
+        window.THREE?Promise.resolve():loadScript('/assets/vendor/three.min.js')
       ]);
-      const loaders=(async()=>{
-        if(!window.THREE) await loadScript('/assets/vendor/three.min.js');
-        if(!window.THREE.GLTFLoader) await loadScript('/assets/vendor/GLTFLoader.js');
-      })();
-      await Promise.all([factories,loaders]);
       const T=window.THREE;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75));
       renderer.outputEncoding=T.sRGBEncoding; renderer.toneMapping=T.ACESFilmicToneMapping;
       renderer.toneMappingExposure=.98;
+      renderer.shadowMap.enabled=true;
+      renderer.shadowMap.type=T.PCFSoftShadowMap;
+      renderer.shadowMap.autoUpdate=false;
       scene=new T.Scene();camera=new T.OrthographicCamera(-8,8,5,-5,.1,100);
       camera.position.set(0,0,20);camera.lookAt(0,0,0);
       scene.add(new T.HemisphereLight(0xffffff,0xc4cfce,.6));
-      const light=(color,intensity,x,y,z)=>{const lamp=new T.DirectionalLight(color,intensity);lamp.position.set(x,y,z);scene.add(lamp);};
-      light(0xfff8ed,1.4,-4,8,12);light(0xd3e5ff,.9,8,3,5);light(0xffffff,.5,-8,-4,6);
+      const light=(color,intensity,x,y,z)=>{const lamp=new T.DirectionalLight(color,intensity);lamp.position.set(x,y,z);scene.add(lamp);return lamp;};
+      keyLight=light(0xfff8ed,1.4,-4,8,12);light(0xd3e5ff,.9,8,3,5);light(0xffffff,.5,-8,-4,6);
+      overviewLight=light(0xfff8ed,0,-4,8,12);
+      keyLight.castShadow=true;
+      keyLight.shadow.mapSize.set(2048,2048);
+      keyLight.shadow.bias=-.00018;
+      keyLight.shadow.normalBias=.003;
+      keyLight.userData.direction=keyLight.position.clone().normalize();
+      scene.add(keyLight.target);
+      shadowBounds=new T.Box3();shadowCorner=new T.Vector3();shadowCentre=new T.Vector3();
       const room=new T.Scene();room.background=new T.Color(0xb6c0c2);
       [[0xffffff,4,[-7,5,1],[0,Math.PI/2,0]],[0xffffff,3,[0,8,0],[Math.PI/2,0,0]],[0xd9e6f3,2,[7,0,0],[0,-Math.PI/2,0]]].forEach(([color,power,position,rotation])=>{
         const material=new T.MeshBasicMaterial({color,side:T.DoubleSide});material.color.multiplyScalar(power);
@@ -210,8 +272,16 @@
       const loadModel=async index=>{
         modelStates[index]='loading';posters[index].dataset.assemblyModelState='loading';
         try {
-          const model=await window.V2AssemblyModels.load(projects[index].name);
+          const name=projects[index].name;
+          let model;
+          try {
+            if(!window.V2HeroAssets) throw new Error('Prepared geometry unavailable');
+            model=await window.V2HeroAssets.load(name);
+          } catch(error) {
+            model=await loadSourceModel(name);
+          }
           if(failed) return;
+          window.V2HeroMotion.prepare(model.parts,{name});
           const shadow=new T.Mesh(new T.PlaneGeometry(1.5,1.5),new T.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false,opacity:.08}));
           models[index]=model;shadows[index]=shadow;scene.add(model.group);scene.add(shadow);
           modelStates[index]='ready';posters[index].dataset.assemblyModelState='ready';

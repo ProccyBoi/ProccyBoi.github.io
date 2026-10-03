@@ -14,10 +14,14 @@ The refreshed `/v2/` contains 25 HTML documents and 15 primary projects, includi
 - Inspectors load automatically within 400 px of the viewport, keep a preview until rendering and offer retry on failure. Automatic loading neither steals keyboard focus nor enables scroll-driven motion; reduced-motion users retain the same controls.
 - Skylabs telemetry and ground station use blue solder mask in all shared inspectors, posters and the telemetry hero. Component substrates and other materials retain their original colours.
 - The homepage scroll scene starts with lightweight moving posters while the three CAD assemblies load independently. A slow or failed assembly keeps its own poster, without blocking the others. The existing Dual USB-C staged animation is retained.
+- Hero CAD now uses lossless prepared assets, retaining all 370,334 triangles, material settings and original SVG silkscreens. Component motion adds staggered clearance, curved separation and independent tilts; a fitted 2048-pixel shadow map adds real component shadows. The original factories remain a per-model recovery path. Cold-cache all-model readiness improved from 25.50 s to 5.75 s in the controlled software-rendering comparison described in `docs/v2-hero-performance.md`.
 
 ## Verification
 
-- `scripts/audit-v2.py`: document landmarks, metadata, project inventory, local assets, navigation and fragments. Runs in GitHub Pages CI before artifact upload.
+- `scripts/audit-v2.py`: document landmarks, metadata, project inventory, local assets, navigation and fragments; also checks hero pack hashes, compressed/plain equality and source freshness. Runs in GitHub Pages CI before artifact upload.
+- `scripts/build-v2-hero-assets.cjs --verify`: exact parity between freshly evaluated source factories and reconstructed hero packs, including expanded triangle bytes, transforms, material/texture settings, metadata and motion origins.
+- `scripts/verify-v2-hero-choreography.cjs`: component-family and spatial stagger, clearance before drift/tilt, curved trajectories, bounded deviation and exact reversible poses.
+- `scripts/profile-v2-hero.cjs`: comparable cold-cache readiness, compression-aware transfer sizes, long tasks and geometry counts, with an assertion against silent source fallback.
 - `scripts/verify-v2-browser.cjs`: homepage loading/menu/keyboard, 15 primary projects without tools, four Framework search results, filter and URL persistence, existing ESP32/Dual USB-C/Skylabs/TramTrace controls, no-JavaScript navigation, failed-model fallback and initial reduced motion.
 - `scripts/verify-v2-autoload.cjs`: all three inspector engines load near the viewport without clicks, retain keyboard focus, stop rendering when idle/offscreen, support reduced motion and Save Data, retry after a failed model and work without IntersectionObserver.
 - `scripts/verify-v2-hero-loading.cjs`: posters respond to scrolling before Three.js arrives; two CAD models render while the third is delayed; late models adopt the current chapter; partial failure and context loss retain working posters.

@@ -30,7 +30,7 @@ async function snapshot(page){
   return page.evaluate(()=>Object.fromEntries(Object.entries(window.__observedAssemblies).map(([name,model])=>[name,{
     pose:model.group.matrixWorld.elements.slice(),
     local:{position:model.group.position.toArray(),rotation:model.group.rotation.toArray(),scale:model.group.scale.toArray(),visible:model.group.visible},
-    parts:model.parts.map(part=>({name:part.object.name,position:part.object.position.toArray(),quaternion:part.object.quaternion.toArray(),displacement:part.object.position.distanceTo(part.base),tilt:part.object.quaternion.angleTo(part.motion.baseQuaternion)}))
+    parts:model.parts.map(part=>({name:part.object.name,position:part.object.position.toArray(),quaternion:part.object.quaternion.toArray(),displacement:part.object.position.distanceTo(part.base),tilt:part.object.quaternion.angleTo(part.motion.baseQuaternion),hero:part.heroMotion?{family:part.heroMotion.family,delay:part.heroMotion.delay}:null}))
   }])));
 }
 async function fitsStage(page,name){
@@ -52,22 +52,32 @@ async function fitsStage(page,name){
     // rendering, scroll handlers or requestAnimationFrame in production code.
     await page.addInitScript(()=>{
       window.__observedAssemblies={};
-      let observed, cameraObserved=false;
-      Object.defineProperty(window,'V2AssemblyModels',{configurable:true,get:()=>observed,set:factory=>{
-        observed={load:async(...args)=>{
-          if(!cameraObserved){
-            cameraObserved=true;
-            const update=window.THREE.OrthographicCamera.prototype.updateMatrixWorld;
-            window.THREE.OrthographicCamera.prototype.updateMatrixWorld=function(){
-              if(this.top===5&&this.bottom===-5)window.__heroCamera=this;
-              return update.apply(this,arguments);
-            };
-          }
-          const assembly=await factory.load(...args);
-          window.__observedAssemblies[args[0]]=assembly;
-          return assembly;
-        }};
-      }});
+      let cameraObserved=false;
+      for(const property of ['V2HeroAssets','V2AssemblyModels']){
+        let observed;
+        Object.defineProperty(window,property,{configurable:true,get:()=>observed,set:factory=>{
+          observed={...factory,load:async(...args)=>{
+            if(!cameraObserved){
+              cameraObserved=true;
+              const update=window.THREE.OrthographicCamera.prototype.updateMatrixWorld;
+              window.THREE.OrthographicCamera.prototype.updateMatrixWorld=function(){
+                if(this.top===5&&this.bottom===-5)window.__heroCamera=this;
+                return update.apply(this,arguments);
+              };
+              const before=window.THREE.Scene.prototype.onBeforeRender;
+              window.THREE.Scene.prototype.onBeforeRender=function(renderer,scene,camera){
+                if(camera.isOrthographicCamera&&camera.top===5&&camera.bottom===-5){
+                  window.__heroRenderer=renderer;window.__heroScene=scene;
+                }
+                return before.apply(this,arguments);
+              };
+            }
+            const assembly=await factory.load.apply(factory,args);
+            window.__observedAssemblies[args[0]]=assembly;
+            return assembly;
+          }};
+        }});
+      }
     });
     await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await page.locator('[data-assembly-models-settled="3"]').waitFor({timeout:90000}).catch(async error=>{
@@ -82,6 +92,18 @@ async function fitsStage(page,name){
     await scrollPhase(page,0);
     const initial=await snapshot(page);
     assert.deepEqual(Object.keys(initial).sort(),['pi','telemetry','tramtrace']);
+    const shadowState=await page.evaluate(()=>{
+      const renderer=window.__heroRenderer,scene=window.__heroScene;
+      const lights=scene.children.filter(node=>node.isDirectionalLight&&node.castShadow);
+      const physical=[];
+      Object.values(window.__observedAssemblies).forEach(model=>model.parts.forEach(part=>part.object.traverse(node=>{if(node.isMesh)physical.push({name:part.object.name,cast:node.castShadow,receive:node.receiveShadow});})));
+      return {enabled:renderer.shadowMap.enabled,soft:renderer.shadowMap.type===window.THREE.PCFSoftShadowMap,automatic:renderer.shadowMap.autoUpdate,lights:lights.map(light=>light.shadow.mapSize.toArray()),physical};
+    });
+    assert.equal(shadowState.enabled,true,'Hero must render physical shadows');
+    assert.equal(shadowState.soft,true,'Hero must soften shadow edges');
+    assert.equal(shadowState.automatic,false,'Shadows must only update on requested frames');
+    assert.deepEqual(shadowState.lights,[[2048,2048]],'One detailed shadow map keeps rendering cost bounded');
+    assert.ok(shadowState.physical.length>0&&shadowState.physical.every(part=>part.cast&&part.receive),'All physical components must participate in assembly shadowing');
     const telemetryCoverage=await page.evaluate(()=>{
       const model=window.__observedAssemblies.telemetry;
       return {
@@ -93,6 +115,8 @@ async function fitsStage(page,name){
     for(const [name,model] of Object.entries(initial)){
       assert.ok(model.parts.length>1,name+' must contain movable physical components');
       assert.ok(model.parts.every(part=>part.displacement<1e-10),name+' starts assembled');
+      assert.ok(model.parts.every(part=>part.hero),name+' must use the richer hero choreography');
+      assert.ok(new Set(model.parts.map(part=>part.hero.delay.toFixed(4))).size>4,name+' must stagger individual parts and cohorts');
     }
     await page.evaluate(()=>{
       window.__poseSamples=[];
@@ -125,6 +149,21 @@ async function fitsStage(page,name){
       await fitsStage(page,name);
       console.log('PASS '+name+': '+model.parts.length+' physical groups visibly separate with finite transforms');
       if(shots)await page.screenshot({path:path.join(shots,'final-'+name+'.png')});
+      if(shots&&name==='telemetry'){
+        const shadows=async enabled=>page.evaluate(enabled=>{
+          const renderer=window.__heroRenderer,scene=window.__heroScene;
+          renderer.shadowMap.enabled=enabled;renderer.shadowMap.needsUpdate=true;
+          scene.traverse(node=>{
+            if(!node.isMesh)return;
+            (Array.isArray(node.material)?node.material:[node.material]).forEach(material=>{material.needsUpdate=true;});
+          });
+          renderer.render(scene,window.__heroCamera);
+        },enabled);
+        await shadows(false);
+        await page.screenshot({path:path.join(shots,'comparison-telemetry-without-shadows.png')});
+        await shadows(true);
+        await page.screenshot({path:path.join(shots,'comparison-telemetry-with-shadows.png')});
+      }
     }
     await scrollPhase(page,0);
     const returned=await snapshot(page);

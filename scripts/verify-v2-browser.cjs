@@ -27,7 +27,10 @@ async function posters(page) {
     const requests=[];page.on('request',request=>requests.push(request.url()));
     await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
-    assert.ok(requests.some(url=>/\.glb(?:\?|$)/.test(url)),'Hero must automatically load CAD');
+    await page.locator('[data-assembly-models-settled="3"]').waitFor({timeout:60000});
+    assert.equal(await page.locator('[data-assembly]').getAttribute('data-assembly-models-ready'),'3','All hero CAD must load');
+    for(const name of ['tramtrace','telemetry','pi'])assert.ok(requests.some(url=>new URL(url).pathname==='/assets/models/hero/'+name+'.bin.gz'),'Hero must automatically load the compressed '+name+' CAD pack');
+    assert.equal(requests.some(url=>/\.glb(?:\?|$)/.test(url)),false,'Normal hero loading must not download and merge the source GLBs');
     assert.equal(await page.locator('[data-assembly-canvas]').isVisible(),true);
     assert.equal(await page.locator('[data-assembly-canvas]').getAttribute('role'),'img');
     assert.ok((await page.locator('[data-assembly-canvas]').getAttribute('aria-label')).trim());
@@ -71,7 +74,7 @@ async function posters(page) {
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/12 projects/);
     await page.setViewportSize({width:320,height:900});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
-    console.log('PASS automatic CAD loading, keyboard/menu navigation, 15 projects without tools, four Framework cards, search and categories');
+    console.log('PASS automatic hero CAD packs without source GLBs, keyboard/menu navigation, 15 projects without tools, four Framework cards, search and categories');
     await page.setViewportSize({width:1280,height:900});
     for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
@@ -108,6 +111,7 @@ async function posters(page) {
     await context.close();
     console.log('PASS simplified ESP32/Dual USB assembly actions; Skylabs switching; TramTrace interactions');
     const fallback=await browser.newContext({viewport:{width:1280,height:900}});
+    await fallback.route(/\/models\/hero\/[^/?]+\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort());
     await fallback.route('**/*.glb',route=>route.abort());
     const failedPage=await fallback.newPage();observe(failedPage);
     await failedPage.goto(base+'/v2/',{waitUntil:'networkidle'});
@@ -138,7 +142,7 @@ async function posters(page) {
     const reducedRequests=[];reducedPage.on('request',request=>reducedRequests.push(request.url()));
     await reducedPage.goto(base+'/v2/',{waitUntil:'networkidle'});
     assert.equal(await reducedPage.locator('[data-assembly]').getAttribute('data-assembly-state'),'static');
-    assert.equal(reducedRequests.some(url=>/\.glb(?:\?|$)|three\.min\.js/.test(url)),false,'Initial reduced motion must not download CAD or Three.js');
+    assert.equal(reducedRequests.some(url=>/\.glb(?:\?|$)|\/models\/hero\/[^/?]+\.bin(?:\.gz)?(?:\?|$)|three\.min\.js/.test(url)),false,'Initial reduced motion must not download CAD packs, source CAD or Three.js');
     await posters(reducedPage);
     assert.equal(await reducedPage.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior),'auto');
     await reduced.close();

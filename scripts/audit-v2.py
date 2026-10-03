@@ -14,6 +14,8 @@ from pathlib import Path
 import re
 import sys
 import json
+import gzip
+import hashlib
 import xml.etree.ElementTree as ET
 from urllib.parse import unquote, urljoin, urlsplit
 
@@ -246,6 +248,34 @@ def main() -> int:
     except (OSError, ValueError, KeyError) as exc:
         error(HARDWARE_CATALOG, f"cannot read project inventory: {exc}")
         requested_projects = {"framework-raspberry-pi"}
+
+    # Hero packs are fetched dynamically, so they are not visible to the HTML
+    # reference scan. Reject missing/stale builds before publishing the site.
+    hero_manifest = ROOT / "assets/models/hero/manifest.json"
+    try:
+        hero = json.loads(hero_manifest.read_text(encoding="utf-8"))
+        if set(hero["models"]) != {"tramtrace", "telemetry", "pi"}:
+            error(hero_manifest, "hero requires the three featured assemblies")
+        for model in hero["models"].values():
+            for url in (model["url"], model["compressedUrl"], *model["textures"]):
+                reference(hero_manifest, url, ORIGIN)
+            plain = local_target(model["url"], ORIGIN)[0].read_bytes()
+            compressed = local_target(model["compressedUrl"], ORIGIN)[0].read_bytes()
+            if hashlib.sha256(plain).hexdigest() != model["sha256"] or len(plain) != model["bytes"]:
+                error(hero_manifest, f"prepared geometry does not match its manifest: {model['url']}")
+            if gzip.decompress(compressed) != plain or len(compressed) != model["gzipBytes"]:
+                error(hero_manifest, f"compressed geometry differs from its plain asset: {model['compressedUrl']}")
+        for source, expected in hero["sources"].items():
+            path = local_target("/" + source, ORIGIN)[0]
+            data = path.read_bytes()
+            if path.suffix in {".js", ".json", ".svg"}:
+                data = data.replace(b"\r\n", b"\n")
+            if hashlib.sha256(data).hexdigest() != expected:
+                error(hero_manifest, f"source changed; rebuild the hero packs: {source}")
+        for script in ("/assets/v2-hero-assets.js", "/assets/v2-hero-motion.js"):
+            reference(hero_manifest, script, ORIGIN)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        error(hero_manifest, f"cannot verify prepared hero assets: {exc}")
 
     original = document(ROOT / "projects/index.html")
     if original is None:

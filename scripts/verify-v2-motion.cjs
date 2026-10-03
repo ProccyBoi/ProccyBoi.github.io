@@ -54,6 +54,13 @@ async function inViewport(locator,width,height,label){
     await page.locator('[data-assembly-models-settled="3"]').waitFor({timeout:60000});
     await page.waitForTimeout(1800);
     await framesStop(page,'Entrance must finish and stop rendering');
+    if(shots&&lifecycleOnly){
+      await page.screenshot({path:path.join(shots,'final-overview-desktop.png')});
+      await page.setViewportSize({width:390,height:844});
+      await framesStop(page,'Opening composition settles after mobile resize');
+      await page.screenshot({path:path.join(shots,'final-overview-mobile.png')});
+      await page.setViewportSize({width:1440,height:1000});
+    }
     for(const viewport of lifecycleOnly?[]:[{width:1440,height:1000},{width:1366,height:768},{width:768,height:1024},{width:390,height:844},{width:320,height:740}]){
       await page.setViewportSize(viewport);
       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));

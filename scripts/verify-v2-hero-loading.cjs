@@ -1,5 +1,6 @@
 /* Progressive hero loading acceptance. Real models/rendering are retained;
  * routes only delay one dependency/model or fail one supporting model.
+ * Covers lossless source fallback when a preassembled CAD pack is unavailable.
  * Requires Playwright and a static server. Optional V2_BASE_URL,
  * CHROMIUM_EXECUTABLE. --fault-only runs just render rollback and print. */
 'use strict';
@@ -9,11 +10,16 @@ const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
 const root='[data-assembly]';
 const gate=()=>{let release;const promise=new Promise(resolve=>{release=resolve;});return {promise,release};};
 async function phase(page,value){
+  const started=Date.now();
   await page.evaluate(progress=>{
     const node=document.querySelector('[data-assembly]');
     scrollTo({top:scrollY+node.getBoundingClientRect().top+progress*(node.offsetHeight-node.querySelector('.v2-assembly-sticky').clientHeight),behavior:'instant'});
   },value);
-  await page.waitForFunction(progress=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-progress)<.0002,value,{timeout:15000});
+  await page.waitForFunction(progress=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-progress)<.0002,value,{timeout:60000}).catch(async error=>{
+    console.error('Hero loading scroll diagnostic',{requested:value,state:await page.locator(root).evaluate(node=>({data:{...node.dataset},top:node.getBoundingClientRect().top,height:node.offsetHeight,scrollY,hidden:document.hidden}))});
+    throw error;
+  });
+  if(Date.now()-started>15000)console.log(JSON.stringify({case:'software WebGL scroll settling',requested:value,elapsedMs:Date.now()-started,frames:await page.locator(root).getAttribute('data-assembly-frames')}));
 }
 async function posterVisible(page,index){
   await page.waitForFunction(i=>{
@@ -31,6 +37,7 @@ async function posterVisible(page,index){
     page.on('pageerror',error=>errors.push(error.message));
     const dependency=gate(),pi=gate();
     await page.route('**/three.min.js',async route=>{await dependency.promise;await route.continue();});
+    await page.route(/\/models\/hero\/pi\.bin(?:\.gz)?(?:\?|$)/,async route=>{await pi.promise;await route.continue();});
     await page.route('**/framework-pi-board.glb',async route=>{await pi.promise;await route.continue();});
     await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>Number(document.querySelector('[data-assembly]').dataset.assemblyFrames)>0,null,{timeout:10000});
@@ -62,8 +69,24 @@ async function posterVisible(page,index){
     console.log(JSON.stringify({case:'delayed Pi and dependency',posterFrameMs:Math.round(posterFrameMs),...firstReady}));
     await page.close();
 
+    const sourceFallback=await browser.newPage({viewport:{width:1280,height:900},reducedMotion:'no-preference'});
+    sourceFallback.on('pageerror',error=>errors.push(error.message));
+    const sourceRequests=[];sourceFallback.on('request',request=>sourceRequests.push(request.url()));
+    await sourceFallback.route(/\/models\/hero\/telemetry\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort('failed'));
+    await sourceFallback.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
+    await sourceFallback.locator('[data-assembly-models-settled="3"]').waitFor({timeout:90000});
+    assert.equal(await sourceFallback.locator(root).getAttribute('data-assembly-models-ready'),'3','A missing hero pack must recover the complete source CAD');
+    assert.ok(sourceRequests.some(url=>new URL(url).pathname==='/assets/models/hardware/skylabs-telemetry/board.glb'),'Missing telemetry pack must use its original source model');
+    assert.equal(sourceRequests.some(url=>/framework-pi-board\.glb|tramtrace-kicad-source\.glb/.test(url)),false,'One failed pack must not make other models repeat source parsing');
+    await phase(sourceFallback,.565);
+    assert.equal(await sourceFallback.locator('[data-assembly-posters] img').nth(1).getAttribute('data-assembly-model-state'),'ready');
+    assert.ok(Number(await sourceFallback.locator(root).getAttribute('data-assembly-draws'))>0,'Recovered CAD must render in its chapter');
+    console.log('PASS: unavailable telemetry pack recovers full source CAD while other hero packs remain independent');
+    await sourceFallback.close();
+
     const partial=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'no-preference'});
     partial.on('pageerror',error=>errors.push(error.message));
+    await partial.route(/\/models\/hero\/telemetry\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort('failed'));
     await partial.route('**/hardware/skylabs-telemetry/board.glb',route=>route.abort('failed'));
     await partial.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await partial.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyModelsSettled==='3',null,{timeout:60000});
@@ -85,13 +108,16 @@ async function posterVisible(page,index){
     const fault=await browser.newPage({viewport:{width:1280,height:900}});
     fault.on('pageerror',error=>errors.push(error.message));
     await fault.addInitScript(()=>{
-      window.V2AssemblyModels={load:async name=>{
+      const load=async name=>{
         const T=window.THREE,group=new T.Group();
         const object=new T.Mesh(new T.BoxGeometry(1,.1,1),new T.MeshBasicMaterial({color:0x174faa}));
         group.add(object);
         if(name==='telemetry') object.position.copy=()=>{throw new Error('Intentional first-render failure');};
-        return {group,parts:[{object,base:new T.Vector3(),offset:new T.Vector3(0,1,0)}]};
-      }};
+        const offset=new T.Vector3(0,1,0),baseQuaternion=object.quaternion.clone();
+        return {group,parts:[{object,base:new T.Vector3(),offset,motion:{offset:offset.clone(),baseQuaternion,targetQuaternion:baseQuaternion.clone(),delay:0}}]};
+      };
+      window.V2HeroAssets={prefetch:()=>Promise.resolve(),load};
+      window.V2AssemblyModels={load};
     });
     await fault.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
     await fault.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyModelsSettled==='3',null,{timeout:30000});
