@@ -7,6 +7,19 @@
 
 .coaster-3d-stage.is-dragging { cursor: grabbing; }
 
+.v2 [data-coaster-readout]{position:absolute;z-index:10;top:18px;right:18px;max-width:min(300px,calc(100% - 36px));padding:9px 12px;border:1px solid var(--v2-line);border-radius:3px;background:var(--v2-panel);color:var(--v2-ink);font:11px/1.5 monospace;text-align:right;overflow-wrap:anywhere;pointer-events:none}
+.v2 [data-coaster-readout][hidden]{display:none!important}
+.v2 .coaster-3d-stage{touch-action:pan-y pinch-zoom}
+.v2 .coaster-3d-toolbar.v2-assembly-controls{justify-content:center;padding:12px;border:0}
+.v2 .coaster-3d-toolbar.v2-assembly-controls button{min-width:120px;flex:0 0 auto;border:1px solid var(--v2-line);border-radius:6px;background:var(--v2-accent);color:var(--v2-on-accent)}
+.v2 .coaster-demo{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;padding:20px;border-top:1px solid var(--v2-line)}
+.v2 .coaster-demo .coaster-vessel-list{border:0;gap:6px}
+.v2 .coaster-demo [data-coaster-sim]{position:static;inset:auto;width:auto;max-width:none;padding:0;border:0;background:transparent;pointer-events:none}
+.v2 .coaster-demo .coaster-sim dl{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:25px;margin-top:8px}
+.v2 .coaster-demo .coaster-sim strong,.v2 .coaster-demo .coaster-sim dd{color:var(--v2-ink)}
+.v2 .coaster-demo .coaster-sim dt{color:var(--v2-muted)}
+@media(max-width:600px){.v2 .coaster-demo{grid-template-columns:1fr;gap:16px;padding:16px}.v2 .coaster-demo .coaster-sim dl{grid-template-columns:1fr;gap:5px}}
+
 .coaster-3d-stage canvas {
   position: absolute;
   z-index: 1;

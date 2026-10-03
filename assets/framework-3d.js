@@ -10,6 +10,18 @@
   const resetButton = root.querySelector('[data-framework-reset]');
   const viewButtons = [...root.querySelectorAll('[data-framework-view]')];
   const liveRegion = document.querySelector('[data-framework-live]');
+  const simplified = document.body.classList.contains('v2');
+  const partPanel = root.querySelector('[data-framework-part]');
+  const partName = root.querySelector('[data-framework-part-name]');
+  const pickRoots = [];
+  let requestRender = () => {};
+  let fitRequested = simplified;
+  const requestFit = () => { fitRequested = simplified; requestRender(); };
+  const tagPart = (object, ref, name) => {
+    object.userData.partRef = ref;
+    object.userData.partName = name || ({ U1: 'CH340K USB serial bridge', U2: 'AMS1117-3.3 regulator', U4: 'ESP32-S3-MINI-1' }[ref]) || (ref.startsWith('R') ? 'Resistor' : ref.startsWith('C') ? 'Capacitor' : ref.startsWith('Q') ? 'BC817 transistor' : 'Integrated circuit');
+    pickRoots.push(object);
+  };
 
   const announce = (message) => {
     if (liveRegion) liveRegion.textContent = message;
@@ -120,6 +132,7 @@
       markingMaterial.map = texture;
       markingMaterial.needsUpdate = true;
       markingOverlay.visible = true;
+      requestRender();
     },
     undefined,
     (error) => console.warn('Framework silkscreen overlay failed to load', error)
@@ -264,6 +277,7 @@
     slotB.rotation.y = Math.PI / 2;
     screw.add(slotB);
     screwAssemblies.push(screw);
+    tagPart(screw, `M2-${screwAssemblies.length}`, 'Mounting screw');
   };
   addMountingScrew(128.7, 146.5);
   addMountingScrew(151.3, 146.5);
@@ -366,6 +380,7 @@
     registerExplodePart(q1, { offset: new THREE.Vector3(2.2, 5.8, 1.8), rotation: new THREE.Euler(d(5), d(2), d(9)), delay: 0.36 });
     registerExplodePart(q2, { offset: new THREE.Vector3(-2.2, 5.5, 1.7), rotation: new THREE.Euler(d(-5), d(-2), d(-9)), delay: 0.39 });
     registerExplodePart(antenna, { offset: new THREE.Vector3(0, 10.9, -3.5), rotation: new THREE.Euler(d(9), d(-5), d(-10)), delay: 0.21 });
+    [[usbGroup,'P1','Molex 105444 USB-C plug'],[esp32,'U4','ESP32-S3-MINI-1'],[ch340,'U1','CH340K USB serial bridge'],[regulator,'U2','AMS1117-3.3 regulator'],[q1,'Q1','BC817 transistor'],[q2,'Q2','BC817 transistor']].forEach(([object,ref,name])=>tagPart(object,ref,name));
   };
   registerFallbackExplodeParts();
 
@@ -387,6 +402,7 @@
       const isTransistor = ref.startsWith('Q');
       const isPassive = ref.startsWith('R') || ref.startsWith('C');
       if (!isModule && !isIC && !isTransistor && !isPassive) return;
+      tagPart(child, ref);
 
       const dx = child.position.x - boardCentreX;
       const dz = child.position.z - boardCentreZ;
@@ -502,6 +518,7 @@
   let detailedBoardReady = false;
   let shellReady = false;
   const refreshReadyStatus = () => {
+    requestFit();
     if (detailedBoardReady && shellReady) {
       status.textContent = 'Detailed KiCad assembly + enclosure loaded';
       status.classList.add('is-ready');
@@ -535,6 +552,7 @@
         fallbackGroup.visible = true;
         status.textContent = 'Detailed PCB unavailable · simplified PCB shown';
         console.warn('Framework KiCad GLB failed to load', error);
+        requestFit();
       }
     );
 
@@ -575,19 +593,21 @@
           object.receiveShadow = false;
         });
         exactUsbGroup.add(exactPlug);
+        tagPart(exactPlug, 'P1', 'Molex 105444 USB-C plug');
         usbGroup.visible = false;
         registerExplodePart(exactPlug, {
           offset: new THREE.Vector3(0, 6.0, 10.5),
           rotation: new THREE.Euler(THREE.MathUtils.degToRad(-8), 0, THREE.MathUtils.degToRad(6)),
           delay: 0.10
         });
-
+        requestFit();
       },
       undefined,
       (error) => {
         // Keep the drawing-based reconstruction as a resilient fallback.
         usbGroup.visible = true;
         console.warn('Exact Molex 105444 model failed to load; using fallback geometry', error);
+        requestFit();
       }
     );
   } else {
@@ -663,6 +683,8 @@
   let targetPitch = pitch;
   let targetDistance = distance;
   let assembledDistance = targetDistance;
+  let cameraFitDistance = distance;
+  const limitZoom = value => THREE.MathUtils.clamp(value, simplified ? cameraFitDistance * 0.45 : 35, simplified ? cameraFitDistance * 2.2 : 86);
 
   const presets = {
     iso: { yaw: -31, pitch: 29, distance: 58 },
@@ -685,7 +707,7 @@
 
   viewButtons.forEach((button) => button.addEventListener('click', () => setPreset(button.dataset.frameworkView)));
 
-  shellButton.addEventListener('click', () => {
+  shellButton?.addEventListener('click', () => {
     shellVisible = !shellVisible;
     if (shellMesh) shellMesh.visible = shellVisible;
     shellButton.setAttribute('aria-pressed', String(shellVisible));
@@ -693,7 +715,7 @@
     announce(shellVisible ? 'Enclosure shown' : 'Enclosure hidden');
   });
 
-  explodeButton.addEventListener('click', () => {
+  explodeButton?.addEventListener('click', () => {
     exploded = !exploded;
     componentExplodeTarget = exploded ? 1 : 0;
     if (exploded) {
@@ -703,22 +725,23 @@
       targetDistance = assembledDistance;
     }
     explodeButton.setAttribute('aria-pressed', String(exploded));
-    explodeButton.textContent = exploded ? 'Assemble' : 'Explode';
+    explodeButton.textContent = exploded ? 'Assemble' : simplified ? 'Disassemble' : 'Explode';
     announce(exploded ? 'Exploded enclosure and component view' : 'Assembled enclosure and component view');
+    requestFit();
   });
 
-  resetButton.addEventListener('click', () => {
+  resetButton?.addEventListener('click', () => {
     setPreset('iso', false);
     targetDistance = 58;
     assembledDistance = 58;
     exploded = false;
     componentExplodeTarget = 0;
-    explodeButton.setAttribute('aria-pressed', 'false');
-    explodeButton.textContent = 'Explode';
+    explodeButton?.setAttribute('aria-pressed', 'false');
+    if (explodeButton) explodeButton.textContent = simplified ? 'Disassemble' : 'Explode';
     shellVisible = true;
     if (shellMesh) shellMesh.visible = true;
-    shellButton.setAttribute('aria-pressed', 'true');
-    shellButton.textContent = 'Hide shell';
+    shellButton?.setAttribute('aria-pressed', 'true');
+    if (shellButton) shellButton.textContent = 'Hide shell';
     announce('3D view reset');
   });
 
@@ -726,6 +749,20 @@
   let dragStart = null;
   let pinchStartDistance = 0;
   let pinchStartZoom = distance;
+  let dragTravel = 0;
+  const raycaster = new THREE.Raycaster(), pointerNdc = new THREE.Vector2();
+  const clearPart = () => { if (partPanel) partPanel.hidden = true; root.dataset.explorerPart = ''; };
+  const pickPart = event => {
+    if (!partPanel || !partName) return;
+    const rect = stage.getBoundingClientRect();
+    pointerNdc.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
+    scene.updateMatrixWorld(true);raycaster.setFromCamera(pointerNdc,camera);
+    const hit=raycaster.intersectObjects(pickRoots,true).find(entry=>{for(let node=entry.object;node;node=node.parent)if(!node.visible)return false;return true;});
+    let part=hit?.object;while(part&&!part.userData.partRef)part=part.parent;
+    if(!part){clearPart();return;}
+    partName.textContent=part.userData.partRef+' · '+part.userData.partName;partPanel.hidden=false;
+    root.dataset.explorerPart=part.userData.partRef;
+  };
 
   const markCustomView = () => {
     viewButtons.forEach((button) => {
@@ -735,6 +772,8 @@
   };
 
   stage.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    clearPart();dragTravel=0;
     stage.setPointerCapture(event.pointerId);
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.size === 1) {
@@ -748,7 +787,8 @@
   });
 
   stage.addEventListener('pointermove', (event) => {
-    if (!pointers.has(event.pointerId)) return;
+    if (!pointers.has(event.pointerId)) { pickPart(event); return; }
+    const before=pointers.get(event.pointerId);dragTravel+=Math.hypot(event.clientX-before.x,event.clientY-before.y);
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.size === 1 && dragStart) {
       const dx = event.clientX - dragStart.x;
@@ -759,7 +799,7 @@
     } else if (pointers.size === 2 && pinchStartDistance > 0) {
       const pts = [...pointers.values()];
       const pinch = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      targetDistance = THREE.MathUtils.clamp(pinchStartZoom * pinchStartDistance / Math.max(pinch, 1), 35, 86);
+      targetDistance = limitZoom(pinchStartZoom * pinchStartDistance / Math.max(pinch, 1));
     }
   });
 
@@ -772,14 +812,16 @@
     } else if (pointers.size === 0) {
       dragStart = null;
       pinchStartDistance = 0;
+      if(event.type==='pointerup'&&dragTravel<6){pickPart(event);if(partPanel&&!partPanel.hidden)announce(partName.textContent);}
     }
   };
   stage.addEventListener('pointerup', releasePointer);
   stage.addEventListener('pointercancel', releasePointer);
+  stage.addEventListener('pointerleave', event => { if(event.pointerType!=='touch'&&!pointers.size)clearPart(); });
 
   stage.addEventListener('wheel', (event) => {
     event.preventDefault();
-    targetDistance = THREE.MathUtils.clamp(targetDistance + event.deltaY * 0.035, 35, 86);
+    targetDistance = limitZoom(targetDistance + event.deltaY * 0.035);
   }, { passive: false });
 
   stage.addEventListener('keydown', (event) => {
@@ -788,8 +830,8 @@
     else if (event.key === 'ArrowRight') targetYaw -= 0.12;
     else if (event.key === 'ArrowUp') targetPitch = Math.min(targetPitch + 0.1, THREE.MathUtils.degToRad(88));
     else if (event.key === 'ArrowDown') targetPitch = Math.max(targetPitch - 0.1, THREE.MathUtils.degToRad(-77));
-    else if (event.key === '+' || event.key === '=') targetDistance = Math.max(35, targetDistance - 3);
-    else if (event.key === '-' || event.key === '_') targetDistance = Math.min(86, targetDistance + 3);
+    else if (event.key === '+' || event.key === '=') targetDistance = limitZoom(targetDistance - 3);
+    else if (event.key === '-' || event.key === '_') targetDistance = limitZoom(targetDistance + 3);
     else handled = false;
     if (handled) {
       event.preventDefault();
@@ -804,6 +846,7 @@
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    requestFit();
   };
   new ResizeObserver(resize).observe(stage);
   resize();
@@ -867,10 +910,23 @@
     yaw += (targetYaw - yaw) * smoothing;
     pitch += (targetPitch - pitch) * smoothing;
     distance += (targetDistance - distance) * smoothing;
+    if(Math.abs(targetYaw-yaw)<.0001)yaw=targetYaw;
+    if(Math.abs(targetPitch-pitch)<.0001)pitch=targetPitch;
+    if(Math.abs(targetDistance-distance)<.001)distance=targetDistance;
     componentExplodeProgress += (componentExplodeTarget - componentExplodeProgress) * (motionPreference.matches ? 1 : 1 - Math.pow(0.025, dt));
     if (Math.abs(componentExplodeTarget - componentExplodeProgress) < 0.0001) componentExplodeProgress = componentExplodeTarget;
     updateMechanicalExplode();
     updateComponentExplode();
+    if (fitRequested) {
+      const progress = componentExplodeProgress;
+      componentExplodeProgress = componentExplodeTarget;
+      updateMechanicalExplode(); updateComponentExplode();
+      targetDistance = cameraFitDistance = window.PortfolioExplorer.fitDistance(THREE, assembly, camera, target, targetYaw, targetPitch);
+      if (!exploded) assembledDistance = targetDistance;
+      componentExplodeProgress = progress;
+      updateMechanicalExplode(); updateComponentExplode();
+      fitRequested = false;
+    }
 
     const cp = Math.cos(pitch);
     camera.position.set(
@@ -880,8 +936,17 @@
     );
     camera.lookAt(target);
     renderer.render(scene, camera);
+    if(simplified)root.dataset.explorerProgress=componentExplodeProgress.toFixed(4);
+    return yaw!==targetYaw||pitch!==targetPitch||distance!==targetDistance||componentExplodeProgress!==componentExplodeTarget;
   };
 
   setPreset('iso', false);
-  window.PortfolioExplorer.start(animate, stage);
+  requestRender = window.PortfolioExplorer.start(animate, stage, { demand: simplified });
+  if(simplified){
+    if(explodeButton)explodeButton.textContent='Disassemble';
+    root.addEventListener('click',event=>{if(event.target.closest('button'))clearPart();requestRender();});
+    for(const type of ['pointerdown','pointermove','pointerup','pointercancel','wheel','keydown'])stage.addEventListener(type,requestRender);
+    for(const type of ['wheel','keydown'])stage.addEventListener(type,clearPart);
+    motionPreference.addEventListener('change',requestRender);
+  }
 })();

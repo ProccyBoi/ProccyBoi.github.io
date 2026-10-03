@@ -3,7 +3,7 @@
  * All positions, vertices and explode offsets use normalized board units:
  * one unit = max(board width, board depth). group.scale stays (1, 1, 1).
  * span is the assembled bounding-box extent, including protruding connectors.
- * Set part.object.position.copy(part.base).addScaledVector(part.offset, phase).
+ * prepareMotion / applyMotion reconstruct each component's pose from one phase.
  * This module owns no renderer, camera, animation loop or page interactions.
  */
 (() => {
@@ -168,6 +168,70 @@
     return new T.Vector3(Math.sign(base.x) * 0.025, lift, Math.sign(base.z) * 0.015);
   }
 
+  function referenceSeed(ref) {
+    let value = 2166136261;
+    for (const character of ref) value = Math.imul(value ^ character.charCodeAt(0), 16777619);
+    return value >>> 0;
+  }
+
+  // Components clear the board before drifting and tilting. The reference gives
+  // each part a stable rhythm; sampling in either direction never accumulates error.
+  function prepareMotion(parts) {
+    const T = window.THREE;
+    for (const part of parts) {
+      if (part.motion) continue;
+      const ref = part.ref || part.object.name;
+      const seed = referenceSeed(ref);
+      const a = (seed & 1023) / 1023, b = ((seed >>> 10) & 1023) / 1023, c = ((seed >>> 20) & 1023) / 1023;
+      const bank = Boolean(part.object.userData.componentRefs?.length > 1);
+      const passive = /^[RCLD]\d/.test(ref) || /passives|LED bank/i.test(ref);
+      const sign = Math.sign(part.offset.y) || 1;
+      const offset = part.offset.clone();
+      offset.y = sign * Math.abs(offset.y) * (.82 + a * .78);
+      offset.x += part.base.x * (.09 + b * .1) + (b - .5) * .022;
+      offset.z += part.base.z * (.08 + c * .09) + (c - .5) * .022;
+      const baseQuaternion = part.object.quaternion.clone();
+      const tilt = bank ? .035 : .18;
+      const targetQuaternion = baseQuaternion.clone().multiply(new T.Quaternion().setFromEuler(new T.Euler((a - .5) * tilt, (b - .5) * tilt * 1.4, (c - .5) * tilt)));
+      part.motion = { offset, baseQuaternion, targetQuaternion, delay: (passive ? .14 : .025) + b * .2 };
+    }
+    return parts;
+  }
+
+  function applyMotion(parts, phase) {
+    const clamp = value => Math.max(0, Math.min(1, value));
+    const smooth = value => { const p = clamp(value); return p * p * (3 - 2 * p); };
+    for (const part of parts) {
+      const motion = part.motion;
+      if (!motion) throw new Error('Component motion must be prepared before use');
+      if (phase <= 0) {
+        part.object.position.copy(part.base);
+        part.object.quaternion.copy(motion.baseQuaternion);
+        continue;
+      }
+      const lift = smooth((phase - motion.delay) / (1 - motion.delay));
+      const spread = smooth((phase - motion.delay - .08) / (.92 - motion.delay));
+      part.object.position.copy(part.base);
+      part.object.position.y += motion.offset.y * lift;
+      part.object.position.x += motion.offset.x * spread;
+      part.object.position.z += motion.offset.z * spread;
+      part.object.quaternion.copy(motion.baseQuaternion).slerp(motion.targetQuaternion, spread);
+    }
+  }
+
+  function spatialCohorts(items, position) {
+    const groups = new Map();
+    for (const item of items) {
+      const point = position(item);
+      const column = point.x < 0 ? 0 : 1;
+      const row = Math.max(0, Math.min(2, Math.floor((point.z + .5) * 3)));
+      const key = column + row * 2;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(item);
+    }
+    return [...groups.values()];
+  }
+
   function makeSilk(T, definition, texture, units) {
     let geometry;
     if (definition.connector) {
@@ -193,9 +257,8 @@
     return mesh;
   }
 
-  // The hero lifts each side's passive parts together. Merge only groups with
-  // the same displacement; their original geometry and assembled positions stay
-  // exact. The standalone inspector keeps every reference individually selectable.
+  // Small spatial cohorts give the dense telemetry passives different paths
+  // without turning every CAD surface into another draw call.
   function batchHeroPassives(T, assembly) {
     const batches = new Map();
     assembly.group.updateMatrixWorld(true);
@@ -206,11 +269,11 @@
       if (!batches.has(key)) batches.set(key, []);
       batches.get(key).push(part);
     }
-    for (const parts of batches.values()) {
+    for (const parts of [...batches.values()].flatMap(items => spatialCohorts(items, part => part.base))) {
       if (parts.length < 2) continue;
-      const base = new T.Vector3();
+      const base = parts.reduce((centre, part) => centre.add(part.base), new T.Vector3()).divideScalar(parts.length);
       const object = mergeReference(T, parts.map(part => part.object), base, 1, material => material, '');
-      object.name = parts[0].offset.y < 0 ? 'Back passives' : 'Front passives';
+      object.name = `${parts[0].offset.y < 0 ? 'Back' : 'Front'} passives ${parts[0].ref}`;
       object.userData.componentRefs = parts.map(part => part.ref);
       for (const part of parts) {
         assembly.group.remove(part.object);
@@ -232,7 +295,9 @@
       if (!window.V2HardwareModels) throw new Error('Shared hardware model factory unavailable');
       const assembly = await window.V2HardwareModels.load(definition.manifest);
       assembly.group.name = name;
-      return batchHeroPassives(T, assembly);
+      batchHeroPassives(T, assembly);
+      prepareMotion(assembly.parts);
+      return assembly;
     }
     const loader = new T.GLTFLoader();
     const loadGLB = path => new Promise((resolve, reject) => loader.load(path, gltf => resolve(gltf.scene), undefined, reject));
@@ -257,9 +322,8 @@
     if (!physicalRoots.length) throw new Error(`${name}: no named physical component groups found`);
     const surface = mergeReference(T, staticRoots, new T.Vector3(), units, style, `mat_${definition.boardMaterial + 1}`);
     surface.name = 'PCB'; group.add(surface);
-    // All station LEDs share one rigid lift in the hero. Merging their source
-    // faces together retains the exact placements while avoiding hundreds of
-    // repeated material draw calls.
+    // Nearby LEDs travel together in small cohorts while preserving every
+    // placement and avoiding hundreds of repeated material draw calls.
     const ledRoots = name === 'tramtrace' ? physicalRoots.filter(root => root.name.startsWith('LED')) : [];
     const independentRoots = ledRoots.length ? physicalRoots.filter(root => !root.name.startsWith('LED')) : physicalRoots;
     for (const root of independentRoots) {
@@ -269,11 +333,11 @@
       group.add(object);
       parts.push({ object, base: base.clone(), offset: explodeOffset(T, name, root.name, base, definition) });
     }
-    if (ledRoots.length) {
-      const base = new T.Vector3();
-      const object = mergeReference(T, ledRoots, base, units, style, `mat_${definition.boardMaterial + 1}`);
-      object.name = 'LED bank'; object.userData.partRef = 'LED bank';
-      object.userData.componentRefs = ledRoots.map(root => root.name);
+    for (const cohort of spatialCohorts(ledRoots, root => new T.Vector3().setFromMatrixPosition(root.matrixWorld).divideScalar(units))) {
+      const base = cohort.reduce((centre, root) => centre.add(new T.Vector3().setFromMatrixPosition(root.matrixWorld).divideScalar(units)), new T.Vector3()).divideScalar(cohort.length);
+      const object = mergeReference(T, cohort, base, units, style, `mat_${definition.boardMaterial + 1}`);
+      object.name = `LED bank ${cohort[0].name}`; object.userData.partRef = object.name;
+      object.userData.componentRefs = cohort.map(root => root.name);
       group.add(object);
       parts.push({ object, base, offset: new T.Vector3(0, 0.1, 0) });
     }
@@ -299,8 +363,9 @@
     group.userData.boardUnitsMm = units;
     group.userData.boardSizeMm = [definition.width, definition.thickness, definition.depth];
     group.userData.componentCount = parts.length;
+    prepareMotion(parts);
     return { group, parts, span };
   }
-  window.V2CadGeometry = Object.freeze({ mergeReference, disposeSource });
+  window.V2CadGeometry = Object.freeze({ mergeReference, disposeSource, prepareMotion, applyMotion, spatialCohorts });
   window.V2AssemblyModels = Object.freeze({ load });
 })();

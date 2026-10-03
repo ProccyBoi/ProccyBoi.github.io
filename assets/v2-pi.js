@@ -94,11 +94,12 @@
     const pmrem = new T.PMREMGenerator(renderer);
     const environment = pmrem.fromScene(studio, 0.04); scene.environment = environment.texture;
     studio.traverse((object) => { object.geometry?.dispose(); object.material?.dispose(); }); pmrem.dispose();
-    let disposed = false, observer, visibilityObserver, pending = 0, visible = true;
-    let motion = null, shellVisible = !capture, selected = null;
+    let disposed = false, observer, visibilityObserver, pending = 0, hoverFrame = 0, visible = true;
+    let motion = null, shellVisible = !capture, selected;
     const dispose = () => {
       if (disposed) return;
       disposed = true; controls.abort(); if (pending) cancelAnimationFrame(pending);
+      if (hoverFrame) cancelAnimationFrame(hoverFrame);
       observer?.disconnect(); visibilityObserver?.disconnect();
       scene.traverse((object) => { object.geometry?.dispose(); (Array.isArray(object.material) ? object.material : [object.material]).forEach((m) => { m?.map?.dispose(); m?.dispose(); }); });
       environment.dispose(); renderer.dispose(); root.dataset.piMotion = 'idle';
@@ -107,9 +108,10 @@
     listen(canvas, 'webglcontextlost', (event) => { event.preventDefault(); root.dispatchEvent(new Event('pi-unavailable')); });
     const loader = new T.GLTFLoader();
     const load = (file) => new Promise((resolve, reject) => loader.load(base + file, (gltf) => disposed ? reject(new Error('Viewer closed')) : resolve(gltf.scene), undefined, reject));
-    const [board, usb, shellBuffer] = await Promise.all([
+    const [board, usb, shellBuffer, metadata] = await Promise.all([
       load('framework-pi-board.glb'), load('framework-pi-usbc.glb'),
-      fetch(base + 'framework-pi-enclosure.stl').then((r) => { if (!r.ok) throw new Error('Enclosure unavailable'); return r.arrayBuffer(); })
+      fetch(base + 'framework-pi-enclosure.stl').then((r) => { if (!r.ok) throw new Error('Enclosure unavailable'); return r.arrayBuffer(); }),
+      fetch(base + 'assembly.json').then((r) => { if (!r.ok) throw new Error('Component information unavailable'); return r.json(); })
     ]);
     if (disposed) throw new Error('Viewer closed');
     const materials = new Map();
@@ -170,26 +172,46 @@
     shell.position.z = 15; shell.visible = shellVisible; assembly.add(shell);
     const outline = new T.LineSegments(new T.EdgesGeometry(geometry, 35), new T.LineBasicMaterial({ color: 0x657582, transparent: true, opacity: 0.38 })); shell.add(outline);
 
-    const explodedParts = [], picks = [];
-    board.traverse((object) => {
-      if (!/^(?:U|C|R|L|SW)\d+$/.test(object.name)) return;
-      const ref = object.name, major = ['U5', 'U3', 'U2'].includes(ref);
-      explodedParts.push({ object, position: object.position.clone(), quaternion: object.quaternion.clone(), lift: (ref === 'U5' ? 13 : major ? 10 : ref.startsWith('SW') ? 8 : 6) / 1000, x: (object.position.x - 0.140) * 0.34, z: (object.position.z - 0.142) * 0.26, delay: major ? 0.12 : 0.24 });
-      if (parts[ref]) picks.push(object);
+    const explodedParts = [], picks = [board, plug, shell], identities = new Map();
+    const registerIdentity = (object, ref, value) => {
+      object.userData.piRef = ref;
+      identities.set(ref, { object, value: value.replace(/_/g, ' ').replace(/^USB C Plug USB2\.0$/, 'USB-C plug · USB 2.0') });
+    };
+    const registerMotion = (object, offset, angles, delay, end, arc = 0) => {
+      const position = object.position.clone(), quaternion = object.quaternion.clone();
+      explodedParts.push({ object, position, quaternion, targetPosition: position.clone().add(offset), targetQuaternion: quaternion.clone().multiply(new T.Quaternion().setFromEuler(new T.Euler(...angles.map(T.MathUtils.degToRad)))), delay, end, arc });
+    };
+    const footprints = metadata.footprints.filter((part) => part.hasModel && part.ref !== 'P1').sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
+    footprints.forEach((footprint, index) => {
+      const object = board.getObjectByName(footprint.ref);
+      if (!object) return;
+      const ref = footprint.ref, major = ['U5', 'U3', 'U2'].includes(ref), phase = index * 2.399963;
+      const x = footprint.atMm[0] - 140, z = footprint.atMm[1] - 142;
+      const delay = major ? 0.16 + (index % 3) * 0.025 : 0.25 + (index % 7) * 0.027;
+      const lift = ref === 'U5' ? 14.5 : major ? 11.2 : ref.startsWith('SW') ? 9.6 : 6.7 + (index % 5) * 0.65;
+      registerIdentity(object, ref, footprint.value.replace(/_C\d+$/, ''));
+      registerMotion(object, new T.Vector3(x * 0.32 + Math.sin(phase) * 0.7, lift, z * 0.28 + Math.cos(phase) * 0.6).multiplyScalar(0.001), [Math.sin(phase) * 9, Math.cos(phase) * 13, Math.sin(phase + 0.7) * 8], delay, 0.89 + (index % 4) * 0.035, 0.0007);
     });
-    picks.push(plug);
+    registerIdentity(plug, 'P1', metadata.footprints.find((part) => part.ref === 'P1')?.value || 'USB-C plug');
+    registerMotion(plug, new T.Vector3(0.9, 8.2, -8.2), [-6, 5, 7.5], 0.07, 0.69, 0.8);
+    registerIdentity(shell, 'Enclosure', metadata.enclosure.kind);
+    registerMotion(shell, new T.Vector3(-1.4, -12.8, 2.6), [-5.5, 2.2, 3.2], 0, 0.49);
+    registerIdentity(board, 'PCB', metadata.name);
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const current = { yaw: 145, pitch: 39, zoom: 1, exploded: 0 };
     let target = { ...current }, aspect = 1, width = 0, height = 0;
     const presets = { iso: [145, 39], top: [0, 89.7], bottom: [0, -87], side: [105, 10] };
     const cameraButtons = [...root.querySelectorAll('[data-pi-view]')];
+    const readout = root.querySelector('[data-pi-part]:not(button)');
     const select = (ref) => {
+      if (selected === ref) return;
       selected = ref;
-      const info = parts[ref] || ['', ''];
+      const identity = identities.get(ref), info = parts[ref] || [identity?.value || '', ''];
+      if (readout) { readout.hidden = !identity; readout.textContent = identity ? `${ref} · ${identity.value}` : ''; }
       const name = root.querySelector('[data-pi-part-name]'), detail = root.querySelector('[data-pi-part-detail]');
       if (name) name.textContent = info[0]; if (detail) detail.textContent = info[1];
-      const caption = name?.closest('figcaption'); if (caption) caption.hidden = !parts[ref];
-      root.querySelectorAll('[data-pi-part]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.piPart === ref)));
+      const caption = name?.closest('figcaption'); if (caption) caption.hidden = !identity;
+      root.querySelectorAll('button[data-pi-part]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.piPart === ref)));
       root.dataset.piSelection = ref || '';
     };
     const stop = (finish = false) => { if (finish) Object.assign(current, target); motion = null; root.dataset.piMotion = 'idle'; };
@@ -203,12 +225,12 @@
     const pose = () => {
       const t = current.exploded;
       explodedParts.forEach((part) => {
-        const p = T.MathUtils.smoothstep(T.MathUtils.clamp((t - part.delay) / (1 - part.delay), 0, 1), 0, 1);
-        part.object.position.copy(part.position).add(new T.Vector3(part.x * p, part.lift * p, part.z * p));
-        part.object.quaternion.copy(part.quaternion);
+        const p = T.MathUtils.smoothstep(T.MathUtils.clamp((t - part.delay) / (part.end - part.delay), 0, 1), 0, 1);
+        if (p === 0) { part.object.position.copy(part.position); part.object.quaternion.copy(part.quaternion); return; }
+        part.object.position.lerpVectors(part.position, part.targetPosition, p);
+        part.object.position.y += Math.sin(p * Math.PI) * part.arc;
+        part.object.quaternion.copy(part.quaternion).slerp(part.targetQuaternion, p);
       });
-      plug.position.set(0, 3.9 + t * 7, -16.4 - t * 7);
-      shell.position.set(0, -t * 12, 15 + t * 2); shell.rotation.x = -t * 0.06;
       const pitch = T.MathUtils.degToRad(current.pitch), yaw = T.MathUtils.degToRad(current.yaw);
       const aim = new T.Vector3(0, 3 + t * 1.5, -4.5);
       camera.position.set(aim.x + 130 * Math.cos(pitch) * Math.sin(yaw), aim.y + 130 * Math.sin(pitch), aim.z + 130 * Math.cos(pitch) * Math.cos(yaw)); camera.lookAt(aim);
@@ -227,6 +249,7 @@
         if (p === 1) stop(true);
       }
       pose(); renderer.render(scene, camera);
+      if (hoverPoint && !drag) identify(...hoverPoint);
       root.dataset.piFrames = String(Number(root.dataset.piFrames || 0) + 1);
       root.dataset.piDrawCalls = String(renderer.info.render.calls);
       root.dataset.piProgress = current.exploded.toFixed(3);
@@ -245,12 +268,12 @@
       root.dataset.piAngle = name;
     };
     cameraButtons.forEach((button) => listen(button, 'click', () => setView(button.dataset.piView)));
-    root.querySelectorAll('[data-pi-part]').forEach((button) => listen(button, 'click', () => select(button.dataset.piPart)));
+    root.querySelectorAll('button[data-pi-part]').forEach((button) => listen(button, 'click', () => select(button.dataset.piPart)));
     const explodeButton = root.querySelector('[data-pi-explode]'), shellButton = root.querySelector('[data-pi-shell]');
     const explode = (value) => {
       root.dataset.piExploded = String(value); explodeButton?.setAttribute('aria-pressed', String(value));
-      if (explodeButton) explodeButton.textContent = value ? 'Reassemble' : 'Explode';
-      move({ exploded: value ? 1 : 0, zoom: 1 }, 1100);
+      if (explodeButton) explodeButton.textContent = value ? 'Assemble' : 'Disassemble';
+      select(null); move({ exploded: value ? 1 : 0, zoom: 1 }, 1250);
     };
     if (explodeButton) listen(explodeButton, 'click', () => explode(root.dataset.piExploded !== 'true'));
     if (shellButton) listen(shellButton, 'click', () => {
@@ -259,13 +282,27 @@
     });
     const reset = () => {
       shellVisible = true; shell.visible = true; if (shellButton) { shellButton.setAttribute('aria-pressed', 'true'); shellButton.textContent = 'Hide housing'; }
-      root.dataset.piExploded = 'false'; if (explodeButton) { explodeButton.setAttribute('aria-pressed', 'false'); explodeButton.textContent = 'Explode'; }
+      root.dataset.piExploded = 'false'; if (explodeButton) { explodeButton.setAttribute('aria-pressed', 'false'); explodeButton.textContent = 'Disassemble'; }
       select(null); move({ yaw: 145, pitch: 39, zoom: 1, exploded: 0 }); root.dataset.piAngle = 'iso';
       cameraButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.piView === 'iso')));
     };
     const resetButton = root.querySelector('[data-pi-reset]'); if (resetButton) listen(resetButton, 'click', reset);
     const markCustom = () => { cameraButtons.forEach((button) => button.setAttribute('aria-pressed', 'false')); root.dataset.piAngle = 'custom'; };
-    const ray = new T.Raycaster(), pointer = new T.Vector2(); let drag = null;
+    const ray = new T.Raycaster(), pointer = new T.Vector2(); let drag = null, hoverPoint = null;
+    const identify = (x, y) => {
+      const rect = canvas.getBoundingClientRect();
+      pointer.set((x - rect.left) / rect.width * 2 - 1, -(y - rect.top) / rect.height * 2 + 1);
+      ray.setFromCamera(pointer, camera);
+      const hit = ray.intersectObjects(picks, true).find(({ object }) => {
+        if (!object.isMesh) return false;
+        for (let node = object; node; node = node.parent) if (!node.visible) return false;
+        return true;
+      });
+      let object = hit?.object;
+      while (object && !object.userData.piRef) object = object.parent;
+      select(object?.userData.piRef || null);
+    };
+    const clearHover = () => { if (hoverFrame) cancelAnimationFrame(hoverFrame); hoverFrame = 0; hoverPoint = null; select(null); };
     canvas.style.touchAction = 'pan-y pinch-zoom';
     listen(canvas, 'pointerdown', (event) => {
       if (event.button !== 0 || !event.isPrimary) return;
@@ -273,22 +310,33 @@
       canvas.setPointerCapture(event.pointerId);
     });
     listen(canvas, 'pointermove', (event) => {
-      if (!drag || drag.id !== event.pointerId) return;
+      if (!drag) {
+        if (event.pointerType === 'touch') return;
+        hoverPoint = [event.clientX, event.clientY];
+        if (!hoverFrame) hoverFrame = requestAnimationFrame(() => { hoverFrame = 0; if (hoverPoint && !disposed) identify(...hoverPoint); });
+        return;
+      }
+      if (drag.id !== event.pointerId || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return;
+      clearHover();
       current.yaw = drag.yaw - (event.clientX - drag.x) * 0.38;
       if (!drag.touch) current.pitch = T.MathUtils.clamp(drag.pitch + (event.clientY - drag.y) * 0.3, -88, 89.7);
       markCustom(); invalidate();
     });
     listen(canvas, 'pointerup', (event) => {
       if (drag && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) {
-        const rect = canvas.getBoundingClientRect(); pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
-        ray.setFromCamera(pointer, camera); const hit = ray.intersectObjects(picks, true)[0];
-        if (hit) { let node = hit.object; while (node && !parts[node.name]) node = node.parent; if (node) select(node.name); }
+        identify(event.clientX, event.clientY);
       }
       drag = null;
     });
-    listen(canvas, 'pointercancel', () => { drag = null; }); listen(canvas, 'lostpointercapture', () => { drag = null; });
+    listen(canvas, 'pointerleave', (event) => { if (!drag && event.pointerType !== 'touch') clearHover(); });
+    listen(canvas, 'pointercancel', () => { drag = null; clearHover(); }); listen(canvas, 'lostpointercapture', () => { drag = null; });
     listen(canvas, 'keydown', (event) => {
       if (event.key === 'Home') { event.preventDefault(); reset(); return; }
+      if (event.key === 'Escape') { event.preventDefault(); clearHover(); return; }
+      if (event.key === '[' || event.key === ']') {
+        event.preventDefault(); const refs = [...identities.keys()], index = refs.indexOf(selected);
+        select(refs[(index + (event.key === ']' ? 1 : -1) + refs.length) % refs.length]); return;
+      }
       if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-', '_'].includes(event.key)) return;
       event.preventDefault(); stop();
       if (event.key === 'ArrowLeft') current.yaw += 10;
@@ -297,7 +345,7 @@
       if (event.key === 'ArrowDown') current.pitch = Math.max(-88, current.pitch - 8);
       if (event.key === '+' || event.key === '=') current.zoom = Math.min(1.8, current.zoom * 1.1);
       if (event.key === '-' || event.key === '_') current.zoom = Math.max(0.65, current.zoom / 1.1);
-      markCustom(); invalidate();
+      clearHover(); markCustom(); invalidate();
     });
     const visibility = () => {
       if (disposed) return;
@@ -310,9 +358,10 @@
     }
     listen(document, 'visibilitychange', visibility);
     listen(reduced, 'change', () => { if (reduced.matches && motion) { stop(true); invalidate(); } });
-    canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Raspberry Pi expansion card. Drag to rotate, use arrow keys to turn, plus and minus to zoom, Home to reset.');
-    canvas.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight ArrowUp ArrowDown + - Home');
-    root.dataset.piExploded = 'false'; root.dataset.piMotion = 'idle'; root.dataset.piAngle = 'iso'; root.dataset.piComponents = String(explodedParts.length + 1);
+    canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Raspberry Pi expansion card. Drag to rotate, use arrow keys to turn, plus and minus to zoom, Home to reset. Hover or tap a part to identify it; bracket keys cycle through parts, Escape clears the name.');
+    canvas.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight ArrowUp ArrowDown + - Home [ ] Escape');
+    root.dataset.piExploded = 'false'; root.dataset.piMotion = 'idle'; root.dataset.piAngle = 'iso'; root.dataset.piComponents = String(explodedParts.length - 1); root.dataset.piPickables = String(identities.size);
+    if (explodeButton) explodeButton.textContent = 'Disassemble';
     select(null); resize(); pose(); renderer.render(scene, camera);
     return { render, setView, explode, dispose };
   }
@@ -343,7 +392,7 @@
         await create(root); if (token !== generation) return;
         canvas.hidden = false; if (poster) poster.hidden = true;
         start.hidden = true; root.dataset.piState = 'ready';
-        if (status) status.textContent = 'Drag to rotate · arrow keys to turn · + / − to zoom';
+        if (status) status.textContent = 'Drag to rotate · hover or tap a part to identify it';
       } catch (error) { if (token === generation) { console.warn('Pi card viewer unavailable', error); unavailable(); } }
     };
     start.addEventListener('click', initialize);

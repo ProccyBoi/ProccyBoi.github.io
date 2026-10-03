@@ -108,8 +108,7 @@ function inspectTheme(){
     }
     const filename=route.replace(/^\/|\/$/g,'').replaceAll('/','-')+'-'+width;
     if(representative.has(route))await page.screenshot({path:path.join(output,filename+'-top.png')});
-    const toggles=route.includes('/tramtrace/')?['[data-inspector-mode="copper"]','[data-inspector-mode="data"]']:
-      route==='/v2/projects/skylabs/'?['[data-hardware-components="telemetry"] [data-hardware-component]:first-child summary']:
+    const toggles=route==='/v2/projects/skylabs/'?['[data-hardware-board="ground"]']:
       route.includes('/mosfet-operating-regions/')?['.seg button[data-mode="continuous"]','[data-preset="cutoff"]','[data-preset="triode"]','[data-preset="saturation"]']:
       route.includes('/lithography-animation/')?['#negativeTone']:[];
     for(const selector of toggles){

@@ -12,7 +12,7 @@
     if(!(units>0))throw new Error('Invalid assembly bounds');
     source.scale.setScalar(metadata.scaleToMillimetres||1000);
     source.position.set(-(x1+x2)/2,0,-(z1+z2)/2);source.updateMatrixWorld(true);
-    const {mergeReference,disposeSource}=window.V2CadGeometry;
+    const {mergeReference,disposeSource,spatialCohorts}=window.V2CadGeometry;
     const group=new T.Group(),parts=[],materials=new Map();
     const footprints=new Map(metadata.footprints.map(part=>[part.ref,part]));
     // The manufactured Skylabs boards use blue soldermask. Keep this finish
@@ -44,21 +44,25 @@
     const hiddenMaterial=metadata.silk?.frontUrl?metadata.materials?.silk:'';
     const board=mergeReference(T,fixed,new T.Vector3(),units,style,hiddenMaterial);
     board.name='PCB';group.add(board);
-    // Large maps retain each LED placement while moving the repeated bank as
-    // one physical layer, avoiding hundreds of separate material draws.
+    // Nearby LEDs share small material batches, retaining individual identities
+    // for picking while giving different regions their own assembly motion.
     const ledRoots=moving.filter(object=>/^(LED|D)\d+$/.test(object.name)&&/WS2812|SK6812|RGB|2020/i.test(footprints.get(object.name).value));
     const bank=ledRoots.length>50?new Set(ledRoots):new Set();
     const addPart=(roots,ref,footprint)=>{
-      const base=new T.Vector3().setFromMatrixPosition(roots[0].matrixWorld).divideScalar(units);
+      const base=roots.reduce((centre,object)=>centre.add(new T.Vector3().setFromMatrixPosition(object.matrixWorld).divideScalar(units)),new T.Vector3()).divideScalar(roots.length);
       const object=mergeReference(T,roots,base,units,style,hiddenMaterial);
       object.name=ref;object.userData.partRef=ref;group.add(object);
+      if(roots.length>1){
+        object.userData.componentRefs=roots.map(root=>root.name);
+        object.userData.componentCenters=roots.map(root=>({ref:root.name,value:footprints.get(root.name)?.value||'RGB LED',position:new T.Vector3().setFromMatrixPosition(root.matrixWorld).divideScalar(units).sub(base).toArray()}));
+      }
       const sign=footprint?.side==='back'?-1:1;
       const lift=/^U\d/.test(ref)?.22:/^(J|P|SW|RV|BT)\d/.test(ref)?.17:.11;
       const offset=new T.Vector3(0,sign*lift,0);
       parts.push({object,base:base.clone(),offset,ref,value:footprint?.value||'RGB pixels'});
     };
     moving.filter(object=>!bank.has(object)).forEach(object=>addPart([object],object.name,footprints.get(object.name)));
-    if(bank.size)addPart([...bank],'LED bank',{value:bank.size+' RGB pixels'});
+    for(const cohort of spatialCohorts([...bank],object=>new T.Vector3().setFromMatrixPosition(object.matrixWorld).divideScalar(units)))addPart(cohort,'LED bank '+cohort[0].name,{value:cohort.length+' RGB pixels'});
     if(metadata.dimensionedLedFallback){
       // Preserve the existing dimensioned Metroboard package representation
       // where its referenced supplier model is absent. Positions remain CAD-derived.
@@ -72,6 +76,7 @@
       const box=(parent,dimensions,position,material)=>{const mesh=new T.Mesh(new T.BoxGeometry(...dimensions),material);mesh.position.set(...position);parent.add(mesh);};
       for(const part of leds){
         const root=new T.Group(),[x,z,angle]=part.atMm;
+        root.name=part.ref;
         root.position.set(x-(x1+x2)/2,metadata.thicknessMm,z-(z1+z2)/2);root.rotation.y=angle*Math.PI/180;
         box(root,[size,.72,size],[0,.38,0],body);
         box(root,[size*.56,.035,size*.56],[0,.765,0],windowMaterial);
@@ -79,11 +84,14 @@
         box(root,[size*.13,.028,size*.13],[-size*.32,.79,-size*.32],notch);
         root.updateMatrixWorld(true);roots.push(root);
       }
-      if(roots.length){
-        const base=new T.Vector3(),object=mergeReference(T,roots,base,units,material=>material,null);
-        object.name='LED bank';object.userData.partRef='LED bank';group.add(object);
-        parts.push({object,base,offset:new T.Vector3(0,.09,0),ref:'LED bank',value:leds.length+' RGB pixels'});
-        roots.forEach(root=>root.traverse(mesh=>mesh.geometry?.dispose()));
+      for(const cohort of spatialCohorts(roots,root=>root.position.clone().divideScalar(units))){
+        const base=cohort.reduce((centre,root)=>centre.add(root.position.clone().divideScalar(units)),new T.Vector3()).divideScalar(cohort.length);
+        const object=mergeReference(T,cohort,base,units,material=>material,null);
+        object.name='LED bank '+cohort[0].name;object.userData.partRef=object.name;group.add(object);
+        object.userData.componentRefs=cohort.map(root=>root.name);
+        object.userData.componentCenters=cohort.map(root=>({ref:root.name,value:fallback.value,position:root.position.clone().divideScalar(units).sub(base).toArray()}));
+        parts.push({object,base,offset:new T.Vector3(0,.09,0),ref:object.name,value:cohort.length+' RGB pixels'});
+        cohort.forEach(root=>root.traverse(mesh=>mesh.geometry?.dispose()));
       }
     }
     if(metadata.connector&&!parts.some(part=>part.ref===metadata.connector.node)){

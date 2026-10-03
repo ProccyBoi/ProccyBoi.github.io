@@ -30,21 +30,39 @@ async function snapshot(page){
   return page.evaluate(()=>Object.fromEntries(Object.entries(window.__observedAssemblies).map(([name,model])=>[name,{
     pose:model.group.matrixWorld.elements.slice(),
     local:{position:model.group.position.toArray(),rotation:model.group.rotation.toArray(),scale:model.group.scale.toArray(),visible:model.group.visible},
-    parts:model.parts.map(part=>({name:part.object.name,position:part.object.position.toArray(),displacement:part.object.position.distanceTo(part.base)}))
+    parts:model.parts.map(part=>({name:part.object.name,position:part.object.position.toArray(),quaternion:part.object.quaternion.toArray(),displacement:part.object.position.distanceTo(part.base),tilt:part.object.quaternion.angleTo(part.motion.baseQuaternion)}))
   }])));
+}
+async function fitsStage(page,name){
+  const bounds=await page.evaluate(name=>{
+    const model=window.__observedAssemblies[name],T=window.THREE;
+    const box=new T.Box3().setFromObject(model.group),points=[];
+    for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z])points.push(new T.Vector3(x,y,z).project(window.__heroCamera));
+    return {left:(Math.min(...points.map(p=>p.x))+1)*innerWidth/2,right:(Math.max(...points.map(p=>p.x))+1)*innerWidth/2,top:(1-Math.max(...points.map(p=>p.y)))*innerHeight/2,bottom:(1-Math.min(...points.map(p=>p.y)))*innerHeight/2,width:innerWidth,height:innerHeight,header:document.querySelector('.v2-header').getBoundingClientRect().bottom};
+  },name);
+  assert.ok(bounds.left>=0&&bounds.right<=bounds.width&&bounds.top>=bounds.header&&bounds.bottom<=bounds.height,name+' exploded geometry must stay on screen below navigation: '+JSON.stringify(bounds));
 }
 (async()=>{
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   try{
     const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    page.on('console',message=>{if(message.type()==='warning'&&message.text().includes('CAD unavailable'))console.error(message.text());});
     // Observe the public factory results without replacing geometry, transforms,
     // rendering, scroll handlers or requestAnimationFrame in production code.
     await page.addInitScript(()=>{
       window.__observedAssemblies={};
-      let observed;
+      let observed, cameraObserved=false;
       Object.defineProperty(window,'V2AssemblyModels',{configurable:true,get:()=>observed,set:factory=>{
         observed={load:async(...args)=>{
+          if(!cameraObserved){
+            cameraObserved=true;
+            const update=window.THREE.OrthographicCamera.prototype.updateMatrixWorld;
+            window.THREE.OrthographicCamera.prototype.updateMatrixWorld=function(){
+              if(this.top===5&&this.bottom===-5)window.__heroCamera=this;
+              return update.apply(this,arguments);
+            };
+          }
           const assembly=await factory.load(...args);
           window.__observedAssemblies[args[0]]=assembly;
           return assembly;
@@ -52,7 +70,11 @@ async function snapshot(page){
       }});
     });
     await page.goto(base+'/v2/',{waitUntil:'domcontentloaded'});
-    await page.locator('[data-assembly-models-ready="3"]').waitFor({timeout:60000});
+    await page.locator('[data-assembly-models-settled="3"]').waitFor({timeout:90000}).catch(async error=>{
+      console.error('Model loading diagnostic',await page.locator('[data-assembly]').evaluate(node=>({data:{...node.dataset},models:[...node.querySelectorAll('[data-assembly-model-state]')].map(item=>({...item.dataset}))})));
+      throw error;
+    });
+    assert.equal(await page.locator('[data-assembly]').getAttribute('data-assembly-models-ready'),'3','All hero models must render');
     await page.waitForTimeout(1800);
     // Establish the baseline after a complete scroll roundtrip so the finite
     // entrance animation cannot be mistaken for part of the scroll state.
@@ -97,7 +119,10 @@ async function snapshot(page){
       assert.ok(model.parts.every(part=>part.position.every(Number.isFinite)),name+' component transforms must remain finite');
       assert.ok(model.parts.every(part=>part.displacement>.001),name+' physical groups must separate in the exploded chapter');
       assert.ok(Math.max(...model.parts.map(part=>part.displacement))>.05,name+' must visibly disassemble');
+      assert.ok(new Set(model.parts.map(part=>part.displacement.toFixed(4))).size>4,name+' parts must have varied separation distances');
+      assert.ok(model.parts.some(part=>part.tilt>.015),name+' parts must tilt as they separate');
       assert.ok(model.pose.every(Number.isFinite),name+' scene transform must remain finite');
+      await fitsStage(page,name);
       console.log('PASS '+name+': '+model.parts.length+' physical groups visibly separate with finite transforms');
       if(shots)await page.screenshot({path:path.join(shots,'final-'+name+'.png')});
     }
@@ -108,14 +133,19 @@ async function snapshot(page){
       const error=Math.max(...returned[name].pose.map((value,index)=>Math.abs(value-initial[name].pose[index])));
       assert.ok(error<1e-3,name+' must return to the original scene pose; maximum error '+error+'; initial '+JSON.stringify(initial[name].local)+'; returned '+JSON.stringify(returned[name].local));
       assert.deepEqual(returned[name].parts.map(part=>part.position),initial[name].parts.map(part=>part.position));
+      assert.deepEqual(returned[name].parts.map(part=>part.quaternion),initial[name].parts.map(part=>part.quaternion));
     }
     assert.deepEqual(errors,[],'Browser JavaScript errors');
     console.log('PASS continuous rendered component motion and exact reversal to all three original assemblies');
-    if(shots)for(const viewport of [{width:390,height:844},{width:320,height:740}]){
+    for(const viewport of [{width:390,height:844},{width:320,height:740}]){
       await page.setViewportSize(viewport);
       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await scrollPhase(page,0);
-      await page.screenshot({path:path.join(shots,'final-intro-'+viewport.width+'.png')});
+      if(shots)await page.screenshot({path:path.join(shots,'final-intro-'+viewport.width+'.png')});
+      for(const [name,progress] of [['tramtrace',.265],['telemetry',.565],['pi',.88]]){
+        await scrollPhase(page,progress);await fitsStage(page,name);
+        if(shots)await page.screenshot({path:path.join(shots,'final-'+name+'-'+viewport.width+'.png')});
+      }
     }
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

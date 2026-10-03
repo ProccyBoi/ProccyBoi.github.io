@@ -5,6 +5,10 @@
   const root = document.querySelector('[data-pcb-object]');
   const canvas = root?.querySelector('[data-pcb-object-canvas]');
   if (!config || !root || !canvas) return;
+  const simplified = document.body.classList.contains('v2');
+  let requestRender = () => {};
+  let fitRequested = simplified;
+  const requestFit = () => { fitRequested = simplified; requestRender(); };
 
   const THREE = window.THREE;
   const d2r = THREE.MathUtils.degToRad;
@@ -93,8 +97,8 @@
     const c = document.createElement('canvas'); c.width = width; c.height = height; const ctx = c.getContext('2d'); draw(ctx, width, height); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.minFilter = THREE.LinearMipmapLinearFilter; return t;
   };
 
-  const applyTopTexture = (texture) => { texture.encoding = THREE.sRGBEncoding; texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); topMat.map = texture; topMat.color.setHex(0xffffff); topMat.needsUpdate = true; };
-  const applyBottomTexture = (texture) => { texture.encoding = THREE.sRGBEncoding; texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); bottomMat.map = texture; bottomMat.color.setHex(0xffffff); bottomMat.needsUpdate = true; };
+  const applyTopTexture = (texture) => { texture.encoding = THREE.sRGBEncoding; texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); topMat.map = texture; topMat.color.setHex(0xffffff); topMat.needsUpdate = true; requestRender(); };
+  const applyBottomTexture = (texture) => { texture.encoding = THREE.sRGBEncoding; texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); bottomMat.map = texture; bottomMat.color.setHex(0xffffff); bottomMat.needsUpdate = true; requestRender(); };
 
   if (config.drawTop) applyTopTexture(textureCanvas(config.drawTop, config.textureWidth || 1600, config.textureHeight || Math.round((config.height / config.width) * (config.textureWidth || 1600))));
   if (config.drawBottom) applyBottomTexture(textureCanvas(config.drawBottom, config.textureWidth || 1600, config.textureHeight || Math.round((config.height / config.width) * (config.textureWidth || 1600))));
@@ -116,9 +120,22 @@
     });
   }
 
-  const pickables = []; const explodeParts = [];
+  const pickables = []; const explodeParts = [], instanceParts = [];
   const tag = (object, spec) => { object.userData.ref = spec.ref || ''; object.userData.name = spec.name || spec.ref || 'Part'; object.userData.copy = spec.copy || ''; pickables.push(object); return object; };
-  const registerExplode = (object, spec, index) => { explodeParts.push({ object, base: object.position.clone(), lift: spec.explode == null ? (3.0 + (index % 4) * 0.8) : spec.explode, driftX: spec.explodeX || 0, driftZ: spec.explodeZ || 0, delay: Math.min(0.4, (spec.delay == null ? index * 0.025 : spec.delay)) }); };
+  const registerExplode = (object, spec, index, scale = 1) => {
+    const seed=[...(spec.ref||String(index))].reduce((hash,char)=>(hash*31+char.charCodeAt(0))>>>0,0);
+    const lift=spec.explode == null ? 3+(index%4)*.8 : spec.explode;
+    const x=spec.x||0,z=spec.z||0;
+    const baseQuaternion=object.quaternion.clone();
+    const part={object,base:object.position.clone(),baseQuaternion,
+      lift:(lift+(simplified?(seed%7)*.55:0))/scale,
+      driftX:(spec.explodeX||(simplified?(Math.sign(x)||1)*(1.4+(seed%5)*.55):0))/scale,
+      driftZ:(spec.explodeZ||(simplified?(Math.sign(z)||-1)*(1.1+(seed%4)*.5):0))/scale,
+      delay:simplified?.05+(seed%17)*.021:Math.min(.4,spec.delay==null?index*.025:spec.delay),
+      targetQuaternion:baseQuaternion.clone()};
+    if(simplified)part.targetQuaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(d2r((seed%9)-4),d2r(((seed>>>3)%9)-4),d2r(((seed>>>5)%11)-5))));
+    explodeParts.push(part);return part;
+  };
 
   const addMetalEnds = (g, w, h, d, mat = materials.silver) => {
     const endW = Math.min(w * 0.23, 0.6); for (const sx of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(endW, h * 1.04, d * 1.03), mat); m.position.x = sx * (w - endW) / 2; g.add(m); }
@@ -247,7 +264,16 @@
     bodies.userData.instanceInfo=config.ledInstances;
     pickables.push(bodies);
     g.add(pads,bodies,windows,notches);
-    if (config.ledExplode) registerExplode(g,{explode:config.ledExplode,delay:0.05},0);
+    if(config.ledExplode&&simplified){
+      config.ledInstances.forEach((p,index)=>{
+        const object=new THREE.Object3D();object.position.set(p[0],config.thickness/2,p[1]);
+        const motion=registerExplode(object,{ref:p[3],x:p[0],z:p[1],explode:config.ledExplode},index);
+        const entries=[];
+        for(const mesh of [bodies,windows,notches]){const base=new THREE.Matrix4();mesh.getMatrixAt(index,base);entries.push({mesh,index,base});}
+        for(let k=0;k<4;k++){const base=new THREE.Matrix4();pads.getMatrixAt(index*4+k,base);entries.push({mesh:pads,index:index*4+k,base});}
+        instanceParts.push({motion,entries,pivot:new THREE.Matrix4().makeTranslation(-object.position.x,-object.position.y,-object.position.z)});
+      });
+    }else if(config.ledExplode)registerExplode(g,{explode:config.ledExplode,delay:.05},0);
   }
 
   // Prefer the actual KiCad-exported assembly whenever it is available. The
@@ -258,13 +284,14 @@
   const sourceStatus = document.createElement('p');
   sourceStatus.className = 'explorer-source-status';
   sourceStatus.setAttribute('role', 'status');
-  sourceStatus.textContent = 'Loading the production KiCad assembly…';
+  sourceStatus.textContent = simplified ? 'Loading assembly…' : 'Loading the production KiCad assembly…';
   canvas.parentElement.append(sourceStatus);
   let exactModelReady = false;
+  let exactAssembly = null;
   if (config.exactModel && THREE.GLTFLoader) {
     const componentByRef = new Map((config.components || []).map((spec) => [spec.ref, spec]));
     const ledByRef = new Map((config.ledInstances || []).map((p) => [p[3], {
-      ref: p[3], name: 'WS2812C-2020 RGB pixel', copy: `${p[3]} · WS2812C-2020-V1/W · exact KiCad 3D model`, explode: config.ledExplode || 12, delay: 0.05
+      ref: p[3], x:p[0], z:p[1], name: 'WS2812C-2020 RGB pixel', copy: `${p[3]} · WS2812C-2020-V1/W · exact KiCad 3D model`, explode: config.ledExplode || 12, delay: 0.05
     }]));
     const sourceCentre = config.exactModelCenter || [0, 0];
     const sourceScale = config.exactModelScale || 1000;
@@ -274,8 +301,28 @@
       source.scale.setScalar(sourceScale);
       source.position.set(-sourceCentre[0], -config.thickness / 2, -sourceCentre[1]);
       source.rotation.y = d2r(config.exactModelRotation || 0);
+      const styledMaterials = new Map();
+      const styleMaterial = original => {
+        if (styledMaterials.has(original)) return styledMaterials.get(original);
+        const material = original.clone(), index = Number(original.name.replace('mat_', ''));
+        if (index === 28) { material.color.setHex(0xb9bfc1); material.metalness = 0.84; material.roughness = 0.29; }
+        else if (index === 29) material.visible = false;
+        else if (index === 30 || index === 31) {
+          material.color.setHex(index === 30 ? 0x111918 : 0x1a201b).convertSRGBToLinear();
+          material.metalness = index === 30 ? 0.05 : 0; material.roughness = index === 30 ? 0.42 : 0.78;
+          material.transparent = false; material.opacity = 1; material.depthWrite = true;
+        } else {
+          const bright = Math.max(material.color.r, material.color.g, material.color.b);
+          const neutral = bright - Math.min(material.color.r, material.color.g, material.color.b) < 0.15;
+          material.metalness = bright > 0.32 && neutral ? 0.78 : 0.05;
+          material.roughness = bright > 0.32 && neutral ? 0.3 : 0.6;
+          if (index === 18) { material.color.setHex(0xadb7b8).convertSRGBToLinear(); material.metalness = 0.94; material.roughness = 0.36; }
+        }
+        styledMaterials.set(original, material); return material;
+      };
       source.traverse((o) => {
         if (o.isMesh) {
+          if (simplified) o.material = Array.isArray(o.material) ? o.material.map(styleMaterial) : styleMaterial(o.material);
           o.frustumCulled = false;
           o.castShadow = true;
           o.receiveShadow = true;
@@ -284,6 +331,7 @@
 
       pickables.length = 0;
       explodeParts.length = 0;
+      instanceParts.length = 0;
       const refs = [...componentByRef.keys(), ...ledByRef.keys()];
       refs.forEach((ref, index) => {
         const node = source.getObjectByName(ref);
@@ -295,36 +343,49 @@
         pickables.push(node);
         const led = ref.startsWith('LED');
         const liftMm = spec.explode == null ? (led ? 12 : 8 + (index % 4) * 1.2) : spec.explode;
-        explodeParts.push({
-          object: node,
-          base: node.position.clone(),
-          lift: liftMm / sourceScale,
-          driftX: (spec.explodeX || 0) / sourceScale,
-          driftZ: (spec.explodeZ || 0) / sourceScale,
-          delay: Math.min(0.4, spec.delay == null ? (led ? 0.05 : index * 0.025) : spec.delay)
-        });
+        registerExplode(node,{...spec,explode:liftMm,delay:spec.delay==null?(led?.05:index*.025):spec.delay},index,sourceScale);
       });
 
       scene.add(source);
+      exactAssembly = source;
+      if (simplified) new THREE.TextureLoader().load('/assets/images/v2/tramtrace-silk.svg', texture => {
+        texture.encoding = THREE.sRGBEncoding; texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+        const geometry = new THREE.PlaneGeometry(config.width, config.height); geometry.rotateX(-Math.PI / 2);
+        const material = new THREE.MeshStandardMaterial({map:texture,transparent:true,alphaTest:0.04,roughness:0.9,metalness:0,polygonOffset:true,polygonOffsetFactor:-2,depthWrite:false,side:THREE.DoubleSide});
+        const silk = new THREE.Mesh(geometry, material); silk.position.y = config.thickness / 2 + 0.02; silk.receiveShadow = true; scene.add(silk); requestRender();
+      });
       board.visible = false;
       exactModelReady = true;
       root.dataset.sourceModel = 'kicad-glb';
       sourceStatus.hidden = true;
-      announce('Exact KiCad 3D assembly ready');
+      announce(simplified ? 'Assembly ready' : 'Exact KiCad 3D assembly ready');
+      requestFit();
     }, undefined, (error) => {
       console.warn('TramTrace exact KiCad GLB failed to load; using procedural fallback', error);
       root.dataset.sourceModel = 'fallback';
-      sourceStatus.textContent = 'The production 3D assembly could not load. This simplified fallback retains source placements; use the copper and inspection views below for board detail.';
+      sourceStatus.textContent = simplified ? 'The detailed model could not load. A simplified assembly is shown.' : 'The production 3D assembly could not load. This simplified fallback retains source placements; use the copper and inspection views below for board detail.';
+      requestRender();
     });
   } else {
     root.dataset.sourceModel = 'fallback';
-      sourceStatus.textContent = 'The production 3D assembly could not load. This simplified fallback retains source placements; use the copper and inspection views below for board detail.';
+      sourceStatus.textContent = simplified ? 'The detailed model could not load. A simplified assembly is shown.' : 'The production 3D assembly could not load. This simplified fallback retains source placements; use the copper and inspection views below for board detail.';
   }
 
   let exploded = 0, explodeTarget = 0;
+  const instanceMatrix=new THREE.Matrix4();
   const updateExplode = () => {
     const t = THREE.MathUtils.smoothstep(exploded, 0, 1);
-    explodeParts.forEach((p) => { const local = clamp((t - p.delay) / Math.max(0.01, 1 - p.delay), 0, 1); p.object.position.set(p.base.x + p.driftX*local, p.base.y + p.lift*local, p.base.z + p.driftZ*local); });
+    explodeParts.forEach((p) => {
+      const raw=clamp((t-p.delay)/Math.max(.01,1-p.delay),0,1);
+      const local=simplified?raw*raw*(3-2*raw):raw;
+      if(local===0){p.object.position.copy(p.base);p.object.quaternion.copy(p.baseQuaternion);}
+      else{p.object.position.set(p.base.x+p.driftX*local,p.base.y+p.lift*local,p.base.z+p.driftZ*local);p.object.quaternion.copy(p.baseQuaternion).slerp(p.targetQuaternion,local);}
+    });
+    for(const part of instanceParts){
+      part.motion.object.updateMatrix();
+      const transform=part.motion.object.matrix.clone().multiply(part.pivot);
+      for(const entry of part.entries){entry.mesh.setMatrixAt(entry.index,t===0?entry.base:instanceMatrix.multiplyMatrices(transform,entry.base));entry.mesh.instanceMatrix.needsUpdate=true;}
+    }
     if (config.fadeSurfaceOnExplode) { topMat.opacity = 1 - t * 0.62; topMat.transparent = t > 0.001; topMat.needsUpdate = true; }
   };
 
@@ -353,12 +414,15 @@
 
   viewButtons.forEach((b) => b.addEventListener('click', () => { setPreset(b.dataset.pcbView); announce(`${b.dataset.pcbView} camera view`); }));
   setPreset('angle');
-  const explodeButton = root.querySelector('[data-pcb-explode]'); explodeButton?.addEventListener('click', () => { explodeTarget = explodeTarget > 0.5 ? 0 : 1; explodeButton.setAttribute('aria-pressed', explodeTarget ? 'true' : 'false'); explodeButton.textContent = explodeTarget ? 'Assemble' : 'Explode'; targetDistance = fitDistance() * (explodeTarget ? 1.2 : 1); announce(explodeTarget?'Exploded board view':'Assembled board view'); });
-  root.querySelector('[data-pcb-reset]')?.addEventListener('click', () => { explodeTarget=0; if(explodeButton){explodeButton.textContent='Explode';explodeButton.setAttribute('aria-pressed','false');} setPreset('angle'); announce('3D view reset'); });
+  const explodeButton = root.querySelector('[data-pcb-explode]'); explodeButton?.addEventListener('click', () => { explodeTarget = explodeTarget > 0.5 ? 0 : 1; explodeButton.setAttribute('aria-pressed', explodeTarget ? 'true' : 'false'); explodeButton.textContent = explodeTarget ? 'Assemble' : simplified ? 'Disassemble' : 'Explode'; targetDistance = fitDistance() * (explodeTarget ? 1.2 : 1); requestFit(); announce(explodeTarget?'Exploded board view':'Assembled board view'); });
+  root.querySelector('[data-pcb-reset]')?.addEventListener('click', () => { explodeTarget=0; if(explodeButton){explodeButton.textContent=simplified?'Disassemble':'Explode';explodeButton.setAttribute('aria-pressed','false');} setPreset('angle'); announce('3D view reset'); });
 
   const pointers=new Map();
-  let dragStart=null,pinchStartDistance=0,pinchStartZoom=distance;
+  let dragStart=null,pinchStartDistance=0,pinchStartZoom=distance,dragTravel=0;
   canvas.addEventListener('pointerdown',(e)=>{
+    if(e.button!==0)return;
+    dragTravel=0;
+    const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
     canvas.setPointerCapture?.(e.pointerId);
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pointers.size===1){
@@ -373,6 +437,7 @@
   canvas.addEventListener('pointermove',(e)=>{
     const r=canvas.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;
     if(!pointers.has(e.pointerId))return;
+    const previous=pointers.get(e.pointerId);dragTravel+=Math.hypot(e.clientX-previous.x,e.clientY-previous.y);
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pointers.size===1&&dragStart){
       targetYaw=dragStart.yaw-(e.clientX-dragStart.x)*0.008;
@@ -390,7 +455,7 @@
     canvas.releasePointerCapture?.(e.pointerId);
     canvas.classList.toggle('is-dragging',pointers.size>0);
     if(pointers.size===1){const p=[...pointers.values()][0];dragStart={x:p.x,y:p.y,yaw:targetYaw,pitch:targetPitch};}
-    else if(!pointers.size){dragStart=null;pinchStartDistance=0;}
+    else if(!pointers.size){dragStart=null;pinchStartDistance=0;if(e.type!=='pointerup'||dragTravel>=6){mouse.set(2,2);showPart(null);}}
   };
   canvas.addEventListener('pointerup',releasePointer);
   canvas.addEventListener('pointercancel',releasePointer);
@@ -410,25 +475,43 @@
 
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(2,2); let hover=null;
   const refEl=root.querySelector('[data-pcb-ref]'),nameEl=root.querySelector('[data-pcb-name]'),copyEl=root.querySelector('[data-pcb-copy]');
-  const showPart=(o)=>{const part=o?.userData?.ref?o:o?.parent; const ref=part?.userData?.ref||'BOARD'; if(refEl)refEl.textContent=ref; if(nameEl)nameEl.textContent=part?.userData?.name||config.boardName; if(copyEl)copyEl.textContent=part?.userData?.copy||config.boardCopy;}; showPart(null);
-  canvas.addEventListener('pointerleave',()=>{if(!pointers.size){mouse.set(2,2);showPart(null);}});
+  const partPanel=root.querySelector('[data-pcb-part]');
+  const showPart=(o)=>{const part=o?.userData?.ref?o:o?.parent; const ref=part?.userData?.ref||'BOARD'; if(refEl)refEl.textContent=ref; if(nameEl)nameEl.textContent=part?.userData?.name?(simplified?ref+' · ':'')+part.userData.name:config.boardName; if(copyEl)copyEl.textContent=part?.userData?.copy||config.boardCopy; if(partPanel)partPanel.hidden=!part?.userData?.ref;root.dataset.explorerPart=part?.userData?.ref||'';}; showPart(null);
+  canvas.addEventListener('pointerleave',event=>{if(event.pointerType!=='touch'&&!pointers.size){mouse.set(2,2);hover=null;showPart(null);}});
 
-  const resize=()=>{const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const preset=viewButtons.find(b=>b.getAttribute('aria-pressed')==='true');if(preset&&!explodeTarget)setPreset(preset.dataset.pcbView);};
+  const resize=()=>{const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const preset=viewButtons.find(b=>b.getAttribute('aria-pressed')==='true');if(preset&&!explodeTarget)setPreset(preset.dataset.pcbView);else if(simplified)targetDistance=fitDistance()*(explodeTarget?1.2:1);requestFit();};
   new ResizeObserver(resize).observe(canvas); resize();
 
   const clock=new THREE.Clock();
-  const animate=()=>{const reducedMotion=motionPreference.matches; const dt=Math.min(0.05,clock.getDelta()); yaw=reducedMotion?targetYaw:THREE.MathUtils.damp(yaw,targetYaw,7,dt); pitch=reducedMotion?targetPitch:THREE.MathUtils.damp(pitch,targetPitch,7,dt); distance=reducedMotion?targetDistance:THREE.MathUtils.damp(distance,targetDistance,7,dt); exploded=reducedMotion?explodeTarget:THREE.MathUtils.damp(exploded,explodeTarget,6,dt); updateExplode();
+  const animate=()=>{const reducedMotion=motionPreference.matches; const dt=Math.min(0.05,clock.getDelta()); yaw=reducedMotion?targetYaw:THREE.MathUtils.damp(yaw,targetYaw,7,dt); pitch=reducedMotion?targetPitch:THREE.MathUtils.damp(pitch,targetPitch,7,dt); distance=reducedMotion?targetDistance:THREE.MathUtils.damp(distance,targetDistance,7,dt); exploded=reducedMotion?explodeTarget:THREE.MathUtils.damp(exploded,explodeTarget,6,dt);
+    if(Math.abs(targetYaw-yaw)<.0001)yaw=targetYaw;if(Math.abs(targetPitch-pitch)<.0001)pitch=targetPitch;if(Math.abs(targetDistance-distance)<.001)distance=targetDistance;if(Math.abs(explodeTarget-exploded)<.0001)exploded=explodeTarget;
+    updateExplode();
+    if (fitRequested && exactAssembly) {
+      const progress = exploded; exploded = explodeTarget; updateExplode();
+      targetDistance = window.PortfolioExplorer.fitDistance(THREE, exactAssembly, camera, target, targetYaw, targetPitch);
+      exploded = progress; updateExplode(); fitRequested = false;
+    }
     const cp=Math.cos(pitch),sp=Math.sin(pitch),cy=Math.cos(yaw),sy=Math.sin(yaw); camera.position.set(target.x+distance*cp*sy,target.y+distance*sp,target.z+distance*cp*cy); camera.lookAt(target);
-    ray.setFromCamera(mouse,camera); const hits=ray.intersectObjects(pickables,true); const first=hits[0];
+    scene.updateMatrixWorld(true);ray.setFromCamera(mouse,camera); const hits=pointers.size?[]:ray.intersectObjects(pickables,true); const first=hits.find(entry=>{for(let node=entry.object;node;node=node.parent)if(!node.visible)return false;return true;});
     if(first?.object?.userData?.instanceInfo&&first.instanceId!=null){
       const info=first.object.userData.instanceInfo[first.instanceId]||[];
       const ref=info[3]||`LED ${first.instanceId+1}`;
       const key=`${ref}:${first.instanceId}`;
-      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent='WS2812C-2020 RGB pixel';if(copyEl)copyEl.textContent=`${ref} · WS2812C-2020-V1/W · source-positioned RGB pixel.`;}
+      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent=(simplified?ref+' · ':'')+'WS2812C-2020 RGB pixel';if(copyEl)copyEl.textContent=`${ref} · WS2812C-2020-V1/W · source-positioned RGB pixel.`;if(partPanel)partPanel.hidden=false;root.dataset.explorerPart=ref;}
     }else{
       const hit=first?.object; let tagged=hit; while(tagged&&!tagged.userData.ref)tagged=tagged.parent;
       if(tagged!==hover){hover=tagged;showPart(hover);}
     }
-    renderer.render(scene,camera); };
-  window.PortfolioExplorer.start(animate, canvas);
+    renderer.render(scene,camera);
+    if(simplified)root.dataset.explorerProgress=exploded.toFixed(4);
+    return yaw!==targetYaw||pitch!==targetPitch||distance!==targetDistance||exploded!==explodeTarget;
+  };
+  requestRender=window.PortfolioExplorer.start(animate, canvas, { demand:simplified });
+  if(simplified){
+    if(explodeButton)explodeButton.textContent='Disassemble';
+    root.addEventListener('click',event=>{if(event.target.closest('button')){mouse.set(2,2);hover=null;showPart(null);}requestRender();});
+    for(const type of ['pointerdown','pointermove','pointerup','pointercancel','wheel','keydown'])canvas.addEventListener(type,requestRender);
+    for(const type of ['wheel','keydown'])canvas.addEventListener(type,()=>{mouse.set(2,2);hover=null;showPart(null);});
+    motionPreference.addEventListener('change',requestRender);
+  }
 })();

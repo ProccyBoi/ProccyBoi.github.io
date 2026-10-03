@@ -307,3 +307,27 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
   .v2 :is(.catalog-card-media img, .button, .project-hero-actions a) { transition: none; }
   .v2 :is(.catalog-card:hover .catalog-card-media img, .button:hover, .project-hero-actions a:hover) { transform: none; }
 }
+
+/* Shared control and identity treatment across the independent CAD engines. */
+.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls) {
+  justify-content: center; align-items: center; padding: 12px 20px 24px; border: 0;
+}
+.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls) button {
+  flex: 0 0 auto; min-width: 120px; min-height: 42px; padding: 10px 20px;
+  border: 1px solid var(--v2-accent); border-radius: 24px;
+  background: var(--v2-accent); color: var(--v2-on-accent);
+  font: 500 12px/1.4 var(--v2-font); text-transform: none; letter-spacing: 0; cursor: pointer;
+}
+.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls) button:hover {
+  background: #b9d2ff; border-color: #b9d2ff; color: var(--v2-on-accent);
+}
+.v2-case .project-interactive .v2-part-readout {
+  top: 18px; right: 18px; bottom: auto; left: auto; max-width: min(70%, 280px);
+  padding: 9px 12px; border: 1px solid #3c4853; border-radius: 6px;
+  background: #10161ced; color: var(--v2-ink); font: 400 12px/1.5 var(--v2-font);
+  text-align: left; text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; pointer-events: none;
+}
+.v2-case .project-interactive .v2-part-readout strong { font: inherit; }
+@media (max-width: 700px) {
+  .v2-case .project-interactive .v2-part-readout { top: 12px; right: 12px; font-size: 11px; }
+}

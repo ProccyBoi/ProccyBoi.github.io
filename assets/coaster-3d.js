@@ -1,6 +1,7 @@
 (() => {
   const root = document.querySelector('[data-coaster-inspector]');
   if (!root || !window.THREE) return;
+  const compactViewer = document.body.classList.contains('v2');
 
   const stage = root.querySelector('[data-coaster-stage]');
   const canvas = root.querySelector('[data-coaster-canvas]');
@@ -17,6 +18,7 @@
   const partPanel = root.querySelector('[data-coaster-part]');
   const partName = root.querySelector('[data-coaster-part-name]');
   const partDetail = root.querySelector('[data-coaster-part-detail]');
+  const partReadout = root.querySelector('[data-coaster-readout]');
   const liveRegion = document.querySelector('[data-coaster-live]');
   const announce = (message) => { if (liveRegion) liveRegion.textContent = message; };
   const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -79,6 +81,16 @@
     { key: 'usb', file: 'coaster-j1-usbc.stl', material: mat.metal, name: 'J1 · USB-C power', detail: '5 V power input; USB data pins are not connected.', offset: [0, 12.0, 6.5], delay: 0.10 },
     { key: 'lid', file: 'coaster-lid.stl', material: mat.lid, name: 'Clear resin lid', detail: 'Exact Coaster Lid.step geometry; the central cup-contact region is 3 mm thick.', offset: [0, 0, 18.0], delay: 0.04, transparent: true }
   ];
+  if (compactViewer) partSpecs.forEach((spec, index) => {
+    if (spec.key === 'board') return;
+    const phase = index * 2.399963;
+    spec.rotation = new THREE.Euler(THREE.MathUtils.degToRad(Math.sin(phase) * 5), THREE.MathUtils.degToRad(Math.cos(phase) * 6), THREE.MathUtils.degToRad(Math.sin(phase + 0.5) * 7));
+    if (spec.key === 'base') spec.offset = [-1.6, 0.8, -10];
+    if (spec.key === 'lid') spec.offset = [1.4, -1.2, 19];
+    if (spec.key === 'leds') spec.offset = [0.8, 0.6, 7];
+    if (spec.key === 'capacitors') spec.offset = [-1.8, -0.8, 6.2];
+    if (spec.key === 'resistors') spec.offset = [1.6, 1.2, 6.8];
+  });
 
   // These vessels are intentionally procedural visualiser mockups, not source CAD.
   // They demonstrate how the real VEML7700/SHT4x firmware inputs affect the LED state.
@@ -284,7 +296,8 @@
     stage.dataset.coasterLedPeak = peakOpacity.toFixed(3);
   };
 
-  const invalidate = () => { needsRender = true; };
+  let wakeRenderer = null;
+  const invalidate = () => { needsRender = true; wakeRenderer?.(); };
   motionQuery.addEventListener?.('change', (event) => {
     reducedMotion = event.matches;
     if (reducedMotion) {
@@ -303,9 +316,9 @@
 
   const maybeReady = () => {
     if (loaded !== partSpecs.length || surfaceLoaded !== 2) return;
-    status.textContent = 'STEP + KiCad board surfaces loaded';
+    status.textContent = compactViewer ? 'Assembly ready' : 'STEP + KiCad board surfaces loaded';
     status.classList.add('is-ready');
-    announce('Coaster source-derived 3D model ready');
+    announce(compactViewer ? 'Coaster 3D model ready' : 'Coaster source-derived 3D model ready');
   };
   mat.board.toneMapped = false;
 
@@ -456,6 +469,13 @@
     });
 
   const setPartPanel = (spec) => {
+    if (compactViewer) {
+      const identity = spec?.ref || spec?.key || spec?.name || '', label = spec?.name || '';
+      if (root.dataset.coasterSelection === identity && partReadout?.textContent === label) return;
+      root.dataset.coasterSelection = identity;
+      if (partReadout) { partReadout.hidden = !spec; partReadout.textContent = label; }
+      return;
+    }
     if (!partPanel || !partName || !partDetail) return;
     if (!spec) {
       partPanel.classList.remove('is-active');
@@ -479,14 +499,19 @@
         geometry.translate(-133.2, 94.59, 0);
         const wrapper = new THREE.Group();
         wrapper.userData.spec = spec;
+        if (compactViewer) {
+          geometry.computeBoundingBox();
+          wrapper.userData.pivot = geometry.boundingBox.getCenter(new THREE.Vector3());
+          wrapper.userData.turn = new THREE.Quaternion().setFromEuler(spec.rotation || new THREE.Euler());
+        }
         const mesh = new THREE.Mesh(geometry, spec.material);
         mesh.userData.spec = spec;
         mesh.renderOrder = spec.transparent ? 5 : 1;
-        if (spec.transparent) mesh.raycast = () => {};
+        if (spec.transparent && !compactViewer) mesh.raycast = () => {};
         wrapper.add(mesh);
         cadRoot.add(wrapper);
         wrappers.set(spec.key, wrapper);
-        if (!spec.transparent) pickMeshes.push(mesh);
+        if (!spec.transparent || compactViewer) pickMeshes.push(mesh);
         loaded += 1;
         invalidate();
         if (spec.key === 'board' && surfaceManifest) attachBoardSurface(surfaceManifest);
@@ -600,7 +625,8 @@
     if (reducedMotion) explodeProgress = explodeTarget;
     invalidate();
     explodeButton.setAttribute('aria-pressed', String(explodeTarget > 0.5));
-    explodeButton.textContent = explodeTarget > 0.5 ? 'Assemble' : 'Explode';
+    explodeButton.textContent = explodeTarget > 0.5 ? 'Assemble' : compactViewer ? 'Disassemble' : 'Explode';
+    if (compactViewer) setPartPanel(null);
     announce(explodeTarget > 0.5 ? 'Exploding coaster assembly' : 'Assembling coaster');
   });
 
@@ -608,7 +634,7 @@
     explodeTarget = 0;
     if (reducedMotion) explodeProgress = 0;
     explodeButton?.setAttribute('aria-pressed', 'false');
-    if (explodeButton) explodeButton.textContent = 'Explode';
+    if (explodeButton) explodeButton.textContent = compactViewer ? 'Disassemble' : 'Explode';
     lidVisible = true;
     const lid = wrappers.get('lid');
     if (lid) lid.visible = true;
@@ -622,20 +648,26 @@
   });
 
   const clampPitch = (value) => THREE.MathUtils.clamp(value, THREE.MathUtils.degToRad(-88), THREE.MathUtils.degToRad(88));
+  let pointerTouch = false, draggedDistance = 0;
+  if (compactViewer) stage.style.touchAction = 'pan-y pinch-zoom';
   stage.addEventListener('pointerdown', (event) => {
-    dragging = true; lastX = event.clientX; lastY = event.clientY;
+    if (compactViewer && (event.button !== 0 || !event.isPrimary)) return;
+    dragging = true; lastX = event.clientX; lastY = event.clientY; draggedDistance = 0; pointerTouch = event.pointerType === 'touch';
     stage.classList.add('is-dragging');
     stage.setPointerCapture(event.pointerId);
   });
   stage.addEventListener('pointermove', (event) => {
     if (!dragging) return;
+    draggedDistance += Math.hypot(event.clientX - lastX, event.clientY - lastY);
     targetYaw -= (event.clientX - lastX) * 0.008;
-    targetPitch = clampPitch(targetPitch + (event.clientY - lastY) * 0.006);
+    if (!compactViewer || !pointerTouch) targetPitch = clampPitch(targetPitch + (event.clientY - lastY) * 0.006);
+    if (compactViewer && draggedDistance > 4) { hoverPoint = null; setPartPanel(null); }
     invalidate();
     lastX = event.clientX; lastY = event.clientY;
   });
   const stopDrag = (event) => {
     dragging = false; stage.classList.remove('is-dragging');
+    if (compactViewer && event?.type === 'pointercancel') { hoverPoint = null; setPartPanel(null); }
     if (event?.pointerId !== undefined && stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
   };
   stage.addEventListener('pointerup', stopDrag);
@@ -648,6 +680,7 @@
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
+  let hoverPoint = null;
   const isVisibleForPick = (object) => {
     for (let node = object; node; node = node.parent) {
       if (!node.visible) return false;
@@ -659,24 +692,43 @@
     pointer.x = x;
     pointer.y = y;
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(pickMeshes.filter(isVisibleForPick), false)[0];
-    const spec = hit?.object?.userData?.spec || null;
+    const hits = raycaster.intersectObjects(pickMeshes.filter(isVisibleForPick), false);
+    // The clear lid remains identifiable where it extends beyond opaque parts,
+    // while the visibly transparent interior allows inspecting the board below.
+    const hit = compactViewer ? hits.find(hit => !hit.object.userData.spec?.transparent) || hits[0] : hits[0];
+    let spec = hit?.object?.userData?.spec || null;
+    if (compactViewer && hit && surfaceManifest && !['base','board','lid'].includes(spec?.key)) {
+      const point = hit.object.worldToLocal(hit.point.clone()); point.x += 133.2; point.y -= 94.59;
+      const component = surfaceManifest.pcb_step_components.find(component => {
+        const [x0,y0,z0,x1,y1,z1] = component.bounds_mm, tolerance = 0.08;
+        return point.x >= x0-tolerance && point.x <= x1+tolerance && point.y >= y0-tolerance && point.y <= y1+tolerance && point.z >= z0-tolerance && point.z <= z1+tolerance;
+      });
+      if (component) spec = { ...spec, ref: component.ref, name: spec.name.startsWith(component.ref + ' ·') ? spec.name : `${component.ref} · ${component.step_product.replace(/_/g, ' ')}` };
+    }
     setPartPanel(spec);
-    if (speak && spec) announce(`${spec.name}. ${spec.detail}`);
+    if (speak && spec) announce(compactViewer ? spec.name : `${spec.name}. ${spec.detail}`);
+  };
+  const identifyClient = (x, y) => {
+    const rect = canvas.getBoundingClientRect();
+    identifyNdc(
+      ((x - rect.left) / rect.width) * 2 - 1,
+      -((y - rect.top) / rect.height) * 2 + 1
+    );
   };
   const identifyAt = (event) => {
     if (dragging) return;
-    const rect = canvas.getBoundingClientRect();
-    identifyNdc(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1
-    );
+    if (compactViewer && (event.type === 'click' && draggedDistance > 5 || event.pointerType === 'touch' && event.type !== 'click')) return;
+    if (compactViewer && event.pointerType !== 'touch') hoverPoint = [event.clientX, event.clientY];
+    identifyClient(event.clientX, event.clientY);
   };
   stage.addEventListener('pointermove', identifyAt);
   stage.addEventListener('click', identifyAt);
-  stage.addEventListener('pointerleave', () => { if (!dragging) setPartPanel(null); });
+  stage.addEventListener('pointerleave', (event) => {
+    if (!dragging && (!compactViewer || event.pointerType !== 'touch')) { hoverPoint = null; setPartPanel(null); }
+  });
 
   stage.addEventListener('keydown', (event) => {
+    if (compactViewer && event.key === 'Escape') { hoverPoint = null; setPartPanel(null); event.preventDefault(); return; }
     if (event.key === '1') { setVessel('none'); event.preventDefault(); return; }
     if (event.key === '2') { setVessel('cup'); event.preventDefault(); return; }
     const step = THREE.MathUtils.degToRad(4);
@@ -724,7 +776,7 @@
       Math.abs(explodeTarget - explodeProgress) > 0.0001 ||
       (!reducedMotion && (vesselState === 'cup' || occupied || occupancyCandidate !== null))
     );
-    if (!needsRender && !animating) return;
+    if (!needsRender && !animating) return false;
     if (reducedMotion) {
       yaw = targetYaw;
       pitch = targetPitch;
@@ -751,6 +803,12 @@
       const raw = THREE.MathUtils.clamp((explodeProgress - spec.delay) / Math.max(0.001, 1 - spec.delay), 0, 1);
       const t = smoothstep(raw);
       wrapper.position.set(spec.offset[0] * t, spec.offset[1] * t, spec.offset[2] * t);
+      if (compactViewer && spec.rotation) {
+        wrapper.quaternion.identity().slerp(wrapper.userData.turn, t);
+        const pivot = wrapper.userData.pivot;
+        // Rotate around the actual geometry centre without altering source STL.
+        if (t) wrapper.position.add(pivot).sub(pivot.clone().applyQuaternion(wrapper.quaternion));
+      }
     });
     const lidRaw = THREE.MathUtils.clamp((explodeProgress - 0.04) / 0.96, 0, 1);
     vesselRoot.position.z = 18 * smoothstep(lidRaw) + vesselLift;
@@ -758,20 +816,28 @@
     updateSimulationReadout(now);
 
     const cp = Math.cos(pitch);
+    const framedDistance = distance * (compactViewer ? Math.max(1.08, 1.28 / camera.aspect) : 1);
     camera.position.set(
-      target.x + distance * cp * Math.sin(yaw),
-      target.y + distance * Math.sin(pitch),
-      target.z + distance * cp * Math.cos(yaw)
+      target.x + framedDistance * cp * Math.sin(yaw),
+      target.y + framedDistance * Math.sin(pitch),
+      target.z + framedDistance * cp * Math.cos(yaw)
     );
     camera.lookAt(target);
     renderer.render(scene, camera);
+    if (compactViewer && hoverPoint && !dragging) identifyClient(...hoverPoint);
+    if (compactViewer) {
+      root.dataset.coasterProgress = explodeProgress.toFixed(4);
+      root.dataset.coasterFrames = String(Number(root.dataset.coasterFrames || 0) + 1);
+    }
     needsRender = false;
+    return animating;
   };
 
   setPartPanel(null);
   setVessel('none', false);
   setPreset('iso', false);
-  if (window.PortfolioExplorer?.start) window.PortfolioExplorer.start(renderFrame, stage);
+  if (compactViewer && explodeButton) explodeButton.textContent = 'Disassemble';
+  if (window.PortfolioExplorer?.start) wakeRenderer = window.PortfolioExplorer.start(renderFrame, stage, { demand: compactViewer });
   else {
     const animate = () => { requestAnimationFrame(animate); renderFrame(); };
     animate();

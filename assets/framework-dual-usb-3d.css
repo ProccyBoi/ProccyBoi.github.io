@@ -111,3 +111,9 @@
   .framework-dual-3d-status,
   .framework-dual-part { transition: none; }
 }
+.v2 [data-dual-usb-inspector] [hidden]{display:none!important}
+.v2 [data-dual-usb-inspector]:not([data-explorer-mounted]) .framework-dual-3d-toolbar{display:none}
+.v2 .framework-dual-3d-toolbar.v2-assembly-controls{justify-content:center;padding:12px;border:0}
+.v2 .framework-dual-3d-toolbar.v2-assembly-controls button{min-width:120px;flex:0 0 auto;border:1px solid var(--v2-line);border-radius:6px}
+.v2 [data-dual-usb-part]{position:absolute;z-index:8;top:18px;right:18px;max-width:min(70%,280px);padding:9px 12px;border:1px solid #3c4853;border-radius:6px;background:#10161ced;color:var(--v2-ink);font:12px/1.5 var(--sans,sans-serif);pointer-events:none;overflow-wrap:anywhere}
+.v2 [data-dual-usb-part] strong{font-weight:500}

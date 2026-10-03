@@ -67,11 +67,8 @@
           <div><h2 id="framework-explore-title">ESP32 card assembly</h2></div>
           <p>Rotate the card, remove its Framework enclosure or separate the assembly.</p>
         </header>
-        <div class="object-toolbar framework-3d-toolbar" aria-label="3D model controls">
-          <div class="object-view-list" aria-label="Camera angle"><button type="button" class="object-view is-active" data-framework-view="iso" aria-pressed="true">Angle</button><button type="button" class="object-view" data-framework-view="top" aria-pressed="false">Top</button><button type="button" class="object-view" data-framework-view="side" aria-pressed="false">Side</button></div>
-          <button type="button" class="object-tool" data-framework-shell aria-pressed="true">Hide shell</button><button type="button" class="object-tool" data-framework-explode aria-pressed="false">Explode</button><button type="button" class="object-tool object-reset" data-framework-reset>Reset</button>
-        </div>
-        <div class="object-stage framework-3d-stage" data-framework-stage tabindex="0" aria-label="Interactive 3D Framework ESP32 expansion card. Drag to rotate, scroll or pinch to zoom."><canvas data-framework-canvas aria-hidden="true"></canvas><p class="framework-3d-status" data-framework-status>Loading board and enclosure…</p><p class="object-drag-hint framework-3d-hint"><span aria-hidden="true">&larr;</span> Drag to orbit · scroll to zoom <span aria-hidden="true">&rarr;</span></p></div>
+        <div class="object-toolbar framework-3d-toolbar v2-assembly-controls" aria-label="Assembly"><button type="button" class="object-tool" data-framework-explode aria-pressed="false">Disassemble</button></div>
+        <div class="object-stage framework-3d-stage" data-framework-stage tabindex="0" aria-label="Interactive 3D Framework ESP32 expansion card. Drag to rotate, scroll or pinch to zoom."><canvas data-framework-canvas aria-hidden="true"></canvas><p class="framework-3d-status" data-framework-status>Loading board and enclosure…</p><aside class="v2-part-readout" data-framework-part hidden aria-live="polite"><strong data-framework-part-name></strong></aside></div>
         <dl class="project-interactive-facts"><div><dt>PCB</dt><dd>0.6 mm FR-4</dd></div><div><dt>Module</dt><dd>ESP32-S3-MINI-1</dd></div><div><dt>Enclosure</dt><dd>Framework geometry</dd></div></dl>
       </div>
     </section>

@@ -3,36 +3,16 @@
 .hardware-stage{position:relative;height:570px;background:radial-gradient(ellipse at 50% 45%,#1c2730,#10161c 72%)}
 .hardware-stage canvas,.hardware-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .hardware-stage canvas{cursor:grab;touch-action:pan-y pinch-zoom}.hardware-stage canvas:active{cursor:grabbing}
-.hardware-start{text-align:center;padding:0 20px 28px}
-[data-hardware] button,[data-hardware] select{font:inherit;font-size:12px;line-height:1.4;min-height:42px;padding:10px 17px;border:1px solid #3c4853;border-radius:24px;color:var(--v2-ink);background:#1b2630;cursor:pointer}
-[data-hardware] button:hover{background:#2a3947}[data-hardware] button:disabled{opacity:.45;cursor:default}
-[data-hardware] button[aria-pressed=true],[data-hardware-start],[data-hardware-explode]{background:var(--v2-accent)!important;color:var(--v2-on-accent)!important;border-color:var(--v2-accent)!important}
-.hardware-controls{padding:0 26px 28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px}
-.hardware-views{display:flex;gap:3px}.hardware-views button{border-color:transparent;background:transparent}
-.hardware-range{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--v2-muted);width:100%;max-width:380px;margin:10px 0}
-.hardware-range input{flex:1;min-width:70px;accent-color:var(--v2-accent);cursor:pointer}
-.hardware-parts{display:flex;justify-content:center;align-items:center;gap:12px;padding:22px 26px;border-top:1px solid var(--v2-line);flex-wrap:wrap}
-.hardware-parts label{font-size:12px;color:var(--v2-muted)}.hardware-parts select{max-width:100%;width:330px;text-overflow:ellipsis;border-radius:8px}
-[data-hardware-part]{font-size:13px;color:var(--v2-accent);text-align:center;padding:0 20px 22px;margin:0}
+.hardware-start,.hardware-controls{text-align:center;padding:0 20px 26px}
+[data-hardware] button{font:inherit;font-size:12px;line-height:1.4;min-height:42px;padding:10px 20px;border:1px solid var(--v2-accent);border-radius:24px;color:var(--v2-on-accent);background:var(--v2-accent);cursor:pointer}
+[data-hardware] button:hover{filter:brightness(1.08)}[data-hardware] button:disabled{opacity:.45;cursor:default}
 [data-hardware-status]{font-size:12px;line-height:1.6;text-align:center;color:var(--v2-muted);padding:0 20px 20px;margin:0}[data-hardware-status]:empty{display:none}
-[data-hardware]:not([data-hardware-state=ready]) .hardware-controls,[data-hardware]:not([data-hardware-state=ready]) .hardware-parts{display:none}
-[data-hardware-state=ready] .hardware-start,[data-hardware]:not([data-hardware-mounted]) .hardware-start{display:none}
-[data-hardware] button:focus-visible,[data-hardware] select:focus-visible,[data-hardware] input:focus-visible,[data-hardware] canvas:focus-visible{outline:2px solid var(--v2-accent);outline-offset:3px}
+[data-hardware]:not([data-hardware-state=ready]) .hardware-controls,[data-hardware-state=ready] .hardware-start,[data-hardware]:not([data-hardware-mounted]) .hardware-start{display:none}
+[data-hardware] button:focus-visible,[data-hardware] canvas:focus-visible,.hardware-boards a:focus-visible{outline:2px solid var(--v2-accent);outline-offset:3px}
 [data-hardware] canvas:focus-visible{outline-offset:-5px}
 .hardware-boards{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:24px 20px 0}
 .hardware-boards a{display:inline-flex;align-items:center;min-height:42px;padding:10px 17px;border:1px solid #3c4853;border-radius:24px;background:#1b2630;color:var(--v2-ink);font-size:12px;line-height:1.4;text-decoration:none}
 .hardware-boards a:hover{background:#2a3947}.hardware-boards a[aria-current]{background:var(--v2-accent);border-color:var(--v2-accent);color:var(--v2-on-accent)}
-.hardware-boards a:focus-visible,.hardware-components summary:focus-visible{outline:2px solid var(--v2-accent);outline-offset:3px}
-.hardware-components{padding:24px 28px 28px;border-top:1px solid var(--v2-line)}
-.hardware-components h3{font-size:15px;font-weight:500;line-height:1.5;margin:0 0 18px;color:var(--v2-ink)}
-.hardware-components>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px;align-items:start}
-.hardware-components details{border-top:1px solid var(--v2-line);padding:0;min-width:0}
-.hardware-components summary{display:flex;align-items:baseline;gap:13px;padding:15px 0;cursor:pointer;list-style:none;font-size:12px;line-height:1.5;color:var(--v2-ink)}
-.hardware-components summary::-webkit-details-marker{display:none}.hardware-components summary span{flex:0 0 65px;font-family:var(--v2-mono,monospace);font-size:10px;color:var(--v2-muted)}
-.hardware-components summary strong{font-weight:400}.hardware-components summary::after{content:'+';margin-left:auto;color:var(--v2-accent)}.hardware-components details[open] summary::after{content:'−'}
-.hardware-components details p{font-size:13px;line-height:1.7;color:var(--v2-muted);margin:0 0 18px;padding-left:78px;max-width:60ch}
-[data-skylabs-inspector] [data-hardware-part]{max-width:76ch;margin-inline:auto;line-height:1.7}
-@media(max-width:700px){.hardware-stage{height:410px}.hardware-controls{padding:0 12px 24px;gap:7px}.hardware-views{width:100%;justify-content:center}.hardware-parts{padding:20px 14px}.hardware-parts label{width:100%;text-align:center}[data-hardware] button{font-size:11px;padding:10px 13px}.hardware-range{max-width:300px}}
-@media(max-width:700px){.hardware-components{padding:22px 18px}.hardware-components>div{grid-template-columns:1fr}.hardware-components summary{gap:10px}.hardware-components summary span{flex-basis:58px}.hardware-components details p{padding-left:68px}.hardware-boards{padding:20px 12px 0}.hardware-boards a{font-size:11px;padding:10px 13px}}
+[data-hardware] .v2-part-readout{position:absolute;z-index:2;top:18px;right:18px;max-width:min(65%,280px);padding:9px 12px;border:1px solid #3c4853;border-radius:6px;background:#10161ced;color:var(--v2-ink);font-size:12px;line-height:1.5;text-align:left;pointer-events:none;overflow-wrap:anywhere}
+@media(max-width:700px){.hardware-stage{height:410px}.hardware-controls{padding:0 12px 24px}[data-hardware] button{font-size:12px}.hardware-boards{padding:20px 12px 0}.hardware-boards a{font-size:11px;padding:10px 13px}[data-hardware] .v2-part-readout{top:12px;right:12px;font-size:11px;max-width:68%}}
 @media(max-width:360px){.hardware-stage{height:350px}}
-@media(prefers-reduced-motion:reduce){[data-hardware-scroll]{display:none}}

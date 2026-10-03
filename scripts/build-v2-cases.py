@@ -269,17 +269,16 @@ def hardware_viewer(model, title, identifier, manifest=None, poster=None):
     manifest = manifest or f'/assets/models/hardware/{model}/assembly.json'
     poster = poster or f'/assets/images/v2/hardware/{model}.webp'
     return f'''<figure data-hardware="{manifest}" data-hardware-title="{title}">
-      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="{poster}" width="1600" height="1200" alt="{title}" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="{poster}" width="1600" height="1200" alt="{title}" loading="lazy"><canvas data-hardware-canvas hidden></canvas><output class="v2-part-readout" data-hardware-part hidden aria-live="polite"></output></div>
       <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
-      <div class="hardware-controls"><div class="hardware-views" role="group" aria-label="Camera"><button type="button" data-hardware-view="iso" aria-pressed="true">Perspective</button><button type="button" data-hardware-view="top" aria-pressed="false">Top</button><button type="button" data-hardware-view="bottom" aria-pressed="false">Underside</button></div><button type="button" data-hardware-explode aria-pressed="false">Explode</button><button type="button" data-hardware-scroll aria-pressed="false">Follow scroll</button><button type="button" data-hardware-reset>Reset</button><label class="hardware-range">Assembled <input data-hardware-range type="range" min="0" max="100" value="0" aria-label="Assembly separation"> Exploded</label></div>
-      <div class="hardware-parts"><label for="{identifier}-parts">Component</label><select id="{identifier}-parts" data-hardware-selection><option value="">All components</option></select></div>
-      <p data-hardware-part hidden></p><p data-hardware-status role="status" aria-live="polite"></p>
+      <div class="hardware-controls"><button type="button" data-hardware-explode aria-pressed="false">Disassemble</button></div>
+      <p data-hardware-status role="status" aria-live="polite"></p>
     </figure>'''
 
 
 def hardware_section(model, title, identifier='explore', facts='', note=''):
     return f'''<section class="project-interactive v2-hardware-section" id="{identifier}" aria-labelledby="{identifier}-title"><div class="project-interactive-inner">
-      <header class="project-interactive-header"><div><h2 id="{identifier}-title">{escape(title)}</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      <header class="project-interactive-header"><div><h2 id="{identifier}-title">{escape(title)}</h2></div></header>
       {hardware_viewer(model, title, identifier)}
       {f'<p class="v2-hardware-note">{escape(note)}</p>' if note else ''}{facts}
     </div></section>'''
@@ -294,17 +293,14 @@ def skylabs_section(slug):
         selector = '<nav class="hardware-boards" aria-label="Skylabs board">' + ''.join(
             f'<a href="/v2/projects/{record["route"]}/" data-hardware-board="{key}" data-hardware-model="/assets/models/hardware/{record["model"]}/assembly.json" data-hardware-poster-src="/assets/images/v2/hardware/{record["model"]}.webp" data-hardware-title="{escape(record["title"])}"{chr(32) + "aria-current=\"true\"" if key == selected else ""}>{escape(record["title"])}</a>'
             for key, record in SKYLABS_BOARDS.items()) + '</nav>'
-    components = ''
-    for key in keys:
-        record = SKYLABS_BOARDS[key]
-        items = ''.join(f'<details data-hardware-component data-hardware-refs="{escape(" ".join(part["refs"]))}"><summary><span>{escape(" / ".join(part["refs"]))}</span><strong>{escape(part["name"])}</strong></summary><p>{escape(part["description"])}</p></details>' for part in record['components'])
-        components += f'<section class="hardware-components" data-hardware-components="{key}" aria-labelledby="components-{key}"><h3 id="components-{key}">{escape(record["title"])} components</h3><div>{items}</div></section>'
+    labels = {key: {ref: part['name'] for part in SKYLABS_BOARDS[key]['components'] for ref in part['refs']} for key in keys}
+    metadata = '<script type="application/json" data-hardware-labels>' + json.dumps(labels, ensure_ascii=False).replace('<', '\\u003c') + '</script>'
     viewer = hardware_viewer(board['model'], board['title'], 'skylabs')
     viewer = viewer.replace('<figure ', f'<figure data-skylabs-inspector data-hardware-board-key="{selected}" ', 1)
     viewer = viewer.replace('>\n      <div class="hardware-stage"', '>\n' + selector + '\n      <div class="hardware-stage"', 1)
-    viewer = viewer.replace('</figure>', components + '</figure>')
+    viewer = viewer.replace('</figure>', metadata + '</figure>')
     return f'''<section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="skylabs-assembly-title"><span id="assembly" class="v2-anchor-alias" aria-hidden="true"></span><div class="project-interactive-inner">
-      <header class="project-interactive-header"><div><h2 id="skylabs-assembly-title">{'Flight hardware' if slug == 'skylabs' else escape(board['title'])}</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      <header class="project-interactive-header"><div><h2 id="skylabs-assembly-title">{'Flight hardware' if slug == 'skylabs' else escape(board['title'])}</h2></div></header>
       {viewer}
     </div></section>'''
 
@@ -347,10 +343,58 @@ def integrate_hardware(source, slug):
     return source
 
 
+def simplify_viewers(source, slug):
+    """Apply the v2 assembly UI without changing the original project pages."""
+    if slug == 'tramtrace':
+        tree = Tree(source)
+        workbench = tree.find('section', 'inspector-workbench')
+        source = replace_nodes(source, [(workbench, '')])
+        tree = Tree(source)
+        old_scripts = {'assets/tramtrace-inspector.js', 'assets/tramtrace-board-data.js', 'assets/tramtrace-component-data.js'}
+        source = replace_nodes(source, [(node, '') for node in tree.nodes if node.tag == 'script' and node.attrs.get('src', '').split('?')[0] in old_scripts])
+        source = re.sub(r' data-board-inspector| data-(?:mode|view|chain|hotspots)="[^"]*"', '', source)
+        tree = Tree(source)
+        intro = tree.find('header', 'project-interactive-header')
+        source = replace_nodes(source, [(intro, '<header class="project-interactive-header"><div><h2 id="tramtrace-explore-title">TramTrace assembly</h2></div></header>')])
+    contracts = [
+        ('data-framework-inspector', 'framework', 'object-toolbar', 'data-framework-stage', '<aside class="v2-part-readout" data-framework-part hidden aria-live="polite"><strong data-framework-part-name></strong></aside>'),
+        ('data-dual-usb-inspector', 'dual-usb', 'object-toolbar', 'data-dual-usb-stage', '<aside class="v2-part-readout" data-dual-usb-part hidden aria-live="polite"><strong data-dual-usb-part-name></strong></aside>'),
+        ('data-pi-inspector', 'pi', 'pi-controls', 'data-pi-stage', '<output class="v2-part-readout" data-pi-part hidden aria-live="polite"></output>'),
+        ('data-coaster-inspector', 'coaster', 'object-toolbar', 'data-coaster-stage', '<output class="v2-part-readout" data-coaster-readout hidden aria-live="polite"></output>'),
+        ('data-pcb-object', 'pcb', 'pcb-object-toolbar', None, '<aside class="v2-part-readout" data-pcb-part hidden aria-live="polite"><span data-pcb-ref hidden></span><strong data-pcb-name></strong><span data-pcb-copy hidden></span></aside>'),
+    ]
+    for hook, prefix, controls_class, stage_hook, readout in contracts:
+        tree = Tree(source)
+        root = next((node for node in tree.nodes if hook in node.attrs), None)
+        if not root:
+            continue
+        markup = root.outer(source)
+        inner = Tree(markup)
+        controls = inner.find(cls=controls_class)
+        vessel = inner.find(cls='coaster-vessel-list')
+        simulation = next((node for node in inner.nodes if 'data-coaster-sim' in node.attrs), None)
+        demo = '<div class="coaster-demo">' + (vessel.outer(markup) if vessel else '') + (simulation.outer(markup) if simulation else '') + '</div>' if prefix == 'coaster' else ''
+        controls_markup = f'<div class="{controls.attrs.get("class", controls_class)} v2-assembly-controls" aria-label="Assembly"><button type="button" class="object-tool" data-{prefix}-explode aria-pressed="false">Disassemble</button></div>'
+        changes = [(controls, controls_markup)]
+        for node in inner.nodes:
+            if node.has('object-drag-hint') or node.has('pi-parts') or node.has('pi-part-detail') or node.has('pcb-object-readout') or node.has('pcb-object-stage-label') or node.has('tramtrace-3d-intro') or node is simulation or 'data-dual-usb-part' in node.attrs or 'data-coaster-part' in node.attrs:
+                changes.append((node, ''))
+        markup = replace_nodes(markup, changes)
+        inner = Tree(markup)
+        stage = next((node for node in inner.nodes if stage_hook in node.attrs), None) if stage_hook else inner.find(cls='pcb-object-stage')
+        markup = markup[:stage.close_start] + readout + markup[stage.close_start:]
+        if demo:
+            stage = next(node for node in Tree(markup).nodes if stage_hook in node.attrs)
+            markup = markup[:stage.end] + demo + markup[stage.end:]
+        source = replace_nodes(source, [(root, markup)])
+    return source
+
+
 def make_case(path, slug=None, source=None):
     slug = slug or path.parent.relative_to(ROOT / 'projects').as_posix()
     source = source if source is not None else path.read_text(encoding='utf-8')
     source = integrate_hardware(source, slug)
+    source = simplify_viewers(source, slug)
     if slug == 'skylabs/flight-review':
         return source
     if slug in ('lithography-animation', 'mosfet-operating-regions'):

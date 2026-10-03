@@ -1,0 +1,33 @@
+/* Deterministic physical choreography: different paths, exact assembly, no drift. */
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const T = require('../assets/vendor/three.min.js');
+const window = {THREE:T};
+vm.runInNewContext(fs.readFileSync(require.resolve('../assets/v2-assembly-models.js'),'utf8'),{window});
+const {prepareMotion,applyMotion} = window.V2CadGeometry;
+const parts = ['U1','U2','C1','C2','C3','R1','R2','J1','BT2'].map((ref,index)=>{
+  const object=new T.Group(),base=new T.Vector3((index%3-1)*.23,.012,(Math.floor(index/3)-1)*.28);
+  object.position.copy(base);object.quaternion.setFromEuler(new T.Euler(.02,index*.07,-.03));
+  return {ref,object,base,offset:new T.Vector3(0,ref==='BT2'?-.17:/^U/.test(ref)?.22:.11,0)};
+});
+const pose=()=>parts.map(part=>[...part.object.position.toArray(),...part.object.quaternion.toArray()]);
+const initial=pose();prepareMotion(parts);
+const descriptors=parts.map(part=>part.motion);
+prepareMotion(parts);assert.ok(parts.every((part,index)=>part.motion===descriptors[index]),'Preparation must preserve the original assembly');
+applyMotion(parts,.19);
+const started=parts.filter(part=>part.object.position.distanceTo(part.base)>0).length;
+assert.ok(started>0&&started<parts.length,'Components must start at different times');
+applyMotion(parts,.54);const intermediate=pose();
+applyMotion(parts,1);
+assert.ok(parts.every(part=>part.object.position.distanceTo(part.base)>.04),'Every physical component separates');
+assert.ok(new Set(parts.filter(part=>/^C/.test(part.ref)).map(part=>(part.object.position.y-part.base.y).toFixed(5))).size===3,'Same-family components need different heights');
+assert.ok(parts.every(part=>Math.abs(part.object.position.x-part.base.x)+Math.abs(part.object.position.z-part.base.z)>.001),'Separation includes lateral movement');
+assert.ok(parts.every(part=>part.object.quaternion.angleTo(part.motion.baseQuaternion)>.001),'Parts tilt independently');
+assert.ok(parts.at(-1).object.position.y<parts.at(-1).base.y,'Underside parts move away from the underside');
+applyMotion(parts,.54);assert.deepEqual(pose(),intermediate,'Reverse sampling must reconstruct the same intermediate pose');
+for(let cycle=0;cycle<20;cycle++)for(const phase of [0,.16,.73,1,.32])applyMotion(parts,phase);
+applyMotion(parts,0);assert.deepEqual(pose(),initial,'Position and orientation must reassemble exactly after repeated reversals');
+assert.ok(pose().flat().every(Number.isFinite));
+console.log('PASS staggered starts, distinct component heights, lateral spread, tilt, underside direction and exact reversible poses');

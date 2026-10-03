@@ -72,7 +72,7 @@ The independently styled version lives at `/v2/`, with its project collection at
 
 The fullscreen opening presents TramTrace, the Skylabs telemetry board and Raspberry Pi card, with their physical components assembling and separating as the reader scrolls. The model factory merges the original CAD faces within component groups for efficient rendering. `assets/v2-assembly-models.js`, `assets/v2-assembly.js` and `assets/v2-assembly.css` own this scene. The surrounding charcoal gallery uses `assets/v2.css` and `assets/v2.js`; case-study styles/controllers are `assets/v2-case.css` and `assets/v2-cases.js`.
 
-The Raspberry Pi page includes an on-demand 3D inspector with its exact board, a reference Framework enclosure, camera presets and component separation. Rendering pauses offscreen and when idle. Reduced motion, Save Data, unavailable WebGL and JavaScript-disabled browsing retain still images and project navigation. Finite section transitions use `assets/v2-motion.css` / `.js`.
+Assembly viewers load near the viewport and use one Disassemble/Assemble action, with varied component paths and a compact hover/tap identification readout. Rendering pauses offscreen and when idle. Reduced motion uses instant assembly poses; unavailable WebGL and JavaScript-disabled browsing retain still images and project navigation. Finite section transitions use `assets/v2-motion.css` / `.js`.
 
 - Run `python scripts/build-v2-cases.py` to regenerate the case-study, collection and about pages from the original factual material.
 - Run `python scripts/audit-v2.py` to check every v2 page, project inventory, linked assets, metadata and fragments, including untracked files.

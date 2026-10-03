@@ -13,6 +13,10 @@
   const partName = root.querySelector('[data-dual-usb-part-name]');
   const partDetail = root.querySelector('[data-dual-usb-part-detail]');
   const liveRegion = document.querySelector('[data-dual-usb-live]');
+  const simplified = document.body.classList.contains('v2');
+  let requestRender = () => {};
+  let fitRequested = simplified;
+  const requestFit = () => { fitRequested = simplified; requestRender(); };
   const announce = (message) => { if (liveRegion) liveRegion.textContent = message; };
 
   const renderer = window.PortfolioExplorer.createRenderer(THREE, { canvas, antialias: true, alpha: true });
@@ -266,6 +270,7 @@
       silkMaterial.map = texture;
       silkMaterial.needsUpdate = true;
       silkOverlay.visible = true;
+      requestRender();
     },
     undefined,
     (error) => console.warn('Dual USB-C high-resolution F.SilkS overlay failed to load', error)
@@ -682,9 +687,10 @@
         usbFallback.visible = false;
         registerExplodePart(exact, { offset: new THREE.Vector3(0, 6.0, 10.5), rotation: new THREE.Euler(THREE.MathUtils.degToRad(-8), 0, THREE.MathUtils.degToRad(6)), delay: 0.08 });
         tagPart(exact, 'P1');
+        requestFit();
       },
       undefined,
-      () => { usbFallback.visible = true; }
+      () => { usbFallback.visible = true; requestFit(); }
     );
   }
 
@@ -758,10 +764,12 @@
       status.textContent = 'KiCad PCB + Framework enclosure loaded';
       status.classList.add('is-ready');
       announce('Dual USB-C Framework 3D model ready');
+      requestFit();
     })
     .catch((error) => {
       status.textContent = 'Exact PCB loaded · enclosure unavailable';
       console.warn('Framework enclosure STL failed to load', error);
+      requestFit();
     });
 
   let exploded = false;
@@ -774,6 +782,8 @@
   let targetPitch = pitch;
   let targetDistance = distance;
   let assembledDistance = distance;
+  let cameraFitDistance = distance;
+  const limitZoom = value => THREE.MathUtils.clamp(value, simplified ? cameraFitDistance * 0.45 : 35, simplified ? cameraFitDistance * 2.2 : 90);
 
   const presets = {
     iso: { yaw: -31, pitch: 29, distance: 58 },
@@ -796,7 +806,7 @@
 
   viewButtons.forEach((button) => button.addEventListener('click', () => setPreset(button.dataset.dualUsbView)));
 
-  shellButton.addEventListener('click', () => {
+  shellButton?.addEventListener('click', () => {
     shellVisible = !shellVisible;
     if (shellMesh) shellMesh.visible = shellVisible;
     shellButton.setAttribute('aria-pressed', String(shellVisible));
@@ -804,7 +814,7 @@
     announce(shellVisible ? 'Enclosure shown' : 'Enclosure hidden');
   });
 
-  explodeButton.addEventListener('click', () => {
+  explodeButton?.addEventListener('click', () => {
     exploded = !exploded;
     componentExplodeTarget = exploded ? 1 : 0;
     if (exploded) {
@@ -814,29 +824,32 @@
       targetDistance = assembledDistance;
     }
     explodeButton.setAttribute('aria-pressed', String(exploded));
-    explodeButton.textContent = exploded ? 'Assemble' : 'Explode';
+    explodeButton.textContent = exploded ? 'Assemble' : simplified ? 'Disassemble' : 'Explode';
     announce(exploded ? 'Exploded component and enclosure view' : 'Assembled card view');
+    requestFit();
   });
 
   const resetPartPanel = () => {
-    if (!partPanel || !partName || !partDetail) return;
-    partName.textContent = 'Component map';
-    partDetail.textContent = 'Point to or tap the PCB to identify the hub, power switches, protection and ports.';
+    if (!partPanel || !partName) return;
+    if(simplified){partPanel.hidden=true;partName.textContent='';}
+    else partName.textContent = 'Component map';
+    if(partDetail)partDetail.textContent = simplified?'':'Point to or tap the PCB to identify the hub, power switches, protection and ports.';
+    root.dataset.explorerPart='';
     partPanel.classList.remove('is-active');
   };
 
-  resetButton.addEventListener('click', () => {
+  resetButton?.addEventListener('click', () => {
     setPreset('iso', false);
     targetDistance = 58;
     assembledDistance = 58;
     exploded = false;
     componentExplodeTarget = 0;
-    explodeButton.setAttribute('aria-pressed', 'false');
-    explodeButton.textContent = 'Explode';
+    explodeButton?.setAttribute('aria-pressed', 'false');
+    if(explodeButton)explodeButton.textContent = simplified ? 'Disassemble' : 'Explode';
     shellVisible = true;
     if (shellMesh) shellMesh.visible = true;
-    shellButton.setAttribute('aria-pressed', 'true');
-    shellButton.textContent = 'Hide shell';
+    shellButton?.setAttribute('aria-pressed', 'true');
+    if(shellButton)shellButton.textContent = 'Hide shell';
     resetPartPanel();
     announce('3D view reset');
   });
@@ -865,20 +878,25 @@
     return null;
   };
   const updatePartHover = (event, allowActivePointer = false) => {
-    if (!partPanel || !partName || !partDetail || (pointers.size && !allowActivePointer)) return;
+    if (!partPanel || !partName || (pointers.size && !allowActivePointer)) return;
     const rect = stage.getBoundingClientRect();
     pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointerNdc, camera);
-    const hit = raycaster.intersectObjects(pickRoots, true).find((entry) => entry.object.visible !== false);
+    scene.updateMatrixWorld(true);
+    const hit = raycaster.intersectObjects(pickRoots, true).find((entry) => {for(let node=entry.object;node;node=node.parent)if(!node.visible)return false;return true;});
     const info = hit ? resolvePartInfo(hit.object) : null;
     if (!info) { resetPartPanel(); return; }
     partName.textContent = info[0];
-    partDetail.textContent = info[1];
+    if(partDetail)partDetail.textContent = info[1];
+    partPanel.hidden=false;
+    root.dataset.explorerPart=info[0];
     partPanel.classList.add('is-active');
   };
 
   stage.addEventListener('pointerdown', (event) => {
+    if(event.button!==0)return;
+    if(simplified)resetPartPanel();
     stage.setPointerCapture(event.pointerId);
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     dragTravel = 0;
@@ -904,7 +922,7 @@
     } else if (pointers.size === 2 && pinchStartDistance > 0) {
       const pts = [...pointers.values()];
       const pinch = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      targetDistance = THREE.MathUtils.clamp(pinchStartZoom * pinchStartDistance / Math.max(pinch, 1), 35, 90);
+      targetDistance = limitZoom(pinchStartZoom * pinchStartDistance / Math.max(pinch, 1));
     }
   });
 
@@ -917,19 +935,19 @@
     } else if (pointers.size === 0) {
       dragStart = null;
       pinchStartDistance = 0;
-      if (dragTravel < 6) {
+      if (event.type==='pointerup' && dragTravel < 6) {
         updatePartHover(event, true);
-        if (partPanel.classList.contains('is-active')) announce(`${partName.textContent}. ${partDetail.textContent}`);
+        if (partPanel?.classList.contains('is-active')) announce(partName.textContent+(partDetail?'. '+partDetail.textContent:''));
       }
     }
   };
   stage.addEventListener('pointerup', releasePointer);
   stage.addEventListener('pointercancel', releasePointer);
-  stage.addEventListener('pointerleave', () => { if (!pointers.size) resetPartPanel(); });
+  stage.addEventListener('pointerleave', event => { if (event.pointerType!=='touch'&&!pointers.size) resetPartPanel(); });
 
   stage.addEventListener('wheel', (event) => {
     event.preventDefault();
-    targetDistance = THREE.MathUtils.clamp(targetDistance + event.deltaY * 0.035, 35, 90);
+    targetDistance = limitZoom(targetDistance + event.deltaY * 0.035);
   }, { passive: false });
 
   stage.addEventListener('keydown', (event) => {
@@ -938,8 +956,8 @@
     else if (event.key === 'ArrowRight') targetYaw -= 0.12;
     else if (event.key === 'ArrowUp') targetPitch = Math.min(targetPitch + 0.1, THREE.MathUtils.degToRad(88));
     else if (event.key === 'ArrowDown') targetPitch = Math.max(targetPitch - 0.1, THREE.MathUtils.degToRad(-77));
-    else if (event.key === '+' || event.key === '=') targetDistance = Math.max(35, targetDistance - 3);
-    else if (event.key === '-' || event.key === '_') targetDistance = Math.min(90, targetDistance + 3);
+    else if (event.key === '+' || event.key === '=') targetDistance = simplified ? limitZoom(targetDistance - 3) : Math.max(35, targetDistance - 3);
+    else if (event.key === '-' || event.key === '_') targetDistance = simplified ? limitZoom(targetDistance + 3) : Math.min(90, targetDistance + 3);
     else handled = false;
     if (handled) { event.preventDefault(); markCustomView(); }
   });
@@ -951,6 +969,7 @@
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    requestFit();
   };
   new ResizeObserver(resize).observe(stage);
   resize();
@@ -1007,10 +1026,23 @@
     yaw += (targetYaw - yaw) * smoothing;
     pitch += (targetPitch - pitch) * smoothing;
     distance += (targetDistance - distance) * smoothing;
+    if(Math.abs(targetYaw-yaw)<.0001)yaw=targetYaw;
+    if(Math.abs(targetPitch-pitch)<.0001)pitch=targetPitch;
+    if(Math.abs(targetDistance-distance)<.001)distance=targetDistance;
     componentExplodeProgress += (componentExplodeTarget - componentExplodeProgress) * (motionPreference.matches ? 1 : 1 - Math.pow(0.025, dt));
     if (Math.abs(componentExplodeTarget - componentExplodeProgress) < 0.0001) componentExplodeProgress = componentExplodeTarget;
     updateMechanicalExplode();
     updateComponentExplode();
+    if (fitRequested) {
+      const progress = componentExplodeProgress;
+      componentExplodeProgress = componentExplodeTarget;
+      updateMechanicalExplode(); updateComponentExplode();
+      targetDistance = cameraFitDistance = window.PortfolioExplorer.fitDistance(THREE, assembly, camera, target, targetYaw, targetPitch);
+      if (!exploded) assembledDistance = targetDistance;
+      componentExplodeProgress = progress;
+      updateMechanicalExplode(); updateComponentExplode();
+      fitRequested = false;
+    }
     const cp = Math.cos(pitch);
     camera.position.set(
       target.x + distance * cp * Math.sin(yaw),
@@ -1019,9 +1051,18 @@
     );
     camera.lookAt(target);
     renderer.render(scene, camera);
+    if(simplified)root.dataset.explorerProgress=componentExplodeProgress.toFixed(4);
+    return yaw!==targetYaw||pitch!==targetPitch||distance!==targetDistance||componentExplodeProgress!==componentExplodeTarget;
   };
 
   resetPartPanel();
   setPreset('iso', false);
-  window.PortfolioExplorer.start(animate, stage);
+  requestRender = window.PortfolioExplorer.start(animate, stage, { demand: simplified });
+  if(simplified){
+    if(explodeButton)explodeButton.textContent='Disassemble';
+    root.addEventListener('click',event=>{if(event.target.closest('button'))resetPartPanel();requestRender();});
+    for(const type of ['pointerdown','pointermove','pointerup','pointercancel','wheel','keydown'])stage.addEventListener(type,requestRender);
+    for(const type of ['wheel','keydown'])stage.addEventListener(type,resetPartPanel);
+    motionPreference.addEventListener('change',requestRender);
+  }
 })();

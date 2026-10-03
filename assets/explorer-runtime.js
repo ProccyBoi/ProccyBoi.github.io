@@ -1,32 +1,73 @@
 /* Rendering lifecycle shared by the independent PCB engines. */
 window.PortfolioExplorer = {
-  start(render, element) {
+  fitDistance(THREE, object, camera, target, yaw, pitch, margin = 0.84) {
+    const direction = new THREE.Vector3(Math.cos(pitch) * Math.sin(yaw), Math.sin(pitch), Math.cos(pitch) * Math.cos(yaw));
+    const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    const up = new THREE.Vector3().crossVectors(direction, right);
+    const point = new THREE.Vector3();
+    const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * margin;
+    let distance = camera.near * 2;
+    object.updateMatrixWorld(true);
+    object.traverseVisible(mesh => {
+      if (!mesh.isMesh) return;
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      const bounds = mesh.geometry.boundingBox;
+      for (let corner = 0; corner < 8; corner++) {
+        point.set(corner & 1 ? bounds.max.x : bounds.min.x, corner & 2 ? bounds.max.y : bounds.min.y, corner & 4 ? bounds.max.z : bounds.min.z).applyMatrix4(mesh.matrixWorld).sub(target);
+        const depth = point.dot(direction);
+        distance = Math.max(distance, depth + Math.abs(point.dot(right)) / (tangent * camera.aspect), depth + Math.abs(point.dot(up)) / tangent);
+      }
+    });
+    return distance;
+  },
+
+  start(render, element, { demand = false } = {}) {
     let frame = 0;
     let visible = false;
+    let lost = false;
+    let frames = 0;
+    const root = element.closest('[data-pcb-object], [data-framework-inspector], [data-dual-usb-inspector], [data-coaster-inspector]') || element;
+    if (demand) root.dataset.explorerMounted = 'true';
     const stop = () => {
       cancelAnimationFrame(frame);
       frame = 0;
     };
     const tick = () => {
       frame = 0;
-      if (!visible || document.hidden) return;
-      render();
-      frame = requestAnimationFrame(tick);
+      if (!visible || document.hidden || lost) return;
+      const moving = draw();
+      if (!demand || moving) frame = requestAnimationFrame(tick);
+    };
+    const draw = () => {
+      const moving = render() !== false;
+      if (demand) {
+        root.dataset.explorerFrames = String(++frames);
+        root.dataset.explorerMotion = moving ? 'transition' : 'idle';
+      }
+      return moving;
     };
     const resume = () => {
-      if (visible && !document.hidden && !frame) frame = requestAnimationFrame(tick);
+      if (visible && !document.hidden && !lost && !frame) {
+        if (demand) root.dataset.explorerMotion = 'rendering';
+        frame = requestAnimationFrame(tick);
+      }
     };
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       if (visible) resume();
-      else stop();
+      else { stop(); if (demand) root.dataset.explorerMotion = 'paused'; }
     }, { rootMargin: "160px" });
     observer.observe(element);
     document.addEventListener("visibilitychange", () => document.hidden ? stop() : resume());
     window.addEventListener("pagehide", stop);
     window.addEventListener("pageshow", resume);
+    if (demand) {
+      const canvas = element.matches('canvas') ? element : element.querySelector('canvas');
+      canvas?.addEventListener('webglcontextlost', () => { lost = true; stop(); root.dataset.explorerMotion = 'unavailable'; });
+    }
     // Initialise one complete frame, including canvas dimensions and readouts.
-    render();
+    draw();
+    return resume;
   },
 
   createRenderer(THREE, options) {

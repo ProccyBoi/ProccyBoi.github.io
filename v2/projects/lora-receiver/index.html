@@ -57,13 +57,12 @@
 <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>The system</dt><dd>An ESP32 receiver combining 915 MHz LoRa with u-blox GNSS.</dd></div><div><dt>The constraint</dt><dd>Radio and navigation on one PCB, with a feedline worth measuring.</dd></div><div><dt>What I learned</dt><dd>At least 1 km in testing; VNA measurements informed the RF Test Board.</dd></div></dl>
 
     <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="explore-title"><div class="project-interactive-inner">
-      <header class="project-interactive-header"><div><h2 id="explore-title">LoRa receiver assembly</h2></div><p>Rotate the board, select a component or separate the assembly.</p></header>
+      <header class="project-interactive-header"><div><h2 id="explore-title">LoRa receiver assembly</h2></div></header>
       <figure data-hardware="/assets/models/hardware/lora-receiver/assembly.json" data-hardware-title="LoRa receiver assembly">
-      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/lora-receiver.webp" width="1600" height="1200" alt="LoRa receiver assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas></div>
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/lora-receiver.webp" width="1600" height="1200" alt="LoRa receiver assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas><output class="v2-part-readout" data-hardware-part hidden aria-live="polite"></output></div>
       <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
-      <div class="hardware-controls"><div class="hardware-views" role="group" aria-label="Camera"><button type="button" data-hardware-view="iso" aria-pressed="true">Perspective</button><button type="button" data-hardware-view="top" aria-pressed="false">Top</button><button type="button" data-hardware-view="bottom" aria-pressed="false">Underside</button></div><button type="button" data-hardware-explode aria-pressed="false">Explode</button><button type="button" data-hardware-scroll aria-pressed="false">Follow scroll</button><button type="button" data-hardware-reset>Reset</button><label class="hardware-range">Assembled <input data-hardware-range type="range" min="0" max="100" value="0" aria-label="Assembly separation"> Exploded</label></div>
-      <div class="hardware-parts"><label for="explore-parts">Component</label><select id="explore-parts" data-hardware-selection><option value="">All components</option></select></div>
-      <p data-hardware-part hidden></p><p data-hardware-status role="status" aria-live="polite"></p>
+      <div class="hardware-controls"><button type="button" data-hardware-explode aria-pressed="false">Disassemble</button></div>
+      <p data-hardware-status role="status" aria-live="polite"></p>
     </figure>
 
     </div></section>

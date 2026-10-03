@@ -7,3 +7,10 @@
 .tramtrace-3d-source{display:flex;flex-wrap:wrap;gap:.65rem 1.4rem;padding:.85rem 1.5rem;border-top:1px solid rgba(241,238,232,.13);color:#858b89;font:600 .64rem/1.45 var(--mono);letter-spacing:.045em;text-transform:uppercase}
 @media(max-width:800px){.tramtrace-3d-intro{grid-template-columns:1fr}.tramtrace-3d-explorer .pcb-object-stage{min-height:390px;aspect-ratio:4/3}}
 @media(max-width:560px){.tramtrace-3d-explorer{margin-inline:-.25rem}.tramtrace-3d-intro{padding:1rem}.tramtrace-3d-explorer .pcb-object-stage{min-height:340px}.tramtrace-3d-source{padding: .75rem 1rem}}
+
+.v2 [data-pcb-object] [hidden]{display:none!important}
+.v2 [data-pcb-object]:not([data-explorer-mounted]) .pcb-object-toolbar{display:none}
+.v2 .pcb-object-toolbar.v2-assembly-controls{justify-content:center;padding:12px;border:0}
+.v2 .pcb-object-toolbar.v2-assembly-controls button{min-width:120px;flex:0 0 auto;border:1px solid var(--v2-line);border-radius:6px}
+.v2 [data-pcb-part]{position:absolute;z-index:8;top:18px;right:18px;max-width:min(70%,280px);padding:9px 12px;border:1px solid #3c4853;border-radius:6px;background:#10161ced;color:var(--v2-ink);font:12px/1.5 var(--sans,sans-serif);pointer-events:none;overflow-wrap:anywhere}
+.v2 [data-pcb-part] strong{font-weight:500}

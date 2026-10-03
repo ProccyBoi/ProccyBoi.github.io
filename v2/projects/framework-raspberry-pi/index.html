@@ -41,15 +41,12 @@
   <div class="project-interactive-inner">
     <header class="project-interactive-header"><div><h2 id="pi-explore-title">RP2354B assembly</h2></div><p>Turn the card, separate the layers, and follow the components that make it work.</p></header>
     <figure data-pi-inspector>
-      <div class="pi-stage" data-pi-stage><img data-pi-poster src="/assets/images/v2/framework-pi-cad.webp" alt="Isometric view of the Raspberry Pi expansion card" width="1600" height="1200" loading="lazy"><canvas data-pi-canvas hidden></canvas></div>
+      <div class="pi-stage" data-pi-stage><img data-pi-poster src="/assets/images/v2/framework-pi-cad.webp" alt="Isometric view of the Raspberry Pi expansion card" width="1600" height="1200" loading="lazy"><canvas data-pi-canvas hidden></canvas><output class="v2-part-readout" data-pi-part hidden aria-live="polite"></output></div>
       <div class="pi-start-wrap"><button type="button" data-pi-start>Explore in 3D ↗</button></div>
-      <div class="pi-controls" aria-label="Assembly controls">
-        <div class="pi-view-group" role="group" aria-label="Camera angle"><button type="button" data-pi-view="iso" aria-pressed="true">Perspective</button><button type="button" data-pi-view="top" aria-pressed="false">Top</button><button type="button" data-pi-view="bottom" aria-pressed="false">Underside</button><button type="button" data-pi-view="side" aria-pressed="false">Side</button></div>
-        <button type="button" data-pi-explode aria-pressed="false">Explode</button><button type="button" data-pi-shell aria-pressed="true">Hide housing</button><button type="button" data-pi-reset>Reset</button>
-      </div>
+      <div class="pi-controls v2-assembly-controls" aria-label="Assembly"><button type="button" class="object-tool" data-pi-explode aria-pressed="false">Disassemble</button></div>
       <p class="pi-status" data-pi-status role="status" aria-live="polite"></p>
-      <div class="pi-parts" role="group" aria-label="Explore components"><button type="button" data-pi-part="U5" aria-pressed="false">RP2354B</button><button type="button" data-pi-part="U3" aria-pressed="false">Flash</button><button type="button" data-pi-part="U2" aria-pressed="false">Power</button><button type="button" data-pi-part="U1" aria-pressed="false">Clock</button><button type="button" data-pi-part="SW1" aria-pressed="false">Controls</button><button type="button" data-pi-part="P1" aria-pressed="false">USB-C</button></div>
-      <figcaption class="pi-part-detail" aria-live="polite" hidden><strong data-pi-part-name></strong><p data-pi-part-detail></p></figcaption>
+
+
     </figure>
   </div>
 </section>

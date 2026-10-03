@@ -91,8 +91,8 @@
     const sideStart=startScale*(small?.57:.8);
     poses = [
       [pose(0,0,-1.9,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.405,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
-      [pose(0,left,small ? -.2 : -1.65,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale,.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
-      [pose(0,right,small ? -.25 : -1.65,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-.35,scale,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
+      [pose(0,left,small ? -.2 : -1.65,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale*(small?.9:1),.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
+      [pose(0,right,small ? -.25 : -1.65,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-.35,scale*.8,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
     updateProgress();
     request();
@@ -139,11 +139,7 @@
       group.position.set(transform.x,transform.y-(1-settle)*.6,0);
       group.scale.setScalar(transform.s*(.94+settle*.06));
       group.rotation.set(transform.rx,transform.ry,transform.rz+(1-settle)*.11);
-      model.parts.forEach((part,partIndex) => {
-        const stagger=projects[index].name==='tramtrace' ? .04*Math.sin(partIndex*.45) : 0;
-        const exploded=clamp(transform.e*(1+stagger));
-        part.object.position.copy(part.base).addScaledVector(part.offset,exploded);
-      });
+      window.V2CadGeometry.applyMotion(model.parts,transform.e);
       shadow.position.set(transform.x,transform.y-transform.s*.43,-3);
       shadow.scale.set(transform.s*.9,transform.s*.18,1);
       shadow.material.opacity=.085*(1-transform.e*.6);

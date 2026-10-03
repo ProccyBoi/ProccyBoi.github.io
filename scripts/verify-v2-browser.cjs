@@ -77,16 +77,14 @@ async function posters(page) {
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
       await page.locator('[data-'+prefix+'-stage]').scrollIntoViewIfNeeded();
       await page.locator('[data-'+prefix+'-status].is-ready').waitFor({state:'attached',timeout:60000});
-      await page.locator('[data-'+prefix+'-view="top"]').click();
-      assert.equal(await page.locator('[data-'+prefix+'-view="top"]').getAttribute('aria-pressed'),'true');
-      await page.locator('[data-'+prefix+'-shell]').click();
-      assert.equal(await page.locator('[data-'+prefix+'-shell]').getAttribute('aria-pressed'),'false');
-      await page.locator('[data-'+prefix+'-explode]').click();
-      assert.equal(await page.locator('[data-'+prefix+'-explode]').getAttribute('aria-pressed'),'true');
-      await page.locator('[data-'+prefix+'-reset]').click();
-      assert.equal(await page.locator('[data-'+prefix+'-view="iso"]').getAttribute('aria-pressed'),'true');
-      assert.equal(await page.locator('[data-'+prefix+'-shell]').getAttribute('aria-pressed'),'true');
-      assert.equal(await page.locator('[data-'+prefix+'-explode]').getAttribute('aria-pressed'),'false');
+      const action=page.locator('[data-'+prefix+'-explode]');
+      assert.equal(await page.locator('[data-'+prefix+'-view], [data-'+prefix+'-shell], [data-'+prefix+'-reset]').count(),0,'Viewer has one assembly action');
+      assert.equal(await action.textContent(),'Disassemble');
+      await action.click();
+      assert.equal(await action.getAttribute('aria-pressed'),'true');
+      assert.equal(await action.textContent(),'Assemble');
+      await action.click();
+      assert.equal(await action.getAttribute('aria-pressed'),'false');
     }
     await page.goto(base+'/v2/projects/skylabs/',{waitUntil:'networkidle'});
     assert.equal(await page.locator('[data-hardware]').count(),1);
@@ -96,15 +94,19 @@ async function posters(page) {
     assert.equal(await page.locator('[data-hardware]').getAttribute('data-hardware-board-key'),'ground');
     await page.locator('[data-hardware]').scrollIntoViewIfNeeded();
     await page.locator('[data-hardware-state="ready"]').waitFor({timeout:60000});
-    await page.locator('select[data-hardware-selection]').selectOption('U3');
-    assert.match(await page.locator('[data-hardware-part]').textContent(),/ESP32.*field dashboard/);
+    assert.equal(await page.locator('[data-hardware] select, [data-hardware] input[type="range"]').count(),0);
+    await page.locator('[data-hardware-explode]').click();
+    assert.equal(await page.locator('[data-hardware-explode]').textContent(),'Assemble');
+    await page.locator('[data-hardware-explode]').click();
     await page.goto(base+'/v2/projects/tramtrace/',{waitUntil:'networkidle'});
-    for(const mode of ['copper','data']){
-      await page.locator('[data-inspector-mode="'+mode+'"]').click();
-      assert.equal(await page.locator('[data-inspector-mode="'+mode+'"]').getAttribute('aria-pressed'),'true');
-    }
+    await page.locator('[data-pcb-object]').scrollIntoViewIfNeeded();
+    await page.locator('[data-pcb-object][data-source-model="kicad-glb"]').waitFor({timeout:60000});
+    assert.equal(await page.locator('[data-pcb-view], [data-inspector-mode], [data-component-directory]').count(),0,'TramTrace has one assembly viewer');
+    await page.locator('[data-pcb-explode]').click();
+    assert.equal(await page.locator('[data-pcb-explode]').textContent(),'Assemble');
+    await page.locator('[data-pcb-explode]').click();
     await context.close();
-    console.log('PASS ESP32/Dual USB view, shell, explode and reset; Skylabs switching; TramTrace copper/data');
+    console.log('PASS simplified ESP32/Dual USB assembly actions; Skylabs switching; TramTrace interactions');
     const fallback=await browser.newContext({viewport:{width:1280,height:900}});
     await fallback.route('**/*.glb',route=>route.abort());
     const failedPage=await fallback.newPage();observe(failedPage);

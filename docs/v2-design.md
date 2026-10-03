@@ -1,6 +1,6 @@
 # V2 — hardware, inside and out
 
-Revised 27 September 2026. The portfolio lives at `/v2/` and contains 15 projects, including the expanded electronics collection and Coaster. The standalone browser tools are not presented as portfolio projects.
+Revised 3 October 2026. The portfolio lives at `/v2/` and contains 15 projects, including the expanded electronics collection and Coaster. The standalone browser tools are not presented as portfolio projects.
 
 ## Visual direction
 
@@ -15,10 +15,10 @@ Project names and concise descriptions carry the interface. CAD provenance belon
 - Native scrolling controls the hero. The page never intercepts wheel/touch input.
 - The project selector moves to a project in the sequence; its caption links to the full case study. “View projects” skips the sequence.
 - Rendering runs only while a pose changes, a viewport resizes, or the scene enters view. Hidden tabs and offscreen scenes stop rendering.
-- Physical CAD faces are merged by material within moving components. TramTrace’s LEDs form one bank for the hero, retaining all 116 source geometries. Telemetry’s resistors and capacitors are batched by their shared displacement; every original part and position remains present.
+- Physical CAD faces are merged by material within moving components. Dense LED arrays and telemetry passives form small spatial groups, retaining every original geometry and placement. Components separate with stable stagger, different heights, lateral movement and gentle rotation; reversing the motion restores their original positions and orientations.
 - The hero uses still images and direct project links for reduced motion and Save Data; JavaScript/WebGL failure retains the same navigation. No loading gate blocks the page.
-- The standalone Raspberry Pi inspector adds orbiting, camera presets, component identification, shell visibility and assembly separation.
-- The shared hardware inspector adds component selection, front/back views, assembly separation and optional scroll control across the electronics collection.
+- Every assembly viewer presents one Disassemble/Assemble action. Dragging rotates the model; pointer hover or a touch tap identifies a physical component in a compact top-right readout. Keyboard rotation and reset remain available without extra toolbar controls.
+- Camera preset rows, component directories, selection dropdowns and separation sliders are removed from v2. Skylabs keeps aircraft/ground-station tabs. Coaster's cup simulation is separate from the assembly toolbar, and TramTrace uses one 3D viewer.
 - Inspectors load automatically near the viewport, including for reduced motion. Loading does not start animations, enable scroll control or move keyboard focus. A failed load exposes a retry button.
 - Skylabs telemetry and ground-station solder masks use the rich blue of the fabricated boards. Copper, silkscreen, components and board cores retain their materials.
 

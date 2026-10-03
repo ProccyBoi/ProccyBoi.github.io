@@ -9,9 +9,8 @@ const models=path.resolve(__dirname,'../assets/models/hardware');
 const output=path.resolve(__dirname,'../.codex-temp/hardware-posters');
 const selected=process.argv.slice(2);
 const figure=slug=>`<figure data-hardware="/assets/models/hardware/${slug}/assembly.json" data-hardware-title="${slug}" data-hardware-capture>
-<div data-hardware-stage style="width:1600px;height:1200px"><img data-hardware-poster hidden><canvas data-hardware-canvas></canvas></div>
-<button data-hardware-start hidden></button><button data-hardware-explode hidden></button><button data-hardware-reset hidden></button><button data-hardware-scroll hidden></button>
-<input data-hardware-range type="range" hidden><select data-hardware-selection hidden></select><p data-hardware-part hidden></p><p data-hardware-status hidden></p></figure>`;
+<div data-hardware-stage style="width:1600px;height:1200px"><img data-hardware-poster hidden><canvas data-hardware-canvas></canvas><output data-hardware-part hidden></output></div>
+<button data-hardware-start hidden></button><button data-hardware-explode hidden></button><p data-hardware-status hidden></p></figure>`;
 (async()=>{
  await fs.mkdir(output,{recursive:true});
  const slugs=selected.length?selected:(await fs.readdir(models,{withFileTypes:true})).filter(item=>item.isDirectory()&&!item.name.startsWith('_')).map(item=>item.name);
