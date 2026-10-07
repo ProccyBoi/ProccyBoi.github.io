@@ -23,11 +23,13 @@
     const showStatus=text=>{status.textContent=text;};
     const startWrap=start.closest('.hardware-start')||start,showRetry=show=>{start.hidden=!show;startWrap.hidden=!show;};
     root.dataset.hardwareState='poster';root.dataset.hardwareMounted='true';showRetry(false);
-    const clearPart=()=>{selected='';pendingPick=null;readout.hidden=true;readout.textContent='';root.dataset.hardwareSelection='';};
+    const identify=ref=>root.dispatchEvent(new CustomEvent('v2:component-identify',{bubbles:true,detail:{model:root.dataset.hardware,ref,panel:readout}}));
+    const clearPart=()=>{selected='';pendingPick=null;readout.hidden=true;readout.textContent='';root.dataset.hardwareSelection='';identify('');};
     const showPart=(ref,value)=>{
       if(selected===ref)return;selected=ref;root.dataset.hardwareSelection=ref;
       const name=labels[root.dataset.hardwareBoardKey]?.[ref]||value;
       readout.textContent=name&&name!==ref?`${ref} · ${name}`:ref;readout.hidden=false;
+      identify(ref);
     };
     const pickPart=pick=>{
       if(!ready)return;const bounds=canvas.getBoundingClientRect();

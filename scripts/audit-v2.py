@@ -449,12 +449,21 @@ def main() -> int:
                     for dimension in ("width", "height"):
                         if not re.fullmatch(r"[1-9]\d*", item.attrs.get(dimension, "")):
                             error(page, f"image needs positive integer {dimension} to reserve layout space", item.line)
-                if not modal_image and not any(item.attrs.get(attr) for attr in ("src", "srcset")):
+                deferred_image = item.attrs.get("data-gallery-src")
+                if deferred_image and not any(
+                    "noscript" in fallback.ancestors
+                    and fallback.attrs.get("src") == deferred_image
+                    and fallback.attrs.get("srcset", "") == item.attrs.get("data-gallery-srcset", "")
+                    and all(fallback.attrs.get(attr) == item.attrs.get(attr) for attr in ("alt", "width", "height"))
+                    for fallback in doc.tags("img")
+                ):
+                    error(page, "deferred gallery image needs a matching noscript photograph", item.line)
+                if not modal_image and not deferred_image and not any(item.attrs.get(attr) for attr in ("src", "srcset")):
                     error(page, "image missing src/srcset", item.line)
-            for attr in ("href", "src", "poster", "xlink:href", "data-hardware"):
+            for attr in ("href", "src", "poster", "xlink:href", "data-hardware", "data-gallery-src"):
                 if attr in item.attrs and item.tag != "base":
                     reference(page, item.attrs[attr], doc.base, item.line, navigation=item.tag in {"a", "area"} and attr == "href")
-            for attr in ("srcset", "imagesrcset"):
+            for attr in ("srcset", "imagesrcset", "data-gallery-srcset"):
                 if attr in item.attrs:
                     stats["responsive image sets"] += 1
                     for raw_url in source_set_urls(item.attrs[attr]):

@@ -36,8 +36,8 @@ async function posters(page) {
     assert.ok((await page.locator('[data-assembly-canvas]').getAttribute('aria-label')).trim());
     assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items=>items.map(item=>item.getAttribute('href'))),routes);
     assert.equal(await page.locator('h1').count(),1);
-    assert.equal(await page.locator('.v2-project-grid > .v2-project-card').count(),7,'Seven public homepage cards');
-    assert.equal(await page.locator('.v2-project-grid > .v2-project-card').first().getAttribute('href'),'/v2/projects/tramtrace/');
+    assert.equal(await page.locator('.v2-gallery-photo-link, .v2-gallery-more-card').count(),7,'Seven public homepage projects');
+    assert.equal(await page.locator('.v2-gallery-photo-link').first().getAttribute('href'),'/v2/projects/tramtrace/');
     const skip=await page.locator('.v2-skip').getAttribute('href');
     assert.equal(await page.locator(skip).count(),1,'Skip target must exist');
     await page.locator('.v2-skip').focus();await page.keyboard.press('Enter');

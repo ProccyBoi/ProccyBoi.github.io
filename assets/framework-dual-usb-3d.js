@@ -839,6 +839,7 @@
     if(partDetail)partDetail.textContent = simplified?'':'Point to or tap the PCB to identify the hub, power switches, protection and ports.';
     root.dataset.explorerPart='';
     partPanel.classList.remove('is-active');
+    root.dispatchEvent(new CustomEvent('v2:component-identify',{bubbles:true,detail:{model:'framework-dual-usb',ref:'',panel:partPanel}}));
   };
 
   resetButton?.addEventListener('click', () => {
@@ -880,6 +881,15 @@
     }
     return null;
   };
+  const showPartInfo = info => {
+    if (!info) { resetPartPanel(); return; }
+    partName.textContent = info[0];
+    if(partDetail)partDetail.textContent = info[1];
+    partPanel.hidden=false;
+    root.dataset.explorerPart=info[0];
+    partPanel.classList.add('is-active');
+    root.dispatchEvent(new CustomEvent('v2:component-identify',{bubbles:true,detail:{model:'framework-dual-usb',ref:info[0].split(' · ')[0],panel:partPanel}}));
+  };
   const updatePartHover = (event, allowActivePointer = false) => {
     if (!partPanel || !partName || (pointers.size && !allowActivePointer)) return;
     const rect = stage.getBoundingClientRect();
@@ -889,12 +899,7 @@
     scene.updateMatrixWorld(true);
     const hit = raycaster.intersectObjects(pickRoots, true).find((entry) => {for(let node=entry.object;node;node=node.parent)if(!node.visible)return false;return true;});
     const info = hit ? resolvePartInfo(hit.object) : null;
-    if (!info) { resetPartPanel(); return; }
-    partName.textContent = info[0];
-    if(partDetail)partDetail.textContent = info[1];
-    partPanel.hidden=false;
-    root.dataset.explorerPart=info[0];
-    partPanel.classList.add('is-active');
+    showPartInfo(info);
   };
 
   stage.addEventListener('pointerdown', (event) => {
@@ -953,7 +958,17 @@
     targetDistance = limitZoom(targetDistance + event.deltaY * 0.035);
   }, { passive: false });
 
+  let keyboardPartIndex = -1;
+  if(simplified)stage.setAttribute('aria-label',stage.getAttribute('aria-label')+' Use bracket keys to browse components and Escape to clear.');
   stage.addEventListener('keydown', (event) => {
+    if(simplified && (event.key==='[' || event.key===']')) {
+      const parts=[...new Map(pickRoots.filter(object=>{for(let node=object;node;node=node.parent)if(!node.visible)return false;return true;}).map(object=>object.userData.partInfo).filter(Boolean).map(info=>[info[0],info])).values()];
+      if(!parts.length)return;
+      event.preventDefault();
+      keyboardPartIndex=keyboardPartIndex<0?(event.key===']'?0:parts.length-1):(keyboardPartIndex+(event.key===']'?1:-1)+parts.length)%parts.length;
+      showPartInfo(parts[keyboardPartIndex]); return;
+    }
+    if(simplified && event.key==='Escape'){event.preventDefault();resetPartPanel();return;}
     let handled = true;
     if (event.key === 'ArrowLeft') targetYaw += 0.12;
     else if (event.key === 'ArrowRight') targetYaw -= 0.12;
@@ -1065,7 +1080,7 @@
     if(explodeButton)explodeButton.textContent='Disassemble';
     root.addEventListener('click',event=>{if(event.target.closest('button'))resetPartPanel();requestRender();});
     for(const type of ['pointerdown','pointermove','pointerup','pointercancel','wheel','keydown'])stage.addEventListener(type,requestRender);
-    for(const type of ['wheel','keydown'])stage.addEventListener(type,resetPartPanel);
+    for(const type of ['wheel','keydown'])stage.addEventListener(type,event=>{if(event.type!=='keydown'||!['[',']'].includes(event.key))resetPartPanel();});
     motionPreference.addEventListener('change',requestRender);
   }
 })();

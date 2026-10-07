@@ -131,6 +131,7 @@ def route_links(source):
 
 def common(source, body_class, active='work'):
     source = re.sub(r'(assets/(?:framework-3d|framework-dual-usb-3d|v2-pi)\.js)(?:\?v=[^"\s]+)?', r'\1?v=mechanics-20261003', source)
+    source = re.sub(r'(assets/(?:framework-dual-usb-3d|tramtrace-pcb-explorer)\.js)(?:\?v=[^"\s]+)?', r'\1?v=physical-20261007', source)
     source = re.sub(r'(assets/images/v2/(?:framework-pi-cad|hardware/framework-logic-analyser)\.webp)(?:\?v=[^"\s]+)?', r'\1?v=mechanics-20261003', source)
     tree = Tree(source)
     changes = []
@@ -146,14 +147,16 @@ def common(source, body_class, active='work'):
     source = re.sub(r'(<meta name="theme-color" content=")[^"]*(">)', r'\g<1>#141412\2', source)
     if '<base' not in source:
         source = source.replace('<head>', '<head>\n<base href="/">', 1)
-    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=folio-20261007">
-  <link rel="stylesheet" href="/assets/v2-case.css?v=folio-20261007">
-  <script src="/assets/v2.js" defer></script><script src="/assets/v2-cases.js" defer></script>
+    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
+  <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
+  <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
 </head>''')
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
     if 'data-hardware=' in source:
-        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=mechanics-20261003" defer></script>\n</head>')
+        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=physical-20261007" defer></script>\n</head>')
     return route_links(clean_display_copy(source))
 
 

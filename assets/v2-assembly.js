@@ -213,7 +213,6 @@
     const introFade=1-ramp(current,.015,.10);
     intro.style.opacity=introFade.toFixed(4);
     intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
-    intro.style.setProperty('--assembly-separation',((1-introFade)*width*.035).toFixed(2));
     captionAt(current);
     progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
     if(renderer) {fitShadows();renderer.render(scene,camera);}
@@ -223,6 +222,12 @@
     if(moving && (Math.abs(target-current)>.00008 || settle<1)) frame=requestAnimationFrame(render);
   };
   function request(){if(!frame && ready && visible && !document.hidden) frame=requestAnimationFrame(render);}
+  root.querySelector('.v2-assembly-jump')?.addEventListener('click', () => {
+    if (active !== 0 && active !== 1) return;
+    window.dispatchEvent(new CustomEvent('v2:gallery-project', {
+      detail: {project: active === 0 ? 'tramtrace' : 'skylabs'}
+    }));
+  });
   const staticMode = () => {
     loadingExperience?.suspend(true);
     root.classList.remove('is-enhanced'); root.classList.add('is-static');

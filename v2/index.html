@@ -17,12 +17,14 @@
   <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/images/v2/tramtrace-cad.webp" as="image" type="image/webp" fetchpriority="high">
   <script src="/assets/v2-hero-startup.js?v=startup-20261007" async></script>
-  <link rel="stylesheet" href="/assets/v2.css?v=folio-20261007">
-  <link rel="stylesheet" href="/assets/v2-assembly.css?v=folio-20261007">
+  <link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-assembly.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
-  <script src="/assets/v2.js" defer></script>
+  <link rel="stylesheet" href="/assets/v2-gallery.css?v=gallery-20261007">
+  <script src="/assets/v2.js?v=physical-20261007" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
-  <script src="/assets/v2-assembly.js?v=startup-20261007" defer></script>
+  <script src="/assets/v2-assembly.js?v=physical-20261007" defer></script>
+  <script src="/assets/v2-gallery.js?v=gallery-20261007" defer></script>
 </head>
 <body class="v2 v2-home">
   <a class="v2-skip" href="#main">Skip to content</a>
@@ -66,19 +68,78 @@
         <div class="v2-assembly-progress" aria-hidden="true"><span data-assembly-progress></span></div>
       </div>
     </section>
-    <section class="v2-work v2-shell" aria-labelledby="work-title">
-      <div class="v2-section-heading" id="work"><h2 id="work-title">Selected projects</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
-      <div class="v2-project-grid">
-        <a class="v2-project-card is-featured" href="/v2/projects/tramtrace/"><div class="v2-project-image"><img src="/assets/images/projects/tramtrace-hero-960.webp" srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(min-width: 901px) 60vw, 90vw" alt="TramTrace displaying live light-rail positions" width="1920" height="1280" loading="lazy"></div><div class="v2-project-copy"><h3>TramTrace <span aria-hidden="true">↗</span></h3><p>A live map of Sydney and Parramatta light rail. An ESP32 turns service data into 116 RGB pixels across a custom PCB.</p></div></a>
-        <a class="v2-project-card" href="/v2/projects/skylabs/"><div class="v2-project-image"><img src="/assets/images/projects/skylabs-telemetry-macro-960.webp" alt="Populated Skylabs telemetry PCB, photographed close up" width="960" height="640" loading="lazy"></div><div class="v2-project-copy"><h3>Skylabs <span aria-hidden="true">↗</span></h3><p>Aircraft telemetry, a ground station, and the software to review a flight.</p></div></a>
-        <a class="v2-project-card" href="/v2/projects/framework-dual-usb/"><div class="v2-project-image"><img src="/assets/images/projects/framework-dual-hero-960.webp" alt="Dual USB-C expansion card in a clear enclosure" width="960" height="640" loading="lazy"></div><div class="v2-project-copy"><h3>Dual USB-C <span aria-hidden="true">↗</span></h3><p>Two USB 2.0 Type-C ports in one Framework expansion bay.</p></div></a>
-        <a class="v2-project-card" href="/v2/projects/coaster/"><div class="v2-project-image"><img src="/assets/images/projects/coaster-hero-960.webp" alt="Coaster circuit board and enclosure" width="960" height="640" loading="lazy"></div><div class="v2-project-copy"><h3>Coaster <span aria-hidden="true">↗</span></h3><p>A light-sensing coaster with an RGB ring and printed enclosure.</p></div></a>
-        <a class="v2-project-card" href="/v2/projects/rf-test-board/"><div class="v2-project-image"><img src="/assets/images/projects/rf-test-hero-960.webp" alt="RF test board with transmission-line structures" width="960" height="640" loading="lazy"></div><div class="v2-project-copy"><h3>RF test board <span aria-hidden="true">↗</span></h3><p>Transmission lines and filter footprints, made to compare on a VNA.</p></div></a>
-        <a class="v2-project-card is-compact" href="/v2/projects/framework-logic-analyser/"><div class="v2-project-image is-board"><img src="/assets/images/v2/hardware/framework-logic-analyser.webp" alt="STM32 logic analyser expansion card" width="1600" height="1200" loading="lazy"></div><div class="v2-project-copy"><h3>Logic analyser <span aria-hidden="true">↗</span></h3><p>Logic and serial-bus capture in a Framework expansion card.</p></div></a>
-        <a class="v2-project-card is-compact" href="/v2/projects/tamagotchi-sd-card/"><div class="v2-project-image is-board"><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy"></div><div class="v2-project-copy"><h3>Tamagotchi SD Card <span aria-hidden="true">↗</span></h3><p>An STM32, an SD-card socket and a seven-pin interface.</p></div></a>
+    <section class="v2-work v2-shell v2-gallery" data-gallery aria-labelledby="work-title">
+      <div class="v2-gallery-heading" id="work"><h2 id="work-title">Selected work</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
+      <div class="v2-gallery-featured">
+        <div class="v2-gallery-stage" data-gallery-stage hidden>
+          <div class="v2-gallery-media" data-gallery-media></div>
+          <div class="v2-gallery-views" aria-label="Photograph views">
+            <button class="v2-gallery-view" type="button" data-gallery-view="overview" aria-pressed="true"><span class="v2-gallery-view-label">Overview</span></button>
+            <button class="v2-gallery-view" type="button" data-gallery-view="detail" aria-pressed="false"><span class="v2-gallery-view-label">Detail</span></button>
+            <p class="v2-gallery-view-caption" data-gallery-caption aria-live="polite" aria-atomic="true"></p>
+          </div>
+        </div>
+        <div class="v2-gallery-projects" data-gallery-projects>
+          <article class="v2-gallery-project" data-gallery-project="tramtrace" data-gallery-name="TramTrace" data-gallery-detail="tramtrace-controller" data-gallery-detail-alt="USB connector, ESP32 and controller circuitry on TramTrace" data-gallery-overview-caption="Sydney &amp; Parramatta light rail" data-gallery-detail-caption="The controller">
+            <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v2/projects/tramtrace/"><img data-gallery-original data-gallery-src="/assets/images/projects/tramtrace-hero-960.webp" data-gallery-srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="TramTrace displaying live light-rail positions" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/tramtrace-hero-960.webp" srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="TramTrace displaying live light-rail positions" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
+            <h3><a class="v2-gallery-static-title" href="/v2/projects/tramtrace/">TramTrace</a><button class="v2-gallery-selector" type="button" data-gallery-select="tramtrace" aria-expanded="true" aria-controls="gallery-tramtrace-info" hidden><span class="v2-gallery-selector-thumb" aria-hidden="true"></span><span class="v2-gallery-selector-title">TramTrace</span><span class="v2-gallery-selector-mark" aria-hidden="true"></span></button></h3>
+            <div class="v2-gallery-info" id="gallery-tramtrace-info"><div><p>A live map of Sydney and Parramatta light rail. An ESP32 turns service data into 116 RGB pixels across a custom PCB.</p><a class="v2-text-link" href="/v2/projects/tramtrace/">Explore TramTrace <span aria-hidden="true">↗</span></a></div></div>
+          </article>
+          <article class="v2-gallery-project" data-gallery-project="skylabs" data-gallery-name="Skylabs" data-gallery-detail="skylabs-telemetry-macro" data-gallery-detail-alt="Close-up of components and controls on the Skylabs telemetry board" data-gallery-overview-caption="The telemetry board" data-gallery-detail-caption="Telemetry, up close">
+            <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v2/projects/skylabs/"><img data-gallery-original data-gallery-src="/assets/images/projects/skylabs-telemetry-hero-960.webp" data-gallery-srcset="/assets/images/projects/skylabs-telemetry-hero-960.webp 960w, /assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Populated Skylabs aircraft telemetry board" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" srcset="/assets/images/projects/skylabs-telemetry-hero-960.webp 960w, /assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Populated Skylabs aircraft telemetry board" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
+            <h3><a class="v2-gallery-static-title" href="/v2/projects/skylabs/">Skylabs</a><button class="v2-gallery-selector" type="button" data-gallery-select="skylabs" aria-expanded="false" aria-controls="gallery-skylabs-info" hidden><span class="v2-gallery-selector-thumb" aria-hidden="true"></span><span class="v2-gallery-selector-title">Skylabs</span><span class="v2-gallery-selector-mark" aria-hidden="true"></span></button></h3>
+            <div class="v2-gallery-info" id="gallery-skylabs-info"><div><p>Aircraft telemetry, a ground station, and the software to review a flight.</p><a class="v2-text-link" href="/v2/projects/skylabs/">Explore Skylabs <span aria-hidden="true">↗</span></a></div></div>
+          </article>
+          <article class="v2-gallery-project" data-gallery-project="dual-usb-c" data-gallery-name="Dual USB-C" data-gallery-detail="framework-dual-ports" data-gallery-detail-alt="The two USB-C ports and mounting screw in the clear Framework enclosure" data-gallery-overview-caption="One Framework expansion bay" data-gallery-detail-caption="The two USB-C ports">
+            <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v2/projects/framework-dual-usb/"><img data-gallery-original data-gallery-src="/assets/images/projects/framework-dual-hero-960.webp" data-gallery-srcset="/assets/images/projects/framework-dual-hero-960.webp 960w, /assets/images/projects/framework-dual-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Dual USB-C expansion card with its clear housing and mounting screws" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/framework-dual-hero-960.webp" srcset="/assets/images/projects/framework-dual-hero-960.webp 960w, /assets/images/projects/framework-dual-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Dual USB-C expansion card with its clear housing and mounting screws" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
+            <h3><a class="v2-gallery-static-title" href="/v2/projects/framework-dual-usb/">Dual USB-C</a><button class="v2-gallery-selector" type="button" data-gallery-select="dual-usb-c" aria-expanded="false" aria-controls="gallery-dual-usb-c-info" hidden><span class="v2-gallery-selector-thumb" aria-hidden="true"></span><span class="v2-gallery-selector-title">Dual USB-C</span><span class="v2-gallery-selector-mark" aria-hidden="true"></span></button></h3>
+            <div class="v2-gallery-info" id="gallery-dual-usb-c-info"><div><p>Two USB 2.0 Type-C ports in one Framework expansion bay.</p><a class="v2-text-link" href="/v2/projects/framework-dual-usb/">Explore Dual USB-C <span aria-hidden="true">↗</span></a></div></div>
+          </article>
+        </div>
+      </div>
+      <script>
+        (() => {
+          const gallery = document.currentScript.closest('[data-gallery]');
+          const fallback = () => {
+            if (!gallery || gallery.dataset.galleryReady) return;
+            const frames = new Set(gallery.querySelectorAll('.v2-gallery-photo, .v2-gallery-more-photo'));
+            const load = frame => {
+              frame.querySelectorAll('img[data-gallery-src]').forEach(image => {
+                if (image.dataset.gallerySrcset) image.srcset = image.dataset.gallerySrcset;
+                image.src = image.dataset.gallerySrc;
+              });
+              frames.delete(frame);
+            };
+            if ('IntersectionObserver' in window) {
+              const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+                if (entry.isIntersecting) { load(entry.target); observer.unobserve(entry.target); }
+              }), { rootMargin: '240px 0px' });
+              frames.forEach(frame => observer.observe(frame));
+            } else {
+              const check = () => {
+                frames.forEach(frame => {
+                  const bounds = frame.getBoundingClientRect();
+                  if (bounds.top < innerHeight + 240 && bounds.bottom > -240) load(frame);
+                });
+                if (!frames.size) { removeEventListener('scroll', check); removeEventListener('resize', check); }
+              };
+              addEventListener('scroll', check, { passive: true });
+              addEventListener('resize', check, { passive: true });
+              check();
+            }
+          };
+          if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fallback, { once: true });
+          else fallback();
+        })();
+      </script>
+      <div class="v2-gallery-more">
+        <a class="v2-gallery-more-card" href="/v2/projects/coaster/"><div class="v2-gallery-more-photo"><img data-gallery-src="/assets/images/projects/coaster-hero-960.webp" alt="Coaster circuit board and enclosure" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/coaster-hero-960.webp" alt="Coaster circuit board and enclosure" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Coaster <span aria-hidden="true">↗</span></h3><p>A light-sensing coaster with an RGB ring and printed enclosure.</p></div></a>
+        <a class="v2-gallery-more-card" href="/v2/projects/rf-test-board/"><div class="v2-gallery-more-photo"><img data-gallery-src="/assets/images/projects/rf-test-hero-960.webp" alt="RF test board with transmission-line structures" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/rf-test-hero-960.webp" alt="RF test board with transmission-line structures" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>RF test board <span aria-hidden="true">↗</span></h3><p>Transmission lines and filter footprints, made to compare on a VNA.</p></div></a>
+        <a class="v2-gallery-more-card" href="/v2/projects/framework-logic-analyser/"><div class="v2-gallery-more-photo is-board"><img data-gallery-src="/assets/images/v2/hardware/framework-logic-analyser.webp" alt="STM32 logic analyser expansion card" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/v2/hardware/framework-logic-analyser.webp" alt="STM32 logic analyser expansion card" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Logic analyser <span aria-hidden="true">↗</span></h3><p>Logic and serial-bus capture in a Framework expansion card.</p></div></a>
+        <a class="v2-gallery-more-card" href="/v2/projects/tamagotchi-sd-card/"><div class="v2-gallery-more-photo is-board"><img data-gallery-src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Tamagotchi SD Card <span aria-hidden="true">↗</span></h3><p>An STM32, an SD-card socket and a seven-pin interface.</p></div></a>
       </div>
     </section>
-    <section class="v2-about-preview v2-shell" aria-labelledby="about-title"><h2 id="about-title">About<br>me.</h2><div class="v2-about-copy"><p>I’m an electrical engineering student at UNSW, working in power electronics and leading avionics and payload work at UNSW Skylabs.</p><p>I like building the whole thing: the board, the code, and the tools that make it useful.</p><a class="v2-text-link" href="/v2/about/">More about me <span aria-hidden="true">↗</span></a></div></section>
+    <section class="v2-about-preview v2-shell" aria-labelledby="about-title"><h2 id="about-title">About me.</h2><div class="v2-about-copy"><p>I’m an electrical engineering student at UNSW, working in power electronics and leading avionics and payload work at UNSW Skylabs.</p><p>I like building the whole thing: the board, the code, and the tools that make it useful.</p><a class="v2-text-link" href="/v2/about/">More about me <span aria-hidden="true">↗</span></a></div></section>
     <section class="v2-contact" aria-labelledby="contact-title"><div class="v2-shell"><h2 id="contact-title">Get in touch.</h2><a class="v2-contact-email" href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com <span aria-hidden="true">↗</span></a></div></section>
   </main>
   <footer class="v2-footer"><div class="v2-shell"><a class="v2-brand" href="/v2/">Andrew Chung</a><div><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV ↗</a></div><p>© <span data-v2-year>2026</span> Andrew Chung</p></div></footer>

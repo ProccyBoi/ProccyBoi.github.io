@@ -401,7 +401,8 @@
   }
   const announce=(message)=>{if(liveRegion)liveRegion.textContent=message;};
   const markCustomView=()=>viewButtons.forEach((b)=>b.setAttribute('aria-pressed','false'));
-  canvas.setAttribute('aria-keyshortcuts','ArrowLeft ArrowRight ArrowUp ArrowDown + - Home');
+  canvas.setAttribute('aria-keyshortcuts','ArrowLeft ArrowRight ArrowUp ArrowDown + - Home'+(simplified?' [ ] Escape':''));
+  if(simplified)canvas.setAttribute('aria-label',canvas.getAttribute('aria-label')+' Use bracket keys to browse components and Escape to clear.');
   // Frame the complete assembly at the current viewport aspect ratio.
   const fitDistance = (flat = false) => (flat ? Math.max(config.width, config.height) : Math.hypot(config.width, config.height)) * 1.85 / Math.min(camera.aspect, 1);
   const setPreset = (name) => {
@@ -418,9 +419,11 @@
   root.querySelector('[data-pcb-reset]')?.addEventListener('click', () => { explodeTarget=0; if(explodeButton){explodeButton.textContent=simplified?'Disassemble':'Explode';explodeButton.setAttribute('aria-pressed','false');} setPreset('angle'); announce('3D view reset'); });
 
   const pointers=new Map();
+  let keyboardSelection=false,keyboardPartIndex=-1;
   let dragStart=null,pinchStartDistance=0,pinchStartZoom=distance,dragTravel=0;
   canvas.addEventListener('pointerdown',(e)=>{
     if(e.button!==0)return;
+    keyboardSelection=false;
     dragTravel=0;
     const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
     canvas.setPointerCapture?.(e.pointerId);
@@ -435,6 +438,7 @@
     }
   });
   canvas.addEventListener('pointermove',(e)=>{
+    keyboardSelection=false;
     const r=canvas.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;
     if(!pointers.has(e.pointerId))return;
     const previous=pointers.get(e.pointerId);dragTravel+=Math.hypot(e.clientX-previous.x,e.clientY-previous.y);
@@ -461,6 +465,14 @@
   canvas.addEventListener('pointercancel',releasePointer);
   canvas.addEventListener('wheel',(e)=>{e.preventDefault();targetDistance=clamp(targetDistance*Math.exp(e.deltaY*0.001),Math.max(config.width,config.height)*0.7,Math.max(config.width,config.height)*3.2);markCustomView();},{passive:false});
   canvas.addEventListener('keydown',(e)=>{
+    if(simplified && (e.key==='[' || e.key===']')) {
+      const parts=pickables.filter(part=>part.userData.ref);
+      if(!parts.length)return;
+      e.preventDefault();keyboardSelection=true;mouse.set(2,2);hover=null;
+      keyboardPartIndex=keyboardPartIndex<0?(e.key===']'?0:parts.length-1):(keyboardPartIndex+(e.key===']'?1:-1)+parts.length)%parts.length;
+      showPart(parts[keyboardPartIndex]);return;
+    }
+    if(simplified && e.key==='Escape'){e.preventDefault();keyboardSelection=false;mouse.set(2,2);hover=null;showPart(null);return;}
     const step=d2r(7); let used=true,custom=true;
     if(e.key==='ArrowLeft')targetYaw+=step;
     else if(e.key==='ArrowRight')targetYaw-=step;
@@ -476,8 +488,9 @@
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(2,2); let hover=null;
   const refEl=root.querySelector('[data-pcb-ref]'),nameEl=root.querySelector('[data-pcb-name]'),copyEl=root.querySelector('[data-pcb-copy]');
   const partPanel=root.querySelector('[data-pcb-part]');
-  const showPart=(o)=>{const part=o?.userData?.ref?o:o?.parent; const ref=part?.userData?.ref||'BOARD'; if(refEl)refEl.textContent=ref; if(nameEl)nameEl.textContent=part?.userData?.name?(simplified?ref+' · ':'')+part.userData.name:config.boardName; if(copyEl)copyEl.textContent=part?.userData?.copy||config.boardCopy; if(partPanel)partPanel.hidden=!part?.userData?.ref;root.dataset.explorerPart=part?.userData?.ref||'';}; showPart(null);
-  canvas.addEventListener('pointerleave',event=>{if(event.pointerType!=='touch'&&!pointers.size){mouse.set(2,2);hover=null;showPart(null);}});
+  const identify=ref=>root.dispatchEvent(new CustomEvent('v2:component-identify',{bubbles:true,detail:{model:'tramtrace',ref,panel:partPanel}}));
+  const showPart=(o)=>{const part=o?.userData?.ref?o:o?.parent; const ref=part?.userData?.ref||'BOARD'; if(refEl)refEl.textContent=ref; if(nameEl)nameEl.textContent=part?.userData?.name?(simplified?ref+' · ':'')+part.userData.name:config.boardName; if(copyEl)copyEl.textContent=part?.userData?.copy||config.boardCopy; if(partPanel)partPanel.hidden=!part?.userData?.ref;root.dataset.explorerPart=part?.userData?.ref||'';identify(part?.userData?.ref||'');}; showPart(null);
+  canvas.addEventListener('pointerleave',event=>{if(event.pointerType!=='touch'&&!pointers.size){keyboardSelection=false;mouse.set(2,2);hover=null;showPart(null);}});
 
   const resize=()=>{const r=canvas.getBoundingClientRect();const w=Math.max(1,Math.floor(r.width)),h=Math.max(1,Math.floor(r.height));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const preset=viewButtons.find(b=>b.getAttribute('aria-pressed')==='true');if(preset&&!explodeTarget)setPreset(preset.dataset.pcbView);else if(simplified)targetDistance=fitDistance()*(explodeTarget?1.2:1);requestFit();};
   new ResizeObserver(resize).observe(canvas); resize();
@@ -492,15 +505,18 @@
       exploded = progress; updateExplode(); fitRequested = false;
     }
     const cp=Math.cos(pitch),sp=Math.sin(pitch),cy=Math.cos(yaw),sy=Math.sin(yaw); camera.position.set(target.x+distance*cp*sy,target.y+distance*sp,target.z+distance*cp*cy); camera.lookAt(target);
-    scene.updateMatrixWorld(true);ray.setFromCamera(mouse,camera); const hits=pointers.size?[]:ray.intersectObjects(pickables,true); const first=hits.find(entry=>{for(let node=entry.object;node;node=node.parent)if(!node.visible)return false;return true;});
+    scene.updateMatrixWorld(true);
+    if(!keyboardSelection){
+    ray.setFromCamera(mouse,camera); const hits=pointers.size?[]:ray.intersectObjects(pickables,true); const first=hits.find(entry=>{for(let node=entry.object;node;node=node.parent)if(!node.visible)return false;return true;});
     if(first?.object?.userData?.instanceInfo&&first.instanceId!=null){
       const info=first.object.userData.instanceInfo[first.instanceId]||[];
       const ref=info[3]||`LED ${first.instanceId+1}`;
       const key=`${ref}:${first.instanceId}`;
-      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent=(simplified?ref+' · ':'')+'WS2812C-2020 RGB pixel';if(copyEl)copyEl.textContent=`${ref} · WS2812C-2020-V1/W · source-positioned RGB pixel.`;if(partPanel)partPanel.hidden=false;root.dataset.explorerPart=ref;}
+      if(hover!==key){hover=key;if(refEl)refEl.textContent=ref;if(nameEl)nameEl.textContent=(simplified?ref+' · ':'')+'WS2812C-2020 RGB pixel';if(copyEl)copyEl.textContent=`${ref} · WS2812C-2020-V1/W · source-positioned RGB pixel.`;if(partPanel)partPanel.hidden=false;root.dataset.explorerPart=ref;identify(ref);}
     }else{
       const hit=first?.object; let tagged=hit; while(tagged&&!tagged.userData.ref)tagged=tagged.parent;
       if(tagged!==hover){hover=tagged;showPart(hover);}
+    }
     }
     renderer.render(scene,camera);
     if(simplified)root.dataset.explorerProgress=exploded.toFixed(4);
@@ -509,9 +525,9 @@
   requestRender=window.PortfolioExplorer.start(animate, canvas, { demand:simplified });
   if(simplified){
     if(explodeButton)explodeButton.textContent='Disassemble';
-    root.addEventListener('click',event=>{if(event.target.closest('button')){mouse.set(2,2);hover=null;showPart(null);}requestRender();});
+    root.addEventListener('click',event=>{if(event.target.closest('button')){keyboardSelection=false;mouse.set(2,2);hover=null;showPart(null);}requestRender();});
     for(const type of ['pointerdown','pointermove','pointerup','pointercancel','wheel','keydown'])canvas.addEventListener(type,requestRender);
-    for(const type of ['wheel','keydown'])canvas.addEventListener(type,()=>{mouse.set(2,2);hover=null;showPart(null);});
+    for(const type of ['wheel','keydown'])canvas.addEventListener(type,event=>{if(event.type!=='keydown'||!['[',']'].includes(event.key)){keyboardSelection=false;mouse.set(2,2);hover=null;showPart(null);}});
     motionPreference.addEventListener('change',requestRender);
   }
 })();
