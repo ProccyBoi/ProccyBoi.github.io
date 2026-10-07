@@ -317,6 +317,7 @@ def main():
     try:
         reference(SITE / "index.html", "/assets/v3-aircraft-hero.js", ORIGIN)
         reference(SITE / "index.html", "/assets/v3-aircraft-scene.js", ORIGIN)
+        reference(SITE / "index.html", "/assets/v3-aircraft-atmosphere.js", ORIGIN)
         reference(SITE / "index.html", "/assets/models/aircraft/skylabs-trainer/manifest.json", ORIGIN)
         manifest = json.loads(aircraft.read_text(encoding="utf-8"))
         manifest_url = ORIGIN + "/" + aircraft.relative_to(ROOT).as_posix()

@@ -19,11 +19,11 @@
     }));
     return scripts.get(url);
   }
-  let renderer, scene, camera, flight, key, track, frame = 0, frameCount = 0;
+  let renderer, scene, camera, flight, key, atmosphere, floorMaterial, groundUniforms, track, frame = 0, frameCount = 0;
   let ready = false, loading = false, telemetryLoading = false, failed = false, visible = true, activePage = true, currentChapter = -1;
   let width = 1, height = 1, rootTop = 0, distance = 1, progress = 0, lastScroll = scrollY;
   let landingDone = false, landingElapsed = 0, previousTime = 0, capturePose;
-  let shadowBox, boardBox, shadowCentre, corner;
+  let shadowBox, boardBox, shadowCentre, corner, studioGround, airfieldGround, studioFog, airfieldFog;
   const request = () => { if (!frame && track && visible && activePage && !document.hidden && allowed()) frame = requestAnimationFrame(render); };
   function chapter(index) {
     if (currentChapter === index) return;
@@ -107,6 +107,14 @@
     view.near = Math.max(.01, near - padding); view.far = far + padding; view.updateProjectionMatrix();
     key.shadow.normalBias = span * .0007; key.shadow.bias = -.00015; renderer.shadowMap.needsUpdate = true;
   }
+  function renderFrame() {
+    renderer.clear();
+    if (atmosphere?.opacity > 0) {
+      renderer.render(atmosphere.scene, atmosphere.camera);
+      renderer.clearDepth();
+    }
+    renderer.render(scene, camera);
+  }
   function render(time) {
     frame = 0;
     if (!track || !visible || !activePage || document.hidden || !allowed() || !ready) { previousTime = 0; return; }
@@ -119,7 +127,15 @@
       const effective = flight.telemetryReady ? progress : Math.min(progress, .61);
       const pose = capturePose?.type === 'landing' ? flight.setLanding(capturePose.value) : capturePose?.type === 'progress' ? flight.setProgress(capturePose.value) : !landingDone ? flight.setLanding(landingElapsed / 5400) : flight.setProgress(effective);
       const framing = flight.frame(camera, width, height); fitLight(framing.focus);
-      renderer.render(scene, camera);
+      const sky = atmosphere?.update({ landing: pose.landing, progress: pose.progress, width, height }) || 0;
+      groundUniforms.sky.value = sky;
+      groundUniforms.near.value = Math.max(3.5, framing.distance) * (width < 761 ? 1.08 : 1.28);
+      groundUniforms.far.value = Math.max(3.5, framing.distance) * (width < 761 ? 1.48 : 2.6);
+      if (floorMaterial.transparent !== (sky > 0)) { floorMaterial.transparent = sky > 0; floorMaterial.needsUpdate = true; }
+      floorMaterial.color.copy(studioGround).lerp(airfieldGround, sky);
+      scene.fog.color.copy(studioFog).lerp(airfieldFog, sky);
+      root.dataset.aircraftAtmosphere = sky.toFixed(6);
+      renderFrame();
       root.classList.add('is-ready'); root.dataset.aircraftState = landingDone || capturePose ? 'ready' : 'landing';
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
       root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftFrames = String(++frameCount);
@@ -128,7 +144,7 @@
     } catch (error) { fail(error); }
   }
   function fail(error) {
-    failed = true; loading = false; fallback('unavailable'); renderer?.dispose();
+    failed = true; loading = false; fallback('unavailable'); atmosphere?.dispose(); renderer?.dispose();
     console.warn('The Skylabs story is showing its photographs.', error);
   }
   async function ensureTelemetry() {
@@ -141,7 +157,7 @@
       flight.attachTelemetry(telemetry); root.dataset.aircraftTelemetryReady = 'true';
       root.dataset.aircraftTelemetryComponents = String(flight.statistics.telemetryComponents); updateScroll(); request();
       if (new URLSearchParams(location.search).has('capture')) {
-        window.__v3Aircraft = { scene, renderer, camera, flight,
+        window.__v3Aircraft = { scene, renderer, camera, flight, atmosphere, renderFrame,
           seekLanding(value) { endLanding(); capturePose = { type: 'landing', value }; chapter(0); request(); },
           seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(value < .25 ? 0 : value < .70 ? 1 : 2); request(); },
           resume() { capturePose = null; updateScroll(); request(); }
@@ -160,28 +176,42 @@
       await Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (!window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
         (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-20261007b'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
-        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })()
+        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
+        script('/assets/v3-aircraft-atmosphere.js?v=sky-20261008').catch(() => {})
       ]);
       if (failed || !allowed()) { loading = false; return; }
       const T = window.THREE;
       renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+      renderer.autoClear = false;
       renderer.setPixelRatio(Math.min(devicePixelRatio || 1, width < 761 ? 1.35 : 1.65));
       window.V2ProductStudio.configureRenderer(renderer, T); renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;
       scene = new T.Scene(); camera = new T.PerspectiveCamera(32, width / height, .002, 80);
+      atmosphere = window.V3AircraftAtmosphere?.create(T);
       key = window.V2ProductStudio.createLights(T, scene).key;
       key.userData.direction.set(-3, 8, 5).normalize();
       const [aircraft, environment] = await Promise.all([window.V3AircraftScene.load(T), window.V2HeroEnvironment.load(T).catch(() => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);
       if (failed) return;
       scene.environment = environment;
       flight = window.V3AircraftScene.create(T, aircraft); scene.add(flight.group);
-      const floorMaterial = new T.MeshBasicMaterial({ color: 0x101210, toneMapped: false }); floorMaterial.color.convertSRGBToLinear();
+      studioGround = new T.Color('#101210').convertSRGBToLinear();
+      airfieldGround = new T.Color('#18232b').convertSRGBToLinear();
+      studioFog = new T.Color('#101210'); airfieldFog = new T.Color('#25323e');
+      groundUniforms = { sky: { value: 0 }, near: { value: 4.5 }, far: { value: 9 } };
+      floorMaterial = new T.MeshBasicMaterial({ color: studioGround, toneMapped: false, transparent: true });
+      floorMaterial.onBeforeCompile = shader => {
+        shader.uniforms.uSky = groundUniforms.sky;
+        shader.uniforms.uGroundNear = groundUniforms.near;
+        shader.uniforms.uGroundFar = groundUniforms.far;
+        shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying float vGroundDepth;').replace('#include <project_vertex>', '#include <project_vertex>\nvGroundDepth = -mvPosition.z;');
+        shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vGroundDepth; uniform float uSky; uniform float uGroundNear; uniform float uGroundFar;').replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.a *= uSky > 0.0 ? 1.0 - smoothstep(uGroundNear, uGroundFar, vGroundDepth) : 1.0;');
+      };
       const floorGeometry = new T.PlaneGeometry(100, 100);
       const floor = new T.Mesh(floorGeometry, floorMaterial); floor.rotation.x = -Math.PI / 2; floor.position.y = -.0007; scene.add(floor);
       const contactShadow = new T.Mesh(floorGeometry, new T.ShadowMaterial({ color: 0x000000, opacity: .35, transparent: true, depthWrite: false }));
       contactShadow.rotation.x = -Math.PI / 2; contactShadow.position.y = -.0005; contactShadow.receiveShadow = true; scene.add(contactShadow);
       // Three r128 blends fog after output encoding; this color therefore
       // matches the CSS background directly rather than being linearized.
-      scene.fog = new T.Fog(new T.Color('#101210'), 9, 28);
+      scene.fog = new T.Fog(studioFog.clone(), 9, 28);
       shadowBox = new T.Box3(); boardBox = new T.Box3(); shadowCentre = new T.Vector3(); corner = new T.Vector3();
       Object.entries(flight.statistics).forEach(([name, value]) => { root.dataset['aircraft' + name[0].toUpperCase() + name.slice(1)] = String(value); });
       ready = true; loading = false;

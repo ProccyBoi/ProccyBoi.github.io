@@ -1,6 +1,7 @@
 /* Native-page acceptance for the real trainer/telemetry scene. A local server
  * and Playwright are required. --static-only avoids WebGL; --scene-only runs
- * the renderer/lifecycle checks. No production test hooks are enabled unless
+ * the renderer/lifecycle checks. --atmosphere-only runs the bounded sky,
+ * poster and lifecycle regression checks. No production test hooks are enabled unless
  * the page explicitly receives ?capture. */
 'use strict';
 const assert = require('node:assert/strict');
@@ -10,12 +11,17 @@ const { chromium } = require('playwright');
 const base = process.env.V3_BASE_URL || 'http://127.0.0.1:8080';
 const output = process.env.V3_AIRCRAFT_OUT || '.codex-temp/v3-aircraft';
 const evidence = [];
+const atmosphereOnly = process.argv.includes('--atmosphere-only');
 const hero = '[data-aircraft-hero]';
-const cadRequest = /\/assets\/(?:models\/(?:aircraft|hero)\/|vendor\/three\.min\.js|v3-aircraft-scene\.js)/;
+const cadRequest = /\/assets\/(?:models\/(?:aircraft|hero)\/|vendor\/three\.min\.js|v3-aircraft-(?:scene|atmosphere)\.js)/;
 
 async function open(browser, options = {}) {
   const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, javaScriptEnabled: options.js !== false, reducedMotion: options.reduced ? 'reduce' : 'no-preference' });
   if (options.saveData) await context.addInitScript(() => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } }));
+  if (options.raf) await context.addInitScript(() => {
+    const request = window.requestAnimationFrame.bind(window); window.__testRafRequests = 0;
+    window.requestAnimationFrame = callback => { window.__testRafRequests++; return request(callback); };
+  });
   if (options.block) await context.route(options.block, route => route.abort());
   const page = await context.newPage(), errors = [], shaders = [], requests = [];
   page.setDefaultTimeout(30000);
@@ -63,6 +69,19 @@ async function staticContent(page) {
   assert.equal(await page.locator('#telemetry a').getAttribute('href'), '/v3/projects/skylabs/boards/telemetry/');
   await layout(page);
 }
+async function posterSky(page) {
+  const result = await page.evaluate(() => {
+    const image = document.querySelector('[data-aircraft-poster]'), canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d'); context.fillStyle = '#101210'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0);
+    const pixels = [];
+    for (const y of [.04, .09, .14]) for (const x of [.12, .37, .62, .87]) pixels.push([...context.getImageData(Math.floor(x * canvas.width), Math.floor(y * canvas.height), 1, 1).data].slice(0, 3));
+    return { source: image.currentSrc, pixels };
+  });
+  const difference = result.pixels.reduce((sum, pixel) => sum + pixel.reduce((total, value, index) => total + Math.abs(value - [16, 18, 16][index]), 0) / 3, 0) / result.pixels.length;
+  assert.ok(difference > (page.viewportSize().width <= 760 ? 1 : 5), 'The actual fallback poster includes the rendered atmosphere');
+  return { source: result.source, meanSkyDifference: difference };
+}
 async function staticCase(browser, name, options) {
   const run = await open(browser, options);
   try {
@@ -70,9 +89,10 @@ async function staticCase(browser, name, options) {
     if (options.failed) await run.page.locator('[data-aircraft-state="unavailable"]').waitFor();
     await staticContent(run.page);
     if (!options.block) assert.equal(run.requests.some(url => cadRequest.test(url)), false, 'Static preferences avoid all model/Three requests');
+    const poster = options.atmosphere ? await posterSky(run.page) : undefined;
     assert.equal(await run.page.evaluate(() => '__v3Aircraft' in window), false, 'Production page has no capture global');
     await run.page.screenshot({ path: path.join(output, name + '.png') });
-    passed(run, name, { requests: run.requests.length });
+    passed(run, name, { requests: run.requests.length, ...(poster ? { poster } : {}) });
   } finally { await run.context.close(); }
 }
 async function progress(page, target) {
@@ -97,8 +117,10 @@ async function seek(page, kind, value) {
 async function idle(page, name) {
   await page.waitForTimeout(350);
   const frames = await page.locator(hero).getAttribute('data-aircraft-frames');
+  const requested = await page.evaluate(() => window.__testRafRequests ?? null);
   await page.waitForTimeout(650);
   assert.equal(await page.locator(hero).getAttribute('data-aircraft-frames'), frames, name);
+  if (requested !== null) assert.equal(await page.evaluate(() => window.__testRafRequests), requested, name + ' (all RAF requests)');
 }
 async function geometry(page) {
   return page.evaluate(() => {
@@ -310,11 +332,124 @@ async function earlyPreference(browser) {
     passed(run, 'early preference change resumes deferred telemetry');
   } finally { release(); await run.context.close(); }
 }
+async function atmospherePixels(page) {
+  return page.evaluate(() => {
+    const capture = window.__v3Aircraft;
+    capture.renderFrame();
+    const gl = capture.renderer.getContext(), sample = new Uint8Array(4), pixels = [];
+    for (const y of [.86, .91, .96]) for (const x of [.12, .37, .62, .87]) {
+      gl.readPixels(Math.floor(gl.drawingBufferWidth * x), Math.floor(gl.drawingBufferHeight * y), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, sample);
+      // A transparent canvas clear is composited over the unchanged page matte.
+      // WebGL's framebuffer is premultiplied, so add only the uncovered matte.
+      pixels.push([0, 1, 2].map(index => Math.round(sample[index] + [16, 18, 16][index] * (1 - sample[3] / 255))));
+    }
+    return { opacity: capture.atmosphere.opacity, dataset: Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftAtmosphere), pixels };
+  });
+}
+async function atmosphereSequence(page, run, label) {
+  const samples = [];
+  for (const amount of [0, .10, .20, .30, .38, .43, 1]) {
+    await seek(page, 'seekProgress', amount);
+    const sample = await atmospherePixels(page);
+    assert.ok(Number.isFinite(sample.opacity), 'Atmosphere exposes a finite strength');
+    assert.ok(Math.abs(sample.dataset - sample.opacity) < .001, 'Controller and rendered atmosphere agree');
+    samples.push({ progress: amount, ...sample });
+    if ([0, .20, 1].includes(amount)) await page.screenshot({ path: path.join(output, `${label}-atmosphere-${amount}.png`) });
+  }
+  assert.equal(samples[0].opacity, 1, 'The entry sky is fully present');
+  assert.ok(samples[2].opacity > 0 && samples[2].opacity < 1, 'The sky fades through intermediate strengths');
+  samples.slice(1).forEach((sample, index) => assert.ok(sample.opacity <= samples[index].opacity, 'The fade is monotonic'));
+  for (const sample of samples.filter(sample => sample.progress >= .38)) {
+    assert.equal(sample.opacity, 0, 'The sky is gone before the board close-up');
+    sample.pixels.forEach(pixel => assert.deepEqual(pixel, [16, 18, 16], 'The final sky area is the exact original dark matte'));
+  }
+  const entryDifference = samples[0].pixels.reduce((sum, pixel) => sum + pixel.reduce((total, value, index) => total + Math.abs(value - [16, 18, 16][index]), 0), 0);
+  assert.ok(entryDifference > (page.viewportSize().width <= 760 ? 36 : 180), 'The entry sky is visibly different from the dark stage');
+  assert.ok(new Set(samples[0].pixels.map(pixel => pixel.join(','))).size >= 3, 'The background contains spatial variation even in the quiet text area');
+  await seek(page, 'seekProgress', 0);
+  const reverse = await atmospherePixels(page);
+  assert.deepEqual(reverse.pixels, samples[0].pixels, 'Reverse scrolling reproduces the same sky pixels');
+  await idle(page, 'Atmosphere adds no idle animation loop');
+  passed(run, `atmosphere fade and reverse ${label}`, { samples });
+}
+async function atmosphereCopyContrast(page) {
+  const contrast = await page.evaluate(() => {
+    const capture = window.__v3Aircraft; capture.renderFrame();
+    const gl = capture.renderer.getContext(), canvas = capture.renderer.domElement.getBoundingClientRect(), pixel = new Uint8Array(4);
+    const luminance = colour => colour.map(value => { const channel = value / 255; return channel <= .04045 ? channel / 12.92 : Math.pow((channel + .055) / 1.055, 2.4); }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+    const samples = [];
+    for (const paragraph of document.querySelectorAll('[data-aircraft-chapter].is-current > p')) {
+      const colour = getComputedStyle(paragraph).color.match(/[\d.]+/g).slice(0, 3).map(Number), foreground = luminance(colour), range = document.createRange();
+      range.selectNodeContents(paragraph);
+      for (const rectangle of range.getClientRects()) for (const x of [.08, .5, .92]) for (const y of [.25, .5, .75]) {
+        const px = Math.floor((rectangle.x + rectangle.width * x - canvas.x) / canvas.width * gl.drawingBufferWidth);
+        const py = Math.floor((1 - (rectangle.y + rectangle.height * y - canvas.y) / canvas.height) * gl.drawingBufferHeight);
+        gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+        const background = luminance([0, 1, 2].map(index => Math.round(pixel[index] + [16, 18, 16][index] * (1 - pixel[3] / 255))));
+        samples.push((Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05));
+      }
+    }
+    return { minimum: Math.min(...samples), samples: samples.length };
+  });
+  assert.ok(contrast.samples > 0 && contrast.minimum >= 4.5, 'Sampled paragraph backgrounds retain at least 4.5:1 contrast');
+  return contrast;
+}
+async function atmosphereCase(browser) {
+  const run = await open(browser, { raf: true }), { page } = run;
+  try {
+    await page.goto(base + '/v3/?capture&v=atmosphere-test', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-aircraft-state="landing"]').waitFor({ timeout: 120000 });
+    await page.locator('[data-aircraft-phase="stopped"][data-aircraft-state="ready"]').waitFor({ timeout: 30000 });
+    await page.waitForFunction(() => typeof window.__v3Aircraft?.renderFrame === 'function' && !!window.__v3Aircraft.atmosphere);
+    await page.waitForLoadState('networkidle');
+    const resources = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => entry.name.includes('/v3-aircraft-atmosphere.js')).map(entry => ({ name: entry.name, bytes: entry.decodedBodySize })));
+    assert.equal(resources.length, 1, 'Atmosphere adds exactly one script request');
+    assert.ok(resources[0].bytes > 0 && resources[0].bytes < 16000, 'Procedural atmosphere stays within a small script budget');
+    const requestsBefore = run.requests.length;
+    await atmosphereSequence(page, run, '1440');
+    assert.equal(run.requests.length, requestsBefore, 'Seeking the atmosphere starts no additional asset requests');
+    const physical = await geometry(page), film = await filmGeometry(page);
+    assert.equal(physical.reverseError, 0); assert.equal(physical.assemblyError, 0); assert.ok(physical.shaftError < 1e-9);
+    physical.ground.forEach(y => assert.ok(Math.abs(y) < 1e-8));
+    assert.equal(film.attachedError, 0); assert.equal(film.restoredError, 0); assert.equal(film.cadChanges, 0); assert.ok(film.seamGap > .02);
+    passed(run, 'atmosphere preserves landing and film geometry', { resources, physical, film });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await atmosphereSequence(page, run, '390');
+    await layout(page);
+    await page.setViewportSize({ width: 1600, height: 650 });
+    await seek(page, 'seekProgress', 0); await layout(page);
+    const contrast = await atmosphereCopyContrast(page);
+    await page.screenshot({ path: path.join(output, '1600x650-atmosphere-entry.png') });
+    await seek(page, 'seekProgress', .20);
+    await page.screenshot({ path: path.join(output, '1600x650-atmosphere-peel.png') });
+    passed(run, 'short desktop atmosphere and paragraph contrast', { contrast });
+    await page.evaluate(() => window.__v3Aircraft.resume());
+    await progress(page, 1);
+    await page.locator('#work').evaluate(element => scrollTo({ top: scrollY + element.getBoundingClientRect().top + 20, behavior: 'instant' }));
+    await idle(page, 'Offscreen atmosphere does not render');
+    await progress(page, 1);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('[data-aircraft-state="static"]').waitFor();
+    await staticContent(page); await posterSky(page);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.locator(hero + '.is-story').waitFor();
+    await seek(page, 'seekProgress', 1);
+    await page.evaluate(() => window.__v3Aircraft.renderer.getContext().getExtension('WEBGL_lose_context').loseContext());
+    await page.locator('[data-aircraft-state="unavailable"]').waitFor();
+    await staticContent(page); await posterSky(page);
+    passed(run, 'atmosphere preference, context-loss and offscreen recovery');
+  } finally { await run.context.close(); }
+}
 (async () => {
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   try {
-    if (!process.argv.includes('--scene-only')) {
+    if (atmosphereOnly) {
+      await staticCase(browser, 'atmosphere reduced-motion poster', { reduced: true, atmosphere: true });
+      await staticCase(browser, 'atmosphere save-data poster', { saveData: true, atmosphere: true, viewport: { width: 390, height: 844 } });
+      await staticCase(browser, 'atmosphere no-javascript poster', { js: false, atmosphere: true, viewport: { width: 390, height: 844 } });
+      await atmosphereCase(browser);
+    } else if (!process.argv.includes('--scene-only')) {
       await staticCase(browser, 'reduced-motion', { reduced: true });
       await staticCase(browser, 'save-data', { saveData: true, viewport: { width: 390, height: 844 } });
       await staticCase(browser, 'no-javascript', { js: false, viewport: { width: 390, height: 844 } });
@@ -322,7 +457,7 @@ async function earlyPreference(browser) {
       await staticCase(browser, 'blocked-three', { block: '**/vendor/three.min.js', failed: true });
       await staticCase(browser, 'short-landscape', { viewport: { width: 844, height: 390 } });
     }
-    if (!process.argv.includes('--static-only')) { await sceneCase(browser); await pendingTelemetry(browser); await earlyPreference(browser); }
-  } finally { await browser.close(); fs.writeFileSync(path.join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); }
+    if (!atmosphereOnly && !process.argv.includes('--static-only')) { await sceneCase(browser); await pendingTelemetry(browser); await earlyPreference(browser); }
+  } finally { await browser.close(); fs.writeFileSync(path.join(output, atmosphereOnly ? 'evidence-atmosphere.json' : 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); }
   console.log(`${evidence.length} aircraft acceptance groups passed.`);
 })().catch(error => { console.error(error); process.exitCode = 1; });

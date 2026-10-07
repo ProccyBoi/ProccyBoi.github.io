@@ -24,8 +24,8 @@ const evidence = path.resolve(__dirname, '../.codex-temp/aircraft-final');
         await page.waitForTimeout(450);
         if (pose.name === 'approach' || pose.name === 'stopped') {
           const data = await page.evaluate(() => {
-            const { renderer, scene, camera } = window.__v3Aircraft;
-            renderer.render(scene, camera);
+            const { renderer, renderFrame } = window.__v3Aircraft;
+            renderFrame();
             return { url: renderer.domElement.toDataURL('image/webp', .93), width: renderer.domElement.width, height: renderer.domElement.height };
           });
           const file = `skylabs-${pose.name}${suffix}.webp`;
