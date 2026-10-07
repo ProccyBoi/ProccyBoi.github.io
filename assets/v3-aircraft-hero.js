@@ -2,6 +2,7 @@
   'use strict';
   const root = document.querySelector('[data-aircraft-hero]');
   if (!root) return;
+  const deferred = root.hasAttribute('data-aircraft-deferred');
   const stage = root.querySelector('[data-aircraft-stage]'), canvas = root.querySelector('canvas');
   const poster = root.querySelector('[data-aircraft-poster]'), skip = root.querySelector('[data-aircraft-skip]');
   const posterSources = [...root.querySelectorAll('[data-aircraft-picture] source')];
@@ -12,7 +13,7 @@
   const allowed = () => !reduced.matches && !short.matches && !navigator.connection?.saveData;
   const clamp = n => Math.max(0, Math.min(1, n));
   const smooth = n => { const p = clamp(n); return p * p * (3 - 2 * p); };
-  const scripts = new Map();
+  const scripts = window.V2HeroScripts ||= new Map();
   function script(url) {
     if (!scripts.has(url)) scripts.set(url, new Promise((resolve, reject) => {
       const element = document.createElement('script'); element.src = url; element.onload = resolve; element.onerror = reject; document.head.append(element);
@@ -20,9 +21,10 @@
     return scripts.get(url);
   }
   let renderer, scene, camera, flight, key, atmosphere, floorMaterial, groundUniforms, track, frame = 0, frameCount = 0;
-  let ready = false, loading = false, telemetryLoading = false, failed = false, visible = true, activePage = true, currentChapter = -1;
+  let ready = false, loading = false, telemetryLoading = false, failed = false, visible = !deferred, activePage = true, currentChapter = -1;
   let width = 1, height = 1, rootTop = 0, distance = 1, progress = 0, lastScroll = scrollY;
   let landingDone = false, landingElapsed = 0, previousTime = 0, capturePose;
+  let landingEntered = !deferred;
   let shadowBox, boardBox, shadowCentre, corner, studioGround, airfieldGround, studioFog, airfieldFog;
   const request = () => { if (!frame && track && visible && activePage && !document.hidden && allowed()) frame = requestAnimationFrame(render); };
   function chapter(index) {
@@ -67,8 +69,21 @@
   }
   function updateScroll() {
     if (!track) return;
+    if (deferred) {
+      const bounds = root.getBoundingClientRect(), pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
+      rootTop = scrollY + bounds.top;
+      visible = bounds.top < innerHeight && bounds.bottom > pinnedTop;
+    }
+    const stageTop = stage.getBoundingClientRect().top;
+    const pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
+    const minimumCopyTop = parseFloat(getComputedStyle(root).getPropertyValue('--v3-aircraft-copy-min')) || 34;
+    root.style.setProperty('--v3-aircraft-copy-top', `${Math.max(minimumCopyTop, pinnedTop - stageTop)}px`);
     const next = clamp((scrollY - rootTop) / distance);
-    if (Math.abs(scrollY - lastScroll) > 4 || next > .005) endLanding();
+    if (deferred && !landingEntered) {
+      const bounds = stage.getBoundingClientRect(), pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
+      landingEntered = bounds.top <= pinnedTop + height * .25 && bounds.bottom > pinnedTop;
+    }
+    if ((!deferred && Math.abs(scrollY - lastScroll) > 4) || next > .005) endLanding();
     lastScroll = scrollY; progress = next;
     const effective = flight && !flight.telemetryReady ? Math.min(progress, .61) : progress;
     chapter(effective < .25 ? 0 : effective < .70 ? 1 : 2);
@@ -80,6 +95,8 @@
     distance = height * (width < 761 ? 3.7 : 3.1);
     track.style.height = `${distance + height}px`; track.style.marginTop = `${-height}px`;
     const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    // The story starts when its section reaches the document's scroll origin;
+    // the sticky stage reserves the header band inside that section.
     [...track.children].forEach((step, index) => { step.style.top = `${[0, .38, 1][index] * distance + padding}px`; });
     rootTop = scrollY + root.getBoundingClientRect().top;
     renderer?.setSize(width, height, false); updateScroll();
@@ -119,7 +136,7 @@
     frame = 0;
     if (!track || !visible || !activePage || document.hidden || !allowed() || !ready) { previousTime = 0; return; }
     try {
-      if (!landingDone && !capturePose) {
+      if (!landingDone && landingEntered && !capturePose) {
         if (previousTime) landingElapsed += time - previousTime;
         previousTime = time;
         if (landingElapsed >= 5400) endLanding();
@@ -140,7 +157,7 @@
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
       root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftFrames = String(++frameCount);
       root.dataset.aircraftAssemblyError = flight.assemblyError().toFixed(9);
-      if (!landingDone && !capturePose) { skip.hidden = false; request(); }
+      if (!landingDone && landingEntered && !capturePose) { skip.hidden = false; request(); }
     } catch (error) { fail(error); }
   }
   function fail(error) {
@@ -230,20 +247,39 @@
       if (target !== null) { event.preventDefault(); links[target].focus(); }
     });
   });
-  root.addEventListener('wheel', endLanding, { passive: true });
-  root.addEventListener('touchmove', endLanding, { passive: true });
-  addEventListener('keydown', event => { if (['Escape', 'PageDown', 'ArrowDown', ' '].includes(event.key) && track && visible) endLanding(); });
+  const interruptLanding = () => { if (landingEntered) endLanding(); };
+  root.addEventListener('wheel', interruptLanding, { passive: true });
+  root.addEventListener('touchmove', interruptLanding, { passive: true });
+  addEventListener('keydown', event => { if (['Escape', 'PageDown', 'ArrowDown', ' '].includes(event.key) && track && visible) interruptLanding(); });
   addEventListener('scroll', updateScroll, { passive: true }); addEventListener('resize', layout, { passive: true });
   if ('ResizeObserver' in window) new ResizeObserver(layout).observe(stage);
   if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
     visible = entries[0].isIntersecting;
-    if (visible) request(); else { endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; }
+    if (visible) { updateScroll(); request(); } else { if (landingEntered) endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; }
   }).observe(root);
   document.addEventListener('visibilitychange', () => { previousTime = 0; if (document.hidden) { cancelAnimationFrame(frame); frame = 0; } else request(); });
   addEventListener('pagehide', () => { activePage = false; cancelAnimationFrame(frame); frame = 0; });
   addEventListener('pageshow', () => { activePage = true; previousTime = 0; updateScroll(); request(); });
-  const preference = () => allowed() ? initialize() : fallback();
+  const storyLead = 420;
+  const nearStory = () => { const bounds = root.getBoundingClientRect(); return bounds.top < innerHeight + storyLead && bounds.bottom > -storyLead; };
+  const start = () => {
+    if (failed) return;
+    if (!allowed()) { fallback(); return; }
+    // Reserve the scroll track immediately; only the lower feature's assets
+    // wait for its viewport. This keeps the rest of the document stationary.
+    enable();
+    if (!deferred || nearStory()) initialize();
+    else if (!ready && !loading) root.dataset.aircraftState = 'waiting';
+  };
+  if (deferred) {
+    if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && allowed()) initialize();
+    }, { rootMargin: `${storyLead}px 0px` }).observe(root);
+    else addEventListener('scroll', () => { if (nearStory() && allowed()) initialize(); }, { passive: true });
+    addEventListener('load', layout, { once: true });
+  }
+  const preference = start;
   reduced.addEventListener('change', preference); short.addEventListener('change', preference); navigator.connection?.addEventListener?.('change', preference);
   canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); fail(new Error('WebGL context unavailable')); });
-  if (allowed()) initialize(); else fallback();
+  start();
 })();

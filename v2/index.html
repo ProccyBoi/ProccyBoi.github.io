@@ -21,10 +21,12 @@
   <link rel="stylesheet" href="/assets/v2-assembly.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
   <link rel="stylesheet" href="/assets/v2-gallery.css?v=product-20261007">
+  <link rel="stylesheet" href="/assets/aircraft-story.css?v=aircraft-feature-20261008">
   <script src="/assets/v2.js?v=physical-20261007" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
   <script src="/assets/v2-assembly.js?v=product-20261007" defer></script>
   <script src="/assets/v2-gallery.js?v=product-20261007" defer></script>
+  <script src="/assets/v3-aircraft-hero.js?v=aircraft-feature-20261008" defer></script>
 </head>
 <body class="v2 v2-home">
   <a class="v2-skip" href="#main">Skip to content</a>
@@ -88,7 +90,7 @@
           <article class="v2-gallery-project" data-gallery-project="skylabs" data-gallery-name="Skylabs" data-gallery-detail="skylabs-telemetry-macro" data-gallery-detail-alt="Close-up of components and controls on the Skylabs telemetry board" data-gallery-overview-caption="The telemetry board" data-gallery-detail-caption="Telemetry, up close">
             <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v2/projects/skylabs/"><img data-gallery-original data-gallery-src="/assets/images/projects/skylabs-telemetry-hero-960.webp" data-gallery-srcset="/assets/images/projects/skylabs-telemetry-hero-960.webp 960w, /assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Populated Skylabs aircraft telemetry board" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" srcset="/assets/images/projects/skylabs-telemetry-hero-960.webp 960w, /assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Populated Skylabs aircraft telemetry board" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
             <h3><a class="v2-gallery-static-title" href="/v2/projects/skylabs/">Skylabs</a><button class="v2-gallery-selector" type="button" data-gallery-select="skylabs" aria-expanded="false" aria-controls="gallery-skylabs-info" hidden><span class="v2-gallery-selector-thumb" aria-hidden="true"></span><span class="v2-gallery-selector-title">Skylabs</span><span class="v2-gallery-selector-mark" aria-hidden="true"></span></button></h3>
-            <div class="v2-gallery-info" id="gallery-skylabs-info"><div><p>Aircraft telemetry, a ground station, and the software to review a flight.</p><a class="v2-text-link" href="/v2/projects/skylabs/">Explore Skylabs <span aria-hidden="true">↗</span></a></div></div>
+            <div class="v2-gallery-info" id="gallery-skylabs-info"><div><p>Aircraft telemetry, a ground station, and the software to review a flight.</p><div class="v2-aircraft-entry-links"><a class="v2-text-link" href="/v2/projects/skylabs/">Explore Skylabs <span aria-hidden="true">↗</span></a><a class="v2-text-link" href="#skylabs-aircraft">See the aircraft <span aria-hidden="true">↓</span></a></div></div></div>
           </article>
           <article class="v2-gallery-project" data-gallery-project="dual-usb-c" data-gallery-name="Dual USB-C" data-gallery-detail="framework-dual-ports" data-gallery-detail-alt="The two USB-C ports and mounting screw in the clear Framework enclosure" data-gallery-overview-caption="One Framework expansion bay" data-gallery-detail-caption="The two USB-C ports">
             <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v2/projects/framework-dual-usb/"><img data-gallery-original data-gallery-src="/assets/images/projects/framework-dual-hero-960.webp" data-gallery-srcset="/assets/images/projects/framework-dual-hero-960.webp 960w, /assets/images/projects/framework-dual-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Dual USB-C expansion card with its clear housing and mounting screws" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/framework-dual-hero-960.webp" srcset="/assets/images/projects/framework-dual-hero-960.webp 960w, /assets/images/projects/framework-dual-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Dual USB-C expansion card with its clear housing and mounting screws" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
@@ -139,7 +141,27 @@
         <a class="v2-gallery-more-card" href="/v2/projects/tamagotchi-sd-card/"><div class="v2-gallery-more-photo is-board"><img data-gallery-src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Tamagotchi SD Card <span aria-hidden="true">↗</span></h3><p>An STM32, an SD-card socket and a seven-pin interface.</p></div></a>
       </div>
     </section>
-    <section class="v2-about-preview v2-shell" aria-labelledby="about-title"><h2 id="about-title">About me.</h2><div class="v2-about-copy"><p>I’m an electrical engineering student at UNSW, working in power electronics and leading avionics and payload work at UNSW Skylabs.</p><p>I like building the whole thing: the board, the code, and the tools that make it useful.</p><a class="v2-text-link" href="/v2/about/">More about me <span aria-hidden="true">↗</span></a></div></section>
+    <section class="v3-aircraft v2-aircraft-feature" data-aircraft-hero data-aircraft-deferred aria-labelledby="skylabs-title">
+      <div class="v3-aircraft-stage" data-aircraft-stage>
+        <div class="v3-aircraft-visual" data-aircraft-visual>
+          <picture data-aircraft-picture><source media="(max-width:760px)" srcset="/assets/images/v3/skylabs-stopped-mobile.webp?v=sky-20261008" data-approach="/assets/images/v3/skylabs-approach-mobile.webp?v=sky-20261008" data-stopped="/assets/images/v3/skylabs-stopped-mobile.webp?v=sky-20261008"><img data-aircraft-poster src="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" data-approach="/assets/images/v3/skylabs-approach.webp?v=sky-20261008" data-stopped="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" width="1600" height="1000" alt="The Skylabs trainer aircraft, with its wing, tail and landing gear assembled" loading="lazy" decoding="async" fetchpriority="low"></picture>
+          <canvas data-aircraft-canvas aria-hidden="true"></canvas>
+        </div>
+        <div class="v3-aircraft-copy" data-aircraft-copy>
+          <article id="skylabs-aircraft" data-aircraft-chapter="0"><p class="v3-intro-line">UNSW Skylabs · Avionics</p><h2 id="skylabs-title">Skylabs.</h2><p>Avionics and payload systems for UNSW’s student-built aircraft.</p><a class="v3-story-next" href="#skylabs-inside">Take a closer look <span aria-hidden="true">↓</span></a></article>
+          <article id="skylabs-inside" data-aircraft-chapter="1"><h2>Under the wing.</h2><p>The telemetry board sits in the centre of the fuselage, beneath the wing.</p></article>
+          <article id="skylabs-telemetry" data-aircraft-chapter="2"><h2>Telemetry.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><div class="v2-aircraft-actions"><a class="v3-link" href="/v2/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a><a class="v3-story-next" href="#about">About me <span aria-hidden="true">↓</span></a></div><figure class="v3-aircraft-static-photo"><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low" alt="The populated Skylabs telemetry board"></figure></article>
+        </div>
+        <button class="v3-aircraft-skip" data-aircraft-skip type="button" hidden>Skip landing <span aria-hidden="true">↘</span></button>
+        <div class="v3-aircraft-foot">
+          <a class="v3-story-project" href="/v2/projects/skylabs/">View Skylabs <span aria-hidden="true">↗</span></a>
+          <nav class="v3-story-nav" aria-label="Explore Skylabs" data-aircraft-nav><a href="#skylabs-aircraft" data-aircraft-go="0">Aircraft</a><a href="#skylabs-inside" data-aircraft-go="1">Inside</a><a href="#skylabs-telemetry" data-aircraft-go="2">Telemetry</a></nav>
+          <a class="v3-story-skip" href="#about">About me <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="v3-aircraft-progress" aria-hidden="true"><span data-aircraft-progress></span></div>
+      </div>
+    </section>
+    <section class="v2-about-preview v2-shell" id="about" aria-labelledby="about-title"><h2 id="about-title">About me.</h2><div class="v2-about-copy"><p>I’m an electrical engineering student at UNSW, working in power electronics and leading avionics and payload work at UNSW Skylabs.</p><p>I like building the whole thing: the board, the code, and the tools that make it useful.</p><a class="v2-text-link" href="/v2/about/">More about me <span aria-hidden="true">↗</span></a></div></section>
     <section class="v2-contact" aria-labelledby="contact-title"><div class="v2-shell"><h2 id="contact-title">Get in touch.</h2><a class="v2-contact-email" href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com <span aria-hidden="true">↗</span></a></div></section>
   </main>
   <footer class="v2-footer"><div class="v2-shell"><a class="v2-brand" href="/v2/">Andrew Chung</a><div><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV ↗</a></div><p>© <span data-v2-year>2026</span> Andrew Chung</p></div></footer>

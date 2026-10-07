@@ -424,7 +424,7 @@ def main() -> int:
             for meta in doc.tags("meta"):
                 if meta.attrs.get("property") == "og:url" and meta.attrs.get("content", "").rstrip("/") != doc.url.rstrip("/"):
                     error(page, f"og:url must identify this v2 route: {doc.url}", meta.line)
-            skips = [item for item in doc.tags("a") if "skip" in item.attrs.get("class", "").lower() or "".join(item.text).strip().lower().startswith("skip to")]
+            skips = [item for item in doc.tags("a") if "v2-skip" in item.attrs.get("class", "").split() or "".join(item.text).strip().lower().startswith("skip to")]
             if not skips:
                 error(page, "missing skip-to-content link")
             for skip in skips:
