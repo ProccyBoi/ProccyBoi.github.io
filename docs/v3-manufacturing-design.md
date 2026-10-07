@@ -1,5 +1,7 @@
 # V3: a board becoming a product
 
+This is the archived manufacturing study from commit `8f0cca9`. The current homepage follows the [Skylabs aircraft story](v3-aircraft-design.md). The manufacturing assets remain available for reuse; the browser checks described below apply to that earlier homepage. Use `scripts/verify-v3-aircraft.cjs` to check the current version.
+
 V3 is a separate dark experiment. Its opening follows TramTrace from a copper-clad substrate through etching, solder mask, legend, paste, component placement and reflow, ending with the working display. The animation explains the object on screen. There are no photo stacks, decorative electrical labels or invented circuitry.
 
 The copy occupies the left side on desktop and the upper part of the screen on phones. One registered board stays in view. Three ordinary anchor links—Fabrication, Assembly and In use—navigate the story using native page scrolling. Five short copy beats keep the physical changes understandable without narrating every operation.

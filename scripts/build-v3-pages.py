@@ -16,7 +16,7 @@ SOURCE = ROOT / "v2"
 DESTINATION = ROOT / "v3"
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 ROUTE_PREFIX = re.compile(r"^(https://proccyboi\.github\.io)?/v2/")
-PRESENTATION = '''  <link rel="stylesheet" href="/assets/v3.css?v=manufacturing-20261007">
+PRESENTATION = '''  <link rel="stylesheet" href="/assets/v3.css?v=aircraft-20261007">
 '''
 
 

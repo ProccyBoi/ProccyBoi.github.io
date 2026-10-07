@@ -12,7 +12,9 @@ from hashlib import sha256
 from html.parser import HTMLParser
 from pathlib import Path
 import json
+import gzip
 import re
+import struct
 import sys
 import xml.etree.ElementTree as ET
 from urllib.parse import unquote, urljoin, urlsplit
@@ -309,8 +311,64 @@ def main():
                 error(page, "an original inline simulation or model JSON block changed")
             stats["preserved interiors"] += 1
 
-    # These resources are requested by the manufacturing controller, so HTML
-    # traversal alone cannot catch a missing layer in a published build.
+    # Aircraft assets are loaded by JavaScript rather than HTML. Check the
+    # delivered mesh and its compressed copy against the export manifest.
+    aircraft = ROOT / "assets/models/aircraft/skylabs-trainer/manifest.json"
+    try:
+        reference(SITE / "index.html", "/assets/v3-aircraft-hero.js", ORIGIN)
+        reference(SITE / "index.html", "/assets/v3-aircraft-scene.js", ORIGIN)
+        reference(SITE / "index.html", "/assets/models/aircraft/skylabs-trainer/manifest.json", ORIGIN)
+        manifest = json.loads(aircraft.read_text(encoding="utf-8"))
+        manifest_url = ORIGIN + "/" + aircraft.relative_to(ROOT).as_posix()
+        for key in ["model", "compressedModel"]:
+            reference(aircraft, manifest[key], manifest_url)
+        model = (aircraft.parent / manifest["model"]).read_bytes()
+        compressed = (aircraft.parent / manifest["compressedModel"]).read_bytes()
+        if gzip.decompress(compressed) != model:
+            error(aircraft, "compressed aircraft differs from the original mesh")
+        if sha256(model).hexdigest() != manifest["asset"]["sha256"]:
+            error(aircraft, "aircraft mesh differs from its recorded export")
+        if len(model) != manifest["asset"]["bytes"] or len(compressed) != manifest["asset"]["gzipBytes"]:
+            error(aircraft, "aircraft asset sizes differ from the manifest")
+        if struct.unpack_from("<III", model) != (0x46546C67, 2, len(model)):
+            error(aircraft, "invalid aircraft GLB header")
+        json_size, json_type = struct.unpack_from("<II", model, 12)
+        if json_type != 0x4E4F534A:
+            error(aircraft, "aircraft GLB is missing its scene description")
+        scene = json.loads(model[20:20 + json_size])
+        node_names = {node.get("name") for node in scene["nodes"]}
+        source_parts = manifest["parts"]
+        if len(source_parts) != 117 or len({part["id"] for part in source_parts}) != 117:
+            error(aircraft, "source aircraft assembly occurrence inventory changed")
+        if any(part["nodeName"] not in node_names for part in source_parts):
+            error(aircraft, "an original aircraft occurrence is absent from the delivered scene")
+        if manifest["units"] != "metres" or manifest["axes"] != {"nose": "+X", "up": "+Y", "span": "+Z"}:
+            error(aircraft, "aircraft coordinate contract changed")
+        if manifest["source"]["sha256"] != "676da89f79adc6d0e3cf81c1d9c64e46f1a60c7e108d24fccf6682b63607a158":
+            error(aircraft, "aircraft no longer identifies the supplied STEP source")
+        if manifest["completion"]["sourceOnly"] or not manifest["completion"]["reconstruction"]:
+            error(aircraft, "completed aircraft needs its reconstructed parts recorded")
+        transport = manifest["transport"]
+        for key in ["model", "compressedModel", "decoder"]:
+            reference(aircraft, transport[key], manifest_url)
+        reference(aircraft, "transport-parity.json", manifest_url)
+        packed = (aircraft.parent / transport["model"]).read_bytes()
+        packed_gzip = (aircraft.parent / transport["compressedModel"]).read_bytes()
+        decoder = (ROOT / transport["decoder"].lstrip("/")).read_bytes()
+        if gzip.decompress(packed_gzip) != packed or sha256(packed).hexdigest() != transport["sha256"]:
+            error(aircraft, "aircraft transport differs from its recorded export")
+        if sha256(decoder).hexdigest() != transport["decoderSha256"]:
+            error(aircraft, "aircraft decoder differs from the verified version")
+        if transport["sourceGlbSha256"] != manifest["asset"]["sha256"] or not transport["lossless"] or transport["quantized"]:
+            error(aircraft, "aircraft transport must preserve the current completed mesh")
+        if len(packed_gzip) >= len(compressed):
+            error(aircraft, "aircraft transport must reduce download size")
+        stats["aircraft source occurrences"] = len(source_parts)
+    except (OSError, ValueError, KeyError, TypeError, struct.error, EOFError) as exception:
+        error(aircraft, f"cannot verify aircraft assets: {exception}")
+
+    # Retain integrity checks for the archived manufacturing study's assets;
+    # they are still published for reuse, but no longer drive the home page.
     manufacturing = ROOT / "assets/models/manufacturing/tramtrace/manufacturing.json"
     try:
         reference(SITE / "index.html", "/assets/v3-manufacturing.js", ORIGIN)

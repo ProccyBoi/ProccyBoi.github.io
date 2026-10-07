@@ -2,7 +2,7 @@
 
 Revised 7 October 2026. This records the visual system and the reference-to-implementation decisions for v2. The portfolio remains a static site with native browser interactions and its existing Three.js CAD pipeline.
 
-The separate [v3 manufacturing study](docs/v3-manufacturing-design.md) follows a single real board from fabrication to use. The expanded [reference review](docs/reference-capabilities-20261007.md) records the public feature coverage, detailed source review and access limits for the requested design tools.
+The separate [v3 aircraft study](docs/v3-aircraft-design.md) follows the Skylabs trainer from landing to the telemetry board beneath its wing. Its [aircraft reference ledger](docs/v3-aircraft-references.md) separates supplied CAD, observed photographs and reconstructed details. The earlier [manufacturing study](docs/v3-manufacturing-design.md) remains documented. The expanded [reference review](docs/reference-capabilities-20261007.md) records the public feature coverage, detailed source review and access limits for the requested design tools.
 
 ## Audience and purpose
 

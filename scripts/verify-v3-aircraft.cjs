@@ -1,0 +1,254 @@
+/* Native-page acceptance for the real trainer/telemetry scene. A local server
+ * and Playwright are required. --static-only avoids WebGL; --scene-only runs
+ * the renderer/lifecycle checks. No production test hooks are enabled unless
+ * the page explicitly receives ?capture. */
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { chromium } = require('playwright');
+const base = process.env.V3_BASE_URL || 'http://127.0.0.1:8080';
+const output = process.env.V3_AIRCRAFT_OUT || '.codex-temp/v3-aircraft';
+const evidence = [];
+const hero = '[data-aircraft-hero]';
+const cadRequest = /\/assets\/(?:models\/(?:aircraft|hero)\/|vendor\/three\.min\.js|v3-aircraft-scene\.js)/;
+
+async function open(browser, options = {}) {
+  const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, javaScriptEnabled: options.js !== false, reducedMotion: options.reduced ? 'reduce' : 'no-preference' });
+  if (options.saveData) await context.addInitScript(() => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } }));
+  if (options.block) await context.route(options.block, route => route.abort());
+  const page = await context.newPage(), errors = [], shaders = [], requests = [];
+  page.setDefaultTimeout(30000);
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('request', request => requests.push(request.url()));
+  page.on('console', message => { if (/Shader Error|VALIDATE_STATUS|Error compiling shader|THREE.WebGLProgram/.test(message.text())) shaders.push(message.text()); });
+  return { context, page, errors, shaders, requests };
+}
+function passed(run, name, details = {}) {
+  assert.deepEqual(run.errors, [], 'No unhandled browser exceptions');
+  assert.deepEqual(run.shaders, [], 'No shader errors');
+  evidence.push({ name, ...details }); console.log('PASS ' + name);
+}
+async function settle(page) {
+  await page.waitForFunction(() => document.querySelector('[data-aircraft-hero]').getAnimations({ subtree: true }).every(animation => !['running', 'pending'].includes(animation.playState)));
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+}
+async function layout(page) {
+  const result = await page.evaluate(() => {
+    const root = document.querySelector('[data-aircraft-hero]');
+    const box = element => { const b = element.getBoundingClientRect(); return { x: b.x, y: b.y, right: b.right, bottom: b.bottom, width: b.width, height: b.height }; };
+    return { overflow: document.documentElement.scrollWidth > innerWidth + 1, story: root.classList.contains('is-story'), header: document.querySelector('header').getBoundingClientRect().bottom, nav: [...root.querySelectorAll('[data-aircraft-go]')].map(box), copy: [...root.querySelectorAll('.is-current > *')].filter(element => getComputedStyle(element).display !== 'none').map(box) };
+  });
+  assert.equal(result.overflow, false, 'No horizontal page overflow');
+  const viewport = page.viewportSize();
+  for (const box of result.nav) {
+    assert.ok(box.width >= 44 && box.height >= 44, 'Stage navigation has 44px targets');
+    assert.ok(box.x >= -1 && box.right <= viewport.width + 1, 'Stage navigation fits horizontally');
+    if (result.story) assert.ok(box.y >= result.header && box.bottom <= viewport.height + 1, 'Pinned navigation remains in the viewport');
+  }
+  if (result.story) for (const box of result.copy) {
+    assert.ok(box.y >= result.header - 1 && box.bottom < Math.min(...result.nav.map(nav => nav.y)), 'Active copy fits between header and navigation');
+    assert.ok(box.x >= 0 && box.right <= viewport.width + 1, 'Copy fits horizontally');
+  }
+}
+async function staticContent(page) {
+  assert.equal(await page.locator(hero + '.is-story').count(), 0, 'Static state removes the long scroll track');
+  for (const id of ['aircraft', 'inside', 'telemetry']) {
+    assert.equal(await page.locator('#' + id).isVisible(), true, 'All source chapters are visible');
+    assert.equal(await page.locator('#' + id).getAttribute('aria-hidden'), null);
+  }
+  await page.waitForFunction(() => { const image = document.querySelector('[data-aircraft-poster]'); return image.complete && image.naturalWidth > 0 && image.currentSrc.includes('stopped'); });
+  await page.locator('.v3-aircraft-static-photo').evaluate(element => element.scrollIntoView({ behavior: 'instant', block: 'center' }));
+  await page.waitForFunction(() => [...document.querySelectorAll('.v3-aircraft-static-photo img')].some(image => image.getBoundingClientRect().height > 0 && image.complete && image.naturalWidth > 0));
+  assert.equal(await page.locator('#telemetry a').getAttribute('href'), '/v3/projects/skylabs/boards/telemetry/');
+  await layout(page);
+}
+async function staticCase(browser, name, options) {
+  const run = await open(browser, options);
+  try {
+    await run.page.goto(base + '/v3/?v=aircraft-test', { waitUntil: 'networkidle' });
+    if (options.failed) await run.page.locator('[data-aircraft-state="unavailable"]').waitFor();
+    await staticContent(run.page);
+    if (!options.block) assert.equal(run.requests.some(url => cadRequest.test(url)), false, 'Static preferences avoid all model/Three requests');
+    assert.equal(await run.page.evaluate(() => '__v3Aircraft' in window), false, 'Production page has no capture global');
+    await run.page.screenshot({ path: path.join(output, name + '.png') });
+    passed(run, name, { requests: run.requests.length });
+  } finally { await run.context.close(); }
+}
+async function progress(page, target) {
+  await page.locator(hero).evaluate((root, amount) => {
+    const top = scrollY + root.getBoundingClientRect().top;
+    scrollTo({ top: top + (root.offsetHeight - root.querySelector('[data-aircraft-stage]').offsetHeight) * amount, behavior: 'instant' });
+  }, target);
+  await page.waitForFunction(amount => Math.abs(Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftProgress) - amount) < .003, target);
+  await settle(page);
+  return page.locator(hero).evaluate(root => ({ ...root.dataset }));
+}
+async function seek(page, kind, value) {
+  const count = await page.locator(hero).getAttribute('data-aircraft-frames');
+  await page.evaluate(({ kind, value }) => window.__v3Aircraft[kind](value), { kind, value });
+  await page.waitForFunction(before => document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames !== before, count);
+  await settle(page);
+}
+async function idle(page, name) {
+  await page.waitForTimeout(350);
+  const frames = await page.locator(hero).getAttribute('data-aircraft-frames');
+  await page.waitForTimeout(650);
+  assert.equal(await page.locator(hero).getAttribute('data-aircraft-frames'), frames, name);
+}
+async function geometry(page) {
+  return page.evaluate(() => {
+    const { flight } = window.__v3Aircraft, T = window.THREE;
+    flight.setLanding(1);
+    const ground = ['mainLeft', 'mainRight', 'nose'].map(name => new T.Vector3(...flight.metadata.contacts[name].aircraftLocal).applyMatrix4(flight.carrier.matrixWorld).y);
+    const prop = flight.group.getObjectByName(flight.metadata.contacts.propeller.nodeName);
+    const shaft = new T.Vector3(...flight.metadata.contacts.propeller.centre);
+    const localShaft = prop.worldToLocal(flight.carrier.localToWorld(shaft.clone()));
+    let shaftError = 0;
+    for (const amount of [.05, .35, .65, .85, 1]) {
+      flight.setLanding(amount);
+      shaftError = Math.max(shaftError, prop.localToWorld(localShaft.clone()).distanceTo(flight.carrier.localToWorld(shaft.clone())));
+    }
+    flight.setLanding(.68);
+    let mainBottom = Infinity, noseBottom = Infinity;
+    for (const name of ['derived-main-wheel-left', 'derived-main-wheel-right', 'derived-nose-wheel']) {
+      flight.group.getObjectByName(name).traverse(mesh => {
+        if (!mesh.isMesh) return;
+        const point = new T.Vector3(), positions = mesh.geometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+          point.fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld);
+          if (name.includes('main')) mainBottom = Math.min(mainBottom, point.y); else noseBottom = Math.min(noseBottom, point.y);
+        }
+      });
+    }
+    const step = 1e-6;
+    flight.setLanding(.64 - step); const beforeContact = flight.carrier.position.x;
+    flight.setLanding(.64); const atContact = flight.carrier.position.x;
+    flight.setLanding(.64 + step); const afterContact = flight.carrier.position.x;
+    const contactVelocity = [(atContact - beforeContact) / step, (afterContact - atContact) / step];
+    flight.setProgress(0);
+    const baseline = flight.parts.map(part => part.object.matrixWorld.toArray());
+    for (const amount of [1, .5, .2, .8, 0]) flight.setProgress(amount);
+    const reverseError = flight.parts.reduce((max, part, index) => Math.max(max, ...part.object.matrixWorld.elements.map((value, axis) => Math.abs(value - baseline[index][axis]))), 0);
+    return { ground, shaftError, mainBottom, noseBottom, contactVelocity, reverseError, assemblyError: flight.assemblyError(), boardScale: flight.board.children[0].scale.toArray(), stats: flight.statistics };
+  });
+}
+async function framing(page, value) {
+  await seek(page, 'seekProgress', value);
+  return page.evaluate(() => {
+    const { flight, camera } = window.__v3Aircraft, T = window.THREE;
+    camera.updateMatrixWorld(true);
+    let outside = 0, vertices = 0;
+    flight.carrier.traverse(mesh => {
+      if (!mesh.isMesh || !mesh.visible) return;
+      let ancestor = mesh; while (ancestor && ancestor !== flight.board) ancestor = ancestor.parent;
+      if (ancestor === flight.board) return;
+      const point = new T.Vector3(), positions = mesh.geometry.attributes.position;
+      for (let index = 0; index < positions.count; index++) {
+        point.fromBufferAttribute(positions, index).applyMatrix4(mesh.matrixWorld).project(camera); vertices++;
+        if (Math.abs(point.x) > 1.001 || Math.abs(point.y) > 1.001 || Math.abs(point.z) > 1.001) outside++;
+      }
+    });
+    return { outside, vertices, near: camera.near };
+  });
+}
+async function sceneCase(browser) {
+  const run = await open(browser), { page } = run;
+  try {
+    await page.goto(base + '/v3/?capture&v=aircraft-test', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-aircraft-state="landing"]').waitFor({ timeout: 120000 });
+    const started = Date.now();
+    await page.locator('[data-aircraft-phase="stopped"][data-aircraft-state="ready"]').waitFor({ timeout: 30000 });
+    const duration = Date.now() - started;
+    assert.ok(duration < 20000, 'Finite autoplay completes without scroll');
+    await page.waitForFunction(() => !!window.__v3Aircraft);
+    assert.equal(await page.locator('[data-aircraft-skip]').isVisible(), false);
+    await layout(page); await idle(page, 'No idle renderer loop after landing');
+    assert.ok(run.requests.some(url => /airframe\.meshopt\.glb/.test(url)), 'Lossless compact transport is used');
+    assert.equal(run.requests.some(url => /\/airframe\.glb/.test(url)), false, 'Original fallback transport is not downloaded unnecessarily');
+    const physical = await geometry(page);
+    assert.equal(physical.stats.sourceOccurrences, 117); assert.equal(physical.stats.telemetryComponents, 153);
+    assert.deepEqual(physical.boardScale, [.07303, .07303, .07303]);
+    physical.ground.forEach(y => assert.ok(Math.abs(y) < 1e-8, 'All three wheels settle on the ground'));
+    assert.ok(physical.shaftError < 1e-9, 'Spinning propeller retains the exact shaft axis');
+    assert.ok(Math.abs(physical.mainBottom) < 1e-6 && physical.noseBottom > .01, 'Main wheels touch before the nose wheel');
+    assert.ok(Math.abs(physical.contactVelocity[0] - physical.contactVelocity[1]) < .001, 'Forward velocity is continuous at main-wheel contact');
+    assert.equal(physical.reverseError, 0); assert.equal(physical.assemblyError, 0);
+    passed(run, 'automatic landing and physical assembly', { duration, physical });
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
+      await page.setViewportSize(viewport);
+      for (const amount of [0, .30, .50, 1]) {
+        const projection = await framing(page, amount);
+        if (amount <= .50) assert.equal(projection.outside, 0, 'Opaque aircraft is framed before the deliberate PCB close-up');
+        await layout(page);
+        await page.screenshot({ path: path.join(output, `${viewport.width}-progress-${amount}.png`) });
+      }
+      passed(run, `scene and layout ${viewport.width}x${viewport.height}`);
+    }
+    await page.setViewportSize({ width: 1265, height: 712 });
+    await page.evaluate(() => window.__v3Aircraft.resume());
+    const opened = await progress(page, .5); assert.equal(opened.aircraftPhase, 'extraction');
+    await layout(page);
+    await page.locator('[data-aircraft-go="0"]').focus(); await page.keyboard.press('End');
+    assert.equal(await page.locator('[data-aircraft-go="2"]').evaluate(link => link === document.activeElement), true);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => location.hash === '#telemetry' && document.querySelector('[data-aircraft-hero]').dataset.aircraftChapter === '2');
+    await settle(page); await idle(page, 'Scroll scene stops drawing at rest');
+    await page.locator('#work').evaluate(element => scrollTo({ top: scrollY + element.getBoundingClientRect().top + 20, behavior: 'instant' }));
+    await idle(page, 'Offscreen scene does not render');
+    await progress(page, 1);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('[data-aircraft-state="static"]').waitFor();
+    await staticContent(page);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.locator(hero + '.is-story').waitFor();
+    await seek(page, 'seekProgress', 1);
+    await page.evaluate(() => window.__v3Aircraft.renderer.getContext().getExtension('WEBGL_lose_context').loseContext());
+    await page.locator('[data-aircraft-state="unavailable"]').waitFor();
+    await staticContent(page);
+    passed(run, 'native keyboard, idle, live reduced motion and context-loss recovery');
+  } finally { await run.context.close(); }
+}
+async function pendingTelemetry(browser) {
+  const run = await open(browser), { page } = run;
+  let release;
+  const held = new Promise(resolve => { release = resolve; });
+  await run.context.route('**/models/hero/telemetry.*', async route => { await held; await route.continue().catch(() => {}); });
+  try {
+    await page.goto(base + '/v3/?v=aircraft-test', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-aircraft-state="landing"]').waitFor({ timeout: 120000 });
+    await page.locator('[data-aircraft-skip]').focus(); await page.keyboard.press('Enter');
+    await page.locator('[data-aircraft-phase="stopped"]').waitFor();
+    assert.equal(await page.locator('[data-aircraft-go="0"]').evaluate(link => link === document.activeElement), true, 'Skip transfers focus before disappearing');
+    await progress(page, 1);
+    assert.equal(await page.locator(hero).getAttribute('data-aircraft-chapter'), '1', 'Early scrolling holds the open aircraft until the real board arrives');
+    assert.equal(await page.locator(hero).getAttribute('data-aircraft-telemetry-ready'), null);
+    release(); await page.locator('[data-aircraft-telemetry-ready="true"][data-aircraft-chapter="2"]').waitFor({ timeout: 60000 });
+    assert.equal(await page.evaluate(() => '__v3Aircraft' in window), false);
+    passed(run, 'keyboard skip and deferred telemetry hold');
+    // A fresh native landing receives an actual wheel event before completion.
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForTimeout(100);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('[data-aircraft-state="landing"]').waitFor({ timeout: 120000 });
+    await page.mouse.move(700, 500); await page.mouse.wheel(0, 80);
+    await page.waitForFunction(() => document.querySelector('[data-aircraft-hero]').dataset.aircraftLanding === '1.000000');
+    passed(run, 'native scroll interrupts landing');
+  } finally { release(); await run.context.close(); }
+}
+(async () => {
+  fs.mkdirSync(output, { recursive: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  try {
+    if (!process.argv.includes('--scene-only')) {
+      await staticCase(browser, 'reduced-motion', { reduced: true });
+      await staticCase(browser, 'save-data', { saveData: true, viewport: { width: 390, height: 844 } });
+      await staticCase(browser, 'no-javascript', { js: false, viewport: { width: 390, height: 844 } });
+      await staticCase(browser, 'blocked-controller', { block: '**/v3-aircraft-hero.js*' });
+      await staticCase(browser, 'blocked-three', { block: '**/vendor/three.min.js', failed: true });
+      await staticCase(browser, 'short-landscape', { viewport: { width: 844, height: 390 } });
+    }
+    if (!process.argv.includes('--static-only')) { await sceneCase(browser); await pendingTelemetry(browser); }
+  } finally { await browser.close(); fs.writeFileSync(path.join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); }
+  console.log(`${evidence.length} aircraft acceptance groups passed.`);
+})().catch(error => { console.error(error); process.exitCode = 1; });
