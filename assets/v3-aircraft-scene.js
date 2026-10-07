@@ -3,6 +3,7 @@
 (() => {
   'use strict';
   const directory = '/assets/models/aircraft/skylabs-trainer/';
+  const version = 'aircraft-20261007b';
   const clamp = n => Math.max(0, Math.min(1, n));
   const smooth = n => { const p = clamp(n); return p * p * (3 - 2 * p); };
   const ramp = (p, a, b) => smooth((p - a) / (b - a));
@@ -14,25 +15,25 @@
       const element = document.createElement('script'); element.src = source; element.onload = resolve; element.onerror = reject; document.head.append(element);
     }).then(async () => { if (!window.MeshoptDecoder?.supported) throw new Error('Mesh transport decoder unavailable'); await window.MeshoptDecoder.ready; });
   }
-  async function download(source) {
+  async function download(source, revision) {
     const compressed = !!window.DecompressionStream && source.compressedModel;
-    const response = await fetch(directory + (compressed || source.model));
+    const response = await fetch(directory + (compressed || source.model) + '?v=' + encodeURIComponent(revision));
     if (!response.ok) throw new Error('Trainer model unavailable');
     let buffer = await response.arrayBuffer();
     if (compressed && new Uint8Array(buffer)[0] === 31) buffer = await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
     return buffer;
   }
   function prefetch() {
-    return pending ||= fetch(directory + 'manifest.json').then(async response => {
+    return pending ||= fetch(directory + 'manifest.json?v=' + version).then(async response => {
       if (!response.ok) throw new Error('Trainer manifest unavailable');
       const metadata = await response.json();
       if (window.WebAssembly && metadata.transport?.lossless && metadata.transport.format === 'EXT_meshopt_compression') {
         try {
-          const [buffer] = await Promise.all([download(metadata.transport), decoder(metadata.transport.decoder)]);
+          const [buffer] = await Promise.all([download(metadata.transport, metadata.asset.sha256), decoder(metadata.transport.decoder)]);
           return { metadata, buffer, packed: true };
         } catch (_) { /* The original GLB remains a complete fallback. */ }
       }
-      return { metadata, buffer: await download(metadata), packed: false };
+      return { metadata, buffer: await download(metadata, metadata.asset.sha256), packed: false };
     });
   }
   async function load(T) {
@@ -43,9 +44,100 @@
     });
     let gltf;
     try { gltf = await parse(buffer, packed); }
-    catch (error) { if (!packed) throw error; gltf = await parse(await download(metadata), false); }
+    catch (error) { if (!packed) throw error; gltf = await parse(await download(metadata, metadata.asset.sha256), false); }
     if (metadata.units !== 'metres' || metadata.axes.nose !== '+X' || metadata.axes.up !== '+Y') throw new Error('Unexpected trainer coordinates');
     return { group: gltf.scene, metadata };
+  }
+
+  // Arc-length lookup for a thin sheet winding into a loose inward spiral.
+  // Its initial tangent is straight and every later turn remains separated.
+  const curl = [{ length: 0, x: 0, y: 0 }];
+  for (let angle = .025; curl[curl.length - 1].length < 12; angle += .025) {
+    const radius = Math.exp(-.055 * (angle - Math.sin(angle)));
+    const x = radius * Math.sin(angle), y = 1 - radius * Math.cos(angle), last = curl[curl.length - 1];
+    curl.push({ length: last.length + Math.hypot(x - last.x, y - last.y), x, y });
+  }
+  function curlAt(length, output) {
+    let left = 0, right = curl.length - 1;
+    while (right - left > 1) { const middle = (left + right) >> 1; if (curl[middle].length < length) left = middle; else right = middle; }
+    const a = curl[left], b = curl[right], blend = (length - a.length) / (b.length - a.length);
+    output[0] = a.x + (b.x - a.x) * blend; output[1] = a.y + (b.y - a.y) * blend;
+  }
+  function covering(T, part) {
+    const patches = [];
+    const contourPoint = (points, u) => {
+      let left = 0, right = points.length - 1;
+      while (right - left > 1) { const middle = (left + right) >> 1; if (points[middle].u < u) left = middle; else right = middle; }
+      const a = points[left], b = points[right];
+      return a.point.clone().lerp(b.point, (u - a.u) / (b.u - a.u));
+    };
+    part.object.traverse(mesh => {
+      const surface = mesh.userData.filmSurface;
+      if (!mesh.isMesh || !surface) return;
+      const geometry = mesh.geometry.clone(); mesh.geometry = geometry;
+      const attribute = geometry.attributes.position, rest = attribute.array.slice(), restNormals = geometry.attributes.normal.array.slice();
+      attribute.setUsage(T.DynamicDrawUsage);
+      const axis = new T.Vector3(...mesh.userData.peelAxis).normalize();
+      const rings = [];
+      if (surface === 'wrap') {
+        const uv = geometry.attributes.uv, rows = new Map();
+        for (let index = 0; index < attribute.count; index++) {
+          const key = uv.getY(index).toFixed(6);
+          if (!rows.has(key)) rows.set(key, []);
+          rows.get(key).push({ index, u: uv.getX(index), point: new T.Vector3().fromArray(rest, index * 3) });
+        }
+        for (const points of rows.values()) {
+          points.sort((a, b) => a.u - b.u);
+          let perimeter = 0; const centre = new T.Vector3();
+          points.forEach((point, index) => { centre.add(point.point); if (index) perimeter += point.point.distanceTo(points[index - 1].point); });
+          rings.push({ points, perimeter, centre: centre.divideScalar(points.length) });
+        }
+      }
+      const bounds = new T.Box3().setFromBufferAttribute(attribute), width = bounds.max.x - bounds.min.x;
+      const outward = new T.Vector3(...(mesh.userData.outwardNormal || mesh.userData.outward || axis.clone().multiplyScalar(mesh.userData.end === 0 ? -1 : 1).toArray()));
+      let previous = -1;
+      const patch = { mesh, surface, rest, rings, amount: 0, attached: 0, peeled: 0,
+        deform(amount) {
+          if (amount === previous) return;
+          previous = amount; patch.amount = amount; patch.attached = 0; patch.peeled = 0; attribute.array.set(rest);
+          if (amount > 0 && surface === 'wrap') {
+            const boundary = 1 - amount * 1.025;
+            for (const ring of rings) {
+              const points = ring.points;
+              const front = contourPoint(points, boundary);
+              // A short arc window turns the free curl continuously around a
+              // polygon corner while leaving every attached vertex untouched.
+              const tangent = contourPoint(points, boundary + .018).sub(contourPoint(points, boundary - .018)).normalize();
+              const normal = new T.Vector3().crossVectors(axis, tangent).normalize();
+              if (normal.dot(front.clone().sub(ring.centre)) < 0) normal.negate();
+              const radius = ring.perimeter / 9, curled = [0, 0], result = new T.Vector3();
+              for (const point of points) {
+                if (point.u <= boundary) { patch.attached++; continue; }
+                curlAt((point.u - boundary) * ring.perimeter / radius, curled);
+                result.copy(front).addScaledVector(tangent, curled[0] * radius).addScaledVector(normal, curled[1] * radius);
+                result.toArray(attribute.array, point.index * 3); patch.peeled++;
+              }
+            }
+          } else if (amount > 0) {
+            // Separate end tabs fold away before the long wrapper releases.
+            const radius = Math.max(width / 2.4, .01), point = new T.Vector3();
+            for (let index = 0; index < attribute.count; index++) {
+              point.fromArray(rest, index * 3);
+              const distance = point.x - bounds.min.x, angle = distance / radius * amount * 1.25;
+              point.x = bounds.min.x + (amount ? Math.sin(angle) * radius / (amount * 1.25) : distance);
+              point.addScaledVector(outward, radius * (1 - Math.cos(angle)));
+              point.toArray(attribute.array, index * 3);
+            }
+          }
+          attribute.needsUpdate = true;
+          if (amount === 0) { geometry.attributes.normal.array.set(restNormals); geometry.attributes.normal.needsUpdate = true; }
+          else geometry.computeVertexNormals();
+          geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+        }
+      };
+      patches.push(patch);
+    });
+    return patches;
   }
 
   function create(T, aircraft, telemetry) {
@@ -85,15 +177,18 @@
       const role = item.category, ordinal = parts.length;
       const sign = centre.z < -.001 || role.endsWith('-left') ? -1 : centre.z > .001 || role.endsWith('-right') ? 1 : ordinal % 2 ? -1 : 1;
       let offset, start, end;
-      if (role === 'covering') { offset = new T.Vector3(centre.x * .08, .38 + ordinal % 3 * .04, sign * .20); start = .055 + ordinal % 4 * .01; end = .30; }
-      else if (role.startsWith('wing-')) { offset = new T.Vector3(.02, sign > 0 ? .28 : .20, sign * .65); start = .18 + (sign < 0 ? .035 : 0); end = .49; }
-      else if (role.startsWith('horizontal-tail')) { offset = new T.Vector3(-.30, .18, sign * .35); start = .25; end = .56; }
-      else if (role === 'vertical-tail') { offset = new T.Vector3(-.35, .42, .025); start = .27; end = .60; }
-      else if (role.includes('gear')) { offset = new T.Vector3(.08, -.14, sign * .17); start = .30; end = .57; }
-      else if (role === 'motor' || role === 'propeller') { offset = new T.Vector3(role === 'propeller' ? .62 : .35, .04, 0); start = role === 'propeller' ? .29 : .35; end = .59; }
-      else { offset = new T.Vector3(centre.x * .21, .04 + (ordinal % 5) * .024, sign * (.25 + ordinal % 4 * .045)); start = .28 + ordinal % 7 * .012; end = .66; }
+      if (role === 'covering') { offset = new T.Vector3(centre.x * .08, .20 + ordinal % 3 * .035, sign * .15); start = .045 + ordinal % 5 * .009; end = .31 + ordinal % 3 * .018; }
+      else if (role.startsWith('wing-')) { offset = new T.Vector3(.02, sign > 0 ? .28 : .20, sign * .65); start = .36 + (sign < 0 ? .025 : 0); end = .59; }
+      else if (role.startsWith('horizontal-tail')) { offset = new T.Vector3(-.30, .18, sign * .35); start = .38; end = .64; }
+      else if (role === 'vertical-tail') { offset = new T.Vector3(-.35, .42, .025); start = .39; end = .66; }
+      else if (role.includes('gear')) { offset = new T.Vector3(.08, -.14, sign * .17); start = .38; end = .66; }
+      else if (role === 'motor' || role === 'propeller') { offset = new T.Vector3(role === 'propeller' ? .62 : .35, .04, 0); start = role === 'propeller' ? .37 : .41; end = .67; }
+      else { offset = new T.Vector3(centre.x * .21, .04 + (ordinal % 5) * .024, sign * (.25 + ordinal % 4 * .045)); start = .37 + ordinal % 7 * .01; end = .72; }
       parts.push({ ...item, base, quaternion, scale, offset, start, end });
     }
+    const films = parts.filter(part => part.category === 'covering').flatMap(part => {
+      const patches = covering(T, part); part.filmPatches = patches; return patches;
+    });
     const materials = new Map(), meshes = [];
     // Reparented groups are now carrier children, so inspect the carrier while
     // excluding the unchanged telemetry subtree.
@@ -108,6 +203,7 @@
         return materials.get(original).material;
       });
       if (mesh.material.length === 1) mesh.material = mesh.material[0];
+      if (mesh.userData.filmSurface) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(material => { material.side = T.DoubleSide; });
       meshes.push({ object: mesh, visible: mesh.visible });
     });
     const prop = originals.find(part => part.category === 'propeller')?.object;
@@ -158,6 +254,7 @@
     }
     function setLanding(value) {
       landing = clamp(value); progress = 0; restore(); fadeAirframe(0);
+      films.forEach(patch => patch.deform(0));
       const flare = ramp(landing, .37, .60), settle = ramp(landing, .65, .86);
       const pitch = .024 + .06 * flare + (restPitch - .084) * settle;
       grounded(pitch);
@@ -175,11 +272,14 @@
     }
     function setProgress(value) {
       landing = 1; progress = clamp(value); restore(); grounded(restPitch);
-      carrier.position.y += .48 * ramp(progress, .08, .37);
+      carrier.position.y += .48 * ramp(progress, .25, .48);
       let separated = 0;
       for (const part of parts) {
         const amount = ramp(progress, part.start, part.end);
-        part.object.position.copy(part.base).addScaledVector(part.offset, amount);
+        if (part.filmPatches) {
+          part.filmPatches.forEach(patch => patch.deform(patch.surface === 'wrap' ? amount : ramp(progress, part.start - .015, part.start + .12)));
+          part.object.position.copy(part.base).addScaledVector(part.offset, ramp(progress, part.end, .53));
+        } else part.object.position.copy(part.base).addScaledVector(part.offset, amount);
         if (amount > 0) separated++;
       }
       const extraction = ramp(progress, .47, .78);
@@ -229,7 +329,7 @@
     let triangles = 0;
     meshes.forEach(mesh => { const geometry = mesh.object.geometry; triangles += (geometry.index?.count || geometry.attributes.position.count) / 3; });
     return {
-      group, carrier, board, parts, metadata,
+      group, carrier, board, parts, films, metadata,
       setLanding, setProgress, frame, attachTelemetry,
       get telemetryReady() { return !!attachedTelemetry; },
       get statistics() { return { parts: parts.length, sourceOccurrences: metadata.parts.length, triangles, boardUnits, telemetryComponents: attachedTelemetry?.group.userData.componentCount || 0, reconstructed: metadata.completion?.reconstruction?.length || 0 }; },

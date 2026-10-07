@@ -23,7 +23,10 @@ function readGLB(bytes) {
   const original = readGLB(fs.readFileSync(path.join(folder, manifest.model)));
   const packed = readGLB(zlib.gunzipSync(fs.readFileSync(path.join(folder, manifest.transport.compressedModel))));
   for (const key of ['nodes', 'meshes', 'materials', 'accessors', 'scenes', 'scene']) {
-    assert.deepEqual(packed.json[key], original.json[key], `Preserved ${key}`);
+    // JSON serialization normalizes -0 in scalar metadata. Geometry buffers
+    // are checked byte-for-byte below, including any signed zero components.
+    const canonical = value => value === undefined ? value : JSON.parse(JSON.stringify(value));
+    assert.deepEqual(canonical(packed.json[key]), canonical(original.json[key]), `Preserved ${key}`);
   }
   assert.equal(packed.json.bufferViews.length, original.json.bufferViews.length);
   let verifiedBytes = 0;

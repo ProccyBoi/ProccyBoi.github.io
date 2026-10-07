@@ -20,7 +20,7 @@
     return scripts.get(url);
   }
   let renderer, scene, camera, flight, key, track, frame = 0, frameCount = 0;
-  let ready = false, loading = false, failed = false, visible = true, activePage = true, currentChapter = -1;
+  let ready = false, loading = false, telemetryLoading = false, failed = false, visible = true, activePage = true, currentChapter = -1;
   let width = 1, height = 1, rootTop = 0, distance = 1, progress = 0, lastScroll = scrollY;
   let landingDone = false, landingElapsed = 0, previousTime = 0, capturePose;
   let shadowBox, boardBox, shadowCentre, corner;
@@ -131,16 +131,35 @@
     failed = true; loading = false; fallback('unavailable'); renderer?.dispose();
     console.warn('The Skylabs story is showing its photographs.', error);
   }
+  async function ensureTelemetry() {
+    if (!flight || flight.telemetryReady || telemetryLoading || failed || !allowed()) return;
+    telemetryLoading = true;
+    try {
+      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=startup-20261007');
+      const telemetry = await window.V2HeroAssets.load('telemetry');
+      if (failed) return;
+      flight.attachTelemetry(telemetry); root.dataset.aircraftTelemetryReady = 'true';
+      root.dataset.aircraftTelemetryComponents = String(flight.statistics.telemetryComponents); updateScroll(); request();
+      if (new URLSearchParams(location.search).has('capture')) {
+        window.__v3Aircraft = { scene, renderer, camera, flight,
+          seekLanding(value) { endLanding(); capturePose = { type: 'landing', value }; chapter(0); request(); },
+          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(value < .25 ? 0 : value < .70 ? 1 : 2); request(); },
+          resume() { capturePose = null; updateScroll(); request(); }
+        };
+      }
+    } catch (error) { fail(error); }
+    finally { telemetryLoading = false; }
+  }
   async function initialize() {
     if (!allowed() || failed) return;
     enable();
-    if (ready) { layout(); request(); return; }
+    if (ready) { layout(); request(); ensureTelemetry(); return; }
     if (loading) return;
     loading = true; root.dataset.aircraftState = 'loading';
     try {
       await Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (!window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
-        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-20261007'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
+        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-20261007b'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
         (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })()
       ]);
       if (failed || !allowed()) { loading = false; return; }
@@ -170,18 +189,7 @@
       layout(); request();
       // The large airframe finishes transport before the small avionics pack
       // starts, leaving the first landing frame uncontested on a cold network.
-      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=startup-20261007');
-      const telemetry = await window.V2HeroAssets.load('telemetry');
-      if (failed) return;
-      flight.attachTelemetry(telemetry); root.dataset.aircraftTelemetryReady = 'true';
-      root.dataset.aircraftTelemetryComponents = String(flight.statistics.telemetryComponents); updateScroll(); request();
-      if (new URLSearchParams(location.search).has('capture')) {
-        window.__v3Aircraft = { scene, renderer, camera, flight,
-          seekLanding(value) { endLanding(); capturePose = { type: 'landing', value }; chapter(0); request(); },
-          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(value < .25 ? 0 : value < .70 ? 1 : 2); request(); },
-          resume() { capturePose = null; updateScroll(); request(); }
-        };
-      }
+      ensureTelemetry();
     } catch (error) { fail(error); }
   }
   skip.addEventListener('click', endLanding);

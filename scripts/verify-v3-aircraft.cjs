@@ -76,6 +76,10 @@ async function staticCase(browser, name, options) {
   } finally { await run.context.close(); }
 }
 async function progress(page, target) {
+  await page.waitForFunction(() => {
+    const root = document.querySelector('[data-aircraft-hero]'), stage = root.querySelector('[data-aircraft-stage]'), track = root.querySelector('.v3-aircraft-track');
+    return track && Math.abs(parseFloat(track.style.height) - stage.clientHeight * (stage.clientWidth < 761 ? 4.7 : 4.1)) < 1;
+  });
   await page.locator(hero).evaluate((root, amount) => {
     const top = scrollY + root.getBoundingClientRect().top;
     scrollTo({ top: top + (root.offsetHeight - root.querySelector('[data-aircraft-stage]').offsetHeight) * amount, behavior: 'instant' });
@@ -133,6 +137,45 @@ async function geometry(page) {
     return { ground, shaftError, mainBottom, noseBottom, contactVelocity, reverseError, assemblyError: flight.assemblyError(), boardScale: flight.board.children[0].scale.toArray(), stats: flight.statistics };
   });
 }
+async function filmGeometry(page) {
+  return page.evaluate(() => {
+    const { flight } = window.__v3Aircraft, T = window.THREE;
+    flight.setProgress(0);
+    const originalCad = [];
+    flight.carrier.traverse(mesh => {
+      if (mesh.isMesh && !mesh.userData.filmSurface) originalCad.push([mesh.geometry.attributes.position.array, mesh.geometry.attributes.position.array.slice()]);
+    });
+    flight.setProgress(.20);
+    let attached = 0, peeled = 0, attachedError = 0, seamGap = 0, chordChange = 0, seamBridge = 0, nonfinite = 0;
+    const wrappers = flight.films.filter(patch => patch.surface === 'wrap');
+    for (const patch of wrappers) {
+      attached += patch.attached; peeled += patch.peeled;
+      const positions = patch.mesh.geometry.attributes.position, uv = patch.mesh.geometry.attributes.uv, indices = patch.mesh.geometry.index;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        if (uv.getX(vertex) <= 1 - patch.amount * 1.025) for (let axis = 0; axis < 3; axis++) attachedError = Math.max(attachedError, Math.abs(positions.array[vertex * 3 + axis] - patch.rest[vertex * 3 + axis]));
+      }
+      for (let index = 0; index < indices.count; index += 3) {
+        const u = [0, 1, 2].map(offset => uv.getX(indices.getX(index + offset)));
+        seamBridge = Math.max(seamBridge, Math.max(...u) - Math.min(...u));
+      }
+      for (const ring of patch.rings) {
+        const first = ring.points[0], last = ring.points[ring.points.length - 1];
+        const a = new T.Vector3().fromBufferAttribute(positions, first.index), b = new T.Vector3().fromBufferAttribute(positions, last.index);
+        seamGap = Math.max(seamGap, a.distanceTo(b));
+        const quarter = ring.points[Math.floor(ring.points.length * .25)], third = ring.points[Math.floor(ring.points.length * .75)];
+        const c = new T.Vector3().fromBufferAttribute(positions, quarter.index), d = new T.Vector3().fromBufferAttribute(positions, third.index);
+        chordChange = Math.max(chordChange, Math.abs(c.distanceTo(d) - quarter.point.distanceTo(third.point)));
+      }
+      for (const array of [positions.array, patch.mesh.geometry.attributes.normal.array]) for (const value of array) if (!Number.isFinite(value)) nonfinite++;
+    }
+    const structuralMotion = flight.parts.filter(part => part.category !== 'covering').reduce((max, part) => Math.max(max, part.object.position.distanceTo(part.base)), 0);
+    for (const amount of [.5, .85, .1, 1, 0]) flight.setProgress(amount);
+    let restoredError = 0, cadChanges = 0;
+    flight.films.forEach(patch => patch.rest.forEach((value, index) => { restoredError = Math.max(restoredError, Math.abs(patch.mesh.geometry.attributes.position.array[index] - value)); }));
+    originalCad.forEach(([array, rest]) => rest.forEach((value, index) => { if (array[index] !== value) cadChanges++; }));
+    return { wrappers: wrappers.length, attached, peeled, attachedError, seamGap, chordChange, seamBridge, nonfinite, structuralMotion, restoredError, cadChanges };
+  });
+}
 async function framing(page, value) {
   await seek(page, 'seekProgress', value);
   return page.evaluate(() => {
@@ -175,9 +218,16 @@ async function sceneCase(browser) {
     assert.ok(Math.abs(physical.contactVelocity[0] - physical.contactVelocity[1]) < .001, 'Forward velocity is continuous at main-wheel contact');
     assert.equal(physical.reverseError, 0); assert.equal(physical.assemblyError, 0);
     passed(run, 'automatic landing and physical assembly', { duration, physical });
+    const film = await filmGeometry(page);
+    assert.ok(film.wrappers >= 11 && film.attached > 0 && film.peeled > 0, 'Mid-peel retains both attached skin and released sheet');
+    assert.equal(film.attachedError, 0); assert.equal(film.structuralMotion, 0, 'Covering peels before structural separation');
+    assert.ok(film.seamGap > .02 && film.chordChange > .02, 'Open seams and changed pair distances prove non-rigid unwrapping');
+    assert.ok(film.seamBridge < .1, 'No triangle bridges the opened perimeter seam');
+    assert.equal(film.nonfinite, 0); assert.equal(film.restoredError, 0); assert.equal(film.cadChanges, 0);
+    passed(run, 'flexible film peel and exact restoration', { film });
     for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
       await page.setViewportSize(viewport);
-      for (const amount of [0, .30, .50, 1]) {
+      for (const amount of [0, .20, .30, .50, 1]) {
         const projection = await framing(page, amount);
         if (amount <= .50) assert.equal(projection.outside, 0, 'Opaque aircraft is framed before the deliberate PCB close-up');
         await layout(page);
@@ -236,6 +286,30 @@ async function pendingTelemetry(browser) {
     passed(run, 'native scroll interrupts landing');
   } finally { release(); await run.context.close(); }
 }
+async function earlyPreference(browser) {
+  const run = await open(browser), { page } = run;
+  let release;
+  const held = new Promise(resolve => { release = resolve; });
+  await run.context.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type, ...args) { const result = getContext.call(this, type, ...args); if (String(type).includes('webgl') && result) window.__testWebglCreated = true; return result; };
+  });
+  await run.context.route('**/airframe*.glb*', async route => { await held; await route.continue().catch(() => {}); });
+  try {
+    await page.goto(base + '/v3/?v=aircraft-test', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__testWebglCreated, null, { timeout: 60000 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('[data-aircraft-state="static"]').waitFor();
+    release();
+    await page.locator('[data-aircraft-source-occurrences="117"]').waitFor({ timeout: 60000 });
+    assert.equal(run.requests.some(url => /\/models\/hero\/telemetry\./.test(url)), false, 'An early static preference defers telemetry');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.locator('[data-aircraft-telemetry-ready="true"]').waitFor({ timeout: 60000 });
+    await progress(page, 1);
+    assert.equal(await page.locator(hero).getAttribute('data-aircraft-chapter'), '2');
+    passed(run, 'early preference change resumes deferred telemetry');
+  } finally { release(); await run.context.close(); }
+}
 (async () => {
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -248,7 +322,7 @@ async function pendingTelemetry(browser) {
       await staticCase(browser, 'blocked-three', { block: '**/vendor/three.min.js', failed: true });
       await staticCase(browser, 'short-landscape', { viewport: { width: 844, height: 390 } });
     }
-    if (!process.argv.includes('--static-only')) { await sceneCase(browser); await pendingTelemetry(browser); }
+    if (!process.argv.includes('--static-only')) { await sceneCase(browser); await pendingTelemetry(browser); await earlyPreference(browser); }
   } finally { await browser.close(); fs.writeFileSync(path.join(output, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n'); }
   console.log(`${evidence.length} aircraft acceptance groups passed.`);
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -17,7 +17,7 @@ const evidence = path.resolve(__dirname, '../.codex-temp/aircraft-final');
       const errors = []; page.on('pageerror', error => errors.push(error.message));
       await page.goto(base + '/v3/?capture=posters', { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => !!window.__v3Aircraft, null, { timeout: 120000 });
-      const poses = [{ name: 'approach', type: 'Landing', value: 0 }, { name: 'stopped', type: 'Progress', value: 0 }, { name: 'open', type: 'Progress', value: .43 }, { name: 'telemetry', type: 'Progress', value: 1 }];
+      const poses = [{ name: 'approach', type: 'Landing', value: 0 }, { name: 'stopped', type: 'Progress', value: 0 }, { name: 'unwrapping', type: 'Progress', value: .20 }, { name: 'open', type: 'Progress', value: .43 }, { name: 'telemetry', type: 'Progress', value: 1 }];
       for (const pose of poses) {
         await page.evaluate(({ type, value }) => window.__v3Aircraft['seek' + type](value), pose);
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
