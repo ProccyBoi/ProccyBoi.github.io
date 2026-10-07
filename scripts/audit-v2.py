@@ -320,7 +320,7 @@ def main() -> int:
             error(environment_manifest, "prepared lighting differs from its verified texture")
         if gzip.decompress(compressed) != plain or len(compressed) != environment["gzipBytes"]:
             error(environment_manifest, "compressed lighting differs from its plain texture")
-        for source, field in (("scripts/build-v2-hero-environment.cjs", "builderFileSha256"), ("assets/vendor/three.min.js", "threeSha256")):
+        for source, field in (("scripts/build-v2-hero-environment.cjs", "builderFileSha256"), ("assets/vendor/three.min.js", "threeSha256"), ("assets/v2-hero-environment.js", "studioHelperSha256")):
             data = (ROOT / source).read_bytes().replace(b"\r\n", b"\n")
             if hashlib.sha256(data).hexdigest() != environment[field]:
                 error(environment_manifest, f"lighting source changed; rebuild the environment: {source}")

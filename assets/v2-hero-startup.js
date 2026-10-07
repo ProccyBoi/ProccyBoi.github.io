@@ -23,7 +23,7 @@
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
     ['tramtrace', 'telemetry', 'pi'].forEach(name => window.V2HeroAssets.prefetch(name).catch(() => {}));
   }).catch(() => {});
-  loadScript('/assets/v2-hero-environment.js?v=startup-20261007').then(() => {
+  loadScript('/assets/v2-hero-environment.js?v=product-20261007').then(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
     window.V2HeroEnvironment.prefetch().catch(() => {});
   }).catch(() => {});

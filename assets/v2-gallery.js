@@ -244,7 +244,6 @@
     currentAnimations.forEach(animation => animation.cancel());
     currentAnimations = [];
     const previous = byKey.get(visibleKey);
-    const direction = records.indexOf(record) >= records.indexOf(previous) ? 1 : -1;
     records.forEach(item => {
       const shown = item === record || (animate && item === previous);
       item.photo.hidden = !shown;
@@ -257,13 +256,13 @@
       return;
     }
     const incoming = record.photo.animate([
-      { opacity: 0, transform: `translateX(${direction * 32}px)` },
-      { opacity: 1, transform: 'translateX(0)' }
-    ], { duration: 440, easing: 'cubic-bezier(.22,.75,.2,1)' });
+      { opacity: 0 },
+      { opacity: 1 }
+    ], { duration: 240, easing: 'ease-out' });
     const outgoing = previous.photo.animate([
-      { opacity: 1, transform: 'translateX(0)' },
-      { opacity: 0, transform: `translateX(${-direction * 20}px)` }
-    ], { duration: 260, easing: 'ease-out', fill: 'forwards' });
+      { opacity: 1 },
+      { opacity: 0 }
+    ], { duration: 240, easing: 'ease-out', fill: 'forwards' });
     currentAnimations = [incoming, outgoing];
     outgoing.finished.then(() => {
       if (visibleKey !== previous.key) previous.photo.hidden = true;

@@ -76,7 +76,7 @@ function smallPack(textures) {
   }
   const original = observed.sandbox.V2HeroEnvironment.prefetch();
   assert.strictEqual(original, observed.sandbox.V2HeroEnvironment.prefetch(), 'Lighting prefetch must share its download');
-  observed.downloads.get('/assets/models/hero/environment.bin').release(new ArrayBuffer(0)); await original;
+  observed.downloads.get(observed.requests.find(url => url.startsWith('/assets/models/hero/environment.bin'))).release(new ArrayBuffer(0)); await original;
   await assert.rejects(observed.sandbox.V2HeroAssets.prefetch('unknown'), /Unknown hero assembly/);
 
   const early = context(); early.run(startup); early.run(startup); await flush();

@@ -20,7 +20,7 @@ The light sweep uses small cached alpha masks on the same 2D canvas. The field a
 
 ## Prepared lighting
 
-The original PMREM studio environment is baked into a 124,717-byte compressed asset. All 768×768 native RGBE texels, their encoding, filtering and layout are preserved. `scripts/build-v2-hero-environment.cjs` compares the source and prepared environment across all three complete CAD models in both assembled and exploded poses; all six comparisons produced zero changed pixel channels. `--verify` checks an existing build. Failed prepared lighting falls back to the same original PMREM construction.
+The product studio PMREM environment is baked into a 164,981-byte compressed asset. All 768×768 native RGBE texels, their encoding, filtering and layout are preserved. `scripts/build-v2-hero-environment.cjs` uses the same studio function as runtime recovery and compares the fresh and prepared environment across all three complete CAD models in both assembled and exploded poses; all six comparisons produced zero changed pixel channels. `--verify` checks an existing build. The environment metadata records the shared studio helper hash as well as the baker and Three.js hashes.
 
 The geometry files and lighting download together while Three.js starts. The original SVG silkscreens begin fetching alongside their geometry, removing the previous dependency on a fully downloaded and decoded pack. Their Image objects are reused at full resolution when textures are constructed; the pack's texture properties remain authoritative.
 
@@ -32,6 +32,8 @@ Serve the repository root, then run `node scripts/build-v2-hero-assets.cjs`. `V2
 
 `assets/models/hero/manifest.json` records the source hashes, pack hashes, triangle counts and parity fingerprints. Expanded triangle attributes are compared byte for byte; material properties, texture URLs/settings, transforms and component metadata are compared structurally. Text source hashes normalize CRLF to LF so Windows and Linux agree. The site audit checks source freshness, generated file hashes and that each gzip file decompresses to its exact plain counterpart before deployment.
 
+`node scripts/render-product-posters.cjs` renders the same complete CAD and studio into transparent 1600×1200 poster candidates. It writes a native PNG reference and a WebP encoded at quality 88 with lossless alpha, checking the decoded alpha bytes exactly. `PRODUCT_POSTER_OUT` selects the candidate directory; the script never replaces production images itself. The three current candidates total 358,572 bytes. They preserve fine component edges and the clear enclosure in Chromium; stepped white edges shown by one transparent-WebP preview tool were absent from both the native PNG and actual browser composition, with zero decoded alpha differences. No supersampling or lower resolution was required.
+
 | Assembly | Physical groups | Meshes | Triangles |
 | --- | ---: | ---: | ---: |
 | TramTrace | 31 | 104 | 96,514 |
@@ -42,7 +44,13 @@ The table counts unique geometry buffers, matching the manifest. The Pi's two sc
 
 ## Lighting and motion
 
-The warm key light now casts soft component shadows onto the boards and neighbouring parts. Its 2048-pixel shadow map follows the visible assemblies, preserving detail when one board fills the scene. The opening composition blends between identical unshadowed and shadowed key lights as the first board takes focus, keeping total illumination constant and avoiding one project's silhouette obscuring another. The existing environment, material response, exposure and fill lights are retained. Shadow maps update only during an actual scene render and are reused in the unshadowed overview; the hero stops rendering when settled, offscreen or hidden.
+The product studio uses a dark room with three shaped softboxes, a warm directional key, restrained fill and a rear rim. The key's single 2048-pixel shadow map follows the visible assemblies, including the opening composition. This gives components contact and self shadows without adding another render target or shadow pass per project. Shadow maps update only during an actual scene render; the hero stops rendering when settled, offscreen or hidden.
+
+The finish is applied after loading an unchanged prepared pack or its source fallback. Original geometry, component transforms, colours, texture objects, opacity and alpha settings remain intact. Known soldermask and housing materials use physical clearcoat; metal and plastic retain distinct roughness and reflection response. The old Three.js release requires restoring the `PHYSICAL` shader define when copying a standard material into a physical one. No generated grain or replacement texture is downloaded.
+
+Only the thin soldermask coating stops casting shadows. The exported coating is coplanar with the physical board, and rendering it as another solid shadow caster incorrectly blackens the whole PCB. The mask still receives shadows from the components; PCB core, pads, pins, packages and screws keep their original casting behavior. The clear Pi housing and silkscreen already do not cast opaque shadows. Isolated diagnostic renders confirmed that the fault was coating self-occlusion, not the housing or a neighbouring project; changing global shadow bias did not solve it.
+
+`V2ProductStudio` is exported by the already-loaded `v2-hero-environment.js`, adding no startup dependency request. Other CAD scenes can call `configureRenderer(renderer, THREE)`, `createLights(THREE, scene)` (returns the shadow-casting `key`), and `applyMaterials(model, name, THREE)`. `V2HeroEnvironment.load(THREE)` returns the prepared texture; `V2ProductStudio.createEnvironment(THREE, renderer)` returns the matching live PMREM target for recovery. Each scene fits its key shadow camera to its own visible geometry. Applying the finish twice is safe.
 
 Hero motion has separate lift-off, spread, rotation and settling phases. Components use family and spatial stagger, restrained curved paths and independently timed tilts. Original exploded positions are retained; intermediate lateral deviation is bounded to 0.012 board spans. Reversing the scroll reconstructs the same pose, and returning to zero restores each original component position and quaternion exactly.
 
@@ -50,6 +58,7 @@ Hero motion has separate lift-off, spread, rotation and settling phases. Compone
 
 - `node scripts/verify-v2-hero-startup.cjs` checks pre-WebGL pointer/touch interaction, actual magnification, mobile scrolling and links, per-model handoff, animation suspension, motion preferences and prepared-lighting recovery.
 - `node scripts/verify-v2-hero-prefetch.cjs` checks exact texture URL parity with committed pack headers, texture requests while geometry is blocked, shared downloads, failed-helper retry, and reduced-motion/Save Data suppression without a browser.
+- `node scripts/verify-v2-product-studio.cjs` loads the real prepared CAD without a GPU and checks byte-identical vertex/index data, exact transforms, source colours/maps/alpha, housing and screws, physical shader activation, and the intentional soldermask-only shadow-casting exception.
 - `node scripts/verify-v2-hero-choreography.cjs` checks deterministic trajectories, reverse sampling, exact reassembly and bounded movement without changing geometry or materials.
 - `node scripts/verify-v2-cad-motion.cjs` checks the actual rendered assemblies, physical reference coverage and desktop/phone framing.
 - `node scripts/verify-v2-hero-loading.cjs` checks progressive loading, prepared-asset recovery and poster fallbacks.
@@ -99,3 +108,20 @@ An isolated copy of committed `9bb87f1` was compared with the startup-only chang
 | All three assemblies ready | 5.597 s | 5.966 s | 4.002 s |
 
 All-model readiness improved in these runs, while first-CAD readiness remained around 2.7 seconds. Individual all-model times varied from 4.239–6.007 seconds for the six baseline runs and 3.882–5.972 seconds for the three final runs; do not present the median improvement as a guaranteed device-level speedup. The image dependency waterfall is removed, but shader work remains hardware-dependent. Each run retains exactly the same geometry counts, 2,666,556 transferred CAD/environment bytes including response headers, original textures, lighting, and 363 overview draw calls. No pack, material, mesh, shadow setting or texture resolution changed.
+
+## Product studio and matching posters, 7 October 2026
+
+The finished studio was compared with committed `81fe1c8` using the same 1440×1000 viewport, cold cache, 10 Mbps / 40 ms network fixture and Chromium SwiftShader renderer. Three-run reports are retained in `.codex-temp/product-performance/before.json`, `before-repeat.json`, `after.json` and `after-final.json`. The final set includes the corrected shadow bias and regenerated posters. The first baseline run had an approximately five-second startup stall: its lead poster was eligible at 5.099 seconds and first CAD at 7.611 seconds. That result remains in the original report and the first baseline column below. A complete second baseline set was captured to check variability. Values are medians:
+
+| Measurement | Initial `81fe1c8` baseline | Repeated `81fe1c8` baseline | Product studio |
+| --- | ---: | ---: | ---: |
+| Lead poster eligible for paint | 0.284 s | 0.244 s | 0.234 s |
+| Loading interaction starts | 0.498 s | 0.482 s | 0.353 s |
+| First CAD assembly ready | 2.872 s | 2.644 s | 2.686 s |
+| Lead TramTrace ready | 2.989 s | 2.735 s | 2.767 s |
+| All three assemblies ready | 6.037 s | 4.050 s | 3.977 s |
+| CAD and lighting transfer, including headers | 2,666,556 B | 2,666,556 B | 2,706,820 B |
+
+The final first-CAD result is comparable to the repeated baseline: 0.042 seconds slower at the median, with TramTrace 0.032 seconds slower. First-CAD times ranged from 2.561–2.697 seconds in the repeated baseline and 2.678–2.767 seconds in the final studio. All-model timings remain variable: 3.980–4.245 seconds before and 3.961–5.701 seconds after, so the slightly lower final median is not evidence of a reliable speedup. The intermediate studio set had a 2.993-second first-CAD median; it remains in `after.json` and must not be silently substituted for the final set or used to attribute improvements solely to the bias correction. These are software-renderer measurements on one host, not guaranteed device timings. Immediate poster interaction and native scrolling remain available before CAD readiness.
+
+Every run retained 121 physical groups, 360 meshes, 386,248 mesh-instance triangles and 363 overview draw calls. The three geometry packs are unchanged. The prepared environment grows by 40,264 bytes, from 124,717 to 164,981 bytes. The final quality-88 posters total 347,352 bytes versus the previous 263,768 bytes, an additional 83,584 bytes; their 1600×1200 resolution is unchanged. These two asset changes add 123,848 bytes before response headers. The posters' decoded alpha matches the native PNG references byte for byte for all three boards, both in the offline encoder check and actual Chromium canvas decoding. Browser image comparisons show clean silhouettes and translucent housing edges without the stepped fringe seen in a preview tool. A scale-matched shadow bias removes diagonal self-shadow bands from broad board and shield surfaces while retaining component contact shadows; no caster geometry is removed for this correction.

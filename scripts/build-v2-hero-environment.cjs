@@ -17,16 +17,10 @@ const verify = process.argv.includes('--verify');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const sourceHash = file => hash(Buffer.from(fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')));
 
-// Keep this physical light setup identical to the recovery path in v2-assembly.
+// The shared studio is also the runtime recovery path. Its PMREM is baked only
+// once here, keeping the prepared hero's startup path free of GPU convolution.
 function createSourceEnvironment(T, renderer) {
-  const room = new T.Scene(); room.background = new T.Color(0xb6c0c2);
-  [[0xffffff, 4, [-7, 5, 1], [0, Math.PI/2, 0]], [0xffffff, 3, [0, 8, 0], [Math.PI/2, 0, 0]], [0xd9e6f3, 2, [7, 0, 0], [0, -Math.PI/2, 0]]].forEach(([color, power, position, rotation]) => {
-    const material = new T.MeshBasicMaterial({color, side:T.DoubleSide}); material.color.multiplyScalar(power);
-    const panel = new T.Mesh(new T.PlaneGeometry(8, 12), material); panel.position.set(...position); panel.rotation.set(...rotation); room.add(panel);
-  });
-  const pmrem = new T.PMREMGenerator(renderer), environment = pmrem.fromScene(room, .06);
-  pmrem.dispose(); room.traverse(object => {object.geometry?.dispose(); object.material?.dispose();});
-  return environment;
+  return window.V2ProductStudio.createEnvironment(T, renderer);
 }
 
 function encode(capture) {
@@ -51,7 +45,7 @@ async function main() {
     await page.evaluate('window.__createSourceEnvironment = ' + createSourceEnvironment.toString());
     const capture = await page.evaluate(() => {
       const T = THREE, renderer = window.__renderer = new T.WebGLRenderer({antialias:true, alpha:true});
-      renderer.setSize(960, 720); renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = .98;
+      renderer.setSize(960, 720); V2ProductStudio.configureRenderer(renderer, T);
       const source = window.__sourceEnvironment = window.__createSourceEnvironment(T, renderer), texture = source.texture;
       if (texture.type !== T.UnsignedByteType || texture.format !== T.RGBAFormat || texture.encoding !== T.RGBEEncoding) throw new Error('Source texture type changed; update the lossless baker');
       const data = new Uint8Array(source.width * source.height * 4);
@@ -68,13 +62,12 @@ async function main() {
     const result = await page.evaluate(async () => {
       const T = THREE, renderer = window.__renderer, restored = await V2HeroEnvironment.load(T);
       const scene = new T.Scene(), camera = new T.OrthographicCamera(-1.25, 1.25, .94, -.94, .1, 20); camera.position.set(0, 0, 6); camera.lookAt(0, 0, 0);
-      scene.add(new T.HemisphereLight(0xffffff, 0xc4cfce, .6));
-      [[0xfff8ed, 1.4, -4, 8, 12], [0xd3e5ff, .9, 8, 3, 5], [0xffffff, .5, -8, -4, 6]].forEach(([color, intensity, x, y, z]) => {const lamp = new T.DirectionalLight(color, intensity); lamp.position.set(x, y, z); scene.add(lamp);});
+      V2ProductStudio.createLights(T, scene);
       const target = new T.WebGLRenderTarget(960, 720), original = new Uint8Array(960 * 720 * 4), copied = new Uint8Array(original.length), models = [];
       // Compare each complete CAD assembly, assembled and exploded, using both
       // environments in the same renderer to isolate texture equivalence.
       for (const name of ['tramtrace', 'telemetry', 'pi']) {
-        const model = await V2HeroAssets.load(name); V2HeroMotion.prepare(model.parts); model.group.rotation.set(.88, -.18, -.2); scene.add(model.group);
+        const model = await V2HeroAssets.load(name); V2ProductStudio.applyMaterials(model, name, T); V2HeroMotion.prepare(model.parts); model.group.rotation.set(.88, -.18, -.2); scene.add(model.group);
         for (const phase of [0, 1]) {
           V2HeroMotion.apply(model.parts, phase);
           scene.environment = window.__sourceEnvironment.texture; renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.readRenderTargetPixels(target, 0, 0, 960, 720, original);
@@ -96,6 +89,7 @@ async function main() {
     const report = {format:1, sourceHashNormalization:'utf8-lf', preservation:'Every native RGBE PMREM texel byte; identical CAD render pixels before and after baking',
       url:'/assets/models/hero/environment.bin', compressedUrl:'/assets/models/hero/environment.bin.gz', bytes:bytes.length, gzipBytes:fs.statSync(filepath + '.gz').size,
       sha256:hash(bytes), sourceBuilderSha256:hash(Buffer.from(createSourceEnvironment.toString().replace(/\r\n/g, '\n'))),
+      studioHelperSha256:sourceHash(path.join(root, 'assets/v2-hero-environment.js')),
       builderFileSha256:sourceHash(__filename), threeSha256:sourceHash(path.join(root, 'assets/vendor/three.min.js')),
       width:capture.width, height:capture.height, type:'UnsignedByteType', encoding:'RGBEEncoding', mapping:'CubeUVReflectionMapping', ...result};
     if (!verify) fs.writeFileSync(path.join(out, 'environment.json'), JSON.stringify(report, null, 2) + '\n');

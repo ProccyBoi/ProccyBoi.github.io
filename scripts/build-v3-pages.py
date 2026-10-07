@@ -16,7 +16,7 @@ SOURCE = ROOT / "v2"
 DESTINATION = ROOT / "v3"
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 ROUTE_PREFIX = re.compile(r"^(https://proccyboi\.github\.io)?/v2/")
-PRESENTATION = '''  <link rel="stylesheet" href="/assets/v3.css">
+PRESENTATION = '''  <link rel="stylesheet" href="/assets/v3.css?v=manufacturing-20261007">
 '''
 
 
@@ -103,7 +103,7 @@ def build(relative):
         if element.tag == "meta" and attrs.get("property") == "og:url":
             updated = attribute(updated, "content", route(attrs.get("content", "")))
         if element.tag == "meta" and attrs.get("name") == "theme-color":
-            updated = attribute(updated, "content", "#e8e5dc")
+            updated = attribute(updated, "content", "#101210")
         if element.tag == "body":
             classes = attrs.get("class", "").split()
             classes.extend(name for name in ["v3", "v3-interior"] if name not in classes)
@@ -115,7 +115,7 @@ def build(relative):
             extra = PRESENTATION
             # Redirects retain their shared application's canonical target.
             if not any(node.tag == "meta" and node.attrs.get("name") == "theme-color" for node in document.elements):
-                extra = '  <meta name="theme-color" content="#e8e5dc">\n' + extra
+                extra = '  <meta name="theme-color" content="#101210">\n' + extra
             edits.append((element.close_start, element.close_start, extra))
         if updated != original:
             edits.append((element.start, element.open_end, updated))

@@ -309,6 +309,30 @@ def main():
                 error(page, "an original inline simulation or model JSON block changed")
             stats["preserved interiors"] += 1
 
+    # These resources are requested by the manufacturing controller, so HTML
+    # traversal alone cannot catch a missing layer in a published build.
+    manufacturing = ROOT / "assets/models/manufacturing/tramtrace/manufacturing.json"
+    try:
+        reference(SITE / "index.html", "/assets/v3-manufacturing.js", ORIGIN)
+        reference(SITE / "index.html", "/assets/models/manufacturing/tramtrace/manufacturing.json", ORIGIN)
+        manifest = json.loads(manufacturing.read_text(encoding="utf-8"))
+        manifest_url = ORIGIN + "/" + manufacturing.relative_to(ROOT).as_posix()
+        for asset in manifest["assets"].values():
+            reference(manufacturing, asset, manifest_url)
+        for name, expected in manifest["assetSha256"].items():
+            path = manufacturing.parent / name
+            data = path.read_bytes().replace(b"\r\n", b"\n")
+            if sha256(data).hexdigest() != expected:
+                error(manufacturing, f"manufacturing layer changed; rebuild registration: {name}")
+        components = manifest["components"]
+        refs = {component["ref"] for component in components}
+        if len(components) != 143 or len(refs) != 143 or sum(ref.startswith("LED") for ref in refs) != 116:
+            error(manufacturing, "manufacturing component inventory differs from the source board")
+        if manifest["pasteApertures"] != 611 or manifest["boardSizeMm"] != [207.81, 1.6, 94.55]:
+            error(manufacturing, "manufacturing geometry or paste registration changed")
+    except (OSError, ValueError, KeyError, TypeError) as exception:
+        error(manufacturing, f"cannot verify manufacturing assets: {exception}")
+
     if errors:
         print("V3 audit failed:")
         print("\n".join(dict.fromkeys(errors)))

@@ -1,12 +1,15 @@
 {
   "format": 1,
+  "sourceHashNormalization": "utf8-lf",
   "preservation": "Every native RGBE PMREM texel byte; identical CAD render pixels before and after baking",
   "url": "/assets/models/hero/environment.bin",
   "compressedUrl": "/assets/models/hero/environment.bin.gz",
   "bytes": 2359540,
-  "gzipBytes": 124717,
-  "sha256": "1f93cae0117e83a916b232e2460d1e5ebae852e40a9baac4f4220db274fd0853",
-  "sourceBuilderSha256": "4109d7dfa483dea90c6cdb6699cecde368c37d409b735d7149f5bddea9f1e9d5",
+  "gzipBytes": 164981,
+  "sha256": "0b82cd57923c35a335bc3cb50e73d3a029b9a1cd975350f46fd0ea935615fd87",
+  "sourceBuilderSha256": "d99844da05f0eb5070566fcb4895bff16ebc0e3243c0f94bd69b00a0522f4cd7",
+  "studioHelperSha256": "1718280d510cee69305f3d18fdb4f970818e7c63abf8502174ffebc2f51c09bd",
+  "builderFileSha256": "3c511c6c05126ea2c011805a554ffa8e088ec0f747138e0957f72f22539dd65c",
   "threeSha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2",
   "width": 768,
   "height": 768,
@@ -47,16 +50,14 @@
       "phase": 0,
       "changedChannels": 0,
       "maximumChannelDifference": 0,
-      "renderedPixels": 110412
+      "renderedPixels": 148018
     },
     {
       "name": "pi",
       "phase": 1,
       "changedChannels": 0,
       "maximumChannelDifference": 0,
-      "renderedPixels": 117709
+      "renderedPixels": 187280
     }
-  ],
-  "sourceHashNormalization": "utf8-lf",
-  "builderFileSha256": "ad19d5fd87be708242660f6c34751257f5f8b08114d355a9a77ae8db9a7d230c"
+  ]
 }

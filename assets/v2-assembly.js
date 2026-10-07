@@ -21,7 +21,7 @@
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
   const smooth = value => { const p = clamp(value); return p*p*(3-2*p); };
   const ramp = (value, start, end) => smooth((value-start)/(end-start));
-  let renderer, scene, camera, environment, keyLight, overviewLight, shadowBounds, shadowCorner, shadowCentre, loadingExperience;
+  let renderer, scene, camera, environment, keyLight, shadowBounds, shadowCorner, shadowCentre, loadingExperience;
   const models = Array(projects.length).fill(null);
   const shadows = Array(projects.length).fill(null);
   const modelStates = Array(projects.length).fill('pending');
@@ -54,13 +54,8 @@
   };
   const fitShadows = () => {
     if (!keyLight) return;
-    // Independent projects overlap in the opening composition. Blend in the
-    // same key light's shadows as a board takes focus, without changing its
-    // total illumination or casting one project's silhouette over another.
-    const strength=ramp(current,.115,.135);
-    keyLight.intensity=1.4*strength;
-    overviewLight.intensity=1.4*(1-strength);
-    if (!strength && keyLight.shadow.map) return;
+    // The same shadow map follows the actual visible CAD from the opening
+    // composition through each exploded view; component contact stays present.
     shadowBounds.makeEmpty();
     models.forEach(model => {
       if (model?.group.visible) shadowBounds.expandByObject(model.group);
@@ -208,7 +203,7 @@
       window.V2HeroMotion.apply(model.parts,transform.e);
       shadow.position.set(transform.x,transform.y-transform.s*.43,-3);
       shadow.scale.set(transform.s*.9,transform.s*.18,1);
-      shadow.material.opacity=.085*(1-transform.e*.6);
+      shadow.material.opacity=.14*(1-transform.e*.6);
     });
     const introFade=1-ramp(current,.015,.10);
     intro.style.opacity=introFade.toFixed(4);
@@ -255,7 +250,7 @@
         projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
       })().catch(()=>{});
       const lighting=(async()=>{
-        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=startup-20261007');
+        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=product-20261007');
         window.V2HeroEnvironment.prefetch().catch(()=>{});
       })().catch(()=>{});
       await Promise.all([
@@ -266,23 +261,21 @@
       const T=window.THREE;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75));
-      renderer.outputEncoding=T.sRGBEncoding; renderer.toneMapping=T.ACESFilmicToneMapping;
-      renderer.toneMappingExposure=.98;
+      if(window.V2ProductStudio) window.V2ProductStudio.configureRenderer(renderer,T);
+      else {renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.94;}
       renderer.shadowMap.enabled=true;
       renderer.shadowMap.type=T.PCFSoftShadowMap;
       renderer.shadowMap.autoUpdate=false;
       scene=new T.Scene();camera=new T.OrthographicCamera(-8,8,5,-5,.1,100);
       camera.position.set(0,0,20);camera.lookAt(0,0,0);
-      scene.add(new T.HemisphereLight(0xffffff,0xc4cfce,.6));
-      const light=(color,intensity,x,y,z)=>{const lamp=new T.DirectionalLight(color,intensity);lamp.position.set(x,y,z);scene.add(lamp);return lamp;};
-      keyLight=light(0xfff8ed,1.4,-4,8,12);light(0xd3e5ff,.9,8,3,5);light(0xffffff,.5,-8,-4,6);
-      overviewLight=light(0xfff8ed,0,-4,8,12);
-      keyLight.castShadow=true;
-      keyLight.shadow.mapSize.set(2048,2048);
-      keyLight.shadow.bias=-.00018;
-      keyLight.shadow.normalBias=.003;
-      keyLight.userData.direction=keyLight.position.clone().normalize();
-      scene.add(keyLight.target);
+      if(window.V2ProductStudio) keyLight=window.V2ProductStudio.createLights(T,scene).key;
+      else {
+        scene.add(new T.HemisphereLight(0xe8edf2,0x363c3d,.16));
+        keyLight=new T.DirectionalLight(0xfff5e8,1.05);keyLight.position.set(-3,6,12);keyLight.castShadow=true;
+        keyLight.shadow.mapSize.set(2048,2048);keyLight.shadow.bias=-.00015;keyLight.shadow.normalBias=.0042;
+        keyLight.userData.direction=keyLight.position.clone().normalize();scene.add(keyLight,keyLight.target);
+        [[0xc8dbf5,.24,8,1,4],[0xffffff,.48,-5,-3,-2]].forEach(([colour,power,x,y,z])=>{const fill=new T.DirectionalLight(colour,power);fill.position.set(x,y,z);scene.add(fill);});
+      }
       shadowBounds=new T.Box3();shadowCorner=new T.Vector3();shadowCentre=new T.Vector3();
       try {
         if(!window.V2HeroEnvironment) throw new Error('Prepared lighting unavailable');
@@ -290,19 +283,22 @@
         environment={texture,dispose:()=>texture.dispose()};
         root.dataset.assemblyEnvironment='prepared';
       } catch(error) {
-        const room=new T.Scene();room.background=new T.Color(0xb6c0c2);
-        [[0xffffff,4,[-7,5,1],[0,Math.PI/2,0]],[0xffffff,3,[0,8,0],[Math.PI/2,0,0]],[0xd9e6f3,2,[7,0,0],[0,-Math.PI/2,0]]].forEach(([color,power,position,rotation])=>{
+        if(window.V2ProductStudio) environment=window.V2ProductStudio.createEnvironment(T,renderer);
+        else {
+        const room=new T.Scene();room.background=new T.Color(.025,.029,.034);
+        [[0xfff6e8,3.8,[-5,7,5],[6,9]],[0xd5e4ff,2.1,[7,3,1],[3,10]],[0xffffff,2.8,[1,-3,-6],[3,7]]].forEach(([color,power,position,size])=>{
           const material=new T.MeshBasicMaterial({color,side:T.DoubleSide});material.color.multiplyScalar(power);
-          const panel=new T.Mesh(new T.PlaneGeometry(8,12),material);panel.position.set(...position);panel.rotation.set(...rotation);room.add(panel);
+          const panel=new T.Mesh(new T.PlaneGeometry(...size),material);panel.position.set(...position);panel.lookAt(0,0,0);room.add(panel);
         });
         const pmrem=new T.PMREMGenerator(renderer);environment=pmrem.fromScene(room,.06);
         pmrem.dispose();room.traverse(object=>{object.geometry?.dispose();object.material?.dispose();});
+        }
         root.dataset.assemblyEnvironment='generated';
       }
       scene.environment=environment.texture;
       const shadowCanvas=document.createElement('canvas');shadowCanvas.width=128;shadowCanvas.height=128;
       const ctx=shadowCanvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,4,64,64,64);
-      gradient.addColorStop(0,'#182d24');gradient.addColorStop(.5,'#182d2480');gradient.addColorStop(1,'#182d2400');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
+      gradient.addColorStop(0,'#060807');gradient.addColorStop(.5,'#06080780');gradient.addColorStop(1,'#06080700');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
       const shadowTexture=new T.CanvasTexture(shadowCanvas);
       layout();
       const loadModel=async index=>{
@@ -317,6 +313,11 @@
             model=await loadSourceModel(name);
           }
           if(failed) return;
+          if(window.V2ProductStudio) window.V2ProductStudio.applyMaterials(model,name,T);
+          else {
+            const maskName={tramtrace:'mat_30',telemetry:'mat_48',pi:'mat_20'}[name];
+            model.group.traverse(object=>{if(object.isMesh&&(Array.isArray(object.material)?object.material:[object.material]).every(material=>material.name===maskName))object.castShadow=false;});
+          }
           window.V2HeroMotion.prepare(model.parts,{name});
           const shadow=new T.Mesh(new T.PlaneGeometry(1.5,1.5),new T.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false,opacity:.08}));
           models[index]=model;shadows[index]=shadow;scene.add(model.group);scene.add(shadow);
