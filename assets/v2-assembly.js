@@ -29,11 +29,19 @@
   let target = 0, current = 0, active = -1, width = 0, height = 0, entry = 0;
   let poses = [];
   const motionAllowed = () => !reduced.matches && !navigator.connection?.saveData;
-  const loadScript = source => new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = source; script.onload = resolve; script.onerror = reject;
-    document.head.append(script);
-  });
+  const pendingScripts = window.V2HeroScripts ||= new Map();
+  const loadScript = source => {
+    if (!pendingScripts.has(source)) {
+      const request = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = source; script.async = true;
+        script.onload = resolve; script.onerror = reject;
+        document.head.append(script);
+      }).catch(error => { pendingScripts.delete(source); throw error; });
+      pendingScripts.set(source, request);
+    }
+    return pendingScripts.get(source);
+  };
   let sourceFactories;
   const loadSourceModel = async name => {
     sourceFactories ||= Promise.all([
@@ -110,6 +118,8 @@
     selectors.forEach((link,index) => {
       if(index===next) link.setAttribute('aria-current','true');
       else link.removeAttribute('aria-current');
+      const [start,end]=windows[index];
+      link.style.setProperty('--chapter-progress',clamp((value-start)/(Math.min(end,1)-start)).toFixed(4));
     });
     root.dataset.assemblyActive = next<0 ? 'overview' : projects[next].name;
   };
@@ -141,9 +151,9 @@
     const leadStart=startScale*(small?1.2:1.7);
     const sideStart=startScale*(small?.57:.8);
     poses = [
-      [pose(0,0,-1.9,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.405,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
-      [pose(0,left,small ? -.2 : -1.65,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale*(small?.9:1),.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
-      [pose(0,right,small ? -.25 : -1.65,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
+      [pose(0,0,small?-1.9:-.95,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.405,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
+      [pose(0,left,small ? -.2 : -.8,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale*(small?.9:1),.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
+      [pose(0,right,small ? -.25 : -.8,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
     updateProgress();
     request();
@@ -203,6 +213,7 @@
     const introFade=1-ramp(current,.015,.10);
     intro.style.opacity=introFade.toFixed(4);
     intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
+    intro.style.setProperty('--assembly-separation',((1-introFade)*width*.035).toFixed(2));
     captionAt(current);
     progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
     if(renderer) {fitShadows();renderer.render(scene,camera);}
@@ -216,9 +227,9 @@
     loadingExperience?.suspend(true);
     root.classList.remove('is-enhanced'); root.classList.add('is-static');
     if(frame) cancelAnimationFrame(frame); frame=0; target=0; current=0;
-    intro.style.removeProperty('opacity'); intro.style.removeProperty('transform');
+    intro.style.removeProperty('opacity'); intro.style.removeProperty('transform'); intro.style.removeProperty('--assembly-separation');
     posters.forEach(poster=>poster.removeAttribute('style'));
-    selectors.forEach(link=>link.removeAttribute('aria-current'));
+    selectors.forEach(link=>{link.removeAttribute('aria-current');link.style.removeProperty('--chapter-progress');});
     caption.classList.remove('is-active');caption.style.opacity='0'; caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;
     if(ready) {entry=0; layout(); request();}
     else root.dataset.assemblyState='static';
@@ -235,11 +246,11 @@
       // Download prepared geometry alongside Three.js. Source CAD remains a
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
-        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=mechanics-20261003');
+        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=startup-20261007');
         projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
       })().catch(()=>{});
       const lighting=(async()=>{
-        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js');
+        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=startup-20261007');
         window.V2HeroEnvironment.prefetch().catch(()=>{});
       })().catch(()=>{});
       await Promise.all([

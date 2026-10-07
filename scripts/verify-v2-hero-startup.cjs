@@ -3,6 +3,7 @@
  * CHROMIUM_EXECUTABLE selects the test browser; HERO_STARTUP_OUT changes the
  * ignored evidence directory. Source CAD, materials, and the real renderer
  * remain active. Only network timing and a deliberate failed dependency vary.
+ * --static-only limits verification to reduced motion, Save Data and no-JS.
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -92,10 +93,16 @@ async function canvasHasInk(page) {
   const evidence = { capturedAt: new Date().toISOString(), cases: [], errors: [] };
   const observeErrors = page => page.on('pageerror', error => evidence.errors.push(error.message));
   try {
+    if (!process.argv.includes('--static-only')) {
     const desktop = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference' });
     const page = await desktop.newPage();
     observeErrors(page);
-    const three = gate(), pi = gate();
+    const three = gate(), pi = gate(), earlyStartup = gate();
+    const requests = [];
+    page.on('request', request => requests.push(new URL(request.url()).pathname));
+    // The async preparation can arrive after the scene has already started.
+    // Its shared promises must still avoid duplicate dependency downloads.
+    await page.route(/\/v2-hero-startup\.js(?:\?|$)/, async route => { await earlyStartup.promise; await route.continue(); });
     await page.route('**/three.min.js', async route => { await three.promise; await route.continue(); });
     await page.route(/\/models\/hero\/pi(?:\.idx)?\.bin(?:\.gz)?(?:\?|$)/, async route => { await pi.promise; await route.continue(); });
     await page.route('**/framework-pi-board.glb', async route => { await pi.promise; await route.continue(); });
@@ -103,6 +110,11 @@ async function canvasHasInk(page) {
       await page.goto(base + '/v2/', { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => Number(document.querySelector('[data-assembly]')?.dataset.heroLoadingFrames) > 3, null, { timeout: 15000 });
       assert.equal(await page.evaluate(() => Boolean(window.THREE)), false, 'The interactive loading scene must appear before Three.js');
+      if (!requests.includes('/assets/models/framework-pi/framework-pi-silk-front.svg')) {
+        await page.waitForRequest(request => new URL(request.url()).pathname === '/assets/models/framework-pi/framework-pi-silk-front.svg', {timeout:15000});
+      }
+      assert.ok(requests.includes('/assets/models/framework-pi/framework-pi-silk-front.svg'), 'The original Pi silk must start while its geometry download is still blocked');
+      earlyStartup.release();
       assert.equal(await page.locator('.v2-hero-loading').getAttribute('aria-hidden'), 'true', 'Decorative loading content must not be read as interface controls');
       assert.equal(await page.locator('.v2-hero-loading-canvas').evaluate(node => getComputedStyle(node).pointerEvents), 'none');
       await page.waitForFunction(() => {
@@ -173,10 +185,13 @@ async function canvasHasInk(page) {
       assert.equal(settled.modelsReady, 3);
       assert.equal(await page.locator(root).getAttribute('data-assembly-environment'), 'prepared', 'The normal path must use the identical prefiltered environment');
       assert.deepEqual(settled.boards, ['ready', 'ready', 'ready']);
+      for (const dependency of ['/assets/vendor/three.min.js', '/assets/v2-hero-assets.js', '/assets/v2-hero-environment.js', '/assets/v2-hero-motion.js']) {
+        assert.equal(requests.filter(url => url === dependency).length, 1, 'Late async startup must share the dependency request: ' + dependency);
+      }
       assert.equal(await page.locator('[data-assembly-posters] img').nth(2).evaluate(node => Number(getComputedStyle(node).opacity) < .05), true);
       await page.screenshot({ path: path.join(output, 'desktop-complete.png') });
       evidence.cases.push({ name: 'independent model handoff and finite animation', partial, settled });
-    } finally { three.release(); pi.release(); await desktop.close(); }
+    } finally { three.release(); pi.release(); earlyStartup.release(); await desktop.close(); }
 
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: 'no-preference' });
     const phone = await mobile.newPage();
@@ -234,6 +249,7 @@ async function canvasHasInk(page) {
     await fallback.waitForFunction(() => document.querySelector('[data-assembly]').dataset.heroLoadingState === 'settled');
     evidence.cases.push({ name: 'prepared-lighting failure recovers original lighting', ...await loaderState(fallback) });
     await lightingFallback.close();
+    }
 
     for (const mode of ['reduced-motion', 'save-data', 'no-js']) {
       const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: mode === 'reduced-motion' ? 'reduce' : 'no-preference', javaScriptEnabled: mode !== 'no-js' });
@@ -250,6 +266,13 @@ async function canvasHasInk(page) {
         assert.equal(state.frames, 0);
       }
       await page.screenshot({ path: path.join(output, mode + '.png') });
+      for (const viewport of [{width:320,height:740},{width:600,height:670}]) {
+        await page.setViewportSize(viewport);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${mode} must fit at ${viewport.width}px`);
+        const title = await page.locator('#hero-title').boundingBox();
+        assert.ok(title.x >= 0 && title.x + title.width <= viewport.width, `${mode} masthead must fit at ${viewport.width}px`);
+        await page.screenshot({ path: path.join(output, `${mode}-${viewport.width}.png`) });
+      }
       evidence.cases.push({ name: mode, heavyRequests: heavy });
       await context.close();
     }

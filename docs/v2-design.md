@@ -1,10 +1,10 @@
 # V2 — hardware, inside and out
 
-Revised 3 October 2026. The portfolio lives at `/v2/` and contains 15 projects, including the expanded electronics collection and Coaster. The standalone browser tools are not presented as portfolio projects.
+Revised 7 October 2026. The portfolio lives at `/v2/` and contains 15 projects, including the expanded electronics collection and Coaster. The standalone browser tools are not presented as portfolio projects.
 
 ## Visual direction
 
-The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses deep charcoal, soft white text and pale blue links. Dark image surfaces suit the original black-background photographs. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections leaves enough space to see how the parts relate.
+The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses warm charcoal, chalk-white text and a restrained vermilion accent. Dark image surfaces suit the original black-background photographs. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections leaves enough space to see how the parts relate.
 
 The opening is a full-screen, scroll-controlled scene led by TramTrace, followed by Skylabs telemetry and the Raspberry Pi card. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their registered positions; reverse scrolling reconstructs the same assembly.
 
@@ -13,6 +13,18 @@ Project names and concise descriptions carry the interface. CAD provenance belon
 The October 3 cleanup applies the Instagram reel's criticism of generic portfolio styling to v2. TramTrace leads the home with a photograph of the working display; Skylabs, Dual USB-C, Coaster and the RF board follow as photographic projects, while Logic Analyser and Tamagotchi use compact board rows. Navigation surfaces are opaque. Hero project links use a flat active underline, and catalogue arrows no longer sit inside decorative circles. The original fonts, dark palette and physical CAD animation remain.
 
 Ordinary headings, prose, project cards and gallery images no longer receive blanket entrance animations. The `v2-motion` imports are removed from both the authored home and the interior generator. Pi copy describes its layout and mechanical dimensions directly; Skylabs no longer repeats its system summary and viewer CTA. Source-rendering commentary is removed from captions and alt text without deleting testing limitations.
+
+### 7 October: hardware folio
+
+The new identity uses Andrew's full name as the opening masthead, heavy uppercase Archivo headings, hard image edges and ruled factual strips. IBM Plex Mono is reserved for real project specifications, dates and small supporting text. The name separates with the assembly's existing scroll position; the project selector's chapter rules show each assembly's progress. Native scrolling, still-image fallbacks and reduced-motion behavior remain intact.
+
+Case-study titles now span the page above the introduction and hardware image. The collection uses a compact three-column catalogue on desktop, two columns on tablets and one on phones. About follows the same typography with a readable professional history. The independent CAD viewers share neutral dark stages, square Assemble/Disassemble controls and compact component readouts. Board geometry, materials, housing and screws are unchanged by the theme work. The accent `#fa7148` against the page background `#141412` has a calculated contrast ratio of 6.61:1.
+
+Reference access was partial. The public caption of [DcWQCQdN28T](https://www.instagram.com/reel/DcWQCQdN28T/) covered tools and workflow. The video in [DcWTIryEqNy](https://www.instagram.com/reel/DcWTIryEqNy/) was observed and showed component-library motion. [DbqYVjazc5Q](https://www.instagram.com/reels/DbqYVjazc5Q/) and [DcEJDHBTyPY](https://www.instagram.com/reels/DcEJDHBTyPY/) were gated by Instagram login. No unseen rules from those two references are attributed to this implementation.
+
+The October 7 static checks pass for all 25 v2 HTML pages, the 15-project inventory, local assets and navigation. Both interior generators reproduce their 23 pages. The v3 mirrors are regenerated only to keep their shared content current; v2 remains the active design.
+
+The theme acceptance suite passes all 23 public routes at 1440 px and 390 px, including mobile navigation and relevant board/tool states. It reports no text-contrast, light-surface or horizontal-overflow findings, no page errors and no failed resources. Fresh Pi desktop/mobile and TramTrace desktop screenshots were also inspected; the Pi housing and both screws remain visible. The motion suite also passes desktop, laptop, tablet, 390 px and 320 px chapters, keyboard selection, idle suspension, live motion-preference changes and context loss. The startup suite passes delayed dependencies, late-script request deduplication, concurrent original-silkscreen loading, pointer/touch interaction, lighting failure recovery and all static preferences. The browser regression passes collection search, navigation and assembly controls. Narrow Pi caption clearance and static posters at 320/390/600 px were refined during visual review; static acceptance was rerun after the sizing fix.
 
 ## Interaction
 

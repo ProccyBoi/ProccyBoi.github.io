@@ -146,6 +146,7 @@ async function profile(browser,index){
       modelHttpDecodedBytes:modelRequests.reduce((sum,record)=>sum+record.decodedBodyBytes,0),
       modelBytesBeforeFirstCad:modelRequests.filter(record=>record.endMs<=measured.firstCadMs).reduce((sum,record)=>sum+record.bytes,0),
       modelRequests,scriptRequests:transferred.filter(record=>/\.js$/.test(record.url)),
+      textureRequests:transferred.filter(record=>/silk(?:-front|-back)?\.svg$/.test(record.url)),
     },blocking:{
       longTaskCount:measured.longTasks.length,
       longTaskTotalMs:round(measured.longTasks.reduce((sum,task)=>sum+task.duration,0)),

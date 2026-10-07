@@ -6,7 +6,7 @@ The build runs the existing factories once and records their final geometry, mat
 
 The hero downloads these prepared assets alongside Three.js, directly creates their renderable buffers and loads the original silkscreens. It no longer needs GLTFLoader or the two source factories on a successful normal visit. A failed prepared asset uses the corresponding source factory; a failed source keeps that project's moving poster. Reduced motion and Save Data retain the static composition without downloading either set of models.
 
-Packs ship as explicit `.idx.bin.gz` files, decoded with the browser's native `DecompressionStream`. This keeps delivery compressed regardless of the host's MIME policy. Before compression, each triangle-index array is rearranged into byte lanes; the browser reverses that arrangement into the exact original bytes. Vertices, triangle order and material data do not change. The three files total 2,366,153 bytes, 26.8% less than the preceding 3,234,732-byte gzip assets. Decoding yields between bounded chunks when its work exceeds an 8 ms budget.
+Packs ship as explicit `.idx.bin.gz` files, decoded with the browser's native `DecompressionStream`. This keeps delivery compressed regardless of the host's MIME policy. Before compression, each triangle-index array is rearranged into byte lanes; the browser reverses that arrangement into the exact original bytes. Vertices, triangle order and material data do not change. The current three files total 2,541,070 bytes, including the Pi housing and mounting screws. Decoding yields between bounded chunks when its work exceeds an 8 ms budget.
 
 Browsers without native decompression use the identical `.bin` data. The preceding `.bin.gz` files remain available for cached older loaders. New filenames and a versioned loader URL prevent a cached old script from receiving the new transport format.
 
@@ -22,7 +22,9 @@ The light sweep uses small cached alpha masks on the same 2D canvas. The field a
 
 The original PMREM studio environment is baked into a 124,717-byte compressed asset. All 768×768 native RGBE texels, their encoding, filtering and layout are preserved. `scripts/build-v2-hero-environment.cjs` compares the source and prepared environment across all three complete CAD models in both assembled and exploded poses; all six comparisons produced zero changed pixel channels. `--verify` checks an existing build. Failed prepared lighting falls back to the same original PMREM construction.
 
-The geometry files and lighting download together while Three.js starts. The original SVG silkscreens begin fetching as soon as model headers are available and their Image objects are reused at full resolution when textures are constructed.
+The geometry files and lighting download together while Three.js starts. The original SVG silkscreens begin fetching alongside their geometry, removing the previous dependency on a fully downloaded and decoded pack. Their Image objects are reused at full resolution when textures are constructed; the pack's texture properties remain authoritative.
+
+The homepage's small async `v2-hero-startup.js` queues the unchanged Three.js and motion runtime before CAD resources compete for the connection. It then starts the geometry and lighting helpers. The scene uses the same script promises if it initializes first or while these requests are in flight. Failed early requests can be retried by normal scene initialization. This work never gates the poster scene, native page scrolling, or navigation. Both the early startup and scene retain the reduced-motion and Save Data guards.
 
 ## Rebuilding
 
@@ -34,9 +36,9 @@ Serve the repository root, then run `node scripts/build-v2-hero-assets.cjs`. `V2
 | --- | ---: | ---: | ---: |
 | TramTrace | 31 | 104 | 96,514 |
 | Telemetry | 54 | 166 | 224,256 |
-| Raspberry Pi | 33 | 87 | 49,564 |
+| Raspberry Pi | 36 | 90 | 59,762 |
 
-All counts match the previous hero. Indexing only combines vertices whose complete attributes are identical.
+The table counts unique geometry buffers, matching the manifest. The Pi's two screws share one 5,716-triangle buffer, so traversing all mesh instances reports 65,478 Pi triangles. Across the three models this is 380,532 unique triangles or 386,248 mesh-instance triangles. Indexing only combines vertices whose complete attributes are identical.
 
 ## Lighting and motion
 
@@ -47,6 +49,7 @@ Hero motion has separate lift-off, spread, rotation and settling phases. Compone
 ## Verification and measurement
 
 - `node scripts/verify-v2-hero-startup.cjs` checks pre-WebGL pointer/touch interaction, actual magnification, mobile scrolling and links, per-model handoff, animation suspension, motion preferences and prepared-lighting recovery.
+- `node scripts/verify-v2-hero-prefetch.cjs` checks exact texture URL parity with committed pack headers, texture requests while geometry is blocked, shared downloads, failed-helper retry, and reduced-motion/Save Data suppression without a browser.
 - `node scripts/verify-v2-hero-choreography.cjs` checks deterministic trajectories, reverse sampling, exact reassembly and bounded movement without changing geometry or materials.
 - `node scripts/verify-v2-cad-motion.cjs` checks the actual rendered assemblies, physical reference coverage and desktop/phone framing.
 - `node scripts/verify-v2-hero-loading.cjs` checks progressive loading, prepared-asset recovery and poster fallbacks.
@@ -82,3 +85,17 @@ The interactive-loading update uses a fresh three-run comparison against the com
 | Geometry and prepared-lighting transfer, including headers | 3.235 MB | 2.492 MB |
 
 The main board becomes ready about 44% sooner and the first CAD about 35% sooner. All-model readiness improves only slightly: its observed range is 4.361–4.663 s versus 4.131–4.849 s before. The remaining first-render shader work is hardware-dependent; the longest individual task does not improve in this comparison. Geometry alone is 26.8% smaller on the wire, and geometry plus the new lighting asset is about 23% smaller than the previous geometry download. Every run preserves the same groups, meshes and 370,334 triangles and requires the prepared assets and lighting without source fallback.
+
+## Parallel startup, 7 October 2026
+
+An isolated copy of committed `9bb87f1` was compared with the startup-only changes, keeping its original theme and layout. The same cold-cache 10 Mbps / 40 ms fixture and software renderer above were used for three runs per version. A second baseline set was then run to check host variability. Reports are in `.codex-temp/hero-startup-20261007/`; `before.json`, `before-repeat.json` and `after-priority.json` contain the retained comparison. Medians:
+
+| Measurement | Baseline | Repeated baseline | Parallel startup |
+| --- | ---: | ---: | ---: |
+| Lead poster eligible for paint | 0.304 s | 0.295 s | 0.289 s |
+| Loading interaction starts | 0.397 s | 0.385 s | 0.379 s |
+| First CAD assembly ready | 2.678 s | 2.778 s | 2.763 s |
+| Lead TramTrace ready | 2.741 s | 2.844 s | 2.838 s |
+| All three assemblies ready | 5.597 s | 5.966 s | 4.002 s |
+
+All-model readiness improved in these runs, while first-CAD readiness remained around 2.7 seconds. Individual all-model times varied from 4.239–6.007 seconds for the six baseline runs and 3.882–5.972 seconds for the three final runs; do not present the median improvement as a guaranteed device-level speedup. The image dependency waterfall is removed, but shader work remains hardware-dependent. Each run retains exactly the same geometry counts, 2,666,556 transferred CAD/environment bytes including response headers, original textures, lighting, and 363 overview draw calls. No pack, material, mesh, shadow setting or texture resolution changed.

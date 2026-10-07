@@ -3,6 +3,14 @@
   'use strict';
   const names = new Set(['tramtrace', 'telemetry', 'pi']);
   const versions = {pi:'mechanics-20261003'};
+  // These are the original textures recorded in the lossless packs. Discover
+  // them before the geometry arrives, rather than adding a network round trip
+  // after decompression and index restoration. The pack remains authoritative.
+  const textureSources = {
+    tramtrace:['/assets/images/v2/tramtrace-silk.svg'],
+    telemetry:['/assets/models/hardware/skylabs-telemetry/silk-front.svg', '/assets/models/hardware/skylabs-telemetry/silk-back.svg'],
+    pi:['/assets/models/framework-pi/framework-pi-silk-front.svg']
+  };
   const pending = new Map();
   const headers = new Map(), images = new Map();
   function header(buffer) {
@@ -53,6 +61,7 @@
   }
   function prefetch(name) {
     if (!names.has(name)) return Promise.reject(new Error('Unknown hero assembly: ' + name));
+    textureSources[name].forEach(url => image(url).catch(() => {}));
     if (!pending.has(name)) pending.set(name, fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin') + (versions[name] ? '?v=' + versions[name] : '')).then(async response => {
       if (!response.ok) throw new Error('Hero assembly unavailable');
       const bytes = await response.arrayBuffer();
