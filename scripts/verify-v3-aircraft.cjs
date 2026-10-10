@@ -200,12 +200,13 @@ async function filmGeometry(page) {
 }
 async function framing(page, value) {
   await seek(page, 'seekProgress', value);
-  return page.evaluate(() => {
+  return page.evaluate(value => {
     const { flight, camera } = window.__v3Aircraft, T = window.THREE;
     camera.updateMatrixWorld(true);
     let outside = 0, vertices = 0;
     flight.carrier.traverse(mesh => {
       if (!mesh.isMesh || !mesh.visible) return;
+      if (flight.statistics.detailedFilm && value > .35 && mesh.userData.filmSurface) return;
       let ancestor = mesh; while (ancestor && ancestor !== flight.board) ancestor = ancestor.parent;
       if (ancestor === flight.board) return;
       const point = new T.Vector3(), positions = mesh.geometry.attributes.position;
@@ -215,7 +216,7 @@ async function framing(page, value) {
       }
     });
     return { outside, vertices, near: camera.near };
-  });
+  }, value);
 }
 async function sceneCase(browser) {
   const run = await open(browser), { page } = run;

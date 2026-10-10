@@ -66,13 +66,28 @@
   // Source wrappers have two end rings. Subdivide only derived film, so the
   // released skin can carry tension, spanwise curvature and a travelling peel.
   // Every added point lies on the same ruled envelope at the assembled pose.
+  function orientFilm(T, geometry) {
+    const indices = geometry.index, positions = geometry.attributes.position, normals = geometry.attributes.normal;
+    if (!indices || !normals) return;
+    const a = new T.Vector3(), b = new T.Vector3(), c = new T.Vector3(), normal = new T.Vector3();
+    for (let index = 0; index < indices.count; index += 3) {
+      a.fromBufferAttribute(positions, indices.getX(index)); b.fromBufferAttribute(positions, indices.getX(index + 1)); c.fromBufferAttribute(positions, indices.getX(index + 2));
+      b.sub(a).cross(c.sub(a)); normal.fromBufferAttribute(normals, indices.getX(index));
+      const orientation = b.dot(normal);
+      if (Math.abs(orientation) < 1e-14) continue;
+      if (orientation < 0) for (let triangle = 0; triangle < indices.count; triangle += 3) {
+        const second = indices.getX(triangle + 1); indices.setX(triangle + 1, indices.getX(triangle + 2)); indices.setX(triangle + 2, second);
+      }
+      break;
+    }
+  }
   function resolveFilm(T, mesh) {
     const source = mesh.geometry, uv = source.attributes.uv;
     const count = mesh.userData.ringVertexCount;
     if (!count || source.attributes.position.count !== count * 2 || !uv) return source.clone();
     const a = new T.Vector3().fromBufferAttribute(source.attributes.position, 0);
     const b = new T.Vector3().fromBufferAttribute(source.attributes.position, count);
-    const rows = Math.max(7, Math.min(19, Math.ceil(a.distanceTo(b) / .035) + 1));
+    const rows = mesh.userData.filmRegion === 'fuselage' ? 49 : Math.max(7, Math.min(19, Math.ceil(a.distanceTo(b) / .035) + 1));
     const geometry = new T.BufferGeometry();
     for (const [name, attribute] of Object.entries(source.attributes)) {
       const array = new Float32Array(rows * count * attribute.itemSize);
@@ -88,11 +103,121 @@
       const start = row * count + vertex, next = start + count;
       indices.push(next, start + 1, start, next, next + 1, start + 1);
     }
-    geometry.setIndex(indices); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+    geometry.setIndex(indices); orientFilm(T, geometry); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
     return geometry;
+  }
+  // Covering film is applied as upper/lower sheets joined at the leading
+  // and trailing seams. Opening those authored seams avoids turning a closed
+  // aircraft envelope into a giant hoop. Only derived film is split; each
+  // assembled vertex still lies exactly on the original surface.
+  function filmPanels(T, part) {
+    const wrappers = [];
+    part.object.traverse(mesh => { if (mesh.isMesh && mesh.userData.filmSurface === 'wrap') wrappers.push(mesh); });
+    for (const mesh of wrappers) {
+      const resolved = resolveFilm(T, mesh), count = mesh.userData.ringVertexCount;
+      if (!count || resolved.attributes.position.count % count) continue;
+      const rows = resolved.attributes.position.count / count, positions = resolved.attributes.position;
+      let leading = 0;
+      for (let index = 1; index < count - 1; index++) if (positions.getX(index) > positions.getX(leading)) leading = index;
+      if (leading < 2 || leading > count - 3) { resolved.dispose(); continue; }
+      const centres = [new T.Vector3(), new T.Vector3()];
+      for (let index = 0; index < count; index++) for (let end = 0; end < 2; end++) centres[end].add(new T.Vector3().fromBufferAttribute(positions, end * (rows - 1) * count + index));
+      centres.forEach(centre => centre.divideScalar(count));
+      for (let side = 0; side < 2; side++) {
+        const columns = side ? Array.from({ length: count - leading }, (_, index) => leading + index) : Array.from({ length: leading + 1 }, (_, index) => leading - index);
+        const geometry = new T.BufferGeometry(), columnsCount = columns.length;
+        for (const [name, attribute] of Object.entries(resolved.attributes)) {
+          const array = new Float32Array(rows * columnsCount * attribute.itemSize);
+          for (let row = 0; row < rows; row++) for (let column = 0; column < columnsCount; column++) for (let axis = 0; axis < attribute.itemSize; axis++) {
+            array[(row * columnsCount + column) * attribute.itemSize + axis] = attribute.array[(row * count + columns[column]) * attribute.itemSize + axis];
+          }
+          geometry.setAttribute(name, new T.BufferAttribute(array, attribute.itemSize, attribute.normalized));
+        }
+        const uv = geometry.attributes.uv;
+        for (let row = 0; row < rows; row++) {
+          const first = uv.getX(row * columnsCount), last = uv.getX((row + 1) * columnsCount - 1);
+          for (let column = 0; column < columnsCount; column++) uv.setX(row * columnsCount + column, (uv.getX(row * columnsCount + column) - first) / (last - first));
+        }
+        const indices = [];
+        for (let row = 0; row < rows - 1; row++) for (let column = 0; column < columnsCount - 1; column++) {
+          const a = row * columnsCount + column, b = a + columnsCount;
+          if (side) indices.push(b, a + 1, a, b, b + 1, a + 1);
+          else indices.push(b, a, a + 1, b, a + 1, b + 1);
+        }
+        geometry.setIndex(indices); orientFilm(T, geometry); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+        const panel = new T.Mesh(geometry, mesh.material); panel.name = mesh.name + '-sheet-' + side;
+        panel.position.copy(mesh.position); panel.quaternion.copy(mesh.quaternion); panel.scale.copy(mesh.scale);
+        panel.userData = { ...mesh.userData, separatedFilmPanel: true, ringVertexCount: columnsCount, ringCount: rows, peelCentres: centres.map(centre => centre.toArray()) };
+        if (part.filmRegion === 'fuselage') {
+          // The fuselage is long and narrow. Peel its crown/belly ACROSS the
+          // short width, not around the metre-long side profile: one broad
+          // covering sheet comes away instead of becoming a forward banner.
+          const middle = new T.Vector3().fromBufferAttribute(geometry.attributes.position, Math.floor(columnsCount * .5));
+          const normal = [0, middle.y >= centres[0].y ? 1 : -1, 0];
+          for (let vertex = 0; vertex < uv.count; vertex++) { const u = uv.getX(vertex); uv.setX(vertex, uv.getY(vertex)); uv.setY(vertex, u); }
+          panel.userData.shortAxisPeel = true; panel.userData.panelNormal = normal;
+          panel.userData.peelAxis = [1, 0, 0]; delete panel.userData.peelCentres;
+        }
+        mesh.parent.add(panel);
+      }
+      mesh.parent.remove(mesh); resolved.dispose();
+    }
+  }
+  // The authored end tabs are triangle fans. Re-tessellate their planar
+  // profile into narrow chord strips so a bend cannot turn a long fan edge
+  // into a dark, folded-over sliver. Boundary points remain on the same cap.
+  function resolvedCap(T, mesh) {
+    const source = mesh.geometry, positions = source.attributes.position, index = source.index;
+    if (!index || mesh.userData.filmRegion === 'fuselage') return source.clone();
+    const edges = new Map();
+    for (let i = 0; i < index.count; i += 3) for (let side = 0; side < 3; side++) {
+      const a = index.getX(i + side), b = index.getX(i + (side + 1) % 3), key = Math.min(a, b) + ':' + Math.max(a, b);
+      if (edges.has(key)) edges.get(key).count++; else edges.set(key, { a, b, count: 1 });
+    }
+    const boundary = [...edges.values()].filter(edge => edge.count === 1), levels = [];
+    const bounds = new T.Box3().setFromBufferAttribute(positions);
+    boundary.forEach(edge => levels.push(positions.getX(edge.a), positions.getX(edge.b)));
+    for (let step = 0; step <= 48; step++) levels.push(bounds.min.x + (bounds.max.x - bounds.min.x) * step / 48);
+    levels.sort((a, b) => a - b);
+    const xs = levels.filter((value, i) => !i || value - levels[i - 1] > 1e-8);
+    const transverse = Math.abs(mesh.userData.peelAxis[1]) > .5 ? 2 : 1;
+    const arrays = Object.fromEntries(Object.keys(source.attributes).map(name => [name, []]));
+    for (const x of xs) {
+      const samples = [];
+      for (const edge of boundary) {
+        const a = positions.getX(edge.a), b = positions.getX(edge.b);
+        if (x < Math.min(a, b) - 1e-8 || x > Math.max(a, b) + 1e-8) continue;
+        const blends = Math.abs(a - b) < 1e-9 ? [0, 1] : [clamp((x - a) / (b - a))];
+        for (const blend of blends) {
+          const sample = {};
+          for (const [name, attribute] of Object.entries(source.attributes)) sample[name] = Array.from({ length: attribute.itemSize }, (_, component) => attribute.array[edge.a * attribute.itemSize + component] * (1 - blend) + attribute.array[edge.b * attribute.itemSize + component] * blend);
+          samples.push(sample);
+        }
+      }
+      samples.sort((a, b) => a.position[transverse] - b.position[transverse]);
+      for (const sample of [samples[0], samples[samples.length - 1]]) for (const name of Object.keys(arrays)) arrays[name].push(...sample[name]);
+    }
+    const geometry = new T.BufferGeometry();
+    for (const [name, array] of Object.entries(arrays)) geometry.setAttribute(name, new T.Float32BufferAttribute(array, source.attributes[name].itemSize));
+    const indices = [];
+    for (let row = 0; row < xs.length - 1; row++) { const a = row * 2; indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    geometry.setIndex(indices); orientFilm(T, geometry); return geometry;
+  }
+  // A finite circular fold followed by its tangent: a tensioned free sheet,
+  // rather than a multi-turn spiral. Both regions conserve material length.
+  function pulledSheet(length, radius, angle, output, tailRadius = Infinity) {
+    const arc = Math.min(length, radius * angle), turn = arc / radius, tail = length - arc;
+    const relaxed = angle - tail / tailRadius;
+    // One shallow relaxation curve gives the free sheet a soft fall without
+    // adding ripples. Arc length and the tangent at the fold remain exact.
+    const tailX = Number.isFinite(tailRadius) ? tailRadius * (Math.sin(angle) - Math.sin(relaxed)) : tail * Math.cos(angle);
+    const tailY = Number.isFinite(tailRadius) ? tailRadius * (Math.cos(relaxed) - Math.cos(angle)) : tail * Math.sin(angle);
+    output[0] = radius * Math.sin(turn) + tailX;
+    output[1] = radius * (1 - Math.cos(turn)) + tailY;
   }
   function covering(T, part, detailed) {
     const patches = [];
+    if (detailed) filmPanels(T, part);
     const contourPoint = (points, u) => {
       let left = 0, right = points.length - 1;
       while (right - left > 1) { const middle = (left + right) >> 1; if (points[middle].u < u) left = middle; else right = middle; }
@@ -102,7 +227,7 @@
     part.object.traverse(mesh => {
       const surface = mesh.userData.filmSurface;
       if (!mesh.isMesh || !surface) return;
-      const geometry = detailed && surface === 'wrap' ? resolveFilm(T, mesh) : mesh.geometry.clone(); mesh.geometry = geometry;
+      const geometry = mesh.userData.separatedFilmPanel ? mesh.geometry : detailed && surface === 'cap' ? resolvedCap(T, mesh) : mesh.geometry.clone(); mesh.geometry = geometry;
       const attribute = geometry.attributes.position, rest = attribute.array.slice(), restNormals = geometry.attributes.normal.array.slice();
       attribute.setUsage(T.DynamicDrawUsage);
       const axis = new T.Vector3(...mesh.userData.peelAxis).normalize();
@@ -118,7 +243,10 @@
           points.sort((a, b) => a.u - b.u);
           let perimeter = 0; const centre = new T.Vector3();
           points.forEach((point, index) => { centre.add(point.point); if (index) perimeter += point.point.distanceTo(points[index - 1].point); });
-          rings.push({ points, perimeter, span: points[0] ? geometry.attributes.uv.getY(points[0].index) : 0, centre: centre.divideScalar(points.length) });
+          const span = points[0] ? geometry.attributes.uv.getY(points[0].index) : 0;
+          centre.divideScalar(points.length);
+          if (mesh.userData.peelCentres) centre.fromArray(mesh.userData.peelCentres[0]).lerp(new T.Vector3(...mesh.userData.peelCentres[1]), span);
+          rings.push({ points, perimeter, span, centre });
         }
       }
       const bounds = new T.Box3().setFromBufferAttribute(attribute), width = bounds.max.x - bounds.min.x;
@@ -134,32 +262,47 @@
               // A tensioned peel travels diagonally instead of releasing an
               // entire straight edge at once. Delayed rows never move vertices
               // ahead of the nominal peel front; both ends release exactly.
-              const lag = detailed ? .13 * Math.sin(Math.PI * amount) * (.25 + .75 * ring.span) : 0;
+              const lag = detailed ? .055 * Math.sin(Math.PI * amount) * (.15 + .85 * ring.span) : 0;
               const localAmount = Math.max(0, amount - lag);
-              const boundary = 1 - localAmount * 1.025;
+              const boundary = detailed ? 1 - localAmount : 1 - localAmount * 1.025;
               const front = contourPoint(points, boundary);
               // A short arc window turns the free curl continuously around a
               // polygon corner while leaving every attached vertex untouched.
               const tangent = contourPoint(points, boundary + .018).sub(contourPoint(points, boundary - .018)).normalize();
               const normal = new T.Vector3().crossVectors(axis, tangent).normalize();
-              if (normal.dot(front.clone().sub(ring.centre)) < 0) normal.negate();
-              const tension = detailed ? 7.8 - 2.1 * ramp(amount, .60, 1) : 9;
-              const radius = ring.perimeter / tension * (detailed ? 1 + .10 * Math.sin(ring.span * Math.PI * 2 + amount * 2) : 1);
+              if (mesh.userData.panelNormal) normal.fromArray(mesh.userData.panelNormal);
+              else if (normal.dot(front.clone().sub(ring.centre)) < 0) normal.negate();
+              const radius = detailed ? Math.max(.004, ring.perimeter * .11) : ring.perimeter / 9;
+              // A consistent pulling direction prevents the whole free sheet
+              // spinning as the peel front reaches a curved leading edge.
+              const side = Math.abs(axis.y) > .5 ? new T.Vector3(0, 0, 1) : new T.Vector3(0, 1, 0);
+              if (points[Math.floor(points.length * .5)].point.clone().sub(ring.centre).dot(side) < 0) side.negate();
+              const pull = mesh.userData.shortAxisPeel ? new T.Vector3(0, 0, -1).addScaledVector(normal, .44).normalize() : new T.Vector3(1, 0, 0).addScaledVector(side, .44).normalize();
+              const pullAngle = Math.max(.2, Math.min(Math.PI * .96, Math.atan2(pull.dot(normal), pull.dot(tangent))));
               const curled = [0, 0], result = new T.Vector3();
               for (const point of points) {
                 if (point.u <= boundary) { patch.attached++; continue; }
-                curlAt((point.u - boundary) * ring.perimeter / radius, curled);
-                result.copy(front).addScaledVector(tangent, curled[0] * radius).addScaledVector(normal, curled[1] * radius);
-                if (detailed) {
-                  const free = smooth((point.u - boundary) / Math.max(.001, 1 - boundary));
-                  const billow = Math.sin(ring.span * Math.PI * 2 + point.u * 4 - amount * 5);
-                  // The squared falloff preserves the tangent where the film
-                  // is still adhered. All flutter is scroll-derived, never a loop.
-                  result.addScaledVector(normal, ring.perimeter * .025 * free * free * billow * Math.sin(amount * Math.PI * .85));
-                  result.addScaledVector(axis, ring.perimeter * .012 * free * free * Math.sin(point.u * 8 + amount * 5) * Math.sin(Math.PI * ring.span));
-                }
+                if (detailed) pulledSheet((point.u - boundary) * ring.perimeter, radius, pullAngle, curled, ring.perimeter * 3.5);
+                else curlAt((point.u - boundary) * ring.perimeter / radius, curled);
+                result.copy(front).addScaledVector(tangent, curled[0] * (detailed ? 1 : radius)).addScaledVector(normal, curled[1] * (detailed ? 1 : radius));
                 result.toArray(attribute.array, point.index * 3); patch.peeled++;
               }
+            }
+          } else if (amount > 0 && detailed) {
+            // End tabs follow the same localized fold, rather than bending
+            // their entire width into another broad crescent.
+            const extents = bounds.getSize(new T.Vector3()).toArray(), components = ['x', 'y', 'z'];
+            const available = components.filter((component, index) => Math.abs(outward[component]) < .5 && extents[index] > .0001);
+            const along = part.filmRegion === 'fuselage' ? available.sort((a, b) => bounds.max[a] - bounds.min[a] - (bounds.max[b] - bounds.min[b]))[0] || 'x' : 'x';
+            const capNormal = outward;
+            const length = bounds.max[along] - bounds.min[along];
+            const front = bounds.min[along] + length * amount, radius = Math.max(.002, length * .11), point = new T.Vector3(), bent = [0, 0];
+            for (let index = 0; index < attribute.count; index++) {
+              point.fromArray(rest, index * 3);
+              if (point[along] >= front) continue;
+              pulledSheet(front - point[along], radius, Math.PI - Math.atan(.44), bent, length * 3.5);
+              point[along] = front - bent[0]; point.addScaledVector(capNormal, bent[1]);
+              point.toArray(attribute.array, index * 3);
             }
           } else if (amount > 0) {
             // Separate end tabs fold away before the long wrapper releases.
@@ -222,7 +365,7 @@
       const role = item.category, ordinal = parts.length;
       const sign = centre.z < -.001 || role.endsWith('-left') ? -1 : centre.z > .001 || role.endsWith('-right') ? 1 : ordinal % 2 ? -1 : 1;
       let offset, start, end;
-      if (role === 'covering') { offset = new T.Vector3(centre.x * .08, .20 + ordinal % 3 * .035, sign * .15); start = .045 + ordinal % 5 * .009; end = .31 + ordinal % 3 * .018; }
+      if (role === 'covering') { offset = detailed ? new T.Vector3(.12, .48 + ordinal % 3 * .04, (item.filmRegion === 'fuselage' ? 1 : sign) * (item.filmRegion === 'fuselage' ? 1.05 : .85)) : new T.Vector3(centre.x * .08, .20 + ordinal % 3 * .035, sign * .15); start = .045 + ordinal % 5 * .009; end = .31 + ordinal % 3 * .018; }
       else if (role.startsWith('wing-')) { offset = new T.Vector3(.02, sign > 0 ? .28 : .20, sign * .65); start = .36 + (sign < 0 ? .025 : 0); end = .59; }
       else if (role.startsWith('horizontal-tail')) { offset = new T.Vector3(-.30, .18, sign * .35); start = .38; end = .64; }
       else if (role === 'vertical-tail') { offset = new T.Vector3(-.35, .42, .025); start = .39; end = .66; }
@@ -292,10 +435,10 @@
     };
     const appearanceEntries = [...materials.values(), ...filmMaterials.values()];
     function fadeAirframe(amount) {
-      // Every wrap has finished releasing by .346. The loose sheets then
-      // clear together with a short, smooth fade; no caps or curls linger
-      // across the power/control inspection. Reversing restores them exactly.
-      const clearance = detailed ? ramp(progress, .355, .455) : 0;
+      // Every sheet finishes releasing before departure. Keep the full-size
+      // material opaque while it travels clear of the airframe, then fade
+      // only near the end of that exit. Reversing restores it exactly.
+      const clearance = detailed ? ramp(progress, .52, .60) : 0;
       for (const entry of appearanceEntries) {
         const fade = entry.film ? 1 - (1 - amount) * (1 - clearance) : amount;
         const transparent = entry.transparent || fade > 0;
@@ -340,13 +483,13 @@
     }
     function setProgress(value) {
       landing = 1; progress = clamp(value); restore(); grounded(restPitch);
-      carrier.position.y += .48 * ramp(progress, .25, .48);
+      carrier.position.y += .48 * ramp(progress, detailed ? .045 : .25, detailed ? .22 : .48);
       let separated = 0;
       for (const part of parts) {
         const amount = ramp(progress, part.start, part.end);
         if (part.filmPatches) {
-          part.filmPatches.forEach(patch => patch.deform(patch.surface === 'wrap' ? amount : ramp(progress, part.start - .015, part.start + .12)));
-          const release = ramp(progress, part.end, detailed ? .455 : .53);
+          part.filmPatches.forEach(patch => patch.deform(detailed || patch.surface === 'wrap' ? amount : ramp(progress, part.start - .015, part.start + .12)));
+          const release = ramp(progress, part.end, detailed ? .55 : .53);
           part.object.position.copy(part.base).addScaledVector(part.offset, release).addScaledVector(part.arc, Math.sin(Math.PI * release));
           if (detailed) {
             const turn = new T.Quaternion().setFromEuler(new T.Euler(part.turn.x * release, part.turn.y * release, part.turn.z * release));
@@ -395,7 +538,7 @@
       let distance = Math.exp(Math.log(wideDistance) * (1 - focus) + Math.log(closeDistance) * focus);
       const right = new T.Vector3(0, 1, 0).cross(direction).normalize(), up = direction.clone().cross(right).normalize();
       const tangent = Math.tan(16 * Math.PI / 180), sample = new T.Vector3();
-      let fitDistance = 0;
+      let fitDistance = 0, filmDistance = 0;
       if (inspection) {
         const bounds = systemBounds;
         let systemDistance = 0;
@@ -413,10 +556,21 @@
         const bounds = geometry.boundingBox;
         for (let index = 0; index < 8; index++) {
           sample.set(index & 1 ? bounds.max.x : bounds.min.x, index & 2 ? bounds.max.y : bounds.min.y, index & 4 ? bounds.max.z : bounds.min.z).applyMatrix4(mesh.object.matrixWorld).sub(target);
-          fitDistance = Math.max(fitDistance, sample.dot(direction) + Math.abs(sample.dot(right)) / (tangent * aspect * .91), sample.dot(direction) + Math.abs(sample.dot(up)) / (tangent * (mobile ? .70 : .72)));
+          // Once unbonded, sheets leave the composition at full size. Do not
+          // zoom out to chase them; keep the camera with the revealed airframe.
+          if (detailed && mesh.film) sample.multiplyScalar(1 - ramp(progress, .35, .51));
+          const needed = Math.max(sample.dot(direction) + Math.abs(sample.dot(right)) / (tangent * aspect * .91), sample.dot(direction) + Math.abs(sample.dot(up)) / (tangent * (mobile ? .70 : .72)));
+          if (detailed && mesh.film) filmDistance = Math.max(filmDistance, needed); else fitDistance = Math.max(fitDistance, needed);
         }
       }
-      distance = Math.max(distance, fitDistance * (1 - ramp(progress, detailed ? .51 : .55, detailed ? .63 : .75)));
+      const fitting = 1 - ramp(progress, detailed ? .51 : .55, detailed ? .63 : .75);
+      if (detailed) {
+        // A conservative smooth maximum retains all required bounds without
+        // a zoom-velocity reversal when the departing sheet stops governing.
+        const soften = (a, b, width) => (a + b + Math.hypot(a - b, width)) * .5;
+        fitDistance = soften(fitDistance, filmDistance, wideDistance * .12);
+        distance = soften(distance, fitDistance * fitting, wideDistance * .12 * fitting);
+      } else distance = Math.max(distance, fitDistance * fitting);
       cameraPosition.copy(target).addScaledVector(direction, distance);
       camera.position.copy(cameraPosition); camera.up.set(0, 1, 0); camera.lookAt(target);
       camera.fov = 32; camera.aspect = aspect; camera.near = Math.max(.002, Math.min(.1, distance * .04)); camera.far = 80;

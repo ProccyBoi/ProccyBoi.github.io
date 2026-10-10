@@ -51,6 +51,9 @@ vm.runInThisContext(helpers);
    let outside=0,count=0;
    flight.carrier.traverse(mesh=>{
     if(!mesh.isMesh||!mesh.visible)return;
+    // Unbonded sheets deliberately exit at full size; keep testing every
+    // structural vertex and all film while the peel remains attached.
+    if(mesh.userData.filmSurface && progress>.35)return;
     let ancestor=mesh;while(ancestor&&ancestor!==flight.board)ancestor=ancestor.parent;if(ancestor===flight.board)return;
     const p=new THREE.Vector3(),positions=mesh.geometry.attributes.position;
     for(let i=0;i<positions.count;i++){p.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld).project(camera);count++;if(Math.abs(p.x)>1.001||Math.abs(p.y)>1.001||Math.abs(p.z)>1.001)outside++;}
@@ -73,17 +76,17 @@ vm.runInThisContext(helpers);
  flight.setProgress(1);assert.equal(flight.electronics.group.visible,false,'Telemetry close-up clears illustrative systems');
  // The whole wrapper (including both cap tabs) clears before the
  // electronics inspection, without an abrupt phone camera refit.
- for(const p of [.35,.455,.60,1,0]){
+ for(const p of [.35,.50,.52,.60,1,0]){
   flight.setProgress(p);
   for(const patch of flight.films){
    const materials=Array.isArray(patch.mesh.material)?patch.mesh.material:[patch.mesh.material];
-   if(p>=.455){assert.equal(patch.mesh.visible,false,'No dangling skin remains');materials.forEach(m=>assert.equal(m.opacity,0,'Skin fade ends fully'));}
+   if(p>=.60){assert.equal(patch.mesh.visible,false,'No dangling skin remains');materials.forEach(m=>assert.equal(m.opacity,0,'Skin fade ends fully'));}
    else {assert.equal(patch.mesh.visible,true,'Skin restored before release');materials.forEach(m=>assert.equal(m.opacity,1,'Attached skin remains opaque'));}
   }
  }
  for(const [w,h]of[[1440,900],[390,844],[320,740]]){
   let prior=null;
-  for(let n=448;n<=458;n++){flight.setProgress(n/1000);flight.frame(camera,w,h);if(prior)assert.ok(camera.position.distanceTo(prior)<.03,'Skin completion cannot snap the camera');prior=camera.position.clone();}
+  for(let n=490;n<=630;n++){flight.setProgress(n/1000);const frame=flight.frame(camera,w,h);if(prior)assert.ok(camera.position.distanceTo(prior)/frame.distance<.015,'Skin completion cannot snap the camera relative to its viewing distance');prior=camera.position.clone();}
  }
  const home=read('v3/index.html');assert.ok(!home.includes('data-aircraft-detail='),'Numbered view controls removed');assert.ok(!home.includes('v3-aircraft-details'),'Overlay markup removed');
  const systems=[];
