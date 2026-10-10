@@ -69,9 +69,8 @@ npm install --no-save playwright
 npx playwright install --with-deps chromium
 ```
 
-The suite uses the normal `playwright` package resolution first. The existing
-cloud environment's `/opt/codex/cua_node/lib/node_modules/playwright` is a fallback
-only; it is not required by CI.
+The suite uses the installed `playwright` package and its bundled Chromium by
+default. CI installs the pinned version defined in its workflow.
 
 Environment options:
 
@@ -119,7 +118,12 @@ A `--static-only` result explicitly excludes browser verification.
 
 The aircraft rendering test uses the production URL, without enabling the
 capture global. It checks keyboard destination navigation and records actual
-renderer state. The dedicated aircraft suite remains the deeper rendering,
+renderer state. Desktop stopped/telemetry captures are followed by a real resize
+to 390×844 and navigation back to Aircraft and onward to Telemetry. Each capture
+waits for a new rendered frame and the actual destination pose, verifies selected
+copy fits between the header and navigation, and rejects horizontal overflow.
+The mobile captures therefore show the live renderer with the Andrew Chung
+heading, rather than a motion-reduced poster. The dedicated aircraft suite remains the deeper rendering,
 lifecycle, context-loss and scene-framing check:
 
 ```sh
@@ -215,8 +219,8 @@ Browser interaction checks include:
   page, the board can pan inside its own viewport, and all 32 L4 pixels can be
   stepped through without a 3D renderer
 
-These browser additions need a fresh full-suite run; passing the source inventory
-alone does not certify their live behavior.
+The source inventory and browser interaction groups passed together in the
+second CI run recorded below.
 
 ### Initial CI result and test-harness correction
 
@@ -226,9 +230,8 @@ real gallery focus-containment issue and a redirect-test race. In the latter,
 `document.fonts.ready` was evaluated in the old Flight Review redirect document
 while that document was being replaced. The test now navigates, waits for the
 final `/shared/flight-review/` URL and its load event, and only then accesses
-fonts. The gallery containment assertion remains strict. These changes and the
-new TramTrace coverage require another CI run; the initial partial result is not
-a final acceptance pass.
+fonts. The gallery containment assertion remains strict. The initial partial result was not an acceptance pass; the corrected suite and
+new TramTrace coverage were checked together in the second run.
 
 
 ## Diagnostic performance measurements
@@ -241,3 +244,19 @@ and the renderer's frame counter. Values are observations from the local preview
 or CI machine, without network throttling or a physical phone. Zero transfer
 sizes may reflect cache or unavailable timing. These diagnostics are neither
 user-network/mobile benchmarks nor a synthetic performance score.
+
+## Observed browser acceptance
+
+[CI run 38092116611](https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/38092116611)
+passed all **23 of 23** source and browser test groups on commit
+`de3405e454e227f85f21293f4b9c5b587c98fa2d`. Chromium 143 rendered the real
+aircraft and all 153 telemetry components using SwiftShader. The integrated
+TramTrace controls, strict gallery focus containment, collection/history,
+responsive interiors and fallback modes all passed. Desktop and mobile full-page
+captures were taken only after scrolling each visible photograph into view and
+verifying its decoded dimensions, eliminating misleading lazy-load placeholders.
+
+The next acceptance run additionally captures and verifies the real rendered
+aircraft and telemetry destinations at 390 × 844, including selected-copy
+visibility, fit between fixed controls, completed transitions and new render
+frames. A resized desktop Chromium viewport is not a physical-device test.

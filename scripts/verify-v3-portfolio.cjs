@@ -180,6 +180,30 @@ async function staticAircraft(page) {
 async function approachAircraft(page) {
   await page.locator(hero).evaluate(node => scrollTo({ top: scrollY + node.getBoundingClientRect().top, behavior: 'instant' }));
 }
+async function selectedAircraftCopy(page, chapter) {
+  const copy = page.locator('[data-aircraft-copy] article[data-aircraft-chapter="' + chapter + '"]');
+  await page.waitForFunction(index => {
+    const node = document.querySelector('[data-aircraft-copy] article[data-aircraft-chapter="' + index + '"]');
+    return node && node.getAnimations({ subtree: true }).every(animation => !['running', 'pending'].includes(animation.playState));
+  }, chapter);
+  assert.equal(await copy.isVisible(), true, 'Selected aircraft copy is visible');
+  assert.equal(await copy.getAttribute('aria-hidden'), 'false');
+  assert.equal(await copy.evaluate(node => node.inert), false);
+  const bounds = await copy.boundingBox(), viewport = page.viewportSize();
+  const headerBottom = await page.locator('.v2-header').evaluate(node => node.getBoundingClientRect().bottom);
+  const navigationTop = await page.locator('[data-aircraft-nav]').evaluate(node => node.getBoundingClientRect().top);
+  assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, 'Selected copy fits viewport width');
+  assert.ok(bounds.y >= headerBottom - 1 && bounds.y + bounds.height <= Math.min(viewport.height, navigationTop) + 1, 'Selected copy fits between the header and aircraft navigation');
+}
+async function waitAircraftDestination(page, chapter, previousFrames) {
+  await page.waitForFunction(({ chapter, previousFrames }) => {
+    const state = document.querySelector('[data-aircraft-hero]').dataset;
+    return state.aircraftState === 'ready' && state.aircraftChapter === String(chapter) && Number(state.aircraftFrames) > previousFrames &&
+      (chapter === 0 ? state.aircraftPhase === 'stopped' && Number(state.aircraftProgress) < .01 : state.aircraftPhase === 'telemetry' && Number(state.aircraftProgress) > .99);
+  }, { chapter, previousFrames }, { timeout: 30000 });
+  await selectedAircraftCopy(page, chapter);
+  await noOverflow(page, 'Rendered aircraft destination ' + chapter);
+}
 async function searchCount(page, count) {
   await page.waitForFunction(({ selector, count }) => [...document.querySelectorAll(selector)].filter(node => !node.hidden && !node.closest('[hidden]')).length === count, { selector: primary, count });
   assert.equal(await page.locator(primary + ':visible').count(), count);
@@ -550,16 +574,35 @@ async function browserTests() {
     const skip = page.locator('[data-aircraft-skip]'); if (await skip.isVisible()) await skip.click();
     await page.locator('[data-aircraft-state="ready"]').waitFor({ timeout: 30000 });
     assert.equal(await page.locator(hero).getAttribute('data-aircraft-assembly-error'), '0.000000000');
+    await selectedAircraftCopy(page, 0); await noOverflow(page, 'Desktop rendered aircraft stopped');
+    await screenshot(page, 'desktop-aircraft-stopped');
+    const desktopStopped = await page.locator(hero).evaluate(node => ({ ...node.dataset }));
     await page.locator('[data-aircraft-go="0"]').focus(); await page.keyboard.press('ArrowRight');
     assert.equal(await page.locator('[data-aircraft-go="1"]').evaluate(node => node === document.activeElement), true);
+    const beforeDesktopTelemetry = Number(await page.locator(hero).getAttribute('data-aircraft-frames'));
     await page.keyboard.press('Enter');
-    await page.locator(hero + '[data-aircraft-chapter="1"]').waitFor({ timeout: 30000 });
+    await waitAircraftDestination(page, 1, beforeDesktopTelemetry);
     assert.equal(await page.locator('[data-aircraft-canvas]').isVisible(), true);
     assert.equal(await page.locator(hero).getAttribute('data-aircraft-telemetry-components'), '153');
     await noOverflow(page, 'Rendered aircraft'); await screenshot(page, 'desktop-aircraft-telemetry');
     const state = await page.locator(hero).evaluate(node => ({ ...node.dataset }));
+    const desktopPerformance = { ...(await performanceData(page)), firstFrameElapsedMs, telemetryReadyElapsedMs, renderedFrames: Number(state.aircraftFrames) };
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileStates = [];
+    for (const [chapter, name] of [[0, 'stopped'], [1, 'telemetry']]) {
+      const previousFrames = Number(await page.locator(hero).getAttribute('data-aircraft-frames'));
+      await page.locator('[data-aircraft-go="' + chapter + '"]').click();
+      await waitAircraftDestination(page, chapter, previousFrames);
+      assert.equal(await page.locator('[data-aircraft-canvas]').isVisible(), true);
+      if (chapter === 0) {
+        assert.equal(await page.locator(hero).getAttribute('data-aircraft-assembly-error'), '0.000000000');
+        assert.match(await page.locator('[data-aircraft-copy] article[data-aircraft-chapter="0"] h1').textContent(), /Andrew Chung/);
+      }
+      await screenshot(page, 'mobile-aircraft-' + name);
+      mobileStates.push({ viewport: { width: 390, height: 844 }, destination: name, state: await page.locator(hero).evaluate(node => ({ ...node.dataset })) });
+    }
     assert.equal(await page.evaluate(() => '__v3Aircraft' in window), false, 'Production URL does not expose a capture global');
-    return { renderer: 'rendered', state, performance: { ...(await performanceData(page)), firstFrameElapsedMs, telemetryReadyElapsedMs, renderedFrames: Number(state.aircraftFrames) } };
+    return { renderer: 'rendered', state, desktopStopped, mobileStates, performance: desktopPerformance };
   });
   await browserTest('responsive core pages without narrow or short viewport overflow', {}, async ({ page }) => {
     const sizes = [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }];
@@ -589,9 +632,7 @@ async function browserTests() {
   await staticTests();
   if (!staticOnly) {
     try {
-      let playwright;
-      try { playwright = require('playwright'); }
-      catch (error) { if (fs.existsSync('/opt/codex/cua_node/lib/node_modules/playwright')) playwright = require('/opt/codex/cua_node/lib/node_modules/playwright'); else throw error; }
+      const playwright = require('playwright');
       browser = await playwright.chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
       evidence.browser = { status: 'launched', version: browser.version(), executable: process.env.CHROMIUM_EXECUTABLE || 'Playwright bundled Chromium' };
       await browserTests();
