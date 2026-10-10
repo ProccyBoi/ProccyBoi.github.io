@@ -4,9 +4,6 @@
   if (!root) return;
   const deferred = root.hasAttribute('data-aircraft-deferred');
   const detailed = root.hasAttribute('data-aircraft-detailed');
-  const detailButtons = [...root.querySelectorAll('[data-aircraft-detail]')];
-  const detailCaption = root.querySelector('[data-aircraft-detail-caption]');
-  const detailNames = ['Film peels along the seam, then curls away.', 'Ribs, spars and control surfaces separate.', 'Battery, ESC, receiver and servos come into view.', 'Follow the power, motor and control connections.'];
   const stage = root.querySelector('[data-aircraft-stage]'), canvas = root.querySelector('canvas');
   const poster = root.querySelector('[data-aircraft-poster]'), skip = root.querySelector('[data-aircraft-skip]');
   const posterSources = [...root.querySelectorAll('[data-aircraft-picture] source')];
@@ -158,8 +155,6 @@
       root.dataset.aircraftAtmosphere = sky.toFixed(6);
       if (detailed) {
         const detail = pose.progress < .34 ? 0 : pose.progress < .49 ? 1 : pose.progress < .60 ? 2 : 3;
-        detailButtons.forEach((button, index) => button.setAttribute('aria-pressed', String(index === detail)));
-        if (detailCaption && detailCaption.textContent !== detailNames[detail]) detailCaption.textContent = detailNames[detail];
         root.dataset.aircraftDetail = String(detail);
       }
       renderFrame();
@@ -202,10 +197,10 @@
     try {
       await Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (!window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
-        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-detail-20261010'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
+        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-refine-20261010'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
         (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
-        script('/assets/v3-aircraft-atmosphere.js?v=sky-20261008').catch(() => {}),
-        detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-detail-20261010') : Promise.resolve()
+        script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
+        detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve()
       ]);
       if (failed || !allowed()) { loading = false; return; }
       const T = window.THREE;
@@ -214,7 +209,7 @@
       renderer.setPixelRatio(Math.min(devicePixelRatio || 1, width < 761 ? 1.35 : 1.65));
       window.V2ProductStudio.configureRenderer(renderer, T); renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;
       scene = new T.Scene(); camera = new T.PerspectiveCamera(32, width / height, .002, 80);
-      atmosphere = window.V3AircraftAtmosphere?.create(T);
+      atmosphere = window.V3AircraftAtmosphere?.create(T, { detailed });
       key = window.V2ProductStudio.createLights(T, scene).key;
       key.userData.direction.set(-3, 8, 5).normalize();
       const [aircraft, environment] = await Promise.all([window.V3AircraftScene.load(T), window.V2HeroEnvironment.load(T).catch(() => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);
@@ -232,6 +227,7 @@
         shader.uniforms.uGroundFar = groundUniforms.far;
         shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying float vGroundDepth;').replace('#include <project_vertex>', '#include <project_vertex>\nvGroundDepth = -mvPosition.z;');
         shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vGroundDepth; uniform float uSky; uniform float uGroundNear; uniform float uGroundFar;').replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.a *= uSky > 0.0 ? 1.0 - smoothstep(uGroundNear, uGroundFar, vGroundDepth) : 1.0;');
+        if (detailed) window.V3AircraftAtmosphere?.detailGround?.(shader);
       };
       const floorGeometry = new T.PlaneGeometry(100, 100);
       const floor = new T.Mesh(floorGeometry, floorMaterial); floor.rotation.x = -Math.PI / 2; floor.position.y = -.0007; scene.add(floor);
@@ -250,12 +246,6 @@
       ensureTelemetry();
     } catch (error) { fail(error); }
   }
-  detailButtons.forEach(button => button.addEventListener('click', () => {
-    if (!track) return;
-    endLanding(); capturePose = null;
-    const amount = Number(button.dataset.aircraftDetail);
-    scrollTo({ top: rootTop + distance * amount, behavior: reduced.matches ? 'instant' : 'smooth' });
-  }));
   skip.addEventListener('click', endLanding);
   links.forEach((link, index) => {
     link.addEventListener('click', endLanding);

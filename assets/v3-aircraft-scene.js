@@ -236,7 +236,7 @@
     const films = parts.filter(part => part.category === 'covering').flatMap(part => {
       const patches = covering(T, part, detailed); part.filmPatches = patches; return patches;
     });
-    const materials = new Map(), meshes = [];
+    const materials = new Map(), filmMaterials = new Map(), meshes = [];
     // Reparented groups are now carrier children, so inspect the carrier while
     // excluding the unchanged telemetry subtree.
     carrier.traverse(mesh => {
@@ -248,19 +248,21 @@
       while (electronicsAncestor && electronicsAncestor !== electronics?.group) electronicsAncestor = electronicsAncestor.parent;
       if (electronics && electronicsAncestor === electronics.group) { meshes.push({ object: mesh, visible: mesh.visible, electronics: true }); return; }
       mesh.castShadow = true; mesh.receiveShadow = true;
+      const materialCache = detailed && mesh.userData.filmSurface ? filmMaterials : materials;
       mesh.material = (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map(original => {
-        if (!materials.has(original)) materials.set(original, { material: original.clone(), opacity: original.opacity, transparent: original.transparent, depthWrite: original.depthWrite });
-        return materials.get(original).material;
+        if (!materialCache.has(original)) materialCache.set(original, { material: original.clone(), opacity: original.opacity, transparent: original.transparent, depthWrite: original.depthWrite, film: materialCache === filmMaterials });
+        return materialCache.get(original).material;
       });
       if (mesh.material.length === 1) mesh.material = mesh.material[0];
       if (mesh.userData.filmSurface) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(material => {
         material.side = T.DoubleSide;
         if (detailed) { material.roughness = .29; material.metalness = .08; }
       });
-      meshes.push({ object: mesh, visible: mesh.visible });
+      meshes.push({ object: mesh, visible: mesh.visible, film: !!mesh.userData.filmSurface });
     });
     const motor = originals.find(part => part.category === 'motor')?.object;
     if (electronics && motor) electronics.bindMotor?.(motor, carrier);
+    if (electronics) electronics.bindAirframe?.(parts, carrier);
     const prop = originals.find(part => part.category === 'propeller')?.object;
     const propBase = prop?.quaternion.clone();
     const propPosition = prop?.position.clone();
@@ -288,14 +290,25 @@
       board.position.copy(mount); board.rotation.set(0, 0, 0); board.scale.setScalar(1);
       if (prop && propBase) prop.quaternion.copy(propBase);
     };
+    const appearanceEntries = [...materials.values(), ...filmMaterials.values()];
     function fadeAirframe(amount) {
-      for (const entry of materials.values()) {
-        const transparent = entry.transparent || amount > 0;
+      // Every wrap has finished releasing by .346. The loose sheets then
+      // clear together with a short, smooth fade; no caps or curls linger
+      // across the power/control inspection. Reversing restores them exactly.
+      const clearance = detailed ? ramp(progress, .355, .455) : 0;
+      for (const entry of appearanceEntries) {
+        const fade = entry.film ? 1 - (1 - amount) * (1 - clearance) : amount;
+        const transparent = entry.transparent || fade > 0;
         if (entry.material.transparent !== transparent) { entry.material.transparent = transparent; entry.material.needsUpdate = true; }
-        entry.material.opacity = entry.opacity * (1 - amount);
-        entry.material.depthWrite = amount > 0 ? false : entry.depthWrite;
+        entry.material.opacity = entry.opacity * (1 - fade);
+        entry.material.depthWrite = fade > 0 ? false : entry.depthWrite;
       }
-      meshes.forEach(mesh => { if (mesh.electronics) return; mesh.object.visible = mesh.visible && amount < .999; mesh.object.castShadow = amount < .15; });
+      meshes.forEach(mesh => {
+        if (mesh.electronics) return;
+        const fade = detailed && mesh.film ? 1 - (1 - amount) * (1 - clearance) : amount;
+        mesh.object.visible = mesh.visible && fade < .999;
+        mesh.object.castShadow = fade < .15;
+      });
     }
     function grounded(pitch) {
       rotation.setFromAxisAngle(axisZ, pitch); contact.copy(mainContact).applyQuaternion(rotation);
@@ -333,7 +346,7 @@
         const amount = ramp(progress, part.start, part.end);
         if (part.filmPatches) {
           part.filmPatches.forEach(patch => patch.deform(patch.surface === 'wrap' ? amount : ramp(progress, part.start - .015, part.start + .12)));
-          const release = ramp(progress, part.end, .53);
+          const release = ramp(progress, part.end, detailed ? .455 : .53);
           part.object.position.copy(part.base).addScaledVector(part.offset, release).addScaledVector(part.arc, Math.sin(Math.PI * release));
           if (detailed) {
             const turn = new T.Quaternion().setFromEuler(new T.Euler(part.turn.x * release, part.turn.y * release, part.turn.z * release));
@@ -393,7 +406,9 @@
         distance = distance * (1 - inspection) + Math.max(systemDistance * 1.13, mobile ? 1.12 : 1.0) * inspection;
       }
       for (const mesh of meshes) {
-        if (!mesh.object.visible) continue;
+        // Keep the departing skin's envelope through the smooth camera
+        // handoff. Hiding a sheet must not snap the phone's fitted distance.
+        if (!mesh.object.visible && !(detailed && mesh.film && progress < .63)) continue;
         const geometry = mesh.object.geometry; if (!geometry.boundingBox) geometry.computeBoundingBox();
         const bounds = geometry.boundingBox;
         for (let index = 0; index < 8; index++) {

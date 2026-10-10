@@ -71,6 +71,21 @@ vm.runInThisContext(helpers);
  assert.equal(flight.electronics.group.visible,false,'Electronics hidden during landing');
  flight.setProgress(.65);assert.equal(flight.electronics.inspect().opacity,1,'Systems fully opaque during inspection');
  flight.setProgress(1);assert.equal(flight.electronics.group.visible,false,'Telemetry close-up clears illustrative systems');
+ // The whole wrapper (including both cap tabs) clears before the
+ // electronics inspection, without an abrupt phone camera refit.
+ for(const p of [.35,.455,.60,1,0]){
+  flight.setProgress(p);
+  for(const patch of flight.films){
+   const materials=Array.isArray(patch.mesh.material)?patch.mesh.material:[patch.mesh.material];
+   if(p>=.455){assert.equal(patch.mesh.visible,false,'No dangling skin remains');materials.forEach(m=>assert.equal(m.opacity,0,'Skin fade ends fully'));}
+   else {assert.equal(patch.mesh.visible,true,'Skin restored before release');materials.forEach(m=>assert.equal(m.opacity,1,'Attached skin remains opaque'));}
+  }
+ }
+ for(const [w,h]of[[1440,900],[390,844],[320,740]]){
+  let prior=null;
+  for(let n=448;n<=458;n++){flight.setProgress(n/1000);flight.frame(camera,w,h);if(prior)assert.ok(camera.position.distanceTo(prior)<.03,'Skin completion cannot snap the camera');prior=camera.position.clone();}
+ }
+ const home=read('v3/index.html');assert.ok(!home.includes('data-aircraft-detail='),'Numbered view controls removed');assert.ok(!home.includes('v3-aircraft-details'),'Overlay markup removed');
  const systems=[];
  for(const [w,h] of [[1440,900],[390,844],[320,740],[1600,650]])for(const progress of [.60,.65,.70]){
   flight.setProgress(progress);flight.frame(camera,w,h);camera.updateMatrixWorld(true);

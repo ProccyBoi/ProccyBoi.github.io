@@ -11,7 +11,7 @@
     const group = new T.Group();
     group.name = 'Illustrative aircraft power and control system';
     group.userData = { provenance, illustrative: true, units: 'metres', ownsOpacity: true };
-    const materialEntries = [], pieces = [], wires = [], articulations = [];
+    const materialEntries = [], pieces = [], wires = [], articulations = [], controls = [];
     const geometryCache = new Map();
     function material(name, colour, roughness = .52, metalness = 0, extra = {}) {
       const value = new T.MeshStandardMaterial({ name, color: colour, roughness, metalness, ...extra });
@@ -59,7 +59,7 @@
     function component(name, fitted, exploded, turns, start = .34, end = .61) {
       const object = new T.Group(); object.name = name; object.userData = { illustrative: true, provenance };
       object.position.set(...fitted); group.add(object);
-      const part = { object, fitted: new T.Vector3(...fitted), offset: new T.Vector3(...exploded), turns: new T.Vector3(...turns), start, end };
+      const part = { object, fitted: new T.Vector3(...fitted), fittedQuaternion: new T.Quaternion(), offset: new T.Vector3(...exploded), turns: new T.Vector3(...turns), start, end };
       pieces.push(part); return part;
     }
     function label(parent, title, detail, width, depth, position) {
@@ -152,42 +152,80 @@
     label(receiver.object, 'RX', 'RECEIVER', .017, .008, [-.009, .0121, 0]);
     for (const x of [-.020, .020]) for (const z of [-.012, .012]) screw(receiver.object, x, .0085, z, .001);
 
-    function makeServo(name, fitted, exploded, turns, start, end) {
-      const part = component(name + ' — KST-X10 Pro-B, illustrative geometry', fitted, exploded, turns, start, end), body = part.object;
-      box(body, 'Micro servo blue lower case', [.023, .019, .012], [0, 0, 0], mat.servo);
-      box(body, 'Micro servo upper gear case', [.023, .006, .0125], [0, .0115, 0], mat.servo);
-      box(body, 'Servo case seam', [.0233, .00065, .0128], [0, .0084, 0], mat.charcoal);
-      for (const x of [-.014, .014]) {
-        box(body, 'Servo mounting lug', [.007, .0026, .011], [x, .005, 0], mat.servo);
-        screw(body, x, .0067, 0, .0015);
+    function makeServo(name, fitted, destination, turns, start, end, installation) {
+      const offset = destination.map((value, index) => value - fitted[index]);
+      const part = component(name + ' — KST-X10 Pro-B, illustrative geometry', fitted, offset, turns, start, end), body = part.object;
+      // A thin, flat-mounted case leaves the output shaft normal to the skin.
+      // Package dimensions and mounting brackets remain illustrative, not a
+      // claim that these installation details exist in the supplied source CAD.
+      box(body, 'Thin-wing servo lower case', [.030, .010, .026], [0, 0, 0], mat.servo);
+      box(body, 'Thin-wing servo upper gear case', [.030, .002, .0265], [0, .006, 0], mat.servo);
+      box(body, 'Servo case seam', [.0303, .00065, .0268], [0, .0049, 0], mat.charcoal);
+      for (const x of [-.018, .018]) {
+        box(body, 'Servo mounting lug', [.007, .0026, .011], [x, 0, 0], mat.servo);
+        box(body, 'Illustrative fixed-structure mounting pad', [.008, .002, .014], [x, -.0026, 0], mat.strap);
+        screw(body, x, .0017, 0, .0015);
       }
-      cylinder(body, 'Visible servo drive motor', .0041, .014, [.0055, -.001, 0], mat.silver, 14);
-      const gearCarrier = new T.Group(); gearCarrier.name = 'Exposed micro servo gear train'; body.add(gearCarrier);
-      articulations.push({ object: gearCarrier, y: 0, travel: .010, from: .40, to: .63 });
-      const sizes = [.0032, .0040, .0044], locations = [-.0075, -.0015, .006];
+      cylinder(body, 'Visible servo drive motor', .0041, .008, [.009, 0, 0], mat.silver, 14);
+      const gearCarrier = new T.Group(); gearCarrier.name = 'Exposed thin-wing servo gear train'; body.add(gearCarrier);
+      articulations.push({ object: gearCarrier, y: 0, travel: .010, from: .48, to: .65 });
+      const sizes = [.0032, .0040, .0044], locations = [.010, .001, -.007];
       for (let index = 0; index < 3; index++) {
-        const gear = new T.Group(); gear.name = 'Servo brass gear ' + (index + 1); gear.position.set(locations[index], .0148 + index * .0016, 0); gearCarrier.add(gear);
+        const gear = new T.Group(); gear.name = 'Servo brass gear ' + (index + 1); gear.position.set(locations[index], .0068 + index * .0016, 0); gearCarrier.add(gear);
         cylinder(gear, 'Machined brass servo gear', sizes[index], .0018, [0, 0, 0], mat.gold, 20);
         for (let tooth = 0; tooth < 12; tooth++) {
           const angle = tooth / 12 * Math.PI * 2;
           const detail = box(gear, 'Gear tooth', [.0015, .0017, .0013], [Math.cos(angle) * sizes[index], 0, Math.sin(angle) * sizes[index]], mat.copper);
           detail.rotation.y = -angle;
         }
-        cylinder(gear, 'Gear spindle', .0011, .004, [0, .001, 0], mat.silver, 10);
+        cylinder(gear, 'Gear spindle', .0011, .003, [0, .001, 0], mat.silver, 10);
       }
-      const horn = new T.Group(); horn.name = 'Servo output horn'; horn.position.set(.006, .022, 0); gearCarrier.add(horn);
+      const horn = new T.Group(); horn.name = 'Servo output horn'; horn.position.set(-.007, .014, 0); horn.rotation.y = Math.PI / 2; gearCarrier.add(horn);
       cylinder(horn, 'Servo horn hub', .0037, .0027, [0, 0, 0], mat.white, 16);
       box(horn, 'Servo two arm horn', [.024, .002, .0045], [0, .0005, 0], mat.white);
       for (const x of [-.009, -.006, .006, .009]) cylinder(horn, 'Control rod horn hole', .00066, .00015, [x, .00158, 0], mat.charcoal, 8);
       screw(horn, 0, .0018, 0, .0013);
-      box(body, 'Servo lead strain relief', [.004, .0048, .008], [-.012, -.005, 0], mat.black);
+      box(body, 'Servo lead strain relief', [.004, .0048, .008], [-.016, -.001, 0], mat.black);
+      part.outputAnchor = new T.Object3D(); part.outputAnchor.name = name + ' pushrod pin'; part.outputAnchor.position.set(-.009, .0015, 0); horn.add(part.outputAnchor);
+      part.fittedQuaternion.setFromEuler(new T.Euler(...(installation.rotation || [0, 0, 0])));
+      part.showcase = new T.Vector3(...destination);
+      part.showcaseQuaternion = part.fittedQuaternion.clone().multiply(new T.Quaternion().setFromEuler(new T.Euler(...turns)));
+      part.installation = installation;
       return part;
     }
-    const servoTailLeft = makeServo('Generic elevator micro servo', [-.224, .209, -.023], [.112, .170, -.227], [-.08, -.26, .08], .38, .635);
-    const servoTailRight = makeServo('Generic rudder micro servo', [-.260, .209, .022], [.154, .270, -.137], [.04, .18, -.09], .39, .65);
-    const servoWingLeft = makeServo('Generic left flaperon micro servo', [-.105, .303, -.386], [.123, .243, .269], [-.12, .04, .06], .38, .64);
-    const servoWingRight = makeServo('Generic right flaperon micro servo', [-.105, .303, .386], [.270, .238, -.441], [.12, -.04, -.06], .36, .62);
+    // Source CAD hinge planes in aircraft metres: ailerons x=-.145,
+    // elevator x=-1.022, rudder x=-.996. Bodies stay FORWARD of those
+    // planes, inside fixed structure. Wing cases sit in the .374–.559 m
+    // rib bay, rather than on the inboard edge of the moving flaperons.
+    const servoTailLeft = makeServo('Elevator servo', [-.949, .243, .060], [-.112, .379, -.250], [-.08, -.26, .08], .47, .65,
+      { fixed: 'horizontal-tail-right', control: 'elevator', hingeX: -1.022, surface: [-1.045, .249, .069] });
+    const servoTailRight = makeServo('Rudder servo', [-.927, .335, 0], [-.106, .479, -.115], [.04, .18, -.09], .475, .66,
+      { fixed: 'vertical-tail', control: 'rudder', hingeX: -.996, surface: [-1.025, .344, -.008], rotation: [-Math.PI / 2, 0, 0] });
+    const servoWingLeft = makeServo('Left flaperon servo', [-.112, .310, -.475], [.018, .546, -.117], [-.12, .04, .06], .455, .645,
+      { fixed: 'wing-left', control: 'aileron', hingeX: -.145, surface: [-.170, .316, -.466] });
+    const servoWingRight = makeServo('Right flaperon servo', [-.112, .310, .475], [.165, .541, -.055], [.12, -.04, -.06], .45, .64,
+      { fixed: 'wing-right', control: 'aileron', hingeX: -.145, surface: [-.170, .316, .484] });
     const servos = [servoTailLeft, servoTailRight, servoWingLeft, servoWingRight];
+    const linkageGroup = new T.Group(); linkageGroup.name = 'Illustrative control horns and mechanical pushrods'; group.add(linkageGroup);
+    for (const servo of servos) {
+      const horn = new T.Group(); horn.name = servo.installation.control + ' surface-mounted control horn'; linkageGroup.add(horn);
+      box(horn, 'Control surface horn foot', [.009, .0016, .009], [0, 0, 0], mat.white);
+      box(horn, 'Control surface horn upright', [.003, .014, .005], [0, .007, 0], mat.white);
+      const eye = cylinder(horn, 'Control horn clevis pin', .0015, .006, [0, .014, 0], mat.silver, 10); eye.rotation.x = Math.PI / 2;
+      const pickup = new T.Object3D(); pickup.name = 'Control horn pushrod pin'; pickup.position.set(0, .014, 0); horn.add(pickup);
+      const rod = cylinder(linkageGroup, servo.object.name + ' steel pushrod', .00072, 1, [0, 0, 0], mat.silver, 10);
+      const clevises = [0, 1].map(index => {
+        const clevis = new T.Group(); clevis.name = (index ? 'Control' : 'Servo') + ' pushrod clevis'; linkageGroup.add(clevis);
+        for (const side of [-1, 1]) box(clevis, 'Clevis fork cheek', [.0011, .005, .0014], [side * .0015, 0, 0], mat.edge);
+        cylinder(clevis, 'Threaded pushrod collar', .0014, .004, [0, index ? -.003 : .003, 0], mat.silver, 10);
+        return clevis;
+      });
+      const fitted = new T.Vector3(...servo.installation.surface);
+      controls.push({ servo, horn, pickup, rod, clevises, fitted,
+        relative: fitted.clone().sub(servo.fitted).applyQuaternion(servo.fittedQuaternion.clone().invert()),
+        mount: null, surface: null, installed: new T.Vector3(), target: new T.Vector3(), direction: new T.Vector3(),
+        a: new T.Vector3(), b: new T.Vector3(), quaternion: new T.Quaternion(), length: 0 });
+    }
 
     // Two separate receiver aerials, including the stripped-length end sleeves.
     const aerialEnds = [];
@@ -200,7 +238,7 @@
 
     // Motor follows the source object if bound; the fallback matches the original
     // scene's motor extraction. Three insulated phase leads terminate separately.
-    let boundMotor = null;
+    let boundMotor = null, airframeBound = false;
     const motorPoint = new T.Vector3(.657, .243, 0), motorLocal = new T.Vector3(), inverseGroup = new T.Matrix4();
     const motorTerminal = component('Motor phase terminal sleeve', [.657, .243, 0], [.350, .040, 0], [0, 0, 0], .41, .67);
     for (const z of [-.009, 0, .009]) {
@@ -244,7 +282,7 @@
     for (let line = 0; line < 3; line++) cable('ESC receiver control ' + (line + 1), anchor(receiver, [.030, .007 + line * .002, -.010]), anchor(esc, [-.019, .002, .017 + line * .0015]), [mat.black, mat.red, mat.white][line], .00064, 1 + line * .37, [.003, .011, -.006], line === 1);
     for (let servoIndex = 0; servoIndex < servos.length; servoIndex++) for (let line = 0; line < 3; line++) {
       const servo = servos[servoIndex];
-      cable(servo.object.name + [' ground', ' supply', ' signal'][line], anchor(receiver, [.030, .006 + line * .002, -.004 + servoIndex * .0045]), anchor(servo, [-.014, -.005, -.002 + line * .002]), [mat.black, mat.red, mat.orange][line], .00061, (servoIndex - 1.5) * 1.20 + line * .26, [-.020, .015 + servoIndex * .003, servoIndex > 1 ? (servoIndex === 2 ? -.025 : .025) : -.010], line === 1);
+      cable(servo.object.name + [' ground', ' supply', ' signal'][line], anchor(receiver, [.030, .006 + line * .002, -.004 + servoIndex * .0045]), anchor(servo, [-.018, -.001, -.002 + line * .002]), [mat.black, mat.red, mat.orange][line], .00061, (servoIndex - 1.5) * 1.20 + line * .26, [-.020, .015 + servoIndex * .003, servoIndex > 1 ? (servoIndex === 2 ? -.025 : .025) : -.010], line === 1);
     }
     for (let i = 0; i < 2; i++) cable('Receiver antenna coax ' + (i + 1), anchor(receiver, [-.023, .005, (i ? 1 : -1) * .008]), anchor(aerialEnds[i], [0, -.012, 0]), mat.black, .00065, -1.7 - i * .6, [-.025, .026, -.011]);
     // A small multicolour balance harness ends at its own white plug on the pack.
@@ -312,13 +350,14 @@
       }
     }
     for (const part of pieces) batch(part.object);
+    for (const control of controls) { batch(control.horn); for (const clevis of control.clevises) batch(clevis); }
     for (const wire of wires) if (wire.connector) batch(wire.connector);
     let triangles = 0, meshCount = 0;
     group.traverse(item => { if (item.isMesh) { meshCount++; triangles += (item.geometry.index?.count || item.geometry.attributes.position.count) / 3; } });
     let progress = 0, previous = -1;
     function setProgress(value) {
       const next = Number.isFinite(value) ? clamp(value) : 0;
-      if (next === previous) return;
+      if (next === previous && !boundMotor && !airframeBound) return;
       progress = next; previous = next;
       const visibility = ramp(progress, .18, .32) * (1 - ramp(progress, .80, .92));
       group.visible = visibility > .0001;
@@ -326,7 +365,10 @@
         const amount = ramp(progress, part.start, part.end);
         part.object.position.copy(part.fitted).addScaledVector(part.offset, amount);
         part.object.rotation.set(part.turns.x * amount, part.turns.y * amount, part.turns.z * amount);
+        part.object.quaternion.premultiply(part.fittedQuaternion);
       }
+      group.updateWorldMatrix(true, false); inverseGroup.copy(group.matrixWorld).invert();
+      for (const control of controls) updateControlPlacement(control);
       if (boundMotor) {
         boundMotor.updateWorldMatrix(true, false); group.updateWorldMatrix(true, false); inverseGroup.copy(group.matrixWorld).invert();
         motorPoint.copy(motorLocal).applyMatrix4(boundMotor.matrixWorld).applyMatrix4(inverseGroup);
@@ -337,6 +379,8 @@
         focus.position.copy(battery.object.position).lerp(receiver.object.position, .53); focus.position.y += .025;
         wiringAnchor.position.copy(battery.object.position).lerp(receiver.object.position, .5); wiringAnchor.position.z -= .055;
       }
+      group.updateWorldMatrix(true, true);
+      for (const control of controls) updatePushrod(control);
       const spread = ramp(progress, .405, .65);
       for (const wire of wires) updateWire(wire, spread);
       for (const entry of materialEntries) {
@@ -345,6 +389,71 @@
         entry.value.opacity = entry.opacity * visibility;
         entry.value.depthWrite = visibility > .995 && entry.depthWrite;
       }
+    }
+    // Store the inverse SOURCE transform at assembly. The delta cancels the
+    // source's millimetre scale and mirrored left-wing transform, leaving a
+    // rigid aircraft-local transform without reparenting or editing source CAD.
+    function binding(object) {
+      if (!object) return null;
+      object.updateWorldMatrix(true, false);
+      return { object, restInverse: new T.Matrix4().multiplyMatrices(inverseGroup, object.matrixWorld).invert(), delta: new T.Matrix4(),
+        position: new T.Vector3(), quaternion: new T.Quaternion(), scale: new T.Vector3() };
+    }
+    function refreshBinding(value) {
+      if (!value) return;
+      value.object.updateWorldMatrix(true, false);
+      value.delta.multiplyMatrices(inverseGroup, value.object.matrixWorld).multiply(value.restInverse);
+      value.delta.decompose(value.position, value.quaternion, value.scale);
+    }
+    function updateControlPlacement(control) {
+      const servo = control.servo, amount = ramp(progress, servo.start, servo.end);
+      refreshBinding(control.mount); refreshBinding(control.surface);
+      control.installed.copy(servo.fitted);
+      control.quaternion.copy(servo.fittedQuaternion);
+      if (control.mount) {
+        control.installed.applyMatrix4(control.mount.delta);
+        control.quaternion.premultiply(control.mount.quaternion);
+      }
+      servo.object.position.copy(control.installed).lerp(servo.showcase, amount);
+      servo.object.quaternion.copy(control.quaternion).slerp(servo.showcaseQuaternion, amount);
+      // The control horn starts on its real moving surface. During extraction
+      // the complete illustrative linkage comes away with its servo, so no rod
+      // stretches across the exploded airframe or remains in the close-up.
+      control.installed.copy(control.fitted);
+      control.quaternion.copy(servo.fittedQuaternion);
+      if (control.surface) {
+        control.installed.applyMatrix4(control.surface.delta);
+        control.quaternion.premultiply(control.surface.quaternion);
+      }
+      control.target.copy(control.relative).applyQuaternion(servo.showcaseQuaternion).add(servo.showcase);
+      control.horn.position.copy(control.installed).lerp(control.target, amount);
+      control.horn.quaternion.copy(control.quaternion).slerp(servo.showcaseQuaternion, amount);
+    }
+    function updatePushrod(control) {
+      control.a.setFromMatrixPosition(control.servo.outputAnchor.matrixWorld).applyMatrix4(inverseGroup);
+      control.b.setFromMatrixPosition(control.pickup.matrixWorld).applyMatrix4(inverseGroup);
+      control.direction.subVectors(control.b, control.a); control.length = control.direction.length();
+      control.direction.multiplyScalar(1 / Math.max(control.length, 1e-9));
+      control.rod.position.copy(control.a).lerp(control.b, .5);
+      control.rod.quaternion.setFromUnitVectors(axisY, control.direction); control.rod.scale.y = control.length;
+      for (let index = 0; index < 2; index++) {
+        control.clevises[index].position.copy(index ? control.b : control.a);
+        control.clevises[index].quaternion.copy(control.rod.quaternion);
+      }
+    }
+    function bindAirframe(parts, carrier) {
+      group.updateWorldMatrix(true, false); inverseGroup.copy(group.matrixWorld).invert();
+      for (const control of controls) {
+        const fixed = parts.find(part => part.category === control.servo.installation.fixed)?.object;
+        let moving = null;
+        fixed?.traverse(object => {
+          if (!moving && object !== fixed && (object.userData.category || '').startsWith(control.servo.installation.control)) moving = object;
+        });
+        control.mount = binding(fixed); control.surface = binding(moving);
+      }
+      airframeBound = controls.some(control => control.mount);
+      previous = -1; setProgress(progress);
+      return controls.every(control => control.mount && control.surface);
     }
     function bindMotor(object) {
       if (!object) { boundMotor = null; return; }
@@ -355,7 +464,7 @@
     function setLanding() { setProgress(0); }
     function assemblyError() {
       let error = 0;
-      for (const part of pieces) error = Math.max(error, part.object.position.distanceTo(part.fitted), Math.abs(part.object.rotation.x), Math.abs(part.object.rotation.y), Math.abs(part.object.rotation.z));
+      for (const part of pieces) error = Math.max(error, part.object.position.distanceTo(part.fitted), 1 - Math.abs(part.object.quaternion.dot(part.fittedQuaternion)));
       for (const part of articulations) error = Math.max(error, Math.abs(part.object.position.y - part.y));
       return error;
     }
@@ -365,14 +474,20 @@
     function showcaseBounds(target = new T.Box3()) {
       group.updateWorldMatrix(true, true); target.makeEmpty();
       for (const part of pieces) if (part !== motorTerminal) target.union(boundsScratch.setFromObject(part.object));
+      target.union(boundsScratch.setFromObject(linkageGroup));
       return target;
     }
     const anchors = { battery: battery.object, esc: esc.object, receiver: receiver.object, servos: servoTailLeft.object, wiring: wiringAnchor };
     setProgress(0);
     return {
-      group, setProgress, setLanding, bindMotor, assemblyError, focus, anchors, showcaseBounds,
-      statistics: Object.freeze({ provenance, illustrative: true, components: 7, batteryCells: 8, servos: 4, antennae: 2, wires: wires.length, wireSegments: 28, meshes: meshCount, triangles }),
-      inspect() { return { progress, visible: group.visible, opacity: materialEntries[0].value.opacity, spread: ramp(progress, .405, .65), assemblyError: assemblyError(), positions: pieces.map(part => ({ name: part.object.name, position: part.object.position.toArray() })) }; }
+      group, setProgress, setLanding, bindMotor, bindAirframe, assemblyError, focus, anchors, showcaseBounds,
+      statistics: Object.freeze({ provenance, illustrative: true, components: 7, batteryCells: 8, servos: 4, pushrods: controls.length, antennae: 2, wires: wires.length, wireSegments: 28, meshes: meshCount, triangles }),
+      inspect() { return { progress, visible: group.visible, opacity: materialEntries[0].value.opacity, spread: ramp(progress, .405, .65), assemblyError: assemblyError(), positions: pieces.map(part => ({ name: part.object.name, position: part.object.position.toArray() })),
+        controls: controls.map(control => ({ servo: control.servo.object.name, fixed: control.servo.installation.fixed,
+          boundFixed: control.mount?.object.name || null, boundControl: control.surface?.object.name || null,
+          hingeX: control.servo.installation.hingeX, fitted: control.servo.fitted.toArray(),
+          installedSurface: control.fitted.toArray(), surface: control.horn.position.toArray(),
+          outputPin: control.a.toArray(), controlPin: control.b.toArray(), pushrodLength: control.length })) }; }
     };
   }
   window.V3AircraftElectronics = Object.freeze({ create });
