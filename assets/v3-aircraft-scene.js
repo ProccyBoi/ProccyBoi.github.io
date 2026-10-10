@@ -63,7 +63,35 @@
     const a = curl[left], b = curl[right], blend = (length - a.length) / (b.length - a.length);
     output[0] = a.x + (b.x - a.x) * blend; output[1] = a.y + (b.y - a.y) * blend;
   }
-  function covering(T, part) {
+  // Source wrappers have two end rings. Subdivide only derived film, so the
+  // released skin can carry tension, spanwise curvature and a travelling peel.
+  // Every added point lies on the same ruled envelope at the assembled pose.
+  function resolveFilm(T, mesh) {
+    const source = mesh.geometry, uv = source.attributes.uv;
+    const count = mesh.userData.ringVertexCount;
+    if (!count || source.attributes.position.count !== count * 2 || !uv) return source.clone();
+    const a = new T.Vector3().fromBufferAttribute(source.attributes.position, 0);
+    const b = new T.Vector3().fromBufferAttribute(source.attributes.position, count);
+    const rows = Math.max(7, Math.min(19, Math.ceil(a.distanceTo(b) / .035) + 1));
+    const geometry = new T.BufferGeometry();
+    for (const [name, attribute] of Object.entries(source.attributes)) {
+      const array = new Float32Array(rows * count * attribute.itemSize);
+      for (let row = 0; row < rows; row++) for (let vertex = 0; vertex < count; vertex++) for (let axis = 0; axis < attribute.itemSize; axis++) {
+        const start = attribute.array[vertex * attribute.itemSize + axis];
+        const end = attribute.array[(vertex + count) * attribute.itemSize + axis];
+        array[(row * count + vertex) * attribute.itemSize + axis] = start + (end - start) * row / (rows - 1);
+      }
+      geometry.setAttribute(name, new T.BufferAttribute(array, attribute.itemSize, attribute.normalized));
+    }
+    const indices = [];
+    for (let row = 0; row < rows - 1; row++) for (let vertex = 0; vertex < count - 1; vertex++) {
+      const start = row * count + vertex, next = start + count;
+      indices.push(next, start + 1, start, next, next + 1, start + 1);
+    }
+    geometry.setIndex(indices); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+    return geometry;
+  }
+  function covering(T, part, detailed) {
     const patches = [];
     const contourPoint = (points, u) => {
       let left = 0, right = points.length - 1;
@@ -74,7 +102,7 @@
     part.object.traverse(mesh => {
       const surface = mesh.userData.filmSurface;
       if (!mesh.isMesh || !surface) return;
-      const geometry = mesh.geometry.clone(); mesh.geometry = geometry;
+      const geometry = detailed && surface === 'wrap' ? resolveFilm(T, mesh) : mesh.geometry.clone(); mesh.geometry = geometry;
       const attribute = geometry.attributes.position, rest = attribute.array.slice(), restNormals = geometry.attributes.normal.array.slice();
       attribute.setUsage(T.DynamicDrawUsage);
       const axis = new T.Vector3(...mesh.userData.peelAxis).normalize();
@@ -90,7 +118,7 @@
           points.sort((a, b) => a.u - b.u);
           let perimeter = 0; const centre = new T.Vector3();
           points.forEach((point, index) => { centre.add(point.point); if (index) perimeter += point.point.distanceTo(points[index - 1].point); });
-          rings.push({ points, perimeter, centre: centre.divideScalar(points.length) });
+          rings.push({ points, perimeter, span: points[0] ? geometry.attributes.uv.getY(points[0].index) : 0, centre: centre.divideScalar(points.length) });
         }
       }
       const bounds = new T.Box3().setFromBufferAttribute(attribute), width = bounds.max.x - bounds.min.x;
@@ -101,20 +129,35 @@
           if (amount === previous) return;
           previous = amount; patch.amount = amount; patch.attached = 0; patch.peeled = 0; attribute.array.set(rest);
           if (amount > 0 && surface === 'wrap') {
-            const boundary = 1 - amount * 1.025;
             for (const ring of rings) {
               const points = ring.points;
+              // A tensioned peel travels diagonally instead of releasing an
+              // entire straight edge at once. Delayed rows never move vertices
+              // ahead of the nominal peel front; both ends release exactly.
+              const lag = detailed ? .13 * Math.sin(Math.PI * amount) * (.25 + .75 * ring.span) : 0;
+              const localAmount = Math.max(0, amount - lag);
+              const boundary = 1 - localAmount * 1.025;
               const front = contourPoint(points, boundary);
               // A short arc window turns the free curl continuously around a
               // polygon corner while leaving every attached vertex untouched.
               const tangent = contourPoint(points, boundary + .018).sub(contourPoint(points, boundary - .018)).normalize();
               const normal = new T.Vector3().crossVectors(axis, tangent).normalize();
               if (normal.dot(front.clone().sub(ring.centre)) < 0) normal.negate();
-              const radius = ring.perimeter / 9, curled = [0, 0], result = new T.Vector3();
+              const tension = detailed ? 7.8 - 2.1 * ramp(amount, .60, 1) : 9;
+              const radius = ring.perimeter / tension * (detailed ? 1 + .10 * Math.sin(ring.span * Math.PI * 2 + amount * 2) : 1);
+              const curled = [0, 0], result = new T.Vector3();
               for (const point of points) {
                 if (point.u <= boundary) { patch.attached++; continue; }
                 curlAt((point.u - boundary) * ring.perimeter / radius, curled);
                 result.copy(front).addScaledVector(tangent, curled[0] * radius).addScaledVector(normal, curled[1] * radius);
+                if (detailed) {
+                  const free = smooth((point.u - boundary) / Math.max(.001, 1 - boundary));
+                  const billow = Math.sin(ring.span * Math.PI * 2 + point.u * 4 - amount * 5);
+                  // The squared falloff preserves the tangent where the film
+                  // is still adhered. All flutter is scroll-derived, never a loop.
+                  result.addScaledVector(normal, ring.perimeter * .025 * free * free * billow * Math.sin(amount * Math.PI * .85));
+                  result.addScaledVector(axis, ring.perimeter * .012 * free * free * Math.sin(point.u * 8 + amount * 5) * Math.sin(Math.PI * ring.span));
+                }
                 result.toArray(attribute.array, point.index * 3); patch.peeled++;
               }
             }
@@ -140,11 +183,13 @@
     return patches;
   }
 
-  function create(T, aircraft, telemetry) {
+  function create(T, aircraft, telemetry, { detailed = false } = {}) {
     const metadata = aircraft.metadata;
     const group = new T.Group(); group.name = 'Skylabs flight story';
     const carrier = new T.Group(); carrier.name = 'Aircraft pose'; group.add(carrier); carrier.add(aircraft.group);
     const board = new T.Group(); board.name = 'Telemetry placement'; carrier.add(board);
+    const electronics = detailed ? window.V3AircraftElectronics?.create(T) : null;
+    if (electronics) carrier.add(electronics.group);
     const mount = new T.Vector3(...(metadata.telemetryMount?.position || [0, .2, 0]));
     const boardUnits = .07303;
     let attachedTelemetry;
@@ -184,10 +229,12 @@
       else if (role.includes('gear')) { offset = new T.Vector3(.08, -.14, sign * .17); start = .38; end = .66; }
       else if (role === 'motor' || role === 'propeller') { offset = new T.Vector3(role === 'propeller' ? .62 : .35, .04, 0); start = role === 'propeller' ? .37 : .41; end = .67; }
       else { offset = new T.Vector3(centre.x * .21, .04 + (ordinal % 5) * .024, sign * (.25 + ordinal % 4 * .045)); start = .37 + ordinal % 7 * .01; end = .72; }
-      parts.push({ ...item, base, quaternion, scale, offset, start, end });
+      const arc = detailed ? new T.Vector3(sign * .018, role === 'covering' ? .12 : .065, sign * .04) : new T.Vector3();
+      const turn = detailed && role === 'covering' ? new T.Vector3(sign * .13, sign * .11, centre.x < -.7 ? -.12 : .06) : new T.Vector3();
+      parts.push({ ...item, base, quaternion, scale, offset, start, end, arc, turn });
     }
     const films = parts.filter(part => part.category === 'covering').flatMap(part => {
-      const patches = covering(T, part); part.filmPatches = patches; return patches;
+      const patches = covering(T, part, detailed); part.filmPatches = patches; return patches;
     });
     const materials = new Map(), meshes = [];
     // Reparented groups are now carrier children, so inspect the carrier while
@@ -197,15 +244,23 @@
       let ancestor = mesh;
       while (ancestor && ancestor !== board) ancestor = ancestor.parent;
       if (ancestor === board) return;
+      let electronicsAncestor = mesh;
+      while (electronicsAncestor && electronicsAncestor !== electronics?.group) electronicsAncestor = electronicsAncestor.parent;
+      if (electronics && electronicsAncestor === electronics.group) { meshes.push({ object: mesh, visible: mesh.visible, electronics: true }); return; }
       mesh.castShadow = true; mesh.receiveShadow = true;
       mesh.material = (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map(original => {
         if (!materials.has(original)) materials.set(original, { material: original.clone(), opacity: original.opacity, transparent: original.transparent, depthWrite: original.depthWrite });
         return materials.get(original).material;
       });
       if (mesh.material.length === 1) mesh.material = mesh.material[0];
-      if (mesh.userData.filmSurface) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(material => { material.side = T.DoubleSide; });
+      if (mesh.userData.filmSurface) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(material => {
+        material.side = T.DoubleSide;
+        if (detailed) { material.roughness = .29; material.metalness = .08; }
+      });
       meshes.push({ object: mesh, visible: mesh.visible });
     });
+    const motor = originals.find(part => part.category === 'motor')?.object;
+    if (electronics && motor) electronics.bindMotor?.(motor, carrier);
     const prop = originals.find(part => part.category === 'propeller')?.object;
     const propBase = prop?.quaternion.clone();
     const propPosition = prop?.position.clone();
@@ -240,7 +295,7 @@
         entry.material.opacity = entry.opacity * (1 - amount);
         entry.material.depthWrite = amount > 0 ? false : entry.depthWrite;
       }
-      meshes.forEach(mesh => { mesh.object.visible = mesh.visible && amount < .999; mesh.object.castShadow = amount < .15; });
+      meshes.forEach(mesh => { if (mesh.electronics) return; mesh.object.visible = mesh.visible && amount < .999; mesh.object.castShadow = amount < .15; });
     }
     function grounded(pitch) {
       rotation.setFromAxisAngle(axisZ, pitch); contact.copy(mainContact).applyQuaternion(rotation);
@@ -254,7 +309,7 @@
     }
     function setLanding(value) {
       landing = clamp(value); progress = 0; restore(); fadeAirframe(0);
-      films.forEach(patch => patch.deform(0));
+      films.forEach(patch => patch.deform(0)); electronics?.setLanding();
       const flare = ramp(landing, .37, .60), settle = ramp(landing, .65, .86);
       const pitch = .024 + .06 * flare + (restPitch - .084) * settle;
       grounded(pitch);
@@ -278,10 +333,16 @@
         const amount = ramp(progress, part.start, part.end);
         if (part.filmPatches) {
           part.filmPatches.forEach(patch => patch.deform(patch.surface === 'wrap' ? amount : ramp(progress, part.start - .015, part.start + .12)));
-          part.object.position.copy(part.base).addScaledVector(part.offset, ramp(progress, part.end, .53));
-        } else part.object.position.copy(part.base).addScaledVector(part.offset, amount);
+          const release = ramp(progress, part.end, .53);
+          part.object.position.copy(part.base).addScaledVector(part.offset, release).addScaledVector(part.arc, Math.sin(Math.PI * release));
+          if (detailed) {
+            const turn = new T.Quaternion().setFromEuler(new T.Euler(part.turn.x * release, part.turn.y * release, part.turn.z * release));
+            part.object.quaternion.copy(part.quaternion).multiply(turn);
+          }
+        } else part.object.position.copy(part.base).addScaledVector(part.offset, amount).addScaledVector(part.arc, Math.sin(Math.PI * amount));
         if (amount > 0) separated++;
       }
+      group.updateMatrixWorld(true); electronics?.setProgress(progress);
       const extraction = ramp(progress, .47, .78);
       board.position.add(new T.Vector3(.035, .27, -.32).multiplyScalar(extraction));
       board.rotation.set(-.08 * extraction, .17 * extraction, .03 * extraction);
@@ -291,15 +352,29 @@
     }
     function frame(camera, width, height) {
       const aspect = width / height, mobile = aspect < .9;
-      const focus = ramp(progress, .50, .98);
+      const focus = ramp(progress, detailed ? .74 : .50, .98);
+      const inspection = electronics ? ramp(progress, .49, .61) * (1 - ramp(progress, .75, .89)) : 0;
       const boardPosition = board.getWorldPosition(new T.Vector3());
+      let systemBounds;
+      if (inspection) {
+        systemBounds = electronics.showcaseBounds(new T.Box3());
+        const wiringBounds = new T.Box3().setFromObject(electronics.group), revealWiring = ramp(progress, .54, .60);
+        systemBounds.min.lerp(wiringBounds.min, revealWiring); systemBounds.max.lerp(wiringBounds.max, revealWiring);
+      }
       const tracking = 1 - ramp(landing, .02, .72);
       const aircraftBounds = new T.Box3().setFromObject(group);
       const baseTarget = new T.Vector3(-.08 + carrier.position.x * .88 * tracking, .20 + carrier.position.y * .35 * tracking, 0);
       baseTarget.lerp(aircraftBounds.getCenter(new T.Vector3()), ramp(progress, .04, .30));
-      target.copy(baseTarget).lerp(boardPosition, focus);
+      target.copy(baseTarget);
+      if (inspection) target.lerp(systemBounds.getCenter(new T.Vector3()), inspection);
+      target.lerp(boardPosition, focus);
       const wideDirection = mobile ? new T.Vector3(2.8, 2.1, -4.3) : new T.Vector3(3.6, 1.6, -5.7);
       const closeDirection = new T.Vector3(.08, .155, -.155).normalize();
+      if (detailed) {
+        const orbit = Math.sin(Math.PI * ramp(progress, .04, .69));
+        wideDirection.applyAxisAngle(new T.Vector3(0, 1, 0), -.24 * orbit);
+        wideDirection.y += .55 * orbit;
+      }
       const direction = wideDirection.normalize().lerp(closeDirection, focus).normalize();
       const groundedDistance = mobile ? 3.0 / Math.max(.48, aspect) : 3.55;
       const wideDistance = groundedDistance * (1 + .6 * tracking);
@@ -308,6 +383,15 @@
       const right = new T.Vector3(0, 1, 0).cross(direction).normalize(), up = direction.clone().cross(right).normalize();
       const tangent = Math.tan(16 * Math.PI / 180), sample = new T.Vector3();
       let fitDistance = 0;
+      if (inspection) {
+        const bounds = systemBounds;
+        let systemDistance = 0;
+        for (let index = 0; index < 8; index++) {
+          sample.set(index & 1 ? bounds.max.x : bounds.min.x, index & 2 ? bounds.max.y : bounds.min.y, index & 4 ? bounds.max.z : bounds.min.z).sub(target);
+          systemDistance = Math.max(systemDistance, sample.dot(direction) + Math.abs(sample.dot(right)) / (tangent * aspect * (mobile ? .86 : .59)), sample.dot(direction) + Math.abs(sample.dot(up)) / (tangent * (mobile ? .38 : .64)));
+        }
+        distance = distance * (1 - inspection) + Math.max(systemDistance * 1.13, mobile ? 1.12 : 1.0) * inspection;
+      }
       for (const mesh of meshes) {
         if (!mesh.object.visible) continue;
         const geometry = mesh.object.geometry; if (!geometry.boundingBox) geometry.computeBoundingBox();
@@ -317,11 +401,11 @@
           fitDistance = Math.max(fitDistance, sample.dot(direction) + Math.abs(sample.dot(right)) / (tangent * aspect * .91), sample.dot(direction) + Math.abs(sample.dot(up)) / (tangent * (mobile ? .70 : .72)));
         }
       }
-      distance = Math.max(distance, fitDistance * (1 - ramp(progress, .55, .75)));
+      distance = Math.max(distance, fitDistance * (1 - ramp(progress, detailed ? .51 : .55, detailed ? .63 : .75)));
       cameraPosition.copy(target).addScaledVector(direction, distance);
       camera.position.copy(cameraPosition); camera.up.set(0, 1, 0); camera.lookAt(target);
       camera.fov = 32; camera.aspect = aspect; camera.near = Math.max(.002, Math.min(.1, distance * .04)); camera.far = 80;
-      camera.setViewOffset(width, height, (mobile ? 0 : -.10 * focus) * width, -.08 * (mobile ? 1 : 1 - focus) * height, width, height);
+      camera.setViewOffset(width, height, (mobile ? 0 : -.10 * focus - .17 * inspection * (1 - focus)) * width, (-.08 * (mobile ? 1 : 1 - focus) - (mobile ? .13 : .015) * inspection * (1 - focus)) * height, width, height);
       camera.updateProjectionMatrix();
       return { target: target.clone(), focus, distance };
     }
@@ -329,10 +413,10 @@
     let triangles = 0;
     meshes.forEach(mesh => { const geometry = mesh.object.geometry; triangles += (geometry.index?.count || geometry.attributes.position.count) / 3; });
     return {
-      group, carrier, board, parts, films, metadata,
+      group, carrier, board, parts, films, metadata, electronics,
       setLanding, setProgress, frame, attachTelemetry,
       get telemetryReady() { return !!attachedTelemetry; },
-      get statistics() { return { parts: parts.length, sourceOccurrences: metadata.parts.length, triangles, boardUnits, telemetryComponents: attachedTelemetry?.group.userData.componentCount || 0, reconstructed: metadata.completion?.reconstruction?.length || 0 }; },
+      get statistics() { return { parts: parts.length, sourceOccurrences: metadata.parts.length, triangles, boardUnits, telemetryComponents: attachedTelemetry?.group.userData.componentCount || 0, reconstructed: metadata.completion?.reconstruction?.length || 0, detailedFilm: detailed, filmRows: films.filter(patch => patch.surface === 'wrap').reduce((count, patch) => count + patch.rings.length, 0), illustrativeComponents: electronics?.statistics.components || 0, harnessWires: electronics?.statistics.wires || 0, batteryCells: electronics?.statistics.batteryCells || 0 }; },
       assemblyError() { return parts.reduce((error, part) => Math.max(error, part.object.position.distanceTo(part.base), 1 - Math.abs(part.object.quaternion.dot(part.quaternion))), 0); }
     };
   }

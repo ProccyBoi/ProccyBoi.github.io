@@ -3,6 +3,10 @@
   const root = document.querySelector('[data-aircraft-hero]');
   if (!root) return;
   const deferred = root.hasAttribute('data-aircraft-deferred');
+  const detailed = root.hasAttribute('data-aircraft-detailed');
+  const detailButtons = [...root.querySelectorAll('[data-aircraft-detail]')];
+  const detailCaption = root.querySelector('[data-aircraft-detail-caption]');
+  const detailNames = ['Film peels along the seam, then curls away.', 'Ribs, spars and control surfaces separate.', 'Battery, ESC, receiver and servos come into view.', 'Follow the power, motor and control connections.'];
   const stage = root.querySelector('[data-aircraft-stage]'), canvas = root.querySelector('canvas');
   const poster = root.querySelector('[data-aircraft-poster]'), skip = root.querySelector('[data-aircraft-skip]');
   const posterSources = [...root.querySelectorAll('[data-aircraft-picture] source')];
@@ -86,7 +90,7 @@
     if ((!deferred && Math.abs(scrollY - lastScroll) > 4) || next > .005) endLanding();
     lastScroll = scrollY; progress = next;
     const effective = flight && !flight.telemetryReady ? Math.min(progress, .61) : progress;
-    chapter(effective < .25 ? 0 : effective < .70 ? 1 : 2);
+    chapter(effective < .25 ? 0 : effective < (detailed ? .80 : .70) ? 1 : 2);
     bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
   }
   function layout() {
@@ -152,6 +156,12 @@
       floorMaterial.color.copy(studioGround).lerp(airfieldGround, sky);
       scene.fog.color.copy(studioFog).lerp(airfieldFog, sky);
       root.dataset.aircraftAtmosphere = sky.toFixed(6);
+      if (detailed) {
+        const detail = pose.progress < .34 ? 0 : pose.progress < .49 ? 1 : pose.progress < .60 ? 2 : 3;
+        detailButtons.forEach((button, index) => button.setAttribute('aria-pressed', String(index === detail)));
+        if (detailCaption && detailCaption.textContent !== detailNames[detail]) detailCaption.textContent = detailNames[detail];
+        root.dataset.aircraftDetail = String(detail);
+      }
       renderFrame();
       root.classList.add('is-ready'); root.dataset.aircraftState = landingDone || capturePose ? 'ready' : 'landing';
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
@@ -176,7 +186,7 @@
       if (new URLSearchParams(location.search).has('capture')) {
         window.__v3Aircraft = { scene, renderer, camera, flight, atmosphere, renderFrame,
           seekLanding(value) { endLanding(); capturePose = { type: 'landing', value }; chapter(0); request(); },
-          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(value < .25 ? 0 : value < .70 ? 1 : 2); request(); },
+          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(value < .25 ? 0 : value < (detailed ? .80 : .70) ? 1 : 2); request(); },
           resume() { capturePose = null; updateScroll(); request(); }
         };
       }
@@ -192,9 +202,10 @@
     try {
       await Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (!window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
-        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-20261007b'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
+        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-detail-20261010'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
         (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
-        script('/assets/v3-aircraft-atmosphere.js?v=sky-20261008').catch(() => {})
+        script('/assets/v3-aircraft-atmosphere.js?v=sky-20261008').catch(() => {}),
+        detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-detail-20261010') : Promise.resolve()
       ]);
       if (failed || !allowed()) { loading = false; return; }
       const T = window.THREE;
@@ -209,7 +220,7 @@
       const [aircraft, environment] = await Promise.all([window.V3AircraftScene.load(T), window.V2HeroEnvironment.load(T).catch(() => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);
       if (failed) return;
       scene.environment = environment;
-      flight = window.V3AircraftScene.create(T, aircraft); scene.add(flight.group);
+      flight = window.V3AircraftScene.create(T, aircraft, null, { detailed }); scene.add(flight.group);
       studioGround = new T.Color('#101210').convertSRGBToLinear();
       airfieldGround = new T.Color('#18232b').convertSRGBToLinear();
       studioFog = new T.Color('#101210'); airfieldFog = new T.Color('#25323e');
@@ -239,6 +250,12 @@
       ensureTelemetry();
     } catch (error) { fail(error); }
   }
+  detailButtons.forEach(button => button.addEventListener('click', () => {
+    if (!track) return;
+    endLanding(); capturePose = null;
+    const amount = Number(button.dataset.aircraftDetail);
+    scrollTo({ top: rootTop + distance * amount, behavior: reduced.matches ? 'instant' : 'smooth' });
+  }));
   skip.addEventListener('click', endLanding);
   links.forEach((link, index) => {
     link.addEventListener('click', endLanding);
