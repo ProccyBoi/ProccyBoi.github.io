@@ -85,14 +85,17 @@ Assembly viewers load near the viewport and use one Disassemble/Assemble action,
 - Serve the repository root (for example `python -m http.server 8080`) and open `http://localhost:8080/v2/`.
 - Design direction, image provenance and references are in [docs/v2-design.md](docs/v2-design.md).
 
-## Archived visual experiment at `/v3/`
+## Engineering portfolio at `/v3/`
 
-The alternative at `/v3/` uses a warm paper ground, ink typography and a floating telemetry assembly with projected component annotations. It remains available as an archived design experiment; ongoing design work uses v2. Its generated interiors still inherit factual content updates so the shared validation checks remain useful.
+The v3 portfolio presents the accepted Skylabs aircraft-to-telemetry sequence within an engineering field notebook. It leads with Andrew's role, follows the data from the aircraft logger through the ground station and flight-review tools, then presents assembled TramTrace and Framework hardware with concise engineering evidence. Teaching tools, shared files, booking and the public CV remain directly discoverable.
 
-The hero in `assets/v3-hero.js` reuses the exact prepared telemetry geometry, lighting asset and component choreography. It renders on demand, keeps the poster until the first successful CAD frame, and supports mouse, touch and keyboard inspection. Reduced-motion and Save Data visitors choose when to load the 3D model. Existing project viewers and teaching tools retain their working controllers and model assets.
+`v3/index.html` is authored separately. `scripts/build-v3-pages.py` preserves all 23 v2 interiors and their working controllers, adding v3-only case records from `scripts/content/v3-case-evidence.json`. The collection still contains 15 projects; teaching tools remain separate. Existing root and v2 routes are unchanged.
 
-- Edit the home in `v3/index.html` and the presentation layer in `assets/v3.css`.
-- Run `python scripts/build-v3-pages.py` after editing public source content in v2. It regenerates the 23 interiors without changing the v3 home or any earlier page.
+The aircraft controller and source geometry retain the approved two-destination transition: Aircraft and Telemetry. Skin clearance completes before the rigid explosion. Reduced motion, Save Data, short viewports and graphics failure retain static content and project links. The paper theme and self-hosted IBM Plex Sans / JetBrains Mono fonts live in `assets/v3.css`; dark CAD contexts retain their original colours and geometry.
+
+- Run `python scripts/build-v3-pages.py` after editing maintained source content or the v3 evidence ledger.
 - Run `python scripts/build-v3-pages.py --check` and `python scripts/audit-v3.py` before publishing. Both run in the Pages workflow.
-- Serve the repository root and open `http://localhost:8080/v3/` for browser review.
-- Design and validation notes are in [docs/v3-sketch-design.md](docs/v3-sketch-design.md).
+- Run `node scripts/verify-v3-story-controller.cjs`, `node scripts/verify-v3-direct-transition.cjs`, `node scripts/verify-v3-film-peel.cjs` and `node scripts/verify-v3-aircraft-transport.cjs` for the approved animation contract.
+- With a running repository preview, `node scripts/verify-v3-portfolio.cjs` covers responsive navigation, search, galleries, fallback preferences and real WebGL readiness. `--static-only` does not claim browser validation.
+- The separate browser workflow runs on the `v3-field-notebook` review branch and uploads screenshots and a JSON report. Main publishes only after review.
+- See [the design contract](docs/v3-field-notebook.md) and [validation coverage](docs/v3-portfolio-validation.md).

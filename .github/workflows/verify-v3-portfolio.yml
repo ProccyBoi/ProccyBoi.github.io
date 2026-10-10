@@ -1,0 +1,54 @@
+name: Verify v3 portfolio experience
+
+on:
+  push:
+    branches: [v3-field-notebook]
+  pull_request:
+    paths:
+      - 'v3/**'
+      - 'assets/v3*'
+      - 'scripts/*v3*'
+      - 'scripts/content/v3*'
+      - '.github/workflows/verify-v3-portfolio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify generated documents and preserved geometry
+        run: |
+          python3 scripts/build-v3-pages.py --check
+          python3 scripts/audit-v3.py
+          node scripts/verify-v3-story-controller.cjs
+          node scripts/verify-v3-direct-transition.cjs
+          node scripts/verify-v3-film-peel.cjs
+          node scripts/verify-v3-aircraft-transport.cjs
+      - name: Prepare browser test dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Verify rendered portfolio and capture desktop and mobile
+        env:
+          V3_BASE_URL: http://127.0.0.1:8080/v3/
+          V3_SCREENSHOTS: /tmp/v3-browser-evidence
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v3-preview.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
+          node scripts/verify-v3-portfolio.cjs
+      - name: Save browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-browser-evidence
+          path: /tmp/v3-browser-evidence/
+          if-no-files-found: warn
+          retention-days: 14

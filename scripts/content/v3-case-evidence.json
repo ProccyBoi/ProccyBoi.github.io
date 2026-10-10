@@ -1,0 +1,142 @@
+{
+  "projects/skylabs/index.html": {
+    "title": "From aircraft sensors to a flight record",
+    "role": "I developed the STM32 aircraft logger, ESP32 LoRa ground station and post-flight replay tools. I joined Skylabs in August 2025 and became Avionics & Payload Team Lead in May 2026.",
+    "constraint": "Sensors update at different rates, the radio carries a smaller live subset, and the team still needs a useful record after landing.",
+    "decision": "Keep the aircraft binary log separate from the live link. Record the received packets again on the ground, then use one data contract for synchronized replay.",
+    "test": "The published F110211 flight contains 13,772 rows over 679.33 seconds. Its report records a 50.0 ms log interval, 13,402 log overruns and zero SD write errors.",
+    "limit": "40 Hz is the aircraft logger’s target. This flight does not demonstrate sustained 40 Hz logging; zero SD write errors does not mean every timing deadline was met.",
+    "path": ["Sensors + validity", "Aircraft binary log", "915 MHz live link", "Ground copy + replay"],
+    "links": [
+      {"label": "Inspect the recorded flight", "href": "/shared/projects/skylabs/f110211/"},
+      {"label": "Aircraft logging design", "href": "/v3/projects/skylabs/boards/telemetry/#telemetry-firmware"},
+      {"label": "Open Flight Review", "href": "/shared/flight-review/"}
+    ],
+    "disclosure": "The recorded flight includes its exact GPS route.",
+    "sources": ["/projects/skylabs/#details", "/projects/skylabs/boards/telemetry/#telemetry-firmware", "/projects/skylabs/boards/ground-station/#ground-station-backup", "/shared/projects/skylabs/f110211/"],
+    "hero": {"src": "/assets/images/projects/skylabs-telemetry-hero-1920.jpg", "width": 1920, "height": 1280, "alt": "Assembled blue Skylabs aircraft telemetry PCB with its sensors, microSD socket and radio"}
+  },
+  "projects/tramtrace/index.html": {
+    "title": "The map is also the circuit board",
+    "role": "PCB design, embedded display logic and the vehicle-position service that feeds the board over Wi-Fi.",
+    "constraint": "Four light-rail lines, station labels, 116 RGB pixels and the controller circuitry share a 207.81 × 94.55 mm board.",
+    "decision": "Use the silkscreen as the map, an ESP32 for network and display logic, and level shifting between the controller and LED data. Five electrical chains carry the pixels.",
+    "test": "The build photographs show an assembled, illuminated display. The production-board explorer exposes the copper layers and plays a frame through the source-derived LED order.",
+    "limit": "The photographs establish the physical build. The data-frame explorer explains electrical order; it is not a measurement of live update latency or service uptime.",
+    "path": ["Vehicle-position service", "Wi-Fi + ESP32", "Five LED data chains", "116 RGB pixels"],
+    "links": [
+      {"label": "Open copper + data-frame explorer", "href": "/projects/tramtrace/#tramtrace-workbench-title"},
+      {"label": "See the illuminated build", "href": "/v3/projects/tramtrace/#build"}
+    ],
+    "sources": ["/projects/tramtrace/#overview", "/projects/tramtrace/#explore", "/projects/tramtrace/#details", "/projects/tramtrace/#build"],
+    "hero": {"src": "/assets/images/projects/tramtrace-hero-1920.jpg", "width": 1920, "height": 1280, "alt": "The built TramTrace board illuminated with Sydney and Parramatta light-rail routes"}
+  },
+  "projects/metroboard/index.html": {
+    "title": "Live rail data, made physical",
+    "role": "A custom Sydney rail-map PCB and a service that supplies TfNSW GTFS real-time vehicle positions to the Wi-Fi-connected board.",
+    "constraint": "The display is a 300 × 305.7 mm PCB with 291 RGB pixels. Copper, solder mask and silkscreen must communicate the network without a separate screen or printed overlay.",
+    "decision": "Make the PCB itself the interface, with LEDs positioned on the rail map. The same approach later informed TramTrace’s smaller, tighter light-rail layout.",
+    "test": "The published photographs show the unlit PCB, controller edge and illuminated network. The assembly view makes the placement of the pixels and support circuitry inspectable.",
+    "limit": "This is build and display evidence. No measured refresh latency, fleet-position accuracy or long-duration reliability result is published here.",
+    "path": ["TfNSW real-time data", "Custom service", "Wi-Fi-connected board", "291 RGB pixels"],
+    "links": [
+      {"label": "Inspect the build photographs", "href": "/v3/projects/metroboard/#build"},
+      {"label": "See the smaller TramTrace", "href": "/v3/projects/tramtrace/"}
+    ],
+    "sources": ["/projects/metroboard/#details", "/v2/projects/metroboard/#build"],
+    "hero": {"src": "/assets/images/projects/metroboard1-web.jpg", "width": 1600, "height": 900, "alt": "The assembled Metroboard displaying illuminated Sydney rail routes in a dark room"}
+  },
+  "projects/framework-dual-usb/index.html": {
+    "title": "A useful trade-off inside one bay",
+    "role": "A custom two-port USB hub PCB packaged in the standard Framework expansion-card enclosure.",
+    "constraint": "Three Type-C connectors, a hub, power switching, protection and their supporting parts must fit inside one laptop bay.",
+    "decision": "Keep the design at USB 2.0 for small peripherals. A CH334F handles the hub, TPS2065 switches limit downstream power, and USBLC6-2SC6 parts provide connector-side ESD protection.",
+    "test": "Photographs show the assembled PCB, both downstream ports and the card installed in a Framework laptop. The assembly viewer shows the board, enclosure and component arrangement.",
+    "limit": "The published material establishes the build and installed fit. It does not include USB compliance, sustained throughput, ESD-test or power-limit measurements.",
+    "path": ["Laptop USB-C", "CH334F USB 2.0 hub", "Switched downstream power", "Two Type-C ports"],
+    "links": [
+      {"label": "See the card installed", "href": "/v3/projects/framework-dual-usb/#build"},
+      {"label": "Inspect the circuit", "href": "/v3/projects/framework-dual-usb/#dual-circuit"}
+    ],
+    "sources": ["/projects/framework-dual-usb/#details", "/projects/framework-dual-usb/#build"]
+  },
+  "projects/skylabs/boards/telemetry/index.html": {
+    "title": "Keep missing data distinguishable",
+    "role": "The STM32G474 aircraft PCB, sensor acquisition, binary logging and the aircraft side of the SX1262 link.",
+    "constraint": "Acceleration, attitude, GNSS and other sensors have different update rates and failure modes. A sample also needs to say whether its inputs are present and valid.",
+    "decision": "Store presence and validity with measurements and represent missing values as NaN. Batch eight records per SD transaction and sync once a second, with a 40 Hz logging target.",
+    "test": "F110211 provides a replayable recorded flight. The report shows a 50.0 ms log interval, 13,402 overruns, zero SD write errors and zero IMU resets.",
+    "limit": "That report separates storage and timing outcomes. It does not establish that the 40 Hz target was sustained, or explain the cause of the overruns.",
+    "links": [
+      {"label": "Inspect F110211", "href": "/shared/projects/skylabs/f110211/"},
+      {"label": "Read the logging design", "href": "/v3/projects/skylabs/boards/telemetry/#telemetry-firmware"}
+    ],
+    "disclosure": "The recorded flight includes its exact GPS route.",
+    "sources": ["/projects/skylabs/boards/telemetry/#telemetry-purpose", "/projects/skylabs/boards/telemetry/#telemetry-firmware", "/shared/projects/skylabs/f110211/"],
+    "hero": {"src": "/assets/images/projects/skylabs-telemetry-alt-1920.jpg", "width": 1920, "height": 1280, "alt": "Component side of the assembled Skylabs telemetry and avionics circuit board"}
+  },
+  "projects/skylabs/boards/ground-station/index.html": {
+    "title": "A second record at the field",
+    "role": "An ESP32-WROOM-32E ground-station PCB bringing together the SX1262 receiver, microSD storage, OLED connection and field controls.",
+    "constraint": "The crew needs telemetry and logging controls without depending on a laptop, plus a separate record if the aircraft log becomes inaccessible.",
+    "decision": "Store valid received packets locally as CSV or indexed, CRC-protected binary. Expose link and sensor status on the OLED, and provide a phone-ready Wi-Fi dashboard and pre-flight checklist.",
+    "test": "The published build photographs show the receiver, antenna connection and microSD hardware. The documented workflow adds a rate-limited USB stream for another record on a laptop.",
+    "limit": "A ground log contains the received live subset, not the full aircraft log. No packet-loss benchmark or damaged-record recovery test result is published here.",
+    "links": [
+      {"label": "Read the field workflow", "href": "/v3/projects/skylabs/boards/ground-station/#ground-station-field"},
+      {"label": "Inspect the assembled receiver", "href": "/v3/projects/skylabs/boards/ground-station/#build"}
+    ],
+    "sources": ["/projects/skylabs/boards/ground-station/#ground-station-purpose", "/projects/skylabs/boards/ground-station/#ground-station-field", "/projects/skylabs/boards/ground-station/#ground-station-backup"],
+    "hero": {"src": "/assets/images/projects/skylabs-ground-hero-1920.jpg", "width": 1920, "height": 1280, "alt": "Assembled blue Skylabs ground-station PCB with LoRa module, microSD and USB-C"}
+  },
+  "projects/rf-test-board/index.html": {
+    "title": "Turn a feedline problem into a test coupon",
+    "role": "A two-layer RF comparison board, ordered without impedance control and measured with a vector network analyser.",
+    "constraint": "Calculator geometry needed checking against the inexpensive 1.6 mm FR-4 process I was actually using.",
+    "decision": "Place masked and unmasked coplanar traces, u.FL and SMA transitions, tuning sections and split-pi footprints on the same board. Print the stack-up and nominal widths on the reverse.",
+    "test": "The case study documents VNA measurement and the physical comparison structures. The target is 50 Ω with 1 oz outer copper and a 0.2 mm gap to the surrounding copper.",
+    "limit": "50 Ω is a design target. Measured S-parameter plots and a numerical pass/fail result are not included in the public case study.",
+    "links": [
+      {"label": "Inspect the test structures", "href": "/v3/projects/rf-test-board/#build"},
+      {"label": "Read the preceding LoRa test", "href": "/v3/projects/lora-receiver/#details"}
+    ],
+    "sources": ["/projects/rf-test-board/#details", "/v2/projects/rf-test-board/#build", "/v2/projects/lora-receiver/#details"]
+  },
+  "projects/lora-receiver/index.html": {
+    "title": "A range result, and a better RF question",
+    "role": "A receiver PCB combining an ESP32 application controller, 915 MHz LoRa and a u-blox NEO-M9N GNSS receiver.",
+    "constraint": "Putting radio and navigation on one board reduces external wiring, but makes the feedline layout part of the system design.",
+    "decision": "Check the Rev A feedline with a VNA. Its mismatch from the 50 Ω target informed a dedicated RF test board for comparing geometries and transitions.",
+    "test": "The published case records a link reaching at least one kilometre in testing, alongside the VNA investigation of the first-pass feedline.",
+    "limit": "The distance is a reported test result. The page does not publish a complete range-test setup, packet-loss curve or measured impedance value.",
+    "links": [
+      {"label": "Read the RF test-board follow-up", "href": "/v3/projects/rf-test-board/"},
+      {"label": "See the Rev A build", "href": "/v3/projects/lora-receiver/#build"}
+    ],
+    "sources": ["/v2/projects/lora-receiver/#details", "/v2/projects/lora-receiver/#build", "/projects/rf-test-board/#details"]
+  },
+  "projects/framework-expansion-card/index.html": {
+    "title": "Board thickness is an interface decision",
+    "role": "An ESP32-S3-MINI-1 development board integrated into a Framework expansion bay, including USB serial, power and automatic boot/reset circuitry.",
+    "constraint": "The laptop connection, module keep-out and component placement all have to fit the expansion-card outline.",
+    "decision": "Use a 0.6 mm PCB to mate directly with the laptop’s USB-C connector. A CH340K and BC817 transistor pair support programming; the clear enclosure leaves the antenna end unobstructed.",
+    "test": "The photographs show the latest black PCB assembled in its enclosure, circuit details and the earlier green revision.",
+    "limit": "The public evidence covers revisions and physical assembly. It does not provide a measured radio comparison or connector-cycle reliability test.",
+    "links": [
+      {"label": "Compare the published revisions", "href": "/v3/projects/framework-expansion-card/#build"}
+    ],
+    "sources": ["/projects/framework-expansion-card/#details", "/projects/framework-expansion-card/#build"]
+  },
+  "projects/framework-raspberry-pi/index.html": {
+    "title": "An RP2354B in the Framework outline",
+    "role": "A 26 × 30 mm microcontroller-board design for a Framework laptop expansion bay.",
+    "constraint": "The 0.8 mm PCB, straddle-mount USB-C plug, mounting points and tactile controls share the small expansion-card envelope.",
+    "decision": "Arrange the RP2354B, external flash, crystal and power circuit around the connector and reference-enclosure mounting points.",
+    "test": "The source-derived assembly makes the board layout and relationship to the reference enclosure inspectable.",
+    "limit": "This page presents design and CAD evidence. It does not establish a manufactured, electrically tested or installed card.",
+    "links": [
+      {"label": "Inspect the board and reference enclosure", "href": "/v3/projects/framework-raspberry-pi/#explore"}
+    ],
+    "sources": ["/v2/projects/framework-raspberry-pi/#details", "/v2/projects/framework-raspberry-pi/#explore"]
+  }
+}
