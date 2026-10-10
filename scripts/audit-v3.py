@@ -26,6 +26,13 @@ LOCAL_HOSTS = {"proccyboi.github.io", "localhost", "127.0.0.1"}
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 REDIRECTS = {"projects/skylabs/flight-review/index.html": "/shared/flight-review/"}
 PRIVATE_PROJECTS = {"kiku", "usense", "comp6441", "pcbnotebook"}
+V3_ADDITIONAL_SCRIPTS = {
+    "projects/tramtrace/index.html": [
+        "assets/tramtrace-board-data.js",
+        "assets/tramtrace-component-data.js",
+        "assets/tramtrace-inspector.js?v=20260824b",
+    ],
+}
 
 
 @dataclass
@@ -305,7 +312,7 @@ def main():
                 error(page, f"{sum(missing_hooks.values())} original viewer/tool data-hook elements were changed or removed")
             old_scripts = [item.attrs["src"] for item in original.tags("script") if item.attrs.get("src") and not item.attrs["src"].split("?", 1)[0].endswith("/v2-motion.js")]
             new_scripts = [item.attrs["src"] for item in doc.tags("script") if item.attrs.get("src") and not item.attrs["src"].split("?", 1)[0].endswith("/v3.js")]
-            if old_scripts != new_scripts:
+            if old_scripts + V3_ADDITIONAL_SCRIPTS.get(relative, []) != new_scripts:
                 error(page, "shared viewer/tool script sources or execution order differ from v2")
             if inline_scripts(original) - inline_scripts(doc):
                 error(page, "an original inline simulation or model JSON block changed")

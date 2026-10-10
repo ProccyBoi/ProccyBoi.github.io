@@ -90,6 +90,59 @@
 }
 .v3 .v3-case-photograph { background: #1c1d1a; }
 .v3 .v3-case-photograph img { object-fit: cover; }
+/* The canonical 2D inspector keeps its physical board coordinates and controls.
+   Local dark tokens prevent the surrounding paper palette leaking into it. */
+.v3.v2-case .v3-tramtrace-workbench {
+  color-scheme: dark;
+  --bg: #101210;
+  --text: #edeee7;
+  --muted: #bdc4b6;
+  --rule: #495044;
+  --v2-bg: #101210;
+  --v2-ink: #edeee7;
+  --v2-muted: #bdc4b6;
+  --v2-accent: #d9aa75;
+  --inspect-bg: #101210;
+  --inspect-panel: #1c1d19;
+  --inspect-panel-soft: #252a25;
+  --inspect-text: #edeee7;
+  --inspect-muted: #bdc4b6;
+  --inspect-line: #495044;
+  --inspect-accent: #d9aa75;
+  background: var(--inspect-bg);
+  color: var(--inspect-text);
+  scroll-margin-top: 150px;
+}
+.v3 .v3-tramtrace-workbench .inspector-mode-copy h3 {
+  font-size: clamp(23px, 2.4vw, 32px);
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -.025em;
+}
+.v3 .v3-tramtrace-workbench :is(.inspector-mode-copy p, .component-readout p, .frame-readout-main p) {
+  line-height: 1.65;
+}
+.v3 .v3-tramtrace-workbench :is(.inspector-kicker, .inspector-mode-copy > p:first-child,
+  .component-readout > p:first-child, .frame-readout-main > p:first-child,
+  .pcb-legend, .component-directory summary, .frame-metrics dt, .chain-button small) {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.v3 .v3-tramtrace-workbench :is(.pcb-rotate-controls button, .pcb-annotation-toggle,
+  .frame-play, .frame-reset) { min-height: 44px; }
+.v3 .v3-tramtrace-workbench .component-directory-list button strong { font-size: 12px; }
+.v3 .v3-tramtrace-workbench .pcb-hotspot { width: 44px; height: 44px; }
+.v3 .v3-tramtrace-workbench .pcb-hotspot span { font-size: 11px; }
+.v3 .v3-tramtrace-workbench:not([data-mode="assembled"]) .pcb-hotspots { visibility: hidden; }
+.v3 .v3-tramtrace-workbench :focus-visible { outline-color: var(--inspect-accent); }
+.v3 .v3-tramtrace-note {
+  max-width: 85ch;
+  margin: 22px 0 0;
+  color: var(--inspect-muted);
+  font-size: 13px;
+  line-height: 1.75;
+}
 @media (max-width: 820px) {
   .v3 .v3-evidence-heading { grid-template-columns: 1fr; gap: 10px; }
   .v3 .v3-evidence-entries { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }

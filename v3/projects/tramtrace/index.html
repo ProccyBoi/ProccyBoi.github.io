@@ -36,6 +36,10 @@
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
   <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="assets/tramtrace-board-data.js" defer></script>
+  <script src="assets/tramtrace-component-data.js" defer></script>
+  <script src="assets/tramtrace-inspector.js?v=20260824b" defer></script>
+  <script src="/assets/v3.js?v=field-notebook-20261010" defer></script>
   <link rel="stylesheet" href="/assets/v3-evidence.css?v=field-notebook-20261010">
   <link rel="stylesheet" href="/assets/v3.css?v=field-notebook-20261010">
 </head>
@@ -49,9 +53,9 @@
         <a href="/projects/#interactive">Tools</a><a href="/shared/">Files</a><a href="/book/">Book</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf" aria-label="Public CV (PDF)">CV</a><a class="v2-nav-contact" href="/v3/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>
-  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v3/projects/">← <span>All work</span></a><span class="v2-case-nav-title">TramTrace</span><div class="v2-case-nav-links"><a href="/v3/projects/tramtrace/#overview" data-v2-section>Overview</a><a href="/v3/projects/tramtrace/#engineering" data-v2-section>Engineering</a><a href="/v3/projects/tramtrace/#explore" data-v2-section>Interactive</a><a href="/v3/projects/tramtrace/#details" data-v2-section>Details</a><a href="/v3/projects/tramtrace/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v3/projects/">← <span>All work</span></a><span class="v2-case-nav-title">TramTrace</span><div class="v2-case-nav-links"><a href="/v3/projects/tramtrace/#overview" data-v2-section>Overview</a><a href="/v3/projects/tramtrace/#engineering" data-v2-section>Engineering</a><a href="/v3/projects/tramtrace/#explore" data-v2-section>Interactive</a><a href="/v3/projects/tramtrace/#copper-data" data-v2-section>Copper &amp; data</a><a href="/v3/projects/tramtrace/#details" data-v2-section>Details</a><a href="/v3/projects/tramtrace/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
 
-  <main id="main" class="inspector-main">
+  <main id="main" class="">
     <section class="project-hero" id="overview" aria-labelledby="project-title">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>
 
@@ -74,7 +78,7 @@
         <div class="v3-evidence-test"><dt>Test & evidence</dt><dd>The build photographs show an assembled, illuminated display. The production-board explorer exposes the copper layers and plays a frame through the source-derived LED order.</dd></div>
         <div class="v3-evidence-limit"><dt>Evidence limits</dt><dd>The photographs establish the physical build. The data-frame explorer explains electrical order; it is not a measurement of live update latency or service uptime.</dd></div>
       </dl>
-      <div class="v3-evidence-links"><a href="/projects/tramtrace/#tramtrace-workbench-title">Open copper + data-frame explorer <span aria-hidden="true">↗</span></a><a href="/v3/projects/tramtrace/#build">See the illuminated build <span aria-hidden="true">↗</span></a></div>
+      <div class="v3-evidence-links"><a href="/v3/projects/tramtrace/#copper-data">Inspect copper + LED data <span aria-hidden="true">↗</span></a><a href="/v3/projects/tramtrace/#build">See the illuminated build <span aria-hidden="true">↗</span></a></div>
 
     </section>
 
@@ -95,6 +99,25 @@
         <dl class="project-interactive-facts"><div><dt>Pixels</dt><dd>116 × WS2812C</dd></div><div><dt>Data chains</dt><dd>Five</dd></div><div><dt>Board</dt><dd>207.81 × 94.55 mm</dd></div></dl>
       </div>
     </section>
+    <section class="project-interactive v3-tramtrace-workbench inspector-main" id="copper-data" aria-labelledby="v3-copper-data-title" data-board-inspector data-mode="assembled" data-view="inspect" data-chain="l1" data-hotspots="visible">
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header"><div><h2 id="v3-copper-data-title">Copper and LED data</h2></div><p>Inspect the production-board copper, identify a component or follow one frame through any of the five LED chains. The layers and electrical order come from the same KiCad source as the board above.</p></header>
+<section class="inspector-workbench" aria-labelledby="tramtrace-workbench-title">
+          <div class="inspector-mode-bar">
+            <div class="inspector-control-groups"><div><p class="inspector-kicker">Board view</p><div class="inspector-view-list" aria-label="Board view"><button class="inspector-mode is-active" type="button" data-inspector-view="inspect" aria-pressed="true">Inspect</button><button class="inspector-mode" type="button" data-inspector-view="rotate" aria-pressed="false">Rotate</button></div></div><div><p class="inspector-kicker">Inspection layer</p><div class="inspector-mode-list" aria-label="Board inspection layer"><button class="inspector-mode is-active" type="button" data-inspector-mode="assembled" aria-pressed="true">Assembled</button><button class="inspector-mode" type="button" data-inspector-mode="copper" aria-pressed="false">Copper</button><button class="inspector-mode" type="button" data-inspector-mode="data" aria-pressed="false">Data frame</button></div></div></div>
+            <article class="inspector-mode-copy" aria-live="polite"><p data-mode-index>01 / ASSEMBLED</p><h3 id="tramtrace-workbench-title" data-mode-title>The finished object.</h3><p data-mode-copy>Start with the board as it was designed to be seen. Select a marked component to find out what it contributes.</p></article>
+          </div>
+          <div class="pcb-viewport"><div class="pcb-stage" data-pcb-stage tabindex="0"><div class="pcb-board-fill" aria-hidden="true"></div><img class="pcb-render" src="assets/images/interactive/tramtrace/tramtrace-board-render.webp" width="2263" height="1057" alt="KiCad rendering of the assembled TramTrace board"><img class="pcb-turntable-render" src="assets/images/interactive/tramtrace/tramtrace-turn-00.webp" width="1200" height="1200" alt="" data-pcb-turntable draggable="false"><img class="pcb-vector pcb-back-copper" src="assets/images/interactive/tramtrace/tramtrace-back-copper.svg" alt=""><img class="pcb-vector pcb-front-copper" src="assets/images/interactive/tramtrace/tramtrace-front-copper.svg" alt=""><img class="pcb-vector pcb-front-mask" src="assets/images/interactive/tramtrace/tramtrace-front-mask.svg" alt=""><img class="pcb-vector pcb-front-silk" src="assets/images/interactive/tramtrace/tramtrace-front-silk.svg" alt=""><canvas class="pcb-data-canvas" data-pcb-canvas aria-hidden="true"></canvas><div class="pcb-hotspots" data-pcb-hotspots aria-label="Selectable board components"></div><div class="pcb-stage-label" aria-hidden="true"><span>Production board</span><span>KiCad source / Rev 1</span></div><p class="pcb-drag-hint" data-pcb-drag-hint hidden><span aria-hidden="true">&larr;</span> Drag to rotate <span aria-hidden="true">&rarr;</span></p><p class="pcb-angle" data-pcb-angle hidden>000&deg;</p></div></div>
+          <div class="pcb-legend" aria-live="polite"><div class="pcb-legend-assembled" data-legend="assembled"><span><i class="legend-dot legend-dot-component"></i> Select a component</span><span class="pcb-mobile-hint">Swipe to move across the board</span><button type="button" class="pcb-annotation-toggle" data-hotspot-toggle aria-pressed="true">Hide annotations</button></div><div class="pcb-legend-copper" data-legend="copper" hidden><span><i class="legend-line legend-line-front"></i> Front copper</span><span><i class="legend-line legend-line-back"></i> Back copper</span><span>Exported directly from the fabrication layers</span></div><div class="pcb-legend-rotate" data-legend="rotate" hidden><span>Populated render from the production board</span><div class="pcb-rotate-controls" aria-label="Board rotation controls"><button type="button" data-pcb-rotate-previous aria-label="Rotate board 15 degrees left">&larr; 15&deg;</button><button type="button" data-pcb-rotate-reset>Start angle</button><button type="button" data-pcb-rotate-next aria-label="Rotate board 15 degrees right">15&deg; &rarr;</button></div></div></div>
+          <div class="component-readout" data-component-readout aria-live="polite" aria-atomic="true"><p data-component-ref>BOARD</p><h3 data-component-title>No component selected</h3><p data-component-copy>Select a + marker to inspect it. Select the active marker again to clear the board.</p></div>
+          <details class="component-directory" data-component-directory-wrap><summary>Component index <span data-component-directory-count>10 selectable parts</span></summary><div class="component-directory-list" data-component-directory></div></details>
+          <div class="frame-console" data-frame-console hidden><div class="chain-list" aria-label="Pixel data chains" data-chain-list></div><div class="frame-readout"><div class="frame-readout-main" aria-live="polite"><p data-frame-eyebrow>L1 / 45 PIXELS</p><h3 data-frame-title>Frame at the level shifter.</h3><p data-frame-copy>The first 24 colour bits are about to reach LED94. Everything after them continues downstream.</p></div><dl class="frame-metrics"><div><dt>Progress</dt><dd data-frame-progress>0 / 45</dd></div><div><dt>Bits consumed</dt><dd data-frame-bits>0</dd></div><div><dt>Wire time</dt><dd data-frame-time>0.00 ms</dd></div></dl></div><div class="frame-controls"><button class="frame-play" type="button" data-frame-play aria-label="Play data frame"><span aria-hidden="true">&#9654;</span><span data-frame-play-label>Play frame</span></button><label class="frame-slider-label"><span class="sr-only">Pixels reached</span><input type="range" min="0" max="45" value="0" step="1" data-frame-slider></label><button class="frame-reset" type="button" data-frame-reset>Reset</button></div></div>
+        </section>
+        <p class="v3-tramtrace-note">Frame playback is slowed for inspection. Wire time is calculated from 24 bits per pixel at 800 kbit/s; it is not a measurement of live vehicle-update latency.</p>
+        <noscript><p class="inspector-noscript">The assembled board image remains visible. Enable JavaScript to inspect copper layers, select components and step through a data frame.</p></noscript>
+      </div>
+    </section>
+
 
     <div class="project-body shell" id="details">
       <section class="project-summary" aria-labelledby="tramtrace-origin">
@@ -110,7 +133,7 @@
         <div class="project-prose">
           <p>An ESP32-WROOM-32E handles the network connection and display logic. A CH340C gives me a straightforward USB programming path, while level shifting keeps the ESP32 and LED data happy together.</p>
           <p>The hard part was physical rather than computational: the station names, route geometry and components all had to share the same compact board. The silkscreen ended up doing real work as part map, part assembly drawing.</p>
-          <div class="hero-actions"><a class="button button-primary" href="/projects/tramtrace/#tramtrace-workbench-title">Inspect copper and LED data order ↗</a></div>
+          <div class="hero-actions"><a class="button button-primary" href="/v3/projects/tramtrace/#copper-data">Inspect copper and LED data order ↓</a></div>
         </div>
       </section>
 

@@ -84,7 +84,12 @@ Environment options:
   direct-transition regression; its default is `HEAD`
 
 A full browser run writes `results.json`, desktop and mobile screenshots, and
-per-failure screenshot/request/error evidence when a page was available. It
+per-failure screenshot/request/error evidence when a page was available. Full-page
+captures first scroll each rendered, meaningful photograph into view, await its
+actual lazy-load/IntersectionObserver load and decode, and restore the original
+scroll position. The JSON records decoded sources and dimensions. Hidden
+alternate posters are excluded; loading is never forced eager globally, and a
+meaningful image failure fails the test. It
 returns a nonzero exit status on failure or browser-launch blockage. A blocked
 browser is explicitly reported as blocked, even when every source check passes.
 A `--static-only` result explicitly excludes browser verification.
@@ -99,6 +104,7 @@ A `--static-only` result explicitly excludes browser verification.
 | Mobile navigation | Enter opens, Escape closes and restores focus, selected navigation follows the correct route |
 | Search | Query and category URL initialization, four Framework results, reload restoration, empty state, Escape reset, all category counts |
 | Browser history | Real Back and Forward restore query/result state while retaining unrelated query parameters |
+| TramTrace workbench | In-page production copper layers, ten component groups, matching source data, 24-frame rotation controls, every chain and frame readout, keyboard/pointer stepping, playback interruptions and denied-WebGL narrow layout |
 | Photo gallery | Real case-study dialog opens by keyboard, arrow navigation, modal focus containment, Escape/Close restoration and repeated opening |
 | Shared destinations | All preserved interior routes and shared files/booking/Flight Review/CV return meaningful responses; redirect actually arrives at Flight Review |
 | No JavaScript | Visible navigation, aircraft and telemetry copy/poster, complete collection, native photographs |
@@ -120,8 +126,9 @@ lifecycle, context-loss and scene-framing check:
 node scripts/verify-v3-aircraft.cjs
 ```
 
-The portfolio suite checks existing tool destinations and preserves their
-controllers through `audit-v3.py`; it does not claim to re-test every teaching
+The portfolio suite exercises the integrated TramTrace copper/data workbench in
+detail. For other tools, it checks destinations and preserves controllers through
+`audit-v3.py`; it does not claim to re-test every teaching
 simulation, hardware protocol or external booking backend. Existing focused
 hardware and aircraft suites should also run when their implementation changes.
 
@@ -163,3 +170,74 @@ not a demonstrated site failure. No local rendered screenshots or interaction
 passes are claimed. A browser-capable CI or preview environment must run the
 full suite and provide the actual `results.json` and screenshots before visual
 acceptance can be considered complete.
+
+
+## Integrated TramTrace workbench
+
+The original root workbench is also available directly in the v3 case study at
+`/v3/projects/tramtrace/#copper-data`. Its wrapper owns the inspection state;
+the separate v3 WebGL assembly viewer remains in place. It uses the original
+board-data, component-data and inspector controller, in their original order.
+The root page and shared source data are unchanged.
+
+The source-backed chain inventory is:
+
+| Chain | Pixels | Full-frame colour bits | Wire time at 800 kbit/s |
+| --- | ---: | ---: | ---: |
+| L1 | 45 | 1080 | 1.35 ms |
+| L2 | 8 | 192 | 0.24 ms |
+| L3 | 30 | 720 | 0.90 ms |
+| L4 | 32 | 768 | 0.96 ms |
+| Status | 1 | 24 | 0.03 ms |
+| Total | 116 | 2784 | Each chain is inspected independently |
+
+Tests verify all 116 distinct source LED references, their coordinates and copper
+segments, ten component groups, the shared 24-bit/800 kbit/s constants and exact
+browser-loaded data parity. The Copper mode displays both fabrication layers
+together, matching the original workbench's controls.
+
+Browser interaction checks include:
+
+- Assembled/Copper/Data selection by keyboard, decoded visible copper layers
+- Each of the ten component-directory choices, matching hotspot state, repeated
+  selection clearing, Escape clearing and annotation visibility
+- Rotation by arrow keys, Home, next/reset buttons and wrapping through 24 frames
+- All five chain buttons; native range step, Home/End and real pointer scrubbing
+- Correct progress, consumed bits, wire time and first/final LED readouts
+- Play/pause, reset, rapid repeated activation, replay after completion and
+  cancellation when changing chain, scrubbing, changing layer or rotating
+- Offscreen pause preserves the current frame step; returning to the workbench
+  does not restart playback automatically
+- A wait longer than two playback ticks after interruption to catch orphaned
+  timers rather than merely checking the button label
+- Actual nontransparent pixel/path drawing in the 2D canvas
+- Separate denied-WebGL checks at 320 px and 390 px: controls remain within the
+  page, the board can pan inside its own viewport, and all 32 L4 pixels can be
+  stepped through without a 3D renderer
+
+These browser additions need a fresh full-suite run; passing the source inventory
+alone does not certify their live behavior.
+
+### Initial CI result and test-harness correction
+
+The first browser-capable CI run passed 16 of 18 checks, including actual aircraft
+WebGL rendering, core responsive pages and all narrow interior pages. It found a
+real gallery focus-containment issue and a redirect-test race. In the latter,
+`document.fonts.ready` was evaluated in the old Flight Review redirect document
+while that document was being replaced. The test now navigates, waits for the
+final `/shared/flight-review/` URL and its load event, and only then accesses
+fonts. The gallery containment assertion remains strict. These changes and the
+new TramTrace coverage require another CI run; the initial partial result is not
+a final acceptance pass.
+
+
+## Diagnostic performance measurements
+
+The desktop-home result records Navigation Timing DOMContentLoaded/load elapsed
+milliseconds and Resource Timing count, transfer bytes and decoded bytes both
+initially and after scrolling the complete page. The real WebGL result records
+those timings plus elapsed time to the first rendered frame, telemetry readiness
+and the renderer's frame counter. Values are observations from the local preview
+or CI machine, without network throttling or a physical phone. Zero transfer
+sizes may reflect cache or unavailable timing. These diagnostics are neither
+user-network/mobile benchmarks nor a synthetic performance score.

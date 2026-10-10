@@ -25,7 +25,7 @@
     "limit": "The photographs establish the physical build. The data-frame explorer explains electrical order; it is not a measurement of live update latency or service uptime.",
     "path": ["Vehicle-position service", "Wi-Fi + ESP32", "Five LED data chains", "116 RGB pixels"],
     "links": [
-      {"label": "Open copper + data-frame explorer", "href": "/projects/tramtrace/#tramtrace-workbench-title"},
+      {"label": "Inspect copper + LED data", "href": "/v3/projects/tramtrace/#copper-data"},
       {"label": "See the illuminated build", "href": "/v3/projects/tramtrace/#build"}
     ],
     "sources": ["/projects/tramtrace/#overview", "/projects/tramtrace/#explore", "/projects/tramtrace/#details", "/projects/tramtrace/#build"],

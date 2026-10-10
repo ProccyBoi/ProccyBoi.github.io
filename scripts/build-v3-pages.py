@@ -18,10 +18,16 @@ SOURCE = ROOT / "v2"
 DESTINATION = ROOT / "v3"
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 ROUTE_PREFIX = re.compile(r"^(https://proccyboi\.github\.io)?/v2/")
-PRESENTATION = '''  <link rel="stylesheet" href="/assets/v3-evidence.css?v=field-notebook-20261010">
+PRESENTATION = '''  <script src="/assets/v3.js?v=field-notebook-20261010" defer></script>
+  <link rel="stylesheet" href="/assets/v3-evidence.css?v=field-notebook-20261010">
   <link rel="stylesheet" href="/assets/v3.css?v=field-notebook-20261010">
 '''
 EVIDENCE = json.loads((ROOT / "scripts/content/v3-case-evidence.json").read_text(encoding="utf-8"))
+TRAMTRACE_SCRIPTS = (
+    "assets/tramtrace-board-data.js",
+    "assets/tramtrace-component-data.js",
+    "assets/tramtrace-inspector.js?v=20260824b",
+)
 UTILITY_LINKS = (
     ("Tools", "/projects/#interactive"),
     ("Files", "/shared/"),
@@ -161,12 +167,49 @@ def validate_evidence():
                     raise ValueError(f"Evidence source fragment does not exist: {reference}")
 
 
+def tramtrace_workbench_source():
+    """Import only the complete 2D workbench, never the root's 3D viewer."""
+    source = (ROOT / "projects/tramtrace/index.html").read_text(encoding="utf-8")
+    document = Document(source)
+    workbenches = [node for node in document.elements if node.has_class("inspector-workbench")]
+    if len(workbenches) != 1:
+        raise ValueError("Expected one canonical TramTrace inspector workbench")
+    node = workbenches[0]
+    return source[node.start:node.end]
+
+
+def tramtrace_workbench():
+    return '''
+    <section class="project-interactive v3-tramtrace-workbench inspector-main" id="copper-data" aria-labelledby="v3-copper-data-title" data-board-inspector data-mode="assembled" data-view="inspect" data-chain="l1" data-hotspots="visible">
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header"><div><h2 id="v3-copper-data-title">Copper and LED data</h2></div><p>Inspect the production-board copper, identify a component or follow one frame through any of the five LED chains. The layers and electrical order come from the same KiCad source as the board above.</p></header>
+''' + tramtrace_workbench_source() + '''
+        <p class="v3-tramtrace-note">Frame playback is slowed for inspection. Wire time is calculated from 24 bits per pixel at 800 kbit/s; it is not a measurement of live vehicle-update latency.</p>
+        <noscript><p class="inspector-noscript">The assembled board image remains visible. Enable JavaScript to inspect copper layers, select components and step through a data frame.</p></noscript>
+      </div>
+    </section>
+'''
+
+
+def validate_tramtrace_import(source):
+    """Exact markup parity preserves root hooks, IDs, controls and 2D fallback."""
+    document = Document(source)
+    imported = [node for node in document.elements if node.has_class("inspector-workbench")]
+    if len(imported) != 1 or normalized(source[imported[0].start:imported[0].end]) != normalized(tramtrace_workbench_source()):
+        raise ValueError("The v3 TramTrace workbench must match the canonical root workbench")
+    if len([node for node in document.elements if "data-pcb-object" in node.attrs]) != 1:
+        raise ValueError("TramTrace must retain exactly one original 3D assembly")
+    if any(node.tag == "main" and node.has_class("inspector-main") for node in document.elements):
+        raise ValueError("TramTrace inspector mode CSS must be scoped to its 2D wrapper")
+
+
 def build(relative):
     source = (SOURCE / relative).read_text(encoding="utf-8")
     document = Document(source)
     edits = []
     has_footer = False
     record = EVIDENCE.get(relative.as_posix())
+    is_tramtrace = relative.as_posix() == "projects/tramtrace/index.html"
     counterpart = "/v2/" + relative.as_posix().removesuffix("index.html")
     comparison = f'<a class="v3-version-link" href="{counterpart}" aria-label="View this page in v2">v2</a>'
 
@@ -199,6 +242,10 @@ def build(relative):
             classes = attrs.get("class", "").split()
             classes.extend(name for name in ["v3", "v3-interior"] if name not in classes)
             updated = attribute(updated, "class", " ".join(classes))
+        if is_tramtrace and element.tag == "main" and element.has_class("inspector-main"):
+            # Mode selectors must not also match an unconfigured outer ancestor.
+            classes = [name for name in attrs.get("class", "").split() if name != "inspector-main"]
+            updated = attribute(updated, "class", " ".join(classes))
         if element.has_class("v2-footer-links"):
             edits.append((element.close_start, element.close_start, utility_navigation() + comparison))
             has_footer = True
@@ -209,8 +256,14 @@ def build(relative):
         if record and element.tag == "a" and "data-v2-section" in attrs and attrs.get("href", "").endswith("#overview"):
             href = route(attrs["href"]).removesuffix("#overview") + "#engineering"
             edits.append((element.end, element.end, f'<a href="{href}" data-v2-section>Engineering</a>'))
+        if is_tramtrace and element.attrs.get("id") == "explore":
+            edits.append((element.end, element.end, tramtrace_workbench()))
+        if is_tramtrace and element.tag == "a" and "data-v2-section" in attrs and attrs.get("href", "").endswith("#explore"):
+            edits.append((element.end, element.end, '<a href="/v3/projects/tramtrace/#copper-data" data-v2-section>Copper &amp; data</a>'))
         if element.tag == "head":
             extra = PRESENTATION
+            if is_tramtrace:
+                extra = "".join(f'  <script src="{asset}" defer></script>\n' for asset in TRAMTRACE_SCRIPTS) + extra
             # Redirects retain their shared application's canonical target.
             if not any(node.tag == "meta" and node.attrs.get("name") == "theme-color" for node in document.elements):
                 extra = '  <meta name="theme-color" content="#f3f2eb">\n' + extra
@@ -235,9 +288,10 @@ def build(relative):
         source = source.replace("STM32G474 sensor acquisition, 40 Hz binary logging", "STM32G474 sensor acquisition, a 40 Hz binary logging target")
     if relative.as_posix() == "projects/skylabs/boards/telemetry/index.html":
         source = source.replace("<dd>40 Hz binary</dd>", "<dd>40 Hz target / binary</dd>")
-    if relative.as_posix() == "projects/tramtrace/index.html":
+    if is_tramtrace:
         source = source.replace('<a class="button button-primary" href="/v3/projects/tramtrace/#explore">Inspect the PCB</a>',
-                                '<a class="button button-primary" href="/projects/tramtrace/#tramtrace-workbench-title">Inspect copper and LED data order ↗</a>')
+                                '<a class="button button-primary" href="/v3/projects/tramtrace/#copper-data">Inspect copper and LED data order ↓</a>')
+        validate_tramtrace_import(source)
     return normalized(source)
 
 

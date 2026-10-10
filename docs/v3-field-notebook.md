@@ -22,8 +22,10 @@ validated by the generator.
 Skylabs' logging rate is a target, not a measured achievement. F110211's published
 50.0 ms log interval, 13,402 overruns and zero SD write errors remain together.
 RP2354B is labelled as design/CAD evidence, without suggesting a tested build.
-The root TramTrace copper/data-frame inspector remains the canonical complete
-inspector; v3 links directly to it rather than duplicating its controllers.
+The complete TramTrace copper/data-frame workbench is imported into v3 from its
+maintained root markup and uses the original controller and production-board
+data. Root remains intact; v3 hosts the complete 2D inspector beside its existing
+3D assembly, without creating a second implementation of the electrical model.
 
 ## Composition and type
 

@@ -8,6 +8,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const origin = new URL(process.env.V3_BASE_URL || 'http://localhost:8080/v3/').origin;
 const output = path.resolve(process.env.V3_SCREENSHOTS || path.join(root, '.codex-temp/v3-portfolio'));
@@ -17,6 +18,8 @@ const projectSlugs = ['coaster', 'dash', 'framework-dual-usb', 'framework-expans
 const toolSlugs = ['scopelab', 'lithography-animation', 'mosfet-operating-regions'];
 const primary = 'a[data-v2-project][href^="/v3/projects/"]';
 const hero = '[data-aircraft-hero]';
+const workbench = '#copper-data[data-board-inspector]';
+const chainCounts = { l1: 45, l2: 8, l3: 30, l4: 32, status: 1 };
 const cadRequest = /\/assets\/(?:models\/(?:aircraft|hero)\/|vendor\/three\.min\.js|v3-aircraft-(?:scene|atmosphere)\.js)/;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const sourcePages = listPages('v2').filter(file => file !== 'index.html' && !file.startsWith('render/'));
@@ -47,8 +50,52 @@ async function test(name, action) {
   }
   entry.durationMs = Date.now() - started;
 }
+async function prepareFullPageImages(page) {
+  const original = await page.evaluate(() => ({ x: scrollX, y: scrollY })), checked = [];
+  try {
+    for (const image of await page.locator('img[alt]').all()) {
+      const meaningful = await image.evaluate(node => {
+        const deferred = node.hasAttribute('data-v3-src') && !node.getAttribute('src') && document.body.classList.contains('v2-ready');
+        if (!node.alt.trim() || (!node.getClientRects().length && !deferred)) return false;
+        // Offscreen photographs still qualify. Hidden alternate posters, modal
+        // images and inactive states do not. Do not change loading attributes.
+        for (let item = node; item; item = item.parentElement) {
+          const style = getComputedStyle(item);
+          if (item.hidden || (style.display === 'none' && !(item === node && deferred)) || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+        }
+        return true;
+      });
+      if (!meaningful) continue;
+      await image.evaluate(node => (node.hasAttribute('data-v3-src') && !node.getAttribute('src') ? node.parentElement : node).scrollIntoView({ block: 'center', behavior: 'instant' }));
+      const details = await image.evaluate(async node => {
+        // Scrolling triggers both native lazy loading and data-v3-src IO. Wait
+        // for that real load event before decoding, including src-less images.
+        await new Promise((resolve, reject) => {
+          if (node.complete && node.naturalWidth > 0) return resolve();
+          const cleanup = () => { clearTimeout(timer); node.removeEventListener('load', success); node.removeEventListener('error', failure); };
+          const success = () => { cleanup(); resolve(); };
+          const failure = () => { cleanup(); reject(new Error('Meaningful photograph failed: ' + node.alt + ' (' + (node.currentSrc || node.dataset.v3Src || node.src) + ')')); };
+          const timer = setTimeout(failure, 20000);
+          node.addEventListener('load', success, { once: true }); node.addEventListener('error', failure, { once: true });
+        });
+        await node.decode();
+        if (!node.naturalWidth || !node.naturalHeight) throw new Error('Photograph decoded without dimensions: ' + node.alt);
+        return { alt: node.alt, source: node.currentSrc || node.src, width: node.naturalWidth, height: node.naturalHeight };
+      });
+      checked.push(details);
+    }
+  } finally {
+    await page.evaluate(position => scrollTo({ left: position.x, top: position.y, behavior: 'instant' }), original);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  }
+  return checked;
+}
 async function screenshot(page, name, fullPage = false) {
   const file = name.replace(/[^a-z0-9_-]/gi, '-').toLowerCase() + '.png';
+  if (fullPage) {
+    const photographs = await prepareFullPageImages(page);
+    (evidence.fullPagePhotographs ||= []).push({ screenshot: file, photographs });
+  }
   await page.screenshot({ path: path.join(output, file), fullPage, animations: 'disabled', timeout: 30000 });
   screenshotPaths.push(file);
   return file;
@@ -92,6 +139,23 @@ async function visit(page, route = '/v3/') {
   await page.waitForLoadState('load');
   await page.evaluate(() => document.fonts.ready);
 }
+async function performanceData(page) {
+  return page.evaluate(() => {
+    const navigation = performance.getEntriesByType('navigation')[0], resources = performance.getEntriesByType('resource');
+    const milliseconds = value => Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
+    return {
+      url: location.href,
+      domContentLoadedMs: navigation ? milliseconds(navigation.domContentLoadedEventEnd - navigation.startTime) : null,
+      loadMs: navigation?.loadEventEnd ? milliseconds(navigation.loadEventEnd - navigation.startTime) : null,
+      elapsedSinceNavigationMs: milliseconds(performance.now()),
+      documentTransferBytes: navigation?.transferSize ?? null,
+      resourceCount: resources.length,
+      resourceTransferBytes: resources.reduce((sum, entry) => sum + (entry.transferSize || 0), 0),
+      resourceDecodedBytes: resources.reduce((sum, entry) => sum + (entry.decodedBodySize || 0), 0),
+      resourcesWithReportedTransferBytes: resources.filter(entry => entry.transferSize > 0).length
+    };
+  });
+}
 async function noOverflow(page, label) {
   const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: innerWidth }));
   assert.ok(dimensions.scroll <= dimensions.viewport + 1, label + ': horizontal overflow ' + JSON.stringify(dimensions));
@@ -120,6 +184,36 @@ async function searchCount(page, count) {
   await page.waitForFunction(({ selector, count }) => [...document.querySelectorAll(selector)].filter(node => !node.hidden && !node.closest('[hidden]')).length === count, { selector: primary, count });
   assert.equal(await page.locator(primary + ':visible').count(), count);
 }
+function tramTraceSourceData() {
+  const context = { window: {} }; vm.createContext(context);
+  for (const file of ['assets/tramtrace-board-data.js', 'assets/tramtrace-component-data.js']) vm.runInContext(read(file), context, { filename: file });
+  return JSON.parse(JSON.stringify(context.window.tramTraceBoardData));
+}
+async function openWorkbench(page) {
+  await visit(page, '/v3/projects/tramtrace/#copper-data');
+  const board = page.locator(workbench);
+  assert.equal(await board.count(), 1, 'Exactly one in-page copper/data workbench');
+  await board.locator('[data-chain-list] button').last().waitFor({ state: 'attached' });
+  return board;
+}
+async function activateKeyboard(page, button) { await button.focus(); await page.keyboard.press('Enter'); }
+async function frameReadout(board, key, step) {
+  const length = chainCounts[key], bits = step * 24;
+  assert.equal(await board.getAttribute('data-chain'), key);
+  assert.equal(await board.locator('[data-frame-slider]').inputValue(), String(step));
+  assert.equal(await board.locator('[data-frame-slider]').getAttribute('max'), String(length));
+  assert.equal((await board.locator('[data-frame-progress]').textContent()).trim(), `${step} / ${length}`);
+  assert.equal((await board.locator('[data-frame-bits]').textContent()).replace(/[^0-9]/g, ''), String(bits));
+  assert.equal((await board.locator('[data-frame-time]').textContent()).trim(), `${(bits / 800).toFixed(2)} ms`);
+}
+async function assertStopped(page, board) {
+  assert.equal(await board.locator('[data-frame-play]').getAttribute('aria-label'), 'Play data frame');
+  const value = await board.locator('[data-frame-slider]').inputValue();
+  // Longer than two reduced-motion playback ticks (360 ms) proves that a
+  // pause/reset/mode switch cancelled the interval, not just its label.
+  await page.waitForTimeout(800);
+  assert.equal(await board.locator('[data-frame-slider]').inputValue(), value, 'Stopped playback cannot advance later');
+}
 async function staticTests() {
   await test('15 public projects and 23 preserved interiors', () => {
     assert.equal(sourcePages.length, 23);
@@ -146,6 +240,31 @@ async function staticTests() {
     }
     return { routes: [...paths].sort() };
   });
+  await test('TramTrace in-page workbench uses production electrical data', () => {
+    const html = read('v3/projects/tramtrace/index.html'), data = tramTraceSourceData();
+    const wrappers = tags(html, 'section').filter(tag => tag.id === 'copper-data' && 'data-board-inspector' in tag);
+    assert.equal(wrappers.length, 1);
+    assert.ok(wrappers[0].class.split(/\s+/).includes('inspector-main'));
+    assert.equal(tags(html, 'main').some(tag => tag.class?.split(/\s+/).includes('inspector-main')), false, 'Mode-scoped CSS belongs to the workbench, not an ancestor');
+    for (const [key, value] of Object.entries({ 'data-mode': 'assembled', 'data-view': 'inspect', 'data-chain': 'l1', 'data-hotspots': 'visible' })) assert.equal(wrappers[0][key], value);
+    assert.equal((html.match(/\bdata-pcb-object(?:\s|>)/g) || []).length, 1, 'Keep the separate existing 3D viewer');
+    const scripts = tags(html, 'script').filter(tag => tag.src).map(tag => new URL(tag.src, origin + '/').pathname);
+    const required = ['/assets/tramtrace-board-data.js', '/assets/tramtrace-component-data.js', '/assets/tramtrace-inspector.js'];
+    assert.deepEqual(scripts.filter(src => required.includes(src)), required, 'One ordered copy of each production controller/data source');
+    assert.equal(data.pixelCount, 116); assert.equal(data.bitsPerPixel, 24); assert.equal(data.dataRate, 800000);
+    assert.deepEqual(Object.keys(data.chains).sort(), Object.keys(chainCounts).sort());
+    assert.equal(data.components.length, 10);
+    const references = [];
+    for (const [key, count] of Object.entries(chainCounts)) {
+      const chain = data.chains[key]; assert.equal(chain.leds.length, count); assert.equal(chain.traces.length, count);
+      references.push(...chain.leds.map(led => led[0]));
+      assert.ok(chain.leds.every(led => led.slice(1).every(Number.isFinite)), 'Finite pixel coordinates');
+      assert.ok(chain.traces.every(connection => connection.length && connection.every(segment => segment.length === 5 && segment.every(Number.isFinite))), 'Finite source copper segments');
+    }
+    assert.equal(references.length, 116); assert.equal(new Set(references).size, 116);
+    for (const layer of ['front-copper', 'back-copper']) assert.ok(tags(html, 'img').some(tag => tag.src?.endsWith('tramtrace-' + layer + '.svg')), layer + ' fabrication asset retained');
+    return { chains: chainCounts, pixels: 116, components: 10, bitsPerPixel: 24, dataRate: 800000 };
+  });
   await test('Approved two-chapter aircraft and gallery hooks remain', () => {
     const home = read('v3/index.html');
     assert.deepEqual(tags(home, 'article').filter(tag => 'data-aircraft-chapter' in tag).map(tag => tag.id), ['aircraft', 'telemetry']);
@@ -160,6 +279,7 @@ async function staticTests() {
 async function browserTests() {
   await browserTest('desktop navigation and meaningful first screen', {}, async ({ page }) => {
     await visit(page);
+    const initialHomePerformance = await performanceData(page);
     assert.equal(await page.locator('h1').isVisible(), true);
     assert.match(await page.locator('main').textContent(), /Andrew Chung|electrical engineering/i);
     const skip = page.locator('a[href$="#main"]').first();
@@ -169,10 +289,12 @@ async function browserTests() {
     await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
     await screenshot(page, 'desktop-home');
     await screenshot(page, 'desktop-home-full', true);
+    const inspectedHomePerformance = await performanceData(page);
     await page.locator('[data-v2-nav] a[href="/v3/projects/"]').click();
     await page.waitForURL('**/v3/projects/');
     await searchCount(page, 15);
     await screenshot(page, 'desktop-collection');
+    return { performance: { initialHome: initialHomePerformance, afterFullPageViewing: inspectedHomePerformance } };
   });
   await browserTest('collection query categories empty reset and history', {}, async ({ page }) => {
     await visit(page, '/v3/projects/?qa=portfolio&q=Framework&category=hardware');
@@ -236,6 +358,143 @@ async function browserTests() {
     assert.equal(await first.evaluate(node => node === document.activeElement), true);
     await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' })); await screenshot(page, 'desktop-case-study');
   });
+  await browserTest('TramTrace copper components and rotation preserve source behavior', {}, async ({ page }) => {
+    const board = await openWorkbench(page), expected = tramTraceSourceData();
+    assert.deepEqual(await page.evaluate(() => window.tramTraceBoardData), expected, 'Served electrical order, coordinates, copper segments and components equal production sources');
+    assert.equal(await board.locator('[data-component-directory] button').count(), 10);
+    assert.equal(await board.locator('[data-pcb-hotspots] button').count(), 10);
+    assert.equal(await board.locator('[data-component-directory-count]').textContent(), '10 selectable parts');
+    await activateKeyboard(page, board.locator('[data-inspector-mode="copper"]'));
+    assert.equal(await board.getAttribute('data-mode'), 'copper');
+    assert.equal(await board.locator('[data-legend="copper"]').isVisible(), true);
+    for (const selector of ['.pcb-front-copper', '.pcb-back-copper']) {
+      const layer = board.locator(selector); await layer.evaluate(image => image.decode());
+      assert.equal(await layer.evaluate(image => image.naturalWidth > 0 && Number(getComputedStyle(image).opacity) > 0), true);
+    }
+    await board.locator('[data-pcb-stage]').scrollIntoViewIfNeeded(); await screenshot(page, 'desktop-tramtrace-copper');
+    await activateKeyboard(page, board.locator('[data-inspector-mode="assembled"]'));
+    await activateKeyboard(page, board.locator('[data-component-directory-wrap] summary'));
+    for (let index = 0; index < expected.components.length; index++) {
+      const choice = board.locator('[data-component-directory] [data-component-index="' + index + '"]');
+      await activateKeyboard(page, choice);
+      assert.equal(await choice.getAttribute('aria-pressed'), 'true');
+      assert.equal(await board.locator('[data-component-ref]').textContent(), expected.components[index][0]);
+      assert.equal(await board.locator('[data-component-title]').textContent(), expected.components[index][1]);
+      assert.equal(await board.locator('[data-pcb-hotspots] [aria-pressed="true"]').getAttribute('data-component-index'), String(index));
+    }
+    await page.keyboard.press('Enter');
+    assert.equal(await board.locator('[data-component-ref]').textContent(), 'BOARD', 'Repeated selection clears');
+    await activateKeyboard(page, board.locator('[data-component-directory] [data-component-index="8"]'));
+    await board.locator('[data-pcb-stage]').focus(); await page.keyboard.press('Escape');
+    assert.equal(await board.locator('[data-component-ref]').textContent(), 'BOARD');
+    await activateKeyboard(page, board.locator('[data-hotspot-toggle]'));
+    assert.equal(await board.getAttribute('data-hotspots'), 'hidden');
+    await page.keyboard.press('Enter'); assert.equal(await board.getAttribute('data-hotspots'), 'visible');
+    await activateKeyboard(page, board.locator('[data-inspector-view="rotate"]'));
+    await board.locator('[data-pcb-stage]').focus(); await page.keyboard.press('ArrowRight');
+    assert.equal(await board.locator('[data-pcb-angle]').textContent(), '015°');
+    await page.keyboard.press('ArrowLeft'); assert.equal(await board.locator('[data-pcb-angle]').textContent(), '000°');
+    await page.keyboard.press('ArrowLeft'); assert.equal(await board.locator('[data-pcb-angle]').textContent(), '345°');
+    await page.keyboard.press('Home'); assert.equal(await board.locator('[data-pcb-angle]').textContent(), '000°');
+    await activateKeyboard(page, board.locator('[data-pcb-rotate-next]')); assert.equal(await board.locator('[data-pcb-angle]').textContent(), '015°');
+    await activateKeyboard(page, board.locator('[data-pcb-rotate-reset]')); assert.equal(await board.locator('[data-pcb-angle]').textContent(), '000°');
+    await activateKeyboard(page, board.locator('[data-inspector-view="inspect"]'));
+    assert.equal(await board.getAttribute('data-view'), 'inspect'); await noOverflow(page, 'Copper/component workbench');
+    return { sourceParity: true, componentSelections: 10, copperLayers: 2, turntableFrames: 24 };
+  });
+  await browserTest('TramTrace every electrical chain supports step scrub and correct readouts', {}, async ({ page }) => {
+    const board = await openWorkbench(page), expected = tramTraceSourceData();
+    await activateKeyboard(page, board.locator('[data-inspector-mode="data"]'));
+    assert.equal(await board.locator('[data-frame-console]').isVisible(), true);
+    assert.deepEqual(await board.locator('[data-chain-list] button').evaluateAll(buttons => buttons.map(button => button.dataset.chain)), Object.keys(chainCounts));
+    const slider = board.locator('[data-frame-slider]');
+    for (const [key, count] of Object.entries(chainCounts)) {
+      await activateKeyboard(page, board.locator('[data-chain-list] [data-chain="' + key + '"]'));
+      assert.equal(await board.locator('[data-chain-list] [aria-pressed="true"]').count(), 1);
+      await frameReadout(board, key, 0);
+      assert.match(await board.locator('[data-frame-copy]').textContent(), new RegExp(expected.chains[key].leds[0][0]));
+      await slider.focus(); await page.keyboard.press('ArrowRight'); await frameReadout(board, key, 1);
+      await page.keyboard.press('End'); await frameReadout(board, key, count);
+      assert.match(await board.locator('[data-frame-title]').textContent(), /ready to latch/);
+      assert.match(await board.locator('[data-frame-copy]').textContent(), new RegExp(expected.chains[key].leds.at(-1)[0]));
+      await page.keyboard.press('Home'); await frameReadout(board, key, 0);
+      if (count > 1) {
+        await slider.scrollIntoViewIfNeeded(); const bounds = await slider.boundingBox();
+        await page.mouse.click(bounds.x + bounds.width * 0.53, bounds.y + bounds.height / 2);
+        const step = Number(await slider.inputValue()); assert.ok(step > 0 && step < count, 'Pointer scrub chooses an interior step');
+        await frameReadout(board, key, step);
+      }
+      await activateKeyboard(page, board.locator('[data-frame-reset]')); await frameReadout(board, key, 0);
+    }
+    assert.equal(await board.locator('[data-pcb-canvas]').evaluate(canvas => {
+      const context = canvas.getContext('2d');
+      return !!context && canvas.width > 1 && canvas.height > 1 && context.getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 === 3 && value > 0);
+    }), true, 'Electrical paths and pixel markers actually draw into the 2D canvas');
+    await screenshot(page, 'desktop-tramtrace-data');
+    return { chainCounts, bitsPerPixel: 24, dataRate: 800000, keyboardRange: true, pointerScrub: true };
+  });
+  await browserTest('TramTrace playback pause reset repeat and interruption cancel timers', {}, async ({ page }) => {
+    const board = await openWorkbench(page), slider = board.locator('[data-frame-slider]'), play = board.locator('[data-frame-play]');
+    await activateKeyboard(page, board.locator('[data-inspector-mode="data"]'));
+    await activateKeyboard(page, play);
+    await page.waitForFunction(() => Number(document.querySelector('#copper-data [data-frame-slider]').value) > 0);
+    await activateKeyboard(page, play); await assertStopped(page, board);
+    await activateKeyboard(page, board.locator('[data-frame-reset]')); await frameReadout(board, 'l1', 0); await assertStopped(page, board);
+    // Rapid repeated activation may not leave a second interval running.
+    await play.focus(); for (let press = 0; press < 4; press++) await page.keyboard.press('Enter');
+    await assertStopped(page, board);
+    await activateKeyboard(page, play);
+    await activateKeyboard(page, board.locator('[data-chain-list] [data-chain="l2"]'));
+    await frameReadout(board, 'l2', 0); await assertStopped(page, board);
+    await activateKeyboard(page, play); await slider.focus(); await page.keyboard.press('End');
+    await frameReadout(board, 'l2', 8); await assertStopped(page, board);
+    await activateKeyboard(page, play);
+    assert.equal(await play.getAttribute('aria-label'), 'Pause data frame', 'Completed frame can be replayed');
+    await page.waitForFunction(() => { const value = Number(document.querySelector('#copper-data [data-frame-slider]').value); return value > 0 && value < 8; });
+    await activateKeyboard(page, board.locator('[data-inspector-mode="copper"]'));
+    await assertStopped(page, board);
+    await activateKeyboard(page, board.locator('[data-inspector-mode="data"]'));
+    await activateKeyboard(page, play); await activateKeyboard(page, board.locator('[data-inspector-view="rotate"]'));
+    await assertStopped(page, board);
+    await activateKeyboard(page, board.locator('[data-inspector-mode="data"]'));
+    await activateKeyboard(page, board.locator('[data-chain-list] [data-chain="status"]'));
+    for (let replay = 0; replay < 2; replay++) {
+      await activateKeyboard(page, play);
+      await page.waitForFunction(() => document.querySelector('#copper-data [data-frame-slider]').value === '1' && document.querySelector('#copper-data [data-frame-play]').getAttribute('aria-label') === 'Play data frame');
+      await frameReadout(board, 'status', 1);
+    }
+    await activateKeyboard(page, board.locator('[data-frame-reset]')); await frameReadout(board, 'status', 0);
+    await activateKeyboard(page, board.locator('[data-chain-list] [data-chain="l1"]'));
+    await activateKeyboard(page, play);
+    await page.waitForFunction(() => Number(document.querySelector('#copper-data [data-frame-slider]').value) > 0);
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForFunction(() => document.querySelector('#copper-data [data-frame-play]').getAttribute('aria-label') === 'Play data frame');
+    const pausedStep = await slider.inputValue(); await assertStopped(page, board);
+    await play.scrollIntoViewIfNeeded(); await assertStopped(page, board);
+    assert.equal(await slider.inputValue(), pausedStep, 'Returning to the workbench preserves its paused step without auto-resume');
+    return { playPause: true, repeatedActivation: true, completionReplay: true, cancelOnChainScrubModeAndView: true, offscreenPauseWithoutAutoResume: true };
+  });
+  await browserTest('TramTrace 2D workbench survives denied WebGL at narrow widths', { noWebGL: true, viewport: { width: 320, height: 740 } }, async ({ page }) => {
+    const board = await openWorkbench(page);
+    assert.equal(await page.evaluate(() => document.createElement('canvas').getContext('webgl')), null, 'Test genuinely denies WebGL');
+    assert.equal(await board.locator('[data-pcb-canvas]').evaluate(canvas => !!canvas.getContext('2d')), true);
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 740 });
+      await activateKeyboard(page, board.locator('[data-inspector-mode="copper"]'));
+      assert.equal(await board.locator('[data-legend="copper"]').isVisible(), true);
+      await activateKeyboard(page, board.locator('[data-inspector-mode="data"]'));
+      await activateKeyboard(page, board.locator('[data-chain-list] [data-chain="l4"]'));
+      await board.locator('[data-frame-slider]').focus(); await page.keyboard.press('End'); await frameReadout(board, 'l4', 32);
+      await noOverflow(page, '2D workbench with denied WebGL at ' + width);
+      for (const button of await board.locator('[data-inspector-mode], [data-chain-list] button, [data-frame-play], [data-frame-reset]').all()) {
+        const bounds = await button.boundingBox(); assert.ok(bounds && bounds.x >= -1 && bounds.x + bounds.width <= width + 1, 'Essential workbench control fits horizontally');
+      }
+      const viewport = board.locator('.pcb-viewport');
+      assert.equal(await viewport.evaluate(node => { node.scrollLeft = node.scrollWidth; return node.scrollWidth <= node.clientWidth || node.scrollLeft > 0; }), true, 'Oversized board remains locally pannable');
+      await screenshot(page, 'mobile-' + width + '-tramtrace-2d');
+    }
+    return { webglDenied: true, canvas2dAvailable: true, testedWidths: [320, 390] };
+  });
   await browserTest('all interior routes and shared destinations return real content', { js: false }, async ({ page, context }) => {
     const routes = sourcePages.map(file => '/v3/' + file.replace(/index\.html$/, ''));
     for (const route of [...routes, '/shared/', '/book/', '/shared/flight-review/', '/assets/documents/Andrew_Chung_Public_CV.pdf']) {
@@ -244,8 +503,11 @@ async function browserTests() {
       const body = await response.body(); assert.ok(body.length > 100, route + ' body exists');
       if (route.endsWith('.pdf')) assert.equal(body.subarray(0, 4).toString(), '%PDF');
     }
-    await visit(page, '/v3/projects/skylabs/flight-review/');
-    await page.waitForURL('**/shared/flight-review/');
+    // This route redirects immediately, so wait for its destination before
+    // touching its DOM or fonts. The old document may disappear after load.
+    await page.goto(origin + '/v3/projects/skylabs/flight-review/', { waitUntil: 'domcontentloaded' });
+    await page.waitForURL('**/shared/flight-review/', { waitUntil: 'load' });
+    await page.evaluate(() => document.fonts.ready);
     return { routesChecked: routes.length + 4, flightReviewRedirect: true };
   });
   await browserTest('no JavaScript retains navigation photographs and complete collection', { js: false, viewport: { width: 390, height: 844 } }, async ({ page }) => {
@@ -275,13 +537,16 @@ async function browserTests() {
     });
   }
   await browserTest('actual WebGL aircraft and telemetry readiness', { motion: 'no-preference' }, async ({ page }) => {
+    const rendererStarted = Date.now();
     await visit(page); await approachAircraft(page);
     await page.waitForFunction(() => {
       const root = document.querySelector('[data-aircraft-hero]');
       return root.dataset.aircraftState === 'unavailable' || Number(root.dataset.aircraftFrames) > 0;
     }, null, { timeout: 120000 });
     assert.notEqual(await page.locator(hero).getAttribute('data-aircraft-state'), 'unavailable', 'Actual WebGL must render; fallback is not a render pass');
+    const firstFrameElapsedMs = Date.now() - rendererStarted;
     await page.locator('[data-aircraft-telemetry-ready="true"]').waitFor({ timeout: 120000 });
+    const telemetryReadyElapsedMs = Date.now() - rendererStarted;
     const skip = page.locator('[data-aircraft-skip]'); if (await skip.isVisible()) await skip.click();
     await page.locator('[data-aircraft-state="ready"]').waitFor({ timeout: 30000 });
     assert.equal(await page.locator(hero).getAttribute('data-aircraft-assembly-error'), '0.000000000');
@@ -294,7 +559,7 @@ async function browserTests() {
     await noOverflow(page, 'Rendered aircraft'); await screenshot(page, 'desktop-aircraft-telemetry');
     const state = await page.locator(hero).evaluate(node => ({ ...node.dataset }));
     assert.equal(await page.evaluate(() => '__v3Aircraft' in window), false, 'Production URL does not expose a capture global');
-    return { renderer: 'rendered', state };
+    return { renderer: 'rendered', state, performance: { ...(await performanceData(page)), firstFrameElapsedMs, telemetryReadyElapsedMs, renderedFrames: Number(state.aircraftFrames) } };
   });
   await browserTest('responsive core pages without narrow or short viewport overflow', {}, async ({ page }) => {
     const sizes = [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }];
@@ -333,6 +598,7 @@ async function browserTests() {
     } catch (error) { evidence.browser = { status: 'blocked', error: error.stack || String(error) }; console.error('BLOCKED browser suite: ' + evidence.browser.error); }
     finally { if (browser) await browser.close(); }
   }
+  evidence.performanceContext = 'Diagnostic measurements from this local preview/CI browser only. No network throttling or physical mobile device was used. Zero transfer sizes can reflect caching or unavailable timing; these are not user-network benchmarks or performance scores.';
   evidence.finished = new Date().toISOString();
   evidence.screenshots = screenshotPaths;
   evidence.status = evidence.tests.some(item => item.status === 'failed') ? 'failed' : evidence.browser?.status === 'blocked' ? 'blocked' : 'passed';
