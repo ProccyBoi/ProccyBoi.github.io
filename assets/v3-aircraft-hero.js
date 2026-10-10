@@ -28,6 +28,7 @@
   let landingEntered = !deferred;
   let shadowBox, boardBox, shadowCentre, corner, studioGround, airfieldGround, studioFog, airfieldFog;
   const request = () => { if (!frame && track && visible && activePage && !document.hidden && allowed()) frame = requestAnimationFrame(render); };
+  const chapterAt = value => detailed ? value < .76 ? 0 : 1 : value < .25 ? 0 : value < .70 ? 1 : 2;
   function chapter(index) {
     if (currentChapter === index) return;
     currentChapter = index;
@@ -87,7 +88,7 @@
     if ((!deferred && Math.abs(scrollY - lastScroll) > 4) || next > .005) endLanding();
     lastScroll = scrollY; progress = next;
     const effective = flight && !flight.telemetryReady ? Math.min(progress, .61) : progress;
-    chapter(effective < .25 ? 0 : effective < (detailed ? .80 : .70) ? 1 : 2);
+    chapter(chapterAt(effective));
     bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
   }
   function layout() {
@@ -98,7 +99,7 @@
     const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
     // The story starts when its section reaches the document's scroll origin;
     // the sticky stage reserves the header band inside that section.
-    [...track.children].forEach((step, index) => { step.style.top = `${[0, .38, 1][index] * distance + padding}px`; });
+    [...track.children].forEach((step, index) => { step.style.top = `${(detailed ? [0, 1] : [0, .38, 1])[index] * distance + padding}px`; });
     rootTop = scrollY + root.getBoundingClientRect().top;
     renderer?.setSize(width, height, false); updateScroll();
   }
@@ -153,10 +154,6 @@
       floorMaterial.color.copy(studioGround).lerp(airfieldGround, sky);
       scene.fog.color.copy(studioFog).lerp(airfieldFog, sky);
       root.dataset.aircraftAtmosphere = sky.toFixed(6);
-      if (detailed) {
-        const detail = pose.progress < .34 ? 0 : pose.progress < .49 ? 1 : pose.progress < .60 ? 2 : 3;
-        root.dataset.aircraftDetail = String(detail);
-      }
       renderFrame();
       root.classList.add('is-ready'); root.dataset.aircraftState = landingDone || capturePose ? 'ready' : 'landing';
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
@@ -181,7 +178,7 @@
       if (new URLSearchParams(location.search).has('capture')) {
         window.__v3Aircraft = { scene, renderer, camera, flight, atmosphere, renderFrame,
           seekLanding(value) { endLanding(); capturePose = { type: 'landing', value }; chapter(0); request(); },
-          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(value < .25 ? 0 : value < (detailed ? .80 : .70) ? 1 : 2); request(); },
+          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(chapterAt(value)); request(); },
           resume() { capturePose = null; updateScroll(); request(); }
         };
       }
@@ -197,7 +194,7 @@
     try {
       await Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (!window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
-        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-peel-20261010'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
+        (async () => { if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-transition-20261010'); window.V3AircraftScene.prefetch().catch(() => {}); })(),
         (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
         script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
         detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve()

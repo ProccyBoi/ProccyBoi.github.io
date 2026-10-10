@@ -33,8 +33,8 @@
 .v3-aircraft.is-story .v3-aircraft-copy article.is-current{opacity:1;visibility:visible;transform:none;pointer-events:auto}
 .v3-aircraft.is-story .v3-aircraft-copy article:not(:first-child){top:50%;transform:translateY(calc(-50% + 10px));width:34%}
 .v3-aircraft.is-story .v3-aircraft-copy article:not(:first-child).is-current{transform:translateY(-50%)}
-.v3-aircraft.is-story .v3-aircraft-copy article[data-aircraft-chapter="1"]{top:clamp(32px,7vh,90px);width:min(45%,650px);transform:translateY(10px)}
-.v3-aircraft.is-story .v3-aircraft-copy article[data-aircraft-chapter="1"].is-current{transform:none}
+.v3-aircraft.is-story .v3-aircraft-copy article[id$="inside"]{top:clamp(32px,7vh,90px);width:min(45%,650px);transform:translateY(10px)}
+.v3-aircraft.is-story .v3-aircraft-copy article[id$="inside"].is-current{transform:none}
 .v3-aircraft.is-story .v3-aircraft-copy article:not(:first-child) h2{font-size:clamp(48px,5.3vw,78px)}
 .v3-aircraft.is-story .v3-aircraft-static-photo{display:none}
 .v3-aircraft.is-story .v3-aircraft-foot{position:absolute;bottom:20px;left:var(--v2-gutter);right:var(--v2-gutter);width:auto;border:0;padding:0;z-index:5}
@@ -55,14 +55,3 @@
 @media(max-width:760px){.v2-aircraft-feature .v2-aircraft-actions{column-gap:24px}.v2-aircraft-feature .v2-aircraft-actions .v3-story-next{margin-top:15px}}
 @media(max-width:600px){.v2-aircraft-feature{--v3-header-height:66px}}
 @media print{.v3-aircraft .v3-story-nav{display:none!important}}
-
-/* Detailed v3 anatomy. Shared v2 presentation remains unchanged. */
-.v3-home .v3-system-eyebrow{font-family:var(--v2-mono,"IBM Plex Mono",monospace);font-size:10px!important;letter-spacing:.12em;text-transform:uppercase;color:var(--v2-accent)!important;margin:0 0 14px!important}
-.v3-home .v3-aircraft.is-story .v3-aircraft-copy article[data-aircraft-chapter="1"]{width:min(48%,660px)}
-.v3-home .v3-aircraft.is-story .v3-aircraft-copy article[data-aircraft-chapter="1"] h2{font-size:clamp(42px,4.2vw,63px);line-height:1.02}
-
-.v3-home .v3-aircraft-copy .v3-system-note{font-size:10px!important;line-height:1.5!important;max-width:52ch!important;margin-top:9px!important;color:#a1aaa0!important}
-
-@media(min-width:761px){.v3-home .v3-aircraft[data-aircraft-detail="2"] .v3-aircraft-copy article[data-aircraft-chapter="1"],.v3-home .v3-aircraft[data-aircraft-detail="3"] .v3-aircraft-copy article[data-aircraft-chapter="1"]{width:34%}.v3-home .v3-aircraft[data-aircraft-detail="2"] .v3-aircraft-copy article[data-aircraft-chapter="1"] h2,.v3-home .v3-aircraft[data-aircraft-detail="3"] .v3-aircraft-copy article[data-aircraft-chapter="1"] h2{font-size:clamp(36px,3.4vw,53px)}}
-@media(max-width:760px){.v3-home .v3-aircraft.is-story .v3-aircraft-copy article[data-aircraft-chapter="1"]{width:calc(100% - 2*var(--v2-gutter))}.v3-home .v3-aircraft.is-story .v3-aircraft-copy article[data-aircraft-chapter="1"] h2{font-size:39px}.v3-home .v3-system-eyebrow{margin-bottom:10px!important;font-size:9px!important}.v3-home .v3-aircraft-copy article[data-aircraft-chapter="1"]>p:not(.v3-system-eyebrow){font-size:13px;line-height:1.5;margin-top:12px;max-width:37ch}.v3-home .v3-aircraft-copy .v3-system-note{font-size:9px!important;margin-top:6px!important}}
-@media(max-width:360px){.v3-home .v3-aircraft.is-story .v3-aircraft-copy article[data-aircraft-chapter="1"] h2{font-size:33px}.v3-home .v3-system-eyebrow{display:none}}

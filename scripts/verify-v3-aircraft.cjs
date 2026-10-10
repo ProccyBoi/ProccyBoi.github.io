@@ -59,7 +59,7 @@ async function layout(page) {
 }
 async function staticContent(page) {
   assert.equal(await page.locator(hero + '.is-story').count(), 0, 'Static state removes the long scroll track');
-  for (const id of ['aircraft', 'inside', 'telemetry']) {
+  for (const id of ['aircraft', 'telemetry']) {
     assert.equal(await page.locator('#' + id).isVisible(), true, 'All source chapters are visible');
     assert.equal(await page.locator('#' + id).getAttribute('aria-hidden'), null);
   }
@@ -294,9 +294,9 @@ async function pendingTelemetry(browser) {
     await page.locator('[data-aircraft-phase="stopped"]').waitFor();
     assert.equal(await page.locator('[data-aircraft-go="0"]').evaluate(link => link === document.activeElement), true, 'Skip transfers focus before disappearing');
     await progress(page, 1);
-    assert.equal(await page.locator(hero).getAttribute('data-aircraft-chapter'), '1', 'Early scrolling holds the open aircraft until the real board arrives');
+    assert.equal(await page.locator(hero).getAttribute('data-aircraft-chapter'), '0', 'Early scrolling holds the open aircraft until the real board arrives');
     assert.equal(await page.locator(hero).getAttribute('data-aircraft-telemetry-ready'), null);
-    release(); await page.locator('[data-aircraft-telemetry-ready="true"][data-aircraft-chapter="2"]').waitFor({ timeout: 60000 });
+    release(); await page.locator('[data-aircraft-telemetry-ready="true"][data-aircraft-chapter="1"]').waitFor({ timeout: 60000 });
     assert.equal(await page.evaluate(() => '__v3Aircraft' in window), false);
     passed(run, 'keyboard skip and deferred telemetry hold');
     // A fresh native landing receives an actual wheel event before completion.
@@ -329,7 +329,7 @@ async function earlyPreference(browser) {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.locator('[data-aircraft-telemetry-ready="true"]').waitFor({ timeout: 60000 });
     await progress(page, 1);
-    assert.equal(await page.locator(hero).getAttribute('data-aircraft-chapter'), '2');
+    assert.equal(await page.locator(hero).getAttribute('data-aircraft-chapter'), '1');
     passed(run, 'early preference change resumes deferred telemetry');
   } finally { release(); await run.context.close(); }
 }

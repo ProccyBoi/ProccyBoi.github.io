@@ -372,6 +372,9 @@
       else if (role.includes('gear')) { offset = new T.Vector3(.08, -.14, sign * .17); start = .38; end = .66; }
       else if (role === 'motor' || role === 'propeller') { offset = new T.Vector3(role === 'propeller' ? .62 : .35, .04, 0); start = role === 'propeller' ? .37 : .41; end = .67; }
       else { offset = new T.Vector3(centre.x * .21, .04 + (ordinal % 5) * .024, sign * (.25 + ordinal % 4 * .045)); start = .37 + ordinal % 7 * .01; end = .72; }
+      // Finish the accepted peel and clear every sheet before any rigid
+      // exterior travels through its path. Keep source part order/trajectories.
+      if (detailed && role !== 'covering') { start = .62 + (start - .36) * .60; end = .62 + (end - .36) * .60; }
       const arc = detailed ? new T.Vector3(sign * .018, role === 'covering' ? .12 : .065, sign * .04) : new T.Vector3();
       const turn = detailed && role === 'covering' ? new T.Vector3(sign * .13, sign * .11, centre.x < -.7 ? -.12 : .06) : new T.Vector3();
       parts.push({ ...item, base, quaternion, scale, offset, start, end, arc, turn });
@@ -498,31 +501,27 @@
         } else part.object.position.copy(part.base).addScaledVector(part.offset, amount).addScaledVector(part.arc, Math.sin(Math.PI * amount));
         if (amount > 0) separated++;
       }
-      group.updateMatrixWorld(true); electronics?.setProgress(progress);
-      const extraction = ramp(progress, .47, .78);
+      group.updateMatrixWorld(true);
+      // Installed systems remain in their bays during the peel. They reveal
+      // briefly with the opening airframe, without a separate inspection beat.
+      const systemsProgress = detailed ? progress <= .65 ? Math.min(progress, .32) : .32 + (progress - .65) * (.68 / .21) : progress;
+      electronics?.setProgress(systemsProgress);
+      const extraction = ramp(progress, detailed ? .62 : .47, detailed ? .86 : .78);
       board.position.add(new T.Vector3(.035, .27, -.32).multiplyScalar(extraction));
       board.rotation.set(-.08 * extraction, .17 * extraction, .03 * extraction);
-      fadeAirframe(ramp(progress, .67, .91));
+      fadeAirframe(ramp(progress, detailed ? .69 : .67, detailed ? .90 : .91));
       group.updateMatrixWorld(true);
-      return { phase: progress < .055 ? 'stopped' : progress < .47 ? 'opening' : progress < .80 ? 'extraction' : 'telemetry', progress, landing: 1, separated };
+      return { phase: progress < .055 ? 'stopped' : progress < (detailed ? .62 : .47) ? 'opening' : progress < (detailed ? .86 : .80) ? 'extraction' : 'telemetry', progress, landing: 1, separated };
     }
     function frame(camera, width, height) {
       const aspect = width / height, mobile = aspect < .9;
-      const focus = ramp(progress, detailed ? .74 : .50, .98);
-      const inspection = electronics ? ramp(progress, .49, .61) * (1 - ramp(progress, .75, .89)) : 0;
+      const focus = ramp(progress, detailed ? .64 : .50, .98);
       const boardPosition = board.getWorldPosition(new T.Vector3());
-      let systemBounds;
-      if (inspection) {
-        systemBounds = electronics.showcaseBounds(new T.Box3());
-        const wiringBounds = new T.Box3().setFromObject(electronics.group), revealWiring = ramp(progress, .54, .60);
-        systemBounds.min.lerp(wiringBounds.min, revealWiring); systemBounds.max.lerp(wiringBounds.max, revealWiring);
-      }
       const tracking = 1 - ramp(landing, .02, .72);
       const aircraftBounds = new T.Box3().setFromObject(group);
       const baseTarget = new T.Vector3(-.08 + carrier.position.x * .88 * tracking, .20 + carrier.position.y * .35 * tracking, 0);
       baseTarget.lerp(aircraftBounds.getCenter(new T.Vector3()), ramp(progress, .04, .30));
       target.copy(baseTarget);
-      if (inspection) target.lerp(systemBounds.getCenter(new T.Vector3()), inspection);
       target.lerp(boardPosition, focus);
       const wideDirection = mobile ? new T.Vector3(2.8, 2.1, -4.3) : new T.Vector3(3.6, 1.6, -5.7);
       const closeDirection = new T.Vector3(.08, .155, -.155).normalize();
@@ -539,15 +538,6 @@
       const right = new T.Vector3(0, 1, 0).cross(direction).normalize(), up = direction.clone().cross(right).normalize();
       const tangent = Math.tan(16 * Math.PI / 180), sample = new T.Vector3();
       let fitDistance = 0, filmDistance = 0;
-      if (inspection) {
-        const bounds = systemBounds;
-        let systemDistance = 0;
-        for (let index = 0; index < 8; index++) {
-          sample.set(index & 1 ? bounds.max.x : bounds.min.x, index & 2 ? bounds.max.y : bounds.min.y, index & 4 ? bounds.max.z : bounds.min.z).sub(target);
-          systemDistance = Math.max(systemDistance, sample.dot(direction) + Math.abs(sample.dot(right)) / (tangent * aspect * (mobile ? .86 : .59)), sample.dot(direction) + Math.abs(sample.dot(up)) / (tangent * (mobile ? .38 : .64)));
-        }
-        distance = distance * (1 - inspection) + Math.max(systemDistance * 1.13, mobile ? 1.12 : 1.0) * inspection;
-      }
       for (const mesh of meshes) {
         // Keep the departing skin's envelope through the smooth camera
         // handoff. Hiding a sheet must not snap the phone's fitted distance.
@@ -563,7 +553,7 @@
           if (detailed && mesh.film) filmDistance = Math.max(filmDistance, needed); else fitDistance = Math.max(fitDistance, needed);
         }
       }
-      const fitting = 1 - ramp(progress, detailed ? .51 : .55, detailed ? .63 : .75);
+      const fitting = 1 - ramp(progress, detailed ? .58 : .55, detailed ? .85 : .75);
       if (detailed) {
         // A conservative smooth maximum retains all required bounds without
         // a zoom-velocity reversal when the departing sheet stops governing.
@@ -574,7 +564,7 @@
       cameraPosition.copy(target).addScaledVector(direction, distance);
       camera.position.copy(cameraPosition); camera.up.set(0, 1, 0); camera.lookAt(target);
       camera.fov = 32; camera.aspect = aspect; camera.near = Math.max(.002, Math.min(.1, distance * .04)); camera.far = 80;
-      camera.setViewOffset(width, height, (mobile ? 0 : -.10 * focus - .17 * inspection * (1 - focus)) * width, (-.08 * (mobile ? 1 : 1 - focus) - (mobile ? .13 : .015) * inspection * (1 - focus)) * height, width, height);
+      camera.setViewOffset(width, height, (mobile ? 0 : -.10 * focus) * width, (-.08 * (mobile ? 1 : 1 - focus)) * height, width, height);
       camera.updateProjectionMatrix();
       return { target: target.clone(), focus, distance };
     }

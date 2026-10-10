@@ -89,13 +89,13 @@ vm.runInThisContext(helpers);
   for(let n=490;n<=630;n++){flight.setProgress(n/1000);const frame=flight.frame(camera,w,h);if(prior)assert.ok(camera.position.distanceTo(prior)/frame.distance<.015,'Skin completion cannot snap the camera relative to its viewing distance');prior=camera.position.clone();}
  }
  const home=read('v3/index.html');assert.ok(!home.includes('data-aircraft-detail='),'Numbered view controls removed');assert.ok(!home.includes('v3-aircraft-details'),'Overlay markup removed');
- const systems=[];
- for(const [w,h] of [[1440,900],[390,844],[320,740],[1600,650]])for(const progress of [.60,.65,.70]){
+ const systems=[]; // Now validates the direct destination, not an electronics interstitial.
+ for(const [w,h] of [[1440,900],[390,844],[320,740],[1600,650]])for(const progress of [.82,.90,1]){
   flight.setProgress(progress);flight.frame(camera,w,h);camera.updateMatrixWorld(true);
-  const bounds=new THREE.Box3().setFromObject(flight.electronics.group), p=new THREE.Vector3();
-  let outside=0;const projected=[];
-  for(let i=0;i<8;i++){p.set(i&1?bounds.max.x:bounds.min.x,i&2?bounds.max.y:bounds.min.y,i&4?bounds.max.z:bounds.min.z).project(camera);projected.push(p.toArray());if(Math.abs(p.x)>1.001||Math.abs(p.y)>1.001||Math.abs(p.z)>1.001)outside++;}
-  assert.equal(outside,0,'Systems fit close-up '+w+'x'+h+' at '+progress);systems.push({w,h,progress,projected});
+  const p=new THREE.Vector3();
+  let outside=0,vertices=0;const projected=[0,0,0];
+  flight.board.traverse(mesh=>{if(!mesh.isMesh)return;const positions=mesh.geometry.attributes.position;for(let i=0;i<positions.count;i++){p.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld).project(camera);vertices++;for(let j=0;j<3;j++)projected[j]=Math.max(projected[j],Math.abs(p.getComponent(j)));if(Math.abs(p.x)>1.001||Math.abs(p.y)>1.001||Math.abs(p.z)>1.001)outside++;}});
+  assert.equal(outside,0,'Telemetry fits direct close-up '+w+'x'+h+' at '+progress);systems.push({w,h,progress,vertices,maximumAbsoluteNDC:projected});
  }
  console.log(JSON.stringify({result:'PASS',projections,systems},null,2));
  const destination=process.env.QA_OUT||root+'/.codex-temp/v3-aircraft-detail/geometry.json';fs.mkdirSync(path.dirname(destination),{recursive:true});fs.writeFileSync(destination,JSON.stringify({physical,film,projections,systems,electronics:flight.electronics.statistics},null,2));
