@@ -1,0 +1,172 @@
+{
+  "name": "logic",
+  "sourceMethod": "Detached original shared CAD factory",
+  "unitsMm": 30.000010000000003,
+  "normalizedBounds": {
+    "min": [
+      -0.4999998211860657,
+      -0.10333329888890036,
+      -0.8033332220129865
+    ],
+    "max": [
+      0.4999998211860657,
+      0.12333330062319986,
+      0.5
+    ]
+  },
+  "sourceStats": {
+    "meshes": 220,
+    "triangles": 100575,
+    "lines": 0,
+    "lineSegments": 0,
+    "draws": 220,
+    "materials": 153,
+    "finiteVertices": 301721,
+    "refs": [
+      "C1",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C16",
+      "C18",
+      "C19",
+      "C2",
+      "C20",
+      "C21",
+      "C22",
+      "C23",
+      "C24",
+      "C25",
+      "C26",
+      "C27",
+      "C28",
+      "C29",
+      "C3",
+      "C30",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "Enclosure",
+      "J3",
+      "M2-1",
+      "M2-2",
+      "R1",
+      "R2",
+      "R3",
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5",
+      "U6",
+      "U7",
+      "X1"
+    ],
+    "ledRefs": [],
+    "bounds": {
+      "min": [
+        -0.4999998211860657,
+        -0.10333329888890036,
+        -0.8033332220129865
+      ],
+      "max": [
+        0.4999998211860657,
+        0.12333330062319986,
+        0.5
+      ]
+    }
+  },
+  "stats": {
+    "meshes": 220,
+    "triangles": 100575,
+    "lines": 0,
+    "lineSegments": 0,
+    "draws": 220,
+    "materials": 153,
+    "finiteVertices": 301721,
+    "refs": [
+      "C1",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C16",
+      "C18",
+      "C19",
+      "C2",
+      "C20",
+      "C21",
+      "C22",
+      "C23",
+      "C24",
+      "C25",
+      "C26",
+      "C27",
+      "C28",
+      "C29",
+      "C3",
+      "C30",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "Enclosure",
+      "J3",
+      "M2-1",
+      "M2-2",
+      "R1",
+      "R2",
+      "R3",
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5",
+      "U6",
+      "U7",
+      "X1"
+    ],
+    "ledRefs": [],
+    "bounds": {
+      "min": [
+        -0.4999998211860657,
+        -0.10333329888890036,
+        -0.8033332220129865
+      ],
+      "max": [
+        0.4999998211860657,
+        0.12333330062319986,
+        0.5
+      ]
+    }
+  },
+  "materials": 153,
+  "textures": [
+    "/assets/models/hardware/framework-logic-analyser/silk-front.svg",
+    "/assets/models/hardware/framework-logic-analyser/silk-back.svg"
+  ],
+  "drawCalls": {
+    "before": 220,
+    "after": 220,
+    "reduction": 0
+  },
+  "triangleParity": {
+    "source": 100575,
+    "packed": 100575,
+    "retained": true
+  },
+  "runtimeParitySha256": "5d1cd768d7cb58601116348001ede219dc289235a483d891f0d64c4ff34af54d",
+  "limitations": [],
+  "browserErrors": [],
+  "failedRequests": []
+}

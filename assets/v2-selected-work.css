@@ -1,5 +1,5 @@
 /* Selected hardware stays on v2's continuous charcoal surface. Every image and
-   link is present before enhancement; only the physical card cutouts move. */
+   link is present before enhancement; the shared CAD stage is optional. */
 .v2-selected-work .v2-gallery-heading{display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin-bottom:48px;padding-top:26px;border-top:1px solid var(--v2-line);scroll-margin-top:90px}
 .v2-selected-work .v2-gallery-heading h2{font-size:clamp(36px,4vw,60px);font-weight:450;letter-spacing:-.045em;line-height:1.1}
 .v2-selected-work .v2-gallery-heading .v2-text-link{white-space:nowrap}
@@ -39,3 +39,210 @@
 @media(max-width:360px){.v2-selected-work .v2-gallery-heading{align-items:start;flex-direction:column;gap:12px}.v2-selected-heading h3{font-size:25px}.v2-framework-grid{column-gap:14px}.v2-framework-copy h4{font-size:17px;gap:5px}.v2-framework-copy p{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.v2-selected-work *{animation:none!important;transition:none!important}.v2-framework-object{transform:none!important}}
 @media print{.v2-selected-work{padding-block:30px}.v2-framework-object{transform:none!important}.v2-framework-card,.v2-transport-card{break-inside:avoid}.v2-transport-collection{margin-top:35px}}
+
+/* The original collections remain the no-JS, short-viewport, Save Data and
+   graphics-failure layout. The controller opts into this single shared stage
+   only after checking those guards; live models replace artwork, never links. */
+@media screen and (prefers-reduced-motion:no-preference){
+  .v2-selected-work.is-scene{
+    --selected-top:76px;
+    --selected-stage-height:calc(100svh - var(--selected-top));
+    --selected-gap:24px;
+    position:relative;
+    isolation:isolate;
+  }
+  .v2-selected-work.is-scene .v2-gallery-heading{margin-bottom:12px}
+  .v2-selected-work.is-scene .v2-selected-stage{
+    position:sticky;
+    top:var(--selected-top);
+    height:var(--selected-stage-height);
+    min-height:0;
+    isolation:isolate;
+    background:var(--v2-bg);
+  }
+  .v2-selected-work.is-scene .v2-selected-canvas{
+    position:absolute;
+    inset:0;
+    z-index:0;
+    display:block;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .24s ease;
+  }
+  .v2-selected-work.is-scene.is-live .v2-selected-canvas{opacity:1}
+  .v2-selected-work.is-scene [data-selected-chapter]{
+    position:absolute;
+    inset:0;
+    z-index:1;
+    margin:0;
+    padding:0;
+    border:0;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:opacity .18s ease,visibility .18s;
+  }
+  .v2-selected-work.is-scene [data-selected-chapter].is-current{opacity:1;visibility:visible}
+  .v2-selected-work.is-scene .v2-selected-heading{
+    position:absolute;
+    top:clamp(20px,4svh,40px);
+    left:0;
+    right:0;
+    align-items:start;
+    gap:36px;
+  }
+  .v2-selected-work.is-scene .v2-selected-heading h3{max-width:none;font-size:clamp(26px,2.7vw,40px)}
+  .v2-selected-work.is-scene .v2-selected-heading p{max-width:31ch;font-size:15px;line-height:1.55}
+  .v2-selected-work.is-scene .v2-selected-nav{
+    position:absolute;
+    z-index:3;
+    top:clamp(96px,14svh,128px);
+    left:0;
+    display:flex;
+    align-items:center;
+    gap:26px;
+    max-width:100%;
+  }
+  .v2-selected-work.is-scene .v2-selected-nav a{
+    display:inline-flex;
+    align-items:center;
+    min-height:44px;
+    border-bottom:1px solid transparent;
+    color:var(--v2-muted);
+    font-size:13px;
+    line-height:1.3;
+    white-space:nowrap;
+  }
+  .v2-selected-work.is-scene .v2-selected-nav a:hover{color:var(--v2-ink)}
+  .v2-selected-work.is-scene .v2-selected-nav a[aria-current="true"],
+  .v2-selected-work.is-scene .v2-selected-nav a[aria-current="step"]{border-bottom-color:var(--v2-accent);color:var(--v2-ink)}
+  .v2-selected-work.is-scene .v2-framework-grid,
+  .v2-selected-work.is-scene .v2-transport-grid{
+    position:absolute;
+    inset:0;
+    display:grid;
+    grid-template-rows:minmax(0,1fr) auto;
+    gap:0 var(--selected-gap);
+    margin:0;
+    padding:0 0 clamp(20px,3svh,32px);
+    align-items:end;
+  }
+  .v2-selected-work.is-scene .v2-framework-grid{--selected-columns:4;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .v2-selected-work.is-scene .v2-transport-grid{--selected-columns:2;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .v2-selected-work.is-scene .v2-framework-card,
+  .v2-selected-work.is-scene .v2-transport-card{
+    --selected-column:0;
+    --selected-row:0;
+    position:static;
+    grid-row:2;
+    min-height:44px;
+    padding-bottom:5px;
+    pointer-events:auto;
+  }
+  .v2-selected-work.is-scene .v2-framework-card:nth-child(2),
+  .v2-selected-work.is-scene .v2-transport-card:nth-child(2){--selected-column:1}
+  .v2-selected-work.is-scene .v2-framework-card:nth-child(3){--selected-column:2}
+  .v2-selected-work.is-scene .v2-framework-card:nth-child(4){--selected-column:3}
+  .v2-selected-work.is-scene .v2-framework-art,
+  .v2-selected-work.is-scene .v2-transport-photo{
+    position:absolute;
+    top:26%;
+    left:calc(var(--selected-column)*(100% + var(--selected-gap))/var(--selected-columns));
+    width:calc((100% - (var(--selected-columns) - 1)*var(--selected-gap))/var(--selected-columns));
+    height:52%;
+    aspect-ratio:auto;
+    background:transparent;
+    pointer-events:auto;
+    transition:opacity .2s ease,visibility .2s;
+  }
+  .v2-selected-work.is-scene .v2-framework-object{transform:none!important}
+  .v2-selected-work.is-scene .v2-transport-photo img{object-fit:contain;transform:none}
+  .v2-selected-work.is-scene.is-live .v2-framework-art,
+  .v2-selected-work.is-scene.is-live .v2-transport-photo{opacity:0;visibility:hidden;pointer-events:none}
+  .v2-selected-work.is-scene .v2-framework-copy,
+  .v2-selected-work.is-scene .v2-transport-copy{
+    display:block;
+    padding-top:14px;
+    border-top:1px solid var(--v2-line);
+  }
+  .v2-selected-work.is-scene .v2-framework-copy h4{font-size:clamp(18px,1.7vw,25px)}
+  .v2-selected-work.is-scene .v2-transport-copy h4{font-size:clamp(24px,2.6vw,36px)}
+  .v2-selected-work.is-scene .v2-framework-copy p,
+  .v2-selected-work.is-scene .v2-transport-copy p{margin-top:8px;font-size:14px;line-height:1.45}
+  .v2-selected-work.is-scene .v2-framework-card:focus-visible,
+  .v2-selected-work.is-scene .v2-transport-card:focus-visible{outline:none}
+  .v2-selected-work.is-scene .v2-framework-card:focus-visible .v2-framework-copy,
+  .v2-selected-work.is-scene .v2-transport-card:focus-visible .v2-transport-copy{outline:2px solid var(--v2-accent);outline-offset:5px}
+  .v2-selected-work.is-scene .v2-selected-progress{position:absolute;z-index:3;bottom:0;left:0;right:0;height:1px;background:var(--v2-line);pointer-events:none}
+  .v2-selected-work.is-scene .v2-selected-progress>span{display:block;width:100%;height:100%;background:var(--v2-accent);transform:scaleX(0);transform-origin:left}
+  .v2-selected-work.is-scene .v2-selected-track{position:relative;pointer-events:none}
+  .v2-selected-work.is-scene .v2-selected-step{position:absolute;left:0;width:1px;height:1px}
+}
+
+@media screen and (max-width:900px) and (prefers-reduced-motion:no-preference){
+  .v2-selected-work.is-scene{--selected-gap:20px}
+  .v2-selected-work.is-scene .v2-selected-heading{gap:24px}
+  .v2-selected-work.is-scene .v2-selected-heading p{max-width:26ch;font-size:14px}
+  .v2-selected-work.is-scene .v2-framework-copy h4{font-size:18px;gap:8px}
+  .v2-selected-work.is-scene .v2-framework-copy h4 span{font-size:15px}
+  .v2-selected-work.is-scene .v2-framework-copy p{font-size:13px}
+}
+
+@media screen and (max-width:760px) and (prefers-reduced-motion:no-preference){
+  .v2-selected-work.is-scene{--selected-gap:18px}
+  .v2-selected-work.is-scene .v2-selected-heading{display:block;top:clamp(18px,3svh,28px)}
+  .v2-selected-work.is-scene .v2-selected-heading h3{max-width:20ch;font-size:27px;line-height:1.16}
+  .v2-selected-work.is-scene .v2-selected-heading p,
+  .v2-selected-work.is-scene .v2-framework-copy p{
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip-path:inset(50%);
+    white-space:nowrap;
+    border:0;
+  }
+  .v2-selected-work.is-scene .v2-selected-nav{top:clamp(88px,13svh,114px);gap:24px}
+  .v2-selected-work.is-scene .v2-selected-nav a{font-size:12px}
+  .v2-selected-work.is-scene .v2-framework-grid{--selected-columns:2;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr) 44px 44px;row-gap:8px}
+  .v2-selected-work.is-scene .v2-framework-card{height:44px;padding:0}
+  .v2-selected-work.is-scene .v2-framework-card:nth-child(3){--selected-column:0;--selected-row:1;grid-row:3}
+  .v2-selected-work.is-scene .v2-framework-card:nth-child(4){--selected-column:1;--selected-row:1;grid-row:3}
+  .v2-selected-work.is-scene .v2-framework-art{top:calc(27% + var(--selected-row)*25%);height:25%}
+  .v2-selected-work.is-scene .v2-framework-copy{padding-top:11px;padding-bottom:8px}
+  .v2-selected-work.is-scene .v2-framework-copy h4{font-size:19px;line-height:1.2}
+  .v2-selected-work.is-scene .v2-transport-photo{top:27%;left:12%;width:76%;height:25%}
+  .v2-selected-work.is-scene .v2-transport-card:nth-child(2) .v2-transport-photo{top:53%}
+  .v2-selected-work.is-scene .v2-transport-copy{padding-top:12px}
+  .v2-selected-work.is-scene .v2-transport-copy h4{font-size:clamp(21px,4.8vw,29px);gap:8px;line-height:1.16}
+  .v2-selected-work.is-scene .v2-transport-copy h4 span{font-size:17px}
+  .v2-selected-work.is-scene .v2-transport-copy p{margin-top:8px;font-size:13px;line-height:1.4}
+}
+
+@media screen and (max-width:600px) and (prefers-reduced-motion:no-preference){
+  .v2-selected-work.is-scene{--selected-top:66px}
+  .v2-selected-work.is-scene .v2-gallery-heading{margin-bottom:10px}
+}
+
+@media screen and (max-width:360px) and (prefers-reduced-motion:no-preference){
+  .v2-selected-work.is-scene{--selected-gap:14px}
+  .v2-selected-work.is-scene .v2-selected-heading h3{font-size:25px}
+  .v2-selected-work.is-scene .v2-framework-copy h4{font-size:17px;gap:5px}
+  .v2-selected-work.is-scene .v2-transport-copy h4{font-size:20px;gap:5px}
+  .v2-selected-work.is-scene .v2-transport-copy h4 span{font-size:15px}
+}
+
+/* CSS also restores print/reduced-motion flow if a preference changes before
+   the controller has had time to dismantle its optional stage. */
+@media print,(prefers-reduced-motion:reduce){
+  .v2-selected-work.is-scene{height:auto!important;min-height:0!important}
+  .v2-selected-work.is-scene .v2-selected-stage{position:static;height:auto!important;min-height:0!important}
+  .v2-selected-work.is-scene .v2-selected-canvas,
+  .v2-selected-work.is-scene .v2-selected-nav,
+  .v2-selected-work.is-scene .v2-selected-progress,
+  .v2-selected-work.is-scene .v2-selected-track{display:none!important}
+}

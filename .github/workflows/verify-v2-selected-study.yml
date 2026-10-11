@@ -1,0 +1,37 @@
+name: Review shared v2 Selected Work scenes
+on:
+  push:
+    branches: [v2-selected-live-scenes]
+    paths-ignore:
+      - scripts/build-v2-selected-assets.cjs
+      - scripts/build-v2-hero-assets.cjs
+      - .github/workflows/build-v2-selected-assets.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Source parity and desktop/mobile scene studies
+        env:
+          V2_BASE_URL: http://127.0.0.1:8080
+          V2_SELECTED_OUT: /tmp/v2-selected-study
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
+          node scripts/verify-v2-selected-scene.cjs --study
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-selected-studies
+          path: /tmp/v2-selected-study
+          retention-days: 14

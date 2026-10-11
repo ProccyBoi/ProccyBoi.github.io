@@ -20,12 +20,12 @@
   <link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-assembly.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
-  <link rel="stylesheet" href="/assets/v2-selected-work.css?v=background-20261011">
+  <link rel="stylesheet" href="/assets/v2-selected-work.css?v=shared-scene-20261011">
   <link rel="stylesheet" href="/assets/aircraft-story.css?v=v2-aircraft-20261011">
   <script src="/assets/v2.js?v=physical-20261007" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
   <script src="/assets/v2-assembly.js?v=background-20261011" defer></script>
-  <script src="/assets/v2-selected-work.js?v=background-20261011" defer></script>
+  <script src="/assets/v2-selected-work.js?v=shared-scene-20261011" defer></script>
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
   <script src="/assets/v3-aircraft-hero.js?v=v2-background-20261011" defer></script>
 </head>
@@ -73,7 +73,7 @@
     </section>
     <section class="v2-work v2-shell v2-selected-work" data-selected-work aria-labelledby="work-title">
       <div class="v2-gallery-heading" id="work"><h2 id="work-title">Selected work</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
-      <section class="v2-framework-collection" aria-labelledby="framework-title">
+      <section class="v2-framework-collection" id="work-framework" data-selected-chapter="0" aria-labelledby="framework-title">
         <header class="v2-selected-heading">
           <h3 id="framework-title">Framework expansion cards</h3>
           <p>Development tools and extra ports, built for one laptop bay.</p>
@@ -97,7 +97,7 @@
           </a>
         </div>
       </section>
-      <section class="v2-transport-collection" aria-labelledby="transport-title">
+      <section class="v2-transport-collection" id="work-transit" data-selected-chapter="1" aria-labelledby="transport-title">
         <header class="v2-selected-heading">
           <h3 id="transport-title">Live transport displays</h3>
           <p>Two custom PCBs turn real-time transport data into light.</p>

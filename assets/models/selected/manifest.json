@@ -1,0 +1,282 @@
+{
+  "format": 1,
+  "container": "V2HERO1",
+  "transport": "V2HIDX1/index-byte-planes-v1",
+  "sourceCommit": "99c15f63605a579ff91b6b631c8d6a867e9833e5",
+  "sources": {
+    "assets/explorer-runtime.js": {
+      "bytes": 4767,
+      "sha256": "04418cca7f825f446169b06c1602f3f4f0fe4bac37a6a7cad72b825bf437bb79"
+    },
+    "assets/framework-dual-usb-3d.js": {
+      "bytes": 59721,
+      "sha256": "eb57258c0b9f4c8a90a09e4bba82559e5a31c346af643de8c17b93077e160f72"
+    },
+    "assets/framework-mechanics.js": {
+      "bytes": 3584,
+      "sha256": "fd83ec09670bd045cbb6dc76a863f535c64933aa774a99156cb64e2250a60add"
+    },
+    "assets/metroboard-3d.js": {
+      "bytes": 43195,
+      "sha256": "cebefcf2b36edf65ea5ea45526f80eaa2510c770e17fdd8da7507ce55881a4e2"
+    },
+    "assets/models/framework-dual-usb/framework-dual-usb-silk.svg": {
+      "bytes": 19789,
+      "sha256": "c1bbdaad7fdd559cc9d366735f65b999e6c711a2ddc2b85219a45805f2a8df96"
+    },
+    "assets/models/framework-esp32/framework-board.glb": {
+      "bytes": 3923244,
+      "sha256": "f65b7c7b5b9e9fa548e84403b3a021b0b7b6cff203dfed1647cdcf6c7d74f232"
+    },
+    "assets/models/framework-esp32/framework-enclosure.stl": {
+      "bytes": 224184,
+      "sha256": "92c401b4880ed1262ebc939911455b1c9da729dd594b2892c98ab40baf44e16a"
+    },
+    "assets/models/framework-esp32/framework-markings-silk.svg": {
+      "bytes": 28268,
+      "sha256": "1e9ff8d03cdd24449e3c576828e4a18c73306f688ce813b58d4be336f206d0c6"
+    },
+    "assets/models/framework-esp32/framework-usbc.glb": {
+      "bytes": 516408,
+      "sha256": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa"
+    },
+    "assets/models/framework-mechanics/framework-m2x3-screw.json": {
+      "bytes": 1237,
+      "sha256": "aad9a77422868ddb3fea490cd2933f4e405c859804661f243f242ac1672b6a64"
+    },
+    "assets/models/framework-mechanics/framework-m2x3-screw.stl": {
+      "bytes": 285884,
+      "sha256": "b3149ea236c240d7317abfd51d3ba4d716eba5f5bc8982db3def92a4a62c2881"
+    },
+    "assets/models/hardware/framework-logic-analyser/assembly.json": {
+      "bytes": 22816,
+      "sha256": "6b3c76514faf70952fd071cdd5a12d23cfc135d910cbd12f031eab6b0ecbc55f"
+    },
+    "assets/models/hardware/framework-logic-analyser/board.glb": {
+      "bytes": 7818648,
+      "sha256": "ed6787c6873b23e83d603a8ee631cf4b1f44bfb24fa0a59d7fcae7d38c7bcc35"
+    },
+    "assets/models/hardware/framework-logic-analyser/framework-logic-enclosure.stl": {
+      "bytes": 219884,
+      "sha256": "1c1f709830333e8fe5b1a889fc184a88fd4a51452d4caaccc8f4b450f7105d8d"
+    },
+    "assets/models/hardware/framework-logic-analyser/silk-back.svg": {
+      "bytes": 48019,
+      "sha256": "52b80a55cd878bb3baf8c9a5564888b070bc25c3731b8024f1b832f6dc5f5553"
+    },
+    "assets/models/hardware/framework-logic-analyser/silk-front.svg": {
+      "bytes": 25554,
+      "sha256": "b50015db466093635bbecc52e8329cc88127c96bc4de70def85aaef743feb5b6"
+    },
+    "assets/models/hardware/metroboard/assembly.json": {
+      "bytes": 157821,
+      "sha256": "1e8b0c9a98edb176d8aed289c441fa3bb744d4394e42a98146edcc993e832695"
+    },
+    "assets/models/hardware/metroboard/board.glb": {
+      "bytes": 11609852,
+      "sha256": "01ce0a49eae3571d143dceb76dd2a9e2137a48baf1c5de6ee9a1f2166a006913"
+    },
+    "assets/models/hardware/metroboard/silk-back.svg": {
+      "bytes": 35186,
+      "sha256": "d3ffbd54e22920c59e936ab3ccf8b637e248e52d422e3064dcbea84872a82c20"
+    },
+    "assets/models/hardware/metroboard/silk-front.svg": {
+      "bytes": 1710363,
+      "sha256": "a15c1fb3049a4f4c41a9b9306f5a8bbe2ddd8ed1ef4faac71d79d0028e69b484"
+    },
+    "assets/pcb-object-explorer.js": {
+      "bytes": 30735,
+      "sha256": "1fc44fda107ecafa18d7e0d2e364261568bbf512fa8f52766eeef05913de06db"
+    },
+    "assets/v2-assembly-models.js": {
+      "bytes": 22105,
+      "sha256": "c3fc34a8c760a258015255c4c4d977711e5314ab60e1a7a4a4b2876c9eb5c19e"
+    },
+    "assets/v2-hardware-models.js": {
+      "bytes": 10434,
+      "sha256": "4491d95bd7ee8eb9378be39f0b6d032155e142fb219a983d67cb3ab8ff79e34f"
+    },
+    "assets/v2-hero-assets.js": {
+      "bytes": 9308,
+      "sha256": "cd6d70a5db2a70cdedcc3bb82da8bee4946dc541487a66d60445d5aa591552fe"
+    },
+    "assets/v2-selected-assets.js": {
+      "bytes": 9896,
+      "sha256": "4ab1df2e6303662bd6a108204c00fba8859bda18af2e62dd0d07342b9bb4b60f"
+    },
+    "assets/vendor/GLTFLoader.js": {
+      "bytes": 96550,
+      "sha256": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6"
+    },
+    "assets/vendor/three.min.js": {
+      "bytes": 603445,
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
+    },
+    "scripts/build-v2-hero-assets.cjs": {
+      "bytes": 17591,
+      "sha256": "c3ea978e7503ea1ba33651981caf3a5f810fcf25924c191443d4edeeef22f75f"
+    },
+    "scripts/build-v2-selected-assets.cjs": {
+      "bytes": 32299,
+      "sha256": "a5a8c4853b8ddce87db8b6a000839d12ff917e7bcfb918cf681bceb2401ad216"
+    },
+    "scripts/render-framework-dual-poster.cjs": {
+      "bytes": 15711,
+      "sha256": "61c9b539a753d31df3aa9d711016b4d68bae4dba6b4ba587b3d593d91b8efdc4"
+    },
+    "v2/projects/framework-dual-usb/index.html": {
+      "bytes": 12773,
+      "sha256": "e47e735e22e8d5f46ec14bb7f6441ca66cace54ea685173f974cc70ab664ea9e"
+    }
+  },
+  "sourceHashNormalization": "raw bytes",
+  "sourceFilesUnchanged": true,
+  "models": {
+    "esp32": {
+      "url": "/assets/models/selected/esp32.bin",
+      "compressedUrl": "/assets/models/selected/esp32.idx.bin.gz",
+      "bytes": 2919776,
+      "gzipBytes": 612015,
+      "sha256": "9da6bf19804721f3467afa251b54d19b11362753604122dd12ec4bd897790ae5",
+      "compressedSha256": "db16a1117cca99b0bec798e73ad5f1f066377b3a938e4b4fe6071fbecf883389",
+      "unitsMm": 30,
+      "parts": 21,
+      "meshes": 52,
+      "triangles": 80231,
+      "lineSegments": 0,
+      "materials": 22,
+      "textures": [
+        "/assets/models/framework-esp32/framework-markings-silk.svg"
+      ],
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.10333333333333333,
+          -0.8033333269755045
+        ],
+        "max": [
+          0.5,
+          0.12333334068457286,
+          0.5000001788139343
+        ]
+      },
+      "drawCalls": {
+        "before": 52,
+        "after": 52,
+        "reduction": 0
+      },
+      "paritySha256": "e9e9d17c91234fbe7afe785a1377ba4c3aea2aa3464fc2edb3e836bfcd0269bd",
+      "provenance": "esp32.provenance.json"
+    },
+    "dual": {
+      "url": "/assets/models/selected/dual.bin",
+      "compressedUrl": "/assets/models/selected/dual.idx.bin.gz",
+      "bytes": 1353764,
+      "gzipBytes": 238100,
+      "sha256": "7b4eb9359ab1b02935e87c5490292391f66792329b0750acf48c4d1b92b024c6",
+      "compressedSha256": "afc6e4487bd0618a52c49cb3b50f08b85178c1932cbccc895de6e0f7d1f90999",
+      "unitsMm": 30,
+      "parts": 0,
+      "meshes": 19,
+      "triangles": 22209,
+      "lineSegments": 1026,
+      "materials": 21,
+      "textures": [
+        "/assets/models/framework-dual-usb/framework-dual-usb-silk.svg"
+      ],
+      "bounds": {
+        "min": [
+          -0.5,
+          -0.10333333333333333,
+          -0.8033332824707031
+        ],
+        "max": [
+          0.5,
+          0.13700000127156575,
+          0.500166665079693
+        ]
+      },
+      "drawCalls": {
+        "before": 1073,
+        "after": 21,
+        "reduction": 1052
+      },
+      "paritySha256": "23e78c4bda8bcf844171588df2582c9371c2b4b237ce74fef4cb3fbf96912190",
+      "provenance": "dual.provenance.json"
+    },
+    "logic": {
+      "url": "/assets/models/selected/logic.bin",
+      "compressedUrl": "/assets/models/selected/logic.idx.bin.gz",
+      "bytes": 4857148,
+      "gzipBytes": 907131,
+      "sha256": "19c92b3b7b66583d6e72baea6e22363950fad9df31b23b44ba2970f9bc31d023",
+      "compressedSha256": "4498909f4f142bcfb72c70cb4c6259877b69897d3d4651520814954720212815",
+      "unitsMm": 30.000010000000003,
+      "parts": 45,
+      "meshes": 220,
+      "triangles": 100575,
+      "lineSegments": 0,
+      "materials": 153,
+      "textures": [
+        "/assets/models/hardware/framework-logic-analyser/silk-front.svg",
+        "/assets/models/hardware/framework-logic-analyser/silk-back.svg"
+      ],
+      "bounds": {
+        "min": [
+          -0.4999998211860657,
+          -0.10333329888890036,
+          -0.8033332220129865
+        ],
+        "max": [
+          0.4999998211860657,
+          0.12333330062319986,
+          0.5
+        ]
+      },
+      "drawCalls": {
+        "before": 220,
+        "after": 220,
+        "reduction": 0
+      },
+      "paritySha256": "5d1cd768d7cb58601116348001ede219dc289235a483d891f0d64c4ff34af54d",
+      "provenance": "logic.provenance.json"
+    },
+    "metro": {
+      "url": "/assets/models/selected/metro.bin",
+      "compressedUrl": "/assets/models/selected/metro.idx.bin.gz",
+      "bytes": 5713548,
+      "gzipBytes": 615024,
+      "sha256": "86a43d6e67b6c0ec2615c4a2dc446ba2dccb46a44dc771141e47cdd81358a517",
+      "compressedSha256": "a6f926ff1263e7c311ecd0934aabe57b5437af104f0c06c23846a633283e25e7",
+      "unitsMm": 305.69999,
+      "parts": 34,
+      "meshes": 94,
+      "triangles": 122070,
+      "lineSegments": 0,
+      "materials": 19,
+      "textures": [
+        "/assets/models/hardware/metroboard/silk-front.svg",
+        "/assets/models/hardware/metroboard/silk-back.svg"
+      ],
+      "bounds": {
+        "min": [
+          -0.490677148103714,
+          -0.00016355904517695308,
+          -0.5
+        ],
+        "max": [
+          0.490677148103714,
+          0.015358194850496209,
+          0.5
+        ]
+      },
+      "drawCalls": {
+        "before": 94,
+        "after": 94,
+        "reduction": 0
+      },
+      "paritySha256": "4a82a0da658bc513373b526b25ee16e27738047b35664c25523cf512cfc6879c",
+      "provenance": "metro.provenance.json"
+    }
+  }
+}

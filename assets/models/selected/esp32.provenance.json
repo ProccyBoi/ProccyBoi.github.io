@@ -1,0 +1,125 @@
+{
+  "name": "esp32",
+  "sourceMethod": "Detached original shared CAD factory",
+  "unitsMm": 30,
+  "normalizedBounds": {
+    "min": [
+      -0.5,
+      -0.10333333333333333,
+      -0.8033333269755045
+    ],
+    "max": [
+      0.5,
+      0.12333334068457286,
+      0.5000001788139343
+    ]
+  },
+  "sourceStats": {
+    "meshes": 52,
+    "triangles": 80231,
+    "lines": 0,
+    "lineSegments": 0,
+    "draws": 52,
+    "materials": 22,
+    "finiteVertices": 240423,
+    "refs": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "Enclosure",
+      "M2-1",
+      "M2-2",
+      "P1",
+      "Q1",
+      "Q2",
+      "R1",
+      "R10",
+      "R14",
+      "R15",
+      "R9",
+      "U1",
+      "U2",
+      "U4"
+    ],
+    "ledRefs": [],
+    "bounds": {
+      "min": [
+        -0.5,
+        -0.10333333333333333,
+        -0.8033333269755045
+      ],
+      "max": [
+        0.5,
+        0.12333334068457286,
+        0.5000001788139343
+      ]
+    }
+  },
+  "stats": {
+    "meshes": 52,
+    "triangles": 80231,
+    "lines": 0,
+    "lineSegments": 0,
+    "draws": 52,
+    "materials": 22,
+    "finiteVertices": 240423,
+    "refs": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "Enclosure",
+      "M2-1",
+      "M2-2",
+      "P1",
+      "Q1",
+      "Q2",
+      "R1",
+      "R10",
+      "R14",
+      "R15",
+      "R9",
+      "U1",
+      "U2",
+      "U4"
+    ],
+    "ledRefs": [],
+    "bounds": {
+      "min": [
+        -0.5,
+        -0.10333333333333333,
+        -0.8033333269755045
+      ],
+      "max": [
+        0.5,
+        0.12333334068457286,
+        0.5000001788139343
+      ]
+    }
+  },
+  "materials": 22,
+  "textures": [
+    "/assets/models/framework-esp32/framework-markings-silk.svg"
+  ],
+  "drawCalls": {
+    "before": 52,
+    "after": 52,
+    "reduction": 0
+  },
+  "triangleParity": {
+    "source": 80231,
+    "packed": 80231,
+    "retained": true
+  },
+  "runtimeParitySha256": "e9e9d17c91234fbe7afe785a1377ba4c3aea2aa3464fc2edb3e836bfcd0269bd",
+  "limitations": [],
+  "browserErrors": [],
+  "failedRequests": []
+}
