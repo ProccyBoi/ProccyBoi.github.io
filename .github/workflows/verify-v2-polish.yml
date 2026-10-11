@@ -1,7 +1,7 @@
 name: Verify v2 Skylabs and booking polish
 on:
   push:
-    branches: [v2-skylabs-book-polish, v2-background-collections]
+    branches: [v2-skylabs-book-polish, v2-background-collections, v2-selected-live-scenes]
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,7 +45,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add /tmp/v2-baseline cc3ea558e0446bf15b765c7c1ab932f093f69d09
+          git worktree add /tmp/v2-baseline 68833d90122e16de5cb9fa993c4b4b27f6cd221f
           if [ "${{ matrix.suite }}" = wheel ]; then git worktree add /tmp/v2-wheel-baseline 69b4327851e99a819dd77469fa46d0af4da44119; fi
       - name: Browser acceptance and real desktop/mobile pixels
         env:
@@ -92,14 +92,14 @@ jobs:
       - run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add /tmp/v2-baseline cc3ea558e0446bf15b765c7c1ab932f093f69d09
+          git worktree add /tmp/v2-baseline 68833d90122e16de5cb9fa993c4b4b27f6cd221f
       - name: Measure baseline and final on the same runner
         env:
           HERO_PROFILE_GZIP: '1'
           HERO_EXPECT_PACKS: '1'
           HERO_PROFILE_RUNS: '3'
         run: |
-          HERO_PROFILE_ROOT=/tmp/v2-baseline HERO_PROFILE_REVISION=cc3ea558e0446bf15b765c7c1ab932f093f69d09 HERO_PROFILE_OUT=/tmp/v2-performance/baseline.json node scripts/profile-v2-hero.cjs
+          HERO_PROFILE_ROOT=/tmp/v2-baseline HERO_PROFILE_REVISION=68833d90122e16de5cb9fa993c4b4b27f6cd221f HERO_PROFILE_OUT=/tmp/v2-performance/baseline.json node scripts/profile-v2-hero.cjs
           HERO_EXPECT_PARALLEL=1 HERO_PROFILE_OUT=/tmp/v2-performance/final.json node scripts/profile-v2-hero.cjs
       - uses: actions/upload-artifact@v4
         if: always()

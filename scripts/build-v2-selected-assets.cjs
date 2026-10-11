@@ -4,7 +4,9 @@
  * Output: V2_SELECTED_OUT (default /tmp/v2-selected-assets/selected).
  * --check performs source-only contract checks without a browser or Playwright.
  * --self-test checks merger and transport regressions without a browser.
- * --verify reconstructs and checks existing output packs against current sources.
+ * --verify reconstructs committed compressed-only packs against current sources.
+ * With --verify, the default input is assets/models/selected; V2_SELECTED_OUT
+ * can still point at a build artifact directory containing optional plain packs.
  * The V2HERO1 container additionally preserves Dual's existing LineSegments.
  */
 'use strict';
@@ -15,7 +17,8 @@ const crypto = require('node:crypto');
 const zlib = require('node:zlib');
 const {execFileSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
-const output = path.resolve(process.env.V2_SELECTED_OUT || '/tmp/v2-selected-assets/selected');
+const verifyOnly = process.argv.includes('--verify');
+const output = path.resolve(process.env.V2_SELECTED_OUT || (verifyOnly ? path.join(root, 'assets/models/selected') : '/tmp/v2-selected-assets/selected'));
 const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
 const names = ['esp32', 'dual', 'logic', 'metro'];
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -52,7 +55,7 @@ function checks() {
   const leds = manifests.metro.footprints.filter(part => part.value === manifests.metro.dimensionedLedFallback.value && !part.modelExported);
   assert.equal(leds.length, 291, 'All original 291 dimensioned LEDs are represented');
   assert(leds.every(part => part.atMm.length >= 2 && part.atMm.every(Number.isFinite)), 'Finite Metro source placements');
-  assert(!output.startsWith(path.join(root, 'assets') + path.sep), 'Build output must be an artifact directory, never production assets');
+  assert(verifyOnly || !output.startsWith(path.join(root, 'assets') + path.sep), 'Build output must be an artifact directory, never production assets');
   sourceHashes();
   return inspector;
 }
@@ -210,6 +213,33 @@ function proveMerge(source, merged, expected, proof, expandGeometry) {
   return {sourceMeshes:proof.records.length,mergedDraws:ranges.size,triangles:proof.records.reduce((sum,record)=>sum+record.count/3,0),expandedAttributes:'byte-identical after documented source world transform and mirrored-winding bake',maxPositionRoundingMm:proof.maxPositionRoundingMm,maxNormalRounding:proof.maxNormalRounding,rangeMapSha256:hash(Buffer.from(JSON.stringify(proof.records)))};
 }
 
+// Keep historical generation provenance intact when a narrowly scoped verifier
+// or runtime decoder update is recorded after the build. This is not a general hash exemption:
+// every current source, including the verifier, must match an explicit SHA.
+function verifyRecordedSources(recorded, current) {
+  assert.match(recorded.sourceCommit, /^[a-f0-9]{40}$/, 'Recorded build commit');
+  const expected = {...recorded.sources};
+  for (const [file, tool] of Object.entries(recorded.verificationTools || {})) {
+    assert(['scripts/build-v2-selected-assets.cjs', 'assets/v2-selected-assets.js'].includes(file), 'Only the build verifier and runtime decoder may have a separately recorded verification revision');
+    assert(expected[file], 'Verification revision must retain its original build-source hash');
+    assert(typeof tool.reason === 'string' && tool.reason.length, 'Explain the verification-only revision');
+    expected[file] = {bytes:tool.bytes, sha256:tool.sha256};
+  }
+  assert.deepEqual(current, expected, 'Every current source hash must match recorded build or explicit verifier provenance');
+  return {sourceCommit:recorded.sourceCommit, sources:recorded.sources,
+    ...(recorded.verificationTools ? {verificationTools:recorded.verificationTools} : {})};
+}
+
+function verifyPackFiles(directory, name, freshPlain, indexTransport) {
+  const compressed = fs.readFileSync(path.join(directory, name + '.idx.bin.gz'));
+  assert.deepEqual(indexTransport(zlib.gunzipSync(compressed), true), freshPlain, name + ': committed compressed pack reconstructs the exact fresh source capture');
+  const plainPath = path.join(directory, name + '.bin');
+  if (fs.existsSync(plainPath)) assert.deepEqual(fs.readFileSync(plainPath), freshPlain, name + ': optional plain verification artifact equals fresh source capture');
+  // Reuse the actual stored transport for runtime parity and manifest checks.
+  // Different zlib versions may produce different, equivalent gzip streams.
+  return compressed;
+}
+
 // Browser-free regressions cover reflected parent transforms, UVs/normals,
 // material equality, render ordering, visibility, transparency and line data.
 function selfTest() {
@@ -236,7 +266,22 @@ function selfTest() {
   // ordinary hero-compatible trees, preserving original hero pack behavior.
   const ordinary=new T.Group();ordinary.add(new T.Mesh(new T.BoxGeometry(1,1,1),material));
   assert.deepEqual(canonical(captureSelected({group:ordinary,parts:[]})),canonical(captureAssembly({group:ordinary,parts:[]})));
-  console.log('Selected build self-test passed: exact attributes, mirrored winding, material clones, render order, transparent/hidden primitives, LineSegments, original hero capture and index/gzip transport.');
+  const temporary=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'selected-verify-test-'));
+  try {
+    const stored=zlib.gzipSync(indexTransport(bytes),{level:1});fs.writeFileSync(path.join(temporary,'test.idx.bin.gz'),stored);
+    assert.deepEqual(verifyPackFiles(temporary,'test',bytes,indexTransport),stored,'Compressed-only verification uses the recorded transport');
+    fs.writeFileSync(path.join(temporary,'test.bin'),bytes);verifyPackFiles(temporary,'test',bytes,indexTransport);
+    fs.writeFileSync(path.join(temporary,'test.bin'),Buffer.from('wrong'));assert.throws(()=>verifyPackFiles(temporary,'test',bytes,indexTransport),/optional plain verification artifact/);
+    const wrong=Buffer.from(bytes);wrong[wrong.length-1]^=1;assert.throws(()=>verifyPackFiles(temporary,'test',wrong,indexTransport),/compressed pack reconstructs/);
+    const source={'model.glb':{bytes:1,sha256:'a'},'scripts/build-v2-selected-assets.cjs':{bytes:2,sha256:'b'}};
+    const recorded={sourceCommit:'a'.repeat(40),sources:source};
+    assert.equal(verifyRecordedSources(recorded,source).sourceCommit,recorded.sourceCommit,'Preserve original build commit independently of current HEAD');
+    assert.throws(()=>verifyRecordedSources(recorded,{...source,'model.glb':{bytes:1,sha256:'changed'}}),/Every current source hash/);
+    recorded.verificationTools={'scripts/build-v2-selected-assets.cjs':{bytes:3,sha256:'c',reason:'Verification-only regression fixture'}};
+    verifyRecordedSources(recorded,{...source,'scripts/build-v2-selected-assets.cjs':{bytes:3,sha256:'c'}});
+    assert.throws(()=>verifyRecordedSources({...recorded,verificationTools:{'model.glb':{bytes:2,sha256:'d',reason:'Cannot override a model'}}},source),/Only the build verifier and runtime decoder/);
+  } finally {fs.rmSync(temporary,{recursive:true,force:true});}
+  console.log('Selected build self-test passed: exact attributes, mirrored winding, material clones, render order, transparent/hidden primitives, LineSegments, original hero capture, compressed-only and optional plain verification, recorded build commit and strict source hashes.');
 }
 
 async function main() {
@@ -244,10 +289,12 @@ async function main() {
   if(process.argv.includes('--self-test')){selfTest();return;}
   if(process.argv.includes('--check')){console.log(JSON.stringify({checked:'source contracts, complete originals, Dual fixture, finite Metro LED placements',models:names,leds:291,sources:sourceHashes()},null,2));return;}
   const {captureAssembly,expandGeometry,canonical,pack,indexTransport}=require('./build-v2-hero-assets.cjs');
-  const {chromium}=require('playwright'),verifyOnly=process.argv.includes('--verify'),sources=sourceHashes();
-  fs.mkdirSync(output,{recursive:true});
+  const {chromium}=require('playwright'),sources=sourceHashes();
+  const recorded=verifyOnly?JSON.parse(fs.readFileSync(path.join(output,'manifest.json'),'utf8')):null;
+  const provenance=recorded?verifyRecordedSources(recorded,sources):{sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sources};
+  if(!verifyOnly)fs.mkdirSync(output,{recursive:true});
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-  const report={format:1,container:'V2HERO1',transport:'V2HIDX1/index-byte-planes-v1',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sources,sourceHashNormalization:'raw bytes',sourceFilesUnchanged:true,models:{}};
+  const report={format:1,container:'V2HERO1',transport:'V2HIDX1/index-byte-planes-v1',...provenance,sourceHashNormalization:'raw bytes',sourceFilesUnchanged:true,models:{}};
   const errors=[],failedRequests=[],requestedSources=new Set();
   try {
     const page=await browser.newPage({viewport:{width:900,height:700},reducedMotion:'reduce'});
@@ -298,9 +345,9 @@ async function main() {
         assert(stats.draws<sourceStats.draws/2,'Substantial actual opaque draw-call reduction');
       }
       if(name==='metro')assert.equal(stats.ledRefs.length,291,'All 291 finite dimensioned Metro LED placements retained');
-      const bytes=pack(capture),compressed=zlib.gzipSync(indexTransport(bytes),{level:9}),filepath=path.join(output,name+'.bin'),compressedPath=path.join(output,name+'.idx.bin.gz');
+      const bytes=pack(capture),compressed=verifyOnly?verifyPackFiles(output,name,bytes,indexTransport):zlib.gzipSync(indexTransport(bytes),{level:9}),filepath=path.join(output,name+'.bin'),compressedPath=path.join(output,name+'.idx.bin.gz');
       assert.deepEqual(indexTransport(zlib.gunzipSync(compressed),true),bytes,'Exact indexed transport round trip');
-      if(verifyOnly){assert.deepEqual(fs.readFileSync(filepath),bytes,'Existing plain pack equals fresh source capture');assert.deepEqual(fs.readFileSync(compressedPath),compressed,'Existing compressed pack equals fresh source capture');}else{fs.writeFileSync(filepath,bytes);fs.writeFileSync(compressedPath,compressed);}
+      if(!verifyOnly){fs.writeFileSync(filepath,bytes);fs.writeFileSync(compressedPath,compressed);}
       // Exercise the actual Selected Work runtime decoder against these output
       // bytes without copying anything into production asset directories.
       await page.route(base+'/assets/models/selected/'+name+'.idx.bin.gz',route=>route.fulfill({contentType:'application/octet-stream',body:compressed}));
@@ -312,16 +359,16 @@ async function main() {
       assert.deepEqual(restoredRuntimeStats,sourceRuntimeStats,name+': reconstructed model bounds and triangle counts');
       const unitsMm=name==='dual'?30:name==='esp32'?30:Math.max(manifests[name].boundsMm[2]-manifests[name].boundsMm[0],manifests[name].boundsMm[3]-manifests[name].boundsMm[1]);
       const provenance={name,sourceMethod:name==='dual'?'Unmodified procedural inspector, detached full assembled clone, exact opaque batching':'Detached original shared CAD factory',unitsMm,normalizedBounds:stats.bounds,sourceStats,stats,materials:capture.materials.length,textures:capture.textures.map(texture=>texture.url),drawCalls:{before:sourceStats.draws,after:stats.draws,reduction:sourceStats.draws-stats.draws},triangleParity:{source:sourceStats.triangles,packed:stats.triangles,retained:true},runtimeParitySha256:hash(Buffer.from(JSON.stringify(canonical(capture)))),...(mergeProof?{mergeProof,sourceTransformHierarchy:result.sourceCapture.nodes.map(({geometry,material,...node})=>node),mergedSourceRanges:result.merge.records}:{}),limitations:name==='metro'?['291 dimensioned WS2812B-2020 fallback packages are preserved from the existing factory; original supplier models are absent.','J1 USB-C and U2/U5 source bodies are absent and remain absent.']:[],browserErrors:errors,failedRequests};
-      report.models[name]={url:'/assets/models/selected/'+name+'.bin',compressedUrl:'/assets/models/selected/'+name+'.idx.bin.gz',bytes:bytes.length,gzipBytes:compressed.length,sha256:hash(bytes),compressedSha256:hash(compressed),unitsMm,parts:capture.parts.length,meshes:stats.meshes,triangles:stats.triangles,lineSegments:stats.lineSegments,materials:capture.materials.length,textures:provenance.textures,bounds:stats.bounds,drawCalls:provenance.drawCalls,paritySha256:provenance.runtimeParitySha256,provenance:name+'.provenance.json'};
+      report.models[name]={url:'/assets/models/selected/'+name+'.idx.bin.gz',verificationArtifact:name+'.bin',compressedUrl:'/assets/models/selected/'+name+'.idx.bin.gz',bytes:bytes.length,gzipBytes:compressed.length,sha256:hash(bytes),compressedSha256:hash(compressed),unitsMm,parts:capture.parts.length,meshes:stats.meshes,triangles:stats.triangles,lineSegments:stats.lineSegments,materials:capture.materials.length,textures:provenance.textures,bounds:stats.bounds,drawCalls:provenance.drawCalls,paritySha256:provenance.runtimeParitySha256,provenance:name+'.provenance.json'};
       if(!verifyOnly)fs.writeFileSync(path.join(output,name+'.provenance.json'),JSON.stringify(provenance,null,2)+'\n');
       console.log(name+': exact runtime parity; '+sourceStats.draws+' -> '+stats.draws+' draws; '+stats.triangles+' triangles; '+compressed.length+' gzip bytes');
     }
     for(const requested of requestedSources)assert(sourcePaths.has(requested),'Every requested original is hashed in provenance: '+requested);
     assert.deepEqual(sourceHashes(),sources,'All originals unchanged during build');
     if(!verifyOnly)fs.writeFileSync(path.join(output,'manifest.json'),JSON.stringify(report,null,2)+'\n');
-    else assert.deepEqual(report,JSON.parse(fs.readFileSync(path.join(output,'manifest.json'),'utf8')),'Provenance equals freshly evaluated source');
+    else assert.deepEqual(report,recorded,'Provenance equals freshly evaluated source');
     console.log('Verified Selected Work packs and source provenance:',output);
   } finally {await browser.close();assert.deepEqual(sourceHashes(),sources,'Source files must remain unchanged');}
 }
-module.exports={checks,fixture,captureSelected,inspectAssembly,mergeDualOpaque,proveMerge};
+module.exports={checks,fixture,captureSelected,inspectAssembly,mergeDualOpaque,proveMerge,verifyRecordedSources,verifyPackFiles};
 if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});

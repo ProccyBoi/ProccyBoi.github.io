@@ -54,7 +54,7 @@ function probe() {
   HTMLCanvasElement.prototype.getContext = function (type, ...args) {
     if (this.matches('[data-aircraft-canvas]') && /webgl/i.test(type)) {
       const root = this.closest('[data-aircraft-hero]'), hero = document.querySelector('[data-assembly]'), work = document.querySelector('[data-selected-work]'), bounds = root.getBoundingClientRect();
-      data.contexts.push({ t: performance.now(), visible: bounds.top < innerHeight && bounds.bottom > 0, modelsSettled: hero?.dataset.assemblyModelsSettled, heroState: hero?.dataset.assemblyState, cpuGateStart: data.cpuGates.at(-1)?.t ?? null, selectedReady: work?.dataset.selectedBackgroundReady, selectedState: work?.dataset.selectedState, selectedGateStart: data.selectedGates.at(-1)?.t ?? null });
+      data.contexts.push({ t: performance.now(), y: scrollY, top: bounds.top, bottom: bounds.bottom, viewportHeight: innerHeight, visible: bounds.top < innerHeight && bounds.bottom > 0, near: bounds.top < innerHeight + 420 && bounds.bottom > -420, promoted: root.dataset.aircraftBackgroundState === 'promoted', selectedGate: root.dataset.aircraftSelectedGate, modelsSettled: hero?.dataset.assemblyModelsSettled, heroState: hero?.dataset.assemblyState, cpuGateStart: data.cpuGates.at(-1)?.t ?? null, selectedReady: work?.dataset.selectedBackgroundReady, selectedState: work?.dataset.selectedState, selectedGateStart: data.selectedGates.at(-1)?.t ?? null });
     }
     return nativeContext.call(this, type, ...args);
   };
@@ -125,7 +125,10 @@ async function diagnostic(run, name, error) {
   await run.page.screenshot({ path: path.join(output, name + '-failure.png'), timeout: 30000, animations: 'disabled' }).catch(() => {});
 }
 function assertCPUGate(state) {
-  for (const context of state.probe.contexts.filter(context => !context.visible)) {
+  // The accepted 420px entry observer may initialize just before the exact
+  // visibility observer fires. Record that real geometry/promotion reason,
+  // while genuinely distant no-scroll initialization retains both gates.
+  for (const context of state.probe.contexts.filter(context => !context.visible && !context.near && !context.promoted)) {
     if (context.modelsSettled !== '3' && context.heroState !== 'unavailable') assert.ok(context.cpuGateStart !== null && context.t - context.cpuGateStart >= 11900, 'Offscreen renderer/CPU initialization waits for foreground settling or the 12s fallback');
     if (context.selectedReady !== 'true' && !['static', 'unavailable'].includes(context.selectedState)) assert.ok(context.selectedGateStart !== null && context.t - context.selectedGateStart >= 17900, 'Offscreen aircraft CPU waits for Selected Work preparation or its bounded 18s fallback');
   }
@@ -475,6 +478,67 @@ async function failedTransport(browser) {
     await save(run, 'failed-background-transport-readable-fallback');
   } catch (error) { await diagnostic(run, 'failed-transport', error); throw error; } finally { await context.close(); }
 }
+async function selectedGate(browser, mode) {
+  const run = await open(browser), { page, context } = run;
+  const heldPack = /\/assets\/models\/selected\/esp32\.idx\.bin\.gz(?:\?|$)/;
+  let released = false; const pending = [];
+  await context.route(heldPack, route => {
+    if (mode === 'failure') return route.abort();
+    if (released) return route.continue();
+    return new Promise(resolve => pending.push(async () => { try { await route.continue(); } finally { resolve(); } }));
+  });
+  const release = async () => { released = true; await Promise.all(pending.splice(0).map(resume => resume())); };
+  const name = 'selected-gate-' + mode;
+  try {
+    const requested = page.waitForRequest(heldPack);
+    await page.goto(base + '/v2/?v=' + name, { waitUntil: 'domcontentloaded' }); await requested;
+    if (mode === 'failure') {
+      await page.locator('[data-selected-state="unavailable"]').waitFor({ timeout });
+      await page.locator('[data-aircraft-selected-gate="unavailable"]').waitFor({ timeout });
+      await warmed(page); await decodedImages(page);
+      const state = await snapshot(page); assertCPUGate(state);
+      assert.equal(state.scrollY, 0); assert.equal(state.aircraft.aircraftSelectedGate, 'unavailable', 'A failed Selected pack promptly resolves the dependency instead of waiting for timeout');
+      assert.ok(state.probe.contexts.length > 0 && state.probe.contexts.every(sample => sample.selectedState === 'unavailable' && sample.selectedGate === 'unavailable'), 'Actual aircraft initialization observes the failed dependency result');
+      assert.equal(await page.locator(selected + '.is-scene').count(), 0);
+      assert.equal(await page.locator(selected + ' [data-selected-chapter]').count(), 2);
+      for (const image of await page.locator('[data-selected-image]').all()) assert.equal(await image.isVisible(), true, 'Failed Selected geometry retains its image fallback');
+      assert.equal(await page.locator(selected + ' [data-selected-chapter] a[href]').count(), 6);
+      await save(run, name, { dependencyFailure: true, fallbackImages: 6, fallbackLinks: 6 });
+      return;
+    }
+    await page.locator('[data-aircraft-selected-gate="waiting"]').waitFor({ timeout });
+    assert.ok(pending.length > 0, 'A real Selected geometry response remains held');
+    const waiting = await snapshot(page);
+    assert.equal(waiting.scrollY, 0); assert.equal(waiting.probe.contexts.length, 0, 'Distant aircraft has not allocated a context while the Selected dependency is pending');
+    assert.notEqual(waiting.selected.selectedBackgroundReady, 'true');
+    if (mode === 'timeout') {
+      await page.locator('[data-aircraft-selected-gate="timeout"]').waitFor({ timeout }); await warmed(page);
+      const timedOut = await snapshot(page); assertCPUGate(timedOut);
+      assert.equal(timedOut.scrollY, 0); assert.ok(pending.length > 0, 'Selected remains genuinely blocked when the bounded aircraft fallback completes');
+      assert.ok(timedOut.probe.scrolls.every(sample => sample.y === 0), 'The bounded fallback requires no user entry');
+      assert.ok(timedOut.probe.contexts.length > 0 && timedOut.probe.contexts.every(sample => !sample.visible && !sample.near && !sample.promoted && sample.selectedGate === 'timeout' && sample.t - sample.selectedGateStart >= 17900), 'Distant aircraft initialization occurs only after its 18s deadline');
+      assert.equal(Number(timedOut.aircraft.aircraftFrames || 0), 0); assert.equal(timedOut.aircraft.aircraftWarmFrames, '2');
+      await release(); await selectedWarmed(page); await stableHidden(page);
+      await save(run, name, { waiting, timedOut, boundedFallbackMs: 18000 });
+    } else {
+      assert.equal(mode, 'direct-entry');
+      await page.locator(aircraft).evaluate(root => {
+        const stage = root.querySelector('[data-aircraft-stage]'), track = root.querySelector('.v3-aircraft-track');
+        const distance = parseFloat(track.style.height) - stage.clientHeight;
+        scrollTo({ top: scrollY + root.getBoundingClientRect().top + distance + 1, behavior: 'instant' });
+      });
+      await page.waitForFunction(() => { const root = document.querySelector('[data-aircraft-hero]'); return root.dataset.aircraftTelemetryReady === 'true' && root.dataset.aircraftChapter === '1' && Number(root.dataset.aircraftRenderedProgress) === 1; }, null, { timeout });
+      const entered = await snapshot(page); assertCPUGate(entered);
+      assert.ok(pending.length > 0, 'Direct entry completes while Selected geometry is still blocked');
+      assert.notEqual(entered.selected.selectedBackgroundReady, 'true');
+      assert.ok(entered.probe.contexts.some(sample => (sample.visible || sample.near || sample.promoted) && sample.t - sample.selectedGateStart < 17900), 'Actual entry bypasses the pending 18s dependency gate');
+      assert.equal(Number(entered.aircraft.aircraftWarmFrames || 0), 0, 'Direct entry uses live rendering without offscreen warm poses');
+      await release(); await selectedWarmed(page); await page.waitForTimeout(700);
+      assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-rendered-progress')), 1, 'Late Selected completion cannot replace the chosen aircraft destination');
+      await save(run, name, { waiting, entered, bypassReason: 'Actual native scroll enters the aircraft visibility/420px preparation region' });
+    }
+  } catch (error) { await diagnostic(run, name, error); throw error; } finally { await release().catch(() => {}); await context.close(); }
+}
 async function guard(browser, name, options) {
   const run = await open(browser, options), { page } = run;
   try {
@@ -517,7 +581,7 @@ async function v3Deferred(browser) {
     await guard(browser, 'save-data', { saveData: true });
     await guard(browser, 'short-viewport', { viewport: { width: 1440, height: 550 } });
     if (!process.argv.includes('--static-only')) {
-      await initialViewport(browser); await heldTransport(browser); await interruptedInitialization(browser); await liveWarmMask(browser); await throttledWarmTrace(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
+      await initialViewport(browser); await heldTransport(browser); await interruptedInitialization(browser); await liveWarmMask(browser); await selectedGate(browser, 'timeout'); await selectedGate(browser, 'direct-entry'); await selectedGate(browser, 'failure'); await throttledWarmTrace(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
     }
     console.log(`${evidence.length} v2 background preparation groups passed.`);
   } finally { await browser.close(); }

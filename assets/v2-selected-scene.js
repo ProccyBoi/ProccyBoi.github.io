@@ -28,12 +28,13 @@
         const {wrapper, lift} = objects.get(name);
         const x = compact ? (index % 2 ? .68 : -.68) : (index - 1.5) * 1.19;
         const z = compact ? (index < 2 ? -.75 : .78) : Math.abs(index - 1.5) * .11;
-        wrapper.position.set(x * (1 + spread * .05), lift, z);
+        wrapper.position.set(x * (1 + spread * .05) - range(progress,.57,.86)*10, lift, z);
         wrapper.rotation.set(0, compact ? (index % 2 ? -.11 : .11) * (1-spread*.45) : (index-1.5) * -.10 * (1-spread*.45), 0);
       });
       const metro = objects.get('metro'), tram = objects.get('tramtrace');
-      metro.wrapper.position.set(8, metro.lift, compact ? -3.55 : -.25);
-      tram.wrapper.position.set(compact ? 8 : 17.45, tram.lift, compact ? 4.82 : .55);
+      const arriving = 6*(1-range(progress,.20,.52));
+      metro.wrapper.position.set(8+arriving, metro.lift, compact ? -3.55 : -.25);
+      tram.wrapper.position.set((compact ? 8 : 17.45)+arriving, tram.lift, compact ? 4.82 : .55);
       metro.wrapper.rotation.set(0, compact ? -.04 : .035, 0);
       tram.wrapper.rotation.set(0, compact ? .045 : -.055, 0);
       group.updateMatrixWorld(true);
@@ -70,14 +71,18 @@
         mobile=compact;lastWidth=width;lastHeight=height;
         // Fit both complete compositions once per layout, never to a single
         // card. Endpoints therefore remain stable while scrolling/reversing.
-        place(.25, compact);
-        endpoints=[endpoint(camera,0,width,height),endpoint(camera,1,width,height)];
+        place(0, compact);const first=endpoint(camera,0,width,height);
+        place(1, compact);endpoints=[first,endpoint(camera,1,width,height)];
         place(progress, compact);
       }
       const journey = range(progress, .30, .84), zoom = range(progress, .22, .67), a=endpoints[0], b=endpoints[1];
       target.copy(a.target).lerp(b.target,journey);
       direction.copy(a.direction).lerp(b.direction,journey).normalize();
       const distance = a.distance + (b.distance-a.distance)*zoom;
+      // Keep the depth range local to the camera journey. A .01 near plane
+      // loses precision at the full-size transit boards and makes their exact
+      // thin mask/core surfaces fight even with shadows disabled.
+      camera.near=Math.max(.1,distance*.12);camera.far=Math.max(80,distance*3);
       camera.clearViewOffset();camera.aspect=width/height;camera.position.copy(target).addScaledVector(direction,distance);camera.lookAt(target);camera.updateProjectionMatrix();
       const visualCentre = mobile ? .555 : .555;
       camera.setViewOffset(width,height,0,(.5-visualCentre)*height,width,height);camera.updateMatrixWorld(true);
@@ -86,7 +91,7 @@
     function stats() {
       return names.map(name=>{
         const entry=objects.get(name);let meshes=0,triangles=0,lines=0;
-        entry.assembly.group.traverse(node=>{if(node.isMesh){meshes++;triangles+=(node.geometry.index?.count||node.geometry.attributes.position.count)/3;}if(node.isLineSegments)lines++;});
+        entry.assembly.group.traverseVisible(node=>{if(node.isMesh){meshes++;triangles+=(node.geometry.index?.count||node.geometry.attributes.position.count)/3;}if(node.isLineSegments)lines++;});
         return {name, meshes, triangles, lines, physicalScale:entry.wrapper.scale.x};
       });
     }

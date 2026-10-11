@@ -133,7 +133,7 @@
   "sourceFilesUnchanged": true,
   "models": {
     "esp32": {
-      "url": "/assets/models/selected/esp32.bin",
+      "url": "/assets/models/selected/esp32.idx.bin.gz",
       "compressedUrl": "/assets/models/selected/esp32.idx.bin.gz",
       "bytes": 2919776,
       "gzipBytes": 612015,
@@ -166,10 +166,11 @@
         "reduction": 0
       },
       "paritySha256": "e9e9d17c91234fbe7afe785a1377ba4c3aea2aa3464fc2edb3e836bfcd0269bd",
-      "provenance": "esp32.provenance.json"
+      "provenance": "esp32.provenance.json",
+      "verificationArtifact": "esp32.bin"
     },
     "dual": {
-      "url": "/assets/models/selected/dual.bin",
+      "url": "/assets/models/selected/dual.idx.bin.gz",
       "compressedUrl": "/assets/models/selected/dual.idx.bin.gz",
       "bytes": 1353764,
       "gzipBytes": 238100,
@@ -202,10 +203,11 @@
         "reduction": 1052
       },
       "paritySha256": "23e78c4bda8bcf844171588df2582c9371c2b4b237ce74fef4cb3fbf96912190",
-      "provenance": "dual.provenance.json"
+      "provenance": "dual.provenance.json",
+      "verificationArtifact": "dual.bin"
     },
     "logic": {
-      "url": "/assets/models/selected/logic.bin",
+      "url": "/assets/models/selected/logic.idx.bin.gz",
       "compressedUrl": "/assets/models/selected/logic.idx.bin.gz",
       "bytes": 4857148,
       "gzipBytes": 907131,
@@ -239,10 +241,11 @@
         "reduction": 0
       },
       "paritySha256": "5d1cd768d7cb58601116348001ede219dc289235a483d891f0d64c4ff34af54d",
-      "provenance": "logic.provenance.json"
+      "provenance": "logic.provenance.json",
+      "verificationArtifact": "logic.bin"
     },
     "metro": {
-      "url": "/assets/models/selected/metro.bin",
+      "url": "/assets/models/selected/metro.idx.bin.gz",
       "compressedUrl": "/assets/models/selected/metro.idx.bin.gz",
       "bytes": 5713548,
       "gzipBytes": 615024,
@@ -276,7 +279,20 @@
         "reduction": 0
       },
       "paritySha256": "4a82a0da658bc513373b526b25ee16e27738047b35664c25523cf512cfc6879c",
-      "provenance": "metro.provenance.json"
+      "provenance": "metro.provenance.json",
+      "verificationArtifact": "metro.bin"
+    }
+  },
+  "verificationTools": {
+    "scripts/build-v2-selected-assets.cjs": {
+      "bytes": 36503,
+      "sha256": "a16a197f89ea0ce20e9a5147540317d078414b442e16f0cb2da935f571e5218b",
+      "reason": "Compressed-only verification and manifest metadata update; original pack-generation script hash and build commit are retained in sources and sourceCommit."
+    },
+    "assets/v2-selected-assets.js": {
+      "bytes": 10154,
+      "sha256": "58aed62455b6562d062e517e88325fc6f7528e3d08c4156664fe83f947ef1822",
+      "reason": "Current runtime decoder used by verification: image fetch priority, async image decoding, texture prefetch and shared transfer delegation added after the original build. Pack-generation source hashes remain unchanged."
     }
   }
 }

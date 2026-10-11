@@ -280,7 +280,7 @@ async function initialAndInput(browser) {
 }
 
 async function readable(page) {
-  assert.equal(await page.locator('[data-selected-chapter]').count(),2);
+  assert.equal(await page.locator(selected+' [data-selected-chapter]').count(),2);
   for(const id of ['work-framework','work-transit']){const chapter=page.locator('#'+id);assert.equal(await chapter.isVisible(),true,id+' remains readable');assert.notEqual(await chapter.getAttribute('aria-hidden'),'true');assert.ok(await chapter.locator('a[href]').count()>0,'Project navigation remains available');}
   for(const image of await page.locator('[data-selected-image]').all())assert.equal(await image.isVisible(),true,'All original fallback images remain visible');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Fallback has no horizontal overflow');
@@ -304,6 +304,10 @@ async function fastEntry(browser) {
   try{
     await page.goto(base+'/v2/?v=selected-fast-entry#work-transit',{waitUntil:'domcontentloaded'});await deadline(held,'Held Selected geometry request');
     assert.ok(pending.length>0,'Real new model transport is held');assert.equal(Number((await state(page)).frame),0);
+    await page.waitForFunction(()=>document.querySelector('[data-selected-work]').dataset.selectedChapter==='1');
+    assert.equal(await page.locator(selected+' [data-selected-chapter="1"].is-current').count(),1,'Pending native Transit destination immediately selects Transit copy and posters');
+    assert.equal(await page.locator(selected+' [data-selected-chapter="0"]').getAttribute('aria-hidden'),'true','Framework copy does not remain active during pending Transit entry');
+    assert.equal(await page.locator(selected+' [data-selected-chapter="1"] [data-selected-image]').evaluateAll(images=>images.length===2&&images.every(image=>getComputedStyle(image).visibility==='visible')),true,'Both requested Transit fallback images are visible before geometry resolves');
     const fallback=await page.locator('[data-selected-image]').evaluateAll(images=>images.some(image=>{const css=getComputedStyle(image);return css.visibility!=='hidden'&&Number(css.opacity)>0;}));assert.equal(fallback,true,'Early entry retains a visible fallback while actual geometry is pending');
     await release();await settled(page);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').dataset.selectedModelsReady==='6');
     const current=await state(page);assert.equal(current.chapter,'1');near(current.raw,current.rendered,'Fast entry draws its current native destination',tolerance);assert.equal(current.mask,'false');
@@ -410,6 +414,66 @@ async function interruptedWarmMask(browser) {
   }catch(error){await diagnose(run,'interrupted-warm-mask',error);throw error;}finally{await run.context.close();}
 }
 
+async function pendingPreferenceChange(browser) {
+  const run=await open(browser),{page,context}=run;let released=false,enteredResolve;const entered=new Promise(resolve=>{enteredResolve=resolve;}),pending=[];
+  const environment=/\/assets\/models\/hero\/environment\.bin(?:\.gz)?(?:\?|$)/;
+  await context.route(environment,route=>released?route.continue():new Promise(resolve=>{pending.push(async()=>{try{await route.continue();}finally{resolve();}});enteredResolve();}));
+  const release=async()=>{released=true;await Promise.all(pending.splice(0).map(resume=>resume()));};
+  await context.addInitScript(()=>{
+    let environment;
+    Object.defineProperty(window,'V2HeroEnvironment',{configurable:true,get:()=>environment,set:value=>{
+      environment={...value,load:async(...args)=>{
+        const selected=/v2-selected-work\.js/.test(new Error().stack);
+        if(selected)window.__selectedEnvironmentEntered=true;
+        const result=await value.load(...args);
+        if(selected)window.__selectedEnvironmentReturned=true;
+        return result;
+      }};
+    }});
+  });
+  try{
+    await page.goto(base+'/v2/?v=selected-pending-preference#work-framework',{waitUntil:'domcontentloaded'});await deadline(entered,'Held environment transfer');
+    await page.waitForFunction(()=>window.__selectedEnvironmentEntered===true&&document.querySelector('[data-selected-work]').dataset.selectedModelsReady==='6',null,{timeout});
+    const originalCanvas=await page.locator(canvas).elementHandle();
+    const before=await snapshot(page);assert.equal(before.contexts.filter(context=>context.kind==='selected').length,0,'The renderer is not created before the pending environment await');
+    assert.ok(pending.length>0,'Real shared environment bytes are held during Selected initialization');
+    await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-selected-state="static"]').waitFor();await readable(page);
+    assert.equal(await page.locator(selected+' [data-selected-chapter] a[href]').count(),6,'All six project links are readable during interrupted initialization');
+    await release();await page.waitForFunction(()=>window.__selectedEnvironmentReturned===true);await page.waitForTimeout(500);
+    const interrupted=await snapshot(page);assert.equal(interrupted.selected.selectedState,'static','Late environment completion cannot overwrite the chosen static state');
+    assert.equal(interrupted.contexts.filter(context=>context.kind==='selected').length,0,'Interrupted initialization never leaks a graphics context');
+    assert.notEqual(interrupted.selected.selectedSceneReady,'true');await readable(page);
+    await page.emulateMedia({reducedMotion:'no-preference'});await page.locator(selected+'.is-scene').waitFor();await jump(page,.3);
+    const resumed=await snapshot(page);assert.equal(resumed.selected.selectedModelsReady,'6');assert.equal(resumed.contexts.filter(context=>context.kind==='selected').length,1);
+    assert.equal(await originalCanvas.evaluate(node=>node===document.querySelector('[data-selected-canvas]')),true,'Pending initialization resumes the original canvas');
+    for(const name of ['pi','tramtrace'])assert.equal(run.requests.filter(request=>heroPack(name).test(request.url)).length,1,'Preference restoration reuses '+name+' transport');
+    assert.equal(run.requests.filter(request=>packs.test(request.url)).length,4,'Preference restoration reuses all new geometry transports');
+    await save(run,'pending-environment-reduced-motion-static-and-resume',{before,interrupted,resumed,heldRealEnvironment:true});
+    await originalCanvas.dispose();
+  }catch(error){await diagnose(run,'pending-preference',error);throw error;}finally{await release().catch(()=>{});await run.context.close();}
+}
+
+async function readyPreferenceChange(browser) {
+  const run=await open(browser),{page}=run;
+  try{
+    await page.goto(base+'/v2/?v=selected-ready-preference',{waitUntil:'domcontentloaded'});await ready(page);await page.locator('[data-aircraft-background-ready="true"]').waitFor({timeout});
+    await jump(page,.3);const originalCanvas=await page.locator(canvas).elementHandle(),before=await snapshot(page),cycles=[];
+    for(let cycle=0;cycle<2;cycle++){
+      await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-selected-state="static"]').waitFor();await readable(page);
+      assert.equal(await page.locator(selected+' [data-selected-chapter] a[href]').count(),6);
+      const paused=await snapshot(page);await page.waitForTimeout(600);const staticState=await snapshot(page);
+      assert.equal(staticState.selected.selectedState,'static');assert.equal(staticState.selected.selectedFrames,paused.selected.selectedFrames,'Reduced motion keeps the prepared scene idle');
+      assert.deepEqual(staticState.contexts,before.contexts,'Choosing a static presentation creates no context');
+      await page.emulateMedia({reducedMotion:'no-preference'});await page.locator(selected+'.is-scene').waitFor();await jump(page,cycle ? .2 : .8);
+      const resumed=await snapshot(page);assert.deepEqual(resumed.contexts,before.contexts,'Each restoration reuses all existing contexts');
+      assert.equal(await originalCanvas.evaluate(node=>node===document.querySelector('[data-selected-canvas]')),true,'Ready scene resumes the same canvas');
+      assert.equal(resumed.selected.selectedModelsReady,'6');assert.equal(resumed.selected.selectedWarmFrames,'2','Restoring a prepared scene does not repeat warm poses');
+      cycles.push({paused:staticState.selected,resumed:resumed.selected});
+    }
+    await noLoop(page,'Restored ready scene settles normally');await save(run,'ready-reduced-motion-two-round-trips-reuse-canvas-and-context',{before,cycles});await originalCanvas.dispose();
+  }catch(error){await diagnose(run,'ready-preference',error);throw error;}finally{await run.context.close();}
+}
+
 async function studies(browser) {
   const run=await open(browser),{page}=run;try{
     await page.goto(base+'/v2/?selectedCapture=1',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__v2Selected?.assemblies&&Object.keys(window.__v2Selected.assemblies).length===6,null,{timeout});
@@ -445,7 +509,7 @@ async function studies(browser) {
   fs.mkdirSync(output,{recursive:true});sourceContract();easingMath();await sourceGeometry();
   if(process.argv.includes('--source-only'))return;
   const {chromium}=require('playwright');const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-  try{if(process.argv.includes('--study'))await studies(browser);else{await guards(browser);await initialAndInput(browser);await heldHeroTextures(browser);await fastEntry(browser);await interruptedWarmMask(browser);await mobileTouch(browser);}}
+  try{if(process.argv.includes('--study'))await studies(browser);else{await guards(browser);await initialAndInput(browser);await heldHeroTextures(browser);await fastEntry(browser);await interruptedWarmMask(browser);await pendingPreferenceChange(browser);await readyPreferenceChange(browser);await mobileTouch(browser);}}
   finally{await browser.close();}
   console.log(evidence.length+' Selected Work acceptance groups passed.');
 })().catch(error=>{console.error(error);evidence.push({name:'failure',error:error.stack});process.exitCode=1;}).finally(()=>{fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');});

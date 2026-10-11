@@ -116,6 +116,7 @@
     const smoother=window.V2ScrollSmoothing;
     if(!visible||direct||Math.abs(next-progress)>(smoother?.jump||.18))current=next;
     progress=next;root.dataset.selectedProgress=progress.toFixed(6);
+    if(!root.classList.contains('is-live')){chapter(progress<.57?0:1);bar.style.transform=`scaleX(${progress})`;}
     if(entered){generation++;if(!backgroundDone)root.dataset.selectedBackgroundState='promoted';}
     if(visible){prepareTransfers(true).catch(fail);initialize(true).catch(fail);request();}
     else {cancelAnimationFrame(frame);frame=0;previousTime=0;current=progress;prepareInBackground();}
