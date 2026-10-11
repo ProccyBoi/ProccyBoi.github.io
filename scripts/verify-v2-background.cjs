@@ -2,7 +2,8 @@
  * HTTP server with Playwright installed. No test calls image.decode(), enables
  * capture controls, or scrolls before the initial readiness proof.
  * Software-WebGL durations are evidence, not real-device performance claims.
- * --source-only needs no browser; --static-only runs preference guards only. */
+ * --source-only needs no browser; --static-only runs preference guards only.
+ * --profile-only isolates the full cold 10Mbps/40ms readiness trace. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -36,12 +37,13 @@ function sourceContract() {
 }
 function probe() {
   performance.setResourceTimingBufferSize(2000);
-  const data = window.__v2BackgroundProbe = { scrolls: [], changes: [], longTasks: [], transportGates: [], cpuGates: [], fetches: [], contexts: [], visibility: [] };
+  const data = window.__v2BackgroundProbe = { scrolls: [], changes: [], longTasks: [], transportGates: [], cpuGates: [], selectedGates: [], fetches: [], contexts: [], visibility: [] };
   const nativeTimeout = window.setTimeout.bind(window), nativeFetch = window.fetch.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext;
   window.setTimeout = (callback, delay, ...args) => {
     const root = document.querySelector('[data-aircraft-background]');
     if (root && delay === 4500 && root.dataset.aircraftTransportState === 'waiting-hero-bytes') data.transportGates.push({ t: performance.now(), delay });
     if (root && delay === 12000 && root.dataset.aircraftBackgroundState === 'warming') data.cpuGates.push({ t: performance.now(), delay });
+    if (root && delay === 18000 && root.dataset.aircraftBackgroundState === 'warming') data.selectedGates.push({ t: performance.now(), delay });
     return nativeTimeout(callback, delay, ...args);
   };
   window.fetch = (...args) => {
@@ -51,8 +53,8 @@ function probe() {
   };
   HTMLCanvasElement.prototype.getContext = function (type, ...args) {
     if (this.matches('[data-aircraft-canvas]') && /webgl/i.test(type)) {
-      const root = this.closest('[data-aircraft-hero]'), hero = document.querySelector('[data-assembly]'), bounds = root.getBoundingClientRect();
-      data.contexts.push({ t: performance.now(), visible: bounds.top < innerHeight && bounds.bottom > 0, modelsSettled: hero?.dataset.assemblyModelsSettled, heroState: hero?.dataset.assemblyState, cpuGateStart: data.cpuGates.at(-1)?.t ?? null });
+      const root = this.closest('[data-aircraft-hero]'), hero = document.querySelector('[data-assembly]'), work = document.querySelector('[data-selected-work]'), bounds = root.getBoundingClientRect();
+      data.contexts.push({ t: performance.now(), visible: bounds.top < innerHeight && bounds.bottom > 0, modelsSettled: hero?.dataset.assemblyModelsSettled, heroState: hero?.dataset.assemblyState, cpuGateStart: data.cpuGates.at(-1)?.t ?? null, selectedReady: work?.dataset.selectedBackgroundReady, selectedState: work?.dataset.selectedState, selectedGateStart: data.selectedGates.at(-1)?.t ?? null });
     }
     return nativeContext.call(this, type, ...args);
   };
@@ -68,7 +70,7 @@ function probe() {
     }
   };
   addEventListener('scroll', () => data.scrolls.push({ t: performance.now(), y: scrollY }), { passive: true });
-  const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-settled', 'data-image-decoded', 'data-selected-ready'];
+  const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-settled', 'data-image-decoded', 'data-selected-ready', 'data-selected-models-ready', 'data-selected-background-ready', 'data-selected-warm-frames', 'data-selected-frames'];
   new MutationObserver(records => {
     for (const record of records) if (data.changes.length < 2000) data.changes.push({ t: performance.now(), attribute: record.attributeName, value: record.target.getAttribute(record.attributeName), tag: record.target.tagName, scrollY });
   }).observe(document, { subtree: true, attributes: true, attributeFilter: attributes });
@@ -88,7 +90,7 @@ async function open(browser, options = {}) {
 async function snapshot(page) {
   return page.evaluate(() => {
     const root = document.querySelector('[data-aircraft-hero]'), work = document.querySelector('[data-selected-work]');
-    return { scrollY, aircraftTop: root?.getBoundingClientRect().top, viewportHeight: innerHeight, aircraft: { ...root?.dataset }, selected: { ...work?.dataset }, images: [...document.querySelectorAll('[data-selected-image]')].map(image => ({ src: image.currentSrc || image.src, decoded: image.dataset.imageDecoded, complete: image.complete, width: image.naturalWidth, loading: image.loading, priority: image.fetchPriority })), probe: window.__v2BackgroundProbe, resources: performance.getEntriesByType('resource').filter(entry => /\/assets\//.test(entry.name)).map(entry => ({ name: entry.name, initiatorType: entry.initiatorType, start: entry.startTime, duration: entry.duration, responseEnd: entry.responseEnd, transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize })) };
+    return { scrollY, aircraftTop: root?.getBoundingClientRect().top, viewportHeight: innerHeight, aircraft: { ...root?.dataset }, selected: { ...work?.dataset }, hero: { ...document.querySelector('[data-assembly]')?.dataset }, images: [...document.querySelectorAll('[data-selected-image]')].map(image => ({ src: image.currentSrc || image.src, decoded: image.dataset.imageDecoded, complete: image.complete, width: image.naturalWidth, loading: image.loading, priority: image.fetchPriority })), probe: window.__v2BackgroundProbe, resources: performance.getEntriesByType('resource').filter(entry => /\/assets\//.test(entry.name)).map(entry => ({ name: entry.name, initiatorType: entry.initiatorType, start: entry.startTime, duration: entry.duration, responseEnd: entry.responseEnd, transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize })) };
   });
 }
 async function decodedImages(page) {
@@ -99,6 +101,9 @@ async function decodedImages(page) {
 }
 async function warmed(page) {
   await page.locator('[data-aircraft-background-ready="true"][data-aircraft-telemetry-ready="true"][data-aircraft-warm-frames="2"]').waitFor({ timeout });
+}
+async function selectedWarmed(page) {
+  await page.locator('[data-selected-models-ready="6"][data-selected-background-ready="true"][data-selected-warm-frames="2"]').waitFor({ timeout });
 }
 async function stableHidden(page) {
   const before = await page.locator(aircraft).evaluate(root => ({ live: Number(root.dataset.aircraftFrames || 0), warm: Number(root.dataset.aircraftWarmFrames || 0), landing: Number(root.dataset.aircraftLanding || 0) }));
@@ -121,8 +126,8 @@ async function diagnostic(run, name, error) {
 }
 function assertCPUGate(state) {
   for (const context of state.probe.contexts.filter(context => !context.visible)) {
-    if (context.modelsSettled === '3' || context.heroState === 'unavailable') continue;
-    assert.ok(context.cpuGateStart !== null && context.t - context.cpuGateStart >= 11900, 'Offscreen renderer/CPU initialization waits for foreground settling or the 12s fallback');
+    if (context.modelsSettled !== '3' && context.heroState !== 'unavailable') assert.ok(context.cpuGateStart !== null && context.t - context.cpuGateStart >= 11900, 'Offscreen renderer/CPU initialization waits for foreground settling or the 12s fallback');
+    if (context.selectedReady !== 'true' && !['static', 'unavailable'].includes(context.selectedState)) assert.ok(context.selectedGateStart !== null && context.t - context.selectedGateStart >= 17900, 'Offscreen aircraft CPU waits for Selected Work preparation or its bounded 18s fallback');
   }
 }
 async function initialViewport(browser) {
@@ -131,7 +136,7 @@ async function initialViewport(browser) {
     await page.goto(base + '/v2/?v=background-initial', { waitUntil: 'domcontentloaded' });
     await decodedImages(page); const imageReadyMs = Date.now() - started;
     assert.equal(await page.evaluate(() => scrollY), 0, 'All selected images decode without any scroll');
-    await warmed(page); const backgroundReadyMs = Date.now() - started;
+    await selectedWarmed(page); await warmed(page); const backgroundReadyMs = Date.now() - started;
     const state = await snapshot(page); assertCPUGate(state);
     assert.ok(state.probe.contexts.length > 0, 'Background readiness includes an actual renderer context');
     assert.equal(state.scrollY, 0); assert.ok(state.aircraftTop > state.viewportHeight + 420, 'Aircraft is still well below the initial viewport');
@@ -140,6 +145,9 @@ async function initialViewport(browser) {
     assert.equal(Number(state.aircraft.aircraftFrames || 0), 0, 'Warm draws are separate from live animation frames');
     assert.equal(Number(state.aircraft.aircraftLanding || 0), 0, 'The unseen landing has not advanced');
     assert.equal(state.aircraft.aircraftWarmFrames, '2');
+    assert.equal(state.selected.selectedModelsReady, '6', 'All six actual Selected Work assemblies prepare without scrolling');
+    assert.equal(state.selected.selectedWarmFrames, '2', 'Both Selected Work GPU poses are warmed once');
+    assert.equal(Number(state.selected.selectedFrames || 0), 0, 'Selected warm draws never count as live frames');
     assert.ok(run.requests.some(request => airframeBytes.test(request.url)), 'Aircraft bytes were requested from the initial viewport');
     assert.equal(run.requests.filter(request => telemetryBytes.test(request.url)).length, 1, 'Background aircraft and foreground hero share telemetry transport');
     assert.ok(state.images.every(image => image.loading === 'eager' && image.priority === 'low'), 'Decoded selected images retain eager, low-priority loading');
@@ -149,10 +157,18 @@ async function initialViewport(browser) {
     await page.screenshot({ path: path.join(output, 'initial-viewport.png'), timeout: 30000, animations: 'disabled' });
     await save(run, 'no-scroll-background-ready', { imageReadyMs, backgroundReadyMs, hidden, timingEnvironment: 'Chromium software WebGL; not a real-device benchmark' });
 
-    await page.locator('#work').evaluate(element => scrollTo({ top: scrollY + element.getBoundingClientRect().top - 90, behavior: 'instant' }));
-    await page.waitForFunction(() => ['running', 'complete'].includes(document.querySelector('[data-framework-collection]')?.dataset.frameworkMotion));
-    await page.waitForFunction(() => document.querySelector('[data-framework-collection]')?.dataset.frameworkMotion === 'complete');
-    await page.waitForFunction(() => document.querySelector('[data-selected-work]').getAnimations({ subtree: true }).every(animation => !['running', 'pending'].includes(animation.playState)));
+    await page.locator(selected).evaluate(root => {
+      const stage = root.querySelector('.v2-selected-stage'), track = root.querySelector('.v2-selected-track');
+      scrollTo({ top: scrollY + track.getBoundingClientRect().top - (parseFloat(getComputedStyle(stage).top) || 0), behavior: 'instant' });
+    });
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-selected-work]');
+      return root.dataset.selectedState === 'ready' && root.dataset.selectedWarmMask === 'false' && Number(root.dataset.selectedFrames) > 0;
+    });
+    const selectedFrames = Number(await page.locator(selected).getAttribute('data-selected-frames'));
+    await page.waitForTimeout(700);
+    assert.equal(Number(await page.locator(selected).getAttribute('data-selected-frames')), selectedFrames, 'Selected Work settles without an idle animation loop');
+    assert.equal(await page.locator('canvas[data-selected-canvas]').count(), 1, 'One shared 3D canvas replaces the image-grid animation');
     await page.screenshot({ path: path.join(output, 'selected-work-ready.png'), timeout: 30000, animations: 'disabled' });
     const entry = Date.now();
     await page.locator(aircraft).evaluate(root => scrollTo({ top: scrollY + root.getBoundingClientRect().top, behavior: 'instant' }));
@@ -160,7 +176,7 @@ async function initialViewport(browser) {
     const landing = Number(await page.locator(aircraft).getAttribute('data-aircraft-landing'));
     assert.ok(landing < .7, 'First visible entry starts the preserved landing instead of skipping it');
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-warm-frames'), '2', 'Entry does not repeat the warm draw sequence');
-    await save(run, 'prepared-entry-and-finite-selected-motion', { firstVisibleResponseMs: Date.now() - entry, landing });
+    await save(run, 'prepared-entry-and-finite-selected-scene', { firstVisibleResponseMs: Date.now() - entry, landing, selectedFrames });
   } catch (error) { await diagnostic(run, 'initial-viewport', error); throw error; } finally { await run.context.close(); }
 }
 async function heldTransport(browser) {
@@ -402,8 +418,12 @@ async function throttledWarmTrace(browser) {
     const started = Date.now();
     await page.goto(base + '/v2/?v=background-throttled-full-warm', { waitUntil: 'domcontentloaded' });
     await decodedImages(page); const imageReadyMs = Date.now() - started;
-    await warmed(page); const backgroundReadyMs = Date.now() - started;
+    await selectedWarmed(page); await warmed(page); await page.locator('[data-assembly-models-ready="3"]').waitFor({ timeout }); const backgroundReadyMs = Date.now() - started;
+    const selectedBefore = await page.locator(selected).evaluate(root => ({ live: root.dataset.selectedFrames, warm: root.dataset.selectedWarmFrames }));
     const hidden = await stableHidden(page), state = await snapshot(page); assertCPUGate(state);
+    assert.deepEqual({ live: state.selected.selectedFrames, warm: state.selected.selectedWarmFrames }, selectedBefore, 'Selected Work is also stable during the measured hidden idle interval');
+    assert.equal(Number(state.selected.selectedFrames || 0), 0); assert.equal(state.selected.selectedWarmFrames, '2');
+    assert.equal(state.hero.assemblyModelsReady, '3', 'Measurement continues through all three actual hero assemblies');
     assert.equal(state.scrollY, 0); assert.ok(state.aircraftTop > state.viewportHeight + 420);
     assert.ok(state.probe.scrolls.every(sample => sample.y === 0), 'The complete throttled trace stays in the initial viewport');
     assert.equal(state.aircraft.aircraftBackgroundState, 'ready');
@@ -412,11 +432,15 @@ async function throttledWarmTrace(browser) {
     assert.ok(state.probe.contexts.length > 0, 'The measured horizon includes construction and both GPU warm draws');
     const resourceBytes = Object.fromEntries(['transferSize', 'encodedBodySize', 'decodedBodySize'].map(key => [key, state.resources.reduce((sum, resource) => sum + resource[key], 0)]));
     const longTasks = state.probe.longTasks;
+    const firstChange = (attribute, value) => state.probe.changes.find(change => change.attribute === attribute && change.value === value)?.t ?? null;
+    const milestones = { imagesDecodedMs: firstChange('data-selected-ready', 'true'), allHeroReadyMs: firstChange('data-assembly-models-ready', '3'), allSelectedModelsReadyMs: firstChange('data-selected-models-ready', '6'), selectedGPUWarmMs: Number(state.selected.selectedBackgroundReadyMs), aircraftGPUWarmMs: Number(state.aircraft.aircraftBackgroundReadyMs) };
+    const resourcesByKind = Object.fromEntries(Object.entries({ images: /\.(?:webp|png|jpe?g|svg)(?:\?|$)/i, selectedPacks: /\/models\/selected\//, heroPacks: /\/models\/hero\/.*\.(?:gz|bin)(?:\?|$)/, aircraftPacks: /\/models\/aircraft\// }).map(([kind, pattern]) => [kind, state.resources.filter(resource => pattern.test(resource.name))]));
     await save(run, 'cold-10mbps-through-gpu-warm', {
       network, cacheDisabled: true, imageReadyMs, backgroundReadyMs, hidden, resourceBytes,
+      milestones, resourcesByKind,
       resourceCount: state.resources.length,
       longTaskSummary: { count: longTasks.length, totalMs: longTasks.reduce((sum, task) => sum + task.duration, 0), longestMs: Math.max(0, ...longTasks.map(task => task.duration)) },
-      measurementHorizon: 'Initial navigation through six decoded Selected Work images, telemetry attachment, both GPU warm draws, and one second of hidden idle',
+      measurementHorizon: 'Initial navigation through six decoded Selected Work images and six actual CAD models, both Selected GPU warm poses, aircraft telemetry attachment, both aircraft GPU warm draws, and one second of hidden idle',
       fixture: 'Standard Python HTTP server: uncompressed HTTP responses, unlike the hero gzip-response profiling fixture; precompressed asset files retain their own format',
       timingEnvironment: 'Single cold Chromium software-WebGL trace at 10 Mbps / 40 ms; not a real-device benchmark or a gzip-fixture comparison'
     });
@@ -488,6 +512,7 @@ async function v3Deferred(browser) {
   const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   try {
+    if (process.argv.includes('--profile-only')) { await throttledWarmTrace(browser); return; }
     await guard(browser, 'reduced-motion', { reduced: true });
     await guard(browser, 'save-data', { saveData: true });
     await guard(browser, 'short-viewport', { viewport: { width: 1440, height: 550 } });

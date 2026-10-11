@@ -10,9 +10,13 @@ on:
 permissions:
   contents: read
 jobs:
-  study:
+  selected:
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [study, selected, background, profile]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
@@ -25,13 +29,19 @@ jobs:
         env:
           V2_BASE_URL: http://127.0.0.1:8080
           V2_SELECTED_OUT: /tmp/v2-selected-study
+          V2_BACKGROUND_OUT: /tmp/v2-selected-study/background
         run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
-          node scripts/verify-v2-selected-scene.cjs --study
+          case '${{ matrix.suite }}' in
+            study) node scripts/verify-v2-selected-scene.cjs --study ;;
+            selected) node scripts/verify-v2-selected-scene.cjs ;;
+            background) node scripts/verify-v2-background.cjs ;;
+            profile) node scripts/verify-v2-background.cjs --profile-only ;;
+          esac
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v2-selected-studies
+          name: v2-selected-${{ matrix.suite }}
           path: /tmp/v2-selected-study
           retention-days: 14

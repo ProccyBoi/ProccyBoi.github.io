@@ -21,6 +21,7 @@ const evidence = [], tolerance = .000012;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const near = (a, b, label, epsilon = 1e-10) => assert.ok(Math.abs(a - b) <= epsilon, `${label}: ${a} vs ${b}`);
 function passed(name, details = {}) { evidence.push({name, ...details}); console.log('PASS ' + name); }
+async function deadline(promise,label) {let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out')),timeout);})]);}finally{clearTimeout(timer);}}
 
 function sourceContract() {
   const html = read('v2/index.html'), v3 = read('v3/index.html');
@@ -86,12 +87,23 @@ async function sourceGeometry() {
   const original = localPose(), camera = new T.PerspectiveCamera(34, 1, .01, 200);
   const pose = () => [...camera.position.toArray(), ...camera.quaternion.toArray(), ...camera.projectionMatrix.elements,
     ...names.flatMap(name => {const wrapper = composition.objects.get(name).wrapper; return [...wrapper.position.toArray(), ...wrapper.quaternion.toArray(), ...wrapper.scale.toArray()];})];
-  const fitReports = [];
+  const fitReports = [], journeyReports = [];
   for (const [width, height] of [[1440,900],[390,844],[320,740]]) {
     const samples = [];
     for (let index = 0; index <= 100; index++) {
       const progress = index / 100; composition.frame(camera, progress, width, height);
       const value = pose(); assert.ok(value.every(Number.isFinite), 'Finite continuous camera and assembly transforms'); samples.push(value);
+      const visible=[];
+      for(const name of names){
+        const box=composition.bounds.get(name),points=[];
+        for(let corner=0;corner<8;corner++)points.push(new T.Vector3(corner&1?box.max.x:box.min.x,corner&2?box.max.y:box.min.y,corner&4?box.max.z:box.min.z).project(camera));
+        const minX=Math.max(-1,Math.min(...points.map(point=>point.x))),maxX=Math.min(1,Math.max(...points.map(point=>point.x)));
+        const minY=Math.max(-1,Math.min(...points.map(point=>point.y))),maxY=Math.min(1,Math.max(...points.map(point=>point.y)));
+        const area=Math.max(0,maxX-minX)*Math.max(0,maxY-minY);
+        if(area>.002&&points.some(point=>point.z>-1&&point.z<1))visible.push({name,projectedArea:area});
+      }
+      assert.ok(visible.length>0,`${width}px progress ${progress}: transition must not become an empty camera view`);
+      journeyReports.push({width,progress,visible});
     }
     for (let index = 100; index >= 0; index--) {
       composition.frame(camera, index / 100, width, height); assert.deepEqual(pose(), samples[index], `${width}px reverse reconstructs the same physical pose`);
@@ -115,7 +127,7 @@ async function sourceGeometry() {
   }
   assert.deepEqual(localPose(), original, 'Scene choreography never deforms/reparents source parts');
   for (const name of ['pi', 'tramtrace']) assert.equal(hero[name].group.parent, heroParents);
-  passed('real-six-model-geometry-shared-space-independent-hero-and-reversible-camera', {stats,fitReports,requests:Object.fromEntries(requests)});
+  passed('real-six-model-geometry-shared-space-independent-hero-and-reversible-camera', {stats,fitReports,journeyReports,requests:Object.fromEntries(requests)});
 }
 
 function easingMath() {
@@ -140,9 +152,11 @@ function easingMath() {
 }
 
 function instrument() {
-  const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext;
+  const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext, nativeTimeout=setTimeout.bind(window), nativeFetch=fetch.bind(window);
   const contexts = new Map();
-  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],recording:false};
+  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],recording:false};
+  window.setTimeout=(callback,delay,...args)=>{if(/v2-selected-work\.js/.test(new Error().stack)){if(delay===4500)probe.transportGates.push(performance.now());if(delay===12000)probe.cpuGates.push(performance.now());}return nativeTimeout(callback,delay,...args);};
+  window.fetch=(...args)=>{const url=typeof args[0]==='string'?args[0]:args[0]?.url||String(args[0]);probe.fetches.push({url,t:performance.now()});return nativeFetch(...args);};
   const sample = () => {
     const root=document.querySelector('[data-selected-work]'); if(!root)return null;
     const canvas=root.querySelector('[data-selected-canvas]');
@@ -231,7 +245,7 @@ async function initialAndInput(browser) {
       await save(run,'native-120-wheel-'+label,{before,after,trace,observedIntermediate:trace.samples.filter(sample=>Math.abs(sample.raw-sample.rendered)>.00008).length});
     }
     const before=await jump(page,.35);await begin(page);await page.mouse.wheel(0,120);
-    const forward=await page.waitForFunction(raw=>{const sample=window.__selectedProbe.snapshot();return sample.raw>raw+.01?sample:false;},before.raw,{polling:10});
+    const forward=await page.waitForFunction(before=>{const sample=window.__selectedProbe.snapshot();return sample.raw>before.raw+.01&&sample.frame>before.frame?sample:false;},before,{polling:10});
     const reversal=await forward.jsonValue();await forward.dispose();await page.mouse.wheel(0,-120);
     await page.waitForFunction(y=>Math.abs(scrollY-y)<2,before.y);await settled(page);const after=await state(page),trace=await end(page);trusted(trace);
     const reverseIndex=trace.samples.findIndex((sample,index)=>index>0&&sample.raw<trace.samples[index-1].raw-.005);
@@ -288,7 +302,7 @@ async function fastEntry(browser) {
   await context.route(packs,route=>released?route.continue():new Promise(resolve=>{pending.push(async()=>{try{await route.continue();}finally{resolve();}});heldResolve();}));
   const release=async()=>{released=true;await Promise.all(pending.splice(0).map(resume=>resume()));};
   try{
-    await page.goto(base+'/v2/?v=selected-fast-entry#work-transit',{waitUntil:'domcontentloaded'});await held;
+    await page.goto(base+'/v2/?v=selected-fast-entry#work-transit',{waitUntil:'domcontentloaded'});await deadline(held,'Held Selected geometry request');
     assert.ok(pending.length>0,'Real new model transport is held');assert.equal(Number((await state(page)).frame),0);
     const fallback=await page.locator('[data-selected-image]').evaluateAll(images=>images.some(image=>{const css=getComputedStyle(image);return css.visibility!=='hidden'&&Number(css.opacity)>0;}));assert.equal(fallback,true,'Early entry retains a visible fallback while actual geometry is pending');
     await release();await settled(page);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').dataset.selectedModelsReady==='6');
@@ -296,6 +310,25 @@ async function fastEntry(browser) {
     await page.waitForTimeout(700);assert.equal((await state(page)).chapter,'1','Late warming never resets the requested destination');
     await save(run,'fast-transit-entry-promotes-held-transport-without-blank',{current});
   }catch(error){await diagnose(run,'fast-entry',error);throw error;}finally{await release().catch(()=>{});await run.context.close();}
+}
+
+async function heldHeroTextures(browser) {
+  const run=await open(browser),{page,context}=run;let released=false,enteredResolve;const entered=new Promise(resolve=>{enteredResolve=resolve;}),pending=[];
+  await context.route(heroPack('tramtrace'),route=>released?route.continue():new Promise(resolve=>{pending.push(async()=>{try{await route.continue();}finally{resolve();}});enteredResolve();}));
+  const release=async()=>{released=true;await Promise.all(pending.splice(0).map(resume=>resume()));};
+  const textures=['/assets/models/framework-esp32/framework-markings-silk.svg','/assets/models/framework-dual-usb/framework-dual-usb-silk.svg','/assets/models/hardware/framework-logic-analyser/silk-front.svg','/assets/models/hardware/framework-logic-analyser/silk-back.svg','/assets/models/hardware/metroboard/silk-front.svg','/assets/models/hardware/metroboard/silk-back.svg'];
+  try{
+    const observedPack=page.waitForRequest(packs),observedTextures=Promise.all(textures.map(file=>page.waitForRequest(request=>new URL(request.url()).pathname===file)));
+    await page.goto(base+'/v2/?v=selected-held-hero-textures',{waitUntil:'domcontentloaded'});await deadline(entered,'Held hero request');
+    await observedTextures;await observedPack;
+    const timing=await page.evaluate(()=>({gates:window.__selectedProbe.transportGates,fetches:window.__selectedProbe.fetches,heroReady:document.querySelector('[data-assembly]').dataset.assemblyModelsReady,y:scrollY}));
+    const firstPack=run.requests.find(request=>packs.test(request.url)),firstFetch=timing.fetches.find(request=>/\/models\/selected\//.test(request.url));
+    assert.ok(pending.length>0,'Foreground lead is genuinely still held');assert.ok(Number(timing.heroReady||0)<3);assert.equal(timing.y,0);
+    for(const file of textures){const request=run.requests.find(request=>new URL(request.url).pathname===file);assert.ok(request&&request.t<firstPack.t,'Early texture discovery precedes gated geometry: '+file);}
+    for(const source of ['v2-selected-assets.js','v2-selected-scene.js'])assert.ok(run.requests.find(request=>request.url.includes('/assets/'+source)).t<firstPack.t,'Scene code starts independently of the hero gate');
+    assert.ok(timing.gates.length>0&&firstFetch.t-timing.gates[0]>=4400,'Held foreground bytes defer the new geometry until the bounded 4.5s fallback');
+    await release();await ready(page);await save(run,'held-hero-immediate-textures-and-bounded-geometry-gate',{timing,textures,firstPack});
+  }catch(error){await diagnose(run,'held-hero-textures',error);throw error;}finally{await release().catch(()=>{});await run.context.close();}
 }
 
 async function mobileTouch(browser) {
@@ -310,6 +343,73 @@ async function mobileTouch(browser) {
   }catch(error){await diagnose(run,'mobile-touch',error);throw error;}finally{await run.context.close();}
 }
 
+async function interruptedWarmMask(browser) {
+  const run=await open(browser),{page,context}=run;
+  await context.addInitScript(()=>{
+    const idle=requestIdleCallback.bind(window),raf=requestAnimationFrame.bind(window),cancelIdle=cancelIdleCallback.bind(window),cancelRAF=cancelAnimationFrame.bind(window);
+    const idleQueue=new Map(),liveQueue=new Map(),samples=[];let next=-1,dispatched=0;
+    const control=window.__selectedMaskControl={holdLive:false};
+    const selectedCall=()=>/v2-selected-work\.js/.test(new Error().stack);
+    const read=label=>{
+      const root=document.querySelector('[data-selected-work]'),sample=window.__selectedProbe.snapshot();
+      const image=root?.querySelector('[data-selected-chapter].is-current [data-selected-image]');
+      return{label,...sample,background:root?.dataset.selectedBackgroundState,posterVisibility:image?getComputedStyle(image).visibility:null};
+    };
+    window.requestIdleCallback=(callback,options)=>{if(!selectedCall())return idle(callback,options);const id=next--;idleQueue.set(id,()=>idle(deadline=>{callback(deadline);dispatched++;},options));return id;};
+    window.cancelIdleCallback=id=>{if(!idleQueue.delete(id))cancelIdle(id);};
+    window.requestAnimationFrame=callback=>{
+      if(callback.name!=='render'||!selectedCall())return raf(callback);
+      const observed=time=>{samples.push(read('before-live'));callback(time);samples.push(read('after-live'));};
+      if(!control.holdLive)return raf(observed);const id=next--;liveQueue.set(id,observed);return id;
+    };
+    window.cancelAnimationFrame=id=>{if(!liveQueue.delete(id))cancelRAF(id);};
+    control.releaseIdle=()=>{const entry=idleQueue.entries().next().value;if(!entry)return false;idleQueue.delete(entry[0]);entry[1]();return true;};
+    control.releaseLive=()=>{control.holdLive=false;for(const callback of liveQueue.values())raf(callback);liveQueue.clear();};
+    control.state=()=>({...read('snapshot'),idlePending:idleQueue.size,livePending:liveQueue.size,dispatched,samples});
+    new MutationObserver(records=>{if(records.some(record=>record.attributeName==='data-selected-warm-mask'))samples.push(read('mask-change'));}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-warm-mask']});
+  });
+  const sample=()=>page.evaluate(()=>window.__selectedMaskControl.state());
+  const releaseIdle=async()=>{
+    await page.waitForFunction(()=>window.__selectedMaskControl.state().idlePending>0);
+    const before=(await sample()).dispatched;assert.equal(await page.evaluate(()=>window.__selectedMaskControl.releaseIdle()),true);
+    await page.waitForFunction(previous=>window.__selectedMaskControl.state().dispatched>previous,before);
+  };
+  const assertMasked=(value,label)=>{assert.equal(value.mask,'true',label);assert.equal(value.readyClass,false,label);assert.equal(value.canvasVisibility,'hidden',label);assert.equal(value.posterVisibility,'visible',label);};
+  try{
+    await page.goto(base+'/v2/?v=selected-interrupted-warm-mask',{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>window.__selectedMaskControl.state().idlePending>0);await scrollProgress(page,.3);
+    // Visible promotion must work through the same real per-model idle turns.
+    // Release only actual production idle callbacks; no model/promise is faked.
+    for(let turn=0;turn<16;turn++){
+      const status=await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.frame>0||value.idlePending>0?value:false;});
+      const value=await status.jsonValue();await status.dispose();if(value.frame>0)break;await releaseIdle();
+    }
+    await settled(page);await page.waitForFunction(()=>window.__selectedMaskControl.state().canvasOpacity>.99);
+    const firstLive=await sample();assert.equal(firstLive.warm,0,'A true visible frame precedes any background warm pose');assert.equal(firstLive.mask,'false');
+    await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
+    await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return scrollY===0&&value.mask==='true'&&value.idlePending>0;});
+    const remasked=await sample();assertMasked(remasked,'Returning offscreen immediately masks the previously live canvas');
+    const duringFade=remasked.samples.find(value=>value.label==='mask-change'&&value.frame>0&&value.mask==='true');
+    assert.ok(duringFade&&duringFade.canvasOpacity>0,'Mask transition is observed while the old live canvas still has opacity');assertMasked(duringFade,'Visibility mask covers the whole fade');
+    await releaseIdle(); // background foreground-settled/initialize boundary
+    await releaseIdle(); // first real GPU warm pose
+    await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.warm===1&&value.idlePending>0;});
+    const warmed=await sample();assertMasked(warmed,'First offscreen warm pose stays hidden');assert.equal(warmed.frame,remasked.frame);
+    await page.evaluate(()=>{window.__selectedMaskControl.holdLive=true;});await scrollProgress(page,.85);
+    await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.livePending>0&&Math.abs(value.raw-.85)<.001;});
+    assertMasked(await sample(),'Rapid re-entry stays masked until a current live draw');
+    await releaseIdle(); // canceled old second warm continuation
+    await page.waitForFunction(()=>window.__selectedMaskControl.state().idlePending===0);
+    const canceled=await sample();assertMasked(canceled,'Canceled continuation never unmasks a stale GPU pose');assert.equal(canceled.warm,1);assert.equal(canceled.frame,warmed.frame);
+    await page.evaluate(()=>window.__selectedMaskControl.releaseLive());await settled(page);const final=await sample();
+    assert.ok(final.frame>canceled.frame);assert.equal(final.mask,'false');assert.equal(final.canvasVisibility,'visible');assert.equal(final.chapter,'1');
+    near(final.rendered,final.raw,'Current live draw matches the promoted native target',tolerance);
+    const firstUnmasked=final.samples.find(value=>value.label==='after-live'&&value.frame>canceled.frame);
+    assert.ok(firstUnmasked&&firstUnmasked.mask==='false');near(firstUnmasked.rendered,canceled.raw,'First unmasked frame is current, not a warm endpoint',tolerance);
+    await save(run,'interrupted-live-offscreen-warm-current-frame-unmask',{firstLive,remasked,duringFade,warmed,canceled,final,schedulingControl:'Only Selected production idle callbacks and render RAF are held; native scroll continues normally'});
+  }catch(error){await diagnose(run,'interrupted-warm-mask',error);throw error;}finally{await run.context.close();}
+}
+
 async function studies(browser) {
   const run=await open(browser),{page}=run;try{
     await page.goto(base+'/v2/?selectedCapture=1',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__v2Selected?.assemblies&&Object.keys(window.__v2Selected.assemblies).length===6,null,{timeout});
@@ -317,8 +417,26 @@ async function studies(browser) {
     assert.ok(api.scene&&api.renderer&&api.camera);for(const key of ['seekProgress','resume','composition'])assert.ok(api.keys.includes(key));
     for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:320,height:740}]) {
       await page.setViewportSize(viewport);await scrollProgress(page,.4);
-      for(const progress of [0,.25,.5,.75,1]){await page.evaluate(progress=>window.__v2Selected.seekProgress(progress),progress);await page.waitForTimeout(80);await page.screenshot({path:path.join(output,`study-${viewport.width}-${String(progress).replace('.','_')}.png`)});}
+      for(const progress of [0,.25,.5,.75,1]){await page.evaluate(progress=>window.__v2Selected.seekProgress(progress),progress);await page.waitForTimeout(450);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').getAnimations({subtree:true}).every(animation=>!['running','pending'].includes(animation.playState)));await page.screenshot({path:path.join(output,`study-${viewport.width}-${String(progress).replace('.','_')}.png`)});}
     }
+    // Temporary, explicitly capture-only A/B: distinguish real coating depth
+    // issues from shadow-map artifacts without changing production materials.
+    await page.setViewportSize({width:1440,height:900});await scrollProgress(page,.4);
+    await page.evaluate(()=>window.__v2Selected.seekProgress(1));await page.waitForTimeout(450);
+    await page.screenshot({path:path.join(output,'diagnostic-transit-shadows.png')});
+    const materials=await page.evaluate(()=>{
+      const api=window.__v2Selected,result=[];api.scene.updateMatrixWorld(true);
+      for(const [name,target]of[['metro','mat_12'],['tramtrace','mat_30']])api.assemblies[name].group.traverse(node=>{
+        const matched=[].concat(node.material||[]).filter(material=>material.name===target);if(!matched.length)return;
+        node.geometry.computeBoundingBox();
+        result.push({assembly:name,mesh:node.name,matrix:node.matrix.toArray(),matrixWorld:node.matrixWorld.toArray(),position:node.position.toArray(),scale:node.scale.toArray(),castShadow:node.castShadow,receiveShadow:node.receiveShadow,renderOrder:node.renderOrder,bounds:{min:node.geometry.boundingBox.min.toArray(),max:node.geometry.boundingBox.max.toArray()},materials:matched.map(material=>({name:material.name,type:material.type,color:material.color?.getHexString(),metalness:material.metalness,roughness:material.roughness,opacity:material.opacity,transparent:material.transparent,depthWrite:material.depthWrite,depthTest:material.depthTest,side:material.side,polygonOffset:material.polygonOffset,polygonOffsetFactor:material.polygonOffsetFactor,polygonOffsetUnits:material.polygonOffsetUnits,map:material.map?.image?.src??null}))});
+      });return result;
+    });
+    assert.ok(materials.some(item=>item.assembly==='metro')&&materials.some(item=>item.assembly==='tramtrace'),'Real requested coating materials were located');
+    await page.evaluate(()=>{window.__v2Selected.renderer.shadowMap.enabled=false;window.__v2Selected.seekProgress(1);});await page.waitForTimeout(450);
+    await page.screenshot({path:path.join(output,'diagnostic-transit-no-shadows.png')});
+    await page.evaluate(()=>{window.__v2Selected.renderer.shadowMap.enabled=true;window.__v2Selected.seekProgress(1);});
+    fs.writeFileSync(path.join(output,'diagnostic-transit-materials.json'),JSON.stringify(materials,null,2)+'\n');
     await page.evaluate(()=>window.__v2Selected.resume());await save(run,'capture-only-render-studies',{api,viewports:[1440,390,320],captureOnly:true});
   }catch(error){await diagnose(run,'study',error);throw error;}finally{await run.context.close();}
 }
@@ -327,7 +445,7 @@ async function studies(browser) {
   fs.mkdirSync(output,{recursive:true});sourceContract();easingMath();await sourceGeometry();
   if(process.argv.includes('--source-only'))return;
   const {chromium}=require('playwright');const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-  try{if(process.argv.includes('--study'))await studies(browser);else{await guards(browser);await initialAndInput(browser);await fastEntry(browser);await mobileTouch(browser);}}
+  try{if(process.argv.includes('--study'))await studies(browser);else{await guards(browser);await initialAndInput(browser);await heldHeroTextures(browser);await fastEntry(browser);await interruptedWarmMask(browser);await mobileTouch(browser);}}
   finally{await browser.close();}
   console.log(evidence.length+' Selected Work acceptance groups passed.');
 })().catch(error=>{console.error(error);evidence.push({name:'failure',error:error.stack});process.exitCode=1;}).finally(()=>{fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');});

@@ -27,7 +27,7 @@
   }
   function image(url) {
     if (!images.has(url)) images.set(url, new Promise((resolve, reject) => {
-      const bitmap = new Image(); bitmap.crossOrigin = 'anonymous';
+      const bitmap = new Image(); bitmap.crossOrigin = 'anonymous'; bitmap.decoding = 'async'; bitmap.fetchPriority = 'low';
       bitmap.onload = () => resolve(bitmap); bitmap.onerror = reject; bitmap.src = url;
     }));
     return images.get(url);
@@ -90,7 +90,9 @@
     }
     return pending.get(name);
   }
+  function prefetchTextures() { return Promise.all(Object.values(textureSources).flat().map(image)); }
   function whenTransferSettled(name) {
+    if (shared.has(name)) return window.V2HeroAssets.whenTransferSettled(name);
     if (!names.has(name)) return Promise.reject(new Error('Unknown selected assembly: ' + name));
     prefetch(name).catch(() => {});
     return transfers.get(name);
@@ -146,5 +148,5 @@
     nodes[0].updateMatrixWorld(true);
     return {...decode(data.extra), group:nodes[0], parts};
   }
-  window.V2SelectedAssets = Object.freeze({prefetch, load, whenTransferSettled});
+  window.V2SelectedAssets = Object.freeze({prefetch, load, whenTransferSettled, prefetchTextures});
 })();

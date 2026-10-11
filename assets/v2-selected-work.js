@@ -98,7 +98,7 @@
     root.classList.remove('is-scene','is-live');
     articles.forEach((article,i)=>{article.id=ids[i];article.inert=false;article.removeAttribute('aria-hidden');article.classList.remove('is-current');root.append(article);});
     stage?.remove();track?.remove();track=null;
-    root.dataset.selectedState=state;settleBackground();
+    root.dataset.selectedState=state;settleBackground({state,at:performance.now()});
     if(restore>=0)articles[restore].scrollIntoView({behavior:'instant',block:'start'});
   }
   function fail(error) {
@@ -155,7 +155,7 @@
       window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=product-20261007'),
       script('/assets/v2-selected-assets.js?v=shared-cad-20261011'),
       script('/assets/v2-selected-scene.js?v=shared-cad-20261011')
-    ]).then(()=>{window.V2HeroEnvironment.prefetch().catch(()=>{});});
+    ]).then(()=>{if(allowed()&&!failed){window.V2HeroEnvironment.prefetch().catch(()=>{});window.V2SelectedAssets.prefetchTextures().catch(()=>{});}});
   }
   async function prepareTransfers(promote=false) {
     await prepareSources();if(!allowed()||failed)return;
@@ -194,19 +194,21 @@
       // Construct separate instances from cached transports, never reparent the
       // opening hero's live models. Yield between each reconstruction.
       for(const name of names){
-        await idleTurn();if(!allowed()||failed||!activePage)return;
+        await idleTurn();if(!allowed()||failed||!activePage||document.hidden)return;
         if(assemblies[name])continue;
         assemblies[name]=await window.V2SelectedAssets.load(name);
         if(name==='pi'||name==='tramtrace')window.V2ProductStudio.applyMaterials(assemblies[name],name);
         root.dataset.selectedModelsReady=String(Object.keys(assemblies).length);
       }
-      await idleTurn();if(!allowed()||failed||!track)return;
+      await idleTurn();if(!allowed()||failed||!track||document.hidden||!activePage)return;
       const T=window.THREE;
+      environment ||= await window.V2HeroEnvironment.load(T);
+      if(!allowed()||failed||!track||document.hidden||!activePage)return;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,width<=760?1.25:1.5));renderer.setSize(width,height,false);
       window.V2ProductStudio.configureRenderer(renderer,T);renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
       scene=new T.Scene();camera=new T.PerspectiveCamera(32,width/height,.01,200);
-      environment=await window.V2HeroEnvironment.load(T);scene.environment=environment;
+      scene.environment=environment;
       key=window.V2ProductStudio.createLights(T,scene).key;key.shadow.mapSize.set(1536,1536);
       composition=window.V2SelectedScene.create(T,assemblies);scene.add(composition.group);
       const floor=new T.Mesh(new T.PlaneGeometry(160,160),new T.ShadowMaterial({color:0x000000,opacity:.35,transparent:true,depthWrite:false}));floor.rotation.x=-Math.PI/2;floor.position.y=-.001;floor.receiveShadow=true;scene.add(floor);
@@ -232,7 +234,7 @@
       await initialize();if(!valid()||!ready)return;
       for(const pose of [0,1]){await idleTurn();if(!valid())return;draw(pose);root.dataset.selectedWarmFrames=String(++warmFrames);}
       // Restore CPU pose without an extra GPU frame; keep the canvas masked.
-      composition.frame(camera,progress,width,height);backgroundDone=true;root.dataset.selectedBackgroundReady='true';root.dataset.selectedBackgroundReadyMs=performance.now().toFixed(1);root.dataset.selectedBackgroundState='ready';settleBackground();
+      composition.frame(camera,progress,width,height);backgroundDone=true;root.dataset.selectedBackgroundReady='true';root.dataset.selectedBackgroundReadyMs=performance.now().toFixed(1);root.dataset.selectedBackgroundState='ready';settleBackground({state:'ready',at:performance.now()});
     }catch(error){fail(error);}
     finally{backgroundBusy=false;if(token!==generation&&!backgroundDone&&!failed&&!visible&&!document.hidden&&activePage&&allowed())setTimeout(prepareInBackground,0);}
   }

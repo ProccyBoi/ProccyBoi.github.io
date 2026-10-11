@@ -32,8 +32,8 @@
         wrapper.rotation.set(0, compact ? (index % 2 ? -.11 : .11) * (1-spread*.45) : (index-1.5) * -.10 * (1-spread*.45), 0);
       });
       const metro = objects.get('metro'), tram = objects.get('tramtrace');
-      metro.wrapper.position.set(compact ? 14 : 13, metro.lift, compact ? -3.55 : -.25);
-      tram.wrapper.position.set(compact ? 14 : 22.45, tram.lift, compact ? 4.82 : .55);
+      metro.wrapper.position.set(8, metro.lift, compact ? -3.55 : -.25);
+      tram.wrapper.position.set(compact ? 8 : 17.45, tram.lift, compact ? 4.82 : .55);
       metro.wrapper.rotation.set(0, compact ? -.04 : .035, 0);
       tram.wrapper.rotation.set(0, compact ? .045 : -.055, 0);
       group.updateMatrixWorld(true);
@@ -74,10 +74,10 @@
         endpoints=[endpoint(camera,0,width,height),endpoint(camera,1,width,height)];
         place(progress, compact);
       }
-      const journey = range(progress, .24, .84), a=endpoints[0], b=endpoints[1];
+      const journey = range(progress, .30, .84), zoom = range(progress, .22, .67), a=endpoints[0], b=endpoints[1];
       target.copy(a.target).lerp(b.target,journey);
       direction.copy(a.direction).lerp(b.direction,journey).normalize();
-      const distance = a.distance + (b.distance-a.distance)*journey;
+      const distance = a.distance + (b.distance-a.distance)*zoom;
       camera.clearViewOffset();camera.aspect=width/height;camera.position.copy(target).addScaledVector(direction,distance);camera.lookAt(target);camera.updateProjectionMatrix();
       const visualCentre = mobile ? .555 : .555;
       camera.setViewOffset(width,height,0,(.5-visualCentre)*height,width,height);camera.updateMatrixWorld(true);

@@ -341,6 +341,18 @@
     });
     observer.observe(hero, { attributes: true, attributeFilter: ['data-assembly-models-settled', 'data-assembly-state'] });
   });
+  const selectedSettled = () => new Promise(resolve => {
+    const pending = window.V2SelectedWork?.backgroundSettled;
+    if (!pending) { root.dataset.aircraftSelectedGate = 'absent'; resolve(); return; }
+    // Selected Work is encountered first. Its finite warm draws get their own
+    // turns before this background renderer starts; direct entry bypasses this
+    // optional ordering and a stalled scene cannot starve the aircraft.
+    root.dataset.aircraftSelectedGate = 'waiting';
+    let finished = false;
+    const finish = state => { if (finished) return; finished = true; clearTimeout(timer); root.dataset.aircraftSelectedGate = state; resolve(); };
+    const timer = setTimeout(() => finish('timeout'), 18000);
+    Promise.resolve(pending).then(result => finish(result?.state || 'settled'), () => finish('unavailable'));
+  });
   async function prepareInBackground() {
     if (!background || backgroundBusy || backgroundDone || failed || !allowed() || visible || document.hidden || !activePage) return;
     backgroundBusy = true;
@@ -358,6 +370,7 @@
       // The next heavy CPU/GPU phases yield until the foreground settles.
       await prepareSources();
       await foregroundSettled();
+      await selectedSettled();
       await idleTurn();
       if (!current()) return;
       await initialize();
