@@ -1,6 +1,8 @@
 /* Framework closer-look acceptance. Real production scene, actual browser input,
  * actual CAD bounds and one-in-flight GPU fences; no capture API or fake renderer.
  * --source-only checks the real source geometry without claiming browser results.
+ * --group=desktop|mobile390|mobile320|lifecycle partitions the browser cases;
+ * default runs all. The desktop CI group also runs the shared source geometry.
  * Serve the repository on V2_BASE_URL. Browser evidence belongs in Actions when
  * Chromium cannot launch in the local executor. SwiftShader is not a device benchmark. */
 'use strict';
@@ -74,7 +76,7 @@ async function sourceGeometry(){
 // Observe production objects at their normal creation boundary. No debug/capture
 // render call, new renderer, extra animation loop, geometry or material mutation.
 function instrument(){
-  const probe=window.__frameworkInspectionProbe={contexts:[],frames:[],published:[],inputs:[],prevention:[],fences:[],hold:false,draws:0};
+  const probe=window.__frameworkInspectionProbe={contexts:[],frames:[],published:[],inputs:[],actions:[],scrolls:[],prevention:[],fences:[],hold:false,draws:0};
   let module,composition,camera,lastFrame;
   Object.defineProperty(window,'V2SelectedScene',{configurable:true,get:()=>module,set:value=>{module={...value,create(...args){composition=value.create(...args);const frame=composition.frame;composition.frame=function(...frameArgs){const result=frame.apply(this,frameArgs);camera=frameArgs[0];lastFrame={progress:frameArgs[1],width:frameArgs[2],height:frameArgs[3],weights:Array.from(frameArgs[4]?.weights||[0,0,0,0])};probe.draws++;return result;};return composition;}};}});
   const rect=node=>{if(!node)return null;const b=node.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,left:b.left,right:b.right,top:b.top,bottom:b.bottom};};
@@ -100,7 +102,8 @@ function instrument(){
   };
   new MutationObserver(records=>{const root=document.querySelector('[data-selected-work]');if(!root)return;if(records.some(record=>record.attributeName==='data-selected-last-frame')){const frame=JSON.parse(root.dataset.selectedLastFrame||'null');if(frame&&probe.frames.at(-1)?.sequence!==frame.sequence)probe.frames.push(frame);}if(records.some(record=>record.attributeName==='data-selected-frames')){const state=probe.read();if(state.frames>0&&probe.published.at(-1)?.frames!==state.frames)probe.published.push(state);}}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-last-frame','data-selected-frames']});
   const prevent=Event.prototype.preventDefault;Event.prototype.preventDefault=function(){if(/^(wheel|touchstart|touchmove|touchend)$/.test(this.type))probe.prevention.push(this.type);return prevent.call(this);};
-  for(const type of['click','keydown','pointerenter','pointerleave','wheel','touchstart','touchmove','touchend'])addEventListener(type,event=>{const record={type,key:event.key,trusted:event.isTrusted,at:performance.now(),prevented:event.defaultPrevented};probe.inputs.push(record);queueMicrotask(()=>{record.prevented=event.defaultPrevented;});},{capture:true,passive:true});
+  addEventListener('scroll',()=>probe.scrolls.push({at:performance.now(),y:scrollY,target:Number(document.querySelector('[data-selected-work]')?.dataset.selectedInspectionTarget??-1)}),{passive:true});
+  for(const type of['click','keydown','focusin','focusout','pointerenter','pointerleave','wheel','touchstart','touchmove','touchend'])addEventListener(type,event=>{const point=event.changedTouches?.[0]||event;const record={type,key:event.key,trusted:event.isTrusted,at:performance.now(),prevented:event.defaultPrevented,x:point.clientX,y:point.clientY,scrollY,target:event.target?.closest?.('[data-framework-inspect]')?.getAttribute('data-framework-inspect')??null};probe.inputs.push(record);queueMicrotask(()=>{record.prevented=event.defaultPrevented;});},{capture:true,passive:true});
 }
 async function open(browser,{width=1440,height=900,touch=false,reduced=false,saveData=false,noWebGL=false}={}){
   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:touch?2:1,hasTouch:touch,isMobile:touch,reducedMotion:reduced?'reduce':'no-preference'});await context.addInitScript(instrument);
@@ -111,7 +114,7 @@ async function open(browser,{width=1440,height=900,touch=false,reduced=false,sav
 }
 const state=page=>page.evaluate(()=>window.__frameworkInspectionProbe.read());
 const geometry=page=>page.evaluate(()=>window.__frameworkInspectionProbe.geometry());
-const trace=page=>page.evaluate(()=>{const p=window.__frameworkInspectionProbe;return{frames:p.frames,published:p.published,inputs:p.inputs,prevention:p.prevention,contexts:p.contexts,fences:p.fences,draws:p.draws};});
+const trace=page=>page.evaluate(()=>{const p=window.__frameworkInspectionProbe;return{frames:p.frames,published:p.published,inputs:p.inputs,actions:p.actions,scrolls:p.scrolls,prevention:p.prevention,contexts:p.contexts,fences:p.fences,draws:p.draws};});
 async function settled(page,target,mode){
   await page.waitForFunction(({target,mode})=>{const p=window.__frameworkInspectionProbe,s=p.read();return s.frames>0&&s.live&&s.data.selectedWarmMask==='false'&&s.data.selectedGPUPending==='false'&&Math.abs(Number(s.data.selectedProgress)-Number(s.data.selectedRenderedProgress))<.000003&&s.weights.length===4&&s.renderedWeights.length===4&&s.weights.every((n,i)=>Math.abs(n-s.renderedWeights[i])<.0001)&&s.renderedWeights.every((n,i)=>Math.abs(n-(i===s.target?1:0))<.0001)&&(target===undefined||s.target===target)&&(mode===undefined||s.mode===mode);},{target,mode},{timeout});
 }
@@ -126,7 +129,16 @@ async function start(run){
 }
 async function leavePreview(page){await page.mouse.move(1,80);await page.evaluate(()=>{if(document.activeElement?.matches('[data-framework-inspect]'))document.activeElement.blur();});}
 async function clear(page,{touch=false}={}){if(touch)await page.locator(overview).tap();else await page.locator(overview).click();await leavePreview(page);await settled(page,-1,'overview');}
-async function pin(page,index,{touch=false}={}){if(touch)await page.locator(hit(index)).tap();else await page.locator(hit(index)).click();await settled(page,index,'pinned');}
+async function pin(page,index,{touch=false}={}){
+  const before=await page.locator(hit(index)).evaluate((node,index)=>{
+    const rect=node.getBoundingClientRect(),x=rect.x+rect.width/2,y=rect.y+rect.height/2,top=document.elementFromPoint(x,y),root=document.querySelector('[data-selected-work]');
+    const snapshot={at:performance.now(),requested:index,scrollY,progress:Number(root.dataset.selectedProgress),current:Number(root.dataset.selectedInspectionTarget),rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},point:{x,y},centerOwned:top===node||node.contains(top),owner:top?.closest('[data-framework-inspect]')?.getAttribute('data-framework-inspect')??top?.tagName,stack:document.elementsFromPoint(x,y).slice(0,6).map(element=>({tag:element.tagName,inspect:element.getAttribute('data-framework-inspect'),class:element.className}))};
+    window.__frameworkInspectionProbe.actions.push(snapshot);return snapshot;
+  },index);
+  assert.ok(before.centerOwned,`Card ${index} native tap center is owned by ${before.owner}; projected hit regions must not occlude one another`);
+  if(touch)await page.locator(hit(index)).tap();else await page.locator(hit(index)).click();
+  await settled(page,index,'pinned');const after=await state(page);near(after.y,before.scrollY,'Native inspection activation never scrolls the document',1);near(Number(after.data.selectedProgress),before.progress,'Native inspection activation retains its intended assembly progress',.00001);
+}
 async function idle(page,label){await settled(page);const before=await state(page),oldTrace=await trace(page);await page.waitForTimeout(900);const after=await state(page),nextTrace=await trace(page);assert.equal(after.frames,before.frames,label+': no idle live draws');assert.equal(after.submitted,before.submitted,label+': no queued idle submissions');assert.equal(nextTrace.draws,oldTrace.draws,label+': no hidden scene-frame loop');assert.deepEqual(nextTrace.fences,oldTrace.fences,label+': finite fence allocation/polling');}
 function assertLinks(links){assert.deepEqual(links,urls,'All original six project destinations remain exact');}
 async function links(page){return page.locator(selected+' [data-selected-chapter] a[href]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')));}
@@ -256,8 +268,10 @@ async function fallback(browser){
   }
 }
 (async()=>{
-  fs.mkdirSync(output,{recursive:true});sourceContract();await sourceGeometry();if(process.argv.includes('--source-only'))return;
+  const group=process.argv.find(argument=>argument.startsWith('--group='))?.slice('--group='.length);
+  assert.ok(!group||['desktop','mobile390','mobile320','lifecycle'].includes(group),'Unknown inspection browser group '+group);
+  fs.mkdirSync(output,{recursive:true});sourceContract();if(!group||group==='desktop'||process.argv.includes('--source-only'))await sourceGeometry();if(process.argv.includes('--source-only'))return;
   const {chromium}=require('playwright'),browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-  try{const failures=[];for(const [label,test]of[['desktop',()=>visualAndInput(browser,{width:1440,height:900})],['mobile390',()=>visualAndInput(browser,{width:390,height:844})],['mobile320',()=>visualAndInput(browser,{width:320,height:740})],['heldGPU',()=>heldGPU(browser)],['restoration',()=>restoration(browser)],['fallback',()=>fallback(browser)]]){try{await test();}catch(error){failures.push(error);console.error('FAIL '+label+': '+error.message);evidence.push({name:label+'-failure',error:error.stack});}}if(failures.length)throw new AggregateError(failures,failures.length+' independent inspection case(s) failed');}
+  try{const failures=[];for(const [label,test,testGroup]of[['desktop',()=>visualAndInput(browser,{width:1440,height:900}),'desktop'],['mobile390',()=>visualAndInput(browser,{width:390,height:844}),'mobile390'],['mobile320',()=>visualAndInput(browser,{width:320,height:740}),'mobile320'],['heldGPU',()=>heldGPU(browser),'lifecycle'],['restoration',()=>restoration(browser),'lifecycle'],['fallback',()=>fallback(browser),'lifecycle']]){if(group&&group!==testGroup)continue;try{await test();}catch(error){failures.push(error);console.error('FAIL '+label+': '+error.message);evidence.push({name:label+'-failure',error:error.stack});}}if(failures.length)throw new AggregateError(failures,failures.length+' independent inspection case(s) failed');}
   finally{await browser.close();}console.log(evidence.length+' Framework inspection groups passed.');
 })().catch(error=>{console.error(error);evidence.push({name:'failure',error:error.stack});process.exitCode=1;}).finally(()=>{fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');});

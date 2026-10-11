@@ -116,7 +116,7 @@
     const stageBox=stage.getBoundingClientRect(),navBox=nav.getBoundingClientRect(),footer=articles[0].querySelector('.v2-framework-copy').getBoundingClientRect();
     const controlsTop=navBox.bottom-stageBox.top+6;inspectControls.style.top=controlsTop+'px';
     const minY=controlsTop+44+8,maxY=footer.top-stageBox.top-12;
-    return names.slice(0,4).map((name,index)=>{
+    const rectangles=names.slice(0,4).map((name,index)=>{
       const box=composition.bounds.get(name);let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;
       for(let corner=0;corner<8;corner++){
         hitPoint.set(corner&1?box.max.x:box.min.x,corner&2?box.max.y:box.min.y,corner&4?box.max.z:box.min.z).project(camera);
@@ -124,6 +124,23 @@
       }
       left=Math.min(width-44,Math.max(0,left-8));right=Math.min(width,right+8);top=Math.min(maxY-44,Math.max(minY,top-8));bottom=Math.min(maxY,bottom+8);
       return {index,left,top,width:Math.max(44,right-left),height:Math.max(44,bottom-top)};
+    });
+    // Perspective bounds include empty space between exploded parts. A closer
+    // card must not cover its neighbour's native touch target with that empty
+    // rectangle. Partition the quartet at shared centre midpoints, then keep
+    // each padded model target inside its own cell (including keyboard focus).
+    const centreX=rectangles.map(rect=>rect.left+rect.width/2),centreY=rectangles.map(rect=>rect.top+rect.height/2);
+    const compact=width<=760,gap=2;
+    const splitX=compact?[0,Math.max(45,Math.min(width-45,centreX.reduce((sum,x)=>sum+x,0)/4)),width]
+      :[0,...centreX.slice(0,3).map((x,i)=>Math.max((i+1)*46,Math.min(width-(3-i)*46,(x+centreX[i+1])/2))),width];
+    const splitY=compact?Math.max(minY+45,Math.min(maxY-45,centreY.reduce((sum,y)=>sum+y,0)/4)):maxY;
+    return rectangles.map(rect=>{
+      const column=compact?rect.index%2:rect.index,row=compact?Math.floor(rect.index/2):0;
+      const leftLimit=splitX[column]+(column?gap/2:0),rightLimit=splitX[column+1]-(column<(compact?1:3)?gap/2:0);
+      const topLimit=row?splitY+gap/2:minY,bottomLimit=compact&&!row?splitY-gap/2:maxY;
+      const right=Math.max(leftLimit+44,Math.min(rightLimit,rect.left+rect.width)),bottom=Math.max(topLimit+44,Math.min(bottomLimit,rect.top+rect.height));
+      const left=Math.min(right-44,Math.max(leftLimit,rect.left)),top=Math.min(bottom-44,Math.max(topLimit,rect.top));
+      return {index:rect.index,left,top,width:right-left,height:bottom-top};
     });
   }
   function publishInspection(report){

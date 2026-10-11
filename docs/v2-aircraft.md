@@ -127,6 +127,10 @@ or keyboard-focusing a card previews it closer, and clicking or tapping pins the
 selection. Clicking that card again, choosing **Show all cards**, or pressing
 Escape returns to the quartet. Arrow keys move between card controls; normal Tab
 navigation and the existing project links remain independent.
+Projected hit regions are partitioned at shared quartet midpoints, so an enlarged
+card cannot cover another card's native tap target. Every target stays at least
+44 CSS pixels and all-pairs browser checks verify actual centre ownership without
+moving the document.
 
 Inspection weights compose with the original reversible part assembly and fade
 out before the transport chapter. Offscreen or static-preference changes reset
