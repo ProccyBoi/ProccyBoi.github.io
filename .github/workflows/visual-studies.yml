@@ -7,6 +7,10 @@ permissions:
   contents: read
 jobs:
   render:
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [desktop, mobile]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -19,6 +23,8 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
       - name: Capture comparable real browser pixels
+        env:
+          STUDY_DEVICE: ${{ matrix.device }}
         run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/study-server.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
@@ -27,6 +33,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v3-visual-direction-studies
+          name: v3-visual-direction-${{ matrix.device }}
           path: /tmp/v3-visual-studies/
           retention-days: 14
