@@ -263,11 +263,6 @@
       shadow.scale.set(transform.s*.9,transform.s*.18,1);
       shadow.material.opacity=.14*(1-transform.e*.6);
     });
-    const introFade=1-ramp(current,.015,.10);
-    intro.style.opacity=introFade.toFixed(4);
-    intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
-    captionAt(current);
-    progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
     if(renderer && models.some(Boolean)) {
       const ratio=desiredRatio;
       if(ratio!==bufferRatio) {renderer.setPixelRatio(ratio);bufferRatio=ratio;}
@@ -309,6 +304,11 @@
       root.dataset.assemblyModelsReady=String(paintedModels.filter(Boolean).length);
       root.dataset.assemblyState='ready';
     }
+    const introFade=1-ramp(current,.015,.10);
+    intro.style.opacity=introFade.toFixed(4);
+    intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
+    captionAt(current);
+    progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
     paintedRevision=drawnRevision;
     root.dataset.assemblyFrames=String(++frames);
     root.dataset.assemblyProgress=current.toFixed(5);

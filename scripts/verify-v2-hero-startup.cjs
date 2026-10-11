@@ -23,10 +23,57 @@ async function phase(page, progress) {
     const node = document.querySelector('[data-assembly]');
     scrollTo({ top: scrollY + node.getBoundingClientRect().top + value * (node.offsetHeight - node.querySelector('.v2-assembly-sticky').clientHeight), behavior: 'instant' });
   }, progress);
-  await page.waitForFunction(value => Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress) - value) < .0002, progress, { timeout: 60000 }).catch(async error => {
+  await page.waitForFunction(value => {
+    const node = document.querySelector('[data-assembly]'), span = Math.max(1, node.offsetHeight - node.querySelector('.v2-assembly-sticky').clientHeight);
+    const actual = Math.min(1, Math.max(0, -node.getBoundingClientRect().top / span));
+    // Native scroll positions are rounded to CSS pixels. Wait for the exact
+    // reachable pose and any own-context GPU work, not an intermediate easing
+    // sample which happens to be close to the requested fraction.
+    return Math.abs(actual - value) <= 1 / span + .00001 && Math.abs(Number(node.dataset.assemblyProgress) - actual) < .00001 && node.dataset.assemblyGPUPending !== 'true';
+  }, progress, { timeout: 60000 }).catch(async error => {
     console.error('Startup scroll diagnostic', { requested: progress, actual: await page.locator(root).evaluate(node => ({ ...node.dataset, scrollY, top: node.getBoundingClientRect().top, height: node.offsetHeight })) });
     throw error;
   });
+}
+
+async function visiblePoster(page, index) {
+  // Re-entering a chapter legitimately starts the 250ms CSS opacity fade.
+  // Keep the full opacity/decoded-image requirement, but wait for that visual
+  // milestone rather than treating the controller's pose as a paint barrier.
+  await page.waitForFunction(index => {
+    const node = document.querySelectorAll('[data-assembly-posters] img')[index];
+    if (!node) return false;
+    const style = getComputedStyle(node), box = node.getBoundingClientRect();
+    return node.complete && node.naturalWidth > 0 && Number(style.opacity) > .95 && style.visibility === 'visible' && box.width > 0 && box.height > 0 && box.bottom > 0 && box.top < innerHeight;
+  }, index, { timeout: 15000 });
+  return page.locator('[data-assembly-posters] img').nth(index).evaluate(node => ({ src: node.currentSrc, decoded: node.complete && node.naturalWidth > 0, opacity: Number(getComputedStyle(node).opacity), visibility: getComputedStyle(node).visibility }));
+}
+
+async function gpuReady(page, count = 3) {
+  await page.waitForFunction(count => {
+    const data = document.querySelector('[data-assembly]').dataset;
+    return Number(data.assemblyModelsReady) === count && data.assemblyGPUPending === 'false' && data.assemblyGPUCompletion === 'complete' && Number(data.assemblyCompletedFrames) > 0;
+  }, count, { timeout: 90000 });
+}
+
+async function failureSnapshot(page, name, error, extra = {}) {
+  const report = { name, error: error.stack || String(error), ...extra };
+  try {
+    report.state = await page.evaluate(() => {
+      const root = document.querySelector('[data-assembly]'), canvas = root?.querySelector('[data-assembly-canvas]');
+      const describe = node => {
+        const box = node.getBoundingClientRect(), style = getComputedStyle(node);
+        return { dataset: { ...node.dataset }, style: node.getAttribute('style'), opacity: style.opacity, visibility: style.visibility, display: style.display, box: { x: box.x, y: box.y, width: box.width, height: box.height }, src: node.currentSrc || node.src, decoded: node.complete, naturalWidth: node.naturalWidth };
+      };
+      return { url: location.href, scrollY, viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio }, hidden: document.hidden,
+        hero: root ? { ...describe(root), classes: root.className } : null, canvas: canvas ? { ...describe(canvas), width: canvas.width, height: canvas.height } : null,
+        posters: [...document.querySelectorAll('[data-assembly-posters] img')].map(describe), boards: [...document.querySelectorAll('[data-hero-loading-board]')].map(describe),
+        resources: performance.getEntriesByType('resource').filter(entry => /\/assets\//.test(entry.name)).map(entry => ({ name: entry.name, start: entry.startTime, duration: entry.duration, responseEnd: entry.responseEnd, transferSize: entry.transferSize })),
+      };
+    });
+  } catch (failure) { report.collectionError = failure.message; }
+  fs.writeFileSync(path.join(output, name + '-failure.json'), JSON.stringify(report, null, 2) + '\n');
+  await page.screenshot({ path: path.join(output, name + '-failure.png'), timeout: 15000, animations: 'disabled' }).catch(() => {});
 }
 
 async function loaderState(page) {
@@ -191,6 +238,8 @@ async function canvasHasInk(page) {
       assert.equal(await page.locator('[data-assembly-posters] img').nth(2).evaluate(node => Number(getComputedStyle(node).opacity) < .05), true);
       await page.screenshot({ path: path.join(output, 'desktop-complete.png') });
       evidence.cases.push({ name: 'independent model handoff and finite animation', partial, settled });
+    } catch (error) {
+      await failureSnapshot(page, 'desktop-startup', error, { requests, errors: evidence.errors }); throw error;
     } finally { three.release(); pi.release(); earlyStartup.release(); await desktop.close(); }
 
     const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: 'no-preference' });
@@ -233,22 +282,30 @@ async function canvasHasInk(page) {
       const failed = await stableFrames(phone, 'A failed dependency must settle loading particles and retain static posters');
       assert.deepEqual(failed.boards, ['failed', 'failed', 'failed']);
       await phase(phone, .565);
-      assert.equal(await phone.locator('[data-assembly-posters] img').nth(1).evaluate(node => node.naturalWidth > 0 && Number(getComputedStyle(node).opacity) > .95), true);
+      const poster = await visiblePoster(phone, 1);
+      assert.ok(poster.decoded && poster.opacity > .95 && poster.visibility === 'visible', 'A failed renderer must retain a fully visible decoded telemetry poster');
+      assert.equal(await phone.locator(root).evaluate(node => node.dataset.assemblyState === 'unavailable' && !node.classList.contains('is-loaded')), true);
       await phone.screenshot({ path: path.join(output, 'mobile-failed-fallback.png') });
-      evidence.cases.push({ name: 'touch, native scrolling, mobile pose and failed dependency', pose, beforeTap, failed });
+      evidence.cases.push({ name: 'touch, native scrolling, mobile pose and failed dependency', pose, beforeTap, failed, poster });
+    } catch (error) {
+      await failureSnapshot(phone, 'mobile-startup', error, { errors: evidence.errors }); throw error;
     } finally { mobileThree.release(); await mobile.close(); }
 
     const lightingFallback = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
     const fallback = await lightingFallback.newPage();
     observeErrors(fallback);
+    try {
     await fallback.route(/\/models\/hero\/environment\.bin(?:\.gz)?(?:\?|$)/, route => route.abort('failed'));
     await fallback.goto(base + '/v2/', { waitUntil: 'domcontentloaded' });
     await fallback.waitForFunction(() => document.querySelector('[data-assembly]').dataset.assemblyModelsSettled === '3', null, { timeout: 90000 });
     assert.equal(await fallback.locator(root).getAttribute('data-assembly-environment'), 'generated');
+    await gpuReady(fallback);
     assert.equal(await fallback.locator(root).getAttribute('data-assembly-models-ready'), '3', 'A failed lighting download must recover the original full-quality environment and all CAD');
     await fallback.waitForFunction(() => document.querySelector('[data-assembly]').dataset.heroLoadingState === 'settled');
     evidence.cases.push({ name: 'prepared-lighting failure recovers original lighting', ...await loaderState(fallback) });
-    await lightingFallback.close();
+    } catch (error) {
+      await failureSnapshot(fallback, 'lighting-fallback-startup', error, { errors: evidence.errors }); throw error;
+    } finally { await lightingFallback.close(); }
     }
 
     for (const mode of ['reduced-motion', 'save-data', 'no-js']) {
@@ -257,6 +314,7 @@ async function canvasHasInk(page) {
       observeErrors(page);
       const heavy = [];
       page.on('request', request => { if (/three\.min\.js|\/models\/hero\/|v2-hero-loading\.js/.test(request.url())) heavy.push(request.url()); });
+      try {
       if (mode === 'save-data') await page.addInitScript(() => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } }));
       await page.goto(base + '/v2/', { waitUntil: 'networkidle' });
       assert.equal(await page.locator('[data-assembly-posters] img').evaluateAll(nodes => nodes.every(node => node.naturalWidth > 0 && getComputedStyle(node).visibility === 'visible' && getComputedStyle(node).opacity === '1')), true, `${mode} must retain all original project posters`);
@@ -274,10 +332,15 @@ async function canvasHasInk(page) {
         await page.screenshot({ path: path.join(output, `${mode}-${viewport.width}.png`) });
       }
       evidence.cases.push({ name: mode, heavyRequests: heavy });
-      await context.close();
+      } catch (error) {
+        await failureSnapshot(page, mode + '-startup', error, { heavyRequests: heavy, errors: evidence.errors }); throw error;
+      } finally { await context.close(); }
     }
     assert.deepEqual(evidence.errors, [], 'The loading experience must not emit uncaught JavaScript errors');
     fs.writeFileSync(path.join(output, 'acceptance.json'), JSON.stringify(evidence, null, 2) + '\n');
     console.log(JSON.stringify({ result: 'PASS', cases: evidence.cases.map(item => item.name), evidence: path.join(output, 'acceptance.json') }, null, 2));
+  } catch (error) {
+    fs.writeFileSync(path.join(output, 'acceptance-failure.json'), JSON.stringify({ ...evidence, error: error.stack || String(error) }, null, 2) + '\n');
+    throw error;
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

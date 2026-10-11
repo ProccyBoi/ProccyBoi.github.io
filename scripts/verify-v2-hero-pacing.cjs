@@ -301,7 +301,7 @@ async function browserTests() {
   const { chromium } = require('playwright');
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'no-preference' });
   await context.addInitScript(browserProbe);
   const page = await context.newPage(), errors = [], evidence = [];
   page.setDefaultTimeout(timeout); page.on('pageerror', error => errors.push(error.message));
@@ -327,6 +327,7 @@ async function browserTests() {
     await page.evaluate(() => { window.__heroPacing.releaseModel('telemetry'); window.__heroPacing.releaseModel('pi'); });
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const late = await snapshot();
+    assert.equal(late.dataset.assemblyModelsInstalled, '3', 'All genuine models are installed while the first draw remains pending');
     assert.notEqual(late.posters[1].state, 'ready'); assert.notEqual(late.posters[2].state, 'ready');
     assert.equal(late.posters[1].declaredOpacity, '1'); assert.equal(late.posters[2].declaredOpacity, '1');
     assert.ok(late.posters.slice(1).every(poster => poster.decoded && poster.opacity > .95 && poster.visibility === 'visible'), 'Genuine decoded supporting posters cover the held first draw');
@@ -369,7 +370,10 @@ async function browserTests() {
     assert.equal(draining.dataset.assemblySubmittedFrames, beforeHide.dataset.assemblySubmittedFrames);
     assert.equal(draining.canvas.width, beforeHide.canvas.width); assert.equal(draining.canvas.height, beforeHide.canvas.height);
     await page.evaluate(() => { window.__heroPacing.hold = false; }); await completed();
-    await page.waitForFunction(() => document.querySelector('[data-assembly-canvas]').width === 1100);
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-assembly]'), stage = root.querySelector('.v2-assembly-sticky'), canvas = root.querySelector('canvas');
+      return canvas.width === stage.clientWidth && canvas.height === stage.clientHeight;
+    });
     await scroll(.565); await page.waitForFunction(() => Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress) - .565) < .0002); await completed(); await settled();
     const settledState = await snapshot(); await page.waitForTimeout(650); const idle = await snapshot();
     assert.equal(idle.dataset.assemblySubmittedFrames, settledState.dataset.assemblySubmittedFrames, 'Settled hero has no idle draw loop');

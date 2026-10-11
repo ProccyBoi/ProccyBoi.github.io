@@ -359,14 +359,17 @@ async function interruptedInitialization(browser) {
   try {
     await page.goto(base + '/v2/?v=background-interrupted-initialization', { waitUntil: 'domcontentloaded' });
     await entered;
-    // Hold inside the background initialize() await, rather than merely during
-    // its source or foreground gate, to reproduce the busy-generation race.
+    // initialize() now waits for airframe bytes before constructing a renderer.
+    // Hold that real loading await, after source/foreground gates, to exercise
+    // the same busy-generation cancellation without requiring an early context.
     await page.waitForFunction(() => {
       const root = document.querySelector('[data-aircraft-hero]');
-      return root.dataset.aircraftBackgroundState === 'warming' && root.dataset.aircraftState === 'loading' && window.__v2BackgroundProbe.contexts.some(context => !context.visible);
+      return root.dataset.aircraftBackgroundState === 'warming' && root.dataset.aircraftState === 'loading' && root.dataset.aircraftCPUPhase === 'initialize' && root.dataset.aircraftTransportState === 'loading';
     }, null, { timeout });
     assert.ok(pending.length > 0, 'Aircraft initialization is genuinely held awaiting model bytes');
     const held = await snapshot(page); assertCPUGate(held);
+    assert.equal(held.probe.contexts.length, 0, 'The new initialization order does not construct an aircraft context before held bytes arrive');
+    assert.equal(held.aircraft.aircraftBackgroundReady, 'false', 'Busy initialization never claims GPU readiness');
     assert.equal(held.scrollY, 0); assert.equal(Number(held.aircraft.aircraftWarmFrames || 0), 0);
     await page.locator(aircraft).evaluate(root => scrollTo({ top: scrollY + root.getBoundingClientRect().top, behavior: 'instant' }));
     await page.locator('[data-aircraft-background-state="promoted"]').waitFor();
@@ -390,10 +393,18 @@ async function interruptedInitialization(browser) {
     assert.equal(recovered.scrollY, 0);
     assert.equal(recovered.probe.scrolls.length, scrollCountAtReturn, 'Background recovery does not require another scroll event');
     assert.equal(recovered.aircraft.aircraftBackgroundState, 'ready');
+    assert.ok(recovered.probe.contexts.length > 0, 'Recovery constructs the real aircraft context after transport is released');
+    assertCPUGate(recovered);
+    assert.equal(recovered.aircraft.aircraftWarmPosesCompleted, '2', 'Both distinct warm poses actually complete after interrupted initialization');
+    assert.equal(recovered.aircraft.aircraftGPUCompletion, 'complete', 'Recovered WebGL2 readiness retains actual own-context fence completion');
+    assert.equal(recovered.aircraft.aircraftGPUPending, 'false', 'Recovered preparation has no outstanding GPU fence');
+    const measurements=JSON.parse(recovered.aircraft.aircraftPreparationMeasurements||'[]');
+    assert.ok(measurements.length>=2&&measurements.every(item=>typeof item.completed==='boolean'),'Recovery preserves real boolean completion evidence for every submitted warm draw');
+    for(const name of ['progress-1','landing-0'])assert.ok(measurements.some(item=>item.name===name&&item.completed&&item.gpu?.state==='complete'),'Recovered '+name+' pose has a completed own-context fence');
     assert.ok(warm >= 2 && warm <= 4, 'Interrupted preparation completes with a finite two to four warm draws');
     const hidden = await stableHidden(page);
     assert.deepEqual(hidden, { live: 0, warm, landing: 0 }, 'Unloaded rapid entry does not start live playback after returning to the top');
-    await save(run, 'rapid-enter-exit-background-recovery', { heldInitialization: true, actualVisibilityExitObserved: true, warmDraws: warm, scrollCountAtReturn, hidden });
+    await save(run, 'rapid-enter-exit-background-recovery', { heldInitialization: true, held, returned, actualVisibilityExitObserved: true, warmDraws: warm, scrollCountAtReturn, measurements, hidden });
   } catch (error) { await diagnostic(run, 'interrupted-initialization', error); throw error; } finally {
     await release().catch(() => {}); await context.close();
   }

@@ -404,6 +404,11 @@ function instrument() {
     return {t:performance.now(),y:scrollY,raw:Number(root.dataset.selectedProgress||0),rendered:Number(root.dataset.selectedRenderedProgress||0),frame:Number(root.dataset.selectedFrames||0),submittedFrames:Number(root.dataset.selectedSubmittedFrames||0),completedFrames:Number(root.dataset.selectedCompletedFrames||0),lastFrame:root.dataset.selectedLastFrame?JSON.parse(root.dataset.selectedLastFrame):null,warm:Number(root.dataset.selectedWarmFrames||0),warmPosesCompleted:Number(root.dataset.selectedWarmPosesCompleted||0),preparationMeasurements:root.dataset.selectedPreparationMeasurements?JSON.parse(root.dataset.selectedPreparationMeasurements):[],preparationFrames:Number(root.dataset.selectedPreparationFrames||0),preparedModels:(root.dataset.selectedPreparedModels||'').split(',').filter(Boolean),preparationStage:root.dataset.selectedPreparationStage,gpuPending:root.dataset.selectedGPUPending,gpuCompletion:root.dataset.selectedGPUCompletion,mask:root.dataset.selectedWarmMask,state:root.dataset.selectedState,chapter:root.dataset.selectedChapter,readyClass:root.classList.contains('is-live'),canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,canvasOpacity:canvas?Number(getComputedStyle(canvas).opacity):0,lastDraw:root.dataset.selectedLastDraw?JSON.parse(root.dataset.selectedLastDraw):null,warmPixelRatio:Number(root.dataset.selectedWarmPixelRatio),livePixelRatio:Number(root.dataset.selectedLivePixelRatio),bufferWidth:Number(root.dataset.selectedBufferWidth),bufferHeight:Number(root.dataset.selectedBufferHeight),cssWidth:stage?.clientWidth||0,cssHeight:stage?.clientHeight||0,expectedLivePixelRatio:Math.min(devicePixelRatio||1,(stage?.clientWidth||innerWidth)<=760?1.25:1.5)};
   };
   probe.snapshot=sample; probe.begin=()=>{probe.samples=[];probe.events=[];probe.prevention=[];probe.frameRecords=[];probe.recording=true;probe.samples.push(sample());};
+  probe.geometry=()=>{
+    const root=document.querySelector('[data-selected-work]'),stage=root?.querySelector('.v2-selected-stage'),track=root?.querySelector('.v2-selected-track');
+    if(!stage||!track)return null;
+    return{viewportWidth:innerWidth,viewportHeight:innerHeight,y:scrollY,stageWidth:stage.clientWidth,stageHeight:stage.clientHeight,stickyTop:parseFloat(getComputedStyle(stage).top)||0,rootTop:scrollY+root.getBoundingClientRect().top,rootHeight:root.getBoundingClientRect().height,trackTop:scrollY+track.getBoundingClientRect().top,trackHeight:parseFloat(track.style.height),trackMarginTop:parseFloat(track.style.marginTop)||0};
+  };
   const heroSample=()=>{
     const root=document.querySelector('[data-assembly]');if(!root)return null;
     const box=root.getBoundingClientRect();
@@ -444,7 +449,18 @@ async function settled(page) {
   await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return Number(root.dataset.selectedFrames)>0&&root.dataset.selectedWarmMask==='false'&&Math.abs(Number(root.dataset.selectedProgress)-Number(root.dataset.selectedRenderedProgress))<.000002;},null,{timeout});
 }
 async function scrollProgress(page,amount) {
-  await page.locator(selected).evaluate((root,amount)=>{const stage=root.querySelector('.v2-selected-stage'),track=root.querySelector('.v2-selected-track');const distance=parseFloat(track.style.height)-stage.clientHeight,stickyTop=parseFloat(getComputedStyle(stage).top)||0;scrollTo({top:scrollY+track.getBoundingClientRect().top-stickyTop+distance*amount+(amount===1?1:amount===0?-1:0),behavior:'instant'});},amount);
+  await page.locator(selected).evaluate((root,amount)=>{const geometry=window.__selectedProbe.geometry(),distance=geometry.trackHeight-geometry.stageHeight,targetY=geometry.trackTop-geometry.stickyTop+distance*amount+(amount===1?1:amount===0?-1:0);window.__selectedProbe.scrollRequest={t:performance.now(),amount,geometry,distance,targetY};scrollTo({top:targetY,behavior:'instant'});},amount);
+}
+async function resizedLayoutStable(page,viewport) {
+  await page.evaluate(viewport=>{window.__selectedProbe.resizeLayout={viewport,started:performance.now(),samples:[],stableFrames:0,last:null};},viewport);
+  await page.waitForFunction(()=>{
+    const proof=window.__selectedProbe.resizeLayout,geometry=window.__selectedProbe.geometry();
+    if(!geometry)return false;
+    const key=JSON.stringify(geometry),matches=geometry.viewportWidth===proof.viewport.width&&geometry.viewportHeight===proof.viewport.height&&geometry.stageWidth>0&&geometry.stageHeight>0&&geometry.trackHeight>geometry.stageHeight;
+    proof.stableFrames=matches&&key===proof.last?proof.stableFrames+1:0;proof.last=key;
+    proof.samples.push({t:performance.now(),...geometry});if(proof.samples.length>12)proof.samples.shift();
+    return proof.stableFrames>=3;
+  },null,{polling:'raf',timeout});
 }
 async function jump(page,amount) {
   await scrollProgress(page,amount);
@@ -467,7 +483,7 @@ async function ready(page) {
   await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedReady==='true'&&root.dataset.selectedModelsReady==='6'&&root.dataset.selectedSceneReady==='true'&&root.dataset.selectedBackgroundReady==='true'&&root.dataset.selectedWarmFrames==='2';},null,{timeout});
 }
 async function snapshot(page) {
-  return page.evaluate(()=>({y:scrollY,url:location.href,selected:{...document.querySelector('[data-selected-work]')?.dataset},hero:{...document.querySelector('[data-assembly]')?.dataset},heroTrace:{visibility:window.__selectedProbe.heroVisibility,samples:window.__selectedProbe.heroSamples,submissions:window.__selectedProbe.heroSubmissions,return:window.__selectedProbe.heroReturn},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
+  return page.evaluate(()=>({y:scrollY,url:location.href,selected:{...document.querySelector('[data-selected-work]')?.dataset},geometry:window.__selectedProbe.geometry(),scrollRequest:window.__selectedProbe.scrollRequest,resizeLayout:window.__selectedProbe.resizeLayout,hero:{...document.querySelector('[data-assembly]')?.dataset},heroTrace:{visibility:window.__selectedProbe.heroVisibility,samples:window.__selectedProbe.heroSamples,submissions:window.__selectedProbe.heroSubmissions,return:window.__selectedProbe.heroReturn},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
 }
 async function save(run,name,details={}) {
   assert.deepEqual(run.errors,[],'No unhandled browser errors');assert.deepEqual(run.shaders,[],'No shader errors');
@@ -624,7 +640,7 @@ async function initialAndInput(browser) {
     }
     await save(run,'top-return-to-selected-hashes-no-offscreen-hero-submissions',{heroReturn});
     for(const viewport of [{width:390,height:844},{width:320,height:740},{width:1440,height:900}]){
-      await page.setViewportSize(viewport);
+      await page.setViewportSize(viewport);await resizedLayoutStable(page,viewport);
       for(const [label,progress]of[['framework-separated',0],['framework-seating',.155],['framework-assembled',.32],['transit',1]]){
         await jump(page,progress);assert.equal((await snapshot(page)).overflow,false);
         await visualSettled(page);
