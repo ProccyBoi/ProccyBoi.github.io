@@ -167,14 +167,14 @@ async function browserChecks() {
         document.activeElement?.blur();
         document.querySelector('[data-booking-days]')?.scrollTo({ left: 0, top: 0, behavior: 'instant' });
         window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       });
+      // Chromium can suppress page RAF callbacks when JavaScript is disabled.
+      // Browser screenshot paint synchronization also works for that fallback.
       // Native focus/scroll work may land after the first reset in Chromium.
       // Settle for a bounded interval, then cancel it with one final reset.
       await page.waitForTimeout(180);
       screenshotPositions[name] = await page.evaluate(async () => {
         window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         return { scrollY, headerTop: document.querySelector('.v2-header').getBoundingClientRect().top };
       });
       await page.screenshot({ path: path.join(output, `${engine}-${name}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
