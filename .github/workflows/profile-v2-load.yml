@@ -27,6 +27,7 @@ jobs:
           V2_LOAD_BASELINE_ROOT: /tmp/v2-load-baseline
           V2_LOAD_OUT: /tmp/v2-load-evidence/profile.json
           V2_LOAD_RUNS: '1'
+          V2_LOAD_CASES: journey
         run: node scripts/profile-v2-load.cjs --baseline-only
       - uses: actions/upload-artifact@v4
         if: always()

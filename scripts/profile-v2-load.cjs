@@ -57,9 +57,9 @@ function traceSource(filename, source) {
     source = replaceOnce(source, '}).then(transport).then(({buffer, ...parsed}) => {',
       `}).then(buffer => { ${mark(factory,'decompressionEnd')} ${mark(factory,'indexRestoreStart')} return transport(buffer); }).then(({buffer, ...parsed}) => { ${mark(factory,'indexRestoreEnd')}`);
     source = replaceOnce(source, 'const buffer = await prefetch(name), T = window.THREE;',
-      `const buffer = await prefetch(name), T = window.THREE; ${mark(factory,'reconstructionStart')}`);
+      `const buffer = await prefetch(name), T = window.THREE; const __profileModel = window.__v2LoadProbe.beginModel('${factory}', name);`);
     source = replaceOnce(source, 'return {...decode(data.extra), group:nodes[0], parts};',
-      `const result = {...decode(data.extra), group:nodes[0], parts}; ${mark(factory,'reconstructionEnd')} return result;`);
+      `const result = {...decode(data.extra), group:nodes[0], parts}; __profileModel.endMs = performance.now(); return result;`);
   }
   if (filename === 'assets/v2-selected-work.js') {
     const original = `const idleTurn = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(() => {
@@ -126,8 +126,9 @@ function responseFor(fixture, pathname, requestHeaders = {}) {
 // Executes before production scripts; no fetch, GL or scheduling replacement.
 function browserProbe() {
   const now = () => performance.now();
-  const metrics = window.__v2LoadProbe = {phase:'navigation', milestones:{}, marks:[], yields:[], gpu:[], factory:[], longTasks:[], inputs:[], eventTiming:[], observerSupport:{}, snapshots:{}, selectedDraws:[]};
+  const metrics = window.__v2LoadProbe = {phase:'navigation', milestones:{}, marks:[], yields:[], gpu:[], factory:[], longTasks:[], inputs:[], eventTiming:[], observerSupport:{}, snapshots:{}, selectedDraws:[], reconstructions:[]};
   metrics.mark = (factory, name, event) => metrics.marks.push({factory,name,event,atMs:now(),phase:metrics.phase});
+  metrics.beginModel = (factory, name) => {const record={factory,name,startMs:now(),phase:metrics.phase};metrics.reconstructions.push(record);return record;};
   metrics.beginYield = owner => {
     const data=document.querySelector('[data-selected-work]')?.dataset;
     const record={owner,startMs:now(),phase:metrics.phase,stage:data?.selectedPreparationStage||'construction',modelsReady:Number(data?.selectedModelsReady||0),selectedState:data?.selectedState};
@@ -176,7 +177,23 @@ function browserProbe() {
     const owner=canvas?.matches('[data-assembly-canvas]')?'hero':canvas?.matches('[data-selected-canvas]')?'selected':canvas?.matches('[data-aircraft-canvas]')?'aircraft':'unknown';
     const root=canvas?.closest('[data-assembly],[data-selected-work],[data-aircraft-hero]');
     const record={owner,startMs:now(),phase:metrics.phase,pollMs:options?.pollMs,stage:root?.dataset.selectedPreparationStage||root?.dataset.aircraftGPUPhase||root?.dataset.assemblyGPUPhase};
-    metrics.gpu.push(record);
+    // Geometry is diagnostic evidence, never an input to production gating.
+    // Include strict positive-area intersections so threshold-zero IO's
+    // edge-adjacent 'intersecting' state cannot look like visible pixels.
+    const observationStarted=now();
+    const rectangle=node=>{if(!node)return null;const box=node.getBoundingClientRect();return {x:box.x,y:box.y,top:box.top,right:box.right,bottom:box.bottom,left:box.left,width:box.width,height:box.height};};
+    const style=node=>{if(!node)return null;const computed=getComputedStyle(node);return {display:computed.display,visibility:computed.visibility,opacity:computed.opacity,position:computed.position,contentVisibility:computed.contentVisibility};};
+    const stage=canvas?.closest('.v2-assembly-stage,.v2-selected-stage,[data-aircraft-stage]');
+    const sticky=root?.querySelector('.v2-assembly-sticky'),header=document.querySelector('.v2-header');
+    const bounds={root:rectangle(root),stage:rectangle(stage),canvas:rectangle(canvas),sticky:rectangle(sticky),header:rectangle(header)};
+    const area=(box,top=0)=>box?Math.max(0,Math.min(innerWidth,box.right)-Math.max(0,box.left))*Math.max(0,Math.min(innerHeight,box.bottom)-Math.max(top,box.top)):0;
+    const headerStyle=style(header),headerBottom=['fixed','sticky'].includes(headerStyle?.position)?Math.max(0,bounds.header?.bottom||0):0;
+    record.geometry={atMs:now(),scrollX,scrollY,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},documentHidden:document.hidden,bounds,
+      computed:{root:style(root),stage:style(stage),canvas:style(canvas),header:headerStyle},
+      viewportIntersectionArea:{root:area(bounds.root),stage:area(bounds.stage),canvas:area(bounds.canvas),sticky:area(bounds.sticky)},
+      belowHeaderIntersectionArea:{stage:area(bounds.stage,headerBottom),canvas:area(bounds.canvas,headerBottom),sticky:area(bounds.sticky,headerBottom)}};
+    record.observationCPUms=now()-observationStarted;
+    metrics.gpu.push(record);record.waitCalledMs=now();
     const promise=original.wait.apply(this,arguments);
     promise.then(result=>{record.endMs=now();record.result={...result};},error=>{record.endMs=now();record.error=String(error);});
     return promise;
@@ -215,7 +232,7 @@ function browserProbe() {
     if (aircraft) {
       const data=aircraft.dataset,frame=parse(data.aircraftLastFrame),canvas=aircraft.querySelector('canvas');
       if (data.aircraftTelemetryReady==='true') once('aircraftTelemetryModelReadyMs',now());
-      if (frame?.published && frame.gpu?.state==='complete' && frame.completedMs && data.aircraftLiveCompletionEvidence==='own-context-fence' && data.aircraftWarmMask==='false' && data.aircraftTelemetryReady==='true' && data.aircraftChapter==='1' && frame.kind==='progress' && frame.measurement.width===canvas?.width && frame.measurement.height===canvas?.height && frame.layoutRevision===Number(data.aircraftLayoutRevision) && frame.revision===Number(data.aircraftPoseRevision) && visible(canvas)) {
+      if (frame?.published && frame.gpu?.state==='complete' && frame.completedMs && data.aircraftLiveCompletionEvidence==='own-context-fence' && data.aircraftWarmMask==='false' && data.aircraftTelemetryReady==='true' && data.aircraftChapter==='1' && frame.kind==='progress' && frame.measurement.width===canvas?.width && frame.measurement.height===canvas?.height && frame.measurement.pixelRatio===Number(data.aircraftLivePixelRatio) && frame.layoutRevision===Number(data.aircraftLayoutRevision) && frame.revision===Number(data.aircraftPoseRevision) && visible(canvas)) {
         once('telemetryCurrentSizeVisibleGPUCompletedMs',frame.completedMs);
         metrics.snapshots.telemetryFirstCompleted ||= {frame,dataset:{...data},canvas:{width:canvas.width,height:canvas.height}};
       }
@@ -244,6 +261,8 @@ function assertCompletion(sample) {
     assert.deepEqual([...names].sort(),selectedNames.slice().sort(),'All six real Selected factories complete');
   }
   assert.deepEqual(sample.errors,[], 'No uncaught production/probe errors');
+  assert.equal(sample.metrics.factory.some(item=>item.factory==='V2AssemblyModels'&&item.method==='load'),false,'No original hero factory fallback in packed-load profile');
+  if(sample.scenario==='journey') assert.equal(sample.metrics.snapshots.beforeSelected.hero.assemblyEnvironment,'prepared','Use the real prepared lighting without fallback');
   assert.ok(sample.metrics.inputs.some(input=>input.trusted),'At least one trusted input sample');
   assert.ok(sample.metrics.observerSupport.longtask,'Long-task API must be available');
   const failures=sample.requests.filter(request=>request.error&&!/ERR_ABORTED/.test(request.error));
@@ -262,25 +281,35 @@ function classifyRequests(records, resources, navigationTimestamp) {
     const ms=value=>Number.isFinite(value)&&Number.isFinite(navigationTimestamp)?round((value-navigationTimestamp)*1000):null;
     const pathname=new URL(record.url).pathname;
     return {...record,path:pathname,startMs:ms(record.start),responseMs:ms(record.response),endMs:ms(record.end),
-      resourceTiming:resource||null,resourceTimingCache:Boolean(resource&&resource.transferSize===0&&resource.decodedBodySize>0),
+      dataReceipts:(record.dataReceipts||[]).map(chunk=>({atMs:ms(chunk.at),bytes:chunk.bytes})),resourceTiming:resource||null,resourceTimingCache:Boolean(resource&&resource.transferSize===0&&resource.decodedBodySize>0),
       cacheEvidence:[record.servedFromCache?'CDP requestServedFromCache':null,record.fromDiskCache?'CDP fromDiskCache':null,resource?.transferSize===0&&resource?.decodedBodySize>0?'ResourceTiming zero transfer/nonzero body':null].filter(Boolean)};
   });
 }
 function summarizeSample(sample) {
   const m=sample.metrics.milestones;
   const horizon=sample.scenario==='journey'?m.selectedCurrentSizeVisibleGPUCompletedMs:m.telemetryCurrentSizeVisibleGPUCompletedMs;
-  const tasks=sample.metrics.longTasks.filter(task=>task.startMs<horizon).map(task=>({...task,durationMs:Math.min(task.durationMs,horizon-task.startMs)}));
+  const tasks=sample.metrics.longTasks.filter(task=>task.startMs<horizon);
+  const clippedTaskOccupancyMs=tasks.reduce((sum,task)=>sum+Math.min(task.durationMs,horizon-task.startMs),0);
   const requests=sample.requests.filter(request=>request.finished&&request.endMs<=horizon);
   const modelRequests=requests.filter(request=>modelURL(request.url));
   const input=sample.metrics.inputs.filter(item=>item.atMs<=horizon);
   const yields=sample.metrics.yields.filter(item=>item.endMs<=horizon);
   const cacheCount=requests.filter(request=>request.cacheEvidence.length).length;
-  return {milestones:m,selectedFromTriggerMs:sample.scenario==='journey'?round(m.selectedCurrentSizeVisibleGPUCompletedMs-m.selectedTriggerMs):null,
-    longTasks:{count:tasks.length,totalMs:round(tasks.reduce((sum,task)=>sum+task.durationMs,0)),maxMs:round(Math.max(0,...tasks.map(task=>task.durationMs))),totalBlockingMs:round(tasks.reduce((sum,task)=>sum+Math.max(0,task.durationMs-50),0))},
+  const packPhases={};
+  for(const mark of sample.metrics.marks) {
+    const key=mark.factory+'/'+mark.name;packPhases[key] ||= {};packPhases[key][mark.event+'Ms']=mark.atMs;
+  }
+  for(const value of Object.values(packPhases)) {
+    value.decompressionWallMs=round(value.decompressionEndMs-value.decompressionStartMs);
+    value.indexRestoreWallMs=round(value.indexRestoreEndMs-value.indexRestoreStartMs);
+  }
+  const reconstructionWallMs=sample.metrics.reconstructions.map(item=>({...item,durationMs:round(item.endMs-item.startMs)}));
+  return {milestones:m,packPhases,reconstructionWallMs,selectedFromTriggerMs:sample.scenario==='journey'?round(m.selectedCurrentSizeVisibleGPUCompletedMs-m.selectedTriggerMs):null,
+    longTasks:{count:tasks.length,totalMs:round(tasks.reduce((sum,task)=>sum+task.durationMs,0)),maxMs:round(Math.max(0,...tasks.map(task=>task.durationMs))),clippedWindowOccupancyMs:round(clippedTaskOccupancyMs),totalBlockingMs:round(tasks.reduce((sum,task)=>sum+Math.max(0,task.durationMs-50),0))},
     trustedInputDelayMs:summary(input.filter(item=>item.trusted).map(item=>item.delayMs)),
     selectedYieldMs:{total:summary(yields.map(item=>item.endMs-item.startMs)),raf:summary(yields.map(item=>item.rafMs-item.startMs)),timer:summary(yields.map(item=>item.timerMs-item.rafMs)),idleCallback:summary(yields.map(item=>item.endMs-item.timerMs))},
     gpuWaitMs:Object.fromEntries(['hero','selected','aircraft'].map(owner=>[owner,summary(sample.metrics.gpu.filter(item=>item.owner===owner&&item.endMs<=horizon).map(item=>item.endMs-item.startMs))])),
-    transport:{horizonMs:horizon,finishedRequests:requests.length,cacheEvidencedRequests:cacheCount,totalWireBytes:requests.reduce((sum,request)=>sum+(request.wireBytes||0),0),modelWireBytes:modelRequests.reduce((sum,request)=>sum+(request.wireBytes||0),0),modelCacheEvidencedRequests:modelRequests.filter(request=>request.cacheEvidence.length).length},
+    transport:{horizonMs:horizon,finishedRequests:requests.length,cacheEvidencedRequests:cacheCount,completedResourceWireBytesByReadiness:requests.reduce((sum,request)=>sum+(request.wireBytes||0),0),completedModelWireBytesByReadiness:modelRequests.reduce((sum,request)=>sum+(request.wireBytes||0),0),inFlightAtReadiness:sample.requests.filter(request=>request.startMs<=horizon&&(!request.finished||request.endMs>horizon)).map(request=>({url:request.url,startMs:request.startMs,bodyBytesReceivedByReadiness:(request.dataReceipts||[]).filter(chunk=>chunk.atMs<=horizon).reduce((sum,chunk)=>sum+chunk.bytes,0)})),modelCacheEvidencedRequests:modelRequests.filter(request=>request.cacheEvidence.length).length},
   };
 }
 async function measureVisit(context, base, specification, options) {
@@ -298,6 +327,7 @@ async function measureVisit(context, base, specification, options) {
     const headers=Object.fromEntries(Object.entries(event.response.headers).map(([name,value])=>[name.toLowerCase(),value]));
     Object.assign(record,{response:event.timestamp,status:event.response.status,fromDiskCache:Boolean(event.response.fromDiskCache),fromServiceWorker:Boolean(event.response.fromServiceWorker),headers});
   });
+  cdp.on('Network.dataReceived',event=>{const record=records.get(event.requestId);if(record)(record.dataReceipts ||= []).push({at:event.timestamp,bytes:event.encodedDataLength});});
   cdp.on('Network.loadingFinished',event=>{const record=records.get(event.requestId);if(record)Object.assign(record,{end:event.timestamp,finished:true,wireBytes:event.encodedDataLength});});
   cdp.on('Network.loadingFailed',event=>{const record=records.get(event.requestId);if(record)Object.assign(record,{end:event.timestamp,error:event.errorText});});
   page.on('pageerror',error=>errors.push(error.message));
@@ -351,7 +381,7 @@ async function measureVisit(context, base, specification, options) {
 }
 function comparison(samples) {
   const output={};
-  const paths=['milestones.heroAllSubmittedMs','milestones.heroAllGPUCompletedMs','milestones.selectedAllModelsMs','milestones.selectedEightGPUStagesMs','milestones.selectedCurrentSizeVisibleGPUCompletedMs','milestones.telemetryCurrentSizeVisibleGPUCompletedMs','selectedFromTriggerMs','longTasks.totalMs','longTasks.maxMs','trustedInputDelayMs.p95','transport.modelWireBytes','transport.totalWireBytes'];
+  const paths=['milestones.heroAllSubmittedMs','milestones.heroAllGPUCompletedMs','milestones.selectedAllModelsMs','milestones.selectedEightGPUStagesMs','milestones.selectedCurrentSizeVisibleGPUCompletedMs','milestones.telemetryCurrentSizeVisibleGPUCompletedMs','selectedFromTriggerMs','longTasks.totalMs','longTasks.maxMs','trustedInputDelayMs.p95','transport.completedModelWireBytesByReadiness','transport.completedResourceWireBytesByReadiness'];
   const get=(object,key)=>key.split('.').reduce((value,part)=>value?.[part],object);
   for(const scenario of [...new Set(samples.map(sample=>sample.scenario))])for(const visit of ['cold','repeat']) {
     const group=samples.filter(sample=>sample.valid&&sample.scenario===scenario&&sample.visit===visit);
@@ -404,7 +434,9 @@ async function main() {
   const browserArgs=JSON.parse(process.env.V2_LOAD_BROWSER_ARGS||'["--use-angle=swiftshader","--enable-unsafe-swiftshader"]');
   const report={capturedAt:new Date().toISOString(),valid:false,network,viewport,deviceScaleFactor:1,pairs,scenarios,browserArgs,mode:baselineOnly?'baseline-only-attribution':'matched-comparison',
     phases:Object.fromEntries(Object.entries(fixtures).map(([phase,fixture])=>[phase,{root:fixture.root,revision:revision(fixture.root),traceSources:fixture.traces}])),
-    contract:{cache:'HTTP-cold fresh browser context, then new page in the same context; normal cache semantics in both visits',server:'Cache-Control max-age=600; Vary Accept-Encoding; gzip text; explicit .gz is not HTTP-decoded; content SHA256 ETags',completion:'Native own-context GPU complete + published current-size visible frame, never submitted/ready alone',inputs:'Trusted neutral F8 creation-to-handler queue delay, not INP',instrumentation:'Fixture-only trace markers; no application files, model quality, draw settings, proximity or pacing edits',caveats:['Software WebGL is machine-specific. The same browser/runner serves both phases. GPU-driver and OS caches are not reset.','Tracing adds small CPU/microtask overhead; byte totals include trace source bytes. Compare both phases instrumented identically.','Factory load spans include texture waits/static batching; explicit reconstruction markers include texture waits but exclude pack waiting.','Decode spans are elapsed wall time including scheduling, not CPU-only decompression. Index restoration is measured separately.','GPU wait spans include asynchronous polling and scheduler latency, not GPU execution-only durations.','A fenced published canvas is not an assertion of compositor presentation.','Zero wire bytes alone is not assumed to mean a cache hit; CDP and Resource Timing evidence are retained.','Cached browser resource loading may escape CDP throughput throttling; this is expected for a return visit.']},samples:[]};
+    contract:{cache:'HTTP-cold fresh browser context, then new page in the same context; normal cache semantics in both visits',server:'Cache-Control max-age=600; Vary Accept-Encoding; gzip text; explicit .gz is not HTTP-decoded; content SHA256 ETags',completion:'Native own-context GPU complete + published current-size visible frame, never submitted/ready alone',inputs:'Trusted neutral F8 creation-to-handler queue delay, not INP',instrumentation:'Fixture-only trace markers; no application files, model quality, draw settings, proximity or pacing edits',caveats:['Software WebGL is machine-specific. The same browser/runner serves both phases. GPU-driver and OS caches are not reset.','Tracing adds small CPU/microtask overhead; byte totals include trace source bytes. Compare both phases instrumented identically.','Factory load spans include texture waits/static batching; explicit reconstruction markers include texture waits but exclude pack waiting.','Decode spans are elapsed wall time including scheduling, not CPU-only decompression. Index restoration is measured separately.','GPU wait spans include asynchronous polling and scheduler latency, not GPU execution-only durations.','A fenced published canvas is not an assertion of compositor presentation.',
+      'Long-task total/max/TBT retain full task duration for tasks beginning before readiness; clipped occupancy is a separate metric.',
+      'Wire totals by readiness include only completed responses and are not whole-site payload totals; in-flight paths and received-body bytes are reported separately.','Zero wire bytes alone is not assumed to mean a cache hit; CDP and Resource Timing evidence are retained.','Cached browser resource loading may escape CDP throughput throttling; this is expected for a return visit.']},samples:[]};
   const save=()=>{report.comparison=comparison(report.samples);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(report,null,2)+'\n');};
   let active=fixtures.baseline,browser;
   const server=http.createServer((request,response)=>{
