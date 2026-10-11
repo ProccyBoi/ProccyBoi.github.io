@@ -33,7 +33,7 @@
     // A visitor can choose a supporting chapter while Three is still loading.
     // Promote its transport immediately; installation follows renderer setup.
     const prefetch = async () => {
-      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=startup-20261007');
+      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=transfer-20261011');
       window.V2HeroAssets.prefetch(projects[index].name).catch(() => {});
     };
     prefetch().catch(() => {});
@@ -258,8 +258,8 @@
       // Download prepared geometry alongside Three.js. Source CAD remains a
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
-        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=startup-20261007');
-        window.V2HeroAssets.prefetch('tramtrace').then(() => {
+        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=transfer-20261011');
+        window.V2HeroAssets.whenTransferSettled('tramtrace').then(() => {
           if (motionAllowed()) projects.slice(1).forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
         }).catch(()=>{});
       })().catch(()=>{});

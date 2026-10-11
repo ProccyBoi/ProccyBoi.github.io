@@ -96,8 +96,37 @@ function smallPack(textures) {
     assert.deepEqual(staticPage.requests, [], 'Static preferences must not download any model or lighting');
     assert.deepEqual(staticPage.images, [], 'Static preferences must not download hidden CAD textures');
   }
+  // The compressed lead can still be decoding while support bytes begin.
+  // This separates actual transfer completion from the old unpacking gate.
+  const decoding = context(), decode = gate();
+  decoding.sandbox.DecompressionStream = class {};
+  decoding.sandbox.Blob = class { stream() { return {pipeThrough:() => ({})}; } };
+  decoding.sandbox.Response = class { arrayBuffer() { return decode.promise; } };
+  decoding.run(startup); await flush();
+  const compressedLead = decoding.requests.find(url => url.includes('/tramtrace.'));
+  const prepared = decoding.sandbox.V2HeroAssets.prefetch('tramtrace');
+  let leadPrepared = false; prepared.then(() => { leadPrepared = true; });
+  decoding.downloads.get(compressedLead).release(Uint8Array.from([31,139]).buffer);
+  await flush();
+  assert.equal(leadPrepared, false, 'The lead decode is deliberately still blocked');
+  assert.equal(decoding.requests.length, 4, 'Support starts at network completion before lead decompression');
+  assert.strictEqual(decoding.sandbox.V2HeroAssets.whenTransferSettled('tramtrace'), decoding.sandbox.V2HeroAssets.whenTransferSettled('tramtrace'), 'Transfer signal is deduplicated');
+  decode.release(smallPack(packTextures.tramtrace)); await prepared;
+  assert.equal(leadPrepared, true);
+
+  const failedLead = context();
+  failedLead.sandbox.fetch = url => {
+    failedLead.requests.push(url);
+    if (url.includes('/tramtrace.')) return Promise.reject(new Error('Lead transfer failed'));
+    return new Promise(() => {});
+  };
+  failedLead.run(startup); await flush(); await flush();
+  assert.equal(failedLead.requests.length, 4, 'Failed lead transfer releases support instead of starving visible posters');
+  await assert.rejects(failedLead.sandbox.V2HeroAssets.prefetch('tramtrace'), /Lead transfer failed/, 'Original prefetch failure remains visible to its caller');
+  await assert.rejects(failedLead.sandbox.V2HeroAssets.whenTransferSettled('unknown'), /Unknown hero assembly/);
+
   const unavailable = context({failHelpers:true}); unavailable.run(startup); await flush();
   assert.equal(unavailable.sandbox.V2HeroScripts.size, 0, 'Failed early helpers must be retryable by scene initialization');
   assert.deepEqual(unavailable.requests, []);
-  console.log('PASS: original texture parity, overlap, deduplication, opt-in startup, reduced-motion and Save Data guards.');
+  console.log('PASS: original texture parity, raw-transfer overlap, decode/failure release, deduplication, opt-in startup, reduced-motion and Save Data guards.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

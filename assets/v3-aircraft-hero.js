@@ -185,7 +185,7 @@
     if (!flight || flight.telemetryReady || telemetryLoading || failed || !allowed()) return;
     telemetryLoading = true;
     try {
-      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=startup-20261007');
+      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'transfer-20261011' : 'startup-20261007'));
       const telemetry = await window.V2HeroAssets.load('telemetry');
       if (failed) return;
       flight.attachTelemetry(telemetry); root.dataset.aircraftTelemetryReady = 'true';

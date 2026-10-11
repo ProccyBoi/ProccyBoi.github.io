@@ -11,7 +11,7 @@
     telemetry:['/assets/models/hardware/skylabs-telemetry/silk-front.svg', '/assets/models/hardware/skylabs-telemetry/silk-back.svg'],
     pi:['/assets/models/framework-pi/framework-pi-silk-front.svg']
   };
-  const pending = new Map();
+  const pending = new Map(), transfers = new Map();
   const headers = new Map(), images = new Map();
   function header(buffer) {
     if (buffer.byteLength < 16) throw new Error('Invalid hero assembly');
@@ -62,21 +62,34 @@
   function prefetch(name) {
     if (!names.has(name)) return Promise.reject(new Error('Unknown hero assembly: ' + name));
     textureSources[name].forEach(url => image(url).catch(() => {}));
-    if (!pending.has(name)) pending.set(name, fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin') + (versions[name] ? '?v=' + versions[name] : '')).then(async response => {
-      if (!response.ok) throw new Error('Hero assembly unavailable');
-      const bytes = await response.arrayBuffer();
-      const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
-      // Explicit gzip keeps delivery small regardless of the host's MIME
-      // compression policy. Browsers without native decompression use .bin.
-      return signature[0] === 31 && signature[1] === 139 ? new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : bytes;
-    }).then(transport).then(({buffer, ...parsed}) => {
-      headers.set(name, parsed);
-      // Fetch the original full-resolution silk images while the renderer is
-      // still starting. Loading a texture later reuses these same Image objects.
-      parsed.data.textures.forEach(item => image(item.url).catch(() => {}));
-      return buffer;
-    }));
+    if (!pending.has(name)) {
+      const transfer = fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin') + (versions[name] ? '?v=' + versions[name] : '')).then(response => {
+        if (!response.ok) throw new Error('Hero assembly unavailable');
+        return response.arrayBuffer();
+      });
+      // An opt-in scheduling signal, separate from unpacking readiness. Settle
+      // failures too so a missing lead cannot starve the other visible models.
+      // Store no raw bytes here; prefetch/load retain their original contract.
+      transfers.set(name, transfer.then(() => {}, () => {}));
+      pending.set(name, transfer.then(bytes => {
+        const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
+        // Explicit gzip keeps delivery small regardless of the host's MIME
+        // compression policy. Browsers without native decompression use .bin.
+        return signature[0] === 31 && signature[1] === 139 ? new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : bytes;
+      }).then(transport).then(({buffer, ...parsed}) => {
+        headers.set(name, parsed);
+        // Fetch the original full-resolution silk images while the renderer is
+        // still starting. Loading a texture later reuses these same Image objects.
+        parsed.data.textures.forEach(item => image(item.url).catch(() => {}));
+        return buffer;
+      }));
+    }
     return pending.get(name);
+  }
+  function whenTransferSettled(name) {
+    if (!names.has(name)) return Promise.reject(new Error('Unknown hero assembly: ' + name));
+    prefetch(name).catch(() => {});
+    return transfers.get(name);
   }
   async function load(name) {
     const buffer = await prefetch(name), T = window.THREE;
@@ -128,5 +141,5 @@
     nodes[0].updateMatrixWorld(true);
     return {...decode(data.extra), group:nodes[0], parts};
   }
-  window.V2HeroAssets = Object.freeze({prefetch, load});
+  window.V2HeroAssets = Object.freeze({prefetch, load, whenTransferSettled});
 })();

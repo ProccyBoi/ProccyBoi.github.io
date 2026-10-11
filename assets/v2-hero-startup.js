@@ -19,12 +19,12 @@
   // awaiting it or delaying the independent poster scene.
   loadScript('/assets/vendor/three.min.js').catch(() => {});
   loadScript('/assets/v2-hero-motion.js?v=mechanics-20261003').catch(() => {});
-  loadScript('/assets/v2-hero-assets.js?v=startup-20261007').then(() => {
+  loadScript('/assets/v2-hero-assets.js?v=transfer-20261011').then(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
     // Keep the first visible CAD uncontested; the scene promotes a requested
     // chapter. Once lead bytes arrive, supporting transport can overlap its
     // first shader compile without competing for the lead download.
-    window.V2HeroAssets.prefetch('tramtrace').then(() => {
+    window.V2HeroAssets.whenTransferSettled('tramtrace').then(() => {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
       ['telemetry', 'pi'].forEach(name => window.V2HeroAssets.prefetch(name).catch(() => {}));
     }).catch(() => {});

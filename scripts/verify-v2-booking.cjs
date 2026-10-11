@@ -160,10 +160,17 @@ async function browserChecks() {
     // Keyboard and scroll assertions run separately. Capture clean review
     // frames from the top so fixed/sticky UI does not land mid-page in a
     // full-page image, and the calendar starts at its first day.
-    const captureStyle = await page.addStyleTag({ content: 'html, body, [data-booking-days] { scroll-behavior: auto !important; } [data-booking-days] { scroll-snap-type: none !important; }' });
+    // addStyleTag waits for an onload callback and has no default timeout.
+    // Disabled page JavaScript can suppress that callback, so keep fallback
+    // capture preparation synchronous in Playwright's isolated evaluation.
+    await page.evaluate(() => {
+      const style = document.createElement('style');
+      style.id = 'booking-test-capture';
+      style.textContent = 'html, body, [data-booking-days] { scroll-behavior: auto !important; } [data-booking-days] { scroll-snap-type: none !important; }';
+      document.head.append(style);
+    });
     try {
-      await page.evaluate(async () => {
-        await document.fonts.ready;
+      await page.evaluate(() => {
         document.activeElement?.blur();
         document.querySelector('[data-booking-days]')?.scrollTo({ left: 0, top: 0, behavior: 'instant' });
         window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
@@ -173,13 +180,13 @@ async function browserChecks() {
       // Native focus/scroll work may land after the first reset in Chromium.
       // Settle for a bounded interval, then cancel it with one final reset.
       await page.waitForTimeout(180);
-      screenshotPositions[name] = await page.evaluate(async () => {
+      screenshotPositions[name] = await page.evaluate(() => {
         window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
         return { scrollY, headerTop: document.querySelector('.v2-header').getBoundingClientRect().top };
       });
-      await page.screenshot({ path: path.join(output, `${engine}-${name}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
+      await page.screenshot({ path: path.join(output, `${engine}-${name}.png`), fullPage: true, animations: 'disabled', caret: 'hide', timeout: 30000 });
     } finally {
-      await captureStyle.evaluate(node => node.remove());
+      await page.evaluate(() => document.getElementById('booking-test-capture')?.remove());
     }
   };
   const browser = await playwright[engine].launch({ headless: true, ...(engine === 'chromium' && process.env.CHROMIUM_EXECUTABLE ? { executablePath: process.env.CHROMIUM_EXECUTABLE } : {}) });
