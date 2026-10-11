@@ -241,7 +241,9 @@ async function v3Regression(browser) {
     await page.goto(base + '/v3/?v=shared-controller-regression', { waitUntil: 'domcontentloaded' });
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-smooth'), null, 'v3 does not inherit v2 smoothing');
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-background'), null, 'v3 does not inherit v2 background warming');
-    assert.equal(run.requests.filter(url => aircraftRequest.test(url)).length, 0, 'v3 aircraft remains deferred before entry');
+    const preloadDistance = await page.locator(aircraft).evaluate(root => root.getBoundingClientRect().top - innerHeight);
+    if (preloadDistance > 420) assert.equal(run.requests.filter(url => aircraftRequest.test(url)).length, 0, 'v3 waits until its original preload margin');
+    assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-warm-frames')), 0, 'v3 does not inherit offscreen warm draws');
     // v3 now also defers its aircraft below the hardware portfolio.
     await scrollTo(page, aircraft);
     await page.locator('[data-aircraft-state="landing"]').waitFor({ timeout });

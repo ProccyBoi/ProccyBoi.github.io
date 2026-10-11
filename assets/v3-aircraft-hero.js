@@ -217,7 +217,7 @@
     });
     if (!background || promote) {
       releaseTransport?.();
-      if (background) root.dataset.aircraftTransportState = 'loading';
+      if (background && !airframeTransport) root.dataset.aircraftTransportState = 'loading';
       return transfer();
     }
     return transportGate ||= new Promise(resolve => {
@@ -232,7 +232,7 @@
       })().then(releaseTransport, releaseTransport);
     }).then(() => {
       if (!allowed() || failed) return null;
-      root.dataset.aircraftTransportState = 'loading';
+      if (!airframeTransport) root.dataset.aircraftTransportState = 'loading';
       return transfer();
     });
   }
@@ -375,7 +375,13 @@
     } catch (error) {
       root.dataset.aircraftBackgroundState = 'unavailable';
       fail(error);
-    } finally { backgroundBusy = false; }
+    } finally {
+      backgroundBusy = false;
+      // A quick entry/exit can cancel this generation while its async work is
+      // still pending. Resume finite preparation once that work has released,
+      // rather than requiring another scroll or visibility event.
+      if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed()) setTimeout(prepareInBackground, 0);
+    }
   }
   skip.addEventListener('click', endLanding);
   links.forEach((link, index) => {

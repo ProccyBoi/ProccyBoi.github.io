@@ -1,30 +1,61 @@
-# Skylabs aircraft in v2
+# Skylabs aircraft and Selected Work in v2
 
-The aircraft story follows Selected work and precedes About. The existing opening
-three-project animation and its `#work` destination stay intact. The story uses
-the same aircraft geometry, film peel, cloud fade and telemetry extraction as v3;
-its chapter anchors are namespaced to `#skylabs-aircraft`, `#skylabs-inside` and
-`#skylabs-telemetry`.
+The aircraft story follows Selected Work and precedes About. The opening
+three-project composition stays intact. The detailed story uses the accepted
+v3 aircraft geometry, film peel and telemetry extraction, with two namespaced
+anchors: `#skylabs-aircraft` and `#skylabs-telemetry`. Film is fully gone at .60;
+rigid exterior motion begins after .62. Those scene mechanics are unchanged.
 
-The section defers aircraft-specific code and model requests until it is near
-view. Its entry landing starts when the section is entered, rather than being
-consumed by scrolling the original hero or gallery. The telemetry transport is
-shared with the opening hero. Both scenes suspend drawing when offscreen.
+## Background readiness
 
-## Focused acceptance
+Only v2 opts into `data-aircraft-background`. The three opening model packs
+download concurrently. Selected Work has real eager HTML image sources and
+explicit decode tracking; no image source is withheld until intersection.
+Aircraft scripts and its decoder prepare without scrolling. The larger aircraft
+transfer starts after all three hero raw transfers settle, or a 4.5-second
+fallback. Entry and deep links bypass that gate immediately; shared promises
+prevent duplicate model and decoder requests.
 
-Run `node scripts/verify-v2-aircraft.cjs` with the local site served on port 8080
-and Playwright available. `V2_BASE_URL`, `V2_AIRCRAFT_OUT`, and
-`CHROMIUM_EXECUTABLE` can override defaults. `--static-only` and `--scene-only`
-select bounded subsets. Evidence and desktop/mobile screenshots are written to
-`.codex-temp/v2-aircraft/`; they are not shipped to the website.
+Offscreen construction waits for the foreground model set to settle (with a
+12-second fallback). Separate bounded idle tasks construct the scene, attach a
+separate telemetry object from the shared transport, draw telemetry, then restore
+the landing pose. Real render calls prepare GPU materials and textures. These
+draws do not consume landing time, expose intermediate poses or run a continuing
+offscreen animation. Entry cancels queued background poses. Reduced motion,
+Save Data and short viewports retain readable static imagery without 3D work.
 
-The checks cover source preservation, deferred network requests, entry autoplay,
-one telemetry download shared by both scenes, cloud fade and reverse, idle and
-offscreen suspension, native chapter links and direct hashes, mobile layout,
-reduced motion, no-JavaScript fallback, and a standalone v3 regression smoke.
+Mouse-wheel interpolation is v2-only, timestamp-based exponential damping at
+70ms. Touch stays direct, large consecutive target jumps snap, and explicit
+capture seeks remain exact. Native scrolling is never intercepted.
 
-Validation result: 8 October 2026 — 6 focused groups passed, including static
-fallbacks, the deferred desktop entry, aircraft/telemetry reuse, cloud fade and
-reverse, offscreen suspension, mobile chapter navigation, and the standalone v3
-regression smoke. The broader v2 and v3 audits also pass.
+## Selected Work
+
+Four actual Framework card designs use CAD-derived transparent imagery:
+ESP32-S3, Dual USB-C, RP2354B and Logic analyser. Their source routes remain
+ordinary labelled links. A short, coordinated fan-to-row animation runs once
+after decoding and entry, with static reduced-motion/Save Data/no-JS fallbacks.
+Keyboard focus, hiding the page or resizing settles the motion immediately.
+MetroBoard and TramTrace follow together with real project photography.
+
+The Dual USB-C poster is reproducible with
+`scripts/render-framework-dual-poster.cjs`; its adjacent provenance JSON records
+the unchanged source asset hashes. No new hardware geometry is invented.
+
+## Acceptance
+
+Serve the repository on port 8080 and run:
+
+- `node scripts/verify-v2-background.cjs`: no-scroll image decode and finite GPU
+  preparation, delayed/failing transport, early entry, deep links and fallbacks.
+- `node scripts/verify-v2-aircraft.cjs`: entry landing, accepted CAD/peel, reverse,
+  capture, native hashes/focus, shared telemetry, mobile and v3 regression.
+- `node scripts/verify-v2-wheel.cjs`: wheel, touch, reversal and lifecycle checks.
+- `node scripts/verify-v2-polish.cjs`: responsive routes, navigation and pictures.
+
+The review workflow also exercises Book with mocked submissions, WebKit mobile
+emulation, source/transport contracts and matched three-run cold-cache profiles.
+Performance compares current published v2 at 10Mbps/40ms on the same runner;
+the wheel-only historical comparison uses the original unfiltered controller.
+Chromium uses software WebGL, so timing evidence does not prove hardware-GPU FPS
+or physical-iOS performance. Readiness requires decoded images and real warm
+draws, not merely completed downloads.

@@ -35,7 +35,38 @@ function sourceContract() {
   evidence.push({ name: 'source-contract', images: images.length }); console.log('PASS source-contract');
 }
 function probe() {
-  const data = window.__v2BackgroundProbe = { scrolls: [], changes: [], longTasks: [] };
+  performance.setResourceTimingBufferSize(2000);
+  const data = window.__v2BackgroundProbe = { scrolls: [], changes: [], longTasks: [], transportGates: [], cpuGates: [], fetches: [], contexts: [], visibility: [] };
+  const nativeTimeout = window.setTimeout.bind(window), nativeFetch = window.fetch.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext;
+  window.setTimeout = (callback, delay, ...args) => {
+    const root = document.querySelector('[data-aircraft-background]');
+    if (root && delay === 4500 && root.dataset.aircraftTransportState === 'waiting-hero-bytes') data.transportGates.push({ t: performance.now(), delay });
+    if (root && delay === 12000 && root.dataset.aircraftBackgroundState === 'warming') data.cpuGates.push({ t: performance.now(), delay });
+    return nativeTimeout(callback, delay, ...args);
+  };
+  window.fetch = (...args) => {
+    const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || String(args[0]);
+    if (/\/assets\/models\/aircraft\/.+\.glb(?:\.gz)?(?:\?|$)/.test(url)) data.fetches.push({ url, t: performance.now() });
+    return nativeFetch(...args);
+  };
+  HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+    if (this.matches('[data-aircraft-canvas]') && /webgl/i.test(type)) {
+      const root = this.closest('[data-aircraft-hero]'), hero = document.querySelector('[data-assembly]'), bounds = root.getBoundingClientRect();
+      data.contexts.push({ t: performance.now(), visible: bounds.top < innerHeight && bounds.bottom > 0, modelsSettled: hero?.dataset.assemblyModelsSettled, heroState: hero?.dataset.assemblyState, cpuGateStart: data.cpuGates.at(-1)?.t ?? null });
+    }
+    return nativeContext.call(this, type, ...args);
+  };
+  const NativeIntersectionObserver = window.IntersectionObserver;
+  if (NativeIntersectionObserver) window.IntersectionObserver = class extends NativeIntersectionObserver {
+    constructor(callback, options) {
+      super((entries, observer) => {
+        callback(entries, observer);
+        // Record after the real no-margin visibility callback has updated its
+        // closure. A separate observer or two RAFs cannot establish this barrier.
+        if (!options?.rootMargin) for (const entry of entries) if (entry.target.matches('[data-aircraft-hero]')) data.visibility.push({ t: performance.now(), y: scrollY, visible: entry.isIntersecting });
+      }, options);
+    }
+  };
   addEventListener('scroll', () => data.scrolls.push({ t: performance.now(), y: scrollY }), { passive: true });
   const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-settled', 'data-image-decoded', 'data-selected-ready'];
   new MutationObserver(records => {
@@ -57,7 +88,7 @@ async function open(browser, options = {}) {
 async function snapshot(page) {
   return page.evaluate(() => {
     const root = document.querySelector('[data-aircraft-hero]'), work = document.querySelector('[data-selected-work]');
-    return { scrollY, aircraftTop: root?.getBoundingClientRect().top, viewportHeight: innerHeight, aircraft: { ...root?.dataset }, selected: { ...work?.dataset }, images: [...document.querySelectorAll('[data-selected-image]')].map(image => ({ src: image.currentSrc || image.src, decoded: image.dataset.imageDecoded, complete: image.complete, width: image.naturalWidth, loading: image.loading, priority: image.fetchPriority })), probe: window.__v2BackgroundProbe, resources: performance.getEntriesByType('resource').filter(entry => /\/assets\/(?:models\/aircraft\/|images\/|models\/hero\/)/.test(entry.name)).map(entry => ({ name: entry.name, start: entry.startTime, duration: entry.duration, transferSize: entry.transferSize })) };
+    return { scrollY, aircraftTop: root?.getBoundingClientRect().top, viewportHeight: innerHeight, aircraft: { ...root?.dataset }, selected: { ...work?.dataset }, images: [...document.querySelectorAll('[data-selected-image]')].map(image => ({ src: image.currentSrc || image.src, decoded: image.dataset.imageDecoded, complete: image.complete, width: image.naturalWidth, loading: image.loading, priority: image.fetchPriority })), probe: window.__v2BackgroundProbe, resources: performance.getEntriesByType('resource').filter(entry => /\/assets\//.test(entry.name)).map(entry => ({ name: entry.name, initiatorType: entry.initiatorType, start: entry.startTime, duration: entry.duration, responseEnd: entry.responseEnd, transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize })) };
   });
 }
 async function decodedImages(page) {
@@ -88,6 +119,12 @@ async function diagnostic(run, name, error) {
   fs.writeFileSync(path.join(output, name + '-failure.json'), JSON.stringify(report, null, 2) + '\n');
   await run.page.screenshot({ path: path.join(output, name + '-failure.png'), timeout: 30000, animations: 'disabled' }).catch(() => {});
 }
+function assertCPUGate(state) {
+  for (const context of state.probe.contexts.filter(context => !context.visible)) {
+    if (context.modelsSettled === '3' || context.heroState === 'unavailable') continue;
+    assert.ok(context.cpuGateStart !== null && context.t - context.cpuGateStart >= 11900, 'Offscreen renderer/CPU initialization waits for foreground settling or the 12s fallback');
+  }
+}
 async function initialViewport(browser) {
   const run = await open(browser), { page } = run, started = Date.now();
   try {
@@ -95,7 +132,8 @@ async function initialViewport(browser) {
     await decodedImages(page); const imageReadyMs = Date.now() - started;
     assert.equal(await page.evaluate(() => scrollY), 0, 'All selected images decode without any scroll');
     await warmed(page); const backgroundReadyMs = Date.now() - started;
-    const state = await snapshot(page);
+    const state = await snapshot(page); assertCPUGate(state);
+    assert.ok(state.probe.contexts.length > 0, 'Background readiness includes an actual renderer context');
     assert.equal(state.scrollY, 0); assert.ok(state.aircraftTop > state.viewportHeight + 420, 'Aircraft is still well below the initial viewport');
     assert.ok(state.probe.scrolls.every(sample => sample.y === 0), 'Readiness proof does not scroll and return to the top');
     assert.equal(state.aircraft.aircraftBackgroundState, 'ready');
@@ -127,8 +165,14 @@ async function initialViewport(browser) {
 }
 async function heldTransport(browser) {
   const run = await open(browser, { viewport: { width: 390, height: 844 } }), { page, context } = run;
-  const pending = { lead: [], aircraft: [] };
-  const hold = kind => route => new Promise(resolve => pending[kind].push(async () => { try { await route.continue(); } finally { resolve(); } }));
+  const pending = { lead: [], aircraft: [] }, enteredResolvers = {};
+  const entered = Object.fromEntries(['lead', 'aircraft'].map(kind => [kind, new Promise(resolve => { enteredResolvers[kind] = resolve; })]));
+  const hold = kind => route => new Promise(resolve => {
+    pending[kind].push(async () => { try { await route.continue(); } finally { resolve(); } });
+    // request events can arrive before Playwright enters this route handler.
+    // Confirm interception itself before asserting that bytes remain held.
+    enteredResolvers[kind]();
+  });
   await context.route(leadBytes, hold('lead')); await context.route(airframeBytes, hold('aircraft'));
   const release = async kind => { await Promise.all(pending[kind].splice(0).map(resume => resume())); };
   try {
@@ -140,12 +184,15 @@ async function heldTransport(browser) {
     // Scripts, decoder and images are independent of foreground model bytes.
     // The bounded 4.5s policy may defer the large airframe transfer, but a
     // stalled lead cannot postpone it indefinitely or require user scrolling.
-    await observedAircraft;
+    await observedAircraft; await Promise.all([entered.lead, entered.aircraft]);
     const firstAirframe = run.requests.find(request => airframeBytes.test(request.url));
     const sceneRequest = run.requests.find(request => /\/assets\/v3-aircraft-scene\.js/.test(request.url));
     const decoderRequest = run.requests.find(request => /\/assets\/vendor\/meshopt_decoder\.js/.test(request.url));
     assert.ok(sceneRequest.observedAt <= firstAirframe.observedAt && decoderRequest.observedAt <= firstAirframe.observedAt, 'Scene code and decoder prepare before the large gated transfer');
     const airframeStartMs = firstAirframe.observedAt - navigationStarted;
+    const gateState = await snapshot(page), fetch = gateState.probe.fetches[0], gate = gateState.probe.transportGates[0];
+    assert.ok(gate && fetch && fetch.t - gate.t >= 4400, 'Held foreground bytes keep the large airframe transfer behind its 4.5s fallback gate');
+    assertCPUGate(gateState);
     assert.ok(pending.lead.length > 0 && pending.aircraft.length > 0, 'Foreground and background model requests overlap while both transports are held');
     assert.equal(await page.evaluate(() => scrollY), 0, 'Simultaneous requests and image decoding need no viewport entry');
     assert.ok(Number(await page.locator('[data-assembly]').getAttribute('data-assembly-models-ready')) < 3, 'Held lead bytes keep the foreground model set genuinely incomplete');
@@ -170,10 +217,92 @@ async function heldTransport(browser) {
     await page.waitForTimeout(800);
     assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-rendered-progress')), 1, 'Late preparation cannot overwrite the requested endpoint');
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-phase'), 'telemetry');
-    await save(run, 'simultaneous-transport-foreground-input-and-early-promotion', { menuRoundTripMs, airframeStartMs, genuineHeldRequests: true, policy: 'All hero bytes or 4.5s fallback; observed timings include software-renderer blocking' });
+    assertCPUGate(await snapshot(page));
+    await save(run, 'simultaneous-transport-foreground-input-and-early-promotion', { menuRoundTripMs, airframeStartMs, gatedDelayMs: fetch.t - gate.t, genuineHeldRequests: true, policy: 'All hero bytes or 4.5s fallback; observed timings include software-renderer blocking' });
   } catch (error) { await diagnostic(run, 'held-transport', error); throw error; } finally {
     await release('lead').catch(() => {}); await release('aircraft').catch(() => {}); await context.close();
   }
+}
+async function interruptedInitialization(browser) {
+  const run = await open(browser), { page, context } = run;
+  const pending = []; let enteredResolve, released = false;
+  const entered = new Promise(resolve => { enteredResolve = resolve; });
+  await context.route(airframeBytes, route => released ? route.continue() : new Promise(resolve => {
+    pending.push(async () => { try { await route.continue(); } finally { resolve(); } });
+    enteredResolve();
+  }));
+  const release = async () => { released = true; await Promise.all(pending.splice(0).map(resume => resume())); };
+  try {
+    await page.goto(base + '/v2/?v=background-interrupted-initialization', { waitUntil: 'domcontentloaded' });
+    await entered;
+    // Hold inside the background initialize() await, rather than merely during
+    // its source or foreground gate, to reproduce the busy-generation race.
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-aircraft-hero]');
+      return root.dataset.aircraftBackgroundState === 'warming' && root.dataset.aircraftState === 'loading' && window.__v2BackgroundProbe.contexts.some(context => !context.visible);
+    }, null, { timeout });
+    assert.ok(pending.length > 0, 'Aircraft initialization is genuinely held awaiting model bytes');
+    const held = await snapshot(page); assertCPUGate(held);
+    assert.equal(held.scrollY, 0); assert.equal(Number(held.aircraft.aircraftWarmFrames || 0), 0);
+    await page.locator(aircraft).evaluate(root => scrollTo({ top: scrollY + root.getBoundingClientRect().top, behavior: 'instant' }));
+    await page.locator('[data-aircraft-background-state="promoted"]').waitFor();
+    const visibilityCountAtEntry = await page.evaluate(() => window.__v2BackgroundProbe.visibility.length);
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForFunction(count => {
+      const samples = window.__v2BackgroundProbe.visibility;
+      return scrollY === 0 && document.querySelector('[data-aircraft-hero]').getBoundingClientRect().top > innerHeight + 420 && samples.length > count && samples.at(-1).visible === false;
+    }, visibilityCountAtEntry);
+    const returned = await snapshot(page);
+    assert.notEqual(returned.aircraft.aircraftBackgroundReady, 'true', 'The interrupted generation has not completed while its transport is held');
+    const scrollCountAtReturn = returned.probe.scrolls.length;
+    await release();
+    // No further scroll, resize, visibility event, or capture API is triggered.
+    // The canceled generation must re-arm itself when its pending work ends.
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-aircraft-hero]');
+      return root.dataset.aircraftBackgroundReady === 'true' && root.dataset.aircraftTelemetryReady === 'true';
+    }, null, { timeout });
+    const recovered = await snapshot(page), warm = Number(recovered.aircraft.aircraftWarmFrames || 0);
+    assert.equal(recovered.scrollY, 0);
+    assert.equal(recovered.probe.scrolls.length, scrollCountAtReturn, 'Background recovery does not require another scroll event');
+    assert.equal(recovered.aircraft.aircraftBackgroundState, 'ready');
+    assert.ok(warm >= 2 && warm <= 4, 'Interrupted preparation completes with a finite two to four warm draws');
+    const hidden = await stableHidden(page);
+    assert.deepEqual(hidden, { live: 0, warm, landing: 0 }, 'Unloaded rapid entry does not start live playback after returning to the top');
+    await save(run, 'rapid-enter-exit-background-recovery', { heldInitialization: true, actualVisibilityExitObserved: true, warmDraws: warm, scrollCountAtReturn, hidden });
+  } catch (error) { await diagnostic(run, 'interrupted-initialization', error); throw error; } finally {
+    await release().catch(() => {}); await context.close();
+  }
+}
+async function throttledWarmTrace(browser) {
+  const run = await open(browser), { page, context } = run;
+  const network = { latency: 40, downloadThroughput: 10_000_000 / 8, uploadThroughput: 10_000_000 / 8, connectionType: 'wifi' };
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.enable'); await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, ...network });
+  try {
+    const started = Date.now();
+    await page.goto(base + '/v2/?v=background-throttled-full-warm', { waitUntil: 'domcontentloaded' });
+    await decodedImages(page); const imageReadyMs = Date.now() - started;
+    await warmed(page); const backgroundReadyMs = Date.now() - started;
+    const hidden = await stableHidden(page), state = await snapshot(page); assertCPUGate(state);
+    assert.equal(state.scrollY, 0); assert.ok(state.aircraftTop > state.viewportHeight + 420);
+    assert.ok(state.probe.scrolls.every(sample => sample.y === 0), 'The complete throttled trace stays in the initial viewport');
+    assert.equal(state.aircraft.aircraftBackgroundState, 'ready');
+    assert.deepEqual(hidden, { live: 0, warm: 2, landing: 0 });
+    assert.equal(state.images.length, 6); assert.ok(state.images.every(image => image.decoded === 'true' && image.complete && image.width > 0));
+    assert.ok(state.probe.contexts.length > 0, 'The measured horizon includes construction and both GPU warm draws');
+    const resourceBytes = Object.fromEntries(['transferSize', 'encodedBodySize', 'decodedBodySize'].map(key => [key, state.resources.reduce((sum, resource) => sum + resource[key], 0)]));
+    const longTasks = state.probe.longTasks;
+    await save(run, 'cold-10mbps-through-gpu-warm', {
+      network, cacheDisabled: true, imageReadyMs, backgroundReadyMs, hidden, resourceBytes,
+      resourceCount: state.resources.length,
+      longTaskSummary: { count: longTasks.length, totalMs: longTasks.reduce((sum, task) => sum + task.duration, 0), longestMs: Math.max(0, ...longTasks.map(task => task.duration)) },
+      measurementHorizon: 'Initial navigation through six decoded Selected Work images, telemetry attachment, both GPU warm draws, and one second of hidden idle',
+      fixture: 'Standard Python HTTP server: uncompressed HTTP responses, unlike the hero gzip-response profiling fixture; precompressed asset files retain their own format',
+      timingEnvironment: 'Single cold Chromium software-WebGL trace at 10 Mbps / 40 ms; not a real-device benchmark or a gzip-fixture comparison'
+    });
+  } catch (error) { await diagnostic(run, 'throttled-full-warm', error); throw error; } finally { await context.close(); }
 }
 async function deepLink(browser) {
   const run = await open(browser), { page } = run;
@@ -224,9 +353,15 @@ async function v3Deferred(browser) {
     await page.locator('[data-hardware-portfolio][data-model="ready"]').waitFor({ timeout }); await page.waitForTimeout(800);
     assert.equal(await page.evaluate(() => scrollY), 0);
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-background'), null);
-    assert.equal(run.requests.filter(request => aircraftDependency.test(request.url)).length, 0, 'v3 aircraft retains its accepted deferred loading');
+    const distance = await page.locator(aircraft).evaluate(root => root.getBoundingClientRect().top - innerHeight);
+    // v3's 900px cover naturally puts the story inside its original 420px
+    // preload margin. That proximity loading is not v2 background warming.
+    if (distance > 420) assert.equal(run.requests.filter(request => aircraftDependency.test(request.url)).length, 0, 'v3 does not fetch aircraft outside its accepted preload margin');
+    assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-warm-frames')), 0, 'v3 has no offscreen warm draws');
+    assert.notEqual(await page.locator(aircraft).getAttribute('data-aircraft-background-ready'), 'true');
     assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-frames')), 0);
-    await save(run, 'v3-remains-deferred');
+    assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-landing')), 0, 'v3 does not autoplay before visible entry');
+    await save(run, 'v3-retains-proximity-deferred-loading', { distanceFromViewport: distance, preloadMargin: 420 });
   } catch (error) { await diagnostic(run, 'v3-isolation', error); throw error; } finally { await run.context.close(); }
 }
 (async () => {
@@ -239,7 +374,7 @@ async function v3Deferred(browser) {
     await guard(browser, 'save-data', { saveData: true });
     await guard(browser, 'short-viewport', { viewport: { width: 1440, height: 550 } });
     if (!process.argv.includes('--static-only')) {
-      await initialViewport(browser); await heldTransport(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
+      await initialViewport(browser); await heldTransport(browser); await interruptedInitialization(browser); await throttledWarmTrace(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
     }
     console.log(`${evidence.length} v2 background preparation groups passed.`);
   } finally { await browser.close(); }
