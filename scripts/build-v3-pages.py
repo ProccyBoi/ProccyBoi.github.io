@@ -18,9 +18,9 @@ SOURCE = ROOT / "v2"
 DESTINATION = ROOT / "v3"
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 ROUTE_PREFIX = re.compile(r"^(https://proccyboi\.github\.io)?/v2/")
-PRESENTATION = '''  <script src="/assets/v3.js?v=field-notebook-20261010" defer></script>
-  <link rel="stylesheet" href="/assets/v3-evidence.css?v=field-notebook-20261010">
-  <link rel="stylesheet" href="/assets/v3.css?v=field-notebook-20261010">
+PRESENTATION = '''  <script src="/assets/v3.js?v=dark-cases-20261011" defer></script>
+  <link rel="stylesheet" href="/assets/v3-evidence.css?v=dark-cases-20261011">
+  <link rel="stylesheet" href="/assets/v3.css?v=dark-cases-20261011">
 '''
 EVIDENCE = json.loads((ROOT / "scripts/content/v3-case-evidence.json").read_text(encoding="utf-8"))
 TRAMTRACE_SCRIPTS = (
@@ -29,7 +29,6 @@ TRAMTRACE_SCRIPTS = (
     "assets/tramtrace-inspector.js?v=20260824b",
 )
 UTILITY_LINKS = (
-    ("Tools", "/projects/#interactive"),
     ("Files", "/shared/"),
     ("Book", "/book/"),
     ("CV", "/assets/documents/Andrew_Chung_Public_CV.pdf"),
@@ -105,30 +104,23 @@ def utility_navigation():
 
 
 def evidence_section(record):
-    """Editorial summaries have their own provenance; never alter viewer data."""
-    entries = "\n".join(
-        f'        <div class="v3-evidence-{key}"><dt>{label}</dt><dd>{escape(record[key])}</dd></div>'
-        for key, label in [("role", "My role"), ("constraint", "Constraint"),
-                           ("decision", "Design decision"), ("test", "Test & evidence"),
-                           ("limit", "Evidence limits")]
-    )
-    path = ""
-    if record.get("path"):
-        steps = "".join(f'<li>{escape(step)}</li>' for step in record["path"])
-        path = f'      <ul class="v3-evidence-path" aria-label="System components">{steps}</ul>\n'
+    """Keep substantive constraints and limits in a readable project narrative."""
     links = "".join(
         f'<a href="{escape(link["href"], quote=True)}">{escape(link["label"])} <span aria-hidden="true">↗</span></a>'
         for link in record["links"]
     )
     disclosure = f'<p class="v3-evidence-disclosure">{escape(record["disclosure"])}</p>' if record.get("disclosure") else ""
+    detail = ""
+    if record["title"] == "The map is also the circuit board":
+        detail = '''<figure class="v3-design-photo"><a href="/v3/projects/tramtrace/#build" aria-label="See full-size TramTrace controller photographs"><picture><source type="image/webp" srcset="/assets/images/projects/tramtrace-controller-960.webp 960w, /assets/images/projects/tramtrace-controller-1920.webp 1920w" sizes="(max-width: 800px) 100vw, 52vw"><img src="/assets/images/projects/tramtrace-controller-1920.jpg" width="1920" height="1280" alt="ESP32 module, CH340C USB interface and level-shifting circuitry on the assembled TramTrace board" loading="lazy"></picture></a><figcaption><span>Controller detail</span><span>ESP32 · USB · Level shifting</span></figcaption></figure>'''
     return f'''
-    <section class="v3-evidence shell" id="engineering" aria-labelledby="v3-evidence-title">
-      <header class="v3-evidence-heading"><p>Engineering record</p><h2 id="v3-evidence-title">{escape(record["title"])}</h2></header>
-{path}      <dl class="v3-evidence-entries">
-{entries}
-      </dl>
-      <div class="v3-evidence-links">{links}</div>
-      {disclosure}
+    <section class="v3-evidence shell{' v3-design-illustrated' if detail else ''}" id="engineering" aria-labelledby="v3-evidence-title">
+      <header class="v3-evidence-heading"><p>Inside the design</p><h2 id="v3-evidence-title">{escape(record["title"])}</h2></header>
+      {detail}
+      <div class="v3-design-copy"><p>{escape(record["constraint"])}</p><p>{escape(record["decision"])}</p>
+        <div class="v3-evidence-links">{links}</div>{disclosure}
+      </div>
+      <div class="v3-build-result"><p>{escape(record["test"])}</p><p>{escape(record["limit"])}</p></div>
     </section>
 '''
 
@@ -237,7 +229,7 @@ def build(relative):
         if element.tag == "meta" and attrs.get("property") == "og:url":
             updated = attribute(updated, "content", route(attrs.get("content", "")))
         if element.tag == "meta" and attrs.get("name") == "theme-color":
-            updated = attribute(updated, "content", "#f3f2eb")
+            updated = attribute(updated, "content", "#141412")
         if element.tag == "body":
             classes = attrs.get("class", "").split()
             classes.extend(name for name in ["v3", "v3-interior"] if name not in classes)
@@ -266,7 +258,7 @@ def build(relative):
                 extra = "".join(f'  <script src="{asset}" defer></script>\n' for asset in TRAMTRACE_SCRIPTS) + extra
             # Redirects retain their shared application's canonical target.
             if not any(node.tag == "meta" and node.attrs.get("name") == "theme-color" for node in document.elements):
-                extra = '  <meta name="theme-color" content="#f3f2eb">\n' + extra
+                extra = '  <meta name="theme-color" content="#141412">\n' + extra
             edits.append((element.close_start, element.close_start, extra))
         if updated != original:
             edits.append((element.start, element.open_end, updated))
@@ -292,8 +284,163 @@ def build(relative):
         source = source.replace('<a class="button button-primary" href="/v3/projects/tramtrace/#explore">Inspect the PCB</a>',
                                 '<a class="button button-primary" href="/v3/projects/tramtrace/#copper-data">Inspect copper and LED data order ↓</a>')
         validate_tramtrace_import(source)
-    return normalized(source)
+    return normalized(dark_interiors(source, relative))
 
+
+
+# Editorial opening copy is drawn from each maintained case study. CAD-only
+# projects are labelled as designs rather than presented as tested hardware.
+CASE_OPENINGS = {
+    'tramtrace': ('PCB + firmware', 'I designed the PCB, display firmware and vehicle-position service behind this 116-pixel light-rail map.', 'Assembled board · Rev 1.0'),
+    'skylabs': ('Avionics + telemetry', 'I developed the STM32 aircraft logger, ESP32 LoRa ground station and post-flight replay tools.', 'Aircraft telemetry · Assembled PCB'),
+    'skylabs/boards/telemetry': ('Avionics + firmware', 'My work covers the STM32G474 aircraft PCB, sensor acquisition, binary logging and aircraft-side SX1262 link.', 'Aircraft telemetry · Component side'),
+    'skylabs/boards/ground-station': ('Radio + field tools', 'I designed the ESP32 receiver board around the SX1262 radio, local logging and field controls.', 'Ground station · Assembled PCB'),
+    'framework-dual-usb': ('USB + PCB design', 'I designed a two-port USB hub PCB to fit the standard Framework expansion-card enclosure.', 'Assembled card · Clear enclosure'),
+    'framework-expansion-card': ('Embedded + mechanical integration', 'I integrated USB serial, power and automatic boot/reset circuitry around an ESP32-S3 module in a Framework bay.', 'Assembled card · Black PCB revision'),
+    'framework-raspberry-pi': ('Microcontroller + PCB design', 'My 26 × 30 mm RP2354B board fits around the USB-C plug and reference enclosure. This is a CAD design, not an electrically tested card.', 'RP2354B board · CAD assembly'),
+    'coaster': ('Sensors + embedded firmware', 'I designed the 80 mm PCB, integrated the resin enclosure and wrote the STM32 firmware for cup sensing and RGB lighting.', '24-pixel coaster · USB-C power'),
+    'metroboard': ('PCB + live data', 'I designed the Sydney rail-map PCB and a service that sends TfNSW vehicle positions to its 291 RGB pixels.', 'Assembled board · Illuminated network'),
+    'rf-test-board': ('RF + measurement', 'I designed a two-layer comparison board and measured it with a VNA to check feedlines against the PCB process I was using.', 'RF test coupon · Two-layer FR-4'),
+    'lora-receiver': ('Radio + GNSS', 'I brought ESP32, LoRa and GNSS onto one receiver PCB, then used range testing and a VNA to investigate the RF path.', 'Rev A · Assembled receiver'),
+    'framework-logic-analyser': ('Instrumentation + PCB design', 'Four-channel logic, serial-bus and passive CAN capture on a 26 × 30 mm, four-layer STM32G474 board.', 'Logic analyser · CAD assembly'),
+    'tamagotchi-sd-card': ('Embedded + storage', 'A two-layer STM32F072 design with a full-size SD socket, USB-C, reset and boot controls, and a seven-pin interface.', 'SD-card interface · CAD assembly'),
+    'dash': ('Embedded interaction', 'I rebuilt the firmware around a focus timer, animated character and gesture controls, with a local Wi-Fi portal for sessions and settings.', 'Earlier vehicle-mounted prototype'),
+    'lora-talkie': ('Radio + interface firmware', 'I wrote the single-button Morse composer, message recall and field controls for a Heltec V3 LoRa radio.', 'Handheld build · Heltec V3'),
+    'runswift': ('Robotics + integration', 'I develop and test Python/C++ ROS2 software, integrate robot hardware and prepare the team for competition.', 'rUNSWift · Robot soccer lab'),
+    'scopelab': ('Engineering education', 'A browser-first bench for GPIO, UART, I²C and SPI: edit a program, flash a micro:bit, then measure the signal.', 'ScopeLab · Teaching interface'),
+    'switch-mode-power-supplies': ('Industry + test hardware', 'I maintain, test and repair power supplies and other equipment. These are two isolated test boards from my trainee engineering role.', 'Isolated Glitch Tester · V03'),
+}
+PHOTO_OPENINGS = {
+    'framework-expansion-card': ('framework-black-hero', 'Assembled black ESP32 Framework expansion card in its clear enclosure'),
+    'rf-test-board': ('rf-test-hero', 'The manufactured RF comparison board with feedlines and connector test structures'),
+    'lora-receiver': ('lora-receiver-hero', 'The assembled LoRa receiver with ESP32, radio module and u-blox GNSS receiver'),
+}
+
+
+def apply_edits(source, edits):
+    for start, end, replacement in sorted(edits, reverse=True):
+        source = source[:start] + replacement + source[end:]
+    return source
+
+
+def raw_node(source, node):
+    return source[node.start:node.end]
+
+
+def inside(source, node):
+    return source[node.open_end:node.close_start]
+
+
+def within(document, node, predicate):
+    return [child for child in document.elements if node.open_end <= child.start < node.close_start and predicate(child)]
+
+
+def dark_interiors(source, relative):
+    """Apply the approved photo-led presentation without serializing viewers."""
+    document = Document(source)
+    edits = []
+    slug = relative.as_posix().removeprefix('projects/').removesuffix('/index.html')
+    for node in document.elements:
+        if node.has_class('v2-nav'):
+            current = ' aria-current="page"' if relative.parts[0] == 'projects' else ''
+            edits.append((node.open_end, node.close_start,
+                f'\n        <a href="/v3/projects/"{current}>Projects</a>\n'
+                '        <a href="/assets/documents/Andrew_Chung_Public_CV.pdf" aria-label="Public CV (PDF)">CV</a>\n'
+                '        <a class="v2-nav-contact" href="mailto:andrew.noah.chung@gmail.com">Contact <span aria-hidden="true">↗</span></a>\n      '))
+        if node.has_class('v2-footer-links'):
+            counterpart = '/v2/' + relative.as_posix().removesuffix('index.html')
+            edits.append((node.open_end, node.close_start,
+                '<a href="/v3/about/">About</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf" aria-label="Public CV (PDF)">CV</a>'
+                '<a href="mailto:andrew.noah.chung@gmail.com">Contact ↗</a><a href="/shared/">Files</a><a href="/book/">Book</a>'
+                '<a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a>'
+                '<a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a>'
+                f'<a class="v3-version-link" href="{counterpart}" aria-label="View this page in v2">v2</a>'))
+        if node.has_class('engineering-brief'):
+            # These repeat the opening, specifications and retained full story.
+            edits.append((node.start, node.end, ''))
+    source = apply_edits(source, edits)
+    document = Document(source)
+    heroes = [node for node in document.elements if node.has_class('project-hero')]
+    if heroes:
+        hero = heroes[0]
+        title = within(document, hero, lambda n: n.tag == 'h1')[0]
+        copy = within(document, hero, lambda n: n.has_class('project-hero-copy'))[0]
+        paragraphs = within(document, copy, lambda n: n.tag == 'p' and not n.has_class('eyebrow'))
+        description = inside(source, paragraphs[0])
+        if slug == 'tramtrace': description = 'A live light-rail map for Sydney and Parramatta.'
+        media = within(document, hero, lambda n: n.has_class('project-hero-media'))[0]
+        photo = inside(source, media)
+        is_cad = media.has_class('v2-cad-media')
+        if slug in PHOTO_OPENINGS:
+            stem, alt = PHOTO_OPENINGS[slug]
+            image = photograph({'src': f'/assets/images/projects/{stem}-1920.jpg', 'width': 1920, 'height': 1280, 'alt': alt})
+            photo_doc = Document(image)
+            photo = inside(image, photo_doc.elements[0])
+            is_cad = False
+        photo = re.sub(r'sizes="[^"]*"', 'sizes="(max-width: 800px) 100vw, 72vw"', photo)
+        photo = re.sub(r'(<img\b[^>]*)(>)', lambda m: attribute(m[1] + m[2], 'fetchpriority', 'high'), photo)
+        if not photo.lstrip().startswith('<picture'): photo = '<picture>' + photo.strip() + '</picture>'
+        category, contribution, caption = CASE_OPENINGS[slug]
+        path = '/v3/' + relative.as_posix().removesuffix('index.html')
+        ids = {node.attrs.get('id') for node in document.elements}
+        has_build = 'build' in ids
+        has_design = 'engineering' in ids
+        destination = path + ('#build' if has_build else '#explore' if 'explore' in ids else '#details')
+        destination_label = 'Build photographs' if has_build else 'Inspect the design' if is_cad else 'Project details'
+        specs = within(document, hero, lambda n: n.has_class('v2-case-specs'))[0]
+        nav = next(node for node in document.elements if node.has_class('v2-case-nav'))
+        navigation = raw_node(source, nav).replace('All work', 'All projects').replace('>Engineering</a>', '>Design</a>').replace('>Interactive</a>', '>3D assembly</a>')
+        # Original section anchors and progress hooks remain in the same order.
+        new_hero = f'''<section class="project-hero v3-case-opening" id="overview" aria-labelledby="project-title">
+      <div class="project-hero-grid">
+        <div class="project-hero-copy">
+          <p class="v3-case-category">{escape(category)}</p>
+          {raw_node(source, title)}
+          <p class="v3-case-description">{description}</p>
+          <p class="v3-case-contribution">{escape(contribution)}</p>
+          <div class="project-hero-actions"><a href="{path}{'#engineering' if has_design else '#details'}">Inside the {'design' if is_cad else 'build'} <span aria-hidden="true">↓</span></a></div>
+        </div>
+        <figure class="project-hero-media {'v2-cad-media' if is_cad else 'v3-case-photograph'}">
+          <a class="v3-case-image-link" href="{destination}" aria-label="{escape(destination_label + ': ' + re.sub('<[^>]+>', '', inside(source, title)), quote=True)}">{photo}</a>
+          <figcaption><span>{escape(caption)}</span><a href="{destination}">{destination_label} <span aria-hidden="true">↗</span></a></figcaption>
+        </figure>
+      </div>
+    </section>
+    {navigation}
+    {raw_node(source, specs)}'''
+        header = next(node for node in document.elements if node.has_class('v2-header'))
+        identity = '<p class="v3-identity"><span>Electrical engineering student</span>UNSW, Sydney</p>'
+        source = apply_edits(source, [(hero.start, hero.end, new_hero), (nav.start, nav.end, ''), (header.end, header.end, '\n  ' + identity)])
+    if relative.as_posix() == 'projects/index.html':
+        document = Document(source)
+        catalog = next(node for node in document.elements if node.has_class('project-catalog'))
+        cards = within(document, catalog, lambda n: 'data-v2-project' in n.attrs)
+        markup = {}
+        for card in cards:
+            value = raw_node(source, card)
+            key = card.attrs['href'].strip('/').split('/')[-1]
+            record = EVIDENCE.get(f'projects/{key}/index.html', {})
+            image_record = record.get('hero')
+            if key in PHOTO_OPENINGS:
+                stem, alt = PHOTO_OPENINGS[key]
+                image_record = {'src': f'/assets/images/projects/{stem}-1920.jpg', 'width': 1920, 'height': 1280, 'alt': alt}
+            if image_record:
+                d = Document(value)
+                frame = next(n for n in d.elements if n.has_class('catalog-card-media'))
+                image = photograph(image_record)
+                image_doc = Document(image)
+                image = inside(image, image_doc.elements[0]).replace('fetchpriority="high"', 'loading="lazy"')
+                value = apply_edits(value, [(frame.open_end, frame.close_start, image)])
+                value = value.replace('catalog-card-media v2-catalog-cad', 'catalog-card-media v3-catalog-photograph')
+            markup[key] = value
+        order = ['tramtrace', 'skylabs', 'framework-dual-usb', 'framework-raspberry-pi', 'coaster', 'lora-receiver', 'rf-test-board', 'framework-expansion-card', 'switch-mode-power-supplies', 'metroboard', 'framework-logic-analyser', 'tamagotchi-sd-card']
+        assert set(order) == set(markup), 'Hardware inventory changed; review the editorial order'
+        markup['tramtrace'] = markup['tramtrace'].replace('loading="lazy"', 'fetchpriority="high"')
+        source = apply_edits(source, [(catalog.open_end, catalog.close_start, '\n' + '\n\n'.join(markup[key] for key in order) + '\n')])
+    # Correct only presentation text. Tool routes and teaching apps stay intact.
+    if relative.as_posix() == 'about/index.html':
+        source = source.replace('<h2 id="tools-title">Tools</h2>', '<h2 id="tools-title">Skills &amp; methods</h2>')
+    return source
 
 def main():
     parser = ArgumentParser(description=__doc__)

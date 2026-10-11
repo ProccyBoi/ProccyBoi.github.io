@@ -28,6 +28,8 @@
     if (!data?.chains || data.pixelCount !== 116 || model.group.userData.boardUnitsMm !== units) {
       throw new Error('Pixel pattern requires the original TramTrace board data and hero units');
     }
+    const initialLine = options.line || 'all';
+    if (initialLine !== 'all' && !order.includes(initialLine)) throw new Error('Unknown TramTrace line: ' + initialLine);
     const intensity = options.intensity ?? 1;
     if (!Number.isFinite(intensity) || intensity < 0 || intensity > 4) throw new Error('Pixel intensity must be between 0 and 4');
     const byRef = new Map(), records = [], windows = new Map();
@@ -42,7 +44,7 @@
       }
     }
     if (byRef.size !== 116) throw new Error('Original TramTrace data must contain 116 unique pixel refs');
-    let disposed = false, visible = false, selection = 'all';
+    let disposed = false, visible = false, selection = initialLine;
     const checkLine = key => { if (key !== 'all' && !order.includes(key)) throw new Error('Unknown TramTrace line: ' + key); };
     const cleanup = () => records.forEach(record => {
       record.mesh.geometry = record.originalGeometry; record.mesh.material = record.originalMaterial;
@@ -128,7 +130,7 @@
       dispose() { if (!disposed) { cleanup(); active.delete(model.group); disposed = true; visible = false; } }
     };
     active.set(model.group, api);
-    if (options.visible !== false) api.show(options.line || 'all');
+    if (options.visible !== false) api.show(initialLine);
     return api;
   }
   window.TramTracePixelPattern = Object.freeze({create, source});

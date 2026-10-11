@@ -3,32 +3,38 @@
 (() => {
   'use strict';
 
-  const root = document.querySelector('[data-folio]') || document.querySelector('[data-gallery]');
+  const root = document.querySelector('[data-hardware-portfolio]') || document.querySelector('[data-folio]') || document.querySelector('[data-gallery]');
   if (!root || root.dataset.galleryInspectReady || !window.HTMLDialogElement ||
       typeof HTMLDialogElement.prototype.showModal !== 'function') return;
 
+  const isHardware = root.hasAttribute('data-hardware-portfolio');
   const isFolio = root.hasAttribute('data-folio');
-  const selection = () => isFolio ? root.dataset.folioActive : root.dataset.galleryActive;
-  const currentView = () => isFolio ? root.dataset.folioView : root.dataset.galleryView;
+  const selection = () => isHardware ? root.dataset.project : isFolio ? root.dataset.folioActive : root.dataset.galleryActive;
+  const currentView = () => isHardware ? root.dataset.view : isFolio ? root.dataset.folioView : root.dataset.galleryView;
   const currentState = () => isFolio ? root.dataset.folioState : root.dataset.galleryState;
 
   function setup() {
     if (root.dataset.galleryInspectReady) return true;
-    if ((isFolio ? root.dataset.folioReady : root.dataset.galleryReady) !== 'true') return false;
-    const views = root.querySelector(isFolio ? '[data-folio-views]' : '.v2-gallery-views');
-    const viewButtons = [...root.querySelectorAll(isFolio ? 'button[data-folio-view]' : 'button[data-gallery-view]')];
+    // Metadata-backed hardware images do not depend on the 3D stage, WebGL,
+    // its readiness flag, or preloaded hidden photographs.
+    if (!isHardware && (isFolio ? root.dataset.folioReady : root.dataset.galleryReady) !== 'true') return false;
+    const views = root.querySelector(isHardware ? '.inspection' : isFolio ? '[data-folio-views]' : '.v2-gallery-views');
+    const viewButtons = [...(isHardware ? views?.querySelectorAll('button') || [] : root.querySelectorAll(isFolio ? 'button[data-folio-view]' : 'button[data-gallery-view]'))];
     if (!views || !viewButtons.length) return false;
     root.dataset.galleryInspectReady = 'true';
     if (isFolio) root.dataset.folioInspectReady = 'true';
+    if (isHardware) root.dataset.hardwareInspectReady = 'true';
 
     const expand = document.createElement('button');
     expand.type = 'button';
     expand.className = 'v3-gallery-expand';
     expand.dataset.galleryExpand = '';
     if (isFolio) expand.dataset.folioExpand = '';
+    if (isHardware) expand.dataset.hardwareExpand = '';
     expand.setAttribute('aria-haspopup', 'dialog');
     expand.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><span>Expand photo</span>';
-    viewButtons.at(-1).after(expand);
+    if (isHardware) views.append(expand);
+    else viewButtons.at(-1).after(expand);
 
     const dialog = document.createElement('dialog');
     dialog.className = 'v3-gallery-inspect';
@@ -39,6 +45,10 @@
         <div><h2 data-inspect-title></h2><p data-inspect-caption></p></div>
         <button type="button" class="v3-inspect-close" data-inspect-close autofocus>Close <span aria-hidden="true">×</span></button>
       </header>
+      ${isHardware ? `<div class="v3-inspect-photo-views" role="group" aria-label="Image view">
+        <button type="button" data-inspect-photo-view="overview" aria-pressed="true">Overview</button>
+        <button type="button" data-inspect-photo-view="detail" aria-pressed="false">Close-up</button>
+      </div>` : ''}
       <div class="v3-inspect-stage" data-inspect-stage tabindex="0" role="group" aria-label="Photograph. Use plus and minus to zoom, arrow keys to pan, and Home to reset.">
         <div class="v3-inspect-message" data-inspect-message><p data-inspect-status role="status" aria-live="polite" aria-atomic="true"></p><button type="button" data-inspect-retry hidden>Try again</button></div>
       </div>
@@ -63,9 +73,11 @@
     const message = find('message');
     const hint = find('hint');
     const announcement = find('announcement');
+    const photoViewButtons = [...dialog.querySelectorAll('[data-inspect-photo-view]')];
     const pointers = new Map();
     let image = null;
     let selected = null;
+    let selectedArticle = null;
     let opener = null;
     let unlock = null;
     let cancelLoad = () => {};
@@ -79,7 +91,24 @@
     let buttonTap = null;
     let announceTimer = 0;
 
+    function hardwareArticle() {
+      return [...root.querySelectorAll('[data-hardware-photo]')]
+        .find(node => node.dataset.hardwarePhoto === selection());
+    }
+
+    function metadataPhoto(article, view) {
+      if (!article) return null;
+      const src = largestCandidate(article.dataset[`${view}Srcset`], article.dataset[`${view}Src`]);
+      return src ? { src, alt: article.dataset[`${view}Alt`] || article.dataset.name || '' } : null;
+    }
+
     function currentPhoto() {
+      if (isHardware) {
+        const article = hardwareArticle();
+        const view = currentView() === 'controller' && metadataPhoto(article, 'detail') ? 'detail' : 'overview';
+        const photo = metadataPhoto(article, view);
+        return photo ? { article, photo, view } : null;
+      }
       if (currentState() !== 'ready' || currentView() === 'copper') return null;
       const article = [...root.querySelectorAll(isFolio ? '[data-folio-card]' : '[data-gallery-project]')]
         .find(node => (isFolio ? node.dataset.folioCard : node.dataset.galleryProject) === selection());
@@ -91,18 +120,46 @@
     }
 
     // Only use candidates supplied by the selected photograph; no path guessing.
-    function largestSource(photo) {
-      const candidates = (photo.getAttribute('srcset') || photo.dataset.gallerySrcset || '')
+    function largestCandidate(srcset, fallback) {
+      const candidates = (srcset || '')
         .split(',').map(candidate => {
           const [url, descriptor = '1x'] = candidate.trim().split(/\s+/);
           const match = /^(\d+(?:\.\d+)?)(w|x)$/.exec(descriptor);
           return url && match ? { url, size: Number(match[1]) } : null;
         }).filter(Boolean).sort((a, b) => b.size - a.size);
-      return candidates[0]?.url || photo.currentSrc || photo.src;
+      return candidates[0]?.url || fallback;
+    }
+
+    function largestSource(photo) {
+      return largestCandidate(photo.getAttribute('srcset') || photo.dataset.gallerySrcset, photo.currentSrc || photo.src);
     }
 
     function reflectAvailability() {
       expand.disabled = !currentPhoto();
+      if (isHardware) {
+        const isRender = hardwareArticle()?.dataset.imageKind === 'render';
+        const label = isRender ? 'Images' : 'Photos';
+        if (expand.querySelector('span').textContent !== label) expand.querySelector('span').textContent = label;
+        expand.setAttribute('aria-label', isRender ? 'Expand project images' : 'Expand project photographs');
+      }
+    }
+
+    const mediaNoun = () => selected?.kind === 'render' ? 'image' : 'photograph';
+
+    function selectPhoto(article, photo, view) {
+      const name = isFolio || isHardware ? article.dataset.name : article.dataset.galleryName;
+      selected = { src: isHardware ? photo.src : largestSource(photo), alt: photo.alt, kind: article.dataset.imageKind };
+      selectedArticle = article;
+      find('title').textContent = name;
+      find('caption').textContent = article.dataset[isFolio || isHardware ? `${view}Caption` : view === 'detail' ? 'galleryDetailCaption' : 'galleryOverviewCaption'] || photo.alt;
+      dialog.setAttribute('aria-label', `${name}: expanded ${view} ${mediaNoun()}`);
+      stage.setAttribute('aria-label', `${mediaNoun() === 'image' ? 'Image' : 'Photograph'}. Use plus and minus to zoom, arrow keys to pan, and Home to reset.`);
+      dialog.querySelector('.v3-inspect-controls').setAttribute('aria-label', `${mediaNoun() === 'image' ? 'Image' : 'Photograph'} zoom`);
+      dialog.dataset.view = view;
+      photoViewButtons.forEach(button => {
+        button.hidden = !metadataPhoto(article, button.dataset.inspectPhotoView);
+        button.setAttribute('aria-pressed', String(button.dataset.inspectPhotoView === view));
+      });
     }
 
     function lockScroll() {
@@ -151,7 +208,7 @@
       zoomOut.disabled = !ready || scale <= 1;
       reset.disabled = !ready;
       find('zoom').textContent = `${Number(scale.toFixed(1))}×`;
-      reset.setAttribute('aria-label', `Reset photograph zoom. Currently ${Math.round(scale * 100)} percent.`);
+      reset.setAttribute('aria-label', `Reset ${mediaNoun()} zoom. Currently ${Math.round(scale * 100)} percent.`);
       if (announce) {
         clearTimeout(announceTimer);
         announceTimer = setTimeout(() => {
@@ -189,6 +246,8 @@
 
     function load() {
       cancelLoad();
+      clearTimeout(announceTimer);
+      endGesture();
       const revision = ++loadRevision;
       image?.removeAttribute('src');
       image?.remove();
@@ -206,7 +265,7 @@
       message.hidden = false;
       if (document.activeElement === retry) close.focus({ preventScroll: true });
       retry.hidden = true;
-      status.textContent = 'Loading photograph…';
+      status.textContent = `Loading ${mediaNoun()}…`;
       announcement.textContent = '';
       scale = 1;
       x = 0;
@@ -229,7 +288,7 @@
         if (!stillCurrent()) return;
         dialog.dataset.state = 'error';
         stage.removeAttribute('aria-busy');
-        status.textContent = 'The full-size photograph couldn’t be loaded.';
+        status.textContent = `The full-size ${mediaNoun()} couldn’t be loaded.`;
         retry.hidden = false;
         render();
       };
@@ -248,7 +307,7 @@
         status.textContent = '';
         loadingImage.hidden = false;
         fit();
-        announcement.textContent = 'Photograph ready. Use the zoom controls, or plus and minus keys. Drag or use arrow keys to pan when zoomed.';
+        announcement.textContent = `${mediaNoun() === 'image' ? 'Image' : 'Photograph'} ready. Use the zoom controls, or plus and minus keys. Drag or use arrow keys to pan when zoomed.`;
       };
       const timeout = setTimeout(failed, 20000);
       cancelLoad = cleanup;
@@ -264,14 +323,9 @@
       // A native close event is queued. Finish its cleanup before a rapid reopen.
       if (unlock) end();
       const { article, photo } = current;
-      const view = currentView() === 'detail' ? 'detail' : 'overview';
-      const name = isFolio ? article.dataset.name : article.dataset.galleryName;
-      selected = { src: largestSource(photo), alt: photo.alt };
-      find('title').textContent = name;
-      find('caption').textContent = article.dataset[isFolio ? `${view}Caption` : view === 'detail' ? 'galleryDetailCaption' : 'galleryOverviewCaption'] || photo.alt;
-      dialog.setAttribute('aria-label', `${name}: expanded ${view} photograph`);
+      const view = isHardware ? current.view : currentView() === 'detail' ? 'detail' : 'overview';
+      selectPhoto(article, photo, view);
       dialog.dataset.project = selection();
-      dialog.dataset.view = view;
       hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Pinch to zoom · Drag to pan' : 'Scroll to zoom · Drag to pan';
       opener = document.activeElement;
       unlock = lockScroll();
@@ -280,11 +334,7 @@
       load();
     }
 
-    function end() {
-      ++loadRevision;
-      cancelLoad();
-      cancelLoad = () => {};
-      clearTimeout(announceTimer);
+    function endGesture() {
       for (const pointerId of pointers.keys()) {
         if (stage.hasPointerCapture(pointerId)) stage.releasePointerCapture(pointerId);
       }
@@ -292,6 +342,14 @@
       gesture = null;
       buttonTap = null;
       dialog.classList.remove('is-dragging');
+    }
+
+    function end() {
+      ++loadRevision;
+      cancelLoad();
+      cancelLoad = () => {};
+      clearTimeout(announceTimer);
+      endGesture();
       image?.removeAttribute('src');
       image?.remove();
       image = null;
@@ -353,12 +411,21 @@
 
     expand.addEventListener('click', open);
     if (isFolio) root.addEventListener('v3:folio-inspect', open);
+    if (isHardware) root.addEventListener('v3:hardware-inspect', open);
     activateButton(close, () => dialog.close());
     dialog.addEventListener('close', () => { if (!dialog.open) end(); });
     activateButton(retry, load);
     activateButton(zoomIn, () => zoom(scale + 0.5));
     activateButton(zoomOut, () => zoom(scale - 0.5));
     activateButton(reset, resetView);
+    photoViewButtons.forEach(button => activateButton(button, () => {
+      const view = button.dataset.inspectPhotoView;
+      if (!dialog.open || view === dialog.dataset.view) return;
+      const photo = metadataPhoto(selectedArticle, view);
+      if (!photo) return;
+      selectPhoto(selectedArticle, photo, view);
+      load();
+    }));
 
     dialog.addEventListener('keydown', event => {
       if (event.key === 'Tab') {
@@ -435,8 +502,8 @@
     else window.addEventListener('resize', () => { if (dialog.open) { fit(); beginGesture(); } }, { passive: true });
     // Gallery mutations describe the selection; the inspector never changes it.
     new MutationObserver(reflectAvailability).observe(root, {
-      subtree: true, attributes: true,
-      attributeFilter: ['data-gallery-state', 'data-gallery-active', 'data-gallery-view', 'data-folio-state', 'data-folio-active', 'data-folio-view', 'hidden', 'inert']
+      subtree: true, attributes: true, childList: isHardware,
+      attributeFilter: ['data-gallery-state', 'data-gallery-active', 'data-gallery-view', 'data-folio-state', 'data-folio-active', 'data-folio-view', 'data-project', 'data-view', 'data-overview-src', 'data-overview-srcset', 'data-detail-src', 'data-detail-srcset', 'data-image-kind', 'hidden', 'inert']
     });
     root.addEventListener('load', reflectAvailability, true);
     root.addEventListener('error', reflectAvailability, true);
@@ -446,6 +513,6 @@
 
   if (!setup()) {
     const ready = new MutationObserver(() => { if (setup()) ready.disconnect(); });
-    ready.observe(root, { attributes: true, attributeFilter: ['data-gallery-ready', 'data-folio-ready'] });
+    ready.observe(root, { attributes: true, childList: isHardware, subtree: isHardware, attributeFilter: ['data-gallery-ready', 'data-folio-ready', 'data-hardware-ready'] });
   }
 })();

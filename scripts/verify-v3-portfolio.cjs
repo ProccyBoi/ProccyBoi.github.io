@@ -20,12 +20,15 @@ const primary = 'a[data-v2-project][href^="/v3/projects/"]';
 const hero = '[data-aircraft-hero]';
 const workbench = '#copper-data[data-board-inspector]';
 const chainCounts = { l1: 45, l2: 8, l3: 30, l4: 32, status: 1 };
-const folioProjects = [
-  { key: 'tramtrace', slug: 'tramtrace', overview: 'tramtrace-hero', detail: 'tramtrace-controller' },
-  { key: 'skylabs', slug: 'skylabs', overview: 'skylabs-telemetry-hero', detail: 'skylabs-telemetry-macro' },
-  { key: 'dual-usb-c', slug: 'framework-dual-usb', overview: 'framework-dual-installed', detail: 'framework-dual-ports' }
+const hardware = '[data-hardware-portfolio]';
+const hardwareProjects = [
+  { key: 'tramtrace', slug: 'tramtrace', title: 'TramTrace' },
+  { key: 'telemetry', slug: 'skylabs', title: 'Skylabs' },
+  { key: 'pi', slug: 'framework-raspberry-pi', title: 'Raspberry Pi' }
 ];
-const cadRequest = /\/assets\/(?:models\/(?:aircraft|hero)\/|vendor\/three\.min\.js|v3-aircraft-(?:scene|atmosphere)\.js)/;
+// The hardware stage shares Three and lossless hero packs with the aircraft.
+// Only aircraft-specific downloads are prohibited by its static preference.
+const cadRequest = /\/assets\/(?:models\/aircraft\/|v3-aircraft-(?:scene|atmosphere)\.js)/;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const sourcePages = listPages('v2').filter(file => file !== 'index.html' && !file.startsWith('render/'));
 const screenshotPaths = [];
@@ -60,7 +63,10 @@ async function prepareFullPageImages(page) {
   try {
     for (const image of await page.locator('img[alt]').all()) {
       const meaningful = await image.evaluate(node => {
-        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src') || node.hasAttribute('data-folio-src')) && !node.getAttribute('src') && document.body.classList.contains('v2-ready');
+        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src')) && !node.getAttribute('src');
+        // With scripting disabled the paired noscript image is the actual
+        // photograph. Do not wait for a deliberately unenhanced src-less node.
+        if (deferred && node.parentElement?.querySelector('noscript img')) return false;
         if (!node.alt.trim() || (!node.getClientRects().length && !deferred)) return false;
         // Offscreen photographs still qualify. Hidden alternate posters, modal
         // images and inactive states do not. Do not change loading attributes.
@@ -72,18 +78,18 @@ async function prepareFullPageImages(page) {
       });
       if (!meaningful) continue;
       await image.evaluate(node => {
-        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src') || node.hasAttribute('data-folio-src')) && !node.getAttribute('src');
-        const target = deferred ? node.closest('[data-folio-card], [data-gallery-photo], .v2-gallery-more-photo') || node.parentElement : node;
+        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src')) && !node.getAttribute('src');
+        const target = deferred ? node.closest('[data-gallery-photo], .v2-gallery-more-photo') || node.parentElement : node;
         target.scrollIntoView({ block: 'center', behavior: 'instant' });
       });
       const details = await image.evaluate(async node => {
-        // Scrolling triggers both native lazy loading and data-v3-src/data-folio-src/data-gallery-src IO. Wait
+        // Scrolling triggers both native lazy loading and data-v3-src/data-gallery-src IO. Wait
         // for that real load event before decoding, including src-less images.
         await new Promise((resolve, reject) => {
           if (node.complete && node.naturalWidth > 0) return resolve();
           const cleanup = () => { clearTimeout(timer); node.removeEventListener('load', success); node.removeEventListener('error', failure); };
           const success = () => { cleanup(); resolve(); };
-          const failure = () => { cleanup(); reject(new Error('Meaningful photograph failed: ' + node.alt + ' (' + (node.currentSrc || node.dataset.v3Src || node.dataset.folioSrc || node.dataset.gallerySrc || node.src) + ')')); };
+          const failure = () => { cleanup(); reject(new Error('Meaningful photograph failed: ' + node.alt + ' (' + (node.currentSrc || node.dataset.v3Src || node.dataset.gallerySrc || node.src) + ')')); };
           const timer = setTimeout(failure, 20000);
           node.addEventListener('load', success, { once: true }); node.addEventListener('error', failure, { once: true });
         });
@@ -176,7 +182,7 @@ async function noOverflow(page, label) {
     if (result.scroll <= result.viewport + 1) return result;
     const describe = node => ({ tag: node.tagName.toLowerCase(), id: node.id || undefined,
       className: typeof node.className === 'string' ? node.className : node.className?.baseVal,
-      data: Object.fromEntries(Object.entries(node.dataset || {}).filter(([key]) => /folio|aircraft|copper/.test(key))) });
+      data: Object.fromEntries(Object.entries(node.dataset || {}).filter(([key]) => /hardware|aircraft|copper/.test(key))) });
     const bounds = rect => Object.fromEntries(['x', 'y', 'width', 'height', 'left', 'right'].map(key => [key, Math.round(rect[key] * 100) / 100]));
     result.outOfBounds = [...document.body.querySelectorAll('*')].flatMap(node => {
       const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
@@ -225,7 +231,7 @@ async function selectedAircraftCopy(page, chapter) {
   assert.equal(await copy.getAttribute('aria-hidden'), 'false');
   assert.equal(await copy.evaluate(node => node.inert), false);
   const bounds = await copy.boundingBox(), viewport = page.viewportSize();
-  const headerBottom = await page.locator('.v2-header').evaluate(node => node.getBoundingClientRect().bottom);
+  const headerBottom = await page.locator('.site-header, .v2-header').first().evaluate(node => Math.max(0, node.getBoundingClientRect().bottom));
   const navigationTop = await page.locator('[data-aircraft-nav]').evaluate(node => node.getBoundingClientRect().top);
   assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, 'Selected copy fits viewport width');
   assert.ok(bounds.y >= headerBottom - 1 && bounds.y + bounds.height <= Math.min(viewport.height, navigationTop) + 1, 'Selected copy fits between the header and aircraft navigation');
@@ -234,7 +240,7 @@ async function waitAircraftDestination(page, chapter, previousFrames) {
   await page.waitForFunction(({ chapter, previousFrames }) => {
     const state = document.querySelector('[data-aircraft-hero]').dataset;
     return state.aircraftState === 'ready' && state.aircraftChapter === String(chapter) && Number(state.aircraftFrames) > previousFrames &&
-      (chapter === 0 ? state.aircraftPhase === 'stopped' && Number(state.aircraftProgress) < .01 : state.aircraftPhase === 'telemetry' && Number(state.aircraftProgress) > .99);
+      (chapter === 0 ? state.aircraftPhase === 'stopped' && Number(state.aircraftProgress) < .01 : state.aircraftPhase === 'telemetry' && Number(state.aircraftProgress) === 1);
   }, { chapter, previousFrames }, { timeout: 30000 });
   await selectedAircraftCopy(page, chapter);
   await noOverflow(page, 'Rendered aircraft destination ' + chapter);
@@ -273,51 +279,100 @@ async function assertStopped(page, board) {
   await page.waitForTimeout(800);
   assert.equal(await board.locator('[data-frame-slider]').inputValue(), value, 'Stopped playback cannot advance later');
 }
-async function approachFolio(page) {
-  await page.locator('[data-folio]').evaluate(node => scrollTo({ top: Math.max(0, scrollY + node.getBoundingClientRect().top - 80), behavior: 'instant' }));
+async function approachHardware(page) {
+  await page.locator(hardware).evaluate(node => scrollTo({ top: Math.max(0, scrollY + node.getBoundingClientRect().top - 80), behavior: 'instant' }));
 }
-async function folioSettled(page, project = 'tramtrace', view = 'overview', state = 'ready') {
-  await page.waitForFunction(({ project, view, state }) => {
-    const root = document.querySelector('[data-folio]'), image = root?.querySelector('[data-folio-card="' + project + '"] [data-folio-image]');
-    return root?.dataset.folioReady === 'true' && root.dataset.folioActive === project && root.dataset.folioView === view && root.dataset.folioState === state &&
-      (state === 'error' || view === 'copper' || (image?.complete && image.naturalWidth > 0)) &&
+async function hardwareSettled(page, project = 'tramtrace', view = 'overview') {
+  await page.waitForFunction(({ project, view }) => {
+    const root = document.querySelector('[data-hardware-portfolio]');
+    if (root?.dataset.model === 'fallback') throw new Error('Hardware fell back instead of rendering actual WebGL');
+    return root?.dataset.model === 'ready' && root.dataset.cameraState === 'settled' && root.dataset.project === project && root.dataset.view === view &&
       root.getAnimations({ subtree: true }).every(animation => !['running', 'pending'].includes(animation.playState));
-  }, { project, view, state });
+  }, { project, view }, { timeout: 120000 });
 }
-async function folioSelect(page, key, view = 'overview') {
-  await activateKeyboard(page, page.locator('[data-folio-tab="' + key + '"]'));
-  await page.waitForFunction(key => document.querySelector('[data-folio]').dataset.folioActive === key, key);
-  if (await page.locator('[data-folio]').getAttribute('data-folio-view') !== view) await activateKeyboard(page, page.locator('button[data-folio-view="' + view + '"]'));
-  await folioSettled(page, key, view);
-}
-async function assertFolioLinks(page, key) {
-  const project = folioProjects.find(item => item.key === key);
-  const panel = page.locator('[data-folio-panel="' + key + '"]');
-  const target = '/v3/projects/' + project.slug + '/';
-  const primaryLink = panel.locator('a[href="' + target + '"]');
-  assert.equal(await primaryLink.count(), 1, 'One exact primary project link');
-  assert.ok((await primaryLink.textContent()).trim(), 'Case link has an accessible text label');
-  assert.equal(await primaryLink.isVisible(), true);
-  if (key === 'tramtrace') {
-    const copper = page.locator('[data-folio] a[href="/v3/projects/tramtrace/#copper-data"]');
-    assert.equal(await copper.count(), 1);
-    assert.ok(tags(read('v3/projects/tramtrace/index.html'), 'section').some(tag => tag.id === 'copper-data'), 'Copper CTA resolves to the real integrated workbench');
-  }
-  if (key === 'skylabs') {
-    const aircraft = panel.locator('a[href="#aircraft"]');
-    assert.equal(await aircraft.count(), 1);
-    assert.equal(await page.locator('#aircraft').count(), 1, 'Aircraft CTA resolves to its real story destination');
+async function selectHardware(page, project, view = 'overview') {
+  await activateKeyboard(page, page.locator(hardware + ' button[data-project="' + project + '"]'));
+  await hardwareSettled(page, project);
+  if (view !== 'overview') {
+    await activateKeyboard(page, page.locator(hardware + ' button[data-view="' + view + '"]'));
+    await hardwareSettled(page, project, view);
   }
 }
-async function folioCardFits(page) {
-  const geometry = await page.locator('[data-folio-card][data-offset="0"]').evaluate(card => {
-    const stage = card.closest('[data-folio-deck]').parentElement;
-    const rect = node => { const b = node.getBoundingClientRect(); return { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height }; };
-    return { project: card.dataset.folioCard, viewport: { width: innerWidth, height: innerHeight }, card: rect(card), stage: rect(stage), image: rect(card.querySelector('[data-folio-image]')) };
+async function hardwareSnapshot(page) {
+  return page.evaluate(() => {
+    const { models, camera, renderer, state } = window.__hardwareStudy;
+    return { state, camera: [...camera.position.toArray(), ...camera.quaternion.toArray(), ...camera.projectionMatrix.toArray()],
+      frames: renderer.info.render.frame, triangles: renderer.info.render.triangles, contextLost: renderer.getContext().isContextLost(),
+      models: [...models].map(([key, model]) => {
+        const nodes = [];
+        model.group.traverse(node => nodes.push({ name: node.name, uuid: node.uuid, position: node.position.toArray(), quaternion: node.quaternion.toArray(), scale: node.scale.toArray(),
+          geometry: node.geometry ? { uuid: node.geometry.uuid, vertices: node.geometry.attributes.position?.count, indices: node.geometry.index?.count } : null }));
+        return { key, visible: model.group.visible, nodes };
+      }) };
   });
-  const { card, stage } = geometry;
-  assert.ok(card.left >= stage.left - 1 && card.right <= stage.right + 1 && card.top >= stage.top - 1 && card.bottom <= stage.bottom + 1,
-    'Entire active photograph sheet, including header and footer, fits its stage: ' + JSON.stringify(geometry));
+}
+async function hardwarePixels(page) {
+  return page.evaluate(() => {
+    const { renderer, scene, camera } = window.__hardwareStudy, T = window.THREE;
+    // Read a real WebGL render, rather than accepting a ready dataset alone.
+    // This is an explicit diagnostic render, outside the idle-render check.
+    const previous = renderer.getRenderTarget(), target = new T.WebGLRenderTarget(96, 96), rgba = new Uint8Array(96 * 96 * 4);
+    renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.readRenderTargetPixels(target, 0, 0, 96, 96, rgba);
+    renderer.setRenderTarget(previous); target.dispose();
+    let opaque = 0, colored = 0;
+    for (let i = 0; i < rgba.length; i += 4) {
+      if (rgba[i + 3] > 100) opaque++;
+      if (rgba[i + 3] > 100 && Math.max(rgba[i], rgba[i + 1], rgba[i + 2]) - Math.min(rgba[i], rgba[i + 1], rgba[i + 2]) > 10) colored++;
+    }
+    return { opaque, colored };
+  });
+}
+async function assertHardwareSelection(page, project, view = 'overview') {
+  const specification = hardwareProjects.find(item => item.key === project), section = page.locator(hardware);
+  await hardwareSettled(page, project, view);
+  assert.equal(await section.locator('button[data-project][aria-pressed="true"]').count(), 1, 'Exactly one physical project is selected');
+  assert.equal(await section.locator('button[data-project="' + project + '"]').getAttribute('aria-pressed'), 'true');
+  assert.match(await section.locator('h1').textContent(), new RegExp(specification.title, 'i'));
+  const link = section.locator('.project a');
+  assert.equal(await link.getAttribute('href'), '/v3/projects/' + specification.slug + '/');
+  assert.equal(await link.isVisible(), true, 'The selected real case is reachable');
+  assert.ok((await link.textContent()).trim());
+  assert.equal(await section.locator('button[data-view]:visible').count(), project === 'tramtrace' ? 3 : 0, 'Only TramTrace offers implemented inspection modes');
+  if (project === 'tramtrace') assert.equal(await section.locator('button[data-view="' + view + '"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await section.locator('.scene-status').getAttribute('aria-live'), 'polite');
+  assert.ok((await section.locator('.scene-status').textContent()).trim(), 'Current view has a nonempty status');
+  const snapshot = await hardwareSnapshot(page);
+  assert.equal(snapshot.contextLost, false); assert.ok(snapshot.frames > 0); assert.ok(snapshot.triangles > 0);
+  assert.deepEqual(snapshot.models.filter(model => model.visible).map(model => model.key), [project], 'Every inactive model is hidden after camera settlement');
+  const pixels = await hardwarePixels(page);
+  assert.ok(pixels.opaque > 40 && pixels.colored > 20, 'Actual WebGL contains visible colored hardware: ' + JSON.stringify(pixels));
+  await noOverflow(page, 'Physical hardware ' + project + ' ' + view);
+  return { project, view, frames: snapshot.frames, triangles: snapshot.triangles, pixels };
+}
+async function assertHardwareIdle(page, project = 'tramtrace', view = 'overview') {
+  await hardwareSettled(page, project, view);
+  // Allow one ResizeObserver/preload completion, then observe much longer than
+  // a display frame. No test-induced renders occur inside this observation.
+  await page.waitForTimeout(350);
+  const before = await hardwareSnapshot(page);
+  await page.waitForTimeout(900);
+  const after = await hardwareSnapshot(page);
+  assert.equal(after.frames, before.frames, 'A settled stage performs no ongoing idle render loop');
+  assert.deepEqual(after.camera, before.camera, 'No idle camera orbit or drift');
+  for (const model of before.models) assert.deepEqual(after.models.find(item => item.key === model.key), model, 'No already-loaded model or part drifts while idle');
+  assert.deepEqual(after.models.filter(model => model.visible).map(model => model.key), [project], 'Background preloads stay hidden');
+  return { framesBefore: before.frames, framesAfter: after.frames, observedMs: 900 };
+}
+async function assertUsableControl(page, locator, label) {
+  await locator.scrollIntoViewIfNeeded();
+  const geometry = await locator.evaluate(node => {
+    const b = node.getBoundingClientRect(), hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+    return { x: b.x, y: b.y, width: b.width, height: b.height, inViewport: b.left >= 0 && b.right <= innerWidth + 1 && b.top >= 0 && b.bottom <= innerHeight + 1, exposed: !!hit && (hit === node || node.contains(hit)) };
+  });
+  assert.ok(geometry.width >= 24 && geometry.height >= 24, label + ' meets minimum native touch target size: ' + JSON.stringify(geometry));
+  assert.ok(geometry.inViewport && geometry.exposed, label + ' is reachable and not covered by the model/copy: ' + JSON.stringify(geometry));
+  await locator.focus();
+  assert.equal(await locator.evaluate(node => node === document.activeElement), true, label + ' accepts keyboard focus');
   return geometry;
 }
 async function supportingPhotoFrames(page) {
@@ -331,43 +386,6 @@ async function supportingPhotoFrames(page) {
   assert.equal(frames.length, 3, 'All three supporting builds are measured');
   return frames;
 }
-async function assertFolioSelection(page, key, view = 'overview') {
-  const project = folioProjects.find(item => item.key === key), active = page.locator('[data-folio-card="' + key + '"]');
-  assert.equal(await page.locator('[data-folio-select][aria-current="true"]').count(), 1);
-  assert.equal(await active.getAttribute('data-offset'), '0');
-  assert.equal(await page.locator('[data-folio-tab="' + key + '"]').getAttribute('aria-selected'), 'true');
-  assert.equal(await page.locator('[data-folio-tab][tabindex="0"]').count(), 1);
-  assert.equal(await page.locator('[data-folio-panel]:not([hidden])').count(), 1, 'Only selected project copy is exposed');
-  assert.equal(await page.locator('[data-folio-panel="' + key + '"]').evaluate(node => node.inert), false);
-  await assertFolioLinks(page, key);
-  if (view !== 'copper') {
-    const image = active.locator('[data-folio-image]');
-    assert.ok((await image.getAttribute('src')).includes(project[view]), 'The selected supplied photo matches the requested project and view');
-    assert.equal(await image.evaluate(node => node.complete && node.naturalWidth > 0 && node.alt.trim().length > 0), true);
-    assert.equal(await page.locator('[data-folio-deck]').evaluate(node => node.inert), false);
-    await folioCardFits(page);
-  } else {
-    assert.equal(await page.locator('[data-folio-copper]').isVisible(), true);
-    assert.equal(await page.locator('[data-folio-deck]').evaluate(node => node.inert), true);
-  }
-  assert.equal(await page.locator('button[data-folio-view="' + view + '"]').getAttribute('aria-pressed'), 'true');
-  await noOverflow(page, 'Selected project folio');
-}
-async function clickExposedCard(page, key) {
-  const button = page.locator('[data-folio-select="' + key + '"]');
-  await button.scrollIntoViewIfNeeded();
-  const point = await button.evaluate(node => {
-    const box = node.getBoundingClientRect();
-    for (const y of [.1, .25, .5, .75, .9]) for (const x of [.02, .08, .25, .5, .75, .92, .98]) {
-      const point = { x: box.x + box.width * x, y: box.y + box.height * y };
-      if (point.x < 0 || point.x >= innerWidth || point.y < 0 || point.y >= innerHeight) continue;
-      if (node.contains(document.elementFromPoint(point.x, point.y))) return point;
-    }
-    return null;
-  });
-  assert.ok(point, key + ' has a genuinely exposed clickable card region');
-  await page.mouse.click(point.x, point.y);
-}
 async function pointerDrag(page, locator, dx, dy = 0) {
   await locator.scrollIntoViewIfNeeded();
   const bounds = await locator.boundingBox(), x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2;
@@ -379,12 +397,12 @@ async function touchDrag(context, page, locator, dx, dy = 0, cancel = false) {
   const bounds = await locator.boundingBox(), x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2;
   await page.evaluate(({ x, y, dx, dy, cancel }) => {
     const log = window.__v3InputDiagnostics;
-    if (!log?.folio) return;
+    if (!log) return;
     const hit = document.elementFromPoint(x, y), ancestry = [];
     for (let node = hit; node; node = node.parentElement) {
       const css = getComputedStyle(node);
       ancestry.push({ tag: node.tagName, className: typeof node.className === 'string' ? node.className : undefined,
-        select: node.dataset?.folioSelect, touchAction: css.touchAction, pointerEvents: css.pointerEvents, overflowX: css.overflowX, overflowY: css.overflowY });
+        project: node.dataset?.project, touchAction: css.touchAction, pointerEvents: css.pointerEvents, overflowX: css.overflowX, overflowY: css.overflowY });
     }
     (log.inputs ||= []).push({ phase: log.phase, x, y, dx, dy, cancel, scrollX, scrollY, ancestry });
   }, { x, y, dx, dy, cancel });
@@ -394,21 +412,6 @@ async function touchDrag(context, page, locator, dx, dy = 0, cancel = false) {
     for (let step = 1; step <= 8; step++) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * step / 8, y: y + dy * step / 8, id: 1 }] });
     await client.send('Input.dispatchTouchEvent', { type: cancel ? 'touchCancel' : 'touchEnd', touchPoints: [] });
   } finally { await client.detach(); }
-}
-async function openComparison(page) {
-  await visit(page, '/v3/?qa=copper&project=tramtrace&view=copper#work');
-  await approachFolio(page); await folioSettled(page, 'tramtrace', 'copper');
-  const comparison = page.locator('[data-folio-copper]');
-  await comparison.locator('[data-copper-range]').waitFor({ state: 'visible' });
-  await page.waitForFunction(() => document.querySelector('[data-folio-copper]').dataset.copperState === 'ready');
-  return comparison;
-}
-async function copperValue(comparison, expected) {
-  assert.equal(await comparison.getAttribute('data-copper-value'), String(expected));
-  assert.equal(await comparison.locator('[data-copper-range]').inputValue(), String(expected));
-  assert.equal(await comparison.locator('[data-copper-range]').getAttribute('aria-valuetext'), `${expected}% copper revealed`);
-  assert.equal((await comparison.locator('[data-copper-readout]').textContent()).trim(), `${expected}%`);
-  assert.equal(await comparison.evaluate(node => getComputedStyle(node).getPropertyValue('--reveal').trim()), `${expected}%`);
 }
 async function rangeViaKeyboard(page, range, value) {
   await range.focus(); await page.keyboard.press(value <= 50 ? 'Home' : 'End');
@@ -441,52 +444,48 @@ async function staticTests() {
     for (const file of core) {
       const html = read(file);
       assert.equal(tags(html, 'h1').length, 1, file + ': one h1');
-      assert.ok(tags(html, 'nav').some(tag => 'data-v2-nav' in tag), file + ': shared keyboard navigation hook');
+      assert.ok(tags(html, 'nav').some(tag => tag['aria-label'] === 'Primary navigation'), file + ': labelled native primary navigation');
       assert.ok(links(file).some(link => link.url.pathname === '/v3/'), file + ': home link');
     }
     return { routes: [...paths].sort() };
   });
-  await test('Photo folio opening uses genuine sources without the rejected gallery', () => {
+  await test('Physical hardware opening uses the original models and implemented controls', () => {
     const home = read('v3/index.html'), styles = tags(home, 'link').filter(tag => tag.rel === 'stylesheet').map(tag => tag.href.split('?')[0]);
     const scripts = tags(home, 'script').filter(tag => tag.src).map(tag => tag.src.split('?')[0]);
-    assert.equal(styles.at(-1), '/assets/v3-folio.css');
-    assert.equal(styles.includes('/assets/v3.css'), false, 'Warm interior theme does not override the landing');
-    assert.equal(styles.includes('/assets/v2.css'), false, 'The new landing owns its base and typography');
-    assert.equal(styles.includes('/assets/v2-gallery.css'), false, 'The rejected gallery presentation is not reloaded');
-    assert.equal(scripts.includes('/assets/v2-gallery.js'), false);
-    assert.ok(scripts.includes('/assets/v3-folio.js'));
-    assert.equal(/class="[^"]*\b(?:v3-system|v3-tools|v3-evidence-note|v3-signal-path)\b|id="skylabs-system"/.test(home), false);
-    const nav = home.match(/<nav\b[^>]*data-v2-nav[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+    assert.ok(styles.some(href => /^\/assets\/v3-hardware.*\.css$/.test(href)), 'Physical hardware presentation is loaded');
+    assert.equal(styles.some(href => /v3-folio|v2-gallery/.test(href)), false, 'Rejected folio/gallery presentation is absent');
+    assert.equal(scripts.some(href => /v3-folio|v2-gallery/.test(href)), false);
+    const stageScripts = scripts.filter(src => /^\/assets\/v3-hardware.*\.js$/.test(src));
+    assert.ok(stageScripts.includes('/assets/v3-hardware-stage.js'), 'The stage controller is included');
+    const stageSource = read('assets/v3-hardware-stage.js');
+    for (const dependency of ['v3-hardware-copper.js', 'v3-hardware-pixels.js']) assert.ok(stageSource.includes(dependency), dependency + ' is an explicit dynamic dependency');
+    for (const src of stageScripts) assert.ok(fs.existsSync(path.join(root, src)), src);
+    const sections = tags(home, 'section').filter(tag => 'data-hardware-portfolio' in tag);
+    assert.equal(sections.length, 1);
+    assert.deepEqual(tags(home, 'button').filter(tag => 'data-project' in tag).map(tag => tag['data-project']), hardwareProjects.map(item => item.key));
+    assert.deepEqual(tags(home, 'button').filter(tag => 'data-view' in tag).map(tag => tag['data-view']), ['overview', 'controller', 'copper']);
+    assert.ok(home.indexOf('data-hardware-portfolio') < home.indexOf('data-aircraft-hero'));
+    assert.match(home, /Illustrative LED test/i);
+    assert.ok(!/<article\b[^>]*data-aircraft-chapter="0"[^>]*>[\s\S]*?<h1/.test(home), 'Aircraft story remains subordinate');
+    const nav = home.match(/<nav\b[^>]*aria-label="Primary navigation"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
     assert.ok(nav); assert.equal(/>\s*Tools\b|href="[^"]*#tools"/i.test(nav), false);
-    const cards = tags(home, 'article').filter(tag => 'data-folio-card' in tag);
-    assert.deepEqual(cards.map(tag => tag['data-folio-card']), folioProjects.map(item => item.key));
-    for (const project of folioProjects) {
-      assert.ok(home.includes(project.overview), project.key + ' genuine overview retained');
-      assert.ok(home.includes(project.detail), project.key + ' genuine detail source declared');
-      for (const photo of [project.overview, project.detail]) for (const size of [960, 1920]) assert.ok(fs.existsSync(path.join(root, 'assets/images/projects/' + photo + '-' + size + '.webp')));
-    }
-    assert.ok(home.indexOf('data-folio') < home.indexOf('data-aircraft-hero'), 'The photo folio precedes the preserved aircraft sequence');
-    const heading = home.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    assert.match(heading, /Andrew\s+Chung/);
-    assert.ok(!/<article\b[^>]*data-aircraft-chapter="0"[^>]*>[\s\S]*?<h1/.test(home), 'Aircraft story has a subordinate heading');
     const footer = home.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] || '';
     for (const target of ['/shared/', '/book/', '/assets/documents/Andrew_Chung_Public_CV.pdf']) assert.ok(tags(footer, 'a').some(tag => tag.href === target));
-    return { folioProjects: folioProjects.map(item => item.key), photoOpening: true, previewOnly: true };
+    for (const name of ['tramtrace', 'telemetry', 'pi']) assert.ok(fs.statSync(path.join(root, 'assets/models/hero/' + name + '.idx.bin.gz')).size > 1000);
+    return { projects: hardwareProjects, originalLosslessModels: true, obsoleteFolioRemoved: true };
   });
-  await test('Copper comparison uses one registered source SVG family', () => {
-    const home = read('v3/index.html'), sources = tags(home, 'image').filter(tag => 'data-copper-source' in tag);
-    const expected = ['copper', 'mask', 'silk'].map(layer => '/assets/images/interactive/tramtrace/tramtrace-front-' + layer + '.svg');
-    assert.equal(sources.length, 4);
-    assert.deepEqual([...new Set(sources.map(item => item.href))].sort(), expected.sort());
-    for (const source of sources) {
-      for (const [attr, value] of Object.entries({ x: '0', y: '0', width: '223.7486', height: '111.1758', preserveAspectRatio: 'xMidYMid meet' })) assert.equal(source[attr], value, 'Source layers have exactly the same drawing frame');
-      assert.equal(source.transform, undefined);
-      const svg = tags(read(source.href.slice(1)), 'svg')[0];
-      assert.deepEqual(svg.viewBox.split(/\s+/).map(Number), [0, 0, 223.7486, 111.1758]);
-    }
-    const slider = tags(home, 'input').find(tag => 'data-copper-range' in tag);
-    assert.deepEqual([slider.type, slider.min, slider.max, slider.step, slider.value], ['range', '0', '100', '1', '50']);
-    return { frame: [0, 0, 223.7486, 111.1758], sources: expected, coordinatesUnchanged: true };
+  await test('Native copper control references the real fabrication artwork', () => {
+    const home = read('v3/index.html'), slider = tags(home, 'input').find(tag => tag.id === 'copper-range');
+    assert.ok(slider); assert.deepEqual([slider.type, slider.min, slider.max, slider.step || '1', slider.value], ['range', '0', '100', '1', '50']);
+    assert.ok(slider['aria-label'] || tags(home, 'label').some(tag => tag.for === 'copper-range'), 'Range has a meaningful accessible name');
+    const scripts = ['assets/v3-hardware-stage.js', 'assets/v3-hardware-copper.js', 'assets/v3-hardware-pixels.js'].map(read).join('\n');
+    const artwork = '/assets/models/manufacturing/tramtrace/front-copper.svg';
+    assert.ok(scripts.includes(artwork), 'The overlay uses original fabrication copper rather than an invented drawing');
+    assert.ok(fs.statSync(path.join(root, artwork)).size > 1000);
+    assert.match(scripts, /native-window-materials/, 'Illustrative pixels color the original LED package windows');
+    assert.match(scripts, /tramtrace-kicad-source\.glb/, 'Pixel registration identifies the original CAD source');
+    assert.equal(/setInterval\(|Date\.now\(\).*vehicle/.test(scripts), false, 'No fabricated live vehicle loop is introduced');
+    return { fabricationArtwork: artwork, slider: 'native range', pixels: 'original WS2812 windows' };
   });
   await test('TramTrace in-page workbench uses production electrical data', () => {
     const html = read('v3/projects/tramtrace/index.html'), data = tramTraceSourceData();
@@ -532,274 +531,238 @@ async function staticTests() {
   });
 }
 async function browserTests() {
-  await browserTest('desktop navigation and meaningful first screen', {}, async ({ page }) => {
-    await visit(page);
-    await folioSettled(page);
+  await browserTest('desktop navigation identity and fully loaded first page', {}, async ({ page }) => {
+    await visit(page); await hardwareSettled(page);
     const initialHomePerformance = await performanceData(page);
     assert.equal(await page.locator('h1').isVisible(), true);
-    assert.match(await page.locator('main').textContent(), /Andrew Chung|electrical engineering/i);
+    assert.match(await page.locator('.site-header').textContent(), /Andrew Chung/);
+    assert.match(await page.locator(hardware).textContent(), /electrical engineering/i);
+    const firstScreen = await page.locator(hardware).evaluate(section => {
+      const bounds = selector => { const r = section.querySelector(selector).getBoundingClientRect(); return { top: r.top, bottom: r.bottom, width: r.width, height: r.height }; };
+      return { title: bounds('h1'), copy: bounds('.project p:not(.eyebrow)'), caseLink: bounds('.project a'), viewport: innerHeight };
+    });
+    for (const key of ['title', 'copy', 'caseLink']) assert.ok(firstScreen[key].top >= 0 && firstScreen[key].bottom <= firstScreen.viewport && firstScreen[key].width > 0, key + ' is readable without first scrolling');
     const skip = page.locator('a[href$="#main"]').first();
-    await skip.focus(); await page.keyboard.press('Enter');
-    assert.equal(new URL(page.url()).hash, '#main');
+    await skip.focus(); await page.keyboard.press('Enter'); assert.equal(new URL(page.url()).hash, '#main');
     await noOverflow(page, 'Desktop home');
     await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
-    await screenshot(page, 'desktop-home');
-    await screenshot(page, 'desktop-home-full', true);
+    await screenshot(page, 'desktop-home'); await screenshot(page, 'desktop-home-full', true);
     const inspectedHomePerformance = await performanceData(page);
-    await page.locator('[data-v2-nav] a[href="/v3/projects/"]').click();
-    await page.waitForURL('**/v3/projects/');
-    await searchCount(page, 15);
-    await screenshot(page, 'desktop-collection');
-    return { performance: { initialHome: initialHomePerformance, afterFullPageViewing: inspectedHomePerformance } };
+    assert.equal(await page.evaluate(() => '__hardwareStudy' in window), false, 'Production URL does not expose capture-only hardware internals');
+    await page.locator('.site-header nav a[href="/v3/projects/"]').click(); await page.waitForURL('**/v3/projects/'); await searchCount(page, 15);
+    await screenshot(page, 'desktop-collection-full', true);
+    await visit(page, '/v3/about/'); await screenshot(page, 'desktop-about-full', true);
+    return { firstScreen, performance: { initialHome: initialHomePerformance, afterFullPageViewing: inspectedHomePerformance } };
   });
-  await browserTest('folio first screen has readable identity and real selectable work', {}, async ({ page }) => {
-    await visit(page); await folioSettled(page);
-    const appearance = await page.evaluate(() => {
-      const body = getComputedStyle(document.body), title = document.querySelector('h1'), rect = title.getBoundingClientRect();
-      const image = document.querySelector('[data-folio-card="tramtrace"] [data-folio-image]'), photo = image.getBoundingClientRect();
-      return { background: body.backgroundColor, color: body.color, font: body.fontFamily, title: title.textContent.replace(/\s+/g, ' ').trim(), titleBounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, photoBounds: { x: photo.x, y: photo.y, width: photo.width, height: photo.height }, viewport: { width: innerWidth, height: innerHeight } };
-    });
-    const luminance = color => {
-      const values = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => { const channel = value / 255; return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4; });
-      return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
-    };
-    const background = luminance(appearance.background), foreground = luminance(appearance.color);
-    assert.ok(background < .1, 'The opening uses a dark readable base');
-    assert.ok((Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05) >= 4.5, 'Default copy has at least 4.5:1 contrast');
-    assert.match(appearance.title, /Andrew\s+Chung/);
-    assert.match(await page.locator('.v3-identity').textContent(), /electrical engineering student/i);
-    assert.ok(appearance.titleBounds.y >= 0 && appearance.titleBounds.y + appearance.titleBounds.height <= appearance.viewport.height, 'Identity is visible in the initial viewport');
-    assert.ok(appearance.photoBounds.y < appearance.viewport.height && appearance.photoBounds.y + appearance.photoBounds.height > 100, 'Real work appears alongside the introduction');
-    assert.equal(await page.locator('[data-folio-tab][role="tab"]').count(), 3);
-    for (const tab of await page.locator('[data-folio-tab]').all()) assert.ok(await tab.getAttribute('aria-controls'), 'Project tabs identify their panels');
-    assert.equal(await page.locator('[data-v2-nav] a').filter({ hasText: /^Tools$/ }).count(), 0);
-    return appearance;
-  });
-  await browserTest('folio real photographs keyboard repeated selection and URL state', {}, async ({ page }) => {
-    await visit(page, '/v3/?qa=folio#work'); await approachFolio(page); await folioSettled(page);
-    for (const project of folioProjects) {
-      await folioSelect(page, project.key); await assertFolioSelection(page, project.key);
-      await screenshot(page, 'desktop-folio-' + project.key);
-      await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
-      await folioSettled(page, project.key, 'detail'); await assertFolioSelection(page, project.key, 'detail');
-      await screenshot(page, 'desktop-folio-' + project.key + '-detail');
-      const url = new URL(page.url()); assert.equal(url.searchParams.get('qa'), 'folio'); assert.equal(url.hash, '#work');
-      assert.equal(url.searchParams.get('project'), project.key); assert.equal(url.searchParams.get('view'), 'detail');
-      await folioSelect(page, project.key); const historyLength = await page.evaluate(() => history.length);
-      await folioSelect(page, project.key); await assertFolioSelection(page, project.key);
-      assert.equal(await page.evaluate(() => history.length), historyLength, 'Repeated current selection cannot add redundant history');
-    }
-    await folioSelect(page, 'tramtrace'); await page.locator('[data-folio-tab="tramtrace"]').focus(); await page.keyboard.press('ArrowRight');
-    await folioSettled(page, 'skylabs'); assert.equal(await page.locator('[data-folio-tab="skylabs"]').evaluate(node => node === document.activeElement), true);
-    await page.keyboard.press('End'); await folioSettled(page, 'dual-usb-c');
-    await page.keyboard.press('Home'); await folioSettled(page, 'tramtrace');
-    await page.locator('[data-folio-prev]').click(); await folioSettled(page, 'dual-usb-c');
-    await page.locator('[data-folio-next]').click(); await folioSettled(page, 'tramtrace');
-    await clickExposedCard(page, 'skylabs'); await folioSettled(page, 'skylabs');
-    assert.ok((await page.locator('[data-folio-count]').textContent()).trim());
-    assert.ok((await page.locator('[data-folio-caption]').textContent()).trim());
-    assert.equal(await page.locator('[data-folio-live]').getAttribute('aria-live'), 'polite');
-    return { projectCount: 3, realMacroCount: 3, keyboard: true, repeatedSelection: true, cycling: true };
-  });
-  await browserTest('folio detail deep link reload native Back and Forward', {}, async ({ page }) => {
-    await visit(page, '/v3/?qa=shared&project=skylabs&view=detail#work'); await approachFolio(page);
-    await folioSettled(page, 'skylabs', 'detail'); await assertFolioSelection(page, 'skylabs', 'detail');
-    await page.reload({ waitUntil: 'load' }); await approachFolio(page); await folioSettled(page, 'skylabs', 'detail');
-    await activateKeyboard(page, page.locator('button[data-folio-view="overview"]')); await folioSettled(page, 'skylabs');
-    await folioSelect(page, 'dual-usb-c'); await page.goBack(); await folioSettled(page, 'skylabs');
-    await page.goBack(); await folioSettled(page, 'skylabs', 'detail'); await assertFolioSelection(page, 'skylabs', 'detail');
-    await page.goForward(); await folioSettled(page, 'skylabs');
-    await page.goForward(); await folioSettled(page, 'dual-usb-c'); await assertFolioSelection(page, 'dual-usb-c');
-    assert.equal(new URL(page.url()).searchParams.get('qa'), 'shared'); assert.equal(new URL(page.url()).hash, '#work');
-  });
-  await browserTest('folio mobile detail Save Data and short viewport controls', { touch: true, saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, requests }) => {
-    await visit(page); await approachFolio(page); await folioSettled(page);
-    for (const project of folioProjects) await folioSelect(page, project.key);
-    assert.equal(requests.some(url => /tramtrace-controller|skylabs-telemetry-macro|framework-dual-ports/.test(url)), false, 'Save Data does not prefetch unselected macros');
-    await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
-    await folioSettled(page, 'dual-usb-c', 'detail'); await assertFolioSelection(page, 'dual-usb-c', 'detail');
-    await screenshot(page, 'mobile-folio-detail');
-    assert.equal(requests.some(url => /tramtrace-controller|skylabs-telemetry-macro/.test(url)), false);
-    for (const button of await page.locator('button[data-folio-view]:visible, [data-gallery-expand]:visible, [data-folio-prev], [data-folio-next]').all()) {
-      const bounds = await button.boundingBox(); assert.ok(bounds.width >= 44 && bounds.height >= 44, 'Photo controls have usable touch targets');
-    }
-    for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 600 }]) {
-      await page.setViewportSize(viewport); await noOverflow(page, 'Folio ' + viewport.width + '×' + viewport.height);
-      await page.locator('[data-folio-next]').scrollIntoViewIfNeeded(); assert.equal(await page.locator('[data-folio-next]').isVisible(), true);
-    }
-  });
-  await browserTest('folio image failure retains case access and retry restores the requested photo', { saveData: true }, async ({ page, context }) => {
-    let failOverview = true, failDetail = true;
-    await context.route(/\/skylabs-telemetry-hero-(?:960|1920)\.webp/, route => failOverview ? route.abort() : route.continue());
-    await context.route(/\/tramtrace-controller-(?:960|1920)\.webp/, route => failDetail ? route.abort() : route.continue());
-    await visit(page); await approachFolio(page); await folioSettled(page);
-    await activateKeyboard(page, page.locator('[data-folio-tab="skylabs"]'));
-    await folioSettled(page, 'skylabs', 'overview', 'error'); await assertFolioLinks(page, 'skylabs');
-    assert.equal(await page.locator('[data-folio-retry]').isVisible(), true);
-    failOverview = false; await page.locator('[data-folio-retry]').click();
-    await folioSettled(page, 'skylabs'); await assertFolioSelection(page, 'skylabs');
-    await folioSelect(page, 'tramtrace'); await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
-    await folioSettled(page, 'tramtrace', 'detail', 'error'); await assertFolioLinks(page, 'tramtrace');
-    failDetail = false; await page.locator('[data-folio-retry]').click();
-    await folioSettled(page, 'tramtrace', 'detail'); await assertFolioSelection(page, 'tramtrace', 'detail');
-  });
-  for (const options of [{ name: 'no JavaScript', js: false }, { name: 'folio controller failure', block: /\/assets\/v3-folio\.js/ }]) {
-    await browserTest('folio remains readable with ' + options.name, { ...options, viewport: { width: 390, height: 844 } }, async ({ page }) => {
-      await visit(page);
-      for (const project of folioProjects) {
-        const article = page.locator('[data-folio-card="' + project.key + '"]');
-        const image = article.locator('[data-folio-image]');
-        await article.scrollIntoViewIfNeeded(); await loaded(image);
-        assert.equal(await page.locator('[data-folio-panel="' + project.key + '"]').isVisible(), true);
-        await assertFolioLinks(page, project.key);
+  for (const [device, viewport] of [['desktop', { width: 1440, height: 900 }], ['mobile', { width: 390, height: 844 }]]) {
+    await browserTest(device + ' actual WebGL projects camera inspection and stationary geometry', { viewport, touch: device === 'mobile', motion: 'no-preference' }, async ({ page }) => {
+      await visit(page, '/v3/?capture=1'); await hardwareSettled(page);
+      const observations = [], baselines = new Map();
+      for (const item of hardwareProjects) {
+        await selectHardware(page, item.key); observations.push(await assertHardwareSelection(page, item.key));
+        baselines.set(item.key, (await hardwareSnapshot(page)).models.find(model => model.key === item.key).nodes);
+        await approachHardware(page); await screenshot(page, device + '-hardware-' + item.key);
+        await assertUsableControl(page, page.locator(hardware + ' button[data-project="' + item.key + '"]'), item.title + ' selector');
       }
-      assert.equal(await page.locator('[data-folio-tab]:visible').count(), 0, 'Unenhanced page does not expose inoperative controls');
-      await noOverflow(page, options.name + ' folio');
+      await selectHardware(page, 'tramtrace');
+      const overview = await hardwareSnapshot(page);
+      for (const view of ['controller', 'copper', 'overview']) {
+        await activateKeyboard(page, page.locator(hardware + ' button[data-view="' + view + '"]'));
+        await hardwareSettled(page, 'tramtrace', view); observations.push(await assertHardwareSelection(page, 'tramtrace', view));
+        const current = await hardwareSnapshot(page);
+        assert.deepEqual(current.models.find(model => model.key === 'tramtrace').nodes, baselines.get('tramtrace'), 'Inspection moves the camera, never rearranges original parts');
+        if (view === 'controller') {
+          assert.notDeepEqual(current.camera, overview.camera, 'Controller is a genuine closer authored camera');
+          assert.match(await page.locator(hardware + ' .project').textContent(), /U3|ESP32/);
+          const framing = await page.evaluate(() => {
+            const { models, camera } = window.__hardwareStudy, object = models.get('tramtrace').group.getObjectByName('U3');
+            const point = object.getWorldPosition(new THREE.Vector3()).project(camera);
+            return { x: point.x, y: point.y, z: point.z };
+          });
+          assert.ok(Math.abs(framing.x) < 1 && Math.abs(framing.y) < 1 && framing.z > -1 && framing.z < 1, 'The actual U3 controller is inside the camera frame: ' + JSON.stringify(framing));
+        }
+        await approachHardware(page); await screenshot(page, device + '-hardware-tramtrace-' + view);
+      }
+      // Repeat every project after all models are loaded. A stale async result
+      // must never reappear, and the original transform/geometry stays intact.
+      for (const item of [...hardwareProjects].reverse()) {
+        await selectHardware(page, item.key); await assertHardwareSelection(page, item.key);
+        assert.deepEqual((await hardwareSnapshot(page)).models.find(model => model.key === item.key).nodes, baselines.get(item.key));
+      }
+      await selectHardware(page, 'tramtrace');
+      const idle = await assertHardwareIdle(page);
+      return { viewport, observations, stationaryOriginalGeometry: true, idle };
     });
   }
-  await browserTest('folio delayed detail cannot replace a newer or reversed selection', { saveData: true, motion: 'no-preference' }, async ({ page, context }) => {
+  await browserTest('physical project and controller deep links reload and native history', {}, async ({ page }) => {
+    await visit(page, '/v3/?capture=1&qa=hardware&project=tramtrace&view=controller#work');
+    await hardwareSettled(page, 'tramtrace', 'controller'); await assertHardwareSelection(page, 'tramtrace', 'controller');
+    await page.reload({ waitUntil: 'load' }); await hardwareSettled(page, 'tramtrace', 'controller');
+    await selectHardware(page, 'telemetry'); await selectHardware(page, 'pi');
+    await page.goBack(); await hardwareSettled(page, 'telemetry');
+    await page.goBack(); await hardwareSettled(page, 'tramtrace', 'controller');
+    await page.goForward(); await hardwareSettled(page, 'telemetry');
+    await page.goForward(); await hardwareSettled(page, 'pi'); await assertHardwareSelection(page, 'pi');
+    const length = await page.evaluate(() => history.length);
+    await selectHardware(page, 'pi'); assert.equal(await page.evaluate(() => history.length), length, 'Repeating a selected project creates no duplicate history');
+    const url = new URL(page.url()); assert.equal(url.searchParams.get('qa'), 'hardware'); assert.equal(url.searchParams.get('capture'), '1'); assert.equal(url.hash, '#work');
+    for (const [query, project, view] of [['project=tramtrace&view=detail', 'tramtrace', 'controller'], ['project=skylabs&view=detail', 'telemetry', 'overview'], ['project=pi&view=copper', 'pi', 'overview']]) {
+      await visit(page, '/v3/?capture=1&qa=legacy&' + query + '#work'); await hardwareSettled(page, project, view); await assertHardwareSelection(page, project, view);
+      assert.equal(new URL(page.url()).searchParams.get('qa'), 'legacy'); assert.equal(new URL(page.url()).hash, '#work');
+    }
+    return { controllerDeepLink: true, browserBackForward: true, legacyAliases: true, unimplementedModesNormalizeToOverview: true };
+  });
+  await browserTest('native 116 pixel test changes only original registered LED windows', { motion: 'no-preference' }, async ({ page }) => {
+    await visit(page, '/v3/?capture=1'); await hardwareSettled(page);
+    const toggle = page.locator(hardware + ' .pixel-toggle');
+    await assertUsableControl(page, toggle, 'Illustrative LED test');
+    assert.match(await toggle.textContent(), /Illustrative LED test/i); assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+    const original = await hardwareSnapshot(page);
+    await toggle.focus(); await page.keyboard.press('Space');
+    assert.equal(await toggle.getAttribute('aria-pressed'), 'true'); assert.equal(await page.locator(hardware).getAttribute('data-pixel-pattern'), 'illustrative');
+    const detail = await page.evaluate(() => {
+      const model = window.__hardwareStudy.models.get('tramtrace'), api = TramTracePixelPattern.create(THREE, model);
+      const refs = Object.values(tramTraceBoardData.chains).flatMap(chain => chain.leds.map(led => led[0]));
+      const materialNames = []; model.group.traverse(node => { if (node.isMesh) for (const material of Array.isArray(node.material) ? node.material : [node.material]) if (/Illustrative/.test(material.name)) materialNames.push(material.name); });
+      return { count: api.count, mode: api.mode, source: api.source, visible: api.visible, lineCounts: api.lineCounts, errorMm: api.maxRegistrationErrorMm,
+        positions: refs.map(ref => ({ ref, position: api.pixelPosition(ref)?.toArray() })), materialNames };
+    });
+    assert.equal(detail.count, 116); assert.equal(detail.mode, 'native-window-materials'); assert.equal(detail.source.live, false); assert.equal(detail.visible, true);
+    assert.deepEqual(detail.lineCounts, chainCounts); assert.ok(detail.errorMm < .001);
+    assert.equal(detail.positions.length, 116); assert.equal(new Set(detail.positions.map(item => item.ref)).size, 116);
+    assert.ok(detail.positions.every(item => item.position?.length === 3 && item.position.every(Number.isFinite)));
+    assert.ok(detail.materialNames.length > 0); assert.match(await page.locator(hardware + ' .scene-status').textContent(), /illustrative|not live/i);
+    const litNodes = (await hardwareSnapshot(page)).models.find(model => model.key === 'tramtrace').nodes;
+    assert.deepEqual(litNodes.map(({ geometry, ...node }) => node), original.models.find(model => model.key === 'tramtrace').nodes.map(({ geometry, ...node }) => node), 'The test creates no fake LED markers or moving parts');
+    await screenshot(page, 'desktop-hardware-native-116-pixels'); await assertHardwareIdle(page);
+    await toggle.focus(); await page.keyboard.press('Enter'); assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+    assert.equal(await page.locator(hardware).getAttribute('data-pixel-pattern'), 'off');
+    assert.deepEqual((await hardwareSnapshot(page)).models.find(model => model.key === 'tramtrace').nodes, original.models.find(model => model.key === 'tramtrace').nodes, 'Turning test off restores original window geometry');
+    return detail;
+  });
+  await browserTest('registered physical copper native keyboard endpoints and 15 50 85 comparisons', {}, async ({ page }) => {
+    await visit(page, '/v3/?capture=1'); await selectHardware(page, 'tramtrace', 'copper');
+    const range = page.locator('#copper-range');
+    await assertUsableControl(page, range, 'Actual copper reveal'); assert.equal(await range.getAttribute('type'), 'range');
+    const artwork = await page.evaluate(() => {
+      const model = window.__hardwareStudy.models.get('tramtrace'), mesh = model.group.getObjectByName('Actual front copper');
+      if (!mesh) return null;
+      const positions = mesh.geometry.attributes.position, uv = mesh.geometry.attributes.uv;
+      return { source: mesh.material.map.image.currentSrc || mesh.material.map.image.src, triangles: positions.count / 3, vertexCount: positions.count,
+        finite: [...positions.array, ...uv.array].every(Number.isFinite), topFace: [...Array(positions.count)].every((_, index) => positions.getY(index) === 0),
+        registered: [...Array(positions.count)].every((_, index) => Math.abs(uv.getX(index) - (positions.getX(index) + .5)) < 1e-6 && Math.abs(uv.getY(index) - (.5 - positions.getZ(index) / (94.55 / 207.81))) < 1e-6) };
+    });
+    assert.ok(artwork); assert.ok(artwork.source.endsWith('/assets/models/manufacturing/tramtrace/front-copper.svg'));
+    assert.ok(artwork.triangles > 2 && artwork.finite && artwork.topFace && artwork.registered, 'Real copper is registered to original laminate top-face triangles');
+    const states = [], historyLength = await page.evaluate(() => history.length);
+    for (const value of [0, 15, 50, 85, 100]) {
+      await rangeViaKeyboard(page, range, value); assert.equal(await range.inputValue(), String(value));
+      assert.equal(await page.locator(hardware).getAttribute('data-project'), 'tramtrace'); assert.equal(await page.locator(hardware).getAttribute('data-view'), 'copper');
+      const visible = await page.evaluate(() => window.__hardwareStudy.models.get('tramtrace').group.getObjectByName('Actual front copper').visible);
+      assert.equal(visible, value > 0, 'Native range controls the actual copper mesh');
+      await approachHardware(page); await screenshot(page, 'desktop-hardware-copper-' + value); states.push({ value, visible });
+    }
+    assert.equal(await page.evaluate(() => history.length), historyLength, 'Range keys do not navigate or create history entries');
+    await selectHardware(page, 'telemetry'); assert.equal(await range.isVisible(), false);
+    await selectHardware(page, 'pi'); assert.equal(await page.locator(hardware + ' .pixel-toggle').isVisible(), false);
+    return { artwork, states };
+  });
+  await browserTest('rapid and reversed project camera requests settle on the newest selection', { motion: 'no-preference' }, async ({ page, context }) => {
     let release;
-    const delayed = new Promise(resolve => { release = resolve; });
-    await context.route(/\/framework-dual-ports-(?:960|1920)\.webp/, async route => { await delayed; await route.continue(); });
+    const blocked = new Promise(resolve => { release = resolve; });
+    await context.route(/\/assets\/models\/hero\/telemetry(?:\.|\?)/, async route => { await blocked; await route.continue(); });
     try {
-      await visit(page); await approachFolio(page); await folioSettled(page); await folioSelect(page, 'dual-usb-c');
-      await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
-      await page.waitForFunction(() => document.querySelector('[data-folio]').dataset.folioState === 'loading');
-      for (const key of ['skylabs', 'tramtrace', 'skylabs', 'tramtrace']) await activateKeyboard(page, page.locator('[data-folio-tab="' + key + '"]'));
-      release(); await page.waitForLoadState('networkidle'); await folioSettled(page, 'tramtrace'); await assertFolioSelection(page, 'tramtrace');
-      assert.equal(new URL(page.url()).searchParams.get('project'), 'tramtrace');
+      await visit(page, '/v3/?capture=1'); await hardwareSettled(page);
+      for (const key of ['telemetry', 'pi', 'tramtrace', 'telemetry', 'tramtrace']) await activateKeyboard(page, page.locator(hardware + ' button[data-project="' + key + '"]'));
+      release(); await hardwareSettled(page);
+      await page.waitForFunction(() => window.__hardwareStudy.models.has('telemetry') && window.__hardwareStudy.models.has('pi'), null, { timeout: 120000 });
+      await assertHardwareSelection(page, 'tramtrace');
+      const original = await hardwareSnapshot(page);
+      for (const key of ['pi', 'telemetry', 'tramtrace', 'pi', 'tramtrace']) {
+        await activateKeyboard(page, page.locator(hardware + ' button[data-project="' + key + '"]'));
+        await page.waitForTimeout(80);
+      }
+      await hardwareSettled(page); await assertHardwareSelection(page, 'tramtrace');
+      const final = await hardwareSnapshot(page);
+      for (const model of original.models) assert.deepEqual(final.models.find(item => item.key === model.key).nodes, model.nodes);
+      await assertHardwareIdle(page);
+      return { delayedModelCannotWin: true, reversedCameraCannotWin: true, allInactiveModelsHidden: true };
     } finally { release(); }
   });
-  await browserTest('folio pointer dragging selects and reverses without accidental small-drag changes', { motion: 'no-preference' }, async ({ page, requests }) => {
-    await visit(page); await approachFolio(page); await folioSettled(page);
-    const activeImage = () => page.locator('[data-folio-card][data-offset="0"] [data-folio-image]');
-    await pointerDrag(page, activeImage(), -120); await folioSettled(page, 'skylabs');
-    await page.waitForFunction(() => document.querySelector('[data-folio]').dataset.folioMotion === 'anime');
-    assert.ok(requests.some(url => new URL(url).pathname === '/assets/vendor/anime.esm.min.js'), 'Normal-motion selection requests the actual vendored Anime module');
-    await pointerDrag(page, activeImage(), 120); await folioSettled(page, 'tramtrace');
-    await pointerDrag(page, activeImage(), -20); await folioSettled(page, 'tramtrace');
-    await assertFolioSelection(page, 'tramtrace');
-    return { pointerDragAndReverse: true, smallDragPreserved: true, textAnimation: 'anime', vendoredAnimationRequested: true };
+  await browserTest('mobile native project taps copper touch and uninterrupted vertical scrolling', { touch: true, motion: 'no-preference', viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
+    await visit(page, '/v3/?capture=1'); await hardwareSettled(page);
+    for (const key of ['telemetry', 'pi', 'tramtrace']) { await page.locator(hardware + ' button[data-project="' + key + '"]').tap(); await hardwareSettled(page, key); await assertHardwareSelection(page, key); }
+    const toggle = page.locator(hardware + ' .pixel-toggle'); await toggle.tap(); assert.equal(await toggle.getAttribute('aria-pressed'), 'true');
+    await toggle.tap(); assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+    await page.locator(hardware + ' button[data-view="copper"]').tap(); await hardwareSettled(page, 'tramtrace', 'copper');
+    const range = page.locator('#copper-range'); await rangeViaKeyboard(page, range, 50);
+    const before = Number(await range.inputValue()); await touchDrag(context, page, range, 75);
+    const after = Number(await range.inputValue()); assert.ok(after > before, 'Real touch input advances the native range');
+    assert.equal(await page.locator(hardware).getAttribute('data-view'), 'copper'); await screenshot(page, 'mobile-hardware-copper-touch');
+    await page.locator(hardware + ' button[data-view="overview"]').tap(); await hardwareSettled(page);
+    await approachHardware(page);
+    const scrollBefore = await page.evaluate(() => scrollY);
+    // The canvas must not capture a vertical reading gesture. Use trusted
+    // browser touch events, not dispatchEvent or programmatic scroll.
+    await touchDrag(context, page, page.locator(hardware + ' .art canvas'), 0, -180);
+    await page.waitForFunction(before => scrollY > before + 40, scrollBefore);
+    assert.equal(await page.locator(hardware).getAttribute('data-project'), 'tramtrace');
+    await noOverflow(page, 'Native mobile hardware');
+    return { nativeProjectTaps: true, nativePixelToggle: true, nativeRange: { before, after }, verticalScroll: true };
   });
-  await browserTest('folio native touch swipe reversal cancellation and vertical page scroll', { touch: true, motion: 'no-preference', viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
-    await visit(page); await approachFolio(page); await folioSettled(page);
-    await page.evaluate(() => {
-      const log = window.__v3InputDiagnostics = { folio: true, phase: 'initial', events: [], checkpoints: [], inputs: [] };
-      const target = node => ({ tag: node?.tagName, select: node?.closest?.('[data-folio-select]')?.dataset.folioSelect,
-        card: node?.closest?.('[data-folio-card]')?.dataset.folioCard, inDeck: !!node?.closest?.('[data-folio-deck]'), isDeck: !!node?.hasAttribute?.('data-folio-deck'),
-        className: typeof node?.className === 'string' ? node.className : undefined });
-      for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'gotpointercapture', 'lostpointercapture', 'touchstart', 'touchmove', 'touchend', 'touchcancel', 'click']) document.addEventListener(type, event => {
-        const root = document.querySelector('[data-folio]'), deck = root.querySelector('[data-folio-deck]');
-        const item = { phase: log.phase, type, target: target(event.target), currentTarget: event.currentTarget.nodeName, pointerId: event.pointerId, pointerType: event.pointerType,
-          buttons: event.buttons, isPrimary: event.isPrimary, x: event.clientX, y: event.clientY, trusted: event.isTrusted,
-          touches: event.touches ? [...event.touches].map(touch => ({ id: touch.identifier, x: touch.clientX, y: touch.clientY })) : undefined,
-          changedTouches: event.changedTouches ? [...event.changedTouches].map(touch => ({ id: touch.identifier, x: touch.clientX, y: touch.clientY })) : undefined,
-          captured: event.pointerId !== undefined ? deck.hasPointerCapture(event.pointerId) : undefined, state: { ...root.dataset }, scrollX, scrollY };
-        log.events.push(item); queueMicrotask(() => { item.defaultPrevented = event.defaultPrevented; item.afterState = { ...root.dataset }; });
-      }, { capture: true, passive: true });
-    });
-    const checkpoint = async phase => page.evaluate(phase => {
-      const log = window.__v3InputDiagnostics; log.phase = phase;
-      const root = document.querySelector('[data-folio]'), image = root.querySelector('[data-folio-card][data-offset="0"] [data-folio-image]');
-      const box = image.getBoundingClientRect(), viewport = visualViewport, hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
-      log.checkpoints.push({ phase, state: { ...root.dataset }, url: location.href, scrollX, scrollY,
-        image: { x: box.x, y: box.y, width: box.width, height: box.height, source: image.currentSrc, complete: image.complete },
-        centerHit: { tag: hit?.tagName, card: hit?.closest('[data-folio-card]')?.dataset.folioCard },
-        viewport: viewport ? { width: viewport.width, height: viewport.height, scale: viewport.scale, offsetLeft: viewport.offsetLeft, offsetTop: viewport.offsetTop } : null });
-    }, phase);
-    const activeImage = () => page.locator('[data-folio-card][data-offset="0"] [data-folio-image]');
-    await checkpoint('first-swipe');
-    await touchDrag(context, page, activeImage(), -100); await checkpoint('first-swipe-dispatched'); await folioSettled(page, 'skylabs');
-    await checkpoint('reverse-swipe');
-    await touchDrag(context, page, activeImage(), 100); await checkpoint('reverse-swipe-dispatched'); await folioSettled(page, 'tramtrace');
-    await checkpoint('cancelled-swipe');
-    await touchDrag(context, page, activeImage(), -100, 0, true); await checkpoint('cancel-dispatched'); await folioSettled(page, 'tramtrace');
-    await activeImage().scrollIntoViewIfNeeded(); const before = await page.evaluate(() => scrollY);
-    await checkpoint('vertical-scroll');
-    await touchDrag(context, page, activeImage(), 3, -170); await checkpoint('vertical-scroll-dispatched');
-    await page.waitForFunction(before => scrollY > before + 40, before);
-    assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-active'), 'tramtrace', 'Vertical touch scroll cannot change project');
-    await noOverflow(page, 'Native touch folio');
-    return { swipe: true, reverse: true, touchCancel: true, verticalPageScroll: true, inputDiagnostics: await page.evaluate(() => window.__v3InputDiagnostics) };
-  });
-  await browserTest('optional folio text animation failure cannot hide selection', { motion: 'no-preference', block: /\/assets\/vendor\/anime\.esm\.min\.js/ }, async ({ page }) => {
-    await visit(page); await approachFolio(page); await folioSettled(page);
-    for (const key of ['skylabs', 'dual-usb-c', 'tramtrace']) { await folioSelect(page, key); await assertFolioSelection(page, key); }
-    assert.equal(await page.locator('[data-folio-panel="tramtrace"]').evaluate(node => Number(getComputedStyle(node).opacity)), 1, 'Fallback text is fully readable');
-  });
-  await browserTest('registered copper keyboard endpoints and 15 50 85 comparisons', {}, async ({ page }) => {
-    const comparison = await openComparison(page), range = comparison.locator('[data-copper-range]');
-    await assertFolioSelection(page, 'tramtrace', 'copper'); await copperValue(comparison, 50);
-    assert.equal(await page.locator('[data-gallery-expand]').isDisabled(), true, 'Artwork comparison cannot masquerade as the selected photograph');
-    const layers = await comparison.locator('[data-copper-side] svg').evaluateAll(nodes => nodes.map(node => {
-      const b = node.getBoundingClientRect(); return { viewBox: node.getAttribute('viewBox'), x: b.x, y: b.y, width: b.width, height: b.height, transform: getComputedStyle(node).transform };
-    }));
-    assert.equal(layers.length, 2); assert.deepEqual(layers[0], layers[1], 'Both sides use the same pixel frame and transform');
-    for (const value of [0, 100, 15, 50, 85]) {
-      await rangeViaKeyboard(page, range, value); await copperValue(comparison, value);
-      assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-active'), 'tramtrace', 'Range keys never navigate the parent folio');
-      if ([15, 50, 85].includes(value)) { await comparison.scrollIntoViewIfNeeded(); await screenshot(page, 'desktop-copper-' + value); }
+  await browserTest('reduced motion uses instant settled cameras with no continuing animation', {}, async ({ page }) => {
+    await visit(page, '/v3/?capture=1'); await hardwareSettled(page);
+    for (const item of hardwareProjects) {
+      await selectHardware(page, item.key); await assertHardwareSelection(page, item.key);
+      assert.equal(await page.locator(hardware).evaluate(node => node.getAnimations({ subtree: true }).some(animation => ['running', 'pending'].includes(animation.playState))), false);
+      await assertHardwareIdle(page, item.key);
     }
-    await comparison.locator('[data-copper-reset]').click(); await copperValue(comparison, 50);
-    await page.locator('button[data-folio-view="overview"]').click(); await folioSettled(page, 'tramtrace');
-    await page.goBack(); await folioSettled(page, 'tramtrace', 'copper');
-    await folioSelect(page, 'skylabs'); assert.equal(await page.locator('button[data-folio-view="copper"]').isVisible(), false);
-    assert.equal(await comparison.isVisible(), false);
-    await visit(page, '/v3/?project=skylabs&view=copper&qa=invalid#work'); await folioSettled(page, 'skylabs');
-    await assertFolioSelection(page, 'skylabs');
-    return { registeredFrame: layers[0], values: [0, 15, 50, 85, 100], keyboardAndHistory: true };
+    await selectHardware(page, 'tramtrace', 'controller'); await assertHardwareIdle(page, 'tramtrace', 'controller');
+    return { reducedMotion: true, actualWebGL: true, noOngoingAnimation: true };
   });
-  await browserTest('registered copper pointer and native touch preserve parent selection', { touch: true, noWebGL: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
-    const comparison = await openComparison(page), stage = comparison.locator('[data-copper-reveal]'), range = comparison.locator('[data-copper-range]');
-    await pointerDrag(page, stage, -60); const pointerValue = Number(await range.inputValue()); assert.ok(pointerValue < 50);
-    await comparison.locator('[data-copper-reset]').click(); await copperValue(comparison, 50);
-    await touchDrag(context, page, stage, 80); const touchValue = Number(await range.inputValue()); assert.ok(touchValue > 50);
-    assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-active'), 'tramtrace');
-    assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-view'), 'copper');
-    for (const value of [15, 50, 85]) { await rangeViaKeyboard(page, range, value); await copperValue(comparison, value); await comparison.scrollIntoViewIfNeeded(); await screenshot(page, 'mobile-copper-' + value); }
-    await page.setViewportSize({ width: 320, height: 740 }); await noOverflow(page, 'Registered copper at 320px');
-    await range.focus(); await page.keyboard.press('Home'); await copperValue(comparison, 0);
-    await page.keyboard.press('End'); await copperValue(comparison, 100);
-    assert.equal(await page.evaluate(() => document.createElement('canvas').getContext('webgl')), null);
-    return { pointerValue, touchValue, webglIndependent: true, narrowWidth: 320 };
-  });
-  await browserTest('registered copper asset failure exposes retry and real case access', {}, async ({ page, context }) => {
-    let fail = true;
-    await context.route(/\/tramtrace-front-mask\.svg/, route => fail ? route.abort() : route.continue());
-    await visit(page, '/v3/?project=tramtrace&view=copper#work'); await approachFolio(page); await folioSettled(page, 'tramtrace', 'copper');
-    const comparison = page.locator('[data-folio-copper]');
-    await page.waitForFunction(() => document.querySelector('[data-folio-copper]').dataset.copperState === 'error');
-    assert.equal(await comparison.locator('[data-copper-error]').isVisible(), true);
-    assert.equal(await comparison.locator('[data-copper-range]').isDisabled(), true);
-    assert.equal(await comparison.locator('a[href="/v3/projects/tramtrace/#copper-data"]').isVisible(), true);
-    fail = false; await comparison.locator('[data-copper-retry]').click();
-    await page.waitForFunction(() => document.querySelector('[data-folio-copper]').dataset.copperState === 'ready');
-    await rangeViaKeyboard(page, comparison.locator('[data-copper-range]'), 85); await copperValue(comparison, 85);
-    await noOverflow(page, 'Recovered registered comparison');
-  });
-  for (const options of [{ name: 'no JavaScript', js: false }, { name: 'comparison controller unavailable', block: /\/assets\/v3-copper-reveal\.js/ }]) {
-    await browserTest('registered artwork remains available with ' + options.name, { ...options, viewport: { width: 390, height: 844 } }, async ({ page }) => {
-      await visit(page, '/v3/?project=tramtrace&view=copper#work');
-      const comparison = page.locator('[data-folio-copper]'); await comparison.scrollIntoViewIfNeeded();
-      assert.equal(await comparison.isVisible(), true);
-      assert.equal(await comparison.locator('[data-copper-side="copper"] svg').isVisible(), true);
-      assert.equal(await comparison.locator('[data-copper-side="board"] svg').isVisible(), true);
-      assert.equal(await comparison.locator('[data-copper-range]').isVisible(), false, 'Nonfunctional controls remain hidden');
-      assert.equal(await comparison.locator('a[href="/v3/projects/tramtrace/#copper-data"]').isVisible(), true);
-      await noOverflow(page, 'Artwork fallback: ' + options.name);
+  for (const options of [
+    { name: 'JavaScript disabled', js: false },
+    { name: 'WebGL unavailable', noWebGL: true },
+    { name: 'Save Data requested', saveData: true },
+    { name: 'stage controller unavailable', block: /\/assets\/v3-hardware-stage\.js/ },
+    { name: 'original TramTrace model unavailable', block: /\/assets\/models\/hero\/tramtrace(?:\.|\?)/ }
+  ]) {
+    await browserTest('hardware has a meaningful fallback with ' + options.name, { ...options, viewport: { width: 390, height: 844 } }, async ({ page, requests }) => {
+      await visit(page);
+      const section = page.locator(hardware);
+      if (options.noWebGL || options.name === 'original TramTrace model unavailable') await page.waitForFunction(() => document.querySelector('[data-hardware-portfolio]').dataset.model === 'fallback', null, { timeout: 120000 });
+      await loaded(section.locator('.poster:visible').first());
+      assert.equal(await section.locator('h1').isVisible(), true);
+      assert.equal(await section.locator('.project a[href="/v3/projects/tramtrace/"]').isVisible(), true);
+      assert.equal(await page.locator('a[href="/v3/projects/"]:visible').count() > 0, true);
+      for (const button of await section.locator('button[data-view]:visible, .pixel-toggle:visible').all()) assert.equal(await button.isDisabled(), true, 'Unavailable 3D controls must not appear operable');
+      if (options.saveData) assert.equal(requests.some(url => /\/assets\/models\/(?:hero|aircraft)\//.test(url)), false, 'Save Data avoids all automatic hardware/aircraft model downloads');
+      if (options.noWebGL || options.saveData || options.name === 'original TramTrace model unavailable') {
+        for (const item of hardwareProjects) {
+          await section.locator('button[data-project="' + item.key + '"]').click();
+          await page.waitForFunction(key => document.querySelector('[data-hardware-portfolio]').dataset.project === key, item.key);
+          await loaded(section.locator('.poster:visible').first());
+          assert.equal(await section.locator('.project a').getAttribute('href'), '/v3/projects/' + item.slug + '/');
+        }
+      }
+      await noOverflow(page, options.name + ' hardware fallback');
+      await screenshot(page, 'mobile-hardware-fallback-' + options.name, true);
+      return { decodedPoster: true, realCaseAccess: true, nonfunctionalControlsHiddenOrDisabled: true };
     });
   }
   await browserTest('expanded hardware photo zoom pan keyboard close and repeat', {}, async ({ page }) => {
-    await visit(page); await approachFolio(page); await folioSettled(page);
-    await folioSelect(page, 'skylabs', 'detail');
+    await visit(page, '/v3/?capture=1'); await approachHardware(page); await hardwareSettled(page);
+    await selectHardware(page, 'telemetry');
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await opener.scrollIntoViewIfNeeded(); await opener.focus();
     const before = { url: page.url(), scrollY: await page.evaluate(() => scrollY) };
-    const expectedSource = await page.locator('[data-folio-card][data-offset="0"] [data-folio-image]').evaluate(image => {
-      const candidates = image.srcset.split(',').map(value => { const [url, size] = value.trim().split(/\s+/); return { url: new URL(url, location.href).href, size: parseInt(size) || 0 }; }).sort((a, b) => b.size - a.size);
-      return candidates[0]?.url || image.currentSrc || image.src;
+    const expectedSource = await page.locator('[data-hardware-photo="telemetry"]').evaluate(article => {
+      const candidates = article.dataset.detailSrcset.split(',').map(value => { const [url, size] = value.trim().split(/\s+/); return { url: new URL(url, location.href).href, size: parseInt(size) || 0 }; }).sort((a, b) => b.size - a.size);
+      return candidates[0]?.url || new URL(article.dataset.detailSrc, location.href).href;
     });
     await page.keyboard.press('Enter'); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    await activateKeyboard(page, dialog.locator('[data-inspect-photo-view="detail"]'));
+    await page.waitForFunction(source => document.querySelector('[data-gallery-inspect]').dataset.state === 'ready' && document.querySelector('[data-inspect-image]')?.src === source, expectedSource);
     assert.equal(await dialog.isVisible(), true);
     assert.equal(await dialog.locator('[data-inspect-image]').evaluate(image => image.currentSrc || image.src), expectedSource, 'Expand the real selected macro at its largest supplied resolution');
     assert.equal(await dialog.locator('[data-inspect-image]').evaluate(image => image.complete && image.naturalWidth > 0 && image.alt.trim().length > 0), true);
@@ -817,6 +780,13 @@ async function browserTests() {
     await page.mouse.move(bounds.x + bounds.width / 2 - 85, bounds.y + bounds.height / 2 - 30, { steps: 6 }); await page.mouse.up();
     assert.notEqual(Number(await dialog.getAttribute('data-pan-x')), dragBefore, 'Pointer dragging pans the enlarged photograph');
     await screenshot(page, 'desktop-expanded-hardware-photo');
+    const hardwareView = await page.locator(hardware).getAttribute('data-view');
+    await dialog.locator('[data-inspect-photo-view="overview"]').click();
+    await page.waitForFunction(() => document.querySelector('[data-gallery-inspect]').dataset.state === 'ready' && /skylabs-telemetry-hero/.test(document.querySelector('[data-inspect-image]')?.src || ''));
+    assert.equal(Number(await dialog.getAttribute('data-zoom')), 1, 'Changing the photograph resets stale pan/zoom');
+    assert.equal(await page.locator(hardware).getAttribute('data-view'), hardwareView, 'Photo selection does not invent a hardware mode');
+    await dialog.locator('[data-inspect-photo-view="detail"]').click();
+    await page.waitForFunction(source => document.querySelector('[data-gallery-inspect]').dataset.state === 'ready' && document.querySelector('[data-inspect-image]')?.src === source, expectedSource);
     await dialog.locator('[data-inspect-reset]').click(); assert.equal(Number(await dialog.getAttribute('data-zoom')), 1);
     assert.equal(Number(await dialog.getAttribute('data-pan-x')), 0); assert.equal(Number(await dialog.getAttribute('data-pan-y')), 0);
     for (let i = 0; i < 12; i++) { await page.keyboard.press(i > 8 ? 'Shift+Tab' : 'Tab'); assert.equal(await dialog.evaluate(node => node.contains(document.activeElement)), true, 'Expanded photo contains forward and reverse keyboard focus'); }
@@ -826,13 +796,15 @@ async function browserTests() {
     await page.keyboard.press('Enter'); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     assert.equal(Number(await dialog.getAttribute('data-zoom')), 1, 'Reopening starts fitted rather than carrying stale pan/zoom');
     await dialog.locator('[data-inspect-close]').click(); await dialog.waitFor({ state: 'hidden' });
-    await folioSelect(page, 'dual-usb-c'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
-    assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /framework-dual-installed/);
+    await selectHardware(page, 'pi'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /framework-pi-cad/);
+    assert.equal(await dialog.locator('[data-inspect-photo-view=detail]').isVisible(), false, 'No fabricated Pi close-up mode');
+    assert.match(await dialog.locator('[data-inspect-caption]').textContent(), /CAD assembly/i);
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
     return { suppliedLargestPhoto: true, boundedZoom: [1, 3], keyboardAndPointerPan: true, focusAndScrollRestored: true };
   });
   await browserTest('expanded hardware photo mobile pinch pan and dismissal', { touch: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
-    await visit(page); await approachFolio(page); await folioSettled(page); await folioSelect(page, 'tramtrace', 'detail');
+    await visit(page, '/v3/?capture=1'); await approachHardware(page); await hardwareSettled(page); await selectHardware(page, 'tramtrace', 'controller');
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await page.evaluate(() => {
       const log = window.__v3InputDiagnostics = { phase: 'fresh-mobile-open', events: [], checkpoints: [] };
@@ -887,11 +859,11 @@ async function browserTests() {
     await dialog.locator('[data-inspect-close]').tap(); await checkpoint('post-gesture-tap-dispatched');
     await dialog.waitFor({ state: 'hidden' });
     assert.equal(await opener.evaluate(node => node === document.activeElement), true);
-    await assertFolioSelection(page, 'tramtrace', 'detail');
+    await assertHardwareSelection(page, 'tramtrace', 'controller');
     return { viewport: { width: 390, height: 844 }, freshMobileClose: true, touchPinch: true, touchPan: true, postGestureControlTaps: true, inputDiagnostics: await page.evaluate(() => window.__v3InputDiagnostics) };
   });
   await browserTest('expanded photo Close ignores touch-down drag cancellation and multitouch', { touch: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
-    await visit(page); await approachFolio(page); await folioSettled(page);
+    await visit(page, '/v3/?capture=1'); await approachHardware(page); await hardwareSettled(page);
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await opener.tap(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     await page.evaluate(() => {
@@ -933,10 +905,10 @@ async function browserTests() {
     assert.equal(await opener.evaluate(node => node === document.activeElement), true);
     return { activatesOnlyAfterValidTap: true, dragCancelled: true, touchCancelled: true, multitouchCancelled: true, inputDiagnostics: trace };
   });
-  await browserTest('expanded photo resource failure retry and selected-source recovery', { saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
+  await browserTest('expanded photo resource failure retry and selected-source recovery', { viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
     let fail = true;
     await context.route(/\/tramtrace-controller-1920\.webp/, route => fail ? route.abort() : route.continue());
-    await visit(page); await approachFolio(page); await folioSettled(page); await folioSelect(page, 'tramtrace', 'detail');
+    await visit(page, '/v3/?capture=1'); await approachHardware(page); await hardwareSettled(page); await selectHardware(page, 'tramtrace', 'controller');
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await opener.click(); await page.locator('[data-gallery-inspect][data-state="error"]').waitFor();
     assert.equal(await dialog.locator('[data-inspect-retry]').isVisible(), true);
@@ -946,10 +918,10 @@ async function browserTests() {
     await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     assert.equal(await dialog.locator('[data-inspect-image]').evaluate(image => image.naturalWidth >= 1920), true);
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
-    await folioSelect(page, 'skylabs'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    await selectHardware(page, 'telemetry'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /skylabs-telemetry-hero/);
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
-    await assertFolioSelection(page, 'skylabs');
+    await assertHardwareSelection(page, 'telemetry');
   });
   await browserTest('collection query categories empty reset and history', {}, async ({ page }) => {
     await visit(page, '/v3/projects/?qa=portfolio&q=Framework&category=hardware');
@@ -976,20 +948,18 @@ async function browserTests() {
     }
     return { queryReload: true, browserBackForward: true, categoryCounts: { all: 15, hardware: 12, robotics: 1, archive: 2 } };
   });
-  await browserTest('mobile menu keyboard Escape and navigation', { viewport: { width: 390, height: 844 } }, async ({ page }) => {
-    await visit(page);
-    const menu = page.locator('[data-v2-menu]');
-    await menu.focus(); await page.keyboard.press('Enter');
-    assert.equal(await menu.getAttribute('aria-expanded'), 'true');
-    assert.equal(await page.locator('[data-v2-nav]').isVisible(), true);
-    await page.keyboard.press('Escape');
-    assert.equal(await menu.getAttribute('aria-expanded'), 'false');
-    assert.equal(await menu.evaluate(node => node === document.activeElement), true);
-    await menu.click(); await page.locator('[data-v2-nav] a[href="/v3/projects/"]').click();
-    await page.waitForURL('**/v3/projects/');
-    await searchCount(page, 15);
-    assert.equal(await menu.getAttribute('aria-expanded'), 'false');
-    await noOverflow(page, 'Mobile project collection');
+  await browserTest('native narrow primary navigation is visible and keyboard accessible', { viewport: { width: 320, height: 740 } }, async ({ page }) => {
+    for (const route of ['/v3/', '/v3/about/']) {
+      await visit(page, route);
+      const nav = page.locator('nav[aria-label="Primary navigation"]');
+      assert.equal(await nav.isVisible(), true);
+      assert.equal(await nav.locator('a:visible').count(), 3, 'Projects, CV and Contact remain directly available');
+      for (const link of await nav.locator('a').all()) await assertUsableControl(page, link, 'Primary navigation link');
+      await activateKeyboard(page, nav.locator('a[href="/v3/projects/"]'));
+      await page.waitForURL('**/v3/projects/'); await searchCount(page, 15);
+      await noOverflow(page, '320px native collection navigation');
+    }
+    return { nativeLinks: ['projects', 'CV', 'contact'], keyboardNavigation: true, viewportWidth: 320 };
   });
   await browserTest('photo gallery keyboard focus Escape and repeat opening', {}, async ({ page }) => {
     await visit(page, '/v3/projects/tramtrace/');
@@ -1168,10 +1138,9 @@ async function browserTests() {
   });
   await browserTest('no JavaScript retains navigation photographs and complete collection', { js: false, viewport: { width: 390, height: 844 } }, async ({ page }) => {
     await visit(page);
-    assert.equal(await page.locator('[data-v2-nav]').isVisible(), true);
+    assert.equal(await page.locator('.site-header nav').isVisible(), true);
     await staticAircraft(page);
-    const nativePhoto = page.locator('#work noscript img').first();
-    if (await nativePhoto.count()) await loaded(nativePhoto);
+    await loaded(page.locator(hardware + ' .poster:visible').first());
     await visit(page, '/v3/projects/'); await searchCount(page, 15);
     assert.equal(await page.locator('[data-v2-search-wrap]').isVisible(), false);
     await noOverflow(page, 'No-JS collection');
@@ -1180,7 +1149,7 @@ async function browserTests() {
     await browserTest(name + ' retains static aircraft without CAD downloads', options, async ({ page, requests }) => {
       await visit(page); await approachAircraft(page); await staticAircraft(page);
       assert.equal(await page.locator(hero).getAttribute('data-aircraft-state'), 'static');
-      assert.equal(requests.some(url => cadRequest.test(url)), false, 'Preference must avoid automatic model and Three downloads');
+      assert.equal(requests.some(url => cadRequest.test(url)), false, 'Preference must avoid aircraft-specific model and renderer downloads');
       return { renderer: 'static', cadDownloads: 0 };
     });
   }
@@ -1244,9 +1213,9 @@ async function browserTests() {
       await page.setViewportSize(viewport); await visit(page, route);
       await noOverflow(page, route + ' ' + viewport.width + 'x' + viewport.height);
       if (route === '/v3/') {
-        await folioSettled(page);
-        const card = await folioCardFits(page), supportingPhotos = await supportingPhotoFrames(page);
-        (evidence.landingGeometry ||= []).push({ viewport, card, supportingPhotos });
+        await hardwareSettled(page);
+        const supportingPhotos = await supportingPhotoFrames(page);
+        (evidence.landingGeometry ||= []).push({ viewport, supportingPhotos });
         await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
       }
       if (viewport.width === 390) {
@@ -1255,6 +1224,35 @@ async function browserTests() {
       }
     }
     return { viewports: sizes, routes };
+  });
+  await browserTest('320px and landscape native hardware controls remain reachable', {}, async ({ page }) => {
+    const viewports = [{ width: 320, height: 568 }, { width: 844, height: 390 }], controls = [];
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport); await visit(page, '/v3/?capture=1'); await hardwareSettled(page);
+      for (const item of hardwareProjects) {
+        await selectHardware(page, item.key); await assertHardwareSelection(page, item.key);
+        for (const button of await page.locator(hardware + ' button[data-project]:visible').all()) controls.push({ viewport, geometry: await assertUsableControl(page, button, item.key + ' project control') });
+      }
+      await selectHardware(page, 'tramtrace');
+      for (const view of ['overview', 'controller', 'copper']) {
+        const button = page.locator(hardware + ' button[data-view="' + view + '"]');
+        await assertUsableControl(page, button, view + ' inspection'); await activateKeyboard(page, button); await hardwareSettled(page, 'tramtrace', view);
+        await noOverflow(page, viewport.width + 'px ' + view);
+        if (view === 'copper') await assertUsableControl(page, page.locator('#copper-range'), 'Copper range');
+        await approachHardware(page); await screenshot(page, viewport.width + 'x' + viewport.height + '-hardware-' + view);
+      }
+    }
+    return { viewports, controls };
+  });
+  await browserTest('loaded dark collection About and non-TramTrace case capture', {}, async ({ page }) => {
+    for (const [device, viewport] of [['desktop', { width: 1440, height: 900 }], ['mobile', { width: 390, height: 844 }]]) {
+      await page.setViewportSize(viewport);
+      for (const [name, route] of [['collection', '/v3/projects/'], ['about', '/v3/about/'], ['raspberry-pi-case', '/v3/projects/framework-raspberry-pi/'], ['tramtrace-case', '/v3/projects/tramtrace/']]) {
+        await visit(page, route); assert.equal(await page.locator('h1').isVisible(), true); await noOverflow(page, device + ' ' + route);
+        await screenshot(page, device + '-' + name + '-fully-loaded', true);
+      }
+    }
+    return { decodedAfterRealScroll: true, cases: ['framework-raspberry-pi', 'tramtrace'] };
   });
   await browserTest('all interiors fit 320 pixel no-JavaScript reading', { js: false, viewport: { width: 320, height: 740 } }, async ({ page }) => {
     for (const file of sourcePages) {
@@ -1284,7 +1282,7 @@ async function browserTests() {
   evidence.finished = new Date().toISOString();
   evidence.screenshots = screenshotPaths;
   evidence.status = evidence.tests.some(item => item.status === 'failed') ? 'failed' : evidence.browser?.status === 'blocked' ? 'blocked' : 'passed';
-  evidence.coverage = staticOnly ? 'Source checks only; browser rendering and interactions were not run.' : evidence.browser?.status === 'blocked' ? 'Browser launch failed; static results are not a browser pass.' : 'Static inventory, live DOM, keyboard, fallback, responsive and actual WebGL readiness checks.';
+  evidence.coverage = staticOnly ? 'Source checks only; browser rendering and interactions were not run.' : evidence.browser?.status === 'blocked' ? 'Browser launch failed; static results are not a browser pass.' : 'Source inventory, original geometry, actual WebGL pixels, native keyboard/touch, idle rendering, fallbacks, routes, workbench and fully decoded screenshots. Passing assertions do not replace human visual review of the captured images.';
   fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(evidence, null, 2));
   console.log(evidence.status.toUpperCase() + ': ' + evidence.tests.filter(item => item.status === 'passed').length + '/' + evidence.tests.length + ' checks; artifacts ' + output);
   if (evidence.status !== 'passed') process.exitCode = 1;

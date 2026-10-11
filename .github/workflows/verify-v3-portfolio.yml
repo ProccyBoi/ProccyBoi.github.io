@@ -2,11 +2,16 @@ name: Verify v3 portfolio experience
 
 on:
   push:
-    branches: [v3-field-notebook]
+    branches: [v3-visual-studies]
   pull_request:
     paths:
       - 'v3/**'
       - 'assets/v3*'
+      - 'assets/models/hero/**'
+      - 'assets/models/manufacturing/tramtrace/**'
+      - 'assets/tramtrace-*'
+      - 'assets/v2-hero-*'
+      - 'assets/aircraft-story.css'
       - 'scripts/*v3*'
       - 'scripts/content/v3*'
       - '.github/workflows/verify-v3-portfolio.yml'
@@ -18,7 +23,7 @@ permissions:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v4

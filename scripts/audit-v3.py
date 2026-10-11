@@ -172,6 +172,11 @@ def main():
                 error(owner, f"missing local target {raw!r} -> {path.relative_to(ROOT).as_posix()}", line)
             return
         checked_files.add(path)
+        fragment = unquote(urlsplit(urljoin(base, raw.strip())).fragment)
+        if fragment and path.suffix.lower() == ".html":
+            destination = read_document(path)
+            if not any(item.attrs.get("id") == fragment or (item.tag == "a" and item.attrs.get("name") == fragment) for item in destination.elements):
+                error(owner, f"missing HTML fragment {raw!r}", line)
         if not path.stat().st_size:
             error(owner, f"empty local target: {raw}", line)
         if path.suffix.lower() == ".css" and path not in checked_css:
@@ -265,7 +270,7 @@ def main():
 
         if not redirect:
             styles = [item for item in doc.tags("link") if "stylesheet" in item.attrs.get("rel", "").split()]
-            final_style = "/assets/v3-folio.css" if page == ROOT / "v3/index.html" else "/assets/v3.css"
+            final_style = "/assets/v3-gallery-inspect.css" if page == ROOT / "v3/index.html" else "/assets/v3.css"
             if not styles or urlsplit(urljoin(doc.base, styles[-1].attrs.get("href", ""))).path != final_style:
                 error(page, f"{final_style} must be the last stylesheet")
             elif any(item.tag == "style" and "head" in item.ancestors for item in doc.elements[doc.elements.index(styles[-1]) + 1:]):
@@ -273,20 +278,54 @@ def main():
             if relative == "index.html":
                 style_paths = {urlsplit(urljoin(doc.base, item.attrs.get("href", ""))).path for item in styles}
                 script_paths = {urlsplit(urljoin(doc.base, item.attrs.get("src", ""))).path for item in doc.tags("script") if item.attrs.get("src")}
-                for rejected in {"/assets/v2.css", "/assets/v2-gallery.css", "/assets/v3.css", "/assets/v3-landing.css"} & style_paths:
-                    error(page, f"rejected landing presentation is still loaded: {rejected}")
-                if "/assets/v2-gallery.js" in script_paths:
-                    error(page, "the folio must not initialize the rejected v2 gallery")
-                for required in {"/assets/v3-folio.js", "/assets/v3-copper-reveal.js", "/assets/v3-gallery-inspect.js", "/assets/v3-aircraft-hero.js"} - script_paths:
-                    error(page, f"missing folio enhancement: {required}")
-                folio_cards = [item.attrs["data-folio-card"] for item in doc.elements if "data-folio-card" in item.attrs]
-                if folio_cards != ["tramtrace", "skylabs", "dual-usb-c"]:
-                    error(page, "folio must retain the three selected hardware projects")
-                for script in {"assets/v3-folio.js", "assets/v3-copper-reveal.js", "assets/v3-gallery-inspect.js"}:
-                    source = ROOT / script
-                    if source.is_file():
-                        for imported in re.findall(r"import\(\s*[\"'](/assets/[^\"']+)[\"']\s*\)", source.read_text(encoding="utf-8")):
-                            reference(source, imported, ORIGIN)
+                for rejected in {"/assets/v2.css", "/assets/v2-gallery.css", "/assets/v3.css", "/assets/v3-landing.css", "/assets/v3-folio.css"} & style_paths:
+                    error(page, f"superseded landing presentation is still loaded: {rejected}")
+                for required in {"/assets/v3-hardware-stage.css", "/assets/v3-gallery-inspect.css", "/assets/aircraft-story.css"} - style_paths:
+                    error(page, f"missing physical-stage presentation: {required}")
+                for rejected in {"/assets/v2-gallery.js", "/assets/v3-folio.js", "/assets/v3-copper-reveal.js"} & script_paths:
+                    error(page, f"superseded landing controller is still loaded: {rejected}")
+                for required in {"/assets/v3-hardware-stage.js", "/assets/v3-gallery-inspect.js", "/assets/v3-aircraft-hero.js"} - script_paths:
+                    error(page, f"missing physical-stage enhancement: {required}")
+                roots = [item for item in doc.elements if "data-hardware-portfolio" in item.attrs]
+                if len(roots) != 1:
+                    error(page, "expected one physical hardware portfolio stage")
+                selected = [item.attrs["data-project"] for item in doc.tags("button") if "data-project" in item.attrs]
+                if selected != ["tramtrace", "telemetry", "pi"]:
+                    error(page, "selected hardware must retain TramTrace, Skylabs telemetry and the RP2354B card")
+                modes = [item.attrs["data-view"] for item in doc.tags("button") if "data-view" in item.attrs]
+                if modes != ["overview", "controller", "copper"]:
+                    error(page, "TramTrace must retain whole-board, controller and actual-copper inspection")
+                photographs = [item for item in doc.elements if "data-hardware-photo" in item.attrs]
+                if [item.attrs["data-hardware-photo"] for item in photographs] != selected:
+                    error(page, "each selected project needs its own photograph or labelled CAD fallback")
+                for item in photographs:
+                    if not item.attrs.get("data-overview-src") or not item.attrs.get("data-overview-alt"):
+                        error(page, "selected-project image metadata needs a readable overview")
+                    if item.attrs["data-hardware-photo"] == "pi" and item.attrs.get("data-image-kind") != "render":
+                        error(page, "the Framework Pi must identify its CAD render rather than claim a physical photograph")
+                page_source = page.read_text(encoding="utf-8")
+                aircraft_section = re.search(r'<section\b[^>]*\bdata-aircraft-hero\b[^>]*>.*?</section>', page_source, re.S)
+                aircraft_digest = sha256(("\n".join(line.rstrip() for line in aircraft_section[0].splitlines()).rstrip() + "\n").encode()).hexdigest() if aircraft_section else None
+                # Approved aircraft-to-telemetry scene, unchanged from the
+                # pre-integration source; do not bless geometry/UI rewrites here.
+                if aircraft_digest != "d1ec3c5f96c892f013c15f6a3342c99b7860da8bb8b5bdd7694abe8db2244634":
+                    error(page, "the approved aircraft-to-telemetry section changed")
+                more = [item for item in doc.elements if item.attrs.get("id") == "more-work"]
+                if len(more) != 1 or "More builds" not in "".join(more[0].text):
+                    error(page, "the More builds collection entry is missing")
+                more_routes = {"/v3/projects/coaster/", "/v3/projects/rf-test-board/", "/v3/projects/framework-logic-analyser/"}
+                local_links = {urlsplit(urljoin(doc.base, item.attrs.get("href", ""))).path for item in doc.tags("a")}
+                for required in more_routes | {"/v3/projects/", "/v3/about/", "/shared/", "/book/", "/assets/documents/Andrew_Chung_Public_CV.pdf"}:
+                    if required not in local_links:
+                        error(page, f"missing project or utility destination: {required}")
+                if not any(item.attrs.get("href") == "mailto:andrew.noah.chung@gmail.com" for item in doc.tags("a")):
+                    error(page, "the home contact destination is missing")
+                for script in ["assets/v3-hardware-stage.js", "assets/v3-hardware-copper.js", "assets/v3-hardware-pixels.js", "assets/v3-gallery-inspect.js"]:
+                    reference(page, "/" + script, ORIGIN)
+                    script_file = ROOT / script
+                    if script_file.is_file():
+                        for imported in re.findall(r'(?:import|script|fetch)\(\s*["\'](/assets/[^"\']+)["\']', script_file.read_text(encoding="utf-8")):
+                            reference(script_file, imported, ORIGIN)
             bodies = doc.tags("body")
             if len(bodies) != 1 or "v3" not in bodies[0].attrs.get("class", "").split():
                 error(page, "missing v3 body class")
@@ -336,6 +375,24 @@ def main():
             if inline_scripts(original) - inline_scripts(doc):
                 error(page, "an original inline simulation or model JSON block changed")
             stats["preserved interiors"] += 1
+            visible_copy = " ".join("".join(doc.tags("body")[0].text).split())
+            if "Engineering record" in visible_copy:
+                error(page, "generic engineering-record presentation has returned")
+            if any("".join(item.text).strip() == "Tools" and item.attrs.get("href") == "/projects/#interactive" for item in doc.tags("a")):
+                error(page, "teaching tools must not be promoted in the primary or footer navigation")
+            records = json.loads((ROOT / "scripts/content/v3-case-evidence.json").read_text(encoding="utf-8"))
+            for key in ["constraint", "decision", "test", "limit"]:
+                expected_copy = records.get(relative, {}).get(key)
+                if expected_copy and " ".join(expected_copy.split()) not in visible_copy:
+                    error(page, f"substantive case-study {key} was removed")
+            if relative == "projects/index.html":
+                expected_projects = Counter(item.attrs.get("href", "").replace("/v2/", "/v3/", 1) for item in original.elements if "data-v2-project" in item.attrs)
+                actual_projects = Counter(item.attrs.get("href", "") for item in doc.elements if "data-v2-project" in item.attrs)
+                if actual_projects != expected_projects or sum(actual_projects.values()) != 15:
+                    error(page, "the collection must retain all 15 original projects exactly once")
+            if relative == "projects/framework-raspberry-pi/index.html":
+                if "RP2354B" not in visible_copy or "RP2040" in visible_copy:
+                    error(page, "Framework Pi controller must remain RP2354B")
 
     # Aircraft assets are loaded by JavaScript rather than HTML. Check the
     # delivered mesh and its compressed copy against the export manifest.
