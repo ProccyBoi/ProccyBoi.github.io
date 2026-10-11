@@ -175,6 +175,9 @@
       const effective = scrub ? renderedProgress : targetProgress;
       const pose = capturePose?.type === 'landing' ? flight.setLanding(capturePose.value) : capturePose?.type === 'progress' ? flight.setProgress(capturePose.value) : !landingDone ? flight.setLanding(landingElapsed / 5400) : flight.setProgress(effective);
       root.dataset.aircraftAtmosphere = drawPose(pose).toFixed(6);
+      // Only a successful current live draw may expose this canvas. Resumed
+      // hidden warm poses must never leak through the opacity transition.
+      if (background) { canvas.style.visibility = ''; root.dataset.aircraftWarmMask = 'false'; }
       root.classList.add('is-ready'); root.dataset.aircraftState = landingDone || capturePose ? 'ready' : 'landing';
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
       root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftFrames = String(++frameCount);
@@ -341,6 +344,10 @@
   async function prepareInBackground() {
     if (!background || backgroundBusy || backgroundDone || failed || !allowed() || visible || document.hidden || !activePage) return;
     backgroundBusy = true;
+    // An early visit may already have revealed the canvas. Mask it immediately
+    // (not with an opacity fade) before any resumed offscreen warm draw.
+    root.classList.remove('is-ready'); canvas.style.visibility = 'hidden';
+    root.dataset.aircraftWarmMask = 'true';
     const generation = ++warmGeneration;
     const current = () => generation === warmGeneration && !visible && !document.hidden && activePage && allowed() && !failed;
     root.dataset.aircraftBackgroundState = 'warming';

@@ -274,6 +274,124 @@ async function interruptedInitialization(browser) {
     await release().catch(() => {}); await context.close();
   }
 }
+async function liveWarmMask(browser) {
+  const run = await open(browser), { page, context } = run;
+  await context.addInitScript(() => {
+    const idle = window.requestIdleCallback.bind(window), raf = window.requestAnimationFrame.bind(window);
+    const cancelIdle = window.cancelIdleCallback.bind(window), cancelRAF = window.cancelAnimationFrame.bind(window);
+    const idleQueue = new Map(), liveQueue = new Map(); let next = -1, idleDispatched = 0;
+    const samples = [], control = window.__v2WarmMaskControl = { holdLive: false };
+    const aircraftCall = () => /v3-aircraft-hero\.js/.test(new Error().stack);
+    const read = label => {
+      const root = document.querySelector('[data-aircraft-hero]'), canvas = root?.querySelector('canvas'), poster = root?.querySelector('[data-aircraft-poster]');
+      if (!root || !canvas || !poster) return { label };
+      return { label, t: performance.now(), y: scrollY, live: Number(root.dataset.aircraftFrames || 0), warm: Number(root.dataset.aircraftWarmFrames || 0), mask: root.dataset.aircraftWarmMask, readyClass: root.classList.contains('is-ready'), canvasVisibility: getComputedStyle(canvas).visibility, canvasOpacity: Number(getComputedStyle(canvas).opacity), posterVisibility: getComputedStyle(poster).visibility, progress: Number(root.dataset.aircraftRenderedProgress || 0), chapter: root.dataset.aircraftChapter, phase: root.dataset.aircraftPhase };
+    };
+    window.requestIdleCallback = (callback, options) => {
+      if (!aircraftCall()) return idle(callback, options);
+      const id = next--; idleQueue.set(id, () => idle(deadline => { callback(deadline); idleDispatched++; }, options)); return id;
+    };
+    window.cancelIdleCallback = id => { if (!idleQueue.delete(id)) cancelIdle(id); };
+    window.requestAnimationFrame = callback => {
+      if (callback.name !== 'render' || !aircraftCall()) return raf(callback);
+      const observed = time => { samples.push(read('before-live')); callback(time); samples.push(read('after-live')); };
+      if (!control.holdLive) return raf(observed);
+      const id = next--; liveQueue.set(id, observed); return id;
+    };
+    window.cancelAnimationFrame = id => { if (!liveQueue.delete(id)) cancelRAF(id); };
+    control.releaseIdle = () => {
+      const nextEntry = idleQueue.entries().next().value;
+      if (!nextEntry) return false;
+      idleQueue.delete(nextEntry[0]); nextEntry[1](); return true;
+    };
+    control.releaseLive = () => {
+      control.holdLive = false;
+      for (const callback of liveQueue.values()) raf(callback);
+      liveQueue.clear();
+    };
+    control.state = () => ({ ...read('snapshot'), idlePending: idleQueue.size, idleDispatched, livePending: liveQueue.size, samples });
+    new MutationObserver(records => {
+      if (records.some(record => record.attributeName === 'data-aircraft-warm-mask')) samples.push(read('mask-change'));
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-aircraft-warm-mask'] });
+  });
+  const state = () => page.evaluate(() => window.__v2WarmMaskControl.state());
+  const releaseIdle = async () => {
+    await page.waitForFunction(() => window.__v2WarmMaskControl.state().idlePending > 0);
+    const dispatched = await page.evaluate(() => window.__v2WarmMaskControl.state().idleDispatched);
+    assert.equal(await page.evaluate(() => window.__v2WarmMaskControl.releaseIdle()), true);
+    await page.waitForFunction(previous => window.__v2WarmMaskControl.state().idleDispatched > previous, dispatched);
+  };
+  const assertMasked = (sample, message) => {
+    assert.equal(sample.mask, 'true', message); assert.equal(sample.readyClass, false, message);
+    assert.equal(sample.canvasVisibility, 'hidden', message); assert.equal(sample.posterVisibility, 'visible', message);
+  };
+  try {
+    await page.goto(base + '/v2/?v=background-live-warm-mask', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__v2WarmMaskControl.state().idlePending > 0);
+    await page.locator(aircraft).evaluate(root => scrollTo({ top: scrollY + root.getBoundingClientRect().top, behavior: 'instant' }));
+    await page.waitForFunction(() => {
+      const sample = window.__v2WarmMaskControl.state(), root = document.querySelector('[data-aircraft-hero]');
+      return sample.live > 0 && sample.canvasOpacity >= .99 && sample.mask === 'false' && root.dataset.aircraftTelemetryReady === 'true';
+    }, null, { timeout });
+    const firstLive = await state();
+    assert.equal(firstLive.warm, 0, 'A real visible frame precedes any completed background warm draw');
+    assert.equal(firstLive.canvasVisibility, 'visible');
+    const visibilityCount = await page.evaluate(() => window.__v2BackgroundProbe.visibility.length);
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForFunction(count => {
+      const samples = window.__v2BackgroundProbe.visibility;
+      return scrollY === 0 && samples.length > count && samples.at(-1).visible === false;
+    }, visibilityCount);
+    // Release the old generation only after the actual exit callback. Its
+    // finally must resume preparation while the previous live canvas is opaque.
+    await releaseIdle();
+    await page.waitForFunction(() => {
+      const sample = window.__v2WarmMaskControl.state();
+      return sample.mask === 'true' && sample.idlePending > 0;
+    });
+    const remasked = await state(); assertMasked(remasked, 'Resumed warming immediately masks the previously visible canvas');
+    const duringFade = remasked.samples.find(sample => sample.label === 'mask-change' && sample.live > 0 && sample.mask === 'true');
+    assert.ok(duringFade && duringFade.canvasOpacity > 0, 'The test observes the former live canvas during its opacity fade');
+    assertMasked(duringFade, 'Visibility masking covers the entire opacity fade and shows the poster immediately');
+    await releaseIdle(); // resumed initialize/telemetry phase
+    await releaseIdle(); // first offscreen warm pose: telemetry progress 1
+    await page.waitForFunction(() => { const sample = window.__v2WarmMaskControl.state(); return sample.warm === 1 && sample.idlePending > 0; });
+    const warmedTelemetry = await state(); assertMasked(warmedTelemetry, 'The temporary telemetry warm pose stays hidden');
+    assert.equal(warmedTelemetry.live, remasked.live, 'Warm drawing never increments the live-frame counter');
+    // Hold only the controller's real render callback. Native scroll and both
+    // production IntersectionObservers continue, exposing the pre-draw interval.
+    await page.evaluate(() => { window.__v2WarmMaskControl.holdLive = true; });
+    await page.locator(aircraft).evaluate(root => {
+      const stage = root.querySelector('[data-aircraft-stage]'), track = root.querySelector('.v3-aircraft-track');
+      const distance = parseFloat(track.style.height) - stage.clientHeight;
+      scrollTo({ top: scrollY + root.getBoundingClientRect().top + distance * .3, behavior: 'instant' });
+    });
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-aircraft-hero]');
+      return root.dataset.aircraftBackgroundState === 'promoted' && Math.abs(Number(root.dataset.aircraftProgress) - .3) < .002 && window.__v2WarmMaskControl.state().livePending > 0;
+    });
+    assertMasked(await state(), 'Rapid re-entry remains masked until a current live draw completes');
+    await releaseIdle(); // cancel the old landing-restoration continuation
+    await page.waitForFunction(() => window.__v2WarmMaskControl.state().idlePending === 0);
+    const canceled = await state(); assertMasked(canceled, 'Canceled warm completion cannot unmask the temporary pose');
+    assert.equal(canceled.warm, 1, 'Canceled restoration does not draw landing zero over the new destination');
+    assert.equal(canceled.live, warmedTelemetry.live);
+    // The .3 jump from top exceeds the production .18 discontinuity threshold,
+    // so its first live pose must already equal the native target (no easing).
+    const target = Number(await page.locator(aircraft).getAttribute('data-aircraft-progress'));
+    await page.evaluate(() => window.__v2WarmMaskControl.releaseLive());
+    await page.waitForFunction(({ previous, target }) => {
+      const sample = window.__v2WarmMaskControl.state();
+      return sample.live > previous && sample.mask === 'false' && Math.abs(sample.progress - target) < .00001;
+    }, { previous: canceled.live, target });
+    const final = await state();
+    assert.equal(final.canvasVisibility, 'visible'); assert.equal(final.posterVisibility, 'hidden'); assert.equal(final.readyClass, true);
+    assert.equal(final.chapter, '0'); assert.notEqual(final.phase, 'telemetry'); assert.equal(final.warm, 1);
+    const firstUnmasked = final.samples.find(sample => sample.label === 'after-live' && sample.live > canceled.live);
+    assert.ok(firstUnmasked && firstUnmasked.mask === 'false' && Math.abs(firstUnmasked.progress - target) < .00001, 'The first unmasked live frame represents the current scroll pose, not a stale warm endpoint');
+    await save(run, 'live-frame-resumed-warm-mask-and-rapid-reentry', { firstLive, duringFade, remasked, warmedTelemetry, canceled, final, target, schedulingControl: 'Only production aircraft idle callbacks and its live render RAF are temporarily held; native scroll and visibility observers run normally' });
+  } catch (error) { await diagnostic(run, 'live-warm-mask', error); throw error; } finally { await context.close(); }
+}
 async function throttledWarmTrace(browser) {
   const run = await open(browser), { page, context } = run;
   const network = { latency: 40, downloadThroughput: 10_000_000 / 8, uploadThroughput: 10_000_000 / 8, connectionType: 'wifi' };
@@ -374,7 +492,7 @@ async function v3Deferred(browser) {
     await guard(browser, 'save-data', { saveData: true });
     await guard(browser, 'short-viewport', { viewport: { width: 1440, height: 550 } });
     if (!process.argv.includes('--static-only')) {
-      await initialViewport(browser); await heldTransport(browser); await interruptedInitialization(browser); await throttledWarmTrace(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
+      await initialViewport(browser); await heldTransport(browser); await interruptedInitialization(browser); await liveWarmMask(browser); await throttledWarmTrace(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
     }
     console.log(`${evidence.length} v2 background preparation groups passed.`);
   } finally { await browser.close(); }

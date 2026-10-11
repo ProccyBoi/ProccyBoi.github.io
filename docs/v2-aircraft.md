@@ -21,7 +21,9 @@ Offscreen construction waits for the foreground model set to settle (with a
 separate telemetry object from the shared transport, draw telemetry, then restore
 the landing pose. Real render calls prepare GPU materials and textures. These
 draws do not consume landing time, expose intermediate poses or run a continuing
-offscreen animation. Entry cancels queued background poses. Reduced motion,
+offscreen animation. Entry cancels queued background poses. Resumed warming immediately hides the
+canvas and restores its poster; only a successful current live draw unmasks it.
+Reduced motion,
 Save Data and short viewports retain readable static imagery without 3D work.
 
 Mouse-wheel interpolation is v2-only, timestamp-based exponential damping at
