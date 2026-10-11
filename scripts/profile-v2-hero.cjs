@@ -86,12 +86,20 @@ async function profile(browser,index){
       const now=performance.now();
       if(metrics.posterFramesMs===null&&Number(root.dataset.assemblyFrames)>0) metrics.posterFramesMs=now;
       if(metrics.loadingAnimationMs===null&&Number(root.dataset.heroLoadingFrames)>0) metrics.loadingAnimationMs=now;
-      if(metrics.firstCadMs===null&&Number(root.dataset.assemblyModelsReady)>0){metrics.firstCadMs=now;metrics.firstModel=root.dataset.assemblyFirstModel;metrics.firstCadDraws=Number(root.dataset.assemblyDraws);}
-      if(metrics.leadCadMs===null&&document.querySelector('[data-assembly-posters] img')?.dataset.assemblyModelState==='ready') metrics.leadCadMs=now;
-      if(metrics.allCadMs===null&&Number(root.dataset.assemblyModelsReady)===3) metrics.allCadMs=now;
+      const submitted=Number(root.dataset.assemblyModelsSubmitted ?? root.dataset.assemblyModelsReady);
+      if(metrics.firstCadMs===null&&submitted>0){metrics.firstCadMs=now;metrics.firstModel=root.dataset.assemblyFirstSubmissionModel||root.dataset.assemblyFirstModel;metrics.firstCadDraws=Number(root.dataset.assemblyDraws);}
+      const lead=document.querySelector('[data-assembly-posters] img');
+      if(metrics.leadCadMs===null&&(lead?.dataset.assemblyModelSubmitted==='true'||lead?.dataset.assemblyModelState==='ready')) metrics.leadCadMs=now;
+      if(metrics.allCadMs===null&&submitted===3) metrics.allCadMs=now;
+      if(root.dataset.assemblyModelsSubmitted!==undefined) {
+        metrics.readinessDefinition='CAD timings are render-submission; handoff timings and GPU evidence are separate';
+        metrics.gpuCompletionEvidence=root.dataset.assemblyGPUCompletionEvidence||'pending';
+        if(metrics.firstFencedCadMs==null&&root.dataset.assemblyGPUCompletionEvidence==='own-context-fence'&&Number(root.dataset.assemblyModelsReady)>0) metrics.firstFencedCadMs=now;
+        if(metrics.allFencedCadMs==null&&root.dataset.assemblyGPUCompletionEvidence==='own-context-fence'&&Number(root.dataset.assemblyModelsReady)===3) metrics.allFencedCadMs=now;
+      }
       metrics.maxDraws=Math.max(metrics.maxDraws,Number(root.dataset.assemblyDraws)||0);
     };
-    new MutationObserver(inspect).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['data-assembly-models-ready','data-assembly-model-state','data-assembly-frames','data-hero-loading-frames']});
+    new MutationObserver(inspect).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['data-assembly-models-ready','data-assembly-models-submitted','data-assembly-model-state','data-assembly-frames','data-hero-loading-frames']});
     const posterPaint=()=>{
       const poster=document.querySelector('[data-assembly-posters] img');
       if(poster?.naturalWidth){

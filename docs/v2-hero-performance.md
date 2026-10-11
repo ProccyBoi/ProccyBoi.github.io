@@ -125,3 +125,30 @@ The finished studio was compared with committed `81fe1c8` using the same 1440×1
 The final first-CAD result is comparable to the repeated baseline: 0.042 seconds slower at the median, with TramTrace 0.032 seconds slower. First-CAD times ranged from 2.561–2.697 seconds in the repeated baseline and 2.678–2.767 seconds in the final studio. All-model timings remain variable: 3.980–4.245 seconds before and 3.961–5.701 seconds after, so the slightly lower final median is not evidence of a reliable speedup. The intermediate studio set had a 2.993-second first-CAD median; it remains in `after.json` and must not be silently substituted for the final set or used to attribute improvements solely to the bias correction. These are software-renderer measurements on one host, not guaranteed device timings. Immediate poster interaction and native scrolling remain available before CAD readiness.
 
 Every run retained 121 physical groups, 360 meshes, 386,248 mesh-instance triangles and 363 overview draw calls. The three geometry packs are unchanged. The prepared environment grows by 40,264 bytes, from 124,717 to 164,981 bytes. The final quality-88 posters total 347,352 bytes versus the previous 263,768 bytes, an additional 83,584 bytes; their 1600×1200 resolution is unchanged. These two asset changes add 123,848 bytes before response headers. The posters' decoded alpha matches the native PNG references byte for byte for all three boards, both in the offline encoder check and actual Chromium canvas decoding. Browser image comparisons show clean silhouettes and translucent housing edges without the stepped fringe seen in a preview tool. A scale-matched shadow bias removes diagonal self-shadow bands from broad board and shield surfaces while retaining component contact shadows; no caster geometry is removed for this correction.
+
+## Bounded GPU submissions, 11 October 2026
+
+The opening v2 hero now uses the same finite, cancelable WebGL2 fence helper as
+Selected Work. Model installation marks the scene dirty; it cannot submit an
+extra draw while another hero frame is pending. A visible frame uses zero-timeout
+GPU polling at 4 ms, and hidden/offscreen/pagehide cancels that polling. If a
+submitted frame was interrupted, resuming drains the hero's own outstanding work
+before submitting the latest native scroll pose. There is no blocking `gl.finish`.
+
+The original 0.19-per-60-Hz-frame follow is expressed as an elapsed-time exponential
+with the same approximately 79.1 ms time constant. The 1,250 ms entrance, authored
+poses, geometry, materials, lighting and native scroll remain unchanged. A slow
+GPU coalesces input instead of building a queue of obsolete poses.
+
+CPU installation (`assemblyModelsInstalled` / `assemblyModelsSettled`), render
+submission (`assemblyModelsSubmitted`) and successful poster handoff
+(`assemblyModelsReady`) are separate milestones. A model installed during an older
+frame's fence wait keeps its poster until a later draw actually includes it.
+`profile-v2-hero.cjs` keeps historical CAD timings on the render-submission
+milestone and reports fenced handoff separately. WebGL1 publishes a finite
+unsupported-completion result, never a verified GPU fence. A fence certifies only
+its own context's commands, not another renderer or pixels reaching a display.
+
+Exact candidate browser results and matched whole-page blocking/input traces are
+required before release; shader/driver work and real-device smoothness cannot be
+inferred from the number of queued frames alone.

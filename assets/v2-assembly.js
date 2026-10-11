@@ -28,6 +28,32 @@
   let frame = 0, frames = 0, visible = true, ready = false, loading = false, failed = false;
   let target = 0, current = 0, active = -1, width = 0, height = 0, entry = 0;
   let poses = [], loadRequestedModel;
+  const paintedModels = Array(projects.length).fill(null);
+  const submittedModels = Array(projects.length).fill(null);
+  // Equivalent to the original .19 step at 60 Hz, including slow GPU frames.
+  const FOLLOW_MS = -(1000 / 60) / Math.log(.81);
+  let renderTime = 0, revision = 0, paintedRevision = -1, activePage = true;
+  let gpuBusy = false, gpuAbort = null, gpuNeedsDrain = false, submittedFrames = 0, completedFrames = 0;
+  let bufferWidth = 0, bufferHeight = 0, bufferRatio = 0, desiredRatio = 0;
+  const drawable = () => ready && visible && activePage && !document.hidden && motionAllowed();
+  const interrupt = () => {
+    if(frame) cancelAnimationFrame(frame); frame=0;
+    renderTime=0; revision++;
+    gpuAbort?.abort();
+  };
+  const gpuWait = async (abort, phase) => {
+    root.dataset.assemblyGPUPending='true'; root.dataset.assemblyGPUPhase=phase;
+    const result=await window.V2GPUPreparation.wait(renderer,{signal:abort.signal,valid:drawable,pollMs:4});
+    root.dataset.assemblyGPUPending='false'; root.dataset.assemblyGPUCompletion=result.state;
+    root.dataset.assemblyGPUWaitMs=result.waitMs.toFixed(1);
+    if(result.state==='complete') {root.dataset.assemblyGPUCompletionEvidence='own-context-fence';return true;}
+    if(result.state==='unsupported') {
+      root.dataset.assemblyGPUCompletionEvidence='unsupported';
+      return !abort.signal.aborted && drawable();
+    }
+    if(result.state==='timeout'||result.state==='lost') throw new Error(`Hero GPU ${result.state}`);
+    return false;
+  };
   const promoteModel = index => {
     if (!motionAllowed()) return;
     // A visitor can choose a supporting chapter while Three is still loading.
@@ -132,16 +158,21 @@
   const updateProgress = () => {
     if (!motionAllowed() || !root.classList.contains('is-enhanced')) {target = 0; return;}
     const bounds = root.getBoundingClientRect();
-    target = clamp(-bounds.top / Math.max(1,root.offsetHeight-stage.clientHeight));
+    const next = clamp(-bounds.top / Math.max(1,root.offsetHeight-stage.clientHeight));
+    if(next!==target) revision++;
+    target = next;
     if (target > .32) promoteModel?.(target >= .65 ? 2 : 1);
   };
   const pose = (t,x,y,s,rx,ry,rz,e=0) => ({t,x,y,s,rx,ry,rz,e});
   const layout = () => {
-    width = stage.clientWidth; height = stage.clientHeight;
+    const nextWidth=stage.clientWidth, nextHeight=stage.clientHeight;
+    const nextRatio=Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75);
+    if(nextWidth!==width||nextHeight!==height||nextRatio!==desiredRatio) revision++;
+    desiredRatio=nextRatio;
+    width=nextWidth; height=nextHeight;
     if(!height || !width) return;
     const half = 5*width/height;
     if(renderer) {
-      renderer.setSize(width,height,false);
       camera.top=5; camera.bottom=-5;
       camera.right=half; camera.left=-half;
       camera.updateProjectionMatrix();
@@ -173,14 +204,29 @@
     for(const key of ['x','y','s','rx','ry','rz','e']) result[key]=a[key]+(b[key]-a[key])*p;
     return result;
   };
-  const render = timestamp => {
+  const render = async timestamp => {
     frame=0;
-    if(!ready || !visible || document.hidden || !motionAllowed()) return;
+    if(!drawable() || gpuBusy) return;
     const moving=motionAllowed();
-    if(moving) current += (target-current)*.19;
+    const abort=new AbortController(); gpuAbort=abort; gpuBusy=true;
+    let entryUnsettled=false;
+    try {
+    if(renderer && gpuNeedsDrain) {
+      if(!await gpuWait(abort,'drain')) return;
+      gpuNeedsDrain=false;
+      timestamp=performance.now();
+    }
+    if(!drawable() || abort.signal.aborted) return;
+    const elapsed=renderTime ? Math.max(0,timestamp-renderTime) : 1000/60;
+    renderTime=timestamp;
+    if(moving) current += (target-current)*(1-Math.exp(-elapsed/FOLLOW_MS));
     else current=0;
+    const drawnRevision=revision;
+    const drawnModels=models.slice();
+    const drawnWidth=width, drawnHeight=height, drawnRatio=desiredRatio;
     if(Math.abs(target-current)<.00008) current=target;
     const settle=entry ? ramp(timestamp-entry,0,1250) : 1;
+    entryUnsettled=settle<1;
     projects.forEach((project,index) => {
       const transform=interpolate(poses[index],current);
       const inScene=index===0 ? current<.405 : index===1 ? current<.105 || (current>=.345 && current<.725) : current<.115 || current>=.65;
@@ -195,7 +241,7 @@
         poster.style.setProperty('--assembly-poster-left',`${width/2+transform.x*pixels}px`);
         poster.style.setProperty('--assembly-poster-top',`${height/2-(transform.y-(1-settle)*.6)*pixels}px`);
         poster.style.setProperty('--assembly-poster-transform',`translate(-50%,-50%) rotate(${-transform.rz*.4}rad)`);
-        poster.style.setProperty('--assembly-poster-opacity',inView&&!models[index]?'1':'0');
+        poster.style.setProperty('--assembly-poster-opacity',inView&&(!models[index]||paintedModels[index]!==models[index])?'1':'0');
         poster.style.setProperty('--assembly-poster-visibility',inView?'visible':'hidden');
         loadingExperience?.setPose(index,{
           x:width/2+transform.x*pixels,y:height/2-(transform.y-(1-settle)*.6)*pixels,
@@ -222,13 +268,71 @@
     intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
     captionAt(current);
     progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
-    if(renderer) {fitShadows();renderer.render(scene,camera);}
+    if(renderer && models.some(Boolean)) {
+      const ratio=desiredRatio;
+      if(ratio!==bufferRatio) {renderer.setPixelRatio(ratio);bufferRatio=ratio;}
+      if(width!==bufferWidth||height!==bufferHeight) {renderer.setSize(width,height,false);bufferWidth=width;bufferHeight=height;}
+      fitShadows();
+      const started=performance.now();
+      renderer.render(scene,camera);
+      root.dataset.assemblyDraws=String(renderer.info.render.calls||0);
+      gpuNeedsDrain=true;
+      root.dataset.assemblySubmittedFrames=String(++submittedFrames);
+      drawnModels.forEach((model,index)=>{
+        if(!model || !model.group.visible) {drawnModels[index]=null;return;}
+        submittedModels[index]=model;
+        posters[index].dataset.assemblyModelSubmitted='true';
+      });
+      root.dataset.assemblyModelsSubmitted=String(submittedModels.filter(Boolean).length);
+      if(!root.dataset.assemblyFirstSubmissionModel) {
+        const index=drawnModels.findIndex(Boolean);
+        if(index>=0) root.dataset.assemblyFirstSubmissionModel=projects[index].name;
+      }
+      root.dataset.assemblyLastSubmission=JSON.stringify({sequence:submittedFrames,at:started,value:current,raw:target,revision:drawnRevision,cpuMs:performance.now()-started});
+      if(!await gpuWait(abort,'frame')) return;
+      gpuNeedsDrain=false;
+      if(root.dataset.assemblyGPUCompletion==='complete') root.dataset.assemblyCompletedFrames=String(++completedFrames);
+      root.dataset.assemblyLastCompletedMs=performance.now().toFixed(1);
+      // Only hand off a poster after this exact installed model was drawn.
+      drawnModels.forEach((model,index)=>{
+        if(!model || model!==models[index] || paintedModels[index]===model || drawnWidth!==width || drawnHeight!==height || drawnRatio!==desiredRatio) return;
+        paintedModels[index]=model;
+        posters[index].dataset.assemblyModelState='ready';
+        posters[index].style.setProperty('--assembly-poster-opacity','0');
+        loadingExperience?.modelReady(index);
+        if(!root.dataset.assemblyFirstModel) {
+          root.dataset.assemblyFirstModel=projects[index].name;
+          root.dataset.assemblyFirstModelMs=performance.now().toFixed(1);
+        }
+      });
+      if(paintedModels.some(Boolean)) root.classList.add('is-loaded');
+      root.dataset.assemblyModelsReady=String(paintedModels.filter(Boolean).length);
+      root.dataset.assemblyState='ready';
+    }
+    paintedRevision=drawnRevision;
     root.dataset.assemblyFrames=String(++frames);
     root.dataset.assemblyProgress=current.toFixed(5);
     root.dataset.assemblyDraws=String(renderer?.info.render.calls||0);
-    if(moving && (Math.abs(target-current)>.00008 || settle<1)) frame=requestAnimationFrame(render);
+    } catch(error) {
+      failRenderer(error);
+    } finally {
+      if(gpuAbort===abort) gpuAbort=null;
+      gpuBusy=false;
+      if(drawable() && (paintedRevision!==revision || Math.abs(target-current)>.00008 || entryUnsettled)) request();
+      else renderTime=0;
+    }
   };
-  function request(){if(!frame && ready && visible && !document.hidden) frame=requestAnimationFrame(render);}
+  function request(){if(!frame && !gpuBusy && drawable()) frame=requestAnimationFrame(render);}
+  function failRenderer(error) {
+    failed=true; interrupt();
+    renderer?.dispose(); renderer=null; models.fill(null); paintedModels.fill(null); submittedModels.fill(null); shadows.fill(null);
+    modelStates.fill('unavailable');
+    root.classList.remove('is-loaded'); root.dataset.assemblyState='unavailable'; root.dataset.assemblyModelsReady='0';
+    root.dataset.assemblyModelsSettled=String(projects.length);
+    posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});
+    projects.forEach((_,index)=>loadingExperience?.modelFailed(index));
+    console.warn('Hardware renderer unavailable; project images remain available.',error);
+  }
   root.querySelector('.v2-assembly-jump')?.addEventListener('click', () => {
     if (active !== 0 && active !== 1) return;
     window.dispatchEvent(new CustomEvent('v2:gallery-project', {
@@ -238,7 +342,7 @@
   const staticMode = () => {
     loadingExperience?.suspend(true);
     root.classList.remove('is-enhanced'); root.classList.add('is-static');
-    if(frame) cancelAnimationFrame(frame); frame=0; target=0; current=0;
+    interrupt(); target=0; current=0;
     intro.style.removeProperty('opacity'); intro.style.removeProperty('transform'); intro.style.removeProperty('--assembly-separation');
     posters.forEach(poster=>poster.removeAttribute('style'));
     selectors.forEach(link=>{link.removeAttribute('aria-current');link.style.removeProperty('--chapter-progress');});
@@ -267,12 +371,14 @@
       })().catch(()=>{});
       await Promise.all([
         assets,lighting,
+        window.V2GPUPreparation?Promise.resolve():loadScript('/assets/v2-gpu-preparation.js?v=paced-20261011'),
         window.V2HeroMotion?Promise.resolve():loadScript('/assets/v2-hero-motion.js?v=mechanics-20261003'),
         window.THREE?Promise.resolve():loadScript('/assets/vendor/three.min.js')
       ]);
       const T=window.THREE;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
-      renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75));
+      bufferRatio=Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75);
+      renderer.setPixelRatio(bufferRatio);
       if(window.V2ProductStudio) window.V2ProductStudio.configureRenderer(renderer,T);
       else {renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.94;}
       renderer.shadowMap.enabled=true;
@@ -335,21 +441,14 @@
           window.V2HeroMotion.prepare(model.parts,{name});
           const shadow=new T.Mesh(new T.PlaneGeometry(1.5,1.5),new T.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false,opacity:.08}));
           models[index]=model;shadows[index]=shadow;scene.add(model.group);scene.add(shadow);
-          modelStates[index]='ready';posters[index].dataset.assemblyModelState='ready';
-          // A late model adopts the current scroll pose without resetting the
-          // scene or waiting for any other project's download/parse/compile.
-          if(frame) cancelAnimationFrame(frame);
-          render(performance.now());root.classList.add('is-loaded');request();
-          loadingExperience?.modelReady(index);
-          root.dataset.assemblyModelsReady=String(models.filter(Boolean).length);
-          root.dataset.assemblyState='ready';
-          if(!root.dataset.assemblyFirstModel) {
-            root.dataset.assemblyFirstModel=projects[index].name;
-            root.dataset.assemblyFirstModelMs=performance.now().toFixed(1);
-          }
+          modelStates[index]='ready';
+          // Installation cannot bypass the single in-flight draw gate. The
+          // matching poster stays until a completed draw includes this model.
+          revision++; request();
         } catch(error) {
-          // A first-render failure must roll back the installed slot too;
-          // otherwise its truthy model would keep its fallback poster hidden.
+          // Installation failures remain independent; the renderer's async
+          // failure path restores every poster if the context cannot continue.
+          paintedModels[index]=null;
           if(models[index]) {
             scene.remove(models[index].group);
             models[index].group.traverse(object=>{
@@ -364,7 +463,7 @@
           }
           modelStates[index]='unavailable';posters[index].dataset.assemblyModelState='unavailable';
           loadingExperience?.modelFailed(index);
-          root.dataset.assemblyModelsReady=String(models.filter(Boolean).length);
+          root.dataset.assemblyModelsReady=String(paintedModels.filter(Boolean).length);
           if(!models.some(Boolean)) root.classList.remove('is-loaded');
           console.warn(`${projects[index].title} CAD unavailable; its scroll poster remains available.`,error);
           request();
@@ -380,6 +479,7 @@
       const supporting=projects.slice(1).map((_,index)=>loadModel(index+1));
       await Promise.allSettled([lead,...supporting]);
       if(!models.some(Boolean)) root.dataset.assemblyState='unavailable';
+      root.dataset.assemblyModelsInstalled=String(models.filter(Boolean).length);
       root.dataset.assemblyModelsSettled=String(modelStates.filter(state=>state!=='pending'&&state!=='loading').length);
       if(!motionAllowed()) staticMode();
     } catch(error) {
@@ -406,22 +506,17 @@
   addEventListener('resize',layout,{passive:true});
   new ResizeObserver(layout).observe(stage);
   const syncLoadingVisibility=()=>loadingExperience?.suspend(!visible||document.hidden||!motionAllowed());
-  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;syncLoadingVisibility();if(visible){updateProgress();request();}else if(frame){cancelAnimationFrame(frame);frame=0;}},{threshold:0}).observe(root);
-  document.addEventListener('visibilitychange',()=>{syncLoadingVisibility();if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateProgress();request();}});
+  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;syncLoadingVisibility();if(visible){updateProgress();current=target;renderTime=0;revision++;request();}else{interrupt();current=target;}},{threshold:0}).observe(root);
+  document.addEventListener('visibilitychange',()=>{syncLoadingVisibility();if(document.hidden){interrupt();}else{updateProgress();current=target;revision++;request();}});
   reduced.addEventListener('change',()=>{
     if(!motionAllowed()) staticMode();
     else if(ready){root.classList.add('is-enhanced');root.classList.remove('is-static');entry=0;syncLoadingVisibility();layout();}
     else initialize();
   });
   canvas.addEventListener('webglcontextlost',event=>{
-    event.preventDefault();failed=true;renderer=null;models.fill(null);shadows.fill(null);
-    modelStates.fill('unavailable');
-    root.classList.remove('is-loaded');root.dataset.assemblyState='unavailable';root.dataset.assemblyModelsReady='0';
-    root.dataset.assemblyModelsSettled=String(projects.length);
-    posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});request();
-    projects.forEach((_,index)=>loadingExperience?.modelFailed(index));
+    event.preventDefault();failRenderer(new Error('Hero WebGL context lost'));request();
   });
-  addEventListener('pagehide',()=>{loadingExperience?.suspend(true);cancelAnimationFrame(frame);frame=0;});
-  addEventListener('pageshow',()=>{syncLoadingVisibility();updateProgress();request();});
+  addEventListener('pagehide',()=>{activePage=false;loadingExperience?.suspend(true);interrupt();});
+  addEventListener('pageshow',()=>{activePage=true;syncLoadingVisibility();updateProgress();current=target;revision++;request();});
   if(motionAllowed()) initialize(); else staticMode();
 })();

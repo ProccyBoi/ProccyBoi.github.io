@@ -77,7 +77,7 @@ function probe() {
     }
   };
   addEventListener('scroll', () => data.scrolls.push({ t: performance.now(), y: scrollY }), { passive: true });
-  const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-settled', 'data-image-decoded', 'data-selected-ready', 'data-selected-models-ready', 'data-selected-background-ready', 'data-selected-preparation-frames', 'data-selected-prepared-models', 'data-selected-warm-poses-completed', 'data-selected-warm-frames', 'data-selected-frames'];
+  const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-submitted', 'data-assembly-models-installed', 'data-assembly-models-settled', 'data-assembly-model-submitted', 'data-assembly-model-state', 'data-image-decoded', 'data-selected-ready', 'data-selected-models-ready', 'data-selected-background-ready', 'data-selected-preparation-frames', 'data-selected-prepared-models', 'data-selected-warm-poses-completed', 'data-selected-warm-frames', 'data-selected-frames'];
   new MutationObserver(records => {
     for (const record of records) if (data.changes.length < 2000) data.changes.push({ t: performance.now(), attribute: record.attributeName, value: record.target.getAttribute(record.attributeName), tag: record.target.tagName, scrollY });
     if (!data.selectedFirstLive && records.some(record => record.attributeName === 'data-selected-frames')) {
@@ -153,6 +153,7 @@ async function save(run, name, details = {}) {
 async function diagnostic(run, name, error) {
   const report = { error: error.stack, requests: run.requests };
   try { report.state = await snapshot(run.page); } catch (failure) { report.collectionError = failure.message; }
+  try { report.controls = await run.page.evaluate(() => ({ priority:window.__aircraftPriorityProbe?.state(),warmMask:window.__v2WarmMaskControl?.state() })); } catch (failure) { report.controlCollectionError=failure.message; }
   fs.writeFileSync(path.join(output, name + '-failure.json'), JSON.stringify(report, null, 2) + '\n');
   await run.page.screenshot({ path: path.join(output, name + '-failure.png'), timeout: 30000, animations: 'disabled' }).catch(() => {});
 }
@@ -548,10 +549,24 @@ async function throttledWarmTrace(browser) {
     const longTasks = state.probe.longTasks;
     const firstChange = (attribute, value) => state.probe.changes.find(change => change.attribute === attribute && change.value === value)?.t ?? null;
     const milestones = { imagesDecodedMs: firstChange('data-selected-ready', 'true'), allHeroReadyMs: firstChange('data-assembly-models-ready', '3'), allSelectedModelsReadyMs: expectSelectedCAD ? firstChange('data-selected-models-ready', '6') : null, selectedGPUWarmMs: expectSelectedCAD ? Number(state.selected.selectedBackgroundReadyMs) : null, aircraftGPUWarmMs: Number(state.aircraft.aircraftBackgroundReadyMs) };
+    const pacedHero = state.hero.assemblyModelsSubmitted !== undefined;
+    const heroReadiness = {
+      contract: pacedHero ? 'separate-render-submission-and-GPU-hand-off' : 'legacy-render-return-readiness',
+      allInstalledMs: firstChange('data-assembly-models-installed', '3'),
+      allConstructionSettledMs: firstChange('data-assembly-models-settled', '3'),
+      allRenderCallsReturnedMs: pacedHero ? firstChange('data-assembly-models-submitted', '3') : milestones.allHeroReadyMs,
+      allGPUHandOffMs: pacedHero ? milestones.allHeroReadyMs : null,
+      allOwnContextFencedMs: pacedHero && state.hero.assemblyGPUCompletionEvidence === 'own-context-fence' ? milestones.allHeroReadyMs : null,
+      completionEvidence: pacedHero ? state.hero.assemblyGPUCompletionEvidence || null : null,
+      submittedFrames: pacedHero ? Number(state.hero.assemblySubmittedFrames || 0) : null,
+      completedFrames: pacedHero ? Number(state.hero.assemblyCompletedFrames || 0) : null,
+      posterStates: await page.locator('[data-assembly-posters] img').evaluateAll(images => images.map((image, index) => ({ index, submitted: image.dataset.assemblyModelSubmitted ?? null, state: image.dataset.assemblyModelState ?? null }))),
+      definitions: 'allHeroReadyMs retains the observed production readiness attribute: legacy means render() returned; paced means poster hand-off after GPU preparation completion or explicitly unsupported fallback. allRenderCallsReturnedMs is the like-for-like CPU submission boundary. Installed/settled describe CPU construction, not GPU completion. Missing historical fence evidence is null. Existing whole-trace long-task and input measurements are unchanged.'
+    };
     const resourcesByKind = Object.fromEntries(Object.entries({ images: /\.(?:webp|png|jpe?g|svg)(?:\?|$)/i, selectedPacks: /\/models\/selected\//, heroPacks: /\/models\/hero\/.*\.(?:gz|bin)(?:\?|$)/, aircraftPacks: /\/models\/aircraft\// }).map(([kind, pattern]) => [kind, state.resources.filter(resource => pattern.test(resource.name))]));
     await save(run, 'cold-10mbps-through-gpu-warm', {
       network, cacheDisabled: true, imageReadyMs, backgroundReadyMs, hidden, resourceBytes,
-      milestones, resourcesByKind,
+      milestones, heroReadiness, resourcesByKind,
       selectedCAD: expectSelectedCAD ? { present: true, modelsReady: 6, warmFrames: 2, gpuReady: true, ...selectedPreparation(state.selected), lastDraw: state.selected.selectedLastDraw ? JSON.parse(state.selected.selectedLastDraw) : null } : { present: false, modelsReady: null, warmFrames: null, gpuReady: null, note: 'This baseline has image-only Selected Work. CAD readiness is inapplicable, not a measured success.' },
       resourceCount: state.resources.length,
       longTaskSummary: { count: longTasks.length, totalMs: longTasks.reduce((sum, task) => sum + task.duration, 0), longestMs: Math.max(0, ...longTasks.map(task => task.duration)) },

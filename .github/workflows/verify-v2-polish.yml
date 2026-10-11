@@ -24,6 +24,7 @@ jobs:
           node scripts/verify-v2-hero-prefetch.cjs
           node scripts/verify-v2-scroll-smoothing.cjs
           node scripts/verify-v2-gpu-preparation.cjs
+          node scripts/verify-v2-hero-pacing.cjs --source-only
           node scripts/verify-v3-story-controller.cjs
           node scripts/verify-v3-direct-transition.cjs
           node scripts/verify-v3-film-peel.cjs
@@ -68,7 +69,7 @@ jobs:
           case '${{ matrix.suite }}' in
             aircraft) node scripts/verify-v2-aircraft.cjs ;;
             wheel) node scripts/verify-v2-wheel.cjs ;;
-            startup) node scripts/verify-v2-hero-startup.cjs ;;
+            startup) node scripts/verify-v2-hero-startup.cjs && node scripts/verify-v2-hero-pacing.cjs --browser-only ;;
             booking) node scripts/verify-v2-booking.cjs ;;
             polish) node scripts/verify-v2-polish.cjs ;;
             background) node scripts/verify-v2-background.cjs ;;

@@ -394,7 +394,7 @@ function easingMath() {
 function instrument() {
   const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext, nativeTimeout=setTimeout.bind(window), nativeFetch=fetch.bind(window);
   const contexts = new Map();
-  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],longTasks:[],frameRecords:[],firstLive:null,recording:false};
+  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],heroVisibility:[],heroSamples:[],heroSubmissions:[],heroReturn:null,transportGates:[],cpuGates:[],fetches:[],longTasks:[],frameRecords:[],firstLive:null,recording:false};
   try{new PerformanceObserver(list=>probe.longTasks.push(...list.getEntries().map(entry=>({start:entry.startTime,duration:entry.duration})))).observe({type:'longtask',buffered:true});}catch(_){/* Long Tasks is unavailable in some engines. */}
   window.setTimeout=(callback,delay,...args)=>{if(/v2-selected-work\.js/.test(new Error().stack)){if(delay===4500)probe.transportGates.push(performance.now());if(delay===12000)probe.cpuGates.push(performance.now());}return nativeTimeout(callback,delay,...args);};
   window.fetch=(...args)=>{const url=typeof args[0]==='string'?args[0]:args[0]?.url||String(args[0]);probe.fetches.push({url,t:performance.now()});return nativeFetch(...args);};
@@ -404,6 +404,17 @@ function instrument() {
     return {t:performance.now(),y:scrollY,raw:Number(root.dataset.selectedProgress||0),rendered:Number(root.dataset.selectedRenderedProgress||0),frame:Number(root.dataset.selectedFrames||0),submittedFrames:Number(root.dataset.selectedSubmittedFrames||0),completedFrames:Number(root.dataset.selectedCompletedFrames||0),lastFrame:root.dataset.selectedLastFrame?JSON.parse(root.dataset.selectedLastFrame):null,warm:Number(root.dataset.selectedWarmFrames||0),warmPosesCompleted:Number(root.dataset.selectedWarmPosesCompleted||0),preparationMeasurements:root.dataset.selectedPreparationMeasurements?JSON.parse(root.dataset.selectedPreparationMeasurements):[],preparationFrames:Number(root.dataset.selectedPreparationFrames||0),preparedModels:(root.dataset.selectedPreparedModels||'').split(',').filter(Boolean),preparationStage:root.dataset.selectedPreparationStage,gpuPending:root.dataset.selectedGPUPending,gpuCompletion:root.dataset.selectedGPUCompletion,mask:root.dataset.selectedWarmMask,state:root.dataset.selectedState,chapter:root.dataset.selectedChapter,readyClass:root.classList.contains('is-live'),canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,canvasOpacity:canvas?Number(getComputedStyle(canvas).opacity):0,lastDraw:root.dataset.selectedLastDraw?JSON.parse(root.dataset.selectedLastDraw):null,warmPixelRatio:Number(root.dataset.selectedWarmPixelRatio),livePixelRatio:Number(root.dataset.selectedLivePixelRatio),bufferWidth:Number(root.dataset.selectedBufferWidth),bufferHeight:Number(root.dataset.selectedBufferHeight),cssWidth:stage?.clientWidth||0,cssHeight:stage?.clientHeight||0,expectedLivePixelRatio:Math.min(devicePixelRatio||1,(stage?.clientWidth||innerWidth)<=760?1.25:1.5)};
   };
   probe.snapshot=sample; probe.begin=()=>{probe.samples=[];probe.events=[];probe.prevention=[];probe.frameRecords=[];probe.recording=true;probe.samples.push(sample());};
+  const heroSample=()=>{
+    const root=document.querySelector('[data-assembly]');if(!root)return null;
+    const box=root.getBoundingClientRect();
+    return{t:performance.now(),y:scrollY,visible:box.top<innerHeight&&box.bottom>0,top:box.top,bottom:box.bottom,frames:Number(root.dataset.assemblyFrames||0),submitted:Number(root.dataset.assemblySubmittedFrames||0),completed:Number(root.dataset.assemblyCompletedFrames||0),pending:root.dataset.assemblyGPUPending,phase:root.dataset.assemblyGPUPhase,completion:root.dataset.assemblyGPUCompletion,lastCompletedMs:Number(root.dataset.assemblyLastCompletedMs||0),lastSubmission:root.dataset.assemblyLastSubmission?JSON.parse(root.dataset.assemblyLastSubmission):null};
+  };
+  probe.heroSnapshot=heroSample;
+  new MutationObserver(records=>{
+    const value=heroSample();if(!value)return;
+    probe.heroSamples.push(value);
+    if(records.some(record=>record.attributeName==='data-assembly-last-submission')&&value.lastSubmission&&value.lastSubmission.sequence!==probe.heroSubmissions.at(-1)?.sequence)probe.heroSubmissions.push(value.lastSubmission);
+  }).observe(document,{subtree:true,attributes:true,attributeFilter:['data-assembly-submitted-frames','data-assembly-completed-frames','data-assembly-g-p-u-pending','data-assembly-g-p-u-phase','data-assembly-g-p-u-completion','data-assembly-last-submission','data-assembly-last-completed-ms']});
   new MutationObserver(records=>{if(records.some(record=>record.attributeName==='data-selected-frames')){const value=sample();if(value?.frame>0){if(!probe.firstLive)probe.firstLive=value;if(probe.recording&&value.frame!==probe.samples.at(-1)?.frame)probe.samples.push(value);}}if(probe.recording&&records.some(record=>record.attributeName==='data-selected-last-frame')){const value=sample();if(value?.lastFrame&&value.lastFrame.sequence!==probe.frameRecords.at(-1)?.sequence)probe.frameRecords.push(value.lastFrame);}}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-frames','data-selected-last-frame']});
   probe.end=()=>{probe.recording=false;return{samples:probe.samples,events:probe.events,prevention:probe.prevention,frameRecords:probe.frameRecords};};
   window.requestAnimationFrame=callback=>nativeRAF(t=>{callback(t);if(probe.recording){const next=sample();if(next&&next.frame!==probe.samples.at(-1)?.frame)probe.samples.push(next);}});
@@ -412,7 +423,7 @@ function instrument() {
   const prevent=Event.prototype.preventDefault;Event.prototype.preventDefault=function(){if(probe.recording&&/^(wheel|touchstart|touchmove|touchend)$/.test(this.type))probe.prevention.push(this.type);return prevent.call(this);};
   addEventListener('scroll',()=>probe.scrolls.push({y:scrollY,t:performance.now()}),{passive:true});
   const NativeObserver=IntersectionObserver;
-  window.IntersectionObserver=class extends NativeObserver{constructor(callback,options){super((entries,observer)=>{callback(entries,observer);if(!options?.rootMargin)for(const entry of entries)if(entry.target.matches('[data-selected-work]'))probe.visibility.push({visible:entry.isIntersecting,t:performance.now(),y:scrollY});},options);}};
+  window.IntersectionObserver=class extends NativeObserver{constructor(callback,options){super((entries,observer)=>{callback(entries,observer);if(!options?.rootMargin)for(const entry of entries){if(entry.target.matches('[data-selected-work]'))probe.visibility.push({visible:entry.isIntersecting,t:performance.now(),y:scrollY});if(entry.target.matches('[data-assembly]'))probe.heroVisibility.push({visible:entry.isIntersecting,t:performance.now(),y:scrollY});}},options);}};
 }
 async function open(browser, options={}) {
   const context=await browser.newContext({viewport:options.viewport||{width:1440,height:900},deviceScaleFactor:options.dpr||1,hasTouch:!!options.touch,isMobile:!!options.touch,javaScriptEnabled:!options.noJS,reducedMotion:options.reduced?'reduce':'no-preference'});
@@ -456,7 +467,7 @@ async function ready(page) {
   await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedReady==='true'&&root.dataset.selectedModelsReady==='6'&&root.dataset.selectedSceneReady==='true'&&root.dataset.selectedBackgroundReady==='true'&&root.dataset.selectedWarmFrames==='2';},null,{timeout});
 }
 async function snapshot(page) {
-  return page.evaluate(()=>({y:scrollY,url:location.href,selected:{...document.querySelector('[data-selected-work]')?.dataset},hero:{...document.querySelector('[data-assembly]')?.dataset},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
+  return page.evaluate(()=>({y:scrollY,url:location.href,selected:{...document.querySelector('[data-selected-work]')?.dataset},hero:{...document.querySelector('[data-assembly]')?.dataset},heroTrace:{visibility:window.__selectedProbe.heroVisibility,samples:window.__selectedProbe.heroSamples,submissions:window.__selectedProbe.heroSubmissions,return:window.__selectedProbe.heroReturn},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
 }
 async function save(run,name,details={}) {
   assert.deepEqual(run.errors,[],'No unhandled browser errors');assert.deepEqual(run.shaders,[],'No shader errors');
@@ -464,6 +475,7 @@ async function save(run,name,details={}) {
 }
 async function diagnose(run,name,error) {
   const report={error:error.stack,requests:run.requests};try{report.state=await snapshot(run.page);report.trace=await end(run.page);}catch(failure){report.collectionError=failure.message;}
+  try{report.controls=await run.page.evaluate(()=>({fences:window.__selectedFenceControl?.state(),response:window.__selectedResponseProbe?(()=>{const {read,stop,...data}=window.__selectedResponseProbe;return data;})():null}));}catch(failure){report.controlCollectionError=failure.message;}
   fs.writeFileSync(path.join(output,name+'-failure.json'),JSON.stringify(report,null,2)+'\n');await run.page.screenshot({path:path.join(output,name+'-failure.png'),timeout:15000}).catch(()=>{});
 }
 function trusted(trace) {
@@ -593,13 +605,24 @@ async function initialAndInput(browser) {
       if(to===0||to===1){assert.equal(final.raw,to);assert.equal(final.rendered,to);}await save(run,'native-large-jump-'+from+'-'+to,{trace});
     }
     await jump(page,.3);await noLoop(page,'Settled scene does not keep rendering');
-    await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await page.waitForTimeout(300);const offscreen=await state(page);await page.waitForTimeout(800);assert.equal((await state(page)).frame,offscreen.frame,'Offscreen Selected Work has no render loop');
+    await page.evaluate(()=>{window.__selectedProbe.heroReturn={started:performance.now(),before:window.__selectedProbe.heroSnapshot()};scrollTo({top:0,behavior:'instant'});});await page.waitForTimeout(300);const offscreen=await state(page);await page.waitForTimeout(800);assert.equal((await state(page)).frame,offscreen.frame,'Offscreen Selected Work has no render loop');
     await save(run,'idle-and-offscreen-stop',{offscreen});
     // Actual in-document history traversal, not a synthetic popstate event.
-    await page.evaluate(()=>{location.hash='work-framework';});await hashDestination(page,'work-framework',0);
+    // Do not wait for the resumed opening hero's GPU completion before leaving.
+    await page.evaluate(()=>{Object.assign(window.__selectedProbe.heroReturn,{hashRequested:performance.now(),atHash:window.__selectedProbe.heroSnapshot()});location.hash='work-framework';});await hashDestination(page,'work-framework',0);
     await page.evaluate(()=>{location.hash='work-transit';});await hashDestination(page,'work-transit',1);
     await page.goBack();await hashDestination(page,'work-framework',0);
     await page.goForward();await hashDestination(page,'work-transit',1);
+    const heroReturn=await page.evaluate(()=>({ ...window.__selectedProbe.heroReturn,finished:performance.now(),after:window.__selectedProbe.heroSnapshot(),visibility:window.__selectedProbe.heroVisibility,submissions:window.__selectedProbe.heroSubmissions,samples:window.__selectedProbe.heroSamples }));
+    assert.ok(heroReturn.submissions.length>0,'Real opening-hero submissions are observed rather than inferred from readiness');
+    assert.equal(heroReturn.submissions.length,heroReturn.after.submitted,'Every actual hero submission has a captured sequence record');
+    assert.ok(heroReturn.visibility.some(entry=>entry.visible&&entry.t>=heroReturn.started&&entry.t<=heroReturn.hashRequested),'The existing top return really resumes the visible opening hero');
+    assert.ok(heroReturn.visibility.some(entry=>!entry.visible&&entry.t>=heroReturn.hashRequested),'Actual hash navigation suspends the offscreen opening hero');
+    for(const submission of heroReturn.submissions.filter(entry=>entry.at>=heroReturn.started)){
+      const visibility=heroReturn.visibility.filter(entry=>entry.t<=submission.at).at(-1);
+      assert.equal(visibility?.visible,true,'No new hero GPU submission starts after its real offscreen observer callback; an earlier in-flight completion remains honest');
+    }
+    await save(run,'top-return-to-selected-hashes-no-offscreen-hero-submissions',{heroReturn});
     for(const viewport of [{width:390,height:844},{width:320,height:740},{width:1440,height:900}]){
       await page.setViewportSize(viewport);
       for(const [label,progress]of[['framework-separated',0],['framework-seating',.155],['framework-assembled',.32],['transit',1]]){

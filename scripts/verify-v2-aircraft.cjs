@@ -36,6 +36,20 @@ function sourceContract() {
 }
 async function open(browser, options = {}) {
   const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, javaScriptEnabled: options.js !== false, reducedMotion: options.reduced ? 'reduce' : 'no-preference' });
+  await context.addInitScript(() => {
+    const probe = window.__v2AircraftProbe = { firstLive: null, frames: [], entryRequestedMs: null };
+    // Observe the actual first live draw in its own microtask. A later protocol
+    // read can consume most of the automatic landing on a slow GPU runner.
+    new MutationObserver(records => {
+      if (!records.some(record => record.attributeName === 'data-aircraft-frames')) return;
+      const root = document.querySelector('[data-aircraft-hero]');
+      if (!root || !(Number(root.dataset.aircraftFrames) > 0)) return;
+      const box = root.getBoundingClientRect(), canvas = root.querySelector('[data-aircraft-canvas]');
+      const sample = { t: performance.now(), y: scrollY, frame: Number(root.dataset.aircraftFrames), landing: Number(root.dataset.aircraftLanding), state: root.dataset.aircraftState, phase: root.dataset.aircraftPhase, progress: Number(root.dataset.aircraftProgress), rendered: Number(root.dataset.aircraftRenderedProgress), visible: box.top < innerHeight && box.bottom > 0, top: box.top, bottom: box.bottom, canvasVisibility: canvas ? getComputedStyle(canvas).visibility : null };
+      if (!probe.firstLive) probe.firstLive = sample;
+      if (sample.frame !== probe.frames.at(-1)?.frame) { probe.frames.push(sample); if (probe.frames.length > 256) probe.frames.shift(); }
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-aircraft-frames'] });
+  });
   if (options.saveData) await context.addInitScript(() => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } }));
   if (options.webglFailure) await context.addInitScript(() => {
     const getContext = HTMLCanvasElement.prototype.getContext;
@@ -47,6 +61,21 @@ async function open(browser, options = {}) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (/Shader Error|VALIDATE_STATUS|Error compiling shader|THREE.WebGLProgram/.test(message.text())) shaders.push(message.text()); });
   return { context, page, requests, errors, shaders };
+}
+async function diagnose(run, name, error) {
+  const report = { error: error.stack, requests: run.requests, errors: run.errors, shaders: run.shaders };
+  try {
+    report.state = await run.page.evaluate(() => {
+      const roots = {};
+      for (const [name, selector] of [['aircraft', '[data-aircraft-hero]'], ['selected', '[data-selected-work]'], ['hero', '[data-assembly]']]) {
+        const node = document.querySelector(selector), box = node?.getBoundingClientRect();
+        roots[name] = node ? { dataset: { ...node.dataset }, visible: box.top < innerHeight && box.bottom > 0, top: box.top, bottom: box.bottom } : null;
+      }
+      return { url: location.href, y: scrollY, viewport: { width: innerWidth, height: innerHeight }, roots, probe: window.__v2AircraftProbe };
+    });
+  } catch (failure) { report.collectionError = failure.message; }
+  fs.writeFileSync(path.join(output, name + '-failure.json'), JSON.stringify(report, null, 2) + '\n');
+  await run.page.screenshot({ path: path.join(output, name + '-failure.png'), timeout: 15000 }).catch(() => {});
 }
 async function scrollTo(page, selector, offset = 0) {
   await page.locator(selector).evaluate((element, adjustment) => scrollTo({ top: scrollY + element.getBoundingClientRect().top + adjustment, behavior: 'instant' }), offset);
@@ -149,9 +178,18 @@ async function desktop(browser) {
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-background-ready'), 'true', 'Aircraft is already prepared while reading Selected work');
     assert.equal(run.requests.filter(url => telemetryRequest.test(url)).length, 1, 'Original hero fetches its telemetry pack once');
     passed('background preparation preserves the original hero and unseen landing', { distance, warmFrames: 2 }, run);
-    await scrollTo(page, aircraft);
-    await page.locator('[data-aircraft-state="landing"]').waitFor({ timeout });
-    const landing = Number(await page.locator(aircraft).getAttribute('data-aircraft-landing'));
+    assert.equal(await page.evaluate(() => window.__v2AircraftProbe.firstLive), null, 'The unseen landing has not already played');
+    await page.locator(aircraft).evaluate(root => {
+      window.__v2AircraftProbe.entryRequestedMs = performance.now();
+      scrollTo({ top: scrollY + root.getBoundingClientRect().top, behavior: 'instant' });
+    });
+    await page.waitForFunction(() => !!window.__v2AircraftProbe.firstLive, null, { timeout });
+    const entry = await page.evaluate(() => ({ requestedMs: window.__v2AircraftProbe.entryRequestedMs, firstLive: window.__v2AircraftProbe.firstLive }));
+    const landing = entry.firstLive.landing;
+    assert.equal(entry.firstLive.frame, 1, 'The first actual live draw is captured, independently of protocol latency');
+    assert.equal(entry.firstLive.state, 'landing', 'Actual entry starts automatic landing rather than skipping to ready');
+    assert.equal(entry.firstLive.visible, true, 'Automatic landing starts in the real visible aircraft section');
+    assert.ok(entry.firstLive.t >= entry.requestedMs && landing >= 0, 'The first landing draw follows the requested native entry');
     assert.ok(landing < .7, 'Entry starts the automatic landing');
     await page.locator('[data-aircraft-phase="stopped"][data-aircraft-state="ready"]').waitFor({ timeout });
     await page.locator('[data-aircraft-telemetry-ready="true"]').waitFor({ timeout });
@@ -164,7 +202,7 @@ async function desktop(browser) {
     await idleFrames(page, '[data-assembly]', 'data-assembly-frames', 'Opening hero stops rendering while aircraft is visible');
     await idleFrames(page, aircraft, 'data-aircraft-frames', 'Aircraft stops rendering after landing');
     await layout(page); await page.screenshot({ path: path.join(output, 'desktop-aircraft.png') });
-    passed('entry landing, detailed accepted CAD and shared telemetry reuse', { landing }, run);
+    passed('entry landing, detailed accepted CAD and shared telemetry reuse', { landing, entry }, run);
     const samples = [];
     for (const amount of [0, .2, .43, .60, .62, .76, 1, .62, .2, 0]) {
       const state = await progress(page, amount); samples.push({ progress: amount, rendered: Number(state.aircraftRenderedProgress), sky: Number(state.aircraftAtmosphere), phase: state.aircraftPhase });
@@ -190,7 +228,7 @@ async function desktop(browser) {
     await page.locator(aircraft + '.is-story').waitFor(); await progress(page, 1); await layout(page);
     assert.equal(await page.locator('.v3-aircraft-track').count(), 1, 'Re-enabling motion creates exactly one track');
     passed('live reduced-motion toggle and resume', {}, run);
-  } finally { await run.context.close(); }
+  } catch (error) { await diagnose(run, 'desktop-aircraft', error); throw error; } finally { await run.context.close(); }
 }
 async function mobile(browser, viewport = { width: 390, height: 844 }) {
   const run = await open(browser, { viewport }), { page } = run;
@@ -213,7 +251,7 @@ async function mobile(browser, viewport = { width: 390, height: 844 }) {
     assert.equal(await page.locator('[data-aircraft-go="1"]').evaluate(element => element === document.activeElement), true);
     await page.keyboard.press('Enter'); await page.waitForFunction(() => location.hash === '#skylabs-telemetry' && document.querySelector('[data-aircraft-hero]').dataset.aircraftChapter === '1'); await settle(page);
     passed(`mobile ${viewport.width}px deep link, Back/Forward, keyboard and layout`, {}, run);
-  } finally { await run.context.close(); }
+  } catch (error) { await diagnose(run, `mobile-${viewport.width}-aircraft`, error); throw error; } finally { await run.context.close(); }
 }
 async function staticCase(browser, name, options) {
   const run = await open(browser, options), { page } = run;
@@ -233,7 +271,7 @@ async function staticCase(browser, name, options) {
     await page.screenshot({ path: path.join(output, name + '.png') });
     assert.equal(await page.locator('#skylabs-telemetry a').first().getAttribute('href'), '/v2/projects/skylabs/boards/telemetry/');
     passed(name, {}, run);
-  } finally { await run.context.close(); }
+  } catch (error) { await diagnose(run, name, error); throw error; } finally { await run.context.close(); }
 }
 async function v3Regression(browser) {
   const run = await open(browser), { page } = run;
@@ -256,7 +294,7 @@ async function v3Regression(browser) {
     await chapter(page, 0, '');
     assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-atmosphere')), 1, 'v3 reverse preserves accepted sky');
     passed('deferred v3 two-destination shared-controller regression', {}, run);
-  } finally { await run.context.close(); }
+  } catch (error) { await diagnose(run, 'v3-regression', error); throw error; } finally { await run.context.close(); }
 }
 (async () => {
   fs.mkdirSync(output, { recursive: true }); sourceContract();
