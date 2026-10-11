@@ -271,14 +271,29 @@
     root.dataset.selectedBufferWidth=String(canvas.width);root.dataset.selectedBufferHeight=String(canvas.height);
     return ratio;
   }
+  function prepareShadowSize(size) {
+    const shadow=key.shadow;
+    // r128 allocates a shadow target only when map is null. Changing mapSize
+    // alone would retain the old allocation and could lower visible quality.
+    // Callers reach draw only after the previous owned batch has completed or
+    // its canceled work has drained; never dispose a target behind a fence.
+    if(shadow.map&&(shadow.map.width!==size||shadow.map.height!==size)){
+      shadow.map.dispose();shadow.map=null;
+    }
+    shadow.mapSize.set(size,size);
+  }
   function draw(value,warm=false,longSide=640) {
     const started=performance.now(),programsBefore=renderer.info.programs.length,ratio=pixelRatio(warm,longSide);
+    // Isolated, masked model stages only need to exercise the exact shader
+    // variants and uploads. Both complete composition stages and every live
+    // frame retain the accepted full-resolution shadow map.
+    prepareShadowSize(warm&&longSide===64?64:1536);
     const pose=composition.frame(camera,value,width,height,warm?undefined:inspection);fitLight(pose);
     // r128 resets its counters after the shadow pass by default. Explicitly
     // bracket the full draw so diagnostics include both shadow and main work.
     const autoReset=renderer.info.autoReset;renderer.info.autoReset=false;renderer.info.reset();
     try{renderer.render(scene,camera);}finally{renderer.info.autoReset=autoReset;}
-    const measurement={durationMs:performance.now()-started,...renderer.info.render,programs:renderer.info.programs.length,programsBefore,warm,pixelRatio:ratio,width:canvas.width,height:canvas.height};
+    const measurement={durationMs:performance.now()-started,...renderer.info.render,programs:renderer.info.programs.length,programsBefore,warm,pixelRatio:ratio,width:canvas.width,height:canvas.height,shadowWidth:key.shadow.map?.width,shadowHeight:key.shadow.map?.height};
     root.dataset.selectedLastDraw=JSON.stringify(measurement);
     return {...pose,measurement};
   }
@@ -339,15 +354,23 @@
   function prepareSources() {
     return sourceTask ||= Promise.all([
       window.THREE?Promise.resolve():script('/assets/vendor/three.min.js'),
-      window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=transfer-20261011'),
-      window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=product-20261007'),
-      script('/assets/v2-selected-assets.js?v=shared-batched-20261011'),
+      window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=load-20261012'),
+      window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=load-20261012'),
+      script('/assets/v2-selected-assets.js?v=load-20261012'),
       script('/assets/v2-selected-scene.js?v=review-20261012'),
       script('/assets/v2-gpu-preparation.js?v=paced-20261011')
-    ]).then(()=>{if(allowed()&&!failed){window.V2HeroEnvironment.prefetch().catch(()=>{});window.V2SelectedAssets.prefetchTextures().catch(()=>{});}});
+    ]).then(()=>{if(allowed()&&!failed){
+      window.V2HeroEnvironment.prefetch().catch(()=>{});
+      const waiting=window.V2TransportPriority?.wait('selected');
+      if(waiting)waiting.then(()=>{if(allowed()&&!failed)window.V2SelectedAssets.prefetchTextures().catch(()=>{});});
+      else window.V2SelectedAssets.prefetchTextures().catch(()=>{});
+    }});
   }
   async function prepareTransfers(promote=false) {
+    if(promote&&(visible||preparationIntent))window.V2TransportPriority?.promote('selected');
     await prepareSources();if(!allowed()||failed)return;
+    const waiting=window.V2TransportPriority?.wait('selected');
+    if(waiting){root.dataset.selectedTransportState='waiting-aircraft-bytes';await waiting;if(!allowed()||failed)return;}
     if(promote)releaseTransfer?.();
     if(!transferTask){
       root.dataset.selectedTransportState='waiting-hero-bytes';
@@ -356,7 +379,9 @@
         const timer=setTimeout(finish,4500);
         Promise.allSettled(['tramtrace','telemetry','pi'].map(name=>window.V2HeroAssets.whenTransferSettled(name))).then(finish);
       });
-      if(promote)releaseTransfer();
+      // Once direct-aircraft critical bytes release the gate, all unrelated
+      // transports can overlap again rather than serializing behind the hero.
+      if(promote||waiting)releaseTransfer();
       transferTask=gate.then(()=>{
         if(!allowed()||failed)return;
         root.dataset.selectedTransportState='loading';

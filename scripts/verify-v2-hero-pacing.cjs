@@ -40,13 +40,21 @@ function harness({ unsupported = false } = {}) {
       toggle(name, on) { if (on) classes.add(name); else classes.delete(name); },
     }, setAttribute(key, value) { attributes.set(key, value); }, removeAttribute(key) { attributes.delete(key); if (key === 'style') values.clear(); } };
   };
-  const root = node(), stage = node(), canvas = node(), posters = Array.from({ length: 3 }, node), selectors = Array.from({ length: 3 }, node);
+  const root = node(), stage = node(), canvas = node(), header = node(), posters = Array.from({ length: 3 }, node), selectors = Array.from({ length: 3 }, node);
   stage.clientWidth = 1440; stage.clientHeight = 900; root.offsetHeight = 3420;
-  root.getBoundingClientRect = () => ({ top, bottom: top + root.offsetHeight });
+  header.clientHeight = 76;
+  const rectangle = (top, width, height) => ({ top, bottom: top + height, left: 0, right: width, width, height });
+  root.getBoundingClientRect = () => rectangle(top, stage.clientWidth, root.offsetHeight);
+  // Match the actual top:0 sticky stage: its parent pushes it up at the end
+  // of the section. The section itself can still intersect with no readable
+  // stage pixels because the opaque fixed header covers its positive tail.
+  stage.getBoundingClientRect = () => rectangle(Math.min(Math.max(top, 0), top + root.offsetHeight - stage.clientHeight), stage.clientWidth, stage.clientHeight);
+  canvas.getBoundingClientRect = stage.getBoundingClientRect;
+  header.getBoundingClientRect = () => rectangle(0, stage.clientWidth, header.clientHeight);
   const nodes = new Map([['[data-assembly-canvas]', canvas], ['.v2-assembly-sticky', stage]]);
   root.querySelector = key => { if (!nodes.has(key)) nodes.set(key, node()); return nodes.get(key); };
   root.querySelectorAll = key => key === '[data-assembly-select]' ? selectors : posters;
-  const document = { ...events(), hidden: false, querySelector: () => root, head: { append() { throw new Error('Unexpected script transport'); } }, createElement(name) {
+  const document = { ...events(), hidden: false, querySelector: selector => selector === '.v2-header' ? header : root, head: { append() { throw new Error('Unexpected script transport'); } }, createElement(name) {
     assert.equal(name, 'canvas'); return { getContext: () => ({ createRadialGradient: () => ({ addColorStop() {} }), fillRect() {} }) };
   } };
   class Vector {
@@ -91,7 +99,7 @@ function harness({ unsupported = false } = {}) {
   };
   const context = vm.createContext({ window, document, navigator: {}, matchMedia: () => reduced, performance: { now: () => now },
     AbortController, Map, console: { warn: (...args) => warnings.push(args.map(String).join(' ')) },
-    innerWidth: stage.clientWidth, devicePixelRatio: 1, scrollY: 0, scrollTo() {}, CustomEvent: class { constructor(type, options) { Object.assign(this, { type }, options); } },
+    innerWidth: stage.clientWidth, innerHeight: stage.clientHeight, devicePixelRatio: 1, scrollY: 0, scrollTo() {}, CustomEvent: class { constructor(type, options) { Object.assign(this, { type }, options); } },
     addEventListener: window.addEventListener, requestAnimationFrame(callback) { const id = ++sequence; raf.set(id, callback); return id; }, cancelAnimationFrame(id) { raf.delete(id); },
     setTimeout(callback, delay) { const id = ++sequence; timers.set(id, { at: now + delay, callback }); return id; }, clearTimeout(id) { timers.delete(id); },
     ResizeObserver: class { observe() {} }, IntersectionObserver: class { constructor(callback) { intersection = callback; } observe() {} },
@@ -112,12 +120,14 @@ function harness({ unsupported = false } = {}) {
   const frame = async (elapsed = 1000 / 60) => { await advance(elapsed); const pending = [...raf.values()]; raf.clear(); pending.forEach(callback => callback(now)); await flush(); await advance(0); };
   const settle = async () => { for (let i = 0; i < 240 && (raf.size || timers.size); i++) await frame(); assert.equal(raf.size + timers.size, 0, 'Settled hero must stop RAF and timer work'); };
   const release = async name => { gates[name].resolve(model(name)); await flush(); };
-  const scroll = value => { top = -value * (root.offsetHeight - stage.clientHeight); window.dispatchEvent({ type: 'scroll' }); };
+  const scrollPixels = (value, notify = true) => { top = -value; context.scrollY = value; if (notify) window.dispatchEvent({ type: 'scroll' }); };
+  const scroll = value => scrollPixels(value * (root.offsetHeight - stage.clientHeight));
+  const boundary = (bottom, notify = true) => scrollPixels(root.offsetHeight - bottom, notify);
   const snapshot = () => ({ ...root.dataset, submission: root.dataset.assemblyLastSubmission ? JSON.parse(root.dataset.assemblyLastSubmission) : null });
-  return { root, stage, posters, raf, timers, draws, resizes, fences, loaderReady, loaderFailed, warnings, reduced, document, gl, context,
-    renderer: () => renderer, now: () => now, flush, advance, frame, settle, release, scroll, snapshot,
+  return { root, stage, header, posters, raf, timers, draws, resizes, fences, loaderReady, loaderFailed, warnings, reduced, document, gl, context,
+    renderer: () => renderer, now: () => now, flush, advance, frame, settle, release, scroll, boundary, snapshot,
     hold(value = true) { held = value; }, lose() { lost = true; }, emit(type) { window.dispatchEvent({ type }); },
-    intersect(visible) { intersection([{ isIntersecting: visible }]); },
+    intersect(visible) { intersection([{ isIntersecting: visible, boundingClientRect: root.getBoundingClientRect() }]); },
     hidden(value) { document.hidden = value; document.dispatchEvent({ type: 'visibilitychange' }); },
   };
 }
@@ -176,12 +186,12 @@ test('elapsed easing preserves .19 at 60Hz and catches up after slow GPU frames'
 for (const reason of ['offscreen', 'hidden', 'pagehide']) test(`${reason} cancels polling and resumes by draining before resize or draw`, async () => {
   const h = await loaded(); h.hold(); h.scroll(.4); await h.frame();
   const draws = h.draws.length, sizes = h.resizes.length;
-  if (reason === 'offscreen') h.intersect(false); else if (reason === 'hidden') h.hidden(true); else h.emit('pagehide');
+  if (reason === 'offscreen') { h.boundary(-1); h.intersect(false); } else if (reason === 'hidden') h.hidden(true); else h.emit('pagehide');
   await h.flush(); assert.equal(h.snapshot().assemblyGPUCompletion, 'canceled');
   assert.equal(h.timers.size + h.raf.size, 0); assert.ok(h.fences.every(fence => fence.deleted === 1));
-  h.stage.clientWidth = 1024; h.stage.clientHeight = 768; h.emit('resize'); h.scroll(.7); await h.advance(300);
+  h.stage.clientWidth = 1024; h.stage.clientHeight = 768; h.emit('resize'); if (reason !== 'offscreen') h.scroll(.7); await h.advance(300);
   assert.equal(h.draws.length, draws); assert.equal(h.resizes.length, sizes, 'Do not mutate the drawing buffer over an uncompleted frame');
-  if (reason === 'offscreen') h.intersect(true); else if (reason === 'hidden') h.hidden(false); else h.emit('pageshow');
+  if (reason === 'offscreen') { h.scroll(.7); h.intersect(true); } else if (reason === 'hidden') h.hidden(false); else h.emit('pageshow');
   await h.frame(); assert.equal(h.snapshot().assemblyGPUPhase, 'drain'); assert.equal(h.draws.length, draws);
   await h.advance(100); assert.equal(h.draws.length, draws, 'A resumed controller cannot submit while old commands remain pending');
   h.hold(false); await h.advance(4); await h.settle();
@@ -189,6 +199,70 @@ for (const reason of ['offscreen', 'hidden', 'pagehide']) test(`${reason} cancel
   assert.ok(h.resizes.some(size => size.width === 1024 && size.height === 768));
   assert.ok(h.fences.every(fence => fence.deleted === 1));
   return { interruption: reason, canceledFrames: Number(h.snapshot().assemblySubmittedFrames) - Number(h.snapshot().assemblyCompletedFrames), drainBeforeResize: true };
+});
+
+test('edge adjacency and a positive header-covered tail never submit a hero frame', async () => {
+  const h = await loaded(), draws = h.draws.length, frames = h.snapshot().assemblyFrames;
+  const evidence = [];
+  for (const bottom of [0, 1, 38, 76]) {
+    h.boundary(bottom);
+    // Native IO is allowed to report true both at edge adjacency and while
+    // the root's remaining pixels are completely covered by the header.
+    h.intersect(true);
+    for (let index = 0; index < 12; index++) { h.emit('scroll'); await h.frame(); }
+    await h.advance(500);
+    assert.equal(h.root.getBoundingClientRect().bottom, bottom);
+    assert.equal(h.stage.getBoundingClientRect().bottom, bottom);
+    assert.equal(h.draws.length, draws, `No draw with stage bottom ${bottom} and header bottom 76`);
+    assert.equal(h.snapshot().assemblyFrames, frames, 'No offscreen pose/render loop');
+    assert.equal(h.raf.size + h.timers.size, 0, 'Boundary exit leaves finite idle work');
+    evidence.push({ stageBottom: bottom, headerBottom: h.header.clientHeight, addedDraws: 0 });
+  }
+  // A stale IO false must not suppress a truly visible sliver. This uses the
+  // same sticky-stage geometry, rather than a test-only visibility override.
+  h.boundary(h.header.clientHeight + 3); h.intersect(false); await h.settle();
+  assert.ok(h.draws.length > draws, 'Three readable pixels resume real controller submissions');
+  assert.equal(h.snapshot().submission.raw, 1); assert.equal(h.snapshot().submission.value, 1);
+  assert.equal(h.snapshot().assemblyGPUCompletion, 'complete');
+  assert.equal(h.snapshot().assemblySubmittedFrames, h.snapshot().assemblyCompletedFrames);
+  return { boundaries: evidence, visibleReturnPixels: 3, completedReturn: true };
+});
+
+for (const bottom of [0, 38, 76]) test(`stage bottom ${bottom} cancels a pending frame and drains before a three-pixel return`, async () => {
+  const h = await loaded(); h.hold(); h.scroll(.4); await h.frame();
+  const draws = h.draws.length, sizes = h.resizes.length;
+  h.boundary(bottom); h.intersect(true); await h.flush();
+  assert.equal(h.snapshot().assemblyGPUCompletion, 'canceled');
+  assert.equal(h.raf.size + h.timers.size, 0); assert.ok(h.fences.every(fence => fence.deleted === 1));
+  h.stage.clientWidth = 1024; h.emit('resize'); await h.advance(500);
+  assert.equal(h.draws.length, draws); assert.equal(h.resizes.length, sizes);
+  h.boundary(h.header.clientHeight + 3); await h.frame();
+  assert.equal(h.snapshot().assemblyGPUPhase, 'drain');
+  await h.advance(200);
+  assert.equal(h.draws.length, draws, 'Visible return cannot bypass the old GPU command drain');
+  assert.equal(h.resizes.length, sizes, 'Buffer allocation is still behind the drain');
+  h.hold(false); await h.advance(4); await h.settle();
+  assert.ok(h.draws.length > draws); assert.equal(h.snapshot().assemblyGPUCompletion, 'complete');
+  assert.equal(h.snapshot().submission.raw, 1); assert.equal(h.snapshot().submission.value, 1);
+  assert.ok(h.resizes.some(size => size.width === 1024));
+  assert.ok(h.fences.every(fence => fence.deleted === 1)); assert.equal(h.raf.size + h.timers.size, 0);
+  return { stageBottom: bottom, canceled: true, returnPixels: 3, drainBeforeResizeAndDraw: true };
+});
+
+test('layout and the draw boundary recheck geometry without waiting for an IO callback', async () => {
+  const h = await loaded(), draws = h.draws.length;
+  h.scroll(.4); assert.equal(h.raf.size, 1);
+  h.boundary(0, false); await h.frame();
+  assert.equal(h.draws.length, draws, 'A scheduled draw reads the new physical rectangle before submission');
+  h.hold(); h.scroll(.4); await h.frame(); const pendingDraws = h.draws.length;
+  h.boundary(38, false); h.emit('resize'); await h.flush();
+  assert.equal(h.snapshot().assemblyGPUCompletion, 'canceled', 'Layout discovers a header-covered stage');
+  h.boundary(79); await h.frame(); assert.equal(h.snapshot().assemblyGPUPhase, 'drain');
+  h.boundary(38, false); h.hold(false); await h.advance(4); await h.settle();
+  assert.equal(h.draws.length, pendingDraws, 'Visibility is checked again after an asynchronous drain');
+  assert.equal(h.raf.size + h.timers.size, 0);
+  h.boundary(79); await h.settle(); assert.ok(h.draws.length > pendingDraws);
+  return { checkedBeforeDraw: true, checkedOnLayout: true, checkedAfterDrain: true };
 });
 
 test('a settled hero remains idle and unchanged resize does not resubmit buffer allocation', async () => {

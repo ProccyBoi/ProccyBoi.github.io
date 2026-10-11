@@ -1,7 +1,7 @@
 name: Verify v2 Skylabs and booking polish
 on:
   push:
-    branches: [v2-skylabs-book-polish, v2-background-collections, v2-selected-live-scenes, v2-selected-responsive]
+    branches: [v2-skylabs-book-polish, v2-background-collections, v2-selected-live-scenes, v2-selected-responsive, v2-load-speed]
   workflow_dispatch:
 permissions:
   contents: read

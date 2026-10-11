@@ -61,12 +61,19 @@
   }
   function prefetch(name) {
     if (!names.has(name)) return Promise.reject(new Error('Unknown hero assembly: ' + name));
-    textureSources[name].forEach(url => image(url).catch(() => {}));
     if (!pending.has(name)) {
-      const transfer = fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin') + (versions[name] ? '?v=' + versions[name] : '')).then(response => {
-        if (!response.ok) throw new Error('Hero assembly unavailable');
-        return response.arrayBuffer();
-      });
+      const start = () => {
+        textureSources[name].forEach(url => image(url).catch(() => {}));
+        return fetch('/assets/models/hero/' + name + (window.DecompressionStream ? '.idx.bin.gz' : '.bin') + (versions[name] ? '?v=' + versions[name] : '')).then(response => {
+          if (!response.ok) throw new Error('Hero assembly unavailable');
+          return response.arrayBuffer();
+        });
+      };
+      // Gate the shared entry point, including the offscreen hero's implicit
+      // load requests. Cache both promises now, before a deferred fetch starts.
+      const gate = name !== 'telemetry' && window.V2TransportPriority?.wait('hero');
+      const transfer = gate ? gate.then(start) : start();
+      if (name === 'telemetry') transfer.then(() => window.V2TransportPriority?.settle('telemetry'), error => window.V2TransportPriority?.settle('telemetry', error));
       // An opt-in scheduling signal, separate from unpacking readiness. Settle
       // failures too so a missing lead cannot starve the other visible models.
       // Store no raw bytes here; prefetch/load retain their original contract.

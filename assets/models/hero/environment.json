@@ -59,5 +59,8 @@
       "maximumChannelDifference": 0,
       "renderedPixels": 187280
     }
-  ]
+  ],
+  "runtimeHelperSha256": "93d3a27a2ebecbba5be9d778aaafbf4c144ec87d45bd5556b86b0d5ba23f6c5d",
+  "studioSourceSha256": "01a5af0a8508095aa382590cb34ff3f30cab81e2bcb81348b117a0c5d0fc3e2b",
+  "runtimeRevisionReason": "Additive raw-transfer settlement for direct v2 aircraft priority only. The complete studio/environment/light/material source prefix is byte-identical to the original bake; original studioHelperSha256, native RGBE texels and render evidence remain retained."
 }

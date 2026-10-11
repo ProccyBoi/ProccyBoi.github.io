@@ -290,9 +290,9 @@
       "reason": "Strict explicit editorial-source revision verifies the detached Dual inspector byte-for-byte; original geometry, runtime capture, pack generation hash and commit remain retained."
     },
     "assets/v2-selected-assets.js": {
-      "bytes": 21500,
-      "sha256": "5f67a28c25fd00e996814a20b351975ca0f414ca3f416c4134dd637fdb7b66c3",
-      "reason": "Current runtime decoder used by verification: image scheduling, texture prefetch and shared transfer delegation; additive Selected-only loadStatic batches independent Metro/TramTrace instances with cooperative transactional cancellation. Exact load() and pack-generation sources remain unchanged."
+      "bytes": 23220,
+      "sha256": "37041778738d0dc5e8c39a36116a2e824143ae6f63ab9898744a908f9c39ec68",
+      "reason": "Current runtime decoder used by verification: image scheduling, texture prefetch and shared transfer delegation; additive Selected-only loadStatic batches independent Metro/TramTrace instances with cooperative transactional cancellation. Exact load() and pack-generation sources remain unchanged. Exact pure-translation fast path byte-compared to the generic Vector3 reference, including signed zeros, materials, part groups, source immutability and transactional cancellation; packed CAD bytes are unchanged."
     }
   },
   "editorialSources": {

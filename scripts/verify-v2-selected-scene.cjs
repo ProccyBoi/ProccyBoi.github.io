@@ -478,7 +478,22 @@ async function open(browser, options={}) {
   page.on('console',message=>{if(/Shader Error|VALIDATE_STATUS|Error compiling shader|THREE.WebGLProgram/.test(message.text()))shaders.push(message.text());});
   return{context,page,requests,errors,shaders};
 }
-const state=page=>page.evaluate(()=>window.__selectedProbe.snapshot());
+const state=async page=>{
+  const result=await page.evaluate(()=>window.__selectedProbe.snapshot());
+  // Older comparison fixtures lack these additive counters. Current source
+  // emits actual target dimensions, so interrupted and resumed live flows
+  // must never reveal an isolated-stage shadow target.
+  if(result.mask==='false'&&result.lastDraw&&!result.lastDraw.warm&&'shadowWidth'in result.lastDraw){
+    assert.equal(result.lastDraw.shadowWidth,1536,'Visible Selected shadow width retains full quality');
+    assert.equal(result.lastDraw.shadowHeight,1536,'Visible Selected shadow height retains full quality');
+  }
+  for(const item of result.preparationMeasurements||[])if('shadowWidth'in item){
+    const size=item.kind==='model'?64:1536;
+    assert.equal(item.shadowWidth,size,'Actual owned preparation shadow width');
+    assert.equal(item.shadowHeight,size,'Actual owned preparation shadow height');
+  }
+  return result;
+};
 const begin=page=>page.evaluate(()=>window.__selectedProbe.begin());
 const end=page=>page.evaluate(()=>window.__selectedProbe.end());
 async function settled(page) {

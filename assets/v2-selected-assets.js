@@ -214,12 +214,32 @@
       for(const item of bucket.items){
         if(performance.now()-sliceStarted>8&&!await yieldWork())return null;
         const normalMatrix=new T.Matrix3().getNormalMatrix(item.transform), vector=new T.Vector3();
+        // Only exact positive-zero identity linear/projective matrices qualify.
+        // The generic path continues to own mirrored/scaled/rotated transforms.
+        const elements=item.transform.elements, normalElements=normalMatrix.elements;
+        const translationOnly=elements.every((value,index)=>index>=12&&index<=14||Object.is(value,index%5===0?1:0))&&
+          normalElements.every((value,index)=>Object.is(value,index%4===0?1:0));
         for(const [attributeName,attribute] of item.attributes){
           const target=arrays[attributeName],offset=vertexStart*attribute.itemSize;
           // First preserve every stored component verbatim. Only coordinates
           // and inverse-transpose normals cross the source local transform.
           target.set(attribute.array,offset);
-          if(attributeName==='position'||attributeName==='normal')for(let vertex=0;vertex<item.vertices;vertex++){
+          if(translationOnly&&(attributeName==='position'||attributeName==='normal')){
+            const positions=attributeName==='position', metric=positions?'maxPositionRounding':'maxNormalRounding';
+            for(let vertex=0;vertex<item.vertices;vertex++){
+              if(vertex%2048===0&&performance.now()-sliceStarted>8&&!await yieldWork())return null;
+              const sourceOffset=vertex*3, targetOffset=offset+sourceOffset;
+              const x=attribute.array[sourceOffset],y=attribute.array[sourceOffset+1],z=attribute.array[sourceOffset+2];
+              // Keep the original left-to-right zero products/additions: they
+              // determine IEEE-754 signed zero, even for identity normal maps.
+              let tx=x+0*y+0*z,ty=0*x+y+0*z,tz=0*x+0*y+z;
+              if(positions){tx+=elements[12];ty+=elements[13];tz+=elements[14];}
+              if(!Number.isFinite(tx)||!Number.isFinite(ty)||!Number.isFinite(tz))fail('non-finite transformed attribute');
+              target[targetOffset]=tx;target[targetOffset+1]=ty;target[targetOffset+2]=tz;
+              report[metric]=Math.max(report[metric],Math.abs(target[targetOffset]-tx),
+                Math.abs(target[targetOffset+1]-ty),Math.abs(target[targetOffset+2]-tz));
+            }
+          }else if(attributeName==='position'||attributeName==='normal')for(let vertex=0;vertex<item.vertices;vertex++){
             if(vertex%2048===0&&performance.now()-sliceStarted>8&&!await yieldWork())return null;
             vector.fromArray(attribute.array,vertex*3);
             if(attributeName==='position')vector.applyMatrix4(item.transform);else vector.applyMatrix3(normalMatrix);

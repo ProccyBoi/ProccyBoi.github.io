@@ -322,7 +322,13 @@ def main() -> int:
             error(environment_manifest, "compressed lighting differs from its plain texture")
         for source, field in (("scripts/build-v2-hero-environment.cjs", "builderFileSha256"), ("assets/vendor/three.min.js", "threeSha256"), ("assets/v2-hero-environment.js", "studioHelperSha256")):
             data = (ROOT / source).read_bytes().replace(b"\r\n", b"\n")
-            if hashlib.sha256(data).hexdigest() != environment[field]:
+            expected = environment[field]
+            if field == "studioHelperSha256" and "runtimeHelperSha256" in environment:
+                expected = environment["runtimeHelperSha256"]
+                studio = data.split(b"  let pending;", 1)[0]
+                if hashlib.sha256(studio).hexdigest() != environment["studioSourceSha256"]:
+                    error(environment_manifest, "original studio lighting/material source changed; rebuild the environment")
+            if hashlib.sha256(data).hexdigest() != expected:
                 error(environment_manifest, f"lighting source changed; rebuild the environment: {source}")
     except (OSError, ValueError, KeyError, TypeError) as exc:
         error(environment_manifest, f"cannot verify prepared hero lighting: {exc}")

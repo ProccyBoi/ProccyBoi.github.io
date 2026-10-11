@@ -16,7 +16,63 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/images/v2/tramtrace-cad.webp?v=product-20261007" as="image" type="image/webp" fetchpriority="high">
-  <script src="/assets/v2-hero-startup.js?v=background-20261011" async></script>
+  <script>
+    // A direct aircraft visit lends its first connection slots to the bytes it
+    // needs. Inline initialization precedes every async/deferred consumer; the
+    // ordinary hero still starts all three boards together with no extra RTT.
+    (() => {
+      const aircraftHash = () => /^#skylabs-(aircraft|telemetry)$/.test(location.hash);
+      if (!aircraftHash() || matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('(max-height:600px)').matches || navigator.connection?.saveData) return;
+      let active = true, reached = false, navigation = false, lastY = scrollY, release;
+      const required = new Set(['telemetry', 'environment', 'airframe']);
+      const waiting = new Promise(resolve => { release = resolve; });
+      const finish = () => {
+        if (!active) return;
+        active = false; clearTimeout(timer); release();
+        removeEventListener('scroll', position); removeEventListener('hashchange', hash);
+        removeEventListener('wheel', input); removeEventListener('touchstart', input);
+        removeEventListener('keydown', key); document.removeEventListener('click', click);
+      };
+      const promote = scene => { if (scene === 'hero' || scene === 'selected') finish(); };
+      const inView = selector => {
+        const node = document.querySelector(selector);
+        if (!node) return false;
+        const bounds = node.getBoundingClientRect();
+        const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+        return bounds.top < innerHeight && bounds.bottom > padding;
+      };
+      function position() {
+        const reversed = reached && scrollY < lastY; lastY = scrollY;
+        if (inView('[data-aircraft-hero]')) reached = true;
+        // Fragment restoration passes through the top and can leave a Selected
+        // tail above the first aircraft anchor. Only a later upward reversal
+        // or new user input may promote another section's readable viewport.
+        if ((reversed || navigation) && (inView('[data-assembly]') || inView('[data-selected-work]'))) finish();
+      }
+      function input() { navigation = true; }
+      function key(event) {
+        if (['Home', 'End', 'PageUp', 'PageDown', 'ArrowUp', 'ArrowDown', ' '].includes(event.key)) input();
+      }
+      function hash() { if (!aircraftHash()) finish(); }
+      function click(event) {
+        const anchor = event.target.closest?.('a[href]');
+        if (!anchor) return;
+        const url = new URL(anchor.href, location.href);
+        if (url.origin === location.origin && url.pathname === location.pathname && !/^#skylabs-(aircraft|telemetry)$/.test(url.hash)) finish();
+      }
+      const timer = setTimeout(finish, 8000);
+      window.V2TransportPriority = Object.freeze({
+        wait: scene => active && (scene === 'hero' || scene === 'selected') ? waiting : null,
+        promote,
+        hasAircraftPriority: () => active,
+        settle(name, error) { if (required.has(name)) { required.delete(name); if (error || !required.size) finish(); } }
+      });
+      addEventListener('scroll', position, {passive:true}); addEventListener('hashchange', hash);
+      addEventListener('wheel', input, {passive:true}); addEventListener('touchstart', input, {passive:true});
+      addEventListener('keydown', key); document.addEventListener('click', click);
+    })();
+  </script>
+  <script src="/assets/v2-hero-startup.js?v=load-20261012" async></script>
   <link rel="stylesheet" href="/assets/v2.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/v2-assembly.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
@@ -24,10 +80,10 @@
   <link rel="stylesheet" href="/assets/aircraft-story.css?v=v2-aircraft-20261011">
   <script src="/assets/v2.js?v=physical-20261007" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
-  <script src="/assets/v2-assembly.js?v=review-20261012" defer></script>
-  <script src="/assets/v2-selected-work.js?v=review-20261012" defer></script>
+  <script src="/assets/v2-assembly.js?v=load-20261012" defer></script>
+  <script src="/assets/v2-selected-work.js?v=load-20261012" defer></script>
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
-  <script src="/assets/v3-aircraft-hero.js?v=review-20261012" defer></script>
+  <script src="/assets/v3-aircraft-hero.js?v=load-20261012" defer></script>
 </head>
 <body class="v2 v2-home">
   <a class="v2-skip" href="#main">Skip to content</a>

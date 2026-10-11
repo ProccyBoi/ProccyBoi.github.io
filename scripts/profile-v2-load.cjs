@@ -250,6 +250,21 @@ function summary(values) {
   const quantile=q=>sorted.length?sorted[Math.min(sorted.length-1,Math.ceil(sorted.length*q)-1)]:null;
   return {count:sorted.length,min:round(sorted[0]),median:round(sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2),p95:round(quantile(.95)),max:round(sorted.at(-1)),total:round(sorted.reduce((sum,value)=>sum+value,0))};
 }
+function assertFullSizeShadows(draws) {
+  const composition=draws.filter(draw=>draw.warm&&draw.longSide===640);
+  assert.deepEqual([...new Set(composition.map(draw=>draw.value))].sort(),[0,1],'Both actual composition warm poses must be observed');
+  const firstLive=draws.find(draw=>!draw.warm);assert.ok(firstLive,'Observe the first actual live draw');
+  for(const draw of [...composition,firstLive]) {
+    assert.deepEqual(draw.shadow.configured,[1536,1536],'Full composition/live draw preserves configured 1536px shadows');
+    assert.deepEqual(draw.shadow.actual,{width:1536,height:1536},'Full composition/live draw allocates the actual 1536px shadow target');
+  }
+}
+function assertNoOffscreenHero(sample) {
+  for(const frame of sample.metrics.gpu.filter(record=>record.owner==='hero'&&record.stage==='frame')) {
+    assert.ok(frame.geometry?.viewportIntersectionArea.canvas>0,'Candidate hero submission needs positive viewport canvas area');
+    assert.ok(frame.geometry?.belowHeaderIntersectionArea.canvas>0,'Candidate hero submission needs positive canvas area below the sticky header');
+  }
+}
 function assertCompletion(sample) {
   const m=sample.metrics.milestones;
   const required=sample.scenario==='journey'?['heroAllSubmittedMs','heroAllGPUCompletedMs','selectedAllModelsMs','selectedEightGPUStagesMs','selectedCurrentSizeVisibleGPUCompletedMs']:['aircraftTelemetryModelReadyMs','telemetryCurrentSizeVisibleGPUCompletedMs'];
@@ -259,6 +274,8 @@ function assertCompletion(sample) {
     assert.ok(m.selectedCurrentSizeVisibleGPUCompletedMs>=m.selectedEightGPUStagesMs, 'Live Selected must follow eight fenced warm stages');
     const names=new Set(sample.metrics.factory.filter(item=>item.factory==='V2SelectedAssets'&&item.method==='loadStatic'&&item.endMs&&!item.error).map(item=>item.name));
     assert.deepEqual([...names].sort(),selectedNames.slice().sort(),'All six real Selected factories complete');
+    assertFullSizeShadows(sample.metrics.selectedDraws);
+    if(sample.phase==='candidate')assertNoOffscreenHero(sample);
   }
   assert.deepEqual(sample.errors,[], 'No uncaught production/probe errors');
   assert.equal(sample.metrics.factory.some(item=>item.factory==='V2AssemblyModels'&&item.method==='load'),false,'No original hero factory fallback in packed-load profile');
@@ -415,7 +432,13 @@ async function sourceTests() {
     const requests=classifyRequests(new Map([['1',{url:'http://localhost/model.bin.gz',start:1,end:2,finished:true,wireBytes:0,servedFromCache:true}]]),[{name:'http://localhost/model.bin.gz',transferSize:0,decodedBodySize:100}],1);
     assert.equal(requests[0].endMs,1000);assert.equal(requests[0].resourceTimingCache,true);assert.equal(requests[0].cacheEvidence.length,2);
     assert.throws(()=>assertCompletion({scenario:'direct-telemetry',metrics:{milestones:{}}}),/strict completion/);
-    console.log('PASS source-only: trace anchors/syntax, cacheable gzip and explicit-gzip parity, ETag revalidation, path safety, cache evidence, strict missing-completion rejection. No browser/GPU performance claimed.');
+    const draw=(warm,value)=>({warm,value,longSide:640,shadow:{configured:[1536,1536],actual:{width:1536,height:1536}}});
+    assertFullSizeShadows([draw(true,0),draw(true,1),draw(false,0)]);
+    const small=draw(false,0);small.shadow.actual.width=64;
+    assert.throws(()=>assertFullSizeShadows([draw(true,0),draw(true,1),small]),/actual 1536px/);
+    assert.throws(()=>assertNoOffscreenHero({metrics:{gpu:[{owner:'hero',stage:'frame',geometry:{viewportIntersectionArea:{canvas:0},belowHeaderIntersectionArea:{canvas:0}}}]}}),/positive viewport/);
+    assertNoOffscreenHero({metrics:{gpu:[{owner:'hero',stage:'frame',geometry:{viewportIntersectionArea:{canvas:100},belowHeaderIntersectionArea:{canvas:50}}}]}});
+    console.log('PASS source-only: trace anchors/syntax, cacheable gzip and explicit-gzip parity, ETag revalidation, path safety, cache evidence, strict completion, actual full-size shadows and positive-area hero assertions. No browser/GPU performance claimed.');
   } finally {fs.rmSync(root,{recursive:true,force:true});}
 }
 async function main() {
@@ -465,4 +488,4 @@ async function main() {
   finally {if(browser)await browser.close();if(server.listening)await new Promise(resolve=>server.close(resolve));}
 }
 if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});
-module.exports={traceSource,prepareFixture,responseFor,browserProbe,summary,assertCompletion,classifyRequests,summarizeSample,comparison};
+module.exports={traceSource,prepareFixture,responseFor,browserProbe,summary,assertCompletion,assertFullSizeShadows,assertNoOffscreenHero,classifyRequests,summarizeSample,comparison};

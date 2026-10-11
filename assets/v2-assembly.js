@@ -8,6 +8,7 @@
   const compact = matchMedia('(max-height: 620px), (max-width: 900px) and (max-height: 700px)');
   const canvas = root.querySelector('[data-assembly-canvas]');
   const stage = root.querySelector('.v2-assembly-sticky');
+  const header = document.querySelector('.v2-header');
   const intro = root.querySelector('[data-assembly-intro]');
   const caption = root.querySelector('[data-assembly-caption]');
   const projectLink = root.querySelector('[data-assembly-link]');
@@ -44,6 +45,19 @@
     renderTime=0; revision++;
     gpuAbort?.abort();
   };
+  const refreshVisibility = () => {
+    // IntersectionObserver considers an edge-adjacent root intersecting even
+    // when its sticky canvas has no visible pixels. Only readable stage area
+    // can justify more graphics work, including the fixed-header boundary.
+    const bounds=stage.getBoundingClientRect();
+    const top=Math.max(0,header?.getBoundingClientRect().bottom||0);
+    const next=bounds.width>0 && bounds.height>0 && bounds.right>0 && bounds.left<innerWidth && bounds.bottom>top && bounds.top<innerHeight;
+    if(next===visible) return;
+    visible=next;
+    syncLoadingVisibility();
+    if(visible) {current=target;renderTime=0;revision++;}
+    else {interrupt();current=target;}
+  };
   const gpuWait = async (abort, phase) => {
     root.dataset.assemblyGPUPending='true'; root.dataset.assemblyGPUPhase=phase;
     const result=await window.V2GPUPreparation.wait(renderer,{signal:abort.signal,valid:drawable,pollMs:4});
@@ -62,7 +76,7 @@
     // A visitor can choose a supporting chapter while Three is still loading.
     // Promote its transport immediately; installation follows renderer setup.
     const prefetch = async () => {
-      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=transfer-20261011');
+      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=load-20261012');
       window.V2HeroAssets.prefetch(projects[index].name).catch(() => {});
     };
     prefetch().catch(() => {});
@@ -94,6 +108,7 @@
   };
   let sourceFactories;
   const loadSourceModel = async name => {
+    if (name !== 'telemetry') await window.V2TransportPriority?.wait('hero');
     sourceFactories ||= Promise.all([
       window.V2AssemblyModels ? Promise.resolve() : loadScript('/assets/v2-assembly-models.js?v=mechanics-20261003'),
       window.V2HardwareModels ? Promise.resolve() : loadScript('/assets/v2-hardware-models.js?v=mechanics-20261003'),
@@ -208,6 +223,7 @@
       [pose(0,right,small ? -.25 : -.8,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
     updateProgress();
+    refreshVisibility();
     request();
   };
   const interpolate = (keys,value) => {
@@ -220,6 +236,7 @@
   };
   const render = async timestamp => {
     frame=0;
+    refreshVisibility();
     if(!drawable() || gpuBusy) return;
     const moving=motionAllowed();
     const abort=new AbortController(); gpuAbort=abort; gpuBusy=true;
@@ -230,6 +247,7 @@
       gpuNeedsDrain=false;
       timestamp=performance.now();
     }
+    refreshVisibility();
     if(!drawable() || abort.signal.aborted) return;
     const elapsed=renderTime ? Math.max(0,timestamp-renderTime) : 1000/60;
     renderTime=timestamp;
@@ -382,11 +400,11 @@
       // Download prepared geometry alongside Three.js. Source CAD remains a
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
-        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=transfer-20261011');
+        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=load-20261012');
         if (motionAllowed()) projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
       })().catch(()=>{});
       const lighting=(async()=>{
-        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=product-20261007');
+        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=load-20261012');
         window.V2HeroEnvironment.prefetch().catch(()=>{});
       })().catch(()=>{});
       await Promise.all([
@@ -516,6 +534,7 @@
     } finally {loading=false;}
   }
   selectors.forEach((button,index)=>button.addEventListener('click',()=>{
+    window.V2TransportPriority?.promote('hero');
     if(!ready || failed || !motionAllowed()) return;
     setExploreProject(index);
     promoteModel?.(index);
@@ -523,12 +542,12 @@
     const top=scrollY+root.getBoundingClientRect().top;
     scrollTo({top:top+positions[index]*(root.offsetHeight-stage.clientHeight),behavior:'smooth'});
   }));
-  addEventListener('scroll',()=>{updateProgress();request();},{passive:true});
+  addEventListener('scroll',()=>{updateProgress();refreshVisibility();request();},{passive:true});
   addEventListener('resize',layout,{passive:true});
   new ResizeObserver(layout).observe(stage);
   const syncLoadingVisibility=()=>loadingExperience?.suspend(!visible||document.hidden||!motionAllowed());
-  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;syncLoadingVisibility();if(visible){updateProgress();current=target;renderTime=0;revision++;request();}else{interrupt();current=target;}},{threshold:0}).observe(root);
-  document.addEventListener('visibilitychange',()=>{syncLoadingVisibility();if(document.hidden){interrupt();}else{updateProgress();current=target;revision++;request();}});
+  new IntersectionObserver(()=>{updateProgress();refreshVisibility();request();},{threshold:0}).observe(root);
+  document.addEventListener('visibilitychange',()=>{syncLoadingVisibility();if(document.hidden){interrupt();}else{updateProgress();refreshVisibility();current=target;revision++;request();}});
   const syncMotionMode=()=>{
     if(!motionAllowed()) staticMode();
     else if(ready){root.classList.add('is-enhanced');root.classList.remove('is-static');setSceneControls(!failed);entry=0;syncLoadingVisibility();layout();}
@@ -540,6 +559,6 @@
     event.preventDefault();failRenderer(new Error('Hero WebGL context lost'));request();
   });
   addEventListener('pagehide',()=>{activePage=false;loadingExperience?.suspend(true);interrupt();});
-  addEventListener('pageshow',()=>{activePage=true;syncLoadingVisibility();updateProgress();current=target;revision++;request();});
+  addEventListener('pageshow',()=>{activePage=true;syncLoadingVisibility();updateProgress();refreshVisibility();current=target;revision++;request();});
   if(motionAllowed()) initialize(); else staticMode();
 })();

@@ -9,6 +9,19 @@
   const ramp = (p, a, b) => smooth((p - a) / (b - a));
   let pending;
   let decoderReady;
+  // Optional v2 transport observation, independent of decompression, parsing
+  // and GPU readiness. Ordinary prefetch/load keep the same cached work.
+  let transferState, transferSignal, settleTransfer;
+  function transferComplete(error) {
+    if (transferState) return;
+    transferState = {state:error ? 'unavailable' : 'ready'};
+    settleTransfer?.(transferState);
+  }
+  function whenTransferSettled() {
+    transferSignal ||= transferState ? Promise.resolve(transferState) : new Promise(resolve => { settleTransfer = resolve; });
+    prefetch().catch(transferComplete);
+    return transferSignal;
+  }
   function decoder(source) {
     return decoderReady ||= new Promise((resolve, reject) => {
       if (window.MeshoptDecoder) return resolve();
@@ -17,9 +30,13 @@
   }
   async function download(source, revision) {
     const compressed = !!window.DecompressionStream && source.compressedModel;
-    const response = await fetch(directory + (compressed || source.model) + '?v=' + encodeURIComponent(revision));
-    if (!response.ok) throw new Error('Trainer model unavailable');
-    let buffer = await response.arrayBuffer();
+    let buffer;
+    try {
+      const response = await fetch(directory + (compressed || source.model) + '?v=' + encodeURIComponent(revision));
+      if (!response.ok) throw new Error('Trainer model unavailable');
+      buffer = await response.arrayBuffer();
+      transferComplete();
+    } catch (error) { transferComplete(error); throw error; }
     if (compressed && new Uint8Array(buffer)[0] === 31) buffer = await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
     return buffer;
   }
@@ -579,5 +596,5 @@
       assemblyError() { return parts.reduce((error, part) => Math.max(error, part.object.position.distanceTo(part.base), 1 - Math.abs(part.object.quaternion.dot(part.quaternion))), 0); }
     };
   }
-  window.V3AircraftScene = Object.freeze({ prefetch, load, create });
+  window.V3AircraftScene = Object.freeze({ prefetch, load, create, whenTransferSettled });
 })();

@@ -373,6 +373,7 @@
     }
   }
   function fail(error) {
+    if (background) window.V2TransportPriority?.settle('airframe', error);
     failed = true; loading = false;
     if (background) publishAircraftPriority();
     if (background) { interruptBackground('unavailable'); root.dataset.aircraftBackgroundState = 'unavailable'; }
@@ -385,7 +386,7 @@
     telemetryLoading = true;
     return telemetryTask = (async () => {
     try {
-      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'transfer-20261011' : 'startup-20261007'));
+      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'load-20261012' : 'startup-20261007'));
       if (background) {
         await window.V2HeroAssets.prefetch('telemetry');
         if (!await backgroundCPU('telemetry-load')) return;
@@ -406,11 +407,23 @@
     })();
   }
   function prepareAirframe(promote = false) {
-    const transfer = () => airframeTransport ||= window.V3AircraftScene.prefetch().then(value => {
-      if (background) root.dataset.aircraftTransportState = 'ready';
-      return value;
-    });
-    if (!background || promote) {
+    const transfer = () => {
+      if (!airframeTransport) {
+        airframeTransport = window.V3AircraftScene.prefetch().then(value => {
+          if (background) root.dataset.aircraftTransportState = 'ready';
+          return value;
+        });
+        if (background && window.V2TransportPriority?.hasAircraftPriority()) {
+          // New helpers report raw bytes. Older/source fallbacks remain safe:
+          // their prefetch settlement or the bounded coordinator releases it.
+          const bytes = window.V3AircraftScene.whenTransferSettled?.() || airframeTransport;
+          bytes.then(result => window.V2TransportPriority.settle('airframe', result?.state === 'unavailable'), error => window.V2TransportPriority.settle('airframe', error));
+        }
+      }
+      return airframeTransport;
+    };
+    // A direct aircraft visit cannot wait for the hero bytes it is holding.
+    if (!background || promote || window.V2TransportPriority?.hasAircraftPriority()) {
       releaseTransport?.();
       if (background && !airframeTransport) root.dataset.aircraftTransportState = 'loading';
       return transfer();
@@ -422,7 +435,7 @@
       const timer = setTimeout(resolve, 4500);
       releaseTransport = () => { clearTimeout(timer); resolve(); };
       (async () => {
-        if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=transfer-20261011');
+        if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=load-20261012');
         await Promise.all(['tramtrace', 'telemetry', 'pi'].map(name => window.V2HeroAssets.whenTransferSettled(name)));
       })().then(releaseTransport, releaseTransport);
     }).then(() => {
@@ -435,11 +448,11 @@
     return sourcePreparation ||= Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (!window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
         (async () => {
-          if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=aircraft-transition-20261010');
+          if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=' + (background ? 'load-20261012' : 'aircraft-transition-20261010'));
           if (background && !window.MeshoptDecoder) await script('/assets/vendor/meshopt_decoder.js').catch(() => {});
           prepareAirframe(!background || nearStory()).catch(() => {});
         })(),
-        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
+        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=' + (background ? 'load-20261012' : 'product-20261007')); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
         script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
         detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve(),
         background ? script('/assets/v2-gpu-preparation.js?v=paced-20261011') : Promise.resolve()

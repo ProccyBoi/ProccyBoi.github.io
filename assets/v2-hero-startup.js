@@ -19,14 +19,14 @@
   // awaiting it or delaying the independent poster scene.
   loadScript('/assets/vendor/three.min.js').catch(() => {});
   loadScript('/assets/v2-hero-motion.js?v=mechanics-20261003').catch(() => {});
-  loadScript('/assets/v2-hero-assets.js?v=transfer-20261011').then(() => {
+  loadScript('/assets/v2-hero-assets.js?v=load-20261012').then(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
     // All visible boards prepare together; no model waits for another model's
     // transfer or shader compilation. The poster scene is already interactive.
     ['tramtrace', 'telemetry', 'pi'].forEach(name => window.V2HeroAssets.prefetch(name).catch(() => {}));
-  }).catch(() => {});
-  loadScript('/assets/v2-hero-environment.js?v=product-20261007').then(() => {
+  }).catch(error => window.V2TransportPriority?.settle('telemetry', error));
+  loadScript('/assets/v2-hero-environment.js?v=load-20261012').then(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
     window.V2HeroEnvironment.prefetch().catch(() => {});
-  }).catch(() => {});
+  }).catch(error => window.V2TransportPriority?.settle('environment', error));
 })();

@@ -88,10 +88,12 @@
   function prefetch() {
     pending ||= fetch('/assets/models/hero/environment.bin' + (window.DecompressionStream ? '.gz' : '') + '?v=product-20261007').then(async response => {
       if (!response.ok) throw new Error('Hero environment unavailable');
-      const bytes = await response.arrayBuffer(), signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
+      const bytes = await response.arrayBuffer();
+      window.V2TransportPriority?.settle('environment');
+      const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
       if (signature[0] === 31 && signature[1] === 139) return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
       return bytes;
-    });
+    }).catch(error => { window.V2TransportPriority?.settle('environment', error); throw error; });
     return pending;
   }
   async function load(T = window.THREE) {

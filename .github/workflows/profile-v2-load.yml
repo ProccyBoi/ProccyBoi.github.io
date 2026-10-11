@@ -21,17 +21,73 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
           git worktree add --detach /tmp/v2-load-baseline b5965978db351e5c6d3ee2a7a2d25ed1ad2a976f
-      - name: Measure current deployment cold and cached phase costs
+      - name: Compare exact baseline and candidate cold and cached readiness
         env:
           V2_LOAD_ROOT: ${{ github.workspace }}
           V2_LOAD_BASELINE_ROOT: /tmp/v2-load-baseline
           V2_LOAD_OUT: /tmp/v2-load-evidence/profile.json
-          V2_LOAD_RUNS: '1'
-          V2_LOAD_CASES: journey
-        run: node scripts/profile-v2-load.cjs --baseline-only
+          V2_LOAD_RUNS: '3'
+        run: node scripts/profile-v2-load.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: v2-load-measurements
           path: /tmp/v2-load-evidence/
+          retention-days: 14
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Exact geometry, full-quality targets and native priority boundaries
+        env:
+          HERO_BOUNDARY_OUT: /tmp/v2-load-targeted
+        run: |
+          node scripts/verify-v2-selected-translation.cjs
+          node scripts/verify-v2-load-quality.cjs
+          node scripts/verify-v2-hero-pacing.cjs --source-only
+          node scripts/verify-v2-direct-transport.cjs
+          node scripts/verify-v2-hero-boundary.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-load-targeted
+          path: /tmp/v2-load-targeted/
+          retention-days: 14
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+          git worktree add --detach /tmp/v2-load-baseline b5965978db351e5c6d3ee2a7a2d25ed1ad2a976f
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
+          python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-load-baseline >/tmp/baseline.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
+      - name: Preserve original RGBE lighting and identical final CAD pixels
+        env:
+          V2_BASE_URL: http://127.0.0.1:8080
+          V2_BASELINE_URL: http://127.0.0.1:8081
+          V2_LOAD_VISUAL_OUT: /tmp/v2-load-visual
+        run: |
+          node scripts/build-v2-hero-environment.cjs --verify
+          node scripts/verify-v2-load-visual-parity.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-load-quality
+          path: /tmp/v2-load-visual/
           retention-days: 14
