@@ -48,7 +48,8 @@ const cases=[],errors=[];
      await page.waitForFunction(()=>document.querySelector('[data-assembly]')?.dataset.assemblyModelsReady==='3',null,{timeout:180000});await page.waitForTimeout(1600);
      await page.screenshot({path:path.join(out,`${name}-hero-${width}.png`)});
      await page.locator('#work').scrollIntoViewIfNeeded();await page.waitForTimeout(700);
-     await page.waitForFunction(()=>[...document.querySelectorAll('[data-gallery-media] img')].every(i=>i.complete&&i.naturalWidth));
+     await page.waitForFunction(()=>{const image=document.querySelector('[data-gallery-media] [data-gallery-photo]:not([hidden]) img[data-gallery-original]');return image?.complete&&image.naturalWidth>0;});
+     await page.locator('[data-gallery-media] [data-gallery-photo]:not([hidden]) img[data-gallery-original]').evaluate(image=>image.decode());
      await page.screenshot({path:path.join(out,`${name}-gallery-${width}.png`)});
      await context.close();
     }

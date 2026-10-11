@@ -277,8 +277,8 @@
     if (visible) { updateScroll(); request(); } else { if (landingEntered) endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; }
   }).observe(root);
   document.addEventListener('visibilitychange', () => { previousTime = 0; scrubTime = 0; renderedProgress = progress; if (document.hidden) { cancelAnimationFrame(frame); frame = 0; } else request(); });
-  addEventListener('pagehide', () => { activePage = false; cancelAnimationFrame(frame); frame = 0; });
-  addEventListener('pageshow', () => { activePage = true; previousTime = 0; updateScroll(); request(); });
+  addEventListener('pagehide', () => { activePage = false; scrubTime = 0; renderedProgress = progress; cancelAnimationFrame(frame); frame = 0; });
+  addEventListener('pageshow', () => { activePage = true; previousTime = 0; scrubTime = 0; renderedProgress = progress; updateScroll(); request(); });
   const storyLead = 420;
   const nearStory = () => { const bounds = root.getBoundingClientRect(); return bounds.top < innerHeight + storyLead && bounds.bottom > -storyLead; };
   const start = () => {

@@ -12,7 +12,8 @@ assert.equal(easing.epsilon, .00008);
 assert.equal(easing.jump, .18);
 assert.equal(easing.step(.3, .7, 0), .3, 'No time produces no motion');
 assert.equal(easing.step(.3, .7, -1), .3, 'Negative elapsed time cannot reverse motion');
-assert.equal(easing.step(.3, .7, 1000), easing.step(.3, .7, 100), 'A suspended tab cannot produce an unbounded elapsed-time step');
+assert.equal(easing.step(.3, .7, 1000), .7, 'Long visible frames catch up without inventing a capped-time tail');
+assert.equal(easing.step(.7, .3, 3000), .3, 'A multi-second visible frame remains bounded and settles exactly');
 assert.equal(easing.step(.7, .7, 16), .7, 'A settled value remains exactly settled');
 const reports = [];
 for (const hz of [30, 60, 120]) {
@@ -46,14 +47,22 @@ for (let index = 1; index < reports.length; index++) near(reports[index].after20
 let irregular = .13;
 for (const dt of [7, 13, 45, 5, 30, 40, 60]) irregular = easing.step(irregular, .91, dt);
 near(irregular, .91 - .78 * Math.exp(-200 / 70), 'Variable frame intervals use elapsed time');
+// Slow visible rendering must retain the same time constant instead of adding
+// another long easing tail when a software WebGL frame takes 150-250ms.
+for (const schedule of [[150], [200], [250], [150, 50], [200, 50], [125, 125]]) {
+  let value = .2;
+  for (const elapsed of schedule) value = easing.step(value, .8, elapsed);
+  near(value, .8 - .6 * Math.exp(-schedule.reduce((sum, elapsed) => sum + elapsed, 0) / 70), 'Slow visible frame schedule ' + schedule.join('+') + 'ms');
+}
+assert.ok((easing.step(0, 1, 200) - 0) > .94, 'A 200ms visible frame advances over 94% of the remaining distance');
 // Verify the same browser global API, not a separate test-only implementation.
 const context = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'assets/v2-scroll-smoothing.js'), 'utf8'), context);
-for (const dt of [0, 8.3333, 16.6667, 33.3333, 100]) near(context.window.V2ScrollSmoothing.step(.2, .9, dt), easing.step(.2, .9, dt), 'Browser and CommonJS exports agree');
+for (const dt of [0, 8.3333, 16.6667, 33.3333, 100, 150, 200, 250]) near(context.window.V2ScrollSmoothing.step(.2, .9, dt), easing.step(.2, .9, dt), 'Browser and CommonJS exports agree');
 const v2 = fs.readFileSync(path.join(root, 'v2/index.html'), 'utf8');
 const v3 = fs.readFileSync(path.join(root, 'v3/index.html'), 'utf8');
 assert.match(v2, /data-aircraft-hero[^>]*data-aircraft-smooth/);
 assert.ok(v2.indexOf('/assets/v2-scroll-smoothing.js') < v2.indexOf('/assets/v3-aircraft-hero.js'), 'Easing loads before its opted-in controller');
 assert.doesNotMatch(v3, /data-aircraft-smooth|v2-scroll-smoothing\.js/, 'Accepted v3 does not opt into v2 easing');
-console.log('PASS time-based easing at 30/60/120 Hz, irregular frames, reversals, exact endpoints, bounded resume and v2-only opt-in.');
+console.log('PASS time-based easing at 30/60/120 Hz, irregular/150-250ms frames, reversals, exact endpoints, bounded resume and v2-only opt-in.');
 console.log(JSON.stringify({ passed: true, reports }, null, 2));

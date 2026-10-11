@@ -45,14 +45,22 @@ function staticChecks() {
   const submit = { disabled: false };
   const success = { hidden: true };
   const weekNavigation = { hidden: true };
-  const days = {};
+  const days = { hidden: false, scrollWidth: 900, clientWidth: 300 };
+  const scrollHint = { hidden: true };
   const settings = [{ disabled: false }, { disabled: false }];
-  const nodes = { '[data-booking-form]': form, '[data-booking-submit]': submit, '[data-booking-success]': success, '.booking-week-nav': weekNavigation, '[data-booking-days]': days };
+  const nodes = { '[data-booking-form]': form, '[data-booking-submit]': submit, '[data-booking-success]': success, '.booking-week-nav': weekNavigation, '[data-booking-days]': days, '[data-v2-booking-scroll-hint]': scrollHint };
   let sync;
   vm.runInNewContext(bridge, {
     document: { querySelector: () => ({ querySelector: selector => nodes[selector], querySelectorAll: () => settings }) },
     MutationObserver: class { constructor(callback) { sync = callback; } observe() {} },
+    ResizeObserver: class { observe() {} },
+    matchMedia: () => ({ matches: true }),
   });
+  assert.equal(scrollHint.hidden, false, 'Show the mobile hint when available days overflow');
+  days.hidden = true; sync();
+  assert.equal(scrollHint.hidden, true, 'Hide the hint during loading, error and confirmation');
+  days.hidden = false; days.scrollWidth = 300; sync();
+  assert.equal(scrollHint.hidden, true, 'Hide the hint when all days fit');
   assert.equal(weekNavigation.hidden, false);
   success.hidden = false; sync();
   assert.equal(weekNavigation.hidden, true);
@@ -145,22 +153,34 @@ async function browserChecks() {
   const engine = process.argv.includes('--webkit') ? 'webkit' : 'chromium';
   const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
   const output = process.env.V2_BOOKING_OUT || process.env.V2_SCREENSHOTS;
+  const screenshotPositions = {};
   if (output) fs.mkdirSync(output, { recursive: true });
   const screenshot = async (page, name) => {
     if (!output) return;
     // Keyboard and scroll assertions run separately. Capture clean review
     // frames from the top so fixed/sticky UI does not land mid-page in a
     // full-page image, and the calendar starts at its first day.
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-      document.activeElement?.blur();
-      document.querySelector('[data-booking-days]')?.scrollTo({ left: 0, top: 0, behavior: 'instant' });
-      window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    });
-    await page.waitForFunction(() => Math.abs(scrollY) <= 1 && Math.abs(document.querySelector('.v2-header').getBoundingClientRect().top) <= 1);
-    await page.waitForTimeout(180);
-    await page.screenshot({ path: path.join(output, `${engine}-${name}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
+    const captureStyle = await page.addStyleTag({ content: 'html, body, [data-booking-days] { scroll-behavior: auto !important; } [data-booking-days] { scroll-snap-type: none !important; }' });
+    try {
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        document.activeElement?.blur();
+        document.querySelector('[data-booking-days]')?.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+        window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      });
+      // Native focus/scroll work may land after the first reset in Chromium.
+      // Settle for a bounded interval, then cancel it with one final reset.
+      await page.waitForTimeout(180);
+      screenshotPositions[name] = await page.evaluate(async () => {
+        window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        return { scrollY, headerTop: document.querySelector('.v2-header').getBoundingClientRect().top };
+      });
+      await page.screenshot({ path: path.join(output, `${engine}-${name}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
+    } finally {
+      await captureStyle.evaluate(node => node.remove());
+    }
   };
   const browser = await playwright[engine].launch({ headless: true, ...(engine === 'chromium' && process.env.CHROMIUM_EXECUTABLE ? { executablePath: process.env.CHROMIUM_EXECUTABLE } : {}) });
   const errors = [];
@@ -260,6 +280,7 @@ async function browserChecks() {
     for (const width of [1440, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       await overflowCheck(page);
+      await page.locator('[data-v2-booking-scroll-hint]').waitFor({ state: width <= 720 ? 'visible' : 'hidden' });
       await page.locator('[data-booking-days]').focus();
       await page.keyboard.press('ArrowRight');
       assert.equal(await page.locator('[data-booking-days]').evaluate(node => node === document.activeElement), true);
@@ -277,6 +298,7 @@ async function browserChecks() {
     await page.waitForFunction(() => document.querySelector('[data-booking-status]').textContent.includes('could not be reached'));
     assert.equal(await page.getByRole('link', { name: 'Email Andrew' }).isVisible(), true);
     assert.equal(await page.locator('[data-booking-days]').isVisible(), false);
+    assert.equal(await page.locator('[data-v2-booking-scroll-hint]').isVisible(), false);
     await screenshot(page, 'booking-error-mobile');
     state.mode = 'empty';
     await page.locator('[data-week-next]').click();
@@ -313,10 +335,10 @@ async function browserChecks() {
     await screenshot(staticPage, 'booking-no-js');
     await nojs.close();
     assert.deepEqual(errors, [], 'No page errors');
-    if (output) fs.writeFileSync(path.join(output, `${engine}-report.json`), JSON.stringify({ ok: true, engine, route: '/v2/book/', viewports: [1440, 768, 390, 320], liveBookings: 0, mockedSubmissions: state.submissions.length, errors }, null, 2));
+    if (output) fs.writeFileSync(path.join(output, `${engine}-report.json`), JSON.stringify({ ok: true, engine, route: '/v2/book/', viewports: [1440, 768, 390, 320], liveBookings: 0, mockedSubmissions: state.submissions.length, screenshotPositions, errors }, null, 2));
     console.log('PASS: mocked booking, stale requests, repeated/error flows, keyboard, responsive, no-JS and reduced-motion checks. No live bookings sent.');
   } catch (error) {
-    if (output) fs.writeFileSync(path.join(output, `${engine}-report.json`), JSON.stringify({ ok: false, engine, message: error.message, errors }, null, 2));
+    if (output) fs.writeFileSync(path.join(output, `${engine}-report.json`), JSON.stringify({ ok: false, engine, message: error.message, screenshotPositions, errors }, null, 2));
     throw error;
   } finally {
     await browser.close();

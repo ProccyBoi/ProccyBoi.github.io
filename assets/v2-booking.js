@@ -9,6 +9,7 @@
   const success = app.querySelector('[data-booking-success]');
   const weekNavigation = app.querySelector('.booking-week-nav');
   const days = app.querySelector('[data-booking-days]');
+  const scrollHint = app.querySelector('[data-v2-booking-scroll-hint]');
   const settings = app.querySelectorAll('.booking-choice-group');
 
   const sync = () => {
@@ -20,10 +21,13 @@
     days.inert = pending;
     weekNavigation.inert = pending;
     form.setAttribute('aria-busy', String(pending));
+    scrollHint.hidden = days.hidden || !matchMedia('(max-width: 720px)').matches || days.scrollWidth <= days.clientWidth + 1;
   };
   const observer = new MutationObserver(sync);
   observer.observe(success, { attributes: true, attributeFilter: ['hidden'] });
   observer.observe(submit, { attributes: true, attributeFilter: ['disabled'] });
+  observer.observe(days, { attributes: true, attributeFilter: ['hidden'], childList: true });
+  new ResizeObserver(sync).observe(days);
 
   // A repeated Enter/requestSubmit while the response is pending must not
   // dispatch a second POST or reset the first request's timeout.

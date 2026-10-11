@@ -3,7 +3,9 @@
  * Wheel events come from Playwright/CDP; touch events use the CDP input stack.
  * No application wheel/touch event is synthesized and native scroll is never
  * prevented by this test. JSON preserves raw/rendered progress and RAF timing.
- * Software WebGL frame rates are reported, not passed off as device benchmarks. */
+ * Software WebGL frame rates are reported, not passed off as device benchmarks.
+ * Optional V2_WHEEL_BASELINE_URL points to a separately served old v2 checkout
+ * for matched input traces without imposing new-story assertions on it. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -11,6 +13,7 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const base = (process.env.V2_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '').replace(/\/v2$/, '');
 const output = process.env.V2_WHEEL_OUT || '.codex-temp/v2-wheel';
+const baselineURL = process.env.V2_WHEEL_BASELINE_URL?.replace(/\/$/, '').replace(/\/v2$/, '');
 const timeout = Number(process.env.V2_BROWSER_TIMEOUT || 120000);
 const evidence = [], aircraft = '[data-aircraft-hero]';
 const telemetryRequest = /\/assets\/models\/hero\/telemetry\.(?:idx\.bin\.gz|bin)(?:\?|$)/;
@@ -29,7 +32,7 @@ function instrument() {
     const geometric = Math.max(0, Math.min(1, -root.getBoundingClientRect().top / Math.max(1, distance)));
     const progressBar = root.querySelector(kind === 'aircraft' ? '[data-aircraft-progress]' : '[data-assembly-progress]');
     const bar = Number(progressBar?.style.transform.match(/scaleX\(([^)]+)\)/)?.[1] || 0);
-    probe.samples.push({ kind, t, frame, scrollY, bar, raw: kind === 'aircraft' ? Number(root.dataset.aircraftProgress || 0) : geometric, geometric, rendered: Number(root.dataset[kind === 'aircraft' ? 'aircraftRenderedProgress' : 'assemblyProgress'] || 0), telemetryReady: root.dataset.aircraftTelemetryReady === 'true' });
+    probe.samples.push({ kind, t, observedAt: performance.now(), frame, scrollY, bar, raw: kind === 'aircraft' ? Number(root.dataset.aircraftProgress || 0) : geometric, geometric, rendered: Number((kind === 'aircraft' ? root.dataset.aircraftRenderedProgress ?? root.dataset.aircraftProgress : root.dataset.assemblyProgress) || 0), renderedSource: kind === 'aircraft' && !('aircraftRenderedProgress' in root.dataset) ? 'legacy-raw-progress' : 'rendered-progress', telemetryReady: root.dataset.aircraftTelemetryReady === 'true' });
   };
   window.requestAnimationFrame = callback => originalRaf(time => { callback(time); if (probe.enabled) { sample('aircraft', time); sample('assembly', time); } });
   const rafSample = time => {
@@ -69,7 +72,7 @@ async function state(page, kind = 'aircraft') {
     const root = document.querySelector(kind === 'aircraft' ? '[data-aircraft-hero]' : '[data-assembly]');
     const stage = root.querySelector(kind === 'aircraft' ? '[data-aircraft-stage]' : '.v2-assembly-sticky');
     const distance = kind === 'aircraft' ? parseFloat(root.querySelector('.v3-aircraft-track').style.height) - stage.clientHeight : root.offsetHeight - stage.clientHeight;
-    return { scrollY, raw: kind === 'aircraft' ? Number(root.dataset.aircraftProgress) : Math.max(0, Math.min(1, -root.getBoundingClientRect().top / distance)), rendered: Number(root.dataset[kind === 'aircraft' ? 'aircraftRenderedProgress' : 'assemblyProgress']), frame: Number(root.dataset[kind === 'aircraft' ? 'aircraftFrames' : 'assemblyFrames']), distance };
+    return { scrollY, raw: kind === 'aircraft' ? Number(root.dataset.aircraftProgress) : Math.max(0, Math.min(1, -root.getBoundingClientRect().top / distance)), rendered: Number(kind === 'aircraft' ? root.dataset.aircraftRenderedProgress ?? root.dataset.aircraftProgress : root.dataset.assemblyProgress), frame: Number(root.dataset[kind === 'aircraft' ? 'aircraftFrames' : 'assemblyFrames']), distance };
   }, kind);
 }
 async function waitSettled(page, kind = 'aircraft') {
@@ -77,10 +80,20 @@ async function waitSettled(page, kind = 'aircraft') {
     const root = document.querySelector(kind === 'aircraft' ? '[data-aircraft-hero]' : '[data-assembly]');
     const stage = root.querySelector(kind === 'aircraft' ? '[data-aircraft-stage]' : '.v2-assembly-sticky');
     const raw = kind === 'aircraft' ? Number(root.dataset.aircraftProgress) : Math.max(0, Math.min(1, -root.getBoundingClientRect().top / (root.offsetHeight - stage.clientHeight)));
-    const rendered = Number(root.dataset[kind === 'aircraft' ? 'aircraftRenderedProgress' : 'assemblyProgress']);
+    const rendered = Number(kind === 'aircraft' ? root.dataset.aircraftRenderedProgress ?? root.dataset.aircraftProgress : root.dataset.assemblyProgress);
     return Math.abs(raw - rendered) < (kind === 'aircraft' ? .000002 : .000006);
   }, kind, { timeout });
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+}
+async function waitNativeStable(page, expected) {
+  await page.evaluate(() => { window.__v2NativeWheelStable = null; });
+  await page.waitForFunction(expected => {
+    const now = performance.now();
+    if (Math.abs(scrollY - expected) > 1) { window.__v2NativeWheelStable = null; return false; }
+    const sample = window.__v2NativeWheelStable;
+    if (!sample || Math.abs(sample.y - scrollY) > .1) { window.__v2NativeWheelStable = { y: scrollY, since: now }; return false; }
+    return now - sample.since >= 160;
+  }, expected, { polling: 25, timeout });
 }
 async function jump(page, amount, kind = 'aircraft') {
   await page.evaluate(({ amount, kind }) => {
@@ -103,7 +116,12 @@ function timing(trace, kind = 'aircraft') {
   const intervals = trace.raf.slice(1).map((sample, index) => sample.t - trace.raf[index].t).filter(value => value > 0);
   const frames = trace.samples.filter(sample => sample.kind === kind);
   const renderIntervals = frames.slice(1).map((sample, index) => sample.t - frames[index].t).filter(value => value > 0);
-  return { rafSamples: trace.raf.length, rafMedianMs: percentile(intervals, .5), rafP95Ms: percentile(intervals, .95), rafMaxMs: intervals.length ? Math.max(...intervals) : null, renderedFrames: frames.length, renderMedianMs: percentile(renderIntervals, .5), renderP95Ms: percentile(renderIntervals, .95), maxObservedLag: frames.length ? Math.max(...frames.map(sample => Math.abs(sample.raw - sample.rendered))) : 0 };
+  const rawSteps = frames.slice(1).map((sample, index) => Math.abs(sample.raw - frames[index].raw));
+  const renderedSteps = frames.slice(1).map((sample, index) => Math.abs(sample.rendered - frames[index].rendered));
+  const lastWheel = trace.events.filter(event => event.type === 'wheel').at(-1)?.t;
+  const finalRaw = frames.at(-1)?.raw;
+  const settled = lastWheel === undefined ? null : frames.find(sample => sample.observedAt >= lastWheel && Math.abs(sample.raw - finalRaw) <= tolerance && Math.abs(sample.raw - sample.rendered) <= tolerance);
+  return { lastWheelToSettledMs: settled ? settled.observedAt - lastWheel : null, maxRawStep: rawSteps.length ? Math.max(...rawSteps) : 0, maxRenderedStep: renderedSteps.length ? Math.max(...renderedSteps) : 0, rafSamples: trace.raf.length, rafMedianMs: percentile(intervals, .5), rafP95Ms: percentile(intervals, .95), rafMaxMs: intervals.length ? Math.max(...intervals) : null, renderedFrames: Math.max(0, frames.length - 1), renderMedianMs: percentile(renderIntervals, .5), renderP95Ms: percentile(renderIntervals, .95), maxObservedLag: frames.length ? Math.max(...frames.map(sample => Math.abs(sample.raw - sample.rendered))) : 0 };
 }
 function noPrevention(trace) {
   assert.deepEqual(trace.prevention, [], 'Production never calls preventDefault for wheel or touch');
@@ -146,6 +164,7 @@ async function detents(run, name, kind, start, deltas) {
     // Deliberately send further coarse detents while interpolation is active.
     await page.waitForTimeout(35);
   }
+  await waitNativeStable(page, before.scrollY + deltas.reduce((sum, delta) => sum + delta, 0));
   await waitSettled(page, kind); const after = await state(page, kind), trace = await end(page);
   noPrevention(trace); smoothTrace(trace, before, after, kind);
   const expected = deltas.reduce((sum, delta) => sum + delta, 0);
@@ -157,6 +176,45 @@ async function stopped(page, kind, message) {
   await waitSettled(page, kind);
   const before = await state(page, kind); await page.waitForTimeout(900); const after = await state(page, kind);
   assert.equal(after.frame, before.frame, message);
+}
+async function baselineWheel(browser) {
+  const run = await open(browser), { page } = run;
+  try {
+    await page.goto(baselineURL + '/v2/?v=wheel-baseline', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-assembly-models-ready="3"]').waitFor({ timeout });
+    await page.locator(aircraft).evaluate(root => scrollTo({ top: scrollY + root.getBoundingClientRect().top, behavior: 'instant' }));
+    await page.locator('[data-aircraft-telemetry-ready="true"]').waitFor({ timeout });
+    for (const [label, start, deltas] of [['forward', .15, [120, 120, 120, 120, 120, 120]], ['reverse', .65, [-120, -120, -120, -120, -120, -120]]]) {
+      const before = await jump(page, start); await page.mouse.move(195, 450);
+      await begin(page, 'baseline-aircraft-coarse-' + label);
+      for (const delta of deltas) {
+        const previous = await state(page); await page.mouse.wheel(0, delta);
+        await page.waitForFunction(({ scroll, direction }) => (scrollY - scroll) * direction > 40, { scroll: previous.scrollY, direction: Math.sign(delta) });
+        await page.waitForTimeout(35);
+      }
+      await waitNativeStable(page, before.scrollY + deltas.reduce((sum, delta) => sum + delta, 0));
+      await waitSettled(page); const after = await state(page), trace = await end(page);
+      noPrevention(trace);
+      assert.ok(Math.abs(after.scrollY - before.scrollY - deltas.reduce((sum, delta) => sum + delta, 0)) < 3, 'Baseline preserves native wheel distance');
+      assert.ok(trace.samples.some(sample => sample.kind === 'aircraft' && sample.renderedSource === 'legacy-raw-progress'), 'Baseline measures the old unfiltered scroll controller');
+      save('baseline-aircraft-coarse-' + label, { baselineURL, kind: 'aircraft', before, after, deltas }, run, trace);
+    }
+    await page.screenshot({ path: path.join(output, 'baseline-wheel-settled.png') });
+  } catch (error) { await diagnostics(run, 'baseline-wheel', error); throw error; } finally { await run.context.close(); }
+}
+function compareBaseline() {
+  if (!baselineURL) return;
+  const comparisons = ['forward', 'reverse'].map(direction => {
+    const baseline = evidence.find(item => item.name === 'baseline-aircraft-coarse-' + direction);
+    const final = evidence.find(item => item.name === 'aircraft-coarse-' + direction);
+    assert.ok(baseline && final, 'Same real wheel sequence was measured on baseline and final');
+    return { direction, input: final.deltas, baseline: baseline.timing, final: final.timing };
+  });
+  // CPU software-WebGL FPS varies with the accepted added detail. Report
+  // observed timing honestly; interpolation and native input have their own
+  // assertions, independent of a noisy cross-page performance threshold.
+  fs.writeFileSync(path.join(output, 'baseline-comparison.json'), JSON.stringify({ baselineURL, finalURL: base, renderer: 'Chromium software WebGL', comparisons }, null, 2) + '\n');
+  evidence.push({ name: 'baseline-versus-final-wheel-measurements', comparisons });
 }
 async function wheelDesktop(browser) {
   const run = await open(browser), { page } = run;
@@ -209,14 +267,23 @@ async function wheelDesktop(browser) {
     await page.waitForTimeout(250); const offscreen = Number(await page.locator(aircraft).getAttribute('data-aircraft-frames'));
     await page.waitForTimeout(900); assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-frames')), offscreen, 'Offscreen story stops rendering');
     await jump(page, .4); await stopped(page, 'aircraft', 'Returning to the story resumes and then settles');
-    // Exercise the browser's page lifecycle without changing any user settings.
-    await page.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
-    const hidden = Number(await page.locator(aircraft).getAttribute('data-aircraft-frames'));
-    await page.waitForTimeout(500); assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-frames')), hidden, 'Pagehide suspends rendering');
+    // Synthetic events verify the application handlers, not real background-tab
+    // visibility or browser BFCache. Interrupt an active interpolation so this
+    // check cannot pass merely because the scene was already idle.
+    await page.mouse.wheel(0, 120);
+    const suspension = await page.waitForFunction(() => {
+      const root = document.querySelector('[data-aircraft-hero]'), raw = Number(root.dataset.aircraftProgress), rendered = Number(root.dataset.aircraftRenderedProgress);
+      if (Math.abs(raw - rendered) <= .00008) return false;
+      dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+      return { frame: Number(root.dataset.aircraftFrames), raw, rendered };
+    }, null, { polling: 10, timeout });
+    const suspended = await suspension.jsonValue(); await suspension.dispose();
+    await page.waitForTimeout(500); assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-frames')), suspended.frame, 'Synthetic pagehide handler suspends active rendering');
     await page.evaluate(() => dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
-    await waitSettled(page); await stopped(page, 'aircraft', 'Pageshow re-entry does not leave a render loop');
+    await page.waitForFunction(frame => Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames) > frame, suspended.frame);
+    await waitSettled(page); await stopped(page, 'aircraft', 'Synthetic pageshow handler resumes, converges and stops');
     await page.screenshot({ path: path.join(output, 'desktop-wheel-settled.png') });
-    save('aircraft-idle-offscreen-lifecycle', { offscreenFrames: offscreen, pagehideFrames: hidden }, run);
+    save('aircraft-idle-offscreen-synthetic-lifecycle-handlers', { offscreenFrames: offscreen, syntheticPagehide: suspended, actualBackgroundVisibilityTested: false }, run);
   } catch (error) { await diagnostics(run, 'desktop-wheel', error); throw error; } finally { await run.context.close(); }
 }
 async function pendingTelemetry(browser) {
@@ -275,7 +342,8 @@ async function touch(browser) {
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   try {
-    await wheelDesktop(browser); await pendingTelemetry(browser); await touch(browser);
+    if (baselineURL) await baselineWheel(browser);
+    await wheelDesktop(browser); await pendingTelemetry(browser); await touch(browser); compareBaseline();
     console.log(`${evidence.length} real-input v2 wheel and lifecycle groups passed.`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); evidence.push({ name: 'failure', error: error.stack }); process.exitCode = 1; }).finally(() => {

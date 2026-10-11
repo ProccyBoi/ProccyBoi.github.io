@@ -51,6 +51,7 @@ jobs:
           V2_BASE_URL: http://127.0.0.1:8080
           V2_AIRCRAFT_OUT: /tmp/v2-evidence/aircraft
           V2_WHEEL_OUT: /tmp/v2-evidence/wheel
+          V2_WHEEL_BASELINE_URL: http://127.0.0.1:8081
           HERO_STARTUP_OUT: /tmp/v2-evidence/startup
           V2_BOOKING_OUT: /tmp/v2-evidence/booking
           V2_POLISH_OUT: /tmp/v2-evidence/polish

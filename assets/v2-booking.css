@@ -154,6 +154,12 @@ body.v2-book {
 
 .v2-book .booking-day-head span { color: var(--v2-muted); }
 
+.v2-book .booking-scroll-hint {
+  margin: 0 0 .8rem;
+  color: var(--v2-muted);
+  font: 400 .7rem/1.6 var(--v2-mono);
+}
+
 .v2-book .booking-slot {
   min-height: 2.75rem;
   font-size: .75rem;
