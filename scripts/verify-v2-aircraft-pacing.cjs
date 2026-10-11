@@ -59,7 +59,7 @@ function sourceHarness() {
     drawPose(pose) { assert.equal(fences.filter(record => !record.deleted).length, 0, 'No render occurs while earlier aircraft GPU commands remain pending'); draws.push({ at: now, ...pose, width: canvas.width, height: canvas.height }); return 1 - pose.progress; },
     publishAircraftPriority() {}, interruptBackground() {}, wakeBackground() {}, prepareInBackground() {}, initialize() {}, idleTurn: async () => {},
     fail(error) { failures.push(error); context.failed = true; context.root.dataset.aircraftState = 'unavailable'; context.liveAbort?.abort(); },
-    getComputedStyle: () => ({ top: '0px', scrollPaddingTop: '0px', getPropertyValue: () => '34' }),
+    getComputedStyle: () => ({ top: `${context.pinnedTop || 0}px`, scrollPaddingTop: '0px', getPropertyValue: () => '34' }),
     performance: { now: () => now }, AbortController, console, Math,
     requestAnimationFrame(callback) { const id = ++sequence; raf.set(id, callback); return id; }, cancelAnimationFrame(id) { raf.delete(id); },
     setTimeout(callback, delay) { const id = ++sequence; timers.set(id, { at: now + delay, callback }); return id; }, clearTimeout(id) { timers.delete(id); },
@@ -184,6 +184,18 @@ async function sourceTests() {
     for (let i = 0; i < 30; i++) { h.request(); await h.frame(); } assert.equal(h.draws.length, offscreen); assert.equal(h.raf.size + h.timers.size, 0);
     reports.push({ name: 'finite-idle-unchanged-buffer-and-offscreen-no-live-work', offscreenDraws: 0 });
   }
+  {
+    const h = sourceHarness(); h.context.landingDone = true; h.context.pinnedTop = 76;
+    h.scroll(.4); await h.frame(); await h.settle(); const draws = h.draws.length;
+    // At maximum page scroll a short footer can leave the root's final pixels
+    // behind the opaque fixed header. Window intersection is not readable area.
+    h.context.scrollY = 1000 + parseFloat(h.context.track.style.height) - 46.65;
+    h.context.updateScroll(); await h.flush(); assert.equal(h.context.visible, false);
+    const box = h.root.getBoundingClientRect(); assert.ok(box.bottom > 0 && box.bottom < h.context.pinnedTop);
+    for (let i = 0; i < 12; i++) { h.request(); await h.frame(); }
+    assert.equal(h.draws.length, draws); assert.equal(h.raf.size + h.timers.size, 0);
+    reports.push({ name: 'fixed-header-covered-root-has-no-readable-aircraft-or-live-work', rootBottom: box.bottom, pinnedTop: h.context.pinnedTop });
+  }
   for (const report of reports) console.log('PASS ' + report.name);
   return { scope: 'Unchanged production pacing/lifecycle/layout functions and shared completion helper, with renderer/DOM doubles. Real browser acceptance is a separate required stage.', reports };
 }
@@ -195,8 +207,11 @@ function browserProbe() {
   const pending = () => control.fences.filter(record => record.deleted === undefined);
   control.snapshot = () => {
     const node = root(), canvas = node?.querySelector('[data-aircraft-canvas]'), stage = node?.querySelector('[data-aircraft-stage]'), poster = node?.querySelector('[data-aircraft-poster]'), box = node?.getBoundingClientRect();
+    const pinnedTop = stage ? parseFloat(getComputedStyle(stage).top) || 0 : 0;
     return { at: performance.now(), scrollY, viewport: { width: innerWidth, height: innerHeight }, dataset: { ...node?.dataset },
-      visible: Boolean(box && box.top < innerHeight && box.bottom > 0), webgl2: control.webgl2, draws: control.draws, pending: pending().length,
+      bounds: box ? { top: box.top, bottom: box.bottom, height: box.height } : null, pinnedTop, maximumScrollY: document.documentElement.scrollHeight - innerHeight,
+      visible: Boolean(box && box.top < innerHeight && box.bottom > 0), readableVisible: Boolean(box && box.top < innerHeight && box.bottom > pinnedTop),
+      webgl2: control.webgl2, draws: control.draws, pending: pending().length,
       submission: node?.dataset.aircraftLastSubmission ? JSON.parse(node.dataset.aircraftLastSubmission) : null,
       lastFrame: node?.dataset.aircraftLastFrame ? JSON.parse(node.dataset.aircraftLastFrame) : null,
       canvas: canvas ? { width: canvas.width, height: canvas.height, visibility: getComputedStyle(canvas).visibility, opacity: getComputedStyle(canvas).opacity } : null,
@@ -370,6 +385,10 @@ async function browserTests() {
       else await page.locator('.v2-about-preview').evaluate(node => scrollTo({ top: scrollY + node.getBoundingClientRect().top + 120, behavior: 'instant' }));
       await page.waitForFunction(() => { const data = document.querySelector('[data-aircraft-hero]').dataset; return data.aircraftGPUCompletion === 'canceled' && !window.__aircraftPacing.fences.some(record => record.deleted === undefined); });
       const canceled = await snapshot(); assert.equal(canceled.pending, 0);
+      if (reason === 'offscreen') {
+        assert.equal(canceled.readableVisible, false, 'Leaving below the aircraft removes it from the readable viewport');
+        assert.ok(canceled.bounds.bottom <= canceled.pinnedTop, 'Any remaining aircraft root pixels are covered by the opaque fixed header');
+      }
       assert.equal(canceled.fences.at(-1).deleteCalls, 1, `${reason} deletes its real pending sync exactly once`);
       await page.setViewportSize({ width: reason === 'pagehide' ? 1180 : 1080, height: reason === 'pagehide' ? 820 : 800 });
       if (reason !== 'offscreen') await scroll(.68);
@@ -391,9 +410,14 @@ async function browserTests() {
       await releaseAll(); await settled(); const complete = await snapshot();
       evidence.push({ name: reason + '-cancellation-delete-drain-resize-resume', before, canceled, paused, drain, resumed, complete });
     }
-    await page.locator('.v2-about-preview').evaluate(node => scrollTo({ top: scrollY + node.getBoundingClientRect().top + 120, behavior: 'instant' }));
+    // The bottom-of-document scroll used above may leave the root's last few
+    // pixels behind the fixed header. Use the document top for the independent
+    // fully-outside-window idle proof, and verify geometry before measuring.
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForFunction(() => document.querySelector('[data-aircraft-hero]').getBoundingClientRect().top >= innerHeight);
     await opportunities(8); const offscreen = await snapshot(); await page.waitForTimeout(700); const idle = await snapshot();
-    assert.equal(idle.visible, false); assertNoNewDraw(offscreen, idle, 'Offscreen aircraft has no new live-frame submissions');
+    assert.equal(idle.visible, false); assert.equal(idle.readableVisible, false); assert.ok(idle.bounds.top >= idle.viewport.height);
+    assertNoNewDraw(offscreen, idle, 'Offscreen aircraft has no new live-frame submissions');
     assert.equal(idle.pending, 0); assert.equal(idle.dataset.aircraftWarmFrames, '2');
     assert.ok(idle.fences.every(record => record.deleteCalls === 1 && record.outstandingAtCreate === 1 && record.maxTimeout === 0), 'Every real sync is uniquely owned, nonblocking and deleted exactly once');
     assert.deepEqual(errors, [], 'No uncaught browser errors'); assert.deepEqual(shaders, [], 'No shader failures');

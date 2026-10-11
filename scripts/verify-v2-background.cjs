@@ -686,9 +686,45 @@ async function selectedGate(browser, mode) {
       assert.notEqual(entered.selected.selectedBackgroundReady, 'true');
       assert.ok(entered.probe.contexts.some(sample => (sample.visible || sample.near || sample.promoted) && sample.t - sample.selectedGateStart < 17900), 'Actual entry bypasses the pending 18s dependency gate');
       assert.equal(Number(entered.aircraft.aircraftWarmFrames || 0), 0, 'Direct entry uses live rendering without offscreen warm poses');
-      await release(); await selectedWarmed(page); await page.waitForTimeout(700);
-      assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-rendered-progress')), 1, 'Late Selected completion cannot replace the chosen aircraft destination');
-      await save(run, name, { waiting, entered, bypassReason: 'Actual native scroll enters the aircraft visibility/420px preparation region' });
+      await release();
+      await page.waitForFunction(() => {
+        const work = document.querySelector('[data-selected-work]');
+        return work.dataset.selectedTransportState === 'ready' && work.dataset.selectedBackgroundState === 'paused-aircraft';
+      }, null, { timeout });
+      const priorityVisibility = await page.evaluate(() => {
+        const work = document.querySelector('[data-selected-work]').getBoundingClientRect(), air = document.querySelector('[data-aircraft-hero]').getBoundingClientRect();
+        return { selected: { top: work.top, bottom: work.bottom, visible: work.top < innerHeight && work.bottom > 0, api: window.V2SelectedWork.isVisible() }, aircraft: { top: air.top, bottom: air.bottom, visible: air.top < innerHeight && air.bottom > 0, api: window.V2AircraftPreparation.isVisible() } };
+      });
+      assert.equal(priorityVisibility.selected.visible, false); assert.equal(priorityVisibility.selected.api, false);
+      assert.equal(priorityVisibility.aircraft.visible, true); assert.equal(priorityVisibility.aircraft.api, true);
+      const paused = await snapshot(page); await page.waitForTimeout(700); const stillPaused = await snapshot(page);
+      assert.equal(stillPaused.selected.selectedBackgroundState, 'paused-aircraft', 'Released bytes do not override actual aircraft priority');
+      assert.equal(stillPaused.selected.selectedModelsReady, paused.selected.selectedModelsReady, 'Offscreen Selected construction remains paused while aircraft is visible');
+      assert.equal(stillPaused.selected.selectedPreparationFrames, paused.selected.selectedPreparationFrames, 'Offscreen Selected submits no competing preparation draws');
+      assert.notEqual(stillPaused.selected.selectedBackgroundReady, 'true', 'A priority pause never fabricates completed GPU preparation');
+      assert.equal(stillPaused.aircraft.aircraftRenderedProgress, '1.000000', 'Late Selected transport cannot replace the visible chosen aircraft destination');
+
+      // The visitor must leave the actual foreground section before expecting
+      // its paused offscreen neighbour to complete construction and GPU work.
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[data-aircraft-hero]');
+        return scrollY === 0 && root.getBoundingClientRect().top > innerHeight + 420 && !window.V2AircraftPreparation.isVisible() && window.__v2BackgroundProbe.visibility.at(-1)?.visible === false;
+      }, null, { timeout });
+      await selectedWarmed(page);
+      const recovered = await snapshot(page), preparation = selectedPreparation(recovered.selected);
+      assert.equal(recovered.scrollY, 0); assert.equal(recovered.selected.selectedModelsReady, '6');
+      await page.locator(aircraft).evaluate(root => {
+        const distance = parseFloat(root.querySelector('.v3-aircraft-track').style.height) - root.querySelector('[data-aircraft-stage]').clientHeight;
+        scrollTo({ top: scrollY + root.getBoundingClientRect().top + distance + 1, behavior: 'instant' });
+      });
+      await page.waitForFunction(previous => {
+        const root = document.querySelector('[data-aircraft-hero]');
+        return Number(root.dataset.aircraftFrames) > previous && root.dataset.aircraftState === 'ready' && root.dataset.aircraftChapter === '1' && Number(root.dataset.aircraftProgress) === 1 && Number(root.dataset.aircraftRenderedProgress) === 1 && root.dataset.aircraftWarmMask === 'false' && root.dataset.aircraftGPUPending === 'false' && root.dataset.aircraftGPUCompletion === 'complete';
+      }, Number(entered.aircraft.aircraftFrames), { timeout });
+      await page.waitForTimeout(700);
+      assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-rendered-progress')), 1, 'Completed Selected preparation cannot replace the revisited aircraft destination');
+      await save(run, name, { waiting, entered, priorityVisibility, paused, stillPaused, recovered, preparation, bypassReason: 'Actual native aircraft entry bypasses its pending dependency; released Selected work pauses until actual aircraft exit, then completes its full fenced preparation before the endpoint is revisited.' });
     }
   } catch (error) { await diagnostic(run, name, error); throw error; } finally { await release().catch(() => {}); await context.close(); }
 }
