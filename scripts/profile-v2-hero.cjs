@@ -125,7 +125,9 @@ async function profile(browser,index){
     // Gzip's ISIZE footer gives that payload size without timing a second
     // decompression or confusing compressed file bytes with CAD bytes.
     for(const [requestId,record] of requests){
-      if(!/\.bin\.gz(?:\?|$)/.test(record.url)||record.status!==200) continue;
+      // Later background packs may have headers but still be in flight at
+      // this hero-only measurement horizon. CDP has no response body yet.
+      if(!record.end||!/\.bin\.gz(?:\?|$)/.test(record.url)||record.status!==200) continue;
       const response=await cdp.send('Network.getResponseBody',{requestId});
       const body=Buffer.from(response.body,response.base64Encoded?'base64':'utf8');
       if(body.length>=18&&body[0]===31&&body[1]===139) decodedGzipSizes.set(record.url,body.readUInt32LE(body.length-4));

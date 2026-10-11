@@ -126,7 +126,8 @@
     width=stage.clientWidth;height=stage.clientHeight;distance=height*(width<=760?2.8:2.5);
     track.style.height=`${distance+height}px`;track.style.marginTop=`${-height}px`;
     const padding=parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0;
-    [...track.children].forEach((step,i)=>step.style.top=`${i*distance+padding}px`);
+    const pinned=parseFloat(getComputedStyle(stage).top)||0;
+    [...track.children].forEach((step,i)=>step.style.top=`${i*distance+padding-pinned}px`);
     renderer?.setSize(width,height,false);previousTime=0;updateScroll();
   }
   function fitLight(pose) {

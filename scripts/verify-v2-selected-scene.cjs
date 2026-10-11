@@ -1,6 +1,7 @@
 /* Actual Selected Work CAD acceptance, not image-plane or animation mocks.
  * --source-only: real packed geometry + deterministic camera/easing, no browser.
  * --study: ONLY opted-in capture API and 1440/390/320 render studies.
+ * --group=core|lifecycle|entry selects an independent browser group; default all.
  * Default browser groups never enable capture or call image.decode(). Serve the
  * repository root on V2_BASE_URL. SwiftShader timings are not device benchmarks.
  */
@@ -196,6 +197,19 @@ async function jump(page,amount) {
   await scrollProgress(page,amount);
   await page.waitForFunction(amount=>Math.abs(Number(document.querySelector('[data-selected-work]').dataset.selectedProgress)-amount)<.001,amount,{timeout});await settled(page);return state(page);
 }
+async function hashDestination(page,id,amount) {
+  await page.waitForURL('**#'+id);
+  await page.evaluate(()=>{window.__selectedHashStable=null;});
+  await page.waitForFunction(({id,amount})=>{
+    const root=document.querySelector('[data-selected-work]'),now=performance.now();
+    if(location.hash!=='#'+id||root.dataset.selectedChapter!==String(amount)||Math.abs(Number(root.dataset.selectedProgress)-amount)>.001){window.__selectedHashStable=null;return false;}
+    const previous=window.__selectedHashStable;
+    if(!previous||Math.abs(previous.y-scrollY)>.1){window.__selectedHashStable={y:scrollY,since:now};return false;}
+    return now-previous.since>=160;
+  },{id,amount},{polling:25,timeout});
+  await settled(page);const value=await state(page);
+  assert.equal(value.chapter,String(amount));near(value.raw,amount,'Native hash reaches its intended endpoint',.001);near(value.rendered,amount,'Rendered hash destination follows the native endpoint',.001);
+}
 async function ready(page) {
   await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedReady==='true'&&root.dataset.selectedModelsReady==='6'&&root.dataset.selectedSceneReady==='true'&&root.dataset.selectedBackgroundReady==='true'&&root.dataset.selectedWarmFrames==='2';},null,{timeout});
 }
@@ -263,10 +277,10 @@ async function initialAndInput(browser) {
     await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await page.waitForTimeout(300);const offscreen=await state(page);await page.waitForTimeout(800);assert.equal((await state(page)).frame,offscreen.frame,'Offscreen Selected Work has no render loop');
     await save(run,'idle-and-offscreen-stop',{offscreen});
     // Actual in-document history traversal, not a synthetic popstate event.
-    await page.evaluate(()=>{location.hash='work-framework';});await page.waitForURL('**#work-framework');await settled(page);
-    await page.evaluate(()=>{location.hash='work-transit';});await page.waitForURL('**#work-transit');await settled(page);assert.equal((await state(page)).chapter,'1');
-    await page.goBack();await page.waitForURL('**#work-framework');await settled(page);assert.equal((await state(page)).chapter,'0');
-    await page.goForward();await page.waitForURL('**#work-transit');await settled(page);assert.equal((await state(page)).chapter,'1');
+    await page.evaluate(()=>{location.hash='work-framework';});await hashDestination(page,'work-framework',0);
+    await page.evaluate(()=>{location.hash='work-transit';});await hashDestination(page,'work-transit',1);
+    await page.goBack();await hashDestination(page,'work-framework',0);
+    await page.goForward();await hashDestination(page,'work-transit',1);
     for(const viewport of [{width:390,height:844},{width:320,height:740},{width:1440,height:900}]){await page.setViewportSize(viewport);await jump(page,1);assert.equal((await snapshot(page)).overflow,false);await page.screenshot({path:path.join(output,`native-transit-${viewport.width}.png`)});}
     assert.deepEqual((await snapshot(page)).contexts,first.contexts,'Resize, Back/Forward and chapter entry reuse the same three contexts');
     await save(run,'native-hashes-back-forward-resize-contexts-stable');
@@ -508,8 +522,17 @@ async function studies(browser) {
 (async()=>{
   fs.mkdirSync(output,{recursive:true});sourceContract();easingMath();await sourceGeometry();
   if(process.argv.includes('--source-only'))return;
+  const group=process.argv.find(argument=>argument.startsWith('--group='))?.slice('--group='.length);
+  assert.ok(group===undefined||['core','lifecycle','entry'].includes(group),'Unknown browser group: '+group);
   const {chromium}=require('playwright');const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-  try{if(process.argv.includes('--study'))await studies(browser);else{await guards(browser);await initialAndInput(browser);await heldHeroTextures(browser);await fastEntry(browser);await interruptedWarmMask(browser);await pendingPreferenceChange(browser);await readyPreferenceChange(browser);await mobileTouch(browser);}}
+  try{
+    if(process.argv.includes('--study'))await studies(browser);
+    else{
+      if(!group||group==='core'){await guards(browser);await initialAndInput(browser);}
+      if(!group||group==='lifecycle'){await interruptedWarmMask(browser);await pendingPreferenceChange(browser);await readyPreferenceChange(browser);}
+      if(!group||group==='entry'){await heldHeroTextures(browser);await fastEntry(browser);await mobileTouch(browser);}
+    }
+  }
   finally{await browser.close();}
   console.log(evidence.length+' Selected Work acceptance groups passed.');
 })().catch(error=>{console.error(error);evidence.push({name:'failure',error:error.stack});process.exitCode=1;}).finally(()=>{fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');});

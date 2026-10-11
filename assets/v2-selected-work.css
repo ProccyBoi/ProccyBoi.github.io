@@ -141,6 +141,7 @@
     padding-bottom:5px;
     pointer-events:auto;
   }
+  .v2-selected-work.is-scene .v2-transport-card{align-self:stretch;height:100%}
   .v2-selected-work.is-scene .v2-framework-card:nth-child(2),
   .v2-selected-work.is-scene .v2-transport-card:nth-child(2){--selected-column:1}
   .v2-selected-work.is-scene .v2-framework-card:nth-child(3){--selected-column:2}
