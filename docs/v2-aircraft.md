@@ -6,7 +6,7 @@ v3 aircraft geometry, film peel and telemetry extraction, with two namespaced
 anchors: `#skylabs-aircraft` and `#skylabs-telemetry`. Film is fully gone at .60;
 rigid exterior motion begins after .62. Those scene mechanics are unchanged.
 
-## Background readiness
+## Loading and proximity preparation
 
 Only v2 opts into `data-aircraft-background`. The three opening model packs
 download concurrently. Selected Work has real eager HTML image sources and
@@ -16,10 +16,18 @@ transfer starts after all three hero raw transfers settle, or a 4.5-second
 fallback. Entry and deep links bypass that gate immediately; shared promises
 prevent duplicate model and decoder requests.
 
-Offscreen construction waits for the foreground model set to settle (with a
-12-second fallback), then for Selected Work to finish or fall back (18-second
-starvation timeout, reported separately from success). Aircraft entry bypasses
-that CPU ordering; its downloads stay concurrent. Separate bounded idle tasks construct the scene, attach a
+Secondary construction and GPU preparation now require section proximity or
+explicit scene intent. Proximity is an absolute section top below twice the
+viewport height and a section bottom above minus one viewport height. This is
+one viewport of advance preparation, not two viewports beyond the visible edge.
+A distant untouched page keeps the secondary renderers unconstructed. Fetching,
+pack decompression/index restoration and poster decoding still occur early.
+
+Eligible offscreen construction waits for the foreground model set to settle
+(with a 12-second fallback). Aircraft waits for actively requested Selected
+preparation (18-second starvation timeout), but reports a deferred sibling rather
+than waiting for intentionally unrequested work. Ready/static/failed outcomes
+retain their real diagnostics. Aircraft entry bypasses that CPU ordering; its downloads stay concurrent. Separate bounded idle tasks construct the scene, attach a
 separate telemetry object from the shared transport, draw telemetry, then restore
 the landing pose. Real render calls prepare GPU materials and textures. These
 draws do not consume landing time, expose intermediate poses or run a continuing
@@ -58,8 +66,9 @@ bytes and the accepted aircraft scene geometry are unchanged.
 
 Scripts, original fallback images and silk textures prepare without scrolling.
 The four new geometry transfers start after all three hero transfers settle or
-a 4.5-second timeout, with immediate entry promotion. CPU reconstruction yields
-between models after the foreground settles. GPU preparation is also staged:
+a 4.5-second timeout, with immediate entry promotion. When proximity or intent permits, CPU reconstruction yields
+between models after the foreground settles. Moving away cancels owned pending
+stages and pauses reconstruction; completed stages are retained for re-entry. GPU preparation is also staged:
 six real model-only draws use a 64-pixel long-side buffer with the final lights,
 materials and shadows, followed by two complete 640-pixel composition draws.
 Each stage yields to input and waits on an owned WebGL2 fence using zero-timeout
@@ -110,7 +119,7 @@ controller retains its existing synchronous path. The opening v2 hero also has
 one-in-flight backpressure, preventing any of the three renderers from building
 an unbounded queue of obsolete frames.
 Hidden/offscreen scenes have no continuing render loop. The page has
-three WebGL contexts total: hero, Selected Work, and aircraft. Preference changes
+at most three WebGL contexts total: hero, Selected Work, and aircraft. Preference changes
 restore the original static collections; renderer reuse avoids context growth.
 
 Reduced motion, Save Data, short viewports, missing DecompressionStream, no JS,
@@ -139,6 +148,28 @@ already-visible transitions coalesce behind the existing single pending frame.
 Only real pointer movement changes hover selection, so moving hit bounds cannot
 oscillate it. The controller stops requesting frames when scroll and inspection
 both settle. No new model, texture, renderer or continual animation is added.
+
+## Shorter browsing paths
+
+The opening hero uses 240svh total on desktop and 230svh on tablet/mobile,
+rather than 380/350svh. Selected Work's native-scroll travel is 1.7 stage heights
+on desktop and 1.9 on mobile; v2 Skylabs uses 1.8/2.1. Normalized CAD choreography
+and accepted aircraft peel timing remain unchanged; v3 keeps its original track.
+
+Projects and CV are available on the first screen. Native buttons select hero
+scenes; the independent Explore project link always navigates. Direct case-study
+links precede Selected Work and each scene has a visible skip. Framework project
+descriptions stay visible on mobile, with responsive framing above their text.
+The About booking action stays in /v2/book/ and Contact consistently targets the
+v2 About contact section. Evidence records in scripts/content/v2-case-evidence.json
+add only published decisions, maturity and measured outcomes. A build-only v3
+filter excludes these explicitly v2-scoped additions, preserving existing v3 bytes.
+
+Initial lab measurement and scene-entry readiness are separate horizons. The
+absence of distant GPU work is not a claim that an unprepared scene is ready.
+SwiftShader/Lighthouse-style lab metrics do not establish physical-device or
+field Core Web Vitals. Existing poster, asynchronous fence and input-priority
+limitations still apply.
 
 ## Acceptance
 

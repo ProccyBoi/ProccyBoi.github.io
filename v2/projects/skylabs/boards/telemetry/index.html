@@ -23,7 +23,7 @@
 
 <link rel="preload" as="image" href="/assets/images/v2/hardware/skylabs-telemetry.webp" type="image/webp">
 <link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
-  <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
   <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
@@ -42,7 +42,7 @@
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>
 
-  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Telemetry / avionics</span><div class="v2-case-nav-links"><a href="/v2/projects/skylabs/boards/telemetry/#overview" data-v2-section>Overview</a><a href="/v2/projects/skylabs/boards/telemetry/#explore" data-v2-section>Assembly</a><a href="/v2/projects/skylabs/boards/telemetry/#details" data-v2-section>Details</a><a href="/v2/projects/skylabs/boards/telemetry/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Telemetry / avionics</span><div class="v2-case-nav-links"><a href="/v2/projects/skylabs/boards/telemetry/#engineering" data-v2-section data-v2-only>Engineering</a><a href="/v2/projects/skylabs/boards/telemetry/#overview" data-v2-section>Overview</a><a href="/v2/projects/skylabs/boards/telemetry/#explore" data-v2-section>Assembly</a><a href="/v2/projects/skylabs/boards/telemetry/#details" data-v2-section>Details</a><a href="/v2/projects/skylabs/boards/telemetry/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
 
   <main id="main">
     <section class="project-hero" id="overview" aria-labelledby="telemetry-title">
@@ -51,13 +51,15 @@
 
             <h1 id="telemetry-title">Telemetry / avionics</h1>
             <p>The aircraft-side sensor, logger and radio board.</p>
-          </div><div class="project-hero-actions"><a href="/v2/projects/skylabs/boards/telemetry/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/skylabs/boards/telemetry/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/skylabs-telemetry.webp" width="1600" height="1200" alt="Telemetry / avionics circuit board assembly" fetchpriority="high"></figure></div>
+          </div><div class="project-hero-actions"><a href="/v2/projects/skylabs/boards/telemetry/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/skylabs/boards/telemetry/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/skylabs-telemetry.webp" width="1600" height="1200" alt="Telemetry / avionics circuit board assembly" fetchpriority="high"><figcaption class="v2-media-label" data-v2-only>CAD assembly rendering</figcaption></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Controller</dt><dd>STM32G474RET6</dd></div>
             <div><dt>Radio</dt><dd>SX1262 / 915 MHz</dd></div>
-            <div><dt>Aircraft log</dt><dd>40 Hz binary</dd></div>
+            <div><dt>Aircraft log</dt><dd>40 Hz target · binary log</dd></div>
             <div><dt>Live link</dt><dd>Up to 10 Hz</dd></div>
           </dl></div></section>
+<dl data-v2-only data-v2-added-block class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My contribution</dt><dd>STM32 aircraft PCB, sensor acquisition, binary logging and the aircraft side of the SX1262 telemetry link.</dd></div><div><dt>Project stage</dt><dd>Flight-tested hardware · post-flight revisions</dd></div><div><dt>Presentation</dt><dd>Assembled hardware photography · recorded flight evidence</dd></div></dl>
+<section class="v2-engineering-evidence shell" id="engineering" data-v2-engineering-evidence aria-labelledby="engineering-title"><h2 id="engineering-title">Engineering notes</h2><div class="v2-evidence-grid"><div class="v2-evidence-note"><h3>Problem</h3><p>Keep a useful onboard record while sensors update at different rates and the radio carries only a smaller live subset.</p></div><div class="v2-evidence-note"><h3>Design decisions</h3><p>Store sensor presence and validity beside the readings, with missing measurements represented as NaN.</p><p>After the reference flight, buffer eight records per SD write and run sensor capture and logging before radio service. The logging target remains 40 Hz.</p><p>Gate EKF outputs using uncertainty and plausibility checks. The replay uses valid GNSS horizontal position and barometric height for the reference flight.</p></div><div class="v2-evidence-note"><h3>Challenges and troubleshooting</h3><p>The F110211 flight averaged 20.27 Hz against the 40 Hz target and recorded 13,402 logging overruns. Its navigation EKF diverged, so the EKF path is excluded from the flight analysis.</p></div><div class="v2-evidence-note"><h3>Evidence and validation</h3><p>The published diagnostic covers 679.331 seconds and 13,772 usable aircraft records, with a 50 ms median log interval and zero SD write errors. These storage and timing results are reported separately.</p></div><div class="v2-evidence-note"><h3>Outcome</h3><p>A later 150-second bench hold produced 146/146 fresh samples with continuous BNO and BME validity. The revised SD rate and EKF recovery still require confirmation in a fresh aircraft binary log.</p></div></div><nav class="v2-evidence-links" aria-label="Project evidence"><a href="/shared/projects/skylabs/f110211/diagnostic.html">Read the flight diagnostic <span aria-hidden="true">↗</span></a><a href="/shared/projects/skylabs/f110211/">Replay the reference flight <span aria-hidden="true">↗</span></a><a href="/shared/flight-review/">Open Flight Review <span aria-hidden="true">↗</span></a></nav></section>
 
     <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="skylabs-assembly-title"><span id="assembly" class="v2-anchor-alias" aria-hidden="true"></span><div class="project-interactive-inner">
       <header class="project-interactive-header"><div><h2 id="skylabs-assembly-title">Aircraft telemetry</h2></div></header>

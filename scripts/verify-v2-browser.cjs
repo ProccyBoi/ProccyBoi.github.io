@@ -12,7 +12,7 @@ async function posters(page) {
   assert.equal(await images.count(),3);
   await images.evaluateAll(items => Promise.all(items.map(item => item.decode())));
   assert.equal(await images.evaluateAll(items => items.every(item => item.naturalWidth > 0 && item.alt.trim())),true);
-  assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items => items.map(item => item.getAttribute('href'))),routes);
+  assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items=>items.map(item=>({tag:item.tagName,type:item.type,href:item.getAttribute('href')}))),routes.map(()=>({tag:'BUTTON',type:'button',href:null})));
 }
 (async()=>{
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -34,7 +34,8 @@ async function posters(page) {
     assert.equal(await page.locator('[data-assembly-canvas]').isVisible(),true);
     assert.equal(await page.locator('[data-assembly-canvas]').getAttribute('role'),'img');
     assert.ok((await page.locator('[data-assembly-canvas]').getAttribute('aria-label')).trim());
-    assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items=>items.map(item=>item.getAttribute('href'))),routes);
+    assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items=>items.map(item=>({tag:item.tagName,type:item.type,href:item.getAttribute('href')}))),routes.map(()=>({tag:'BUTTON',type:'button',href:null})));
+    assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[0],'First screen has a genuine project link independently of scene selectors');
     assert.equal(await page.locator('h1').count(),1);
     assert.equal(await page.locator('.v2-gallery-photo-link, .v2-gallery-more-card').count(),7,'Seven public homepage projects');
     assert.equal(await page.locator('.v2-gallery-photo-link').first().getAttribute('href'),'/v2/projects/tramtrace/');

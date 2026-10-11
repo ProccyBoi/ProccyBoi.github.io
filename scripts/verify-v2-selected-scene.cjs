@@ -1,7 +1,8 @@
 /* Actual Selected Work CAD acceptance, not image-plane or animation mocks.
  * --source-only: real packed geometry + deterministic camera/easing, no browser.
  * --study: ONLY opted-in capture API and 1440/390/320 render studies.
- * --group=core|lifecycle|entry selects an independent browser group; default all.
+ * --group=core|lifecycle|entry selects a browser group; default all.
+ * Lifecycle can also run as independent mask|preference|priority|webgl1 groups.
  * --responsiveness-only: identical native warm-input probe on old/new versions,
  * without claiming an old version implements the newer part choreography.
  * Default browser groups never enable capture or call image.decode(). Serve the
@@ -394,7 +395,12 @@ function easingMath() {
 function instrument() {
   const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext, nativeTimeout=setTimeout.bind(window), nativeFetch=fetch.bind(window);
   const contexts = new Map();
-  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],heroVisibility:[],heroSamples:[],heroSubmissions:[],heroReturn:null,transportGates:[],cpuGates:[],fetches:[],longTasks:[],frameRecords:[],firstLive:null,recording:false};
+  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],heroVisibility:[],heroSamples:[],heroSubmissions:[],heroReturn:null,transportGates:[],cpuGates:[],fetches:[],reconstructionAPIObserved:false,reconstructions:[],longTasks:[],frameRecords:[],firstLive:null,recording:false};
+  let selectedAssets;
+  Object.defineProperty(window,'V2SelectedAssets',{configurable:true,get:()=>selectedAssets,set:value=>{
+    probe.reconstructionAPIObserved=typeof value.loadStatic==='function';
+    selectedAssets=Object.freeze({...value,loadStatic(...args){probe.reconstructions.push({name:args[0],t:performance.now()});return value.loadStatic(...args);}});
+  }});
   try{new PerformanceObserver(list=>probe.longTasks.push(...list.getEntries().map(entry=>({start:entry.startTime,duration:entry.duration})))).observe({type:'longtask',buffered:true});}catch(_){/* Long Tasks is unavailable in some engines. */}
   window.setTimeout=(callback,delay,...args)=>{if(/v2-selected-work\.js/.test(new Error().stack)){if(delay===4500)probe.transportGates.push(performance.now());if(delay===12000)probe.cpuGates.push(performance.now());}return nativeTimeout(callback,delay,...args);};
   window.fetch=(...args)=>{const url=typeof args[0]==='string'?args[0]:args[0]?.url||String(args[0]);probe.fetches.push({url,t:performance.now()});return nativeFetch(...args);};
@@ -451,6 +457,63 @@ async function settled(page) {
 async function scrollProgress(page,amount) {
   await page.locator(selected).evaluate((root,amount)=>{const geometry=window.__selectedProbe.geometry(),distance=geometry.trackHeight-geometry.stageHeight,targetY=geometry.trackTop-geometry.stickyTop+distance*amount+(amount===1?1:amount===0?-1:0);window.__selectedProbe.scrollRequest={t:performance.now(),amount,geometry,distance,targetY};scrollTo({top:targetY,behavior:'instant'});},amount);
 }
+// Use native document geometry, never a fabricated visible flag. Preparing at
+// 1.5 viewport heights exercises the new near-but-not-visible contract.
+async function approachSelected(page) {
+  await page.locator(selected+'.is-scene .v2-selected-track').waitFor({state:'attached'});
+  await page.locator(selected).evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().top-innerHeight*1.5,behavior:'instant'}));
+  await page.waitForFunction(()=>{
+    const root=document.querySelector('[data-selected-work]'),bounds=root.getBoundingClientRect();
+    return bounds.top>=innerHeight&&bounds.top<innerHeight*2&&bounds.bottom>0&&!window.V2SelectedWork.isVisible();
+  },null,{timeout});
+  return selectedProximity(page);
+}
+async function selectedProximity(page) {
+  return page.evaluate(()=>{
+    const root=document.querySelector('[data-selected-work]'),bounds=root.getBoundingClientRect();
+    return{y:scrollY,top:bounds.top,bottom:bounds.bottom,height:innerHeight,visible:window.V2SelectedWork.isVisible(),eligible:root.dataset.selectedPreparationEligible,background:root.dataset.selectedBackgroundState};
+  });
+}
+async function prepareAircraftOffscreen(page) {
+  await page.locator('[data-aircraft-hero]').evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().bottom+1,behavior:'instant'}));
+  await page.waitForFunction(()=>{
+    const air=document.querySelector('[data-aircraft-hero]'),bounds=air.getBoundingClientRect();
+    return bounds.bottom<=0&&bounds.bottom>-innerHeight&&!window.V2AircraftPreparation.isVisible()&&!window.V2SelectedWork.isVisible();
+  },null,{timeout});
+  await page.locator('[data-aircraft-background-ready="true"]').waitFor({timeout});
+  return page.evaluate(()=>{
+    const root=document.querySelector('[data-aircraft-hero]'),bounds=root.getBoundingClientRect();
+    return{y:scrollY,top:bounds.top,bottom:bounds.bottom,height:innerHeight,visible:window.V2AircraftPreparation.isVisible(),selectedVisible:window.V2SelectedWork.isVisible(),state:{...root.dataset}};
+  });
+}
+function assertShortTrack(geometry,label) {
+  near((geometry.trackHeight-geometry.stageHeight)/geometry.stageHeight,geometry.stageWidth<=760?1.9:1.7,label+': shorter native Selected scroll distance',.00001);
+}
+async function coldTopProof(run) {
+  const {page}=run;
+  await page.waitForFunction(()=>{
+    const root=document.querySelector('[data-selected-work]'),hero=document.querySelector('[data-assembly]');
+    return root.dataset.selectedReady==='true'&&root.dataset.selectedTransportState==='ready'&&hero.dataset.assemblyModelsSettled==='3';
+  },null,{timeout});
+  // Observe beyond the previous 12s speculative CPU fallback as well as real
+  // network completion. No scrolling or captured rendering is used here.
+  await page.waitForFunction(()=>performance.now()>=13000,null,{timeout});
+  const before=await snapshot(page);await page.waitForTimeout(800);const after=await snapshot(page),cold=await state(page),proximity=await selectedProximity(page);
+  assert.equal(after.y,0);assert.ok(after.scrolls.every(sample=>sample.y===0),'Cold-page observation genuinely never approaches Selected Work');
+  assert.ok(proximity.top>=proximity.height*2,'Selected Work is genuinely outside its preparation range at the top');
+  assert.equal(proximity.visible,false);assert.equal(proximity.eligible,'false');assert.equal(proximity.background,'deferred-distance');
+  assert.equal(after.selected.selectedModelsReady,'0','Far-away Selected reconstructs no model');
+  assert.equal(after.reconstructionAPIObserved,true,'The real Selected loadStatic API was observed at its production module-creation boundary');
+  assert.deepEqual(after.reconstructions,[],'No Selected reconstruction call starts while its bytes are cached far away');
+  assert.equal(after.selected.selectedSceneReady,undefined,'Far-away Selected creates no scene');
+  assert.equal(cold.preparationFrames,0);assert.equal(cold.warm,0);assert.equal(cold.frame,0);assert.equal(cold.submittedFrames,0);assert.equal(cold.lastDraw,null);
+  assert.deepEqual(after.contexts.map(context=>context.kind),['hero'],'Only the opening hero allocates a context at the top');
+  assert.equal(before.selected.selectedModelsReady,after.selected.selectedModelsReady);assert.deepEqual(before.contexts,after.contexts);
+  assert.equal(after.capture,'undefined','Normal browsing exposes no capture API');
+  assert.ok(after.images.length===6&&after.images.every(image=>image.decoded==='true'&&image.complete&&image.width>0),'All six independently fetched posters are ready without secondary reconstruction');
+  await save(run,'top-cached-assets-no-selected-reconstruction-or-draws-only-hero-context',{before,after,cold,proximity,observation:'After real Selected transport and opening-hero completion, beyond the old 12s CPU fallback, plus an 800ms stable interval.'});
+  return after;
+}
 async function resizedLayoutStable(page,viewport) {
   await page.evaluate(viewport=>{window.__selectedProbe.resizeLayout={viewport,started:performance.now(),samples:[],stableFrames:0,last:null};},viewport);
   await page.waitForFunction(()=>{
@@ -483,7 +546,7 @@ async function ready(page) {
   await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedReady==='true'&&root.dataset.selectedModelsReady==='6'&&root.dataset.selectedSceneReady==='true'&&root.dataset.selectedBackgroundReady==='true'&&root.dataset.selectedWarmFrames==='2';},null,{timeout});
 }
 async function snapshot(page) {
-  return page.evaluate(()=>({y:scrollY,url:location.href,selected:{...document.querySelector('[data-selected-work]')?.dataset},geometry:window.__selectedProbe.geometry(),scrollRequest:window.__selectedProbe.scrollRequest,resizeLayout:window.__selectedProbe.resizeLayout,hero:{...document.querySelector('[data-assembly]')?.dataset},heroTrace:{visibility:window.__selectedProbe.heroVisibility,samples:window.__selectedProbe.heroSamples,submissions:window.__selectedProbe.heroSubmissions,return:window.__selectedProbe.heroReturn},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
+  return page.evaluate(()=>({y:scrollY,url:location.href,selected:{...document.querySelector('[data-selected-work]')?.dataset},geometry:window.__selectedProbe.geometry(),scrollRequest:window.__selectedProbe.scrollRequest,resizeLayout:window.__selectedProbe.resizeLayout,hero:{...document.querySelector('[data-assembly]')?.dataset},heroTrace:{visibility:window.__selectedProbe.heroVisibility,samples:window.__selectedProbe.heroSamples,submissions:window.__selectedProbe.heroSubmissions,return:window.__selectedProbe.heroReturn},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,reconstructionAPIObserved:window.__selectedProbe.reconstructionAPIObserved,reconstructions:window.__selectedProbe.reconstructions,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
 }
 async function save(run,name,details={}) {
   assert.deepEqual(run.errors,[],'No unhandled browser errors');assert.deepEqual(run.shaders,[],'No shader errors');
@@ -568,19 +631,22 @@ function assertPreparation(sample,label,{interrupted=false,unsupported=false}={}
 async function initialAndInput(browser) {
   const run=await open(browser),{page}=run;
   try {
-    const started=Date.now();await page.goto(base+'/v2/?v=selected-normal',{waitUntil:'domcontentloaded'});await ready(page);
-    await page.locator('[data-aircraft-background-ready="true"]').waitFor({timeout});
-    const first=await snapshot(page);assert.equal(first.y,0);assert.equal(first.capture,'undefined','Normal browsing exposes no capture API');
-    assert.ok(first.scrolls.every(sample=>sample.y===0),'No-scroll preparation genuinely never enters Selected Work');
+    const started=Date.now();await page.goto(base+'/v2/?v=selected-normal',{waitUntil:'domcontentloaded'});const coldTop=await coldTopProof(run);
+    const approached=await approachSelected(page);await ready(page);
+    const nearPrepared=await snapshot(page);assertShortTrack(nearPrepared.geometry,'Desktop preparation');
+    assert.equal(await page.evaluate(()=>window.V2SelectedWork.isVisible()),false,'Complete Selected preparation happens before actual section entry');
+    assertPreparation(await state(page),'Near-but-offscreen preparation');assertWarmDraw(await state(page),'Near-but-offscreen preparation');
+    const aircraftPrepared=await prepareAircraftOffscreen(page);await approachSelected(page);
+    const first=await snapshot(page);assert.equal(first.capture,'undefined','Normal browsing exposes no capture API');
     assert.ok(first.images.length===6&&first.images.every(image=>image.decoded==='true'&&image.complete&&image.width>0));
     assert.equal(Number(first.selected.selectedFrames||0),0,'Warm draws never count as live draws');
-    assertPreparation(await state(page),'Initial hidden preparation');
-    assertWarmDraw(await state(page),'Initial hidden preparation');
+    assertPreparation(await state(page),'Prepared offscreen fixtures');
+    assertWarmDraw(await state(page),'Prepared offscreen fixtures');
     assert.deepEqual(first.contexts.map(context=>context.kind).sort(),['aircraft','hero','selected'],'Exactly three real WebGL contexts across the page');
     for(const name of ['pi','tramtrace'])assert.equal(run.requests.filter(request=>heroPack(name).test(request.url)).length,1,'No duplicate '+name+' transfer');
     assert.equal(run.requests.filter(request=>packs.test(request.url)).length,4,'Four new model packs, each once');
     await page.waitForTimeout(900);const hidden=await snapshot(page);assert.equal(hidden.selected.selectedFrames,first.selected.selectedFrames);assert.equal(hidden.selected.selectedWarmFrames,'2');
-    await save(run,'initial-no-scroll-six-models-two-hidden-warm-poses-three-contexts',{readyMs:Date.now()-started,timingEnvironment:'Chromium software WebGL; not a real-device benchmark'});
+    await save(run,'near-offscreen-six-models-two-hidden-warm-poses-three-contexts',{coldTop,approached,nearPrepared,aircraftPrepared,readyMs:Date.now()-started,timingEnvironment:'Chromium software WebGL; not a real-device benchmark'});
     for(const [label,start,deltas]of[['forward',.15,[120,120,120]],['reverse',.7,[-120,-120,-120]],['assembly-reverse',.30,[-120,-120,-120]]]) {
       const before=await jump(page,start);assertLiveDraw(before,'Native entry after capped warming');
       if(label==='forward'){
@@ -640,7 +706,7 @@ async function initialAndInput(browser) {
     }
     await save(run,'top-return-to-selected-hashes-no-offscreen-hero-submissions',{heroReturn});
     for(const viewport of [{width:390,height:844},{width:320,height:740},{width:1440,height:900}]){
-      await page.setViewportSize(viewport);await resizedLayoutStable(page,viewport);
+      await page.setViewportSize(viewport);await resizedLayoutStable(page,viewport);assertShortTrack((await snapshot(page)).geometry,viewport.width+'px resized layout');
       for(const [label,progress]of[['framework-separated',0],['framework-seating',.155],['framework-assembled',.32],['transit',1]]){
         await jump(page,progress);assert.equal((await snapshot(page)).overflow,false);
         await visualSettled(page);
@@ -668,6 +734,7 @@ async function guards(browser) {
   for(const [name,options]of[['reduced-motion',{reduced:true}],['save-data',{saveData:true}],['short-viewport',{viewport:{width:1440,height:550}}],['no-webgl',{noWebGL:true}],['no-decompression',{noDecompression:true}],['no-javascript',{noJS:true,viewport:{width:320,height:740}}]]) {
     const run=await open(browser,options);try{
       await run.page.goto(base+'/v2/?v=selected-'+name,{waitUntil:'domcontentloaded'});
+      if(options.noWebGL)await approachSelected(run.page);
       if(!options.noJS)await run.page.waitForFunction(()=>['static','unavailable'].includes(document.querySelector('[data-selected-work]').dataset.selectedState),null,{timeout});
       await readable(run.page);assert.equal(await run.page.locator(selected+'.is-scene').count(),0);
       if(options.reduced||options.saveData||name==='short-viewport'||options.noDecompression)assert.equal(run.requests.filter(request=>packs.test(request.url)).length,0,'Preference/platform guard avoids unnecessary new CAD transfer');
@@ -723,7 +790,7 @@ async function heldHeroTextures(browser) {
     for(const file of textures){const request=run.requests.find(request=>new URL(request.url).pathname===file);assert.ok(request&&request.t<firstPack.t,'Early texture discovery precedes gated geometry: '+file);}
     for(const source of ['v2-selected-assets.js','v2-selected-scene.js'])assert.ok(run.requests.find(request=>request.url.includes('/assets/'+source)).t<firstPack.t,'Scene code starts independently of the hero gate');
     assert.ok(timing.gates.length>0&&firstFetch.t-timing.gates[0]>=4400,'Held foreground bytes defer the new geometry until the bounded 4.5s fallback');
-    await release();await ready(page);await save(run,'held-hero-immediate-textures-and-bounded-geometry-gate',{timing,textures,firstPack});
+    await release();await approachSelected(page);await ready(page);await save(run,'held-hero-immediate-textures-and-bounded-geometry-gate',{timing,textures,firstPack});
   }catch(error){await diagnose(run,'held-hero-textures',error);throw error;}finally{await release().catch(()=>{});await run.context.close();}
 }
 
@@ -777,7 +844,7 @@ async function warmingInput(browser) {
   },{budget:timeout});
   try{
     await page.goto(base+'/v2/?v=selected-warming-input',{waitUntil:'domcontentloaded'});
-    await page.locator('[data-v2-menu]').waitFor({state:'visible'});
+    await page.locator('[data-v2-menu]').waitFor({state:'visible'});const approached=await approachSelected(page);
     await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedBackgroundState==='warming'&&root.dataset.selectedBackgroundReady!=='true';},null,{timeout});
     const actions=[];let prepared=false,preparationFailure;
     // Deliberately version-neutral readiness for same-probe baseline timing.
@@ -816,7 +883,7 @@ async function warmingInput(browser) {
     const sceneReadyAt=response.phases.find(phase=>phase.attribute==='data-selected-scene-ready'&&phase.value==='true')?.t,firstModelAt=response.phases.find(phase=>phase.attribute==='data-selected-models-ready'&&Number(phase.value)>0)?.t;
     assert.ok(Number.isFinite(sceneReadyAt)&&sceneReadyAt<=readyAt,'The real own-context scene-ready boundary is captured before completed GPU preparation');
     const phaseMetrics={wholePreparation:summarizePhase(response.started,readyAt),sceneReadyThroughGPUPreparation:summarizePhase(sceneReadyAt,readyAt),afterFirstModelThroughSceneReady:Number.isFinite(firstModelAt)?summarizePhase(firstModelAt,sceneReadyAt):null};
-    await save(run,'native-menu-key-during-selected-preparation-stall-evidence',{actions,response,metrics,phaseMetrics,measurementNote:'Native Playwright click/key promises include input dispatch and driver overhead. Browser timestamps measure trusted event receipt to RAF/after-paint; the explicitly bounded 25ms test heartbeat measures event-loop stalls. Phase summaries count complete tasks/gaps intersecting each phase, so they do not conceal a stall by clipping its duration. Null means no corresponding input/heartbeat was observed. Values are recorded for same-environment baseline comparison, with no unmeasured timing threshold.'});
+    await save(run,'native-menu-key-during-selected-preparation-stall-evidence',{approached,actions,response,metrics,phaseMetrics,measurementNote:'Native Playwright click/key promises include input dispatch and driver overhead. Browser timestamps measure trusted event receipt to RAF/after-paint; the explicitly bounded 25ms test heartbeat measures event-loop stalls. Phase summaries count complete tasks/gaps intersecting each phase, so they do not conceal a stall by clipping its duration. Null means no corresponding input/heartbeat was observed. Values are recorded for same-environment baseline comparison, with no unmeasured timing threshold.'});
   }catch(error){await diagnose(run,'warming-input',error);throw error;}finally{await page.evaluate(()=>window.__selectedResponseProbe?.stop()).catch(()=>{});await run.context.close();}
 }
 
@@ -857,7 +924,7 @@ function releasedFences(sample,label){assert.equal(sample.pending,0,label+': no 
 async function interruptedWarmMask(browser) {
   const run=await open(browser),{page,context}=run;await controlledFences(context);
   try{
-    await page.goto(base+'/v2/?v=selected-interrupted-gpu-mask',{waitUntil:'domcontentloaded'});await ready(page);await jump(page,.3);await visualSettled(page);
+    await page.goto(base+'/v2/?v=selected-interrupted-gpu-mask',{waitUntil:'domcontentloaded'});await approachSelected(page);await ready(page);await jump(page,.3);await visualSettled(page);
     const firstLive=await fenceState(page);assert.equal(firstLive.warm,2);assertPreparation(firstLive,'Fully prepared initial live frame');
     await page.evaluate(()=>{window.__selectedFenceControl.hold=true;scrollTo({top:0,behavior:'instant'});});
     await page.waitForFunction(()=>{const value=window.__selectedFenceControl.state();return scrollY===0&&value.mask==='true';});
@@ -881,7 +948,7 @@ async function interruptedWarmMask(browser) {
 async function pendingGPUPreference(browser) {
   const run=await open(browser),{page,context}=run;await controlledFences(context,{hold:true,afterPreparation:2});
   try{
-    await page.goto(base+'/v2/?v=selected-pending-gpu-preference',{waitUntil:'domcontentloaded'});const pending=await heldFence(page);
+    await page.goto(base+'/v2/?v=selected-pending-gpu-preference',{waitUntil:'domcontentloaded'});await approachSelected(page);const pending=await heldFence(page);
     assert.equal(pending.preparationFrames,2,'Two real model-only draws were submitted before the held fence');assert.equal(pending.preparedModels.length,1,'Only the actually completed model is marked prepared');
     assert.equal(pending.warm,0);assert.equal(pending.frame,0);maskedFence(pending,'Cold model preparation retains its posters');
     for(const draw of pending.draws){assert.ok(draw.lastDraw.warm&&Math.max(draw.lastDraw.width,draw.lastDraw.height)<=64,'Real model-only preparation uses the documented 64px target');}
@@ -903,7 +970,7 @@ async function pendingGPUPreference(browser) {
 async function webgl1Preparation(browser) {
   const run=await open(browser,{webgl1:true}),{page}=run;
   try{
-    await page.goto(base+'/v2/?v=selected-webgl1-preparation',{waitUntil:'domcontentloaded'});await ready(page);
+    await page.goto(base+'/v2/?v=selected-webgl1-preparation',{waitUntil:'domcontentloaded'});await approachSelected(page);await ready(page);
     const hidden=await state(page);assertPreparation(hidden,'WebGL1 staged preparation',{unsupported:true});assert.equal(hidden.warm,2);assert.equal(hidden.frame,0);assertWarmDraw(hidden,'WebGL1 hidden composition');
     const api=await page.locator(canvas).evaluate(node=>{const gl=node.getContext('webgl')||node.getContext('experimental-webgl');return{version:gl.getParameter(gl.VERSION),hasFence:typeof gl.fenceSync==='function'};});
     assert.match(api.version,/WebGL 1/,'The fallback uses a real WebGL1 context');assert.equal(api.hasFence,false,'The tested graphics API genuinely lacks completion fences');
@@ -915,7 +982,7 @@ async function webgl1Preparation(browser) {
 async function pendingGPUTouchResize(browser) {
   const run=await open(browser,{touch:true,dpr:2,viewport:{width:390,height:844}}),{page,context}=run;await controlledFences(context);
   try{
-    await page.goto(base+'/v2/?v=selected-pending-gpu-touch-resize',{waitUntil:'domcontentloaded'});await ready(page);const before=await jump(page,.15),contexts=(await snapshot(page)).contexts.filter(context=>context.kind==='selected');
+    await page.goto(base+'/v2/?v=selected-pending-gpu-touch-resize',{waitUntil:'domcontentloaded'});await approachSelected(page);await ready(page);const before=await jump(page,.15),contexts=(await snapshot(page)).contexts.filter(context=>context.kind==='selected');
     await page.evaluate(()=>{window.__selectedFenceControl.hold=true;});await begin(page);
     await page.mouse.move(195,460);await page.mouse.wheel(0,40);const pending=await heldFence(page);
     assert.equal(pending.frame,before.frame,'A held GPU completion is not published as a finished live frame');
@@ -939,10 +1006,43 @@ async function pendingGPUTouchResize(browser) {
   }catch(error){await diagnose(run,'pending-gpu-touch-resize',error);throw error;}finally{await run.context.close();}
 }
 
+async function farReturnDuringSelectedPreparation(browser) {
+  const run=await open(browser),{page,context}=run;await controlledFences(context,{hold:true,afterPreparation:2});
+  try{
+    await page.goto(base+'/v2/?v=selected-near-far-resume',{waitUntil:'domcontentloaded'});
+    const approached=await approachSelected(page),pending=await heldFence(page),before=await snapshot(page);
+    assert.equal(pending.preparationFrames,2);assert.equal(pending.preparedModels.length,1);assert.equal(pending.frame,0);
+    const completed=pending.preparedModels[0],originalCanvas=await page.locator(canvas).elementHandle();
+    maskedFence(pending,'Near-but-offscreen preparation keeps its real posters visible');
+    await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
+    await page.waitForFunction(()=>{
+      const root=document.querySelector('[data-selected-work]'),bounds=root.getBoundingClientRect(),control=window.__selectedFenceControl.state();
+      return scrollY===0&&bounds.top>=innerHeight*2&&!window.V2SelectedWork.isVisible()&&root.dataset.selectedPreparationEligible==='false'&&root.dataset.selectedBackgroundState==='deferred-distance'&&control.pending===0;
+    },null,{timeout});
+    const paused=await fenceState(page),far=await selectedProximity(page);releasedFences(paused,'Returning far away cancels the active preparation fence');
+    assert.deepEqual(paused.preparedModels,[completed]);assert.equal(paused.preparationFrames,2);assert.equal(paused.frame,0);assert.equal(paused.warm,0);
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=false;});await page.waitForTimeout(900);
+    const idle=await fenceState(page),idleSnapshot=await snapshot(page);
+    assert.deepEqual(idle.fences,paused.fences,'Clearing the test hold cannot restart production preparation while the section is distant');
+    assert.equal(idle.preparationFrames,paused.preparationFrames);assert.equal(idle.warm,paused.warm);assert.equal(idle.frame,paused.frame);
+    assert.deepEqual(idleSnapshot.reconstructions,before.reconstructions,'Far-away pause starts no further model reconstruction');
+    assert.deepEqual(idleSnapshot.contexts.filter(item=>item.kind==='selected'),before.contexts.filter(item=>item.kind==='selected'),'Far-away pause creates no replacement Selected context');
+    const reapproached=await approachSelected(page);await ready(page);const resumed=await fenceState(page);
+    assert.equal(await page.evaluate(()=>window.V2SelectedWork.isVisible()),false,'Resume is caused by renewed proximity before actual viewport entry');
+    assertPreparation(resumed,'Near-far-near preparation resumes completed stages',{interrupted:true});releasedFences(resumed,'Near-far-near resume');
+    assert.equal(resumed.frame,0);assert.equal(resumed.warm,2);assertWarmDraw(resumed,'Resumed offscreen preparation');
+    assert.equal(resumed.draws.filter(draw=>draw.preparationStage===completed).length,1,'Previously completed model preparation is not repeated');
+    assert.equal(await originalCanvas.evaluate(node=>node===document.querySelector('[data-selected-canvas]')),true,'Proximity resumption keeps the same canvas');
+    assert.deepEqual((await snapshot(page)).contexts.filter(item=>item.kind==='selected'),before.contexts.filter(item=>item.kind==='selected'),'Proximity resumption reuses the existing Selected context');
+    const live=await jump(page,.3);assertLiveDraw(live,'Actual entry after interrupted proximity warming');await noLoop(page,'Near-far-near lifecycle leaves no residual live loop');
+    await save(run,'near-far-near-cancels-held-preparation-and-resumes',{approached,pending,paused,far,idle,reapproached,resumed,live,completed});await originalCanvas.dispose();
+  }catch(error){await diagnose(run,'near-far-resume',error);throw error;}finally{await run.context.close();}
+}
+
 async function aircraftPriorityDuringSelectedPreparation(browser) {
   const run=await open(browser),{page,context}=run;await controlledFences(context,{hold:true,afterPreparation:2});
   try{
-    await page.goto(base+'/v2/?v=aircraft-priority-pending-selected',{waitUntil:'domcontentloaded'});const pending=await heldFence(page);
+    await page.goto(base+'/v2/?v=aircraft-priority-pending-selected',{waitUntil:'domcontentloaded'});await approachSelected(page);const pending=await heldFence(page);
     assert.equal(pending.preparationFrames,2);assert.equal(pending.preparedModels.length,1);assert.equal(pending.frame,0);
     const track=await page.locator(selected+' .v2-selected-track').elementHandle(),trackHeight=await track.evaluate(node=>node.style.height),completed=pending.preparedModels[0];
     await page.locator('[data-aircraft-hero]').evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().top,behavior:'instant'}));
@@ -1013,7 +1113,7 @@ async function pendingPreferenceChange(browser) {
 async function readyPreferenceChange(browser) {
   const run=await open(browser),{page}=run;
   try{
-    await page.goto(base+'/v2/?v=selected-ready-preference',{waitUntil:'domcontentloaded'});await ready(page);await page.locator('[data-aircraft-background-ready="true"]').waitFor({timeout});
+    await page.goto(base+'/v2/?v=selected-ready-preference',{waitUntil:'domcontentloaded'});await approachSelected(page);await ready(page);await prepareAircraftOffscreen(page);
     await jump(page,.3);const originalCanvas=await page.locator(canvas).elementHandle(),before=await snapshot(page),cycles=[];
     for(let cycle=0;cycle<2;cycle++){
       await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-selected-state="static"]').waitFor();await readable(page);
@@ -1033,7 +1133,7 @@ async function readyPreferenceChange(browser) {
 
 async function studies(browser) {
   const run=await open(browser),{page}=run;try{
-    await page.goto(base+'/v2/?selectedCapture=1',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__v2Selected?.assemblies&&Object.keys(window.__v2Selected.assemblies).length===6,null,{timeout});
+    await page.goto(base+'/v2/?selectedCapture=1',{waitUntil:'domcontentloaded'});await approachSelected(page);await page.waitForFunction(()=>window.__v2Selected?.assemblies&&Object.keys(window.__v2Selected.assemblies).length===6,null,{timeout});
     await ready(page);const cappedWarm=await state(page);assertWarmDraw(cappedWarm,'Study begins after actual capped background warming');
     await page.evaluate(()=>{window.__selectedStudyEntryStarted=performance.now();});await jump(page,0);
     const firstProduction=await page.evaluate(()=>({entryStartedMs:window.__selectedStudyEntryStarted,firstLive:window.__selectedProbe.firstLive}));
@@ -1090,16 +1190,17 @@ async function studies(browser) {
   fs.mkdirSync(output,{recursive:true});sourceContract();easingMath();if(!responsivenessOnly)await sourceGeometry();
   if(process.argv.includes('--source-only'))return;
   const group=process.argv.find(argument=>argument.startsWith('--group='))?.slice('--group='.length);
-  assert.ok(group===undefined||['core','lifecycle','entry'].includes(group),'Unknown browser group: '+group);
+  assert.ok(group===undefined||['core','lifecycle','entry','mask','preference','priority','webgl1'].includes(group),'Unknown browser group: '+group);
   const {chromium}=require('playwright');const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   try{
     if(responsivenessOnly)await warmingInput(browser);
     else if(process.argv.includes('--study'))await studies(browser);
     else{
       if(!group||group==='core'){await guards(browser);await initialAndInput(browser);}
-      if(!group||group==='lifecycle'){
-        const failures=[];
-        for(const test of [interruptedWarmMask,pendingGPUPreference,pendingGPUTouchResize,aircraftPriorityDuringSelectedPreparation,webgl1Preparation,pendingPreferenceChange,readyPreferenceChange]){
+      const lifecycleGroups={mask:[interruptedWarmMask,pendingGPUTouchResize],preference:[pendingGPUPreference,pendingPreferenceChange,readyPreferenceChange],priority:[farReturnDuringSelectedPreparation,aircraftPriorityDuringSelectedPreparation],webgl1:[webgl1Preparation]};
+      if(!group||group==='lifecycle'||lifecycleGroups[group]){
+        const failures=[],tests=lifecycleGroups[group]||Object.values(lifecycleGroups).flat();
+        for(const test of tests){
           try{await test(browser);}
           catch(error){failures.push(error);evidence.push({name:test.name+'-failure',error:error.stack});console.error('FAIL '+test.name+': '+error.message);}
         }

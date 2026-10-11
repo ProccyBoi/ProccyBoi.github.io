@@ -123,6 +123,8 @@ async function jump(page,progress){
   await page.waitForFunction(progress=>Math.abs(Number(document.querySelector('[data-selected-work]').dataset.selectedProgress)-progress)<.001,progress,{timeout});await settled(page);
 }
 async function start(run){
+  // Native chapter intent deliberately enters Selected Work; no distant-page
+  // preparation assumption is needed for any inspection or lifecycle case.
   await run.page.goto(base+'/v2/?v=framework-inspection#work-framework',{waitUntil:'domcontentloaded'});
   await settled(run.page,-1,'overview');await jump(run.page,0);
   assert.equal(await run.page.evaluate(()=>typeof window.__v2Selected),'undefined','Ordinary acceptance does not enable the capture API');
@@ -152,8 +154,18 @@ async function diagnose(run,name,error){
   fs.writeFileSync(path.join(output,name+'-failure.json'),JSON.stringify(report,null,2)+'\n');await run.page.screenshot({path:path.join(output,name+'-failure.png'),timeout:15000}).catch(()=>{});
 }
 const intersects=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
+async function descriptionProof(page){
+  const descriptions=await page.locator(selected+' [data-selected-chapter="0"] .v2-framework-copy p').evaluateAll(nodes=>nodes.map(node=>{
+    const bounds=node.getBoundingClientRect(),css=getComputedStyle(node);
+    let ancestorsVisible=true;for(let parent=node;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)ancestorsVisible=false;}
+    return{text:node.textContent.trim(),width:bounds.width,height:bounds.height,fontSize:parseFloat(css.fontSize),visible:ancestorsVisible&&bounds.width>0&&bounds.height>0};
+  }));
+  assert.equal(descriptions.length,4,'All four Framework cards retain a concise description');
+  for(const description of descriptions){assert.ok(description.visible&&description.text.length>3,'Every Framework description remains visibly rendered at the actual viewport width');assert.ok(description.fontSize>=12,'Framework descriptions retain a readable minimum type size');}
+  return descriptions;
+}
 async function layoutProof(page,index){
-  const s=await state(page),g=await geometry(page),text=await page.evaluate(()=>window.__frameworkInspectionProbe.text());assert.ok(g);
+  const s=await state(page),g=await geometry(page),text=await page.evaluate(()=>window.__frameworkInspectionProbe.text()),descriptions=await descriptionProof(page);assert.ok(g);
   assert.equal(s.overflow,false,'No horizontal document clipping');assert.equal(s.controls.length,4,'Exactly four real model controls');
   for(const control of s.controls){assert.equal(control.tag,'BUTTON','Inspector is a native accessible button');assert.equal(control.type,'button');assert.ok(control.label&&control.label.length>3,'Inspector has a meaningful accessible name');assert.equal(control.disabled,false);assert.ok(['true','false'].includes(control.pressed),'Native control exposes pressed state');assert.ok(control.rect.width>=43.99&&control.rect.height>=43.99,'Projected hit target retains the accepted 44px minimum extent');assert.ok(control.rect.left>=s.stage.left-1&&control.rect.right<=s.stage.right+1&&control.rect.top>=s.stage.top-1&&control.rect.bottom<=s.stage.bottom+1,'Projected hit target fits inside the actual canvas stage');
     const model=g.models[control.index];assert.ok(intersects(control.rect,model),'Hit target overlaps the actual projected CAD it names');
@@ -164,7 +176,7 @@ async function layoutProof(page,index){
   }
   for(let a=0;a<text.length;a++)for(let b=a+1;b<text.length;b++)assert.equal(intersects(text[a].rect,text[b].rect),false,'Visible text/control blocks do not overlap: '+text[a].text+' / '+text[b].text);
   if(index>=0)assert.equal(s.controls[index].pressed,s.mode==='pinned'?'true':'false','Pressed state identifies pinned selection');
-  return{s,g,text};
+  return{s,g,text,descriptions};
 }
 async function visualAndInput(browser,viewport){
   const touch=viewport.width<760,run=await open(browser,{...viewport,touch}),{page}=run,label='inspection-'+viewport.width;
@@ -261,7 +273,7 @@ async function fallback(browser){
   for(const [name,options]of[['reduced-motion',{reduced:true}],['save-data',{saveData:true}],['no-webgl',{noWebGL:true}]]){
     const run=await open(browser,{width:320,height:740,...options});try{
       await run.page.goto(base+'/v2/?v=inspection-'+name+'#work-framework',{waitUntil:'domcontentloaded'});await run.page.waitForFunction(()=>['static','unavailable'].includes(document.querySelector('[data-selected-work]').dataset.selectedState));
-      assertLinks(await links(run.page));assert.equal(await run.page.locator(selected+'.is-scene').count(),0,'Preference/failure keeps the readable original gallery');
+      assertLinks(await links(run.page));await descriptionProof(run.page);assert.equal(await run.page.locator(selected+'.is-scene').count(),0,'Preference/failure keeps the readable original gallery');
       for(const link of await run.page.locator(selected+' [data-selected-chapter] a[href]').all())assert.equal(await link.isVisible(),true,'All original project links remain visible');
       assert.equal(await run.page.locator('[data-framework-inspect]:visible').count(),0,'Unavailable rendering leaves no dead inspection buttons');assert.equal((await state(run.page)).overflow,false);await save(run,'inspection-'+name+'-fallback',{options});
     }catch(error){await diagnose(run,'inspection-'+name,error);throw error;}finally{await run.context.close();}

@@ -197,6 +197,15 @@ def validate_tramtrace_import(source):
 
 def build(relative):
     source = (SOURCE / relative).read_text(encoding="utf-8")
+    # V2's new assessment notes/navigation are independent of the accepted v3
+    # editorial records. Exclude explicitly scoped additions before rewriting.
+    for node in reversed([node for node in Document(source).elements if "data-v2-engineering-evidence" in node.attrs or "data-v2-only" in node.attrs]):
+        start = node.start - 1 if ("data-v2-engineering-evidence" in node.attrs or "data-v2-added-block" in node.attrs) and source[node.start-1:node.start] == "\n" else node.start
+        source = source[:start] + source[node.end:]
+    if relative.as_posix() == "about/index.html":
+        source = source.replace('class="button button-primary" href="/v2/book/"', 'class="button button-primary" href="book/"')
+    source = source.replace("<dd>40 Hz target · binary log</dd>", "<dd>40 Hz binary</dd>")
+    source = source.replace('v2-case.css?v=review-20261012', 'v2-case.css?v=physical-20261007')
     document = Document(source)
     edits = []
     has_footer = False
@@ -274,6 +283,7 @@ def build(relative):
         source = source.replace("<p>Component height and connector position matter as much as the copper layout. The interactive view brings the board and reference housing together, then separates the parts to make the arrangement easier to read.</p>", "")
     if relative.as_posix() == "projects/skylabs/index.html":
         source = source.replace('<a class="button" href="/v3/projects/skylabs/#explore">Explore both boards</a>', "")
+        source = source.replace("Aircraft and ground hardware targeting 40 Hz onboard logging,", "Aircraft and ground hardware for 40 Hz onboard logging,")
         source = source.replace("Aircraft and ground hardware for 40 Hz onboard logging, live 915 MHz telemetry and post-flight replay.",
                                 "Aircraft and ground hardware for onboard logging, live 915 MHz telemetry and post-flight replay.")
         source = source.replace("scheduled at 40 Hz", "with a 40 Hz target")

@@ -1,0 +1,317 @@
+{
+  "framework-expansion-card": {
+    "title": "A development board inside the laptop",
+    "maturity": "Assembled hardware",
+    "role": "ESP32-S3 PCB, USB programming and power circuitry in the Framework expansion-card format.",
+    "media_label": "Manufactured board photography · interactive CAD assembly",
+    "problem": "Fit an ESP32 development board, its USB connection and the antenna keep-out into one Framework expansion bay.",
+    "decisions": [
+      "The 0.6 mm PCB supports direct USB-C mating without a separate interposer. The module's antenna end remains unobstructed in the clear enclosure.",
+      "A CH340K provides USB serial, a BC817 pair handles automatic boot and reset, and an AMS1117-3.3 supplies the module."
+    ],
+    "validation": "The build photographs show the assembled black revision in its enclosure, close-ups of the programming and power circuit, and the earlier green PCB.",
+    "outcome": "The latest black two-layer board is assembled in the Framework shell, with the USB interface, power circuit and radio on one removable card.",
+    "links": [
+      {
+        "label": "Compare the built revisions",
+        "href": "/v2/projects/framework-expansion-card/#build"
+      },
+      {
+        "label": "Inspect the CAD assembly",
+        "href": "/v2/projects/framework-expansion-card/#explore"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published circuit and build record",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-expansion-card/index.html#L76-L129"
+      }
+    ]
+  },
+  "framework-dual-usb": {
+    "title": "Two ports within one expansion bay",
+    "maturity": "Assembled and installed",
+    "role": "A custom two-port USB 2.0 hub PCB packaged in the standard Framework expansion-card shell.",
+    "media_label": "Installed hardware photography · interactive CAD assembly",
+    "problem": "Fit three Type-C connectors, the hub, downstream power switching and connector protection into the outline of one laptop bay.",
+    "decisions": [
+      "USB 2.0 meets the small-peripheral use case while keeping the routing and power design within the expansion-card envelope.",
+      "The CH334F implements the hub. Two TPS2065 switches limit downstream power, with USBLC6-2SC6 devices providing connector-side ESD protection."
+    ],
+    "validation": "Photographs show both sides of the assembled PCB, the two downstream ports and the card installed in a Framework laptop.",
+    "outcome": "The assembled card fits the standard clear shell and presents two Type-C ports from a single bay.",
+    "links": [
+      {
+        "label": "See the installed card",
+        "href": "/v2/projects/framework-dual-usb/#build"
+      },
+      {
+        "label": "Inspect the CAD assembly",
+        "href": "/v2/projects/framework-dual-usb/#explore"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published trade-off, circuit and photographs",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-dual-usb/index.html#L40-L64"
+      }
+    ]
+  },
+  "framework-raspberry-pi": {
+    "title": "An RP2354B within the Framework outline",
+    "maturity": "PCB design",
+    "role": "A 26 × 30 mm RP2354B microcontroller-board design for a Framework laptop expansion bay.",
+    "media_label": "CAD render · reference-enclosure assembly",
+    "problem": "Arrange the microcontroller, USB connector, power circuit and controls around the reference enclosure's mounting points.",
+    "decisions": [
+      "The 0.8 mm PCB uses a straddle-mount USB-C plug. Two tactile controls sit at the opposite edge from the connector.",
+      "The RP2354B occupies the centre of the layout, with flash, crystal and power circuitry arranged around it."
+    ],
+    "outcome": "The board layout and its relationship to the Framework reference enclosure are available to inspect in the CAD assembly.",
+    "links": [
+      {
+        "label": "Inspect the CAD assembly",
+        "href": "/v2/projects/framework-raspberry-pi/#explore"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published layout and mechanical design",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-raspberry-pi/index.html#L40-L62"
+      }
+    ]
+  },
+  "framework-logic-analyser": {
+    "title": "Capture hardware with explicit safe states",
+    "maturity": "PCB design + prototype firmware",
+    "role": "An STM32G474 card design with board-specific capture firmware and Python host tooling.",
+    "media_label": "CAD render · published firmware and host tests",
+    "problem": "Bring logic and serial-bus capture into a 26 × 30 mm expansion card while keeping passive monitoring from driving the bus under observation.",
+    "decisions": [
+      "Timer-triggered DMA samples the GPIO inputs. Native USB CDC carries commands and captured bytes to a Python tool that exports VCD or CSV.",
+      "The firmware boots with the muxes disconnected, CAN in standby and the multiprotocol transceiver shut down. Route changes disable the drivers before reconnecting inputs.",
+      "Raw GPIO routes are limited to 3.3 V logic. RS-232 is excluded from passive capture because that transceiver mode also enables its transmitter."
+    ],
+    "validation": "Published host-side tests exercise binary framing, VCD/CSV export and command validation using simulated serial data. The hardware document maps firmware pins and safe states to the routed PCB.",
+    "outcome": "The prototype firmware implements immediate capture with configured limits of 10 MS/s and 32,768 samples, plus passive Classical CAN monitoring. Hardware trigger and pre-trigger capture remain unimplemented.",
+    "links": [
+      {
+        "label": "Firmware and host tooling",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware"
+      },
+      {
+        "label": "Hardware map and electrical limits",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/main/docs/HARDWARE.md"
+      },
+      {
+        "label": "Host-side tests",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/main/tests/test_host.py"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published PCB dimensions and CAD",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-logic-analyser/index.html"
+      },
+      {
+        "label": "Firmware scope and limits",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/README.md"
+      },
+      {
+        "label": "Safe states and route rationale",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/docs/HARDWARE.md"
+      },
+      {
+        "label": "DMA acquisition implementation",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/src/capture.cpp"
+      },
+      {
+        "label": "Host test scope",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/tests/test_host.py"
+      }
+    ]
+  },
+  "tramtrace": {
+    "title": "From station data to the right physical LED",
+    "maturity": "Assembled hardware + published firmware",
+    "role": "PCB design, embedded display logic and the vehicle-position service for the light-rail map.",
+    "media_label": "Illuminated hardware photography · interactive CAD assembly",
+    "problem": "Fit four light-rail lines, station labels and 116 RGB pixels onto a compact PCB, then map each live station state to its electrical position.",
+    "decisions": [
+      "The hardware cross-reference links printed stations to LED chain indices. It explicitly handles the shared L2/L3 trunk and L1 Central's single route pixel.",
+      "An ESP32 and level shifter drive five LED chains. Firmware caps route brightness and the hardware-test sequence lights one route pixel at a time.",
+      "The service tracks source freshness and caches the last good data; the board clears an expired frame after 60 seconds."
+    ],
+    "validation": "The build photographs show the assembled, illuminated map. Published mapping tests compare the 68 route/station entries with the firmware bindings, check pixel coverage and check the shared-route exceptions.",
+    "outcome": "The physical display is accompanied by public firmware, a traced station-to-pixel map, service code and test code. The documented test-pairs sequence provides a station-by-station check of the displayed direction convention.",
+    "links": [
+      {
+        "label": "Firmware and service source",
+        "href": "https://github.com/ProccyBoi/TramTrace"
+      },
+      {
+        "label": "Hardware mapping and power limits",
+        "href": "https://github.com/ProccyBoi/TramTrace/blob/main/hardware/README.md"
+      },
+      {
+        "label": "Station-mapping tests",
+        "href": "https://github.com/ProccyBoi/TramTrace/blob/main/tests/hardware/test_station_mapping.py"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published contribution and assembled display",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/tramtrace/index.html"
+      },
+      {
+        "label": "Firmware and service behaviour",
+        "href": "https://github.com/ProccyBoi/TramTrace/blob/0afb61a89a005fbba85201744a3132d2a5170ee3/README.md"
+      },
+      {
+        "label": "Hardware cross-reference and direction convention",
+        "href": "https://github.com/ProccyBoi/TramTrace/blob/0afb61a89a005fbba85201744a3132d2a5170ee3/hardware/README.md"
+      },
+      {
+        "label": "Mapping test assertions",
+        "href": "https://github.com/ProccyBoi/TramTrace/blob/0afb61a89a005fbba85201744a3132d2a5170ee3/tests/hardware/test_station_mapping.py"
+      }
+    ]
+  },
+  "metroboard": {
+    "title": "A rail map driven by a small data contract",
+    "maturity": "Assembled hardware + published service",
+    "role": "A custom Sydney rail-map PCB and a service that converts TfNSW vehicle positions into LED states.",
+    "media_label": "Illuminated hardware photography · interactive CAD assembly",
+    "problem": "Make real-time rail activity readable on a 291-pixel PCB, with the copper, solder mask and silkscreen forming the map itself.",
+    "decisions": [
+      "The service builds station-and-route keys from static GTFS data and reduces realtime vehicle positions to a compact set of LED states for the Wi-Fi-connected board.",
+      "Feed caching, per-feed retry backoff and last-good-data expiry keep the update path bounded when an upstream feed fails or rate-limits requests."
+    ],
+    "validation": "The photographs show the assembled board and illuminated routes. The public service repository includes tests for feed caching, backoff and stale-data expiry.",
+    "outcome": "A 300 × 305.7 mm physical rail display with public service and firmware source. Its PCB-as-map approach later informed the smaller TramTrace layout.",
+    "links": [
+      {
+        "label": "Service and firmware source",
+        "href": "https://github.com/ProccyBoi/Metroboard"
+      },
+      {
+        "label": "Feed-cache tests",
+        "href": "https://github.com/ProccyBoi/Metroboard/blob/main/tests/test_feed_cache.py"
+      },
+      {
+        "label": "See the illuminated build",
+        "href": "/v2/projects/metroboard/#build"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published hardware, contribution and build",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/metroboard/index.html"
+      },
+      {
+        "label": "Service architecture and firmware entrypoint",
+        "href": "https://github.com/ProccyBoi/Metroboard/blob/b3f949929456845b8da3e8ad2c9915beee199b7f/README.md"
+      },
+      {
+        "label": "Feed failure test scope",
+        "href": "https://github.com/ProccyBoi/Metroboard/blob/b3f949929456845b8da3e8ad2c9915beee199b7f/tests/test_feed_cache.py"
+      }
+    ]
+  },
+  "rf-test-board": {
+    "title": "A physical check on the RF layout",
+    "maturity": "Fabricated · VNA evaluation",
+    "role": "A two-layer RF comparison board, ordered without impedance control and measured with a vector network analyser.",
+    "media_label": "Manufactured test-board photography · interactive CAD assembly",
+    "problem": "Check calculated feedline geometry against the inexpensive 1.6 mm FR-4 fabrication process used for the preceding LoRa receiver.",
+    "decisions": [
+      "Place masked and unmasked coplanar traces, u.FL and SMA transitions, tuning sections and split-pi footprints on the same board.",
+      "Print the stack-up and nominal trace widths on the reverse: 1 oz copper, a 0.2 mm ground gap, and widths of 0.8877 mm with mask and 1.0244 mm without it. The design target is 50 Ω."
+    ],
+    "challenges": "The earlier LoRa receiver's Rev A feedline missed the intended 50 Ω impedance. Investigating it with a VNA led to this dedicated comparison board.",
+    "validation": "VNA evaluation is documented in the project record. Photographs identify the comparison structures and the printed stack-up and geometry.",
+    "outcome": "A reusable physical reference for comparing feedlines, connector transitions and filter footprints on the chosen fabrication process.",
+    "links": [
+      {
+        "label": "Inspect the test structures",
+        "href": "/v2/projects/rf-test-board/#build"
+      },
+      {
+        "label": "Read the preceding LoRa test",
+        "href": "/v2/projects/lora-receiver/#details"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published test method and geometry",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/rf-test-board/index.html#L49-L58"
+      },
+      {
+        "label": "Preceding feedline investigation",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/lora-receiver/index.html"
+      }
+    ]
+  },
+  "switch-mode-power-supplies": {
+    "title": "Power-supply testing and repair",
+    "maturity": "Professional work · assembled boards",
+    "role": "Electronics Engineer Trainee at Switchmode Power Supplies since June 2026, maintaining, testing and repairing low- and high-voltage power supplies and other equipment.",
+    "media_label": "Manufactured and assembled board photography",
+    "validation": "The photographs document the Isolated Glitch Tester V03 and Isolated Glitch Tester Bus V02, including component-side, reverse and detail views.",
+    "links": [
+      {
+        "label": "Inspect the photographed boards",
+        "href": "/v2/projects/switch-mode-power-supplies/#build"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published role and responsibilities",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/about/index.html#L56-L60"
+      },
+      {
+        "label": "Published board record and photographs",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/switch-mode-power-supplies/index.html"
+      }
+    ]
+  },
+  "skylabs/boards/telemetry": {
+    "title": "Separate the logging target from the flight result",
+    "maturity": "Flight-tested hardware · post-flight revisions",
+    "role": "STM32 aircraft PCB, sensor acquisition, binary logging and the aircraft side of the SX1262 telemetry link.",
+    "media_label": "Assembled hardware photography · recorded flight evidence",
+    "problem": "Keep a useful onboard record while sensors update at different rates and the radio carries only a smaller live subset.",
+    "decisions": [
+      "Store sensor presence and validity beside the readings, with missing measurements represented as NaN.",
+      "After the reference flight, buffer eight records per SD write and run sensor capture and logging before radio service. The logging target remains 40 Hz.",
+      "Gate EKF outputs using uncertainty and plausibility checks. The replay uses valid GNSS horizontal position and barometric height for the reference flight."
+    ],
+    "challenges": "The F110211 flight averaged 20.27 Hz against the 40 Hz target and recorded 13,402 logging overruns. Its navigation EKF diverged, so the EKF path is excluded from the flight analysis.",
+    "validation": "The published diagnostic covers 679.331 seconds and 13,772 usable aircraft records, with a 50 ms median log interval and zero SD write errors. These storage and timing results are reported separately.",
+    "outcome": "A later 150-second bench hold produced 146/146 fresh samples with continuous BNO and BME validity. The revised SD rate and EKF recovery still require confirmation in a fresh aircraft binary log.",
+    "links": [
+      {
+        "label": "Read the flight diagnostic",
+        "href": "/shared/projects/skylabs/f110211/diagnostic.html"
+      },
+      {
+        "label": "Replay the reference flight",
+        "href": "/shared/projects/skylabs/f110211/"
+      },
+      {
+        "label": "Open Flight Review",
+        "href": "/shared/flight-review/"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Published sensor and logger design",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/skylabs/boards/telemetry/index.html"
+      },
+      {
+        "label": "Flight result, changes and bench checks",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/shared/projects/skylabs/f110211/diagnostic.md"
+      }
+    ]
+  }
+}

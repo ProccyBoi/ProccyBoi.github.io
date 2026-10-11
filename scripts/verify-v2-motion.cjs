@@ -97,7 +97,7 @@ async function inViewport(locator,width,height,label){
       await page.locator('[data-assembly-select="'+index+'"]').focus();
       await page.keyboard.press('Enter');
       await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.001,phases[index].progress);
-      assert.equal(await page.locator('[data-assembly-select="'+index+'"]').getAttribute('aria-current'),'true');
+      assert.equal(await page.locator('[data-assembly-select="'+index+'"]').getAttribute('aria-pressed'),'true');
       assert.equal(await page.locator('[data-assembly-link]').getAttribute('href'),phases[index].href);
     }
     await framesStop(page,'Scroll selection must stop rendering when settled');

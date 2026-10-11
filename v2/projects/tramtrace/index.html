@@ -32,7 +32,7 @@
 
 <link rel="preload" as="image" href="/assets/images/v2/tramtrace-cad.webp" type="image/webp">
 <link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
-  <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
   <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
@@ -47,7 +47,7 @@
         <a href="/v2/book/">Book</a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>
-  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">TramTrace</span><div class="v2-case-nav-links"><a href="/v2/projects/tramtrace/#overview" data-v2-section>Overview</a><a href="/v2/projects/tramtrace/#explore" data-v2-section>Interactive</a><a href="/v2/projects/tramtrace/#details" data-v2-section>Details</a><a href="/v2/projects/tramtrace/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">TramTrace</span><div class="v2-case-nav-links"><a href="/v2/projects/tramtrace/#engineering" data-v2-section data-v2-only>Engineering</a><a href="/v2/projects/tramtrace/#overview" data-v2-section>Overview</a><a href="/v2/projects/tramtrace/#explore" data-v2-section>Interactive</a><a href="/v2/projects/tramtrace/#details" data-v2-section>Details</a><a href="/v2/projects/tramtrace/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
 
   <main id="main" class="inspector-main">
     <section class="project-hero" id="overview" aria-labelledby="project-title">
@@ -55,14 +55,15 @@
 
             <h1 id="project-title">TramTrace</h1>
             <p>A live light-rail map for Sydney and Parramatta, built around an ESP32 and 116 addressable RGB pixels.</p>
-          </div><div class="project-hero-actions"><a href="/v2/projects/tramtrace/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/tramtrace/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/tramtrace-cad.webp" width="1600" height="1200" alt="TramTrace light-rail display PCB" fetchpriority="high"></figure></div>
+          </div><div class="project-hero-actions"><a href="/v2/projects/tramtrace/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/tramtrace/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/tramtrace-cad.webp" width="1600" height="1200" alt="TramTrace light-rail display PCB" fetchpriority="high"><figcaption class="v2-media-label" data-v2-only>CAD assembly rendering</figcaption></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Network</dt><dd>L1, L2, L3 and L4</dd></div>
             <div><dt>Controller</dt><dd>ESP32-WROOM-32E</dd></div>
             <div><dt>Display</dt><dd>WS2812C-2020 RGB LEDs</dd></div>
             <div><dt>Board</dt><dd>207.81 × 94.55 mm, Rev 1.0</dd></div>
           </dl></div></section>
-    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>PCB design, embedded display logic and vehicle-position service.</dd></div><div><dt>Design constraint</dt><dd>Route labels, controller circuitry and LEDs share one compact PCB.</dd></div><div><dt>Built hardware</dt><dd>An assembled, illuminated map of four light-rail lines.</dd></div></dl>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My contribution</dt><dd>PCB design, embedded display logic and the vehicle-position service for the light-rail map.</dd></div><div><dt>Project stage</dt><dd>Assembled hardware + published firmware</dd></div><div><dt>Presentation</dt><dd>Illuminated hardware photography · interactive CAD assembly</dd></div></dl>
+<section class="v2-engineering-evidence shell" id="engineering" data-v2-engineering-evidence aria-labelledby="engineering-title"><h2 id="engineering-title">Engineering notes</h2><div class="v2-evidence-grid"><div class="v2-evidence-note"><h3>Problem</h3><p>Fit four light-rail lines, station labels and 116 RGB pixels onto a compact PCB, then map each live station state to its electrical position.</p></div><div class="v2-evidence-note"><h3>Design decisions</h3><p>The hardware cross-reference links printed stations to LED chain indices. It explicitly handles the shared L2/L3 trunk and L1 Central&#x27;s single route pixel.</p><p>An ESP32 and level shifter drive five LED chains. Firmware caps route brightness and the hardware-test sequence lights one route pixel at a time.</p><p>The service tracks source freshness and caches the last good data; the board clears an expired frame after 60 seconds.</p></div><div class="v2-evidence-note"><h3>Evidence and validation</h3><p>The build photographs show the assembled, illuminated map. Published mapping tests compare the 68 route/station entries with the firmware bindings, check pixel coverage and check the shared-route exceptions.</p></div><div class="v2-evidence-note"><h3>Outcome</h3><p>The physical display is accompanied by public firmware, a traced station-to-pixel map, service code and test code. The documented test-pairs sequence provides a station-by-station check of the displayed direction convention.</p></div></div><nav class="v2-evidence-links" aria-label="Project evidence"><a href="https://github.com/ProccyBoi/TramTrace">Firmware and service source <span aria-hidden="true">↗</span></a><a href="https://github.com/ProccyBoi/TramTrace/blob/main/hardware/README.md">Hardware mapping and power limits <span aria-hidden="true">↗</span></a><a href="https://github.com/ProccyBoi/TramTrace/blob/main/tests/hardware/test_station_mapping.py">Station-mapping tests <span aria-hidden="true">↗</span></a></nav></section>
 
 
     <section class="project-interactive" id="explore" aria-labelledby="tramtrace-explore-title">

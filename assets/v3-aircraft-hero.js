@@ -37,6 +37,8 @@
   let poseRevision = 0, presentedRevision = -1, layoutRevision = 0, submittedFrames = 0, completedFrames = 0;
   let desiredRatio = 1, bufferWidth = 0, bufferHeight = 0, bufferRatio = 0, landingClockStarted = false;
   const completedWarmPoses = new Set(), preparationMeasurements = [], backgroundWaiters = new Set();
+  let preparationNear = false, preparationIntent = false;
+  const preparationEligible = () => !background || visible || preparationNear || preparationIntent;
   const selectedVisible = () => Boolean(background && window.V2SelectedWork?.isVisible?.());
   const aircraftVisible = () => Boolean(background && track && visible && allowed() && activePage && !document.hidden && !failed);
   function publishAircraftPriority() {
@@ -53,7 +55,7 @@
     if (!backgroundDone && !failed) root.dataset.aircraftBackgroundState = state;
   }
   function backgroundPause() {
-    return !allowed() ? 'paused-preferences' : document.hidden || !activePage ? 'paused-hidden' : selectedVisible() && !visible ? 'paused-selected' : '';
+    return !allowed() ? 'paused-preferences' : document.hidden || !activePage ? 'paused-hidden' : !preparationEligible() ? 'deferred-distance' : selectedVisible() && !visible ? 'paused-selected' : '';
   }
   // CPU reconstruction can outlive a visibility change. Recheck at each
   // boundary, retaining its promise while a lifecycle/priority event wakes it.
@@ -153,7 +155,13 @@
       rootTop = scrollY + bounds.top;
       const wasVisible = visible;
       visible = bounds.top < innerHeight && bounds.bottom > pinnedTop;
-      if (background) publishAircraftPriority();
+      if (background) {
+        publishAircraftPriority();
+        const wasNear = preparationNear; preparationNear = bounds.top < innerHeight * 2 && bounds.bottom > -innerHeight;
+        if (!preparationNear && !visible) { preparationIntent = false; if (wasNear && backgroundBusy) interruptBackground('deferred-distance'); }
+        root.dataset.aircraftPreparationEligible = String(preparationEligible());
+        if (wasNear !== preparationNear) { wakeBackground(); if (preparationNear && !visible) prepareInBackground(); }
+      }
       if (background && visible !== wasVisible) {
         if (visible) { interruptBackground('promoted'); interruptLive(); initialize(); }
         else { pauseLandingClock(); interruptLive(); prepareInBackground(); }
@@ -187,7 +195,7 @@
       if (changed) { desiredRatio = nextRatio; root.dataset.aircraftLayoutRevision = String(++layoutRevision); interruptLive(); }
     }
     width = nextWidth; height = nextHeight;
-    distance = height * (width < 761 ? 3.7 : 3.1);
+    distance = height * (background ? (width < 761 ? 2.1 : 1.8) : (width < 761 ? 3.7 : 3.1));
     track.style.height = `${distance + height}px`; track.style.marginTop = `${-height}px`;
     const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
     // The story starts when its section reaches the document's scroll origin;
@@ -438,7 +446,7 @@
       ]);
   }
   async function initialize() {
-    if (!allowed() || failed) return;
+    if (!allowed() || failed || !preparationEligible()) return;
     enable();
     if (ready) { layout(); request(); ensureTelemetry(); return; }
     if (loading) return;
@@ -535,7 +543,7 @@
   });
   const foregroundSettled = signal => new Promise(resolve => {
     const hero = document.querySelector('[data-assembly]');
-    if (signal?.aborted || !hero || hero.dataset.assemblyModelsSettled === '3' || hero.dataset.assemblyState === 'unavailable') { resolve(); return; }
+    if (signal?.aborted || !hero || hero.dataset.assemblyModelsSettled === '3' || ['unavailable', 'static'].includes(hero.dataset.assemblyState)) { resolve(); return; }
     let observer, finished = false;
     const finish = () => {
       if (finished) return; finished = true;
@@ -544,12 +552,16 @@
     const timer = setTimeout(finish, 12000);
     signal?.addEventListener('abort', finish, { once: true });
     observer = new MutationObserver(() => {
-      if (hero.dataset.assemblyModelsSettled === '3' || hero.dataset.assemblyState === 'unavailable') finish();
+      if (hero.dataset.assemblyModelsSettled === '3' || ['unavailable', 'static'].includes(hero.dataset.assemblyState)) finish();
     });
     observer.observe(hero, { attributes: true, attributeFilter: ['data-assembly-models-settled', 'data-assembly-state'] });
   });
   const selectedSettled = signal => new Promise(resolve => {
-    const pending = window.V2SelectedWork?.backgroundSettled;
+    const selected = window.V2SelectedWork;
+    const pending = selected?.backgroundSettled;
+    const outcome = selected?.preparationState?.();
+    if (['ready', 'static', 'unavailable'].includes(outcome)) { root.dataset.aircraftSelectedGate = outcome; resolve(); return; }
+    if (selected?.isDeferred?.() || (selected?.isPreparing?.() === false && !selected.isVisible?.())) { root.dataset.aircraftSelectedGate = 'deferred'; resolve(); return; }
     if (!pending) { root.dataset.aircraftSelectedGate = 'absent'; resolve(); return; }
     if (signal?.aborted) { resolve(); return; }
     // This optional one-time order never overrides actual visible priority.
@@ -594,13 +606,14 @@
   }
   async function prepareInBackground() {
     if (!background || liveBusy || backgroundBusy || backgroundDone || failed || !allowed() || visible || document.hidden || !activePage) return;
+    if (!preparationEligible()) { root.dataset.aircraftBackgroundState = 'deferred-distance'; return; }
     if (selectedVisible()) { root.dataset.aircraftBackgroundState = 'paused-selected'; return; }
     backgroundBusy = true;
     // An early visit may already have revealed the canvas. Hide it immediately
     // before any resumed temporary pose, keeping the poster until a live draw.
     maskCanvas();
     const generation = ++warmGeneration, abort = new AbortController(); warmAbort = abort;
-    const current = () => generation === warmGeneration && !abort.signal.aborted && !visible && !document.hidden && activePage && allowed() && !failed && !selectedVisible();
+    const current = () => generation === warmGeneration && !abort.signal.aborted && !visible && !document.hidden && activePage && allowed() && !failed && !selectedVisible() && preparationEligible();
     root.dataset.aircraftBackgroundState = 'warming';
     root.dataset.aircraftBackgroundStartedMs ||= performance.now().toFixed(1);
     try {
@@ -663,12 +676,13 @@
       // Only an invalidated generation gets a one-shot resume. Priority and
       // lifecycle gates are event-driven, never an offscreen retry loop.
       if (aircraftVisible()) request();
-      else if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed() && !selectedVisible()) setTimeout(prepareInBackground, 0);
+      else if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed() && !selectedVisible() && preparationEligible()) setTimeout(prepareInBackground, 0);
     }
   }
   skip.addEventListener('click', endLanding);
   links.forEach((link, index) => {
-    link.addEventListener('click', endLanding);
+    link.addEventListener('click', () => { if (background) { preparationIntent = true; wakeBackground(); initialize(); } endLanding(); });
+    if (background) link.addEventListener('focus', () => { preparationIntent = true; wakeBackground(); prepareInBackground(); });
     link.addEventListener('keydown', event => {
       const target = event.key === 'ArrowRight' ? (index + 1) % links.length : event.key === 'ArrowLeft' ? (index + links.length - 1) % links.length : event.key === 'Home' ? 0 : event.key === 'End' ? links.length - 1 : null;
       if (target !== null) { event.preventDefault(); links[target].focus(); }

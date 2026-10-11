@@ -21,7 +21,7 @@
 
   let settleBackground;
   const backgroundSettled = new Promise(resolve => { settleBackground = resolve; });
-  window.V2SelectedWork = Object.freeze({backgroundSettled,isVisible:()=>Boolean(visible&&track&&!failed&&activePage&&!document.hidden&&allowed())});
+  window.V2SelectedWork = Object.freeze({backgroundSettled,preparationState:()=>failed?'unavailable':!allowed()?'static':backgroundDone?'ready':preparationEligible()?'requested':'deferred',isPreparing:()=>Boolean((backgroundBusy||initialization)&&preparationEligible()),isDeferred:()=>!preparationEligible()&&!backgroundDone,isVisible:()=>Boolean(visible&&track&&!failed&&activePage&&!document.hidden&&allowed())});
   const reduced = matchMedia('(prefers-reduced-motion: reduce)'), short = matchMedia('(max-height:600px)');
   const allowed = () => !reduced.matches && !short.matches && !navigator.connection?.saveData && Boolean(window.DecompressionStream);
   const scripts = window.V2HeroScripts ||= new Map();
@@ -42,7 +42,8 @@
   let ready=false,failed=false,visible=false,activePage=true,generation=0,frame=0,frames=0,warmFrames=0;
   let liveBusy=false,gpuAbort,releaseForeground,needsDrain=true,preparationFrames=0,poseRevision=0,presentedRevision=-1,layoutDPR=0,submittedFrames=0,completedFrames=0;
   const preparedModels=new Set(),preparedPoses=new Set(),preparationMeasurements=[];
-  let lastGPUResult,lastPriority=false;
+  let lastGPUResult,lastPriority=false,preparationNear=false,preparationIntent=false;
+  const preparationEligible=()=>Boolean(visible||preparationNear||preparationIntent);
   const aircraftHasPriority=()=>!visible&&Boolean(window.V2AircraftPreparation?.isVisible());
   function publishPriority(){
     const active=window.V2SelectedWork.isVisible();
@@ -179,13 +180,15 @@
     nav=document.createElement('nav');nav.className='v2-selected-nav';nav.setAttribute('aria-label','Selected Work chapters');
     ['Framework cards','Transit displays'].forEach((text,i)=>{
       const link=document.createElement('a');link.href='#'+ids[i];link.textContent=text;nav.append(link);
-      link.addEventListener('click',()=>{direct=false;previousTime=0;prepareTransfers(true).catch(fail);initialize(true).catch(fail);});
+      link.addEventListener('click',()=>{preparationIntent=true;direct=false;previousTime=0;prepareTransfers(true).catch(fail);initialize(true).catch(fail);prepareInBackground();});
+      link.addEventListener('focus',()=>{preparationIntent=true;prepareInBackground();});
       link.addEventListener('keydown',event=>{
         const index=event.key==='ArrowRight'?(i+1)%2:event.key==='ArrowLeft'?(i+1)%2:event.key==='Home'?0:event.key==='End'?1:null;
         if(index!==null){event.preventDefault();links[index].focus();}
       });
     });
     links=[...nav.children];stage.append(nav);
+    const skipScene=document.createElement('a');skipScene.className='v2-selected-skip';skipScene.href='#skylabs-aircraft';skipScene.textContent='Skip';skipScene.setAttribute('aria-label','Skip Selected Work animation');stage.append(skipScene);
     const progressElement=document.createElement('div');progressElement.className='v2-selected-progress';progressElement.setAttribute('aria-hidden','true');
     bar=document.createElement('span');progressElement.append(bar);stage.append(progressElement);
     track=document.createElement('div');track.className='v2-selected-track';track.setAttribute('aria-hidden','true');
@@ -220,6 +223,9 @@
     const b=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(stage).top)||0;
     const nextVisible=b.top<innerHeight&&b.bottom>pinned;
     const entered=nextVisible&&!visible,left=!nextVisible&&visible;visible=nextVisible;publishPriority();
+    const wasNear=preparationNear;preparationNear=b.top<innerHeight*2&&b.bottom>-innerHeight;
+    if(!preparationNear&&!visible){preparationIntent=false;if(wasNear&&(backgroundBusy||initialization))invalidate();}
+    root.dataset.selectedPreparationEligible=String(preparationEligible());
     // The negative-margin track is the stage's stable flow placeholder; its
     // document position does not change when the stage becomes sticky.
     top=scrollY+track.getBoundingClientRect().top;
@@ -241,7 +247,7 @@
     const nextDPR=Math.min(devicePixelRatio||1,nextWidth<=760?1.25:1.5);
     const sizeChanged=width!==nextWidth||height!==nextHeight,dprChanged=layoutDPR!==nextDPR;
     if(sizeChanged||dprChanged){invalidate();mask();poseRevision++;}
-    width=nextWidth;height=nextHeight;layoutDPR=nextDPR;distance=height*(width<=760?2.8:2.5);
+    width=nextWidth;height=nextHeight;layoutDPR=nextDPR;distance=height*(width<=760?1.9:1.7);
     track.style.height=`${distance+height}px`;track.style.marginTop=`${-height}px`;
     const padding=parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0;
     const pinned=parseFloat(getComputedStyle(stage).top)||0;
@@ -335,7 +341,7 @@
       window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=transfer-20261011'),
       window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=product-20261007'),
       script('/assets/v2-selected-assets.js?v=shared-batched-20261011'),
-      script('/assets/v2-selected-scene.js?v=inspect-cards-20261011'),
+      script('/assets/v2-selected-scene.js?v=review-20261012'),
       script('/assets/v2-gpu-preparation.js?v=paced-20261011')
     ]).then(()=>{if(allowed()&&!failed){window.V2HeroEnvironment.prefetch().catch(()=>{});window.V2SelectedAssets.prefetchTextures().catch(()=>{});}});
   }
@@ -360,35 +366,35 @@
   }
   const foregroundSettled=()=>new Promise(resolve=>{
     const hero=document.querySelector('[data-assembly]');
-    if(!hero||hero.dataset.assemblyModelsSettled==='3'||hero.dataset.assemblyState==='unavailable'){resolve();return;}
+    if(!hero||hero.dataset.assemblyModelsSettled==='3'||['unavailable','static'].includes(hero.dataset.assemblyState)){resolve();return;}
     let observer;const finish=()=>{clearTimeout(timer);observer?.disconnect();if(releaseForeground===finish)releaseForeground=undefined;resolve();};const timer=setTimeout(finish,12000);releaseForeground=finish;
-    observer=new MutationObserver(()=>{if(hero.dataset.assemblyModelsSettled==='3'||hero.dataset.assemblyState==='unavailable')finish();});
+    observer=new MutationObserver(()=>{if(hero.dataset.assemblyModelsSettled==='3'||['unavailable','static'].includes(hero.dataset.assemblyState))finish();});
     observer.observe(hero,{attributes:true,attributeFilter:['data-assembly-models-settled','data-assembly-state']});
   });
   async function initialize(promote=false) {
     if(ready){prepareInBackground();request();return;}
-    if(!allowed()||failed||!track||aircraftHasPriority())return;
+    if(!allowed()||failed||!track||aircraftHasPriority()||!preparationEligible())return;
     if(promote)prepareTransfers(true).catch(fail);
     if(initialization)return initialization;
     initialization=(async()=>{
       root.dataset.selectedState='loading';await prepareTransfers(promote);
-      if(!allowed()||failed||!track||aircraftHasPriority())return;
+      if(!allowed()||failed||!track||aircraftHasPriority()||!preparationEligible())return;
       // Construct separate instances from cached transports, never reparent the
       // opening hero's live models. Yield between each reconstruction.
       for(const name of names){
-        await idleTurn();if(!allowed()||failed||!activePage||document.hidden||aircraftHasPriority())return;
+        await idleTurn();if(!allowed()||failed||!activePage||document.hidden||aircraftHasPriority()||!preparationEligible())return;
         if(assemblies[name])continue;
         const assembly=await window.V2SelectedAssets.loadStatic(name,assembly=>{
           if(name==='pi'||name==='tramtrace')window.V2ProductStudio.applyMaterials(assembly,name);
-        },{shouldContinue:()=>allowed()&&!failed&&track&&activePage&&!document.hidden&&!aircraftHasPriority()});
-        if(!assembly||!allowed()||failed||!track||!activePage||document.hidden||aircraftHasPriority())return;
+        },{shouldContinue:()=>allowed()&&!failed&&track&&activePage&&!document.hidden&&!aircraftHasPriority()&&preparationEligible()});
+        if(!assembly||!allowed()||failed||!track||!activePage||document.hidden||aircraftHasPriority()||!preparationEligible())return;
         assemblies[name]=assembly;
         root.dataset.selectedModelsReady=String(Object.keys(assemblies).length);
       }
-      await idleTurn();if(!allowed()||failed||!track||document.hidden||!activePage||aircraftHasPriority())return;
+      await idleTurn();if(!allowed()||failed||!track||document.hidden||!activePage||aircraftHasPriority()||!preparationEligible())return;
       const T=window.THREE;
       environment ||= await window.V2HeroEnvironment.load(T);
-      if(!allowed()||failed||!track||document.hidden||!activePage||aircraftHasPriority())return;
+      if(!allowed()||failed||!track||document.hidden||!activePage||aircraftHasPriority()||!preparationEligible())return;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,width<=760?1.25:1.5));renderer.setSize(width,height,false);
       window.V2ProductStudio.configureRenderer(renderer,T);renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
@@ -405,7 +411,7 @@
         resume(){capturePose=undefined;previousTime=0;updateScroll();request();}};
     })().catch(fail).finally(()=>{
       initialization=null;
-      if(!ready&&!failed&&allowed()&&track&&!document.hidden&&activePage&&!aircraftHasPriority())setTimeout(()=>visible?initialize(true):prepareInBackground(),0);
+      if(!ready&&!failed&&allowed()&&track&&!document.hidden&&activePage&&!aircraftHasPriority()&&preparationEligible())setTimeout(()=>visible?initialize(true):prepareInBackground(),0);
       if(ready)prepareInBackground();
     });
     return initialization;
@@ -413,9 +419,10 @@
   async function prepareInBackground() {
     if(backgroundDone||failed||!allowed()||document.hidden||!activePage||!track)return;
     if(aircraftHasPriority()){root.dataset.selectedBackgroundState='paused-aircraft';return;}
+    if(!preparationEligible()){root.dataset.selectedBackgroundState='deferred-distance';return;}
     if(backgroundBusy||liveBusy)return;
     backgroundBusy=true;mask();const token=generation;
-    const valid=()=>token===generation&&!document.hidden&&activePage&&allowed()&&!failed&&track&&!aircraftHasPriority();
+    const valid=()=>token===generation&&!document.hidden&&activePage&&allowed()&&!failed&&track&&!aircraftHasPriority()&&preparationEligible();
     root.dataset.selectedBackgroundState=visible?'promoted':'warming';root.dataset.selectedBackgroundStartedMs ||= performance.now().toFixed(1);
     try{
       await prepareSources();prepareTransfers(visible).catch(fail);
@@ -450,7 +457,7 @@
     finally{
       if(renderer&&!failed)pixelRatio();backgroundBusy=false;
       if(backgroundDone)request();
-      else if(!failed&&!document.hidden&&activePage&&allowed()&&track&&!aircraftHasPriority())setTimeout(prepareInBackground,0);
+      else if(!failed&&!document.hidden&&activePage&&allowed()&&track&&!aircraftHasPriority()&&preparationEligible())setTimeout(prepareInBackground,0);
     }
   }
   function start(){
@@ -465,7 +472,7 @@
   });
   root.addEventListener('wheel',()=>{direct=false;},{passive:true});root.addEventListener('touchmove',()=>{direct=true;},{passive:true});
   addEventListener('scroll',updateScroll,{passive:true});addEventListener('resize',()=>{if(allowed()){start();layout();}else fallback();},{passive:true});
-  addEventListener('hashchange',()=>{previousTime=0;current=progress;updateScroll();});
+  addEventListener('hashchange',()=>{if(ids.includes(location.hash.slice(1)))preparationIntent=true;previousTime=0;current=progress;updateScroll();prepareInBackground();});
   document.addEventListener('visibilitychange',()=>{invalidate();publishPriority();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
   addEventListener('pagehide',()=>{activePage=false;invalidate();publishPriority();cancelAnimationFrame(frame);frame=0;previousTime=0;});
   addEventListener('pageshow',()=>{activePage=true;previousTime=0;updateScroll();prepareInBackground();});

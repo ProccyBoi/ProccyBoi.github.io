@@ -4,7 +4,7 @@
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
-const destination='/v2/projects/framework-raspberry-pi/';
+const destination='/v2/projects/tramtrace/';
 
 (async()=>{
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -18,7 +18,7 @@ const destination='/v2/projects/framework-raspberry-pi/';
       try{
         const errors=[],transitions=[];
         let delayedRequests=0;
-        await context.route('**/*.glb',route=>route.abort());
+        await context.route(/\/assets\/models\/hero\/.*\.(?:bin|gz)(?:\?|$)/,route=>route.abort());
         await context.route('**/assets/v2.js',async route=>{
           if(test.delay&&(route.request().headers().referer||'').includes(destination)){
             delayedRequests++;
@@ -36,13 +36,8 @@ const destination='/v2/projects/framework-raspberry-pi/';
         });
         await page.goto(base+'/v2/',{waitUntil:'networkidle'});
         await page.locator('[data-assembly-state="'+(test.reducedMotion?'static':'unavailable')+'"]').waitFor({timeout:30000});
-        let navigation;
-        if(test.reducedMotion) navigation=page.locator('[data-assembly-select="2"]').click();
-        else {
-          await page.locator('[data-assembly-select="2"]').click();
-          await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-.88)<.001);
-          navigation=page.locator('[data-assembly-link]').click();
-        }
+        assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),destination);
+        const navigation=page.locator('[data-assembly-explore]').click();
         await page.waitForURL('**'+destination,{waitUntil:'commit'});
         await page.locator('h1').waitFor({state:'visible',timeout:3000});
         if(test.delay){

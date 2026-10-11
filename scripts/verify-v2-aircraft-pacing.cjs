@@ -45,7 +45,7 @@ function sourceHarness() {
     setSize(width, height) { rendererWidth = width; rendererHeight = height; canvas.width = Math.floor(width * ratio); canvas.height = Math.floor(height * ratio); allocations.push({ at: now, width, height }); } };
   const document = { ...events, hidden: false, activeElement: null, documentElement: {} };
   const context = vm.createContext({ window: {}, document, renderer, root, stage, canvas, track, ...events,
-    background: true, deferred: true, detailed: true, visible: true, activePage: true, failed: false, ready: true, backgroundBusy: false, backgroundDone: true,
+    background:true,preparationNear:true,preparationIntent:false,preparationEligible:()=>context.visible||context.preparationNear||context.preparationIntent,deferred:true,detailed:true,visible:true, activePage: true, failed: false, ready: true, backgroundBusy: false, backgroundDone: true,
     frame: 0, frameCount: 0, liveBusy: false, liveAbort: undefined, liveGeneration: 0, gpuAbort: undefined, needsDrain: true,
     poseRevision: 0, presentedRevision: -1, layoutRevision: 0, submittedFrames: 0, completedFrames: 0,
     desiredRatio: 1, bufferWidth: 0, bufferHeight: 0, bufferRatio: 0,
@@ -304,14 +304,13 @@ async function browserTests() {
   const assertNoNewDraw = (before, after, reason) => { assert.equal(after.dataset.aircraftSubmittedFrames, before.dataset.aircraftSubmittedFrames, reason); assert.equal(after.draws, before.draws, reason); assert.deepEqual(after.drawsWhilePending, [], 'No actual aircraft WebGL draw call may run behind an owned completion fence'); };
   try {
     await page.goto(base + '/v2/?v=live-aircraft-pacing', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => { const data = document.querySelector('[data-aircraft-hero]').dataset; return data.aircraftBackgroundReady === 'true' && data.aircraftTelemetryReady === 'true' && data.aircraftGPUPending === 'false'; });
+    await page.waitForFunction(()=>document.querySelector('[data-aircraft-hero]').dataset.aircraftTransportState==='ready');
     const prepared = await snapshot();
-    assert.equal(prepared.webgl2, true, 'This acceptance requires a real WebGL2 aircraft context');
+    assert.equal(prepared.webgl2,false,'Cached distant transport has not created an aircraft WebGL2 context');
     assert.equal(Number(prepared.dataset.aircraftSubmittedFrames || 0), 0, 'Offscreen preparation does not submit live aircraft frames');
-    assert.equal(prepared.dataset.aircraftWarmFrames, '2');
-    assert.ok(prepared.fences.length >= 3 && prepared.fences.every(record => record.deleteCalls === 1), 'Real warm-context GPU fences complete before live entry');
+    assert.equal(prepared.dataset.aircraftWarmFrames,'0');assert.equal(prepared.fences.length,0,'No aircraft GPU preparation occurs before nearby or direct intent');
     await arm(['live-frame']); await scroll(0); await held('live-frame');
-    const first = await snapshot(); assert.equal(first.pending, 1); assertMasked(first, 'First full-size frame stays behind the poster until its own completion'); assertFullSize(first);
+    const first=await snapshot();assert.equal(first.webgl2,true,'Cold visible entry creates a real WebGL2 aircraft context');assert.equal(first.pending,1); assertMasked(first, 'First full-size frame stays behind the poster until its own completion'); assertFullSize(first);
     await opportunities(12); const firstHeld = await snapshot(); assertNoNewDraw(first, firstHeld, 'Initial pending live frame never queues obsolete landing draws');
     await held('live-frame', await releaseExisting());
     const second = await snapshot();
@@ -327,7 +326,14 @@ async function browserTests() {
     assert.ok(caughtUp.submission.submittedMs - second.submission.submittedMs >= 5400, 'The clock really advanced while the aircraft fence was held');
     near(caughtUp.submission.landing, 1, 'Visible landing uses full elapsed time after GPU delay');
     evidence.push({ name: 'real-webgl-one-pending-frame-and-wall-clock-landing', prepared, first, firstHeld, second, delayed, caughtUp });
-    await releaseAll(); await settled();
+    await releaseAll();await settled();
+    // Cold landing is now established independently. Complete the optional
+    // warm stages on a real offscreen trailing approach before reuse tests.
+    await page.locator('[data-aircraft-hero]').evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().bottom+1,behavior:'instant'}));
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-aircraft-hero]'),box=root.getBoundingClientRect();return box.bottom<=0&&box.bottom>-innerHeight&&root.dataset.aircraftBackgroundReady==='true'&&root.dataset.aircraftWarmPosesCompleted==='2';});
+    const warmed=await snapshot();assert.equal(warmed.dataset.aircraftWarmFrames,'2');assert.ok(warmed.fences.length>=3&&warmed.fences.every(record=>record.deleteCalls===1),'Real optional warm-context fences complete once before reuse/lifecycle tests');
+    evidence.push({name:'near-offscreen-preparation-after-cold-landing',warmed});
+    await scroll(0);await settled();
 
     await arm(); await scroll(.09); await held('live-frame'); const beforeJump = await snapshot();
     assert.equal(beforeJump.submission.masked, false, 'Small wheel-style input starts from an already visible canvas');

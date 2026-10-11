@@ -157,7 +157,7 @@
       const ray = new T.Vector3(...(stage ? (mobile ? [.04,2.2,1] : [.08,2.1,1.05]) : (mobile ? [.04,1.35,1] : [.12,1.30,1.5]))).normalize();
       camera.clearViewOffset(); camera.aspect = width/height; camera.updateProjectionMatrix();
       const availableWidth = stage ? (mobile ? .88 : .91) : (mobile ? .93 : .96);
-      const availableHeight = stage ? (mobile ? .48 : .51) : (mobile ? .48 : .57);
+      const availableHeight = stage ? (mobile ? .48 : .51) : (mobile ? .44 : .57);
       let distance = Math.max(...box.getSize(new T.Vector3()).toArray()) * 2;
       let midY=0;
       for (let iteration=0; iteration<12; iteration++) {
@@ -172,7 +172,7 @@
         if (Math.abs(ratio-1)<.001) break;
         distance *= Math.max(.5, Math.min(2, ratio));
       }
-      return {target:aim, direction:ray, distance:distance*1.035, visualCentre:stage ? .555 : (mobile ? .55 : .555)+midY*.5/1.035};
+      return {target:aim, direction:ray, distance:distance*1.035, visualCentre:stage ? .555 : (mobile ? .535 : .555)+midY*.5/1.035};
     }
     function projectBounds(box, camera) {
       projected.left=projected.bottom=Infinity;projected.right=projected.top=-Infinity;
@@ -193,7 +193,7 @@
       if(!total)return;
       const normalization=gate/Math.max(1,total);
       screenRight.setFromMatrixColumn(camera.matrixWorld,0);screenUp.setFromMatrixColumn(camera.matrixWorld,1);
-      const top=compact ? .38 : .50,bottom=compact ? -.58 : -.72,side=.95;
+      const top=compact ? .38 : .50,bottom=compact ? -.48 : -.72,side=.95;
       for(let i=0;i<4;i++) {
         const weight=inspectionWeights[i]*normalization,entry=objects.get(names[i]),box=bounds.get(names[i]);
         if(!weight)continue;

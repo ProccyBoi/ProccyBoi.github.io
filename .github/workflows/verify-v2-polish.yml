@@ -24,6 +24,7 @@ jobs:
           node scripts/verify-v2-hero-prefetch.cjs
           node scripts/verify-v2-scroll-smoothing.cjs
           node scripts/verify-v2-gpu-preparation.cjs
+          node scripts/verify-v2-review-browsing.cjs --source-only
           node scripts/verify-v2-hero-pacing.cjs --source-only
           node scripts/verify-v2-aircraft-pacing.cjs --source-only
           node scripts/verify-v3-story-controller.cjs
@@ -34,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [aircraft, wheel, startup, booking, polish, background]
+        suite: [aircraft, wheel, startup, booking, polish, background-core, background-priority, background-lifecycle, background-gates, background-trace, background-fallbacks, review-desktop, review-mobile, review-profile]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -48,7 +49,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add /tmp/v2-baseline 0fd1370c5d17cc6bc61da29f17a81ebcfe32df52
+          git worktree add /tmp/v2-baseline d725a378806eb05c8d5b981f8e54d33dde502cac
           if [ "${{ matrix.suite }}" = wheel ]; then git worktree add /tmp/v2-wheel-baseline 69b4327851e99a819dd77469fa46d0af4da44119; fi
       - name: Browser acceptance and real desktop/mobile pixels
         env:
@@ -60,6 +61,7 @@ jobs:
           HERO_STARTUP_OUT: /tmp/v2-evidence/startup
           V2_BOOKING_OUT: /tmp/v2-evidence/booking
           V2_POLISH_OUT: /tmp/v2-evidence/polish
+          V2_REVIEW_OUT: /tmp/v2-evidence/review
           V2_POLISH_BASELINE_URL: http://127.0.0.1:8081
         run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
@@ -73,7 +75,18 @@ jobs:
             startup) node scripts/verify-v2-hero-startup.cjs && node scripts/verify-v2-hero-pacing.cjs --browser-only ;;
             booking) node scripts/verify-v2-booking.cjs ;;
             polish) node scripts/verify-v2-polish.cjs ;;
-            background) node scripts/verify-v2-background.cjs ;;
+            background-*)
+              suite='${{ matrix.suite }}'
+              node scripts/verify-v2-background.cjs --group="${suite#background-}"
+              ;;
+            review-desktop) node scripts/verify-v2-review-browsing.cjs --group=first-screen && node scripts/verify-v2-review-browsing.cjs --group=navigation && node scripts/verify-v2-review-browsing.cjs --group=sources ;;
+            review-mobile) node scripts/verify-v2-review-browsing.cjs --group=mobile && node scripts/verify-v2-review-browsing.cjs --group=fallbacks ;;
+            review-profile)
+              V2_BASE_URL=http://127.0.0.1:8081 V2_REVIEW_OUT=/tmp/v2-evidence/review-baseline V2_REVIEW_LEGACY=1 node scripts/verify-v2-review-browsing.cjs --profile-only
+              V2_REVIEW_OUT=/tmp/v2-evidence/review-final node scripts/verify-v2-review-browsing.cjs --profile-only
+              V2_REVIEW_OUT=/tmp/v2-evidence/repeat/review-final node scripts/verify-v2-review-browsing.cjs --profile-only
+              V2_BASE_URL=http://127.0.0.1:8081 V2_REVIEW_OUT=/tmp/v2-evidence/repeat/review-baseline V2_REVIEW_LEGACY=1 node scripts/verify-v2-review-browsing.cjs --profile-only
+              ;;
           esac
       - name: Save screenshots and acceptance evidence
         if: always()
@@ -95,14 +108,14 @@ jobs:
       - run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add /tmp/v2-baseline 0fd1370c5d17cc6bc61da29f17a81ebcfe32df52
+          git worktree add /tmp/v2-baseline d725a378806eb05c8d5b981f8e54d33dde502cac
       - name: Measure baseline and final on the same runner
         env:
           HERO_PROFILE_GZIP: '1'
           HERO_EXPECT_PACKS: '1'
           HERO_PROFILE_RUNS: '3'
         run: |
-          HERO_PROFILE_ROOT=/tmp/v2-baseline HERO_PROFILE_REVISION=0fd1370c5d17cc6bc61da29f17a81ebcfe32df52 HERO_PROFILE_OUT=/tmp/v2-performance/baseline.json node scripts/profile-v2-hero.cjs
+          HERO_PROFILE_ROOT=/tmp/v2-baseline HERO_PROFILE_REVISION=d725a378806eb05c8d5b981f8e54d33dde502cac HERO_PROFILE_OUT=/tmp/v2-performance/baseline.json node scripts/profile-v2-hero.cjs
           HERO_EXPECT_PARALLEL=1 HERO_PROFILE_OUT=/tmp/v2-performance/final.json node scripts/profile-v2-hero.cjs
       - uses: actions/upload-artifact@v4
         if: always()

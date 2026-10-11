@@ -5,11 +5,14 @@
   const root = document.querySelector('[data-assembly]');
   if (!root) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const compact = matchMedia('(max-height: 620px), (max-width: 900px) and (max-height: 700px)');
   const canvas = root.querySelector('[data-assembly-canvas]');
   const stage = root.querySelector('.v2-assembly-sticky');
   const intro = root.querySelector('[data-assembly-intro]');
   const caption = root.querySelector('[data-assembly-caption]');
   const projectLink = root.querySelector('[data-assembly-link]');
+  const exploreLink = root.querySelector('[data-assembly-explore]');
+  const choices = root.querySelector('[data-assembly-choices]');
   const selectors = [...root.querySelectorAll('[data-assembly-select]')];
   const progressBar = root.querySelector('[data-assembly-progress]');
   const posters = [...root.querySelectorAll('[data-assembly-posters] img')];
@@ -65,7 +68,17 @@
     prefetch().catch(() => {});
     loadRequestedModel?.(index);
   };
-  const motionAllowed = () => !reduced.matches && !navigator.connection?.saveData;
+  const motionAllowed = () => !reduced.matches && !compact.matches && !navigator.connection?.saveData;
+  const setSceneControls = enabled => {
+    if (choices) choices.hidden = !enabled;
+    selectors.forEach(button => { button.disabled = !enabled; });
+  };
+  const setExploreProject = index => {
+    if (!exploreLink) return;
+    const project = projects[index];
+    exploreLink.href = project.href;
+    exploreLink.setAttribute('aria-label', `Explore ${project.title} project`);
+  };
   const pendingScripts = window.V2HeroScripts ||= new Map();
   const loadScript = source => {
     if (!pendingScripts.has(source)) {
@@ -140,18 +153,19 @@
       root.querySelector('[data-assembly-kind]').textContent = project.kind;
       root.querySelector('[data-assembly-description]').textContent = project.description;
       projectLink.href = project.href;
+      setExploreProject(next);
     }
+    if (value < windows[0][0]) setExploreProject(0);
     active = next;
     caption.style.opacity = opacity.toFixed(4);
     caption.style.transform = `translateY(${((1-opacity)*22).toFixed(2)}px)`;
     caption.classList.toggle('is-active',opacity>.5);
     caption.setAttribute('aria-hidden',String(opacity<.5));
     projectLink.tabIndex = opacity>.5 ? 0 : -1;
-    selectors.forEach((link,index) => {
-      if(index===next) link.setAttribute('aria-current','true');
-      else link.removeAttribute('aria-current');
+    selectors.forEach((button,index) => {
+      button.setAttribute('aria-pressed',String(index===next));
       const [start,end]=windows[index];
-      link.style.setProperty('--chapter-progress',clamp((value-start)/(Math.min(end,1)-start)).toFixed(4));
+      button.style.setProperty('--chapter-progress',clamp((value-start)/(Math.min(end,1)-start)).toFixed(4));
     });
     root.dataset.assemblyActive = next<0 ? 'overview' : projects[next].name;
   };
@@ -307,6 +321,8 @@
     const introFade=1-ramp(current,.015,.10);
     intro.style.opacity=introFade.toFixed(4);
     intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
+    intro.inert=introFade<.5;
+    intro.setAttribute('aria-hidden',String(introFade<.5));
     captionAt(current);
     progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
     paintedRevision=drawnRevision;
@@ -325,6 +341,7 @@
   function request(){if(!frame && !gpuBusy && drawable()) frame=requestAnimationFrame(render);}
   function failRenderer(error) {
     failed=true; interrupt();
+    setSceneControls(false);
     renderer?.dispose(); renderer=null; models.fill(null); paintedModels.fill(null); submittedModels.fill(null); shadows.fill(null);
     modelStates.fill('unavailable');
     root.classList.remove('is-loaded'); root.dataset.assemblyState='unavailable'; root.dataset.assemblyModelsReady='0';
@@ -344,8 +361,10 @@
     root.classList.remove('is-enhanced'); root.classList.add('is-static');
     interrupt(); target=0; current=0;
     intro.style.removeProperty('opacity'); intro.style.removeProperty('transform'); intro.style.removeProperty('--assembly-separation');
+    intro.inert=false; intro.removeAttribute('aria-hidden');
     posters.forEach(poster=>poster.removeAttribute('style'));
-    selectors.forEach(link=>{link.removeAttribute('aria-current');link.style.removeProperty('--chapter-progress');});
+    selectors.forEach(button=>{button.setAttribute('aria-pressed','false');button.style.removeProperty('--chapter-progress');});
+    setSceneControls(false); setExploreProject(0); active=-1;
     caption.classList.remove('is-active');caption.style.opacity='0'; caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;
     if(ready) {entry=0; layout(); request();}
     else root.dataset.assemblyState='static';
@@ -354,6 +373,7 @@
     if(loading || ready || failed || !motionAllowed()) return;
     loading=true; root.dataset.assemblyState='loading';
     root.classList.add('is-enhanced'); root.classList.remove('is-static');
+    setSceneControls(true);
     try {loadingExperience=window.V2HeroLoading?.create(root,stage,posters);} catch(error) { /* The original posters remain the fallback. */ }
     // Start the complete scroll scene using the lightweight posters. Neither
     // script download nor CAD parsing gates captions, navigation or movement.
@@ -484,6 +504,7 @@
       if(!motionAllowed()) staticMode();
     } catch(error) {
       failed=true;root.dataset.assemblyState='unavailable';
+      setSceneControls(false);
       modelStates.fill('unavailable');
       posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});
       projects.forEach((_,index)=>loadingExperience?.modelFailed(index));
@@ -494,9 +515,9 @@
       console.warn('Hardware gallery unavailable; project images remain available.',error);
     } finally {loading=false;}
   }
-  selectors.forEach((link,index)=>link.addEventListener('click',event=>{
-    if(!ready || !motionAllowed() || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
+  selectors.forEach((button,index)=>button.addEventListener('click',()=>{
+    if(!ready || failed || !motionAllowed()) return;
+    setExploreProject(index);
     promoteModel?.(index);
     const positions=[.265,.565,.88];
     const top=scrollY+root.getBoundingClientRect().top;
@@ -508,11 +529,13 @@
   const syncLoadingVisibility=()=>loadingExperience?.suspend(!visible||document.hidden||!motionAllowed());
   new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;syncLoadingVisibility();if(visible){updateProgress();current=target;renderTime=0;revision++;request();}else{interrupt();current=target;}},{threshold:0}).observe(root);
   document.addEventListener('visibilitychange',()=>{syncLoadingVisibility();if(document.hidden){interrupt();}else{updateProgress();current=target;revision++;request();}});
-  reduced.addEventListener('change',()=>{
+  const syncMotionMode=()=>{
     if(!motionAllowed()) staticMode();
-    else if(ready){root.classList.add('is-enhanced');root.classList.remove('is-static');entry=0;syncLoadingVisibility();layout();}
+    else if(ready){root.classList.add('is-enhanced');root.classList.remove('is-static');setSceneControls(!failed);entry=0;syncLoadingVisibility();layout();}
     else initialize();
-  });
+  };
+  reduced.addEventListener('change',syncMotionMode);
+  compact.addEventListener('change',syncMotionMode);
   canvas.addEventListener('webglcontextlost',event=>{
     event.preventDefault();failRenderer(new Error('Hero WebGL context lost'));request();
   });

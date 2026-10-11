@@ -50,7 +50,7 @@
 
 
             <h1 id="skylabs-title">Skylabs</h1>
-            <p>Aircraft and ground hardware for 40 Hz onboard logging, live 915 MHz telemetry and post-flight replay.</p>
+            <p>Aircraft and ground hardware targeting 40 Hz onboard logging, live 915 MHz telemetry and post-flight replay.</p>
           </div><div class="project-hero-actions"><a href="/v2/projects/skylabs/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/skylabs/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/skylabs-telemetry.webp" width="1600" height="1200" alt="Skylabs aircraft telemetry circuit board" fetchpriority="high"></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Team</dt><dd>UNSW Skylabs</dd></div>
@@ -89,7 +89,7 @@
       <section class="project-summary" id="system" aria-labelledby="skylabs-system">
         <h2 id="skylabs-system">Logging and flight replay</h2>
         <div class="project-prose">
-          <p>The aircraft binary log is the high-rate record, scheduled at 40 Hz. A smaller telemetry packet crosses the 915 MHz link at up to 10 Hz, where the ground station records it again and forwards a live stream over USB or its own Wi-Fi dashboard.</p>
+          <p>The aircraft binary log is the high-rate record, with a 40 Hz target. A smaller telemetry packet crosses the 915 MHz link at up to 10 Hz, where the ground station records it again and forwards a live stream over USB or its own Wi-Fi dashboard.</p>
           <p>After the flight, the same data contract feeds a replay tool with the 3D route, attitude, artificial horizon, altitude, speed and GPS readouts kept on one timeline. Treating the boards, packet format and analysis software as one system has made faults much easier to trace.</p>
         </div>
       </section>
@@ -100,7 +100,7 @@
           <a class="board-row" href="/v2/projects/skylabs/boards/telemetry/">
             <span>01</span>
             <h3>Telemetry / avionics</h3>
-            <p>STM32G474 sensor acquisition, 40 Hz binary logging and the aircraft side of the SX1262 link.</p>
+            <p>STM32G474 sensor acquisition, a 40 Hz binary logging target and the aircraft side of the SX1262 link.</p>
             <span aria-hidden="true">↗</span>
           </a>
           <a class="board-row" href="/v2/projects/skylabs/boards/ground-station/">

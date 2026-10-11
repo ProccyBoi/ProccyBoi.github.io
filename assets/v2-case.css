@@ -342,3 +342,17 @@ html:has(> body.v2-case), html:has(> body.v2-collection), html:has(> body.v2-abo
 @media (max-width: 700px) {
   .v2-case .project-interactive :is(.v2-part-readout, [data-pi-part]:not(button), [data-coaster-readout]) { top: 12px; right: 12px; }
 }
+
+/* Concise evidence sits ahead of the optional object explorer. */
+.v2-case .v2-engineering-evidence{padding-block:34px 48px;border-top:1px solid var(--v2-line)}
+.v2-case .v2-engineering-evidence>h2{font-size:clamp(26px,3vw,38px);font-weight:500;letter-spacing:-.03em;margin-bottom:26px}
+.v2-evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 48px}
+.v2-evidence-note h3{font-size:17px;font-weight:550;margin:0 0 10px}
+.v2-evidence-note p{font-size:15px;line-height:1.7;color:var(--v2-muted);margin:0}
+.v2-evidence-note p+p{margin-top:12px}
+.v2-evidence-links{display:flex;flex-wrap:wrap;gap:6px 28px;margin-top:26px;padding-top:14px;border-top:1px solid var(--v2-line)}
+.v2-evidence-links a{min-height:44px;display:inline-flex;align-items:center;gap:12px;font-size:14px;text-decoration:underline;text-underline-offset:5px}
+.v2-evidence-links span{color:var(--v2-accent)}
+.v2-case:not(.v3) .project-hero-media{position:relative}
+.v2-case .project-hero-media .v2-media-label{position:absolute;left:16px;right:16px;bottom:12px;padding:8px 10px;background:var(--v2-bg);color:var(--v2-muted);font:400 13px/1.5 var(--v2-font)}
+@media(max-width:700px){.v2-evidence-grid{grid-template-columns:1fr;gap:24px}.v2-case .v2-engineering-evidence{padding-block:26px 36px}.v2-evidence-note p{font-size:15px}.v2-case .project-hero-media .v2-media-label{position:static;padding:10px 0;margin:0;font-size:13px}}

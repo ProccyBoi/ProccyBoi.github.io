@@ -19,7 +19,7 @@
   <script src="assets/site.js" defer></script>
 <link rel="preload" as="image" href="/assets/images/v2/hardware/metroboard.webp" type="image/webp">
 <link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
-  <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
   <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
@@ -38,21 +38,22 @@
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>
 
-  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Metroboard</span><div class="v2-case-nav-links"><a href="/v2/projects/metroboard/#overview" data-v2-section>Overview</a><a href="/v2/projects/metroboard/#explore" data-v2-section>Interactive</a><a href="/v2/projects/metroboard/#details" data-v2-section>Details</a><a href="/v2/projects/metroboard/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Metroboard</span><div class="v2-case-nav-links"><a href="/v2/projects/metroboard/#engineering" data-v2-section data-v2-only>Engineering</a><a href="/v2/projects/metroboard/#overview" data-v2-section>Overview</a><a href="/v2/projects/metroboard/#explore" data-v2-section>Interactive</a><a href="/v2/projects/metroboard/#details" data-v2-section>Details</a><a href="/v2/projects/metroboard/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
 <main id="main">
     <section class="project-hero" id="overview" aria-labelledby="project-title">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>
 
             <h1 id="project-title">Metroboard</h1>
             <p>A Sydney rail map driven by TfNSW real-time data.</p>
-          </div><div class="project-hero-actions"><a href="/v2/projects/metroboard/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/metroboard/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/metroboard.webp" width="1600" height="1200" alt="Metroboard circuit board assembly" fetchpriority="high"></figure></div>
+          </div><div class="project-hero-actions"><a href="/v2/projects/metroboard/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/metroboard/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/metroboard.webp" width="1600" height="1200" alt="Metroboard circuit board assembly" fetchpriority="high"><figcaption class="v2-media-label" data-v2-only>CAD assembly rendering</figcaption></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Type</dt><dd>Personal project</dd></div>
             <div><dt>Data</dt><dd>TfNSW GTFS real-time</dd></div>
             <div><dt>Display</dt><dd>291 LEDs</dd></div>
             <div><dt>Format</dt><dd>300 × 305.7 mm PCB</dd></div>
           </dl></div></section>
-    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>A custom rail-map PCB and a service for TfNSW real-time data.</dd></div><div><dt>Design constraint</dt><dd>Copper, mask, silkscreen and LEDs form the display itself.</dd></div><div><dt>Built hardware</dt><dd>291 RGB pixels on the 300 × 305.7 mm V3 board.</dd></div></dl>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My contribution</dt><dd>A custom Sydney rail-map PCB and a service that converts TfNSW vehicle positions into LED states.</dd></div><div><dt>Project stage</dt><dd>Assembled hardware + published service</dd></div><div><dt>Presentation</dt><dd>Illuminated hardware photography · interactive CAD assembly</dd></div></dl>
+<section class="v2-engineering-evidence shell" id="engineering" data-v2-engineering-evidence aria-labelledby="engineering-title"><h2 id="engineering-title">Engineering notes</h2><div class="v2-evidence-grid"><div class="v2-evidence-note"><h3>Problem</h3><p>Make real-time rail activity readable on a 291-pixel PCB, with the copper, solder mask and silkscreen forming the map itself.</p></div><div class="v2-evidence-note"><h3>Design decisions</h3><p>The service builds station-and-route keys from static GTFS data and reduces realtime vehicle positions to a compact set of LED states for the Wi-Fi-connected board.</p><p>Feed caching, per-feed retry backoff and last-good-data expiry keep the update path bounded when an upstream feed fails or rate-limits requests.</p></div><div class="v2-evidence-note"><h3>Evidence and validation</h3><p>The photographs show the assembled board and illuminated routes. The public service repository includes tests for feed caching, backoff and stale-data expiry.</p></div><div class="v2-evidence-note"><h3>Outcome</h3><p>A 300 × 305.7 mm physical rail display with public service and firmware source. Its PCB-as-map approach later informed the smaller TramTrace layout.</p></div></div><nav class="v2-evidence-links" aria-label="Project evidence"><a href="https://github.com/ProccyBoi/Metroboard">Service and firmware source <span aria-hidden="true">↗</span></a><a href="https://github.com/ProccyBoi/Metroboard/blob/main/tests/test_feed_cache.py">Feed-cache tests <span aria-hidden="true">↗</span></a><a href="/v2/projects/metroboard/#build">See the illuminated build <span aria-hidden="true">↗</span></a></nav></section>
 
 
 

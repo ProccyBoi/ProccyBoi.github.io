@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [study, core, lifecycle, entry, inspection-desktop, inspection-mobile390, inspection-mobile320, inspection-lifecycle, profile, responsiveness, assets]
+        suite: [study, core, mask, preference, priority, webgl1, entry, inspection-desktop, inspection-mobile390, inspection-mobile320, inspection-lifecycle, profile, responsiveness, assets]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -41,10 +41,10 @@ jobs:
               suite='${{ matrix.suite }}'
               node scripts/verify-v2-framework-inspection.cjs --group="${suite#inspection-}"
               ;;
-            core|lifecycle|entry) node scripts/verify-v2-selected-scene.cjs --group=${{ matrix.suite }} ;;
+            core|mask|preference|priority|webgl1|entry) node scripts/verify-v2-selected-scene.cjs --group=${{ matrix.suite }} ;;
             assets) V2_SELECTED_OUT=assets/models/selected node scripts/build-v2-selected-assets.cjs --verify && node scripts/build-v2-hero-assets.cjs --verify ;;
             responsiveness)
-              git worktree add --detach /tmp/v2-published 0fd1370c5d17cc6bc61da29f17a81ebcfe32df52
+              git worktree add --detach /tmp/v2-published d725a378806eb05c8d5b981f8e54d33dde502cac
               python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-published >/tmp/baseline.log 2>&1 &
               for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8081/v2/ >/dev/null && break; sleep 1; done
               V2_BASE_URL=http://127.0.0.1:8081 V2_SELECTED_OUT=/tmp/v2-selected-study/input-baseline node scripts/verify-v2-selected-scene.cjs --responsiveness-only
@@ -55,7 +55,7 @@ jobs:
             profile)
               # Matched cold baseline/final runs, then reversed order, on one
               # runner through actual background GPU preparation.
-              git worktree add --detach /tmp/v2-published 0fd1370c5d17cc6bc61da29f17a81ebcfe32df52
+              git worktree add --detach /tmp/v2-published d725a378806eb05c8d5b981f8e54d33dde502cac
               python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-published >/tmp/baseline.log 2>&1 &
               for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8081/v2/ >/dev/null && break; sleep 1; done
               V2_BASE_URL=http://127.0.0.1:8081 V2_BACKGROUND_OUT=/tmp/v2-selected-study/background-baseline node scripts/verify-v2-background.cjs --profile-only

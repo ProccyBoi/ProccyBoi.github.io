@@ -130,7 +130,9 @@ def css_urls(source):
 
 
 def data_hooks(document, known_keys):
-    return Counter((item.tag, tuple(sorted((key, value) for key, value in item.attrs.items() if key in known_keys))) for item in document.elements if any(key in known_keys for key in item.attrs))
+    # The v3 generator explicitly omits new v2-only editorial blocks. Preserve
+    # all original viewer/tool hooks; only marked editorial elements are scoped.
+    return Counter((item.tag, tuple(sorted((key, value) for key, value in item.attrs.items() if key in known_keys))) for item in document.elements if not ({"data-v2-only", "data-v2-engineering-evidence"} & item.attrs.keys()) and any(key in known_keys for key in item.attrs))
 
 
 def inline_scripts(document):

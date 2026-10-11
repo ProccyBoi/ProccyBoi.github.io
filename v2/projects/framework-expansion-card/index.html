@@ -26,7 +26,7 @@
   <script src="assets/framework-3d.js?v=mechanics-20261003" defer></script>
 <link rel="preload" as="image" href="/assets/images/v2/framework-cad.webp" type="image/webp">
 <link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
-  <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
   <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
@@ -43,7 +43,7 @@
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>
 
-  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Framework ESP32 Card</span><div class="v2-case-nav-links"><a href="/v2/projects/framework-expansion-card/#overview" data-v2-section>Overview</a><a href="/v2/projects/framework-expansion-card/#explore" data-v2-section>Interactive</a><a href="/v2/projects/framework-expansion-card/#details" data-v2-section>Details</a><a href="/v2/projects/framework-expansion-card/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Framework ESP32 Card</span><div class="v2-case-nav-links"><a href="/v2/projects/framework-expansion-card/#engineering" data-v2-section data-v2-only>Engineering</a><a href="/v2/projects/framework-expansion-card/#overview" data-v2-section>Overview</a><a href="/v2/projects/framework-expansion-card/#explore" data-v2-section>Interactive</a><a href="/v2/projects/framework-expansion-card/#details" data-v2-section>Details</a><a href="/v2/projects/framework-expansion-card/#build" data-v2-section>Build</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
 
   <main id="main">
     <section class="project-hero" id="overview" aria-labelledby="project-title">
@@ -51,14 +51,15 @@
 
             <h1 id="project-title">Framework ESP32 Card</h1>
             <p>An ESP32-S3 development board that disappears into a Framework laptop bay.</p>
-          </div><div class="project-hero-actions"><a href="/v2/projects/framework-expansion-card/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/framework-expansion-card/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/framework-cad.webp" width="1600" height="1200" alt="Populated Framework ESP32 expansion card" fetchpriority="high"></figure></div>
+          </div><div class="project-hero-actions"><a href="/v2/projects/framework-expansion-card/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v2/projects/framework-expansion-card/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/framework-cad.webp" width="1600" height="1200" alt="Populated Framework ESP32 expansion card" fetchpriority="high"><figcaption class="v2-media-label" data-v2-only>CAD assembly rendering</figcaption></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>PCB</dt><dd>0.6 mm, black 2-layer FR-4</dd></div>
             <div><dt>Form factor</dt><dd>Framework Expansion Card</dd></div>
             <div><dt>Module</dt><dd>ESP32-S3-MINI-1</dd></div>
             <div><dt>USB interface</dt><dd>CH340K</dd></div>
           </dl></div></section>
-    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My work</dt><dd>An ESP32-S3 development board integrated into a laptop expansion bay.</dd></div><div><dt>Design constraint</dt><dd>0.6 mm PCB, direct USB-C mating and an unobstructed antenna.</dd></div><div><dt>Built hardware</dt><dd>Black two-layer PCB, assembled in the Framework enclosure.</dd></div></dl>
+    <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>My contribution</dt><dd>ESP32-S3 PCB, USB programming and power circuitry in the Framework expansion-card format.</dd></div><div><dt>Project stage</dt><dd>Assembled hardware</dd></div><div><dt>Presentation</dt><dd>Manufactured board photography · interactive CAD assembly</dd></div></dl>
+<section class="v2-engineering-evidence shell" id="engineering" data-v2-engineering-evidence aria-labelledby="engineering-title"><h2 id="engineering-title">Engineering notes</h2><div class="v2-evidence-grid"><div class="v2-evidence-note"><h3>Problem</h3><p>Fit an ESP32 development board, its USB connection and the antenna keep-out into one Framework expansion bay.</p></div><div class="v2-evidence-note"><h3>Design decisions</h3><p>The 0.6 mm PCB supports direct USB-C mating without a separate interposer. The module&#x27;s antenna end remains unobstructed in the clear enclosure.</p><p>A CH340K provides USB serial, a BC817 pair handles automatic boot and reset, and an AMS1117-3.3 supplies the module.</p></div><div class="v2-evidence-note"><h3>Evidence and validation</h3><p>The build photographs show the assembled black revision in its enclosure, close-ups of the programming and power circuit, and the earlier green PCB.</p></div><div class="v2-evidence-note"><h3>Outcome</h3><p>The latest black two-layer board is assembled in the Framework shell, with the USB interface, power circuit and radio on one removable card.</p></div></div><nav class="v2-evidence-links" aria-label="Project evidence"><a href="/v2/projects/framework-expansion-card/#build">Compare the built revisions <span aria-hidden="true">↗</span></a><a href="/v2/projects/framework-expansion-card/#explore">Inspect the CAD assembly <span aria-hidden="true">↗</span></a></nav></section>
 
 
     <section class="project-interactive framework-3d-main" id="explore" aria-labelledby="framework-explore-title" data-framework-inspector>

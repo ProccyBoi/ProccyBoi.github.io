@@ -17,6 +17,7 @@ HARDWARE_PROJECTS = HARDWARE_CATALOG['projects']
 HARDWARE_PROJECT_BY_SLUG = {record['slug']: record for record in HARDWARE_PROJECTS}
 HARDWARE_ASSEMBLIES = {record['route']: record for record in HARDWARE_CATALOG['assemblies']}
 SKYLABS_BOARDS = json.loads((ROOT / 'scripts/content/skylabs-components.json').read_text(encoding='utf-8'))
+CASE_EVIDENCE_PATH = ROOT / 'scripts/content/v2-case-evidence.json'
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'}
 
 
@@ -257,6 +258,7 @@ def case_navigation(source, slug, title):
 def continuation(slug):
     if slug in TOOL_ROUTES:
         return '<nav class="v2-continue shell" aria-label="Portfolio"><a class="v2-all-work" href="/v2/projects/">View projects <span aria-hidden="true">↗</span></a></nav>'
+    source = source.replace('<figcaption class="v2-media-label">', '<figcaption class="v2-media-label" data-v2-only>')
     if slug == 'skylabs/boards/telemetry':
         prev, nxt = 'skylabs', 'skylabs/boards/ground-station'
     elif slug == 'skylabs/boards/ground-station':
@@ -614,11 +616,66 @@ def make_about():
     source = source.replace('</figure>', '<figcaption>Skylabs aircraft telemetry / component detail</figcaption></figure>', 1)
     source = source.replace('Download my CV', 'View CV ↗')
     source = source.replace('I’m Andrew. I study', 'I study')
+    source = source.replace('href="book/"', 'href="/v2/book/"')
     return common(source, 'v2-about', 'about')
 
 
 def normalized(content):
     return '\n'.join(line.rstrip() for line in content.splitlines()).rstrip() + '\n'
+
+
+def enrich_case(source, slug):
+    """V2-only evidence notes, kept separate from shared source pages and v3."""
+    if slug == 'skylabs':
+        source = source.replace('for 40 Hz onboard logging', 'targeting 40 Hz onboard logging').replace('scheduled at 40 Hz', 'with a 40 Hz target').replace('STM32G474 sensor acquisition, 40 Hz binary logging', 'STM32G474 sensor acquisition, a 40 Hz binary logging target')
+    records = json.loads(CASE_EVIDENCE_PATH.read_text(encoding='utf-8')) if CASE_EVIDENCE_PATH.exists() else {}
+    record = records.get(slug)
+    if not record:
+        return source
+    tree = Tree(source)
+    # Idempotent for both a generated source and a targeted existing-v2 update.
+    for node in reversed([node for node in tree.nodes if 'data-v2-engineering-evidence' in node.attrs]):
+        start = node.start - 1 if source[node.start-1:node.start] == '\n' else node.start
+        source = source[:start] + source[node.end:]
+    tree = Tree(source)
+    brief = tree.find('dl', 'engineering-brief')
+    facts = [(label, record[key]) for key, label in [('role', 'My contribution'), ('maturity', 'Project stage'), ('media_label', 'Presentation')] if record.get(key)]
+    summary = '<dl class="engineering-brief shell" aria-label="Engineering brief">' + ''.join(f'<div><dt>{escape(label)}</dt><dd>{escape(value)}</dd></div>' for label, value in facts) + '</dl>'
+    if brief:
+        if 'data-v2-added-block' in brief.attrs:
+            summary = summary.replace('<dl ', '<dl data-v2-only data-v2-added-block ', 1)
+        source = replace_nodes(source, [(brief, summary)])
+    else:
+        hero = tree.find('section', 'project-hero')
+        if hero:
+            source = source[:hero.end] + '\n' + summary.replace('<dl ', '<dl data-v2-only data-v2-added-block ', 1) + source[hero.end:]
+    sections = []
+    for key, label in [('problem', 'Problem'), ('decisions', 'Design decisions'), ('challenges', 'Challenges and troubleshooting'), ('validation', 'Evidence and validation'), ('outcome', 'Outcome')]:
+        value = record.get(key)
+        if not value:
+            continue
+        paragraphs = value if isinstance(value, list) else [value]
+        sections.append('<div class="v2-evidence-note"><h3>' + label + '</h3>' + ''.join('<p>' + escape(paragraph) + '</p>' for paragraph in paragraphs) + '</div>')
+    links = ''.join(f'<a href="{escape(item["href"], quote=True)}">{escape(item["label"])} <span aria-hidden="true">↗</span></a>' for item in record.get('links', []))
+    block = '<section class="v2-engineering-evidence shell" id="engineering" data-v2-engineering-evidence aria-labelledby="engineering-title"><h2 id="engineering-title">Engineering notes</h2><div class="v2-evidence-grid">' + ''.join(sections) + '</div>' + ('<nav class="v2-evidence-links" aria-label="Project evidence">' + links + '</nav>' if links else '') + '</section>'
+    tree = Tree(source)
+    brief = tree.find('dl', 'engineering-brief')
+    if brief:
+        source = source[:brief.end] + '\n' + block + source[brief.end:]
+    path = '/v2/projects/' + slug + '/'
+    if path + '#engineering' not in source:
+        source = source.replace('<div class="v2-case-nav-links">', '<div class="v2-case-nav-links"><a href="' + path + '#engineering" data-v2-section data-v2-only>Engineering</a>', 1)
+    source = source.replace('href="' + path + '#engineering" data-v2-section>', 'href="' + path + '#engineering" data-v2-section data-v2-only>')
+    tree = Tree(source)
+    hero_media = tree.find('figure', 'project-hero-media')
+    if hero_media and record.get('media_label') and not any(node.tag == 'figcaption' for node in hero_media.children):
+        media_label = 'CAD assembly rendering' if hero_media.has('v2-cad-media') else 'Manufactured hardware photograph'
+        source = source[:hero_media.close_start] + '<figcaption class="v2-media-label" data-v2-only>' + media_label + '</figcaption>' + source[hero_media.close_start:]
+    source = source.replace('<figcaption class="v2-media-label">', '<figcaption class="v2-media-label" data-v2-only>')
+    if slug == 'skylabs/boards/telemetry':
+        source = source.replace('<dd>40 Hz binary</dd>', '<dd>40 Hz target · binary log</dd>')
+    source = source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=review-20261012')
+    return source
 
 
 def update_sitemap(generated):
@@ -640,13 +697,15 @@ def main():
             continue
         output = ROOT / 'v2' / path.relative_to(ROOT)
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(normalized(make_case(path)), encoding='utf-8')
+        slug = path.parent.relative_to(ROOT / 'projects').as_posix()
+        output.write_text(normalized(enrich_case(make_case(path), slug)), encoding='utf-8')
         generated.append(output.relative_to(ROOT))
     new_pages = [(f'projects/{record["slug"]}/index.html', make_hardware_case(record)) for record in HARDWARE_PROJECTS]
     for relative, content in [('projects/framework-raspberry-pi/index.html', make_pi_case()), *new_pages, ('projects/index.html', make_index()), ('about/index.html', make_about())]:
         output = ROOT / 'v2' / relative
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(normalized(content), encoding='utf-8')
+        slug = relative.removeprefix('projects/').removesuffix('/index.html') if relative.startswith('projects/') else ''
+        output.write_text(normalized(enrich_case(content, slug)), encoding='utf-8')
         generated.append(output.relative_to(ROOT))
     update_sitemap(generated)
     print('Generated', len(generated), 'v2 pages:')

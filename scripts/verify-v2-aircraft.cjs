@@ -10,7 +10,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const base = (process.env.V2_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '').replace(/\/v2$/, '');
 const output = process.env.V2_AIRCRAFT_OUT || '.codex-temp/v2-aircraft';
-const baseline = process.env.V2_AIRCRAFT_BASELINE || '69b4327851e99a819dd77469fa46d0af4da44119';
+const baseline = process.env.V2_AIRCRAFT_BASELINE || 'd725a378806eb05c8d5b981f8e54d33dde502cac';
 const aircraft = '[data-aircraft-hero]';
 const evidence = [];
 const timeout = Number(process.env.V2_BROWSER_TIMEOUT || 120000);
@@ -24,15 +24,18 @@ function sourceContract() {
   const original = execFileSync('git', ['-c', 'safe.directory=' + process.cwd().replaceAll('\\', '/'), 'show', baseline + ':v2/index.html'], { encoding: 'utf8' });
   const current = fs.readFileSync('v2/index.html', 'utf8');
   const initialHero = html => html.match(/<section class="v2-assembly"[\s\S]*?<\/section>/)?.[0].replaceAll('\r\n', '\n');
-  assert.ok(initialHero(original)); assert.equal(initialHero(current), initialHero(original), 'The original three-project hero markup remains unchanged');
+  assert.ok(initialHero(original));assert.ok(initialHero(current));
+  assert.equal((initialHero(current).match(/data-assembly-select=/g)||[]).length,3,'The three-project hero remains, with explicitly requested selector/navigation markup changes');
+  const originalMotion=execFileSync('git',['show',baseline+':assets/v2-hero-motion.js'],{encoding:'utf8'});
+  assert.equal(fs.readFileSync('assets/v2-hero-motion.js','utf8'),originalMotion,'Shorter hero length does not change normalized component choreography');
   assert.match(current, /id="work"/, '#work remains a real navigation destination');
-  assert.ok(current.indexOf('data-selected-work') > current.indexOf('data-assembly') && current.indexOf('data-selected-work') < current.indexOf('data-aircraft-hero') && current.indexOf('data-aircraft-hero') < current.indexOf('class="v2-about-preview'), 'New Selected work follows the unchanged hero; aircraft still precedes About');
+  assert.ok(current.indexOf('data-selected-work') > current.indexOf('data-assembly') && current.indexOf('data-selected-work') < current.indexOf('data-aircraft-hero') && current.indexOf('data-aircraft-hero') < current.indexOf('class="v2-about-preview'), 'Selected work follows the hero; aircraft still precedes About');
   assert.match(current, /data-aircraft-hero[^>]*data-aircraft-detailed[^>]*data-aircraft-deferred[^>]*data-aircraft-smooth/);
   assert.match(current, /<section[^>]*data-aircraft-hero[^>]*data-aircraft-background/, 'v2 opts into background preparation');
   assert.deepEqual([...current.matchAll(/<article id="([^"]+)" data-aircraft-chapter="(\d+)"/g)].map(match => [match[1], match[2]]), [['skylabs-aircraft', '0'], ['skylabs-telemetry', '1']]);
   assert.doesNotMatch(current, /skylabs-inside|data-aircraft-go="2"/, 'No obsolete inspection chapter');
   assert.match(current, /href="\/v2\/projects\/skylabs\/boards\/telemetry\/"/);
-  passed('original hero, namespaced two-chapter story and section ordering', { baseline });
+  passed('preserved hero choreography, namespaced two-chapter story and section ordering', { baseline });
 }
 async function open(browser, options = {}) {
   const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, javaScriptEnabled: options.js !== false, reducedMotion: options.reduced ? 'reduce' : 'no-preference' });
@@ -178,19 +181,20 @@ async function desktop(browser) {
   try {
     await page.goto(base + '/v2/?capture&v=aircraft-integration-test', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-assembly-models-ready="3"]').waitFor({ timeout });
-    await page.locator('[data-aircraft-background-ready="true"][data-aircraft-telemetry-ready="true"]').waitFor({ timeout });
-    assert.equal(await page.evaluate(() => scrollY), 0, 'Aircraft prepares without scrolling the initial viewport');
+    await page.waitForFunction(()=>document.querySelector('[data-aircraft-hero]').dataset.aircraftTransportState==='ready',null,{timeout});
+    assert.equal(await page.evaluate(()=>scrollY),0,'Cached aircraft transport requires no scrolling');
+    assert.notEqual(await page.locator(aircraft).getAttribute('data-aircraft-background-ready'),'true','Distant aircraft GPU work stays deferred');
     assert.ok(run.requests.some(url => aircraftRequest.test(url)), 'Aircraft dependencies are fetched from the initial viewport');
-    assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-warm-frames'), '2', 'Two bounded warm draws prepare telemetry and restore landing');
+    assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-warm-frames'),'0','Distant aircraft submits no speculative warm draws');
     assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-frames')), 0, 'Offscreen preparation does not start the live animation');
     await idleFrames(page, aircraft, 'data-aircraft-warm-frames', 'Background preparation does not retain a hidden render loop');
     await page.mouse.move(700, 450); await page.mouse.wheel(0, 120); await page.waitForTimeout(200);
     assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-landing')), 0, 'Original hero scrolling preserves the unseen landing');
     await scrollTo(page, '#work'); await page.waitForTimeout(300);
     const distance = await page.locator(aircraft).evaluate(root => root.getBoundingClientRect().top - innerHeight);
-    assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-background-ready'), 'true', 'Aircraft is already prepared while reading Selected work');
+    assert.notEqual(await page.locator(aircraft).getAttribute('data-aircraft-background-ready'),'true','Reading Selected does not force competing distant aircraft GPU preparation');
     assert.equal(run.requests.filter(url => telemetryRequest.test(url)).length, 1, 'Original hero fetches its telemetry pack once');
-    passed('background preparation preserves the original hero and unseen landing', { distance, warmFrames: 2 }, run);
+    passed('cached transport preserves the hero and unseen cold landing',{distance,warmFrames:0}, run);
     assert.equal(await page.evaluate(() => window.__v2AircraftProbe.firstLive), null, 'The unseen landing has not already played');
     await page.locator(aircraft).evaluate(root => {
       window.__v2AircraftProbe.entryRequestedMs = performance.now();
