@@ -92,8 +92,23 @@ preparation does the same while Selected is visible. Downloads remain
 concurrent. Visibility/priority events resume incomplete work without a polling
 render loop. Aircraft proximity alone no longer bypasses this optional CPU
 order; genuine entry still promotes its accepted live animation immediately.
-Its two offscreen poses use a capped 640-pixel buffer and owned completion fences;
-every live aircraft draw restores its original DPR, geometry and choreography.
+Its two offscreen poses use a capped 640-pixel buffer and owned completion fences.
+The v2 aircraft's live draws share that same single GPU owner: entering cancels
+and settles background work, drains any already-submitted commands, then draws
+the latest native pose. Live completion is polled without blocking, at 4 ms;
+background polling remains 16 ms. Size and DPR changes wait until the next owned
+draw rather than clearing an in-flight buffer. Captions, progress and published
+frame metadata advance together after completion. Ordinary wheel/touch input
+never flashes the poster; discontinuities and resize retain coverage until a
+current full-size pose is complete. Actual submitted/completed records remain
+available even when an older completion cannot be published as the current pose.
+The first masked preparation/drain does not spend the unseen landing; once the
+first pose is revealed its original 5,400 ms visible wall-clock timeline resumes,
+including slow frames, with hidden time excluded. Every live aircraft draw
+restores its original DPR, geometry and choreography. This is v2-only; the v3
+controller retains its existing synchronous path. The opening v2 hero also has
+one-in-flight backpressure, preventing any of the three renderers from building
+an unbounded queue of obsolete frames.
 Hidden/offscreen scenes have no continuing render loop. The page has
 three WebGL contexts total: hero, Selected Work, and aircraft. Preference changes
 restore the original static collections; renderer reuse avoids context growth.
@@ -110,6 +125,10 @@ Serve the repository on port 8080 and run:
 
 - `node scripts/verify-v2-gpu-preparation.cjs`: deterministic fence ownership,
   cancellation, timeout, unsupported-path and exactly-once cleanup checks.
+- `node scripts/verify-v2-hero-pacing.cjs`: held real hero fences, late-model
+  poster handoff, newest native target, resize and lifecycle cleanup.
+- `node scripts/verify-v2-aircraft-pacing.cjs`: one shared warm/live owner,
+  held real aircraft fences, landing clock, current-size reveal and cancellation.
 - `node scripts/verify-v2-selected-scene.cjs`: real six-model parity, shared
   camera framing/reversal, three-context budget, native input and lifecycle.
   `--source-only` needs no browser; `--study` captures desktop/mobile renderings.

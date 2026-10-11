@@ -33,6 +33,9 @@
   let shadowBox, boardBox, shadowCentre, corner, studioGround, airfieldGround, studioFog, airfieldFog;
   let sourcePreparation, telemetryTask, airframeTransport, transportGate, releaseTransport, backgroundBusy = false, backgroundDone = false, warmGeneration = 0;
   let warmAbort, gpuAbort, aircraftPriority = false;
+  let liveBusy = false, liveAbort, liveGeneration = 0, needsDrain = true;
+  let poseRevision = 0, presentedRevision = -1, layoutRevision = 0, submittedFrames = 0, completedFrames = 0;
+  let desiredRatio = 1, bufferWidth = 0, bufferHeight = 0, bufferRatio = 0, landingClockStarted = false;
   const completedWarmPoses = new Set(), preparationMeasurements = [], backgroundWaiters = new Set();
   const selectedVisible = () => Boolean(background && window.V2SelectedWork?.isVisible?.());
   const aircraftVisible = () => Boolean(background && track && visible && allowed() && activePage && !document.hidden && !failed);
@@ -46,7 +49,7 @@
   const wakeBackground = () => { const pending = [...backgroundWaiters]; backgroundWaiters.clear(); pending.forEach(resolve => resolve()); };
   function interruptBackground(state) {
     if (!background) return;
-    warmGeneration++; warmAbort?.abort(); gpuAbort?.abort(); wakeBackground();
+    warmGeneration++; warmAbort?.abort(); needsDrain = true; wakeBackground();
     if (!backgroundDone && !failed) root.dataset.aircraftBackgroundState = state;
   }
   function backgroundPause() {
@@ -68,16 +71,37 @@
     }
     return false;
   }
+  function maskCanvas() {
+    root.classList.remove('is-ready'); canvas.style.visibility = 'hidden'; root.dataset.aircraftWarmMask = 'true';
+  }
+  function revisePose(mask = false) {
+    if (!background) return;
+    root.dataset.aircraftPoseRevision = String(++poseRevision);
+    if (mask) maskCanvas();
+  }
+  function pauseLandingClock() {
+    if (!background) return;
+    if (landingClockStarted && previousTime && !landingDone && landingEntered && !capturePose) landingElapsed += Math.max(0, performance.now() - previousTime);
+    previousTime = 0;
+  }
+  function interruptLive(mask = true) {
+    if (!background) return;
+    liveGeneration++; liveAbort?.abort(); needsDrain = true; revisePose(mask);
+  }
   function pixelRatio(warm = false) {
-    const live = Math.min(devicePixelRatio || 1, width < 761 ? 1.35 : 1.65);
+    const live = desiredRatio;
     const ratio = warm ? Math.min(live, 640 / Math.max(1, width, height)) : live;
-    if (renderer.getPixelRatio() !== ratio) renderer.setPixelRatio(ratio);
+    // Buffer mutations happen only after the preceding batch has drained.
+    // A layout observer records desired dimensions without clearing a pending
+    // or already-presented frame through an unchanged setSize call.
+    if (bufferRatio !== ratio) { renderer.setPixelRatio(ratio); bufferRatio = ratio; }
+    if (bufferWidth !== width || bufferHeight !== height) { renderer.setSize(width, height, false); bufferWidth = width; bufferHeight = height; }
     root.dataset.aircraftLivePixelRatio = String(live);
     if (warm) root.dataset.aircraftWarmPixelRatio = String(ratio);
     root.dataset.aircraftBufferWidth = String(canvas.width); root.dataset.aircraftBufferHeight = String(canvas.height);
     return ratio;
   }
-  const request = () => { if (!frame && track && visible && activePage && !document.hidden && allowed()) frame = requestAnimationFrame(render); };
+  const request = () => { if (!frame && track && visible && activePage && !document.hidden && allowed() && (!background || (!liveBusy && !backgroundBusy))) frame = requestAnimationFrame(render); };
   const chapterAt = value => detailed ? value < .76 ? 0 : 1 : value < .25 ? 0 : value < .70 ? 1 : 2;
   function chapter(index) {
     if (currentChapter === index) return;
@@ -93,6 +117,7 @@
   function endLanding() {
     if (landingDone) return;
     landingDone = true; landingElapsed = 5400; previousTime = 0;
+    if (background) revisePose();
     if (document.activeElement === skip) links[0].focus({ preventScroll: true });
     skip.hidden = true; request();
   }
@@ -111,6 +136,7 @@
   }
   function fallback(state = 'static') {
     const restore = track && scrollY > rootTop + 200 ? Math.max(currentChapter, 0) : -1;
+    if (background) { pauseLandingClock(); interruptLive(); }
     cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; landingDone = true;
     root.classList.remove('is-story', 'is-ready'); track?.remove(); track = null; skip.hidden = true;
     if (background) publishAircraftPriority();
@@ -129,8 +155,8 @@
       visible = bounds.top < innerHeight && bounds.bottom > pinnedTop;
       if (background) publishAircraftPriority();
       if (background && visible !== wasVisible) {
-        if (visible) { interruptBackground('promoted'); initialize(); }
-        else prepareInBackground();
+        if (visible) { interruptBackground('promoted'); interruptLive(); initialize(); }
+        else { pauseLandingClock(); interruptLive(); prepareInBackground(); }
         wakeBackground();
       }
     }
@@ -144,15 +170,23 @@
       landingEntered = bounds.top <= pinnedTop + height * .25 && bounds.bottom > pinnedTop;
     }
     if ((!deferred && Math.abs(scrollY - lastScroll) > 4) || next > .005) endLanding();
-    if (scrub && (!visible || directScrub || Math.abs(next - progress) > scrub.jump)) renderedProgress = next;
+    const jumped = Boolean(scrub && Math.abs(next - progress) > scrub.jump);
+    if (background && next !== progress) revisePose(jumped);
+    if (scrub && (!visible || directScrub || jumped)) renderedProgress = next;
     lastScroll = scrollY; progress = next;
     const effective = flight && !flight.telemetryReady ? Math.min(progress, .61) : progress;
-    if (!scrub) chapter(chapterAt(effective));
-    if (!scrub) bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
+    if (!scrub && !background) chapter(chapterAt(effective));
+    if (!scrub && !background) bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
   }
   function layout() {
     if (!track) return;
-    width = stage.clientWidth; height = stage.clientHeight;
+    const nextWidth = stage.clientWidth, nextHeight = stage.clientHeight;
+    if (background) {
+      const nextRatio = Math.min(devicePixelRatio || 1, nextWidth < 761 ? 1.35 : 1.65);
+      const changed = width !== nextWidth || height !== nextHeight || desiredRatio !== nextRatio;
+      if (changed) { desiredRatio = nextRatio; root.dataset.aircraftLayoutRevision = String(++layoutRevision); interruptLive(); }
+    }
+    width = nextWidth; height = nextHeight;
     distance = height * (width < 761 ? 3.7 : 3.1);
     track.style.height = `${distance + height}px`; track.style.marginTop = `${-height}px`;
     const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
@@ -160,7 +194,7 @@
     // the sticky stage reserves the header band inside that section.
     [...track.children].forEach((step, index) => { step.style.top = `${(detailed ? [0, 1] : [0, .38, 1])[index] * distance + padding}px`; });
     rootTop = scrollY + root.getBoundingClientRect().top;
-    renderer?.setSize(width, height, false); updateScroll();
+    if (!background) renderer?.setSize(width, height, false); updateScroll();
   }
   function fitLight(focus) {
     const T = window.THREE;
@@ -208,6 +242,7 @@
     return sky;
   }
   function render(time) {
+    if (background) { renderPaced(time); return; }
     frame = 0;
     if (!track || !visible || !activePage || document.hidden || !allowed() || !ready) { previousTime = 0; scrubTime = 0; return; }
     try {
@@ -246,6 +281,89 @@
       else scrubTime = 0;
     } catch (error) { fail(error); }
   }
+  function gpuSucceeded(result, valid) {
+    if (result.state === 'timeout' || result.state === 'lost') throw new Error('Aircraft GPU preparation ' + result.state);
+    return valid() && (result.state === 'complete' || result.state === 'unsupported');
+  }
+  async function renderPaced(time) {
+    frame = 0;
+    if (liveBusy || backgroundBusy || !ready || !aircraftVisible()) return;
+    liveBusy = true;
+    const generation = liveGeneration, abort = new AbortController(); liveAbort = abort;
+    const valid = () => generation === liveGeneration && !abort.signal.aborted && aircraftVisible();
+    let report, result;
+    try {
+      if (needsDrain) {
+        result = await gpuComplete(valid, abort, 'live-drain', true);
+        if (!gpuSucceeded(result, valid)) return;
+        needsDrain = false;
+      }
+      if (!valid()) return;
+      time = performance.now();
+      // Initial masked upload/drain must not spend unseen approach time. Once
+      // the first live pose is revealed, use the full visible wall-clock delta
+      // across slow GPU frames, never a synthetic or clamped frame interval.
+      if (!landingDone && landingEntered && !capturePose && landingClockStarted) {
+        if (previousTime) landingElapsed += Math.max(0, time - previousTime);
+        previousTime = time;
+        if (landingElapsed >= 5400) endLanding();
+      }
+      const targetProgress = flight.telemetryReady ? progress : Math.min(progress, .61);
+      if (scrub) {
+        if (!flight.telemetryReady) renderedProgress = Math.min(renderedProgress, .61);
+        renderedProgress = directScrub || root.dataset.aircraftWarmMask === 'true' ? targetProgress : scrub.step(renderedProgress, targetProgress, scrubTime ? time - scrubTime : 1000 / 60);
+        scrubTime = time;
+      }
+      const effective = scrub ? renderedProgress : targetProgress;
+      const capture = capturePose, revision = poseRevision, drawnLayout = layoutRevision;
+      const kind = capture?.type || (!landingDone ? 'landing' : 'progress');
+      const value = capture?.type === 'progress' ? capture.value : effective;
+      const started = performance.now(), ratio = pixelRatio(false);
+      const pose = capture?.type === 'landing' ? flight.setLanding(capture.value) : capture?.type === 'progress' ? flight.setProgress(capture.value) : !landingDone ? flight.setLanding(landingElapsed / 5400) : flight.setProgress(effective);
+      const sky = drawPose(pose), assemblyError = flight.assemblyError();
+      needsDrain = true;
+      report = { sequence: ++submittedFrames, submittedMs: started, value, rawAtSubmit: progress, landing: pose.landing,
+        kind, revision, layoutRevision: drawnLayout, direct: directScrub, masked: root.dataset.aircraftWarmMask === 'true', published: false,
+        measurement: { cpuMs: performance.now() - started, width: canvas.width, height: canvas.height, pixelRatio: ratio } };
+      root.dataset.aircraftSubmittedFrames = String(submittedFrames);
+      root.dataset.aircraftLastSubmission = JSON.stringify(report);
+      result = undefined;
+      result = await gpuComplete(valid, abort, 'live-frame', true);
+      if (!gpuSucceeded(result, valid)) return;
+      needsDrain = false;
+      root.dataset.aircraftLiveCompletionEvidence = result.state === 'complete' ? 'own-context-fence' : 'unsupported-staged-yield';
+      if (result.state === 'complete') root.dataset.aircraftCompletedFrames = String(++completedFrames);
+      // Input may change freely while the one outstanding frame finishes. A
+      // superseded touch/jump/capture/size never reveals a masked canvas. An
+      // already-live wheel frame can publish its matching completed UI, while
+      // its old revision keeps the latest native target scheduled next.
+      const masked = report.masked || root.dataset.aircraftWarmMask === 'true';
+      if (drawnLayout !== layoutRevision || capture !== capturePose) return;
+      if (revision !== poseRevision && (masked || directScrub || report.direct || (!capture && kind === 'landing' && landingDone))) return;
+      const shownProgress = capture?.type === 'progress' ? capture.value : value;
+      if (masked && kind === 'progress' && !capture && Math.abs(shownProgress - (flight.telemetryReady ? progress : Math.min(progress, .61))) > .000002) return;
+      chapter(capture?.type === 'landing' ? 0 : chapterAt(shownProgress));
+      bar.style.transform = `scaleX(${shownProgress})`; root.dataset.aircraftRenderedProgress = shownProgress.toFixed(6);
+      root.dataset.aircraftAtmosphere = sky.toFixed(6);
+      root.dataset.aircraftState = capture || kind === 'progress' ? 'ready' : 'landing';
+      root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
+      root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftAssemblyError = assemblyError.toFixed(9);
+      canvas.style.visibility = ''; root.dataset.aircraftWarmMask = 'false'; root.classList.add('is-ready');
+      presentedRevision = revision; root.dataset.aircraftPresentedRevision = String(revision);
+      report.published = true; root.dataset.aircraftFrames = String(++frameCount);
+      root.dataset.aircraftFirstLiveMs ||= performance.now().toFixed(1);
+      if (!landingClockStarted && !landingDone && landingEntered && !capture) { landingClockStarted = true; previousTime = performance.now(); }
+      skip.hidden = !(!landingDone && landingEntered && !capture);
+      if (capture || renderedProgress === (flight.telemetryReady ? progress : Math.min(progress, .61))) scrubTime = 0;
+    } catch (error) { fail(error); }
+    finally {
+      if (report) root.dataset.aircraftLastFrame = JSON.stringify({ ...report, observedMs: performance.now(), completedMs: result?.state === 'complete' ? performance.now() : null, rawAtComplete: progress, gpu: result });
+      abort.abort(); if (liveAbort === abort) liveAbort = undefined;
+      liveBusy = false;
+      if (!failed && aircraftVisible() && (needsDrain || presentedRevision !== poseRevision || root.dataset.aircraftWarmMask === 'true' || (!capturePose && ((!landingDone && landingEntered) || (scrub && renderedProgress !== (flight.telemetryReady ? progress : Math.min(progress, .61))))))) request();
+      else if (!failed && !visible) prepareInBackground();
+    }
+  }
   function fail(error) {
     failed = true; loading = false;
     if (background) publishAircraftPriority();
@@ -266,13 +384,13 @@
       }
       const telemetry = await window.V2HeroAssets.load('telemetry');
       if (failed || (background && !await backgroundCPU('telemetry-attach'))) return;
-      flight.attachTelemetry(telemetry); root.dataset.aircraftTelemetryReady = 'true';
+      flight.attachTelemetry(telemetry); if (background) revisePose(); root.dataset.aircraftTelemetryReady = 'true';
       root.dataset.aircraftTelemetryComponents = String(flight.statistics.telemetryComponents); updateScroll(); request();
       if (new URLSearchParams(location.search).has('capture')) {
-        window.__v3Aircraft = { scene, renderer, camera, flight, atmosphere, renderFrame,
-          seekLanding(value) { endLanding(); capturePose = { type: 'landing', value }; chapter(0); request(); },
-          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; chapter(chapterAt(value)); request(); },
-          resume() { capturePose = null; updateScroll(); request(); }
+        window.__v3Aircraft = { scene, renderer, camera, flight, atmosphere, renderFrame: background ? () => { revisePose(true); request(); } : renderFrame,
+          seekLanding(value) { endLanding(); capturePose = { type: 'landing', value }; if (background) revisePose(true); else chapter(0); request(); },
+          seekProgress(value) { endLanding(); capturePose = { type: 'progress', value }; if (background) revisePose(true); else chapter(chapterAt(value)); request(); },
+          resume() { capturePose = null; if (background) revisePose(true); updateScroll(); request(); }
         };
       }
     } catch (error) { fail(error); }
@@ -447,12 +565,13 @@
     signal?.addEventListener('abort', abort, { once: true });
     Promise.resolve(pending).then(result => finish(result?.state || 'settled'), () => finish('unavailable'));
   });
-  async function gpuComplete(valid, abort, stageName) {
-    root.dataset.aircraftPreparationStage = stageName;
+  async function gpuComplete(valid, abort, stageName, live = false) {
+    if (!live) root.dataset.aircraftPreparationStage = stageName;
+    root.dataset.aircraftGPUPhase = live ? stageName : 'warm-' + stageName;
     gpuAbort = abort; root.dataset.aircraftGPUPending = 'true';
     let result;
     try {
-      result = await window.V2GPUPreparation.wait(renderer, { signal: abort.signal, valid, timeoutMs: 12000 });
+      result = await window.V2GPUPreparation.wait(renderer, { signal: abort.signal, valid, timeoutMs: 12000, pollMs: live ? 4 : 16 });
     } finally {
       if (gpuAbort === abort) gpuAbort = undefined;
       root.dataset.aircraftGPUPending = 'false';
@@ -474,13 +593,12 @@
     root.dataset.aircraftPreparationMeasurements = JSON.stringify(preparationMeasurements);
   }
   async function prepareInBackground() {
-    if (!background || backgroundBusy || backgroundDone || failed || !allowed() || visible || document.hidden || !activePage) return;
+    if (!background || liveBusy || backgroundBusy || backgroundDone || failed || !allowed() || visible || document.hidden || !activePage) return;
     if (selectedVisible()) { root.dataset.aircraftBackgroundState = 'paused-selected'; return; }
     backgroundBusy = true;
     // An early visit may already have revealed the canvas. Hide it immediately
     // before any resumed temporary pose, keeping the poster until a live draw.
-    root.classList.remove('is-ready'); canvas.style.visibility = 'hidden';
-    root.dataset.aircraftWarmMask = 'true';
+    maskCanvas();
     const generation = ++warmGeneration, abort = new AbortController(); warmAbort = abort;
     const current = () => generation === warmGeneration && !abort.signal.aborted && !visible && !document.hidden && activePage && allowed() && !failed && !selectedVisible();
     root.dataset.aircraftBackgroundState = 'warming';
@@ -503,6 +621,7 @@
       let result = await gpuComplete(current, abort, 'drain');
       if (!current() || result.state === 'canceled') return;
       if (result.state === 'timeout' || result.state === 'lost') throw new Error('Aircraft GPU preparation ' + result.state);
+      needsDrain = false;
       for (const name of ['progress-1', 'landing-0']) {
         if (completedWarmPoses.has(name)) continue;
         if (!await backgroundCPU(name, current, abort.signal)) return;
@@ -511,6 +630,7 @@
         const selectedBounds = document.querySelector('[data-selected-work]')?.getBoundingClientRect();
         const selectedInViewport = Boolean(selectedBounds && selectedBounds.top < innerHeight && selectedBounds.bottom > 0);
         drawPose(name === 'progress-1' ? flight.setProgress(1) : flight.setLanding(0));
+        needsDrain = true;
         root.dataset.aircraftWarmFrames = String(Number(root.dataset.aircraftWarmFrames || 0) + 1);
         const measurement = { name, submittedMs: started, cpuMs: performance.now() - started, width: canvas.width, height: canvas.height,
           pixelRatio: ratio, selectedVisible: selectedVisible(), selectedInViewport, completed: false, gpu: { state: 'pending', waitMs: 0, polls: 0 } };
@@ -525,6 +645,7 @@
           if (result.state === 'timeout' || result.state === 'lost') throw new Error('Aircraft GPU preparation ' + result.state);
           return;
         }
+        needsDrain = false;
         completedWarmPoses.add(name); root.dataset.aircraftWarmPosesCompleted = String(completedWarmPoses.size);
       }
       if (!current()) return;
@@ -541,7 +662,8 @@
       backgroundBusy = false;
       // Only an invalidated generation gets a one-shot resume. Priority and
       // lifecycle gates are event-driven, never an offscreen retry loop.
-      if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed() && !selectedVisible()) setTimeout(prepareInBackground, 0);
+      if (aircraftVisible()) request();
+      else if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed() && !selectedVisible()) setTimeout(prepareInBackground, 0);
     }
   }
   skip.addEventListener('click', endLanding);
@@ -554,18 +676,40 @@
   });
   const interruptLanding = () => { if (landingEntered) endLanding(); };
   root.addEventListener('wheel', () => { directScrub = false; interruptLanding(); }, { passive: true });
-  root.addEventListener('touchmove', () => { directScrub = true; interruptLanding(); }, { passive: true });
+  root.addEventListener('touchmove', () => { directScrub = true; if (background) revisePose(); interruptLanding(); }, { passive: true });
   addEventListener('keydown', event => { if (['Escape', 'PageDown', 'ArrowDown', ' '].includes(event.key) && track && visible) interruptLanding(); });
   addEventListener('scroll', updateScroll, { passive: true }); addEventListener('resize', layout, { passive: true });
   if ('ResizeObserver' in window) new ResizeObserver(layout).observe(stage);
   if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
+    if (background) {
+      // Recompute actual bounds in one path. Repeated observer delivery must
+      // not invalidate a live batch when visibility did not really change.
+      updateScroll();
+      if (visible) request();
+      else {
+        if (landingEntered) endLanding();
+        cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress;
+        prepareInBackground();
+      }
+      return;
+    }
     visible = entries[0].isIntersecting;
-    if (background) publishAircraftPriority();
-    if (background && visible) { interruptBackground('promoted'); initialize(); }
-    if (visible) { updateScroll(); request(); } else { if (landingEntered) endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; if (background) prepareInBackground(); }
+    if (visible) { updateScroll(); request(); } else { if (landingEntered) endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; }
   }).observe(root);
-  document.addEventListener('visibilitychange', () => { if (background) publishAircraftPriority(); previousTime = 0; scrubTime = 0; renderedProgress = progress; if (document.hidden) { cancelAnimationFrame(frame); frame = 0; if (background) interruptBackground('paused-hidden'); } else { wakeBackground(); request(); if (background) prepareInBackground(); } });
-  addEventListener('pagehide', () => { activePage = false; if (background) publishAircraftPriority(); scrubTime = 0; renderedProgress = progress; cancelAnimationFrame(frame); frame = 0; if (background) interruptBackground('paused-hidden'); });
+  document.addEventListener('visibilitychange', () => {
+    if (background) {
+      if (document.hidden) { pauseLandingClock(); interruptLive(); interruptBackground('paused-hidden'); }
+      publishAircraftPriority();
+    }
+    previousTime = 0; scrubTime = 0; renderedProgress = progress;
+    if (document.hidden) { cancelAnimationFrame(frame); frame = 0; }
+    else { wakeBackground(); request(); if (background) prepareInBackground(); }
+  });
+  addEventListener('pagehide', () => {
+    if (background) { pauseLandingClock(); interruptLive(); interruptBackground('paused-hidden'); }
+    activePage = false; if (background) publishAircraftPriority();
+    scrubTime = 0; renderedProgress = progress; if (background) previousTime = 0; cancelAnimationFrame(frame); frame = 0;
+  });
   addEventListener('pageshow', () => { activePage = true; previousTime = 0; scrubTime = 0; renderedProgress = progress; wakeBackground(); updateScroll(); if (background) publishAircraftPriority(); request(); if (background) prepareInBackground(); });
   const storyLead = 420;
   const nearStory = () => { const bounds = root.getBoundingClientRect(); return bounds.top < innerHeight + storyLead && bounds.bottom > -storyLead; };
@@ -596,6 +740,8 @@
   }
   if (background) {
     window.V2AircraftPreparation = Object.freeze({ isVisible: aircraftVisible });
+    root.dataset.aircraftFrames = '0'; root.dataset.aircraftSubmittedFrames = '0'; root.dataset.aircraftCompletedFrames = '0';
+    root.dataset.aircraftPoseRevision = '0'; root.dataset.aircraftLayoutRevision = '0';
     root.dataset.aircraftWarmFrames = '0'; root.dataset.aircraftWarmPosesCompleted = '0';
     root.dataset.aircraftBackgroundReady = 'false'; root.dataset.aircraftGPUPending = 'false';
     addEventListener('v2:selected-priority', () => {

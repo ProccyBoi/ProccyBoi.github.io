@@ -20,7 +20,7 @@ const telemetryRequest = /\/assets\/models\/hero\/telemetry\.(?:idx\.bin\.gz|bin
 const tolerance = .000012;
 function instrument() {
   const originalRaf = window.requestAnimationFrame.bind(window), originalCancel = window.cancelAnimationFrame.bind(window);
-  const probe = window.__v2WheelProbe = { enabled: false, samples: [], raf: [], events: [], prevention: [], frame: 0, last: {}, label: '' };
+  const probe = window.__v2WheelProbe = { enabled: false, samples: [], raf: [], events: [], prevention: [], frameRecords: [], frame: 0, last: {}, label: '' };
   const sample = (kind, t) => {
     const root = document.querySelector(kind === 'aircraft' ? '[data-aircraft-hero]' : '[data-assembly]');
     if (!root) return;
@@ -35,6 +35,15 @@ function instrument() {
     probe.samples.push({ kind, t, observedAt: performance.now(), frame, scrollY, bar, raw: kind === 'aircraft' ? Number(root.dataset.aircraftProgress || 0) : geometric, geometric, rendered: Number((kind === 'aircraft' ? root.dataset.aircraftRenderedProgress ?? root.dataset.aircraftProgress : root.dataset.assemblyProgress) || 0), renderedSource: kind === 'aircraft' && !('aircraftRenderedProgress' in root.dataset) ? 'legacy-raw-progress' : 'rendered-progress', telemetryReady: root.dataset.aircraftTelemetryReady === 'true' });
   };
   window.requestAnimationFrame = callback => originalRaf(time => { callback(time); if (probe.enabled) { sample('aircraft', time); sample('assembly', time); } });
+  new MutationObserver(records => {
+    if (!probe.enabled) return;
+    if (records.some(record => record.attributeName === 'data-aircraft-frames')) sample('aircraft', performance.now());
+    if (records.some(record => record.attributeName === 'data-assembly-frames')) sample('assembly', performance.now());
+    if (records.some(record => record.attributeName === 'data-aircraft-last-frame')) {
+      const value = JSON.parse(document.querySelector('[data-aircraft-hero]').dataset.aircraftLastFrame || 'null');
+      if (value && value.sequence !== probe.frameRecords.at(-1)?.sequence) probe.frameRecords.push(value);
+    }
+  }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-aircraft-frames', 'data-assembly-frames', 'data-aircraft-last-frame'] });
   const rafSample = time => {
     if (!probe.enabled) return;
     probe.raf.push({ t: time, scrollY });
@@ -42,11 +51,11 @@ function instrument() {
   };
   probe.begin = label => {
     if (probe.frame) originalCancel(probe.frame);
-    Object.assign(probe, { enabled: true, samples: [], raf: [], events: [], prevention: [], last: {}, label });
+    Object.assign(probe, { enabled: true, samples: [], raf: [], events: [], prevention: [], frameRecords: [], last: {}, label });
     sample('aircraft', performance.now()); sample('assembly', performance.now());
     probe.frame = originalRaf(rafSample);
   };
-  probe.end = () => { probe.enabled = false; originalCancel(probe.frame); probe.frame = 0; return { label: probe.label, samples: probe.samples, raf: probe.raf, events: probe.events, prevention: probe.prevention }; };
+  probe.end = () => { probe.enabled = false; originalCancel(probe.frame); probe.frame = 0; return { label: probe.label, samples: probe.samples, raf: probe.raf, events: probe.events, prevention: probe.prevention, frameRecords: probe.frameRecords }; };
   for (const type of ['wheel', 'touchstart', 'touchmove', 'touchend']) addEventListener(type, event => {
     if (!probe.enabled) return;
     const record = { type, t: performance.now(), trusted: event.isTrusted, deltaY: event.deltaY ?? null, scrollY, prevented: event.defaultPrevented };
@@ -72,7 +81,7 @@ async function state(page, kind = 'aircraft') {
     const root = document.querySelector(kind === 'aircraft' ? '[data-aircraft-hero]' : '[data-assembly]');
     const stage = root.querySelector(kind === 'aircraft' ? '[data-aircraft-stage]' : '.v2-assembly-sticky');
     const distance = kind === 'aircraft' ? parseFloat(root.querySelector('.v3-aircraft-track').style.height) - stage.clientHeight : root.offsetHeight - stage.clientHeight;
-    return { scrollY, raw: kind === 'aircraft' ? Number(root.dataset.aircraftProgress) : Math.max(0, Math.min(1, -root.getBoundingClientRect().top / distance)), rendered: Number(kind === 'aircraft' ? root.dataset.aircraftRenderedProgress ?? root.dataset.aircraftProgress : root.dataset.assemblyProgress), frame: Number(root.dataset[kind === 'aircraft' ? 'aircraftFrames' : 'assemblyFrames']), distance };
+    return { scrollY, raw: kind === 'aircraft' ? Number(root.dataset.aircraftProgress) : Math.max(0, Math.min(1, -root.getBoundingClientRect().top / distance)), rendered: Number(kind === 'aircraft' ? root.dataset.aircraftRenderedProgress ?? root.dataset.aircraftProgress : root.dataset.assemblyProgress), frame: Number(root.dataset[kind === 'aircraft' ? 'aircraftFrames' : 'assemblyFrames']), distance, submitted: Number(root.dataset.aircraftSubmittedFrames), completed: Number(root.dataset.aircraftCompletedFrames), gpuPending: root.dataset.aircraftGPUPending, mask: root.dataset.aircraftWarmMask, lastFrame: root.dataset.aircraftLastFrame ? JSON.parse(root.dataset.aircraftLastFrame) : null };
   }, kind);
 }
 async function waitSettled(page, kind = 'aircraft') {
@@ -81,7 +90,8 @@ async function waitSettled(page, kind = 'aircraft') {
     const stage = root.querySelector(kind === 'aircraft' ? '[data-aircraft-stage]' : '.v2-assembly-sticky');
     const raw = kind === 'aircraft' ? Number(root.dataset.aircraftProgress) : Math.max(0, Math.min(1, -root.getBoundingClientRect().top / (root.offsetHeight - stage.clientHeight)));
     const rendered = Number(kind === 'aircraft' ? root.dataset.aircraftRenderedProgress ?? root.dataset.aircraftProgress : root.dataset.assemblyProgress);
-    return Math.abs(raw - rendered) < (kind === 'aircraft' ? .000002 : .000006);
+    const paced = kind === 'aircraft' && root.dataset.aircraftSubmittedFrames !== undefined;
+    return Math.abs(raw - rendered) < (kind === 'aircraft' ? .000002 : .000006) && (!paced || (root.dataset.aircraftGPUPending === 'false' && root.dataset.aircraftWarmMask === 'false' && root.dataset.aircraftState === 'ready'));
   }, kind, { timeout });
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
@@ -143,6 +153,25 @@ function smoothTrace(trace, before, after, kind = 'aircraft') {
   }
   assert.ok(Math.abs(after.raw - after.rendered) <= tolerance, 'Rendered progress converges to the native target');
 }
+function actualSubmissions(trace, before, after, { directRequired = false } = {}) {
+  const records = trace.frameRecords, completed = records.filter(record => record.gpu?.state === 'complete');
+  assert.ok(Number.isFinite(before.submitted) && Number.isFinite(after.submitted), 'Current aircraft exposes real submission and completion counters');
+  assert.equal(records.length, after.submitted - before.submitted, 'Every actual live draw has a terminal record, including canceled and stale draws');
+  assert.equal(completed.length, after.completed - before.completed, 'Completed stale draws remain counted as actual GPU work');
+  assert.equal(records.filter(record => record.published).length, after.frame - before.frame, 'UI publication is distinguished from actual GPU completion');
+  if (directRequired) assert.ok(records.some(record => record.direct), 'The trace contains actual direct-touch submissions');
+  for (const [index, record] of records.entries()) {
+    assert.ok(Number.isFinite(record.submittedMs) && record.observedMs >= record.submittedMs, 'Submission and terminal observation have honest ordered timestamps');
+    assert.equal(typeof record.published, 'boolean');
+    if (index) assert.ok(record.submittedMs >= records[index - 1].observedMs - .02, 'One live draw is in flight at a time');
+    if (record.gpu.state === 'complete') assert.ok(Number.isFinite(record.completedMs) && record.completedMs >= record.submittedMs, 'GPU completion is observed after its real submission');
+    else assert.equal(record.completedMs, null, 'Canceled or unsupported work does not fabricate a GPU completion time');
+    if (record.direct) assert.ok(Math.abs(record.value - record.rawAtSubmit) <= .000002, 'Direct-touch draws use the native target at submission without easing');
+  }
+  assert.ok(Math.abs(after.raw - after.rendered) <= tolerance, 'The terminal published pose converges to the latest native target');
+  assert.equal(after.gpuPending, 'false'); assert.equal(after.mask, 'false');
+  return { submitted: records.length, completed: completed.length, published: after.frame - before.frame, staleCompleted: completed.filter(record => !record.published).length, maxInputChangeWhilePending: Math.max(0, ...records.map(record => Math.abs(record.rawAtComplete - record.rawAtSubmit))), maxGPUWaitMs: Math.max(0, ...records.map(record => record.gpu.waitMs || 0)) };
+}
 function save(name, details, run, trace) {
   assert.deepEqual(run.errors, [], 'No unhandled browser exceptions'); assert.deepEqual(run.shaders, [], 'No shader errors');
   if (trace) fs.writeFileSync(path.join(output, name + '.json'), JSON.stringify(trace, null, 2) + '\n');
@@ -170,12 +199,14 @@ async function detents(run, name, kind, start, deltas) {
   const expected = deltas.reduce((sum, delta) => sum + delta, 0);
   assert.ok(Math.abs(after.scrollY - before.scrollY - expected) < 3, 'Native document receives the complete wheel distance');
   assert.ok(trace.events.filter(event => event.type === 'wheel').every(event => Math.abs(event.deltaY) === 120), 'Evidence contains actual coarse +/-120 wheel detents');
-  save(name, { kind, before, after, deltas }, run, trace);
+  const completionEvidence = kind === 'aircraft' ? actualSubmissions(trace, before, after) : null;
+  save(name, { kind, before, after, deltas, completionEvidence }, run, trace);
 }
 async function stopped(page, kind, message) {
   await waitSettled(page, kind);
   const before = await state(page, kind); await page.waitForTimeout(900); const after = await state(page, kind);
   assert.equal(after.frame, before.frame, message);
+  if (kind === 'aircraft') { assert.equal(after.submitted, before.submitted, 'Idle aircraft does not silently submit unpublished GPU work'); assert.equal(after.gpuPending, 'false'); }
 }
 async function baselineWheel(browser) {
   const run = await open(browser), { page } = run;
@@ -233,10 +264,11 @@ async function wheelDesktop(browser) {
     // immediately instead of preserving old forward velocity or oscillating.
     const before = await jump(page, .35); await begin(page, 'aircraft-active-reversal');
     await page.mouse.wheel(0, 120);
-    const reversing = await page.waitForFunction(raw => {
+    const reversing = await page.waitForFunction(before => {
       const root = document.querySelector('[data-aircraft-hero]'), target = Number(root.dataset.aircraftProgress), rendered = Number(root.dataset.aircraftRenderedProgress);
-      return target > raw + .02 && target - rendered > .00008 ? { raw: target, rendered, scrollY, frame: Number(root.dataset.aircraftFrames) } : false;
-    }, before.raw, { polling: 10, timeout });
+      const submission = root.dataset.aircraftLastSubmission ? JSON.parse(root.dataset.aircraftLastSubmission) : null;
+      return target > before.raw + .02 && target - rendered > .00008 && Number(root.dataset.aircraftSubmittedFrames) > before.submitted && submission?.rawAtSubmit > before.raw + .02 ? { raw: target, rendered, scrollY, frame: Number(root.dataset.aircraftFrames), submission } : false;
+    }, before, { polling: 10, timeout });
     // Send the reversal before another protocol round trip to read state.
     await page.mouse.wheel(0, -120);
     const reversal = await reversing.jsonValue(); await reversing.dispose();
@@ -245,27 +277,36 @@ async function wheelDesktop(browser) {
     await waitSettled(page); const after = await state(page), trace = await end(page);
     noPrevention(trace);
     const frames = trace.samples.filter(sample => sample.kind === 'aircraft');
-    const reverseIndex = frames.findIndex((sample, index) => index > 0 && sample.raw < frames[index - 1].raw - .02);
-    assert.ok(reverseIndex > 0, 'Renderer observes the input reversal');
-    assert.ok(frames[reverseIndex].rendered <= frames[reverseIndex - 1].rendered + tolerance, 'Reversal responds on the first rendered frame with the reverse target');
+    const records = trace.frameRecords, reverseEvent = trace.events.find(event => event.type === 'wheel' && event.deltaY < 0);
+    const reverseIndex = records.findIndex((record, index) => index > 0 && record.rawAtSubmit < records[index - 1].rawAtSubmit - .02);
+    assert.ok(reverseIndex > 0, 'An actual new submission observes the reversed native target');
+    for (let index = reverseIndex; index < records.length; index++) {
+      assert.ok(records[index].value <= records[index - 1].value + tolerance, 'The first and every subsequent submission seeing reversal head back immediately');
+      assert.ok(records[index].rawAtSubmit <= records[index - 1].rawAtSubmit + tolerance, 'No newer submission replays the previous forward target');
+    }
+    const alreadyInFlight = records.filter(record => record.submittedMs < reverseEvent.t && record.observedMs >= reverseEvent.t);
+    assert.ok(alreadyInFlight.length <= 1, 'At most one honestly recorded earlier draw can complete after native reversal');
+    for (const record of records) assert.ok(record.value >= before.raw - tolerance && record.value <= reversal.raw + tolerance, 'All submitted poses remain inside native reversal extrema');
     for (const sample of frames) assert.ok(sample.rendered >= before.raw - tolerance && sample.rendered <= reversal.raw + tolerance, 'Reversal remains inside native scroll extrema');
     assert.ok(Math.abs(after.scrollY - before.scrollY) < 2 && Math.abs(after.rendered - before.raw) < tolerance, 'A forward/reverse detent pair returns to its exact native position');
-    save('aircraft-active-reversal', { before, reversal, after }, run, trace);
+    save('aircraft-active-reversal', { before, reversal, after, reverseIndex, alreadyInFlight, completionEvidence: actualSubmissions(trace, before, after) }, run, trace);
     await stopped(page, 'aircraft', 'Aircraft settles without a residual RAF loop');
     // Large discontinuities and exact clamped endpoints should snap rather
     // than animate through unrelated intermediate chapters.
     for (const [from, to] of [[.15, .85], [.85, .1], [.1, 1], [1, 0]]) {
-      await jump(page, from); await begin(page, `aircraft-large-${from}-${to}`);
+      const beforeJump = await jump(page, from); await begin(page, `aircraft-large-${from}-${to}`);
       const afterJump = await jump(page, to), jumpTrace = await end(page);
       const changed = jumpTrace.samples.filter(sample => sample.kind === 'aircraft' && Math.abs(sample.raw - from) > .18);
       assert.ok(changed.length > 0 && changed.every(sample => Math.abs(sample.raw - sample.rendered) <= .000002), 'A large native discontinuity snaps to the new pose');
       if (to === 0 || to === 1) { assert.equal(afterJump.raw, to); assert.equal(afterJump.rendered, to); }
-      save(`aircraft-large-${from}-${to}`, { from, to, after: afterJump }, run, jumpTrace);
+      save(`aircraft-large-${from}-${to}`, { from, to, after: afterJump, completionEvidence: actualSubmissions(jumpTrace, beforeJump, afterJump) }, run, jumpTrace);
     }
     await jump(page, .4); await stopped(page, 'aircraft', 'Aircraft idle stops');
     await page.locator('.v2-about-preview').evaluate(element => scrollTo({ top: scrollY + element.getBoundingClientRect().top + 120, behavior: 'instant' }));
-    await page.waitForTimeout(250); const offscreen = Number(await page.locator(aircraft).getAttribute('data-aircraft-frames'));
-    await page.waitForTimeout(900); assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-frames')), offscreen, 'Offscreen story stops rendering');
+    await page.waitForTimeout(250); const offscreenState = await state(page), offscreen = offscreenState.frame;
+    await page.waitForTimeout(900); const offscreenAfter = await state(page);
+    assert.equal(offscreenAfter.frame, offscreen, 'Offscreen story stops rendering');
+    assert.equal(offscreenAfter.submitted, offscreenState.submitted, 'Offscreen aircraft submits no new hidden live draws');
     await jump(page, .4); await stopped(page, 'aircraft', 'Returning to the story resumes and then settles');
     // Synthetic events verify the application handlers, not real background-tab
     // visibility or browser BFCache. Interrupt an active interpolation so this
@@ -283,7 +324,7 @@ async function wheelDesktop(browser) {
     await page.waitForFunction(frame => Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames) > frame, suspended.frame);
     await waitSettled(page); await stopped(page, 'aircraft', 'Synthetic pageshow handler resumes, converges and stops');
     await page.screenshot({ path: path.join(output, 'desktop-wheel-settled.png') });
-    save('aircraft-idle-offscreen-synthetic-lifecycle-handlers', { offscreenFrames: offscreen, syntheticPagehide: suspended, actualBackgroundVisibilityTested: false }, run);
+    save('aircraft-idle-offscreen-synthetic-lifecycle-handlers', { offscreenFrames: offscreen, offscreenState, offscreenAfter, syntheticPagehide: suspended, actualBackgroundVisibilityTested: false }, run);
   } catch (error) { await diagnostics(run, 'desktop-wheel', error); throw error; } finally { await run.context.close(); }
 }
 async function pendingTelemetry(browser) {
@@ -300,6 +341,7 @@ async function pendingTelemetry(browser) {
     await page.waitForFunction(() => Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftRenderedProgress) < .11);
     await page.evaluate(() => document.getElementById('skylabs-telemetry').scrollIntoView({ behavior: 'instant' }));
     await page.waitForFunction(() => Math.abs(Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftRenderedProgress) - .61) < .000002);
+    const releaseMs = await page.evaluate(() => performance.now());
     await Promise.all(releases.splice(0).map(release => release()));
     await page.locator('[data-aircraft-telemetry-ready="true"]').waitFor({ timeout });
     await waitSettled(page); const trace = await end(page);
@@ -307,9 +349,11 @@ async function pendingTelemetry(browser) {
     // Only actual renderer output is a pose; the loading poster is not.
     const pending = trace.samples.filter(sample => sample.kind === 'aircraft' && sample.frame > 0 && sample.renderedSource === 'rendered-progress' && !sample.telemetryReady);
     assert.ok(pending.length >= 2 && pending.every(sample => sample.rendered <= .610002), 'Every pending-board rendered frame respects the .61 availability cap');
+    const heldSubmissions = trace.frameRecords.filter(record => record.submittedMs < releaseMs);
+    assert.ok(heldSubmissions.length >= 2 && heldSubmissions.every(record => record.value <= .610002), 'Every actual pending-board GPU submission respects the availability cap, including superseded draws');
     const final = await state(page); assert.equal(final.raw, 1); assert.equal(final.rendered, 1);
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-chapter'), '1', 'Telemetry release reaches its destination');
-    save('pending-telemetry-availability', { heldFrames: pending.length, final }, run, trace);
+    save('pending-telemetry-availability', { heldFrames: pending.length, heldSubmissions: heldSubmissions.length, releaseMs, final }, run, trace);
   } catch (error) { await diagnostics(run, 'pending-telemetry', error); throw error; } finally { await Promise.all(releases.splice(0).map(release => release().catch(() => {}))); await context.close(); }
 }
 async function touch(browser) {
@@ -331,9 +375,10 @@ async function touch(browser) {
     const after = await state(page), trace = await end(page); noPrevention(trace);
     assert.ok(trace.events.some(event => event.type === 'touchmove'), 'CDP produced real touchmove events');
     const frames = trace.samples.filter(sample => sample.kind === 'aircraft');
-    assert.ok(frames.length >= 2 && frames.every(sample => Math.abs(sample.raw - sample.rendered) <= .000002), 'Touch-driven poses track native scroll directly without a second easing tail');
+    assert.ok(frames.length >= 2 && frames.every(sample => Math.abs(sample.bar - sample.rendered) <= tolerance), 'Completed touch poses keep the progress bar and published metadata in agreement');
+    const completionEvidence = actualSubmissions(trace, before, after, { directRequired: true });
     assert.ok(after.scrollY > before.scrollY + 80, 'Native touch actually scrolls the document');
-    save('aircraft-native-touch', { before, after }, run, trace);
+    save('aircraft-native-touch', { before, after, completionEvidence }, run, trace);
     // A later wheel event must reset touch directness and restore interpolation.
     await detents(run, 'aircraft-wheel-after-touch', 'aircraft', .35, [120, 120]);
     await stopped(page, 'aircraft', 'Touch and wheel resume settle without an idle loop');

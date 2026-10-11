@@ -45,7 +45,7 @@ async function open(browser, options = {}) {
       const root = document.querySelector('[data-aircraft-hero]');
       if (!root || !(Number(root.dataset.aircraftFrames) > 0)) return;
       const box = root.getBoundingClientRect(), canvas = root.querySelector('[data-aircraft-canvas]');
-      const sample = { t: performance.now(), y: scrollY, frame: Number(root.dataset.aircraftFrames), landing: Number(root.dataset.aircraftLanding), state: root.dataset.aircraftState, phase: root.dataset.aircraftPhase, progress: Number(root.dataset.aircraftProgress), rendered: Number(root.dataset.aircraftRenderedProgress), visible: box.top < innerHeight && box.bottom > 0, top: box.top, bottom: box.bottom, canvasVisibility: canvas ? getComputedStyle(canvas).visibility : null };
+      const sample = { t: performance.now(), y: scrollY, frame: Number(root.dataset.aircraftFrames), submitted: Number(root.dataset.aircraftSubmittedFrames || 0), completed: Number(root.dataset.aircraftCompletedFrames || 0), lastFrame: root.dataset.aircraftLastFrame ? JSON.parse(root.dataset.aircraftLastFrame) : null, landing: Number(root.dataset.aircraftLanding), state: root.dataset.aircraftState, phase: root.dataset.aircraftPhase, progress: Number(root.dataset.aircraftProgress), rendered: Number(root.dataset.aircraftRenderedProgress), visible: box.top < innerHeight && box.bottom > 0, top: box.top, bottom: box.bottom, canvasVisibility: canvas ? getComputedStyle(canvas).visibility : null };
       if (!probe.firstLive) probe.firstLive = sample;
       if (sample.frame !== probe.frames.at(-1)?.frame) { probe.frames.push(sample); if (probe.frames.length > 256) probe.frames.shift(); }
     }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-aircraft-frames'] });
@@ -99,6 +99,10 @@ async function settle(page, capture = false) {
   }, null, { timeout });
   await page.waitForFunction(() => document.querySelector('[data-aircraft-hero]').getAnimations({ subtree: true }).every(animation => !['running', 'pending'].includes(animation.playState)), null, { timeout });
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.waitForFunction(() => {
+    const root = document.querySelector('[data-aircraft-hero]');
+    return root.dataset.aircraftSubmittedFrames === undefined || (root.dataset.aircraftGPUPending === 'false' && root.dataset.aircraftWarmMask === 'false' && root.dataset.aircraftState === 'ready');
+  }, null, { timeout });
 }
 async function progress(page, amount) {
   await page.locator(aircraft).evaluate((root, value) => {
@@ -142,22 +146,31 @@ async function captureContract(page) {
   for (const amount of [.2, .60, .62, 1, 0]) {
     const before = await page.locator(aircraft).getAttribute('data-aircraft-frames');
     await page.evaluate(value => window.__v3Aircraft.seekProgress(value), amount);
-    await page.waitForFunction(value => document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames !== value, before);
+    await page.waitForFunction(({ before, amount }) => {
+      const root = document.querySelector('[data-aircraft-hero]');
+      return root.dataset.aircraftFrames !== before && Number(root.dataset.aircraftRenderedProgress) === amount && (root.dataset.aircraftSubmittedFrames === undefined || (root.dataset.aircraftGPUPending === 'false' && root.dataset.aircraftWarmMask === 'false'));
+    }, { before, amount });
     await settle(page, true);
     const state = await page.evaluate(() => {
       const root = document.querySelector('[data-aircraft-hero]'), { flight } = window.__v3Aircraft;
-      return { bar: Number(root.querySelector('[data-aircraft-progress]').style.transform.match(/scaleX\(([^)]+)\)/)?.[1]), rendered: Number(root.dataset.aircraftRenderedProgress), chapter: Number(root.dataset.aircraftChapter), visibleFilms: flight.films.filter(patch => patch.mesh.visible).length, rigidMotion: Math.max(...flight.parts.filter(part => !part.filmPatches).map(part => Math.max(part.object.position.distanceTo(part.base), 1 - Math.abs(part.object.quaternion.dot(part.quaternion))))), electronicsVisible: flight.electronics.group.visible, assemblyError: flight.assemblyError() };
+      return { bar: Number(root.querySelector('[data-aircraft-progress]').style.transform.match(/scaleX\(([^)]+)\)/)?.[1]), rendered: Number(root.dataset.aircraftRenderedProgress), chapter: Number(root.dataset.aircraftChapter), lastFrame: root.dataset.aircraftLastFrame ? JSON.parse(root.dataset.aircraftLastFrame) : null, visibleFilms: flight.films.filter(patch => patch.mesh.visible).length, rigidMotion: Math.max(...flight.parts.filter(part => !part.filmPatches).map(part => Math.max(part.object.position.distanceTo(part.base), 1 - Math.abs(part.object.quaternion.dot(part.quaternion))))), electronicsVisible: flight.electronics.group.visible, assemblyError: flight.assemblyError() };
     });
     assert.equal(state.rendered, amount, 'Capture reports the exact requested progress');
     assert.equal(state.bar, amount, 'Capture progress indicator follows its exact pose');
     assert.equal(state.chapter, amount < .76 ? 0 : 1, 'Capture chapter follows capture pose, not native scrollbar');
+    assert.equal(state.lastFrame?.value, amount, 'The submitted capture pose is the exact requested value');
+    assert.equal(state.lastFrame?.gpu.state, 'complete', 'Exact capture inspection follows actual own-context GPU completion');
+    assert.equal(state.lastFrame?.published, true);
     if (amount >= .60) assert.equal(state.visibleFilms, 0, 'Peel is fully gone by .60');
     if (amount <= .62) assert.ok(state.rigidMotion < 1e-12, 'Rigid exterior remains installed until .62');
     if (amount === 1) assert.equal(state.electronicsVisible, false, 'Endpoint isolates the telemetry board');
     if (amount === 0) assert.ok(state.assemblyError < 1e-9, 'Reverse returns to exact assembled endpoint');
     samples.push({ amount, ...state });
   }
-  await page.evaluate(() => window.__v3Aircraft.resume()); await settle(page);
+  const beforeResume = await page.locator(aircraft).getAttribute('data-aircraft-frames');
+  await page.evaluate(() => window.__v3Aircraft.resume());
+  await page.waitForFunction(before => document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames !== before, beforeResume);
+  await settle(page);
   return samples;
 }
 async function desktop(browser) {
@@ -188,6 +201,8 @@ async function desktop(browser) {
     const landing = entry.firstLive.landing;
     assert.equal(entry.firstLive.frame, 1, 'The first actual live draw is captured, independently of protocol latency');
     assert.equal(entry.firstLive.state, 'landing', 'Actual entry starts automatic landing rather than skipping to ready');
+    assert.equal(entry.firstLive.lastFrame?.gpu.state, 'complete', 'The first landing publication follows its real GPU completion');
+    assert.equal(entry.firstLive.lastFrame?.published, true);
     assert.equal(entry.firstLive.visible, true, 'Automatic landing starts in the real visible aircraft section');
     assert.ok(entry.firstLive.t >= entry.requestedMs && landing >= 0, 'The first landing draw follows the requested native entry');
     assert.ok(landing < .7, 'Entry starts the automatic landing');
