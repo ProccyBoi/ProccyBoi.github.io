@@ -48,7 +48,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add /tmp/v2-baseline de2d03d7f98a1b435bd92e6682d081e6194a14b5
+          git worktree add /tmp/v2-baseline 0fd1370c5d17cc6bc61da29f17a81ebcfe32df52
           if [ "${{ matrix.suite }}" = wheel ]; then git worktree add /tmp/v2-wheel-baseline 69b4327851e99a819dd77469fa46d0af4da44119; fi
       - name: Browser acceptance and real desktop/mobile pixels
         env:
@@ -95,14 +95,14 @@ jobs:
       - run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add /tmp/v2-baseline de2d03d7f98a1b435bd92e6682d081e6194a14b5
+          git worktree add /tmp/v2-baseline 0fd1370c5d17cc6bc61da29f17a81ebcfe32df52
       - name: Measure baseline and final on the same runner
         env:
           HERO_PROFILE_GZIP: '1'
           HERO_EXPECT_PACKS: '1'
           HERO_PROFILE_RUNS: '3'
         run: |
-          HERO_PROFILE_ROOT=/tmp/v2-baseline HERO_PROFILE_REVISION=de2d03d7f98a1b435bd92e6682d081e6194a14b5 HERO_PROFILE_OUT=/tmp/v2-performance/baseline.json node scripts/profile-v2-hero.cjs
+          HERO_PROFILE_ROOT=/tmp/v2-baseline HERO_PROFILE_REVISION=0fd1370c5d17cc6bc61da29f17a81ebcfe32df52 HERO_PROFILE_OUT=/tmp/v2-performance/baseline.json node scripts/profile-v2-hero.cjs
           HERO_EXPECT_PARALLEL=1 HERO_PROFILE_OUT=/tmp/v2-performance/final.json node scripts/profile-v2-hero.cjs
       - uses: actions/upload-artifact@v4
         if: always()

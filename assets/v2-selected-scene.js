@@ -24,7 +24,7 @@
   const timing = Object.freeze({electronics:[.015,.155], connector:[.05,.20], pcb:[.09,.235], screw:[.17,.275], enclosure:[.09,.235]});
   function prepareFramework(T, name, assembly, index) {
     const motion = [], partition = [], stagger = index * .012;
-    const boardOffset = new T.Vector3(0,.34,0);
+    const boardOffset = new T.Vector3(0,.52,0);
     // Capture authored transforms once. Every sample is a direct function of
     // native scroll, so reversing, jumping and resizing cannot accumulate drift.
     function register(object, role, ref=object.userData.partRef || object.name, units=1, offset) {
@@ -32,11 +32,11 @@
       if(!offset) {
         if(role==='electronics') {
           const source=assembly.parts.find(part=>part.object===object), authored=source?.motion?.offset || source?.offset;
-          offset=authored ? authored.clone().multiplyScalar(.72) : new T.Vector3(0,.15,0);
+          offset=authored ? authored.clone().multiplyScalar(1.02) : new T.Vector3(0,.21,0);
         } else if(role==='connector') {
           const source=assembly.parts.find(part=>part.object===object), underside=source?.offset?.y<0;
-          offset=new T.Vector3(0,underside?-.10:.12,ref==='P1'?-.20:.13);
-        } else if(role==='screw') offset=new T.Vector3(0,.28,0);
+          offset=new T.Vector3(0,underside?-.14:.17,ref==='P1'?-.28:.18);
+        } else if(role==='screw') offset=new T.Vector3(0,.40,0);
         else offset=new T.Vector3();
       }
       motion.push({object,role,ref,base,quaternion,offset:offset.multiplyScalar(units),
@@ -121,6 +121,8 @@
       bounds.set(name, new T.Box3());
     });
     const target = new T.Vector3(), direction = new T.Vector3(), corner = new T.Vector3();
+    const inspectionWeights = new Float64Array(4), inspectionCentre = new T.Vector3(), inspectionOffset = new T.Vector3();
+    const screenRight = new T.Vector3(), screenUp = new T.Vector3(), projected = {left:0,right:0,top:0,bottom:0};
     let mobile = false, lastWidth = 0, lastHeight = 0, endpoints;
     function place(progress, compact) {
       const settle = range(progress, 0, .311);
@@ -148,36 +150,94 @@
       (stage ? names.slice(4) : names.slice(0,4)).forEach(name => box.union(bounds.get(name)));
       return box;
     }
-    function endpoint(camera, stage, width, height, box=stageBounds(stage)) {
+    function endpoint(camera, stage, width, height, box=stageBounds(stage), fitBoxes) {
       const aim = box.getCenter(new T.Vector3());
       // Transit maps need their board faces, traces and stations readable. The
       // approach rises smoothly from the Framework assembly angle to 63–66°.
       const ray = new T.Vector3(...(stage ? (mobile ? [.04,2.2,1] : [.08,2.1,1.05]) : (mobile ? [.04,1.35,1] : [.12,1.30,1.5]))).normalize();
       camera.clearViewOffset(); camera.aspect = width/height; camera.updateProjectionMatrix();
-      const availableWidth = mobile ? .88 : .91, availableHeight = mobile ? .48 : .51;
+      const availableWidth = stage ? (mobile ? .88 : .91) : (mobile ? .93 : .96);
+      const availableHeight = stage ? (mobile ? .48 : .51) : (mobile ? .48 : .57);
       let distance = Math.max(...box.getSize(new T.Vector3()).toArray()) * 2;
+      let midY=0;
       for (let iteration=0; iteration<12; iteration++) {
         camera.position.copy(aim).addScaledVector(ray, distance); camera.lookAt(aim); camera.updateMatrixWorld(true);
         let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-        for(let i=0;i<8;i++) {
-          corner.set(i&1?box.max.x:box.min.x,i&2?box.max.y:box.min.y,i&4?box.max.z:box.min.z).project(camera);
+        for(const fitBox of fitBoxes || [box])for(let i=0;i<8;i++) {
+          corner.set(i&1?fitBox.max.x:fitBox.min.x,i&2?fitBox.max.y:fitBox.min.y,i&4?fitBox.max.z:fitBox.min.z).project(camera);
           minX=Math.min(minX,corner.x);maxX=Math.max(maxX,corner.x);minY=Math.min(minY,corner.y);maxY=Math.max(maxY,corner.y);
         }
+        midY=(minY+maxY)*.5;
         const ratio = Math.max((maxX-minX)/(availableWidth*2), (maxY-minY)/(availableHeight*2));
         if (Math.abs(ratio-1)<.001) break;
         distance *= Math.max(.5, Math.min(2, ratio));
       }
-      return {target:aim, direction:ray, distance:distance*1.035};
+      return {target:aim, direction:ray, distance:distance*1.035, visualCentre:stage ? .555 : (mobile ? .55 : .555)+midY*.5/1.035};
     }
-    function frame(camera, progress, width, height) {
+    function projectBounds(box, camera) {
+      projected.left=projected.bottom=Infinity;projected.right=projected.top=-Infinity;
+      for(let i=0;i<8;i++) {
+        corner.set(i&1?box.max.x:box.min.x,i&2?box.max.y:box.min.y,i&4?box.max.z:box.min.z).project(camera);
+        projected.left=Math.min(projected.left,corner.x);projected.right=Math.max(projected.right,corner.x);
+        projected.top=Math.max(projected.top,corner.y);projected.bottom=Math.min(projected.bottom,corner.y);
+      }
+    }
+    function inspect(camera, progress, compact, inspection) {
+      // The controller owns interpolation. Independent weights let an outgoing
+      // card return while the next approaches, without a scene-local clock or
+      // a cached pose that can jump after native scroll, resize or reversal.
+      const gate=1-range(progress,.34,.44), weights=inspection?.weights;
+      if(!weights || !gate)return;
+      let total=0;
+      for(let i=0;i<4;i++)total+=inspectionWeights[i]=Number.isFinite(weights[i])?clamp(weights[i]):0;
+      if(!total)return;
+      const normalization=gate/Math.max(1,total);
+      screenRight.setFromMatrixColumn(camera.matrixWorld,0);screenUp.setFromMatrixColumn(camera.matrixWorld,1);
+      const top=compact ? .38 : .50,bottom=compact ? -.58 : -.72,side=.95;
+      for(let i=0;i<4;i++) {
+        const weight=inspectionWeights[i]*normalization,entry=objects.get(names[i]),box=bounds.get(names[i]);
+        if(!weight)continue;
+        box.getCenter(inspectionCentre);
+        let pull=.24*weight;
+        if(pull>0) {
+          // Use perspective translation, never scale or deform source CAD.
+          // At the fully exploded pose the available text-free height limits
+          // magnification; the assembled dwell can use the full close look.
+          projectBounds(box,camera);
+          const room=Math.min(side*2/(projected.right-projected.left),(top-bottom)/(projected.top-projected.bottom));
+          pull=Math.min(pull,Math.max(0,1-1/Math.max(1,room*.975)));
+        }
+        inspectionOffset.copy(camera.position).sub(inspectionCentre).multiplyScalar(pull);
+        entry.wrapper.position.add(inspectionOffset);box.translate(inspectionOffset);
+        if(weight>0) {
+          // Keep the complete selected assembly in the same quartet slot and
+          // clear of chapter controls and links, including at 320 CSS pixels.
+          // Reproject twice to account for the real CAD's perspective depth.
+          for(let correction=0;correction<2;correction++) {
+            projectBounds(box,camera);
+            const dx=projected.left < -side ? -side-projected.left : projected.right > side ? side-projected.right : 0;
+            const dy=projected.bottom < bottom ? bottom-projected.bottom : projected.top > top ? top-projected.top : 0;
+            if(!dx&&!dy)break;
+            box.getCenter(inspectionCentre);inspectionCentre.applyMatrix4(camera.matrixWorldInverse);
+            const span=-inspectionCentre.z*Math.tan(camera.fov*Math.PI/360);
+            inspectionOffset.copy(screenRight).multiplyScalar(dx*span*camera.aspect).addScaledVector(screenUp,dy*span);
+            entry.wrapper.position.add(inspectionOffset);box.translate(inspectionOffset);
+          }
+        }
+        entry.wrapper.updateMatrixWorld(true);
+      }
+    }
+    function frame(camera, progress, width, height, inspection) {
       const compact = width <= 760;
       if (!endpoints || compact!==mobile || width!==lastWidth || height!==lastHeight) {
         mobile=compact;lastWidth=width;lastHeight=height;
         // Fit the entire most-separated quartet, including genuine housing,
         // connectors and fasteners. The fixed envelope also contains the exact
         // assembled dwell, so scroll never makes the camera chase a small part.
-        place(0,compact);const firstBox=stageBounds(0);
-        place(.311,compact);firstBox.union(stageBounds(0));const first=endpoint(camera,0,width,height,firstBox);
+        place(0,compact);const firstBox=stageBounds(0),fitBoxes=names.slice(0,4).map(name=>bounds.get(name).clone());
+        place(.311,compact);firstBox.union(stageBounds(0));
+        names.slice(0,4).forEach(name=>fitBoxes.push(bounds.get(name).clone()));
+        const first=endpoint(camera,0,width,height,firstBox,fitBoxes);
         place(1,compact);endpoints=[first,endpoint(camera,1,width,height)];
       }
       place(progress, compact);
@@ -192,8 +252,9 @@
       // thin mask/core surfaces fight even with shadows disabled.
       camera.near=Math.max(.1,distance*.12);camera.far=Math.max(80,distance*3);
       camera.clearViewOffset();camera.aspect=width/height;camera.position.copy(target).addScaledVector(direction,distance);camera.lookAt(target);camera.updateProjectionMatrix();
-      const visualCentre = .555;
+      const visualCentre = a.visualCentre+(b.visualCentre-a.visualCentre)*journey;
       camera.setViewOffset(width,height,0,(.5-visualCentre)*height,width,height);camera.updateMatrixWorld(true);
+      inspect(camera,progress,compact,inspection);
       return {target:target.clone(), distance, journey, chapter:progress < .57 ? 0 : 1};
     }
     function stats() {

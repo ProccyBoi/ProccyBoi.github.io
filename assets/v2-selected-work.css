@@ -251,3 +251,18 @@
   .v2-selected-work.is-scene .v2-selected-progress,
   .v2-selected-work.is-scene .v2-selected-track{display:none!important}
 }
+
+/* The existing project names remain links. A separate, lightweight hit layer
+   selects the actual shared CAD objects without capturing native scroll. */
+.v2-framework-interaction[hidden]{display:none!important}
+.v2-framework-interaction{position:absolute;inset:0;z-index:2;pointer-events:none}
+.v2-framework-inspection-controls{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:44px;pointer-events:none}
+.v2-framework-inspection-controls p{margin:0;color:var(--v2-muted);font-size:12px;line-height:1.35}
+.v2-framework-inspection-controls button{flex:none;min-height:44px;padding:0 0 0 12px;border:0;background:transparent;color:var(--v2-ink);font:inherit;font-size:12px;cursor:pointer;pointer-events:auto;text-decoration:underline;text-decoration-color:var(--v2-accent);text-underline-offset:5px}
+.v2-framework-inspection-controls button[aria-disabled="true"]{color:var(--v2-muted);text-decoration-color:var(--v2-line)}
+.v2-framework-hit-targets{position:absolute;inset:0;pointer-events:none}
+.v2-framework-inspect{position:absolute;display:block;min-width:44px;min-height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;pointer-events:auto;cursor:zoom-in;touch-action:pan-y}
+.v2-framework-inspect[aria-pressed="true"]{cursor:zoom-out}
+.v2-framework-inspect:focus-visible,.v2-framework-inspection-controls button:focus-visible{outline:2px solid var(--v2-accent);outline-offset:5px}
+@media(max-width:600px){.v2-framework-inspection-controls p{font-size:11px}.v2-framework-inspection-controls button{font-size:11px;padding-left:6px}.v2-framework-inspection-controls{gap:8px}}
+@media print,(prefers-reduced-motion:reduce){.v2-framework-interaction{display:none!important}}

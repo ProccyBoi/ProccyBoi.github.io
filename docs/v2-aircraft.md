@@ -119,6 +119,23 @@ posters/fallbacks only; the enhanced presentation is actual volumetric geometry.
 Pack provenance and exact source hashes are in `assets/models/selected/`;
 `scripts/build-v2-selected-assets.cjs` reproduces and verifies the assemblies.
 
+## Framework card inspection
+
+The shared Framework quartet has wider physical layer separation. Its optional
+inspection layer reuses the same CAD, renderer and bounded GPU queue: hovering
+or keyboard-focusing a card previews it closer, and clicking or tapping pins the
+selection. Clicking that card again, choosing **Show all cards**, or pressing
+Escape returns to the quartet. Arrow keys move between card controls; normal Tab
+navigation and the existing project links remain independent.
+
+Inspection weights compose with the original reversible part assembly and fade
+out before the transport chapter. Offscreen or static-preference changes reset
+the selection. A first reveal after a masked resize adopts the latest selection;
+already-visible transitions coalesce behind the existing single pending frame.
+Only real pointer movement changes hover selection, so moving hit bounds cannot
+oscillate it. The controller stops requesting frames when scroll and inspection
+both settle. No new model, texture, renderer or continual animation is added.
+
 ## Acceptance
 
 Serve the repository on port 8080 and run:
@@ -129,6 +146,8 @@ Serve the repository on port 8080 and run:
   poster handoff, newest native target, resize and lifecycle cleanup.
 - `node scripts/verify-v2-aircraft-pacing.cjs`: one shared warm/live owner,
   held real aircraft fences, landing clock, current-size reveal and cancellation.
+- `node scripts/verify-v2-framework-inspection.cjs`: physical separation, native
+  hover/focus/tap, overview/Escape, mobile bounds and held-GPU selection recovery.
 - `node scripts/verify-v2-selected-scene.cjs`: real six-model parity, shared
   camera framing/reversal, three-context budget, native input and lifecycle.
   `--source-only` needs no browser; `--study` captures desktop/mobile renderings.
