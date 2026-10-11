@@ -227,7 +227,7 @@ body.v2-book {
 }
 
 .v2-book .booking-fallback .button { margin-top: 1.4rem; }
-.v2-book .booking-no-script { padding-block: 2rem; color: var(--v2-muted); }
+.v2-book .booking-no-script { margin-inline: auto; padding-block: 2rem; color: var(--v2-muted); }
 .v2-book .v2-footer { border-top: 1px solid var(--v2-line); }
 .v2-book .v2-footer-links { flex-wrap: wrap; }
 

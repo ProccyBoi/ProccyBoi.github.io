@@ -166,9 +166,10 @@ async function profile(browser,index){
     }
     if(process.env.HERO_EXPECT_PRIORITY==='1') {
       assert.equal(measured.firstModel,'tramtrace','Lead CAD renders first on untouched opening');
+      const leadRequest=modelRequests.find(record=>record.url.includes('/tramtrace.'));
       for(const name of ['telemetry','pi']) {
         const request=modelRequests.find(record=>record.url.includes('/'+name+'.'));
-        assert.ok(request && request.startMs >= measured.firstCadMs-25, name+' transport waits for lead first render');
+        assert.ok(request && request.startMs >= leadRequest.endMs-25, name+' transport waits for lead bytes, then overlaps first render');
       }
     }
     return result;

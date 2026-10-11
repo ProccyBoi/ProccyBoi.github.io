@@ -259,7 +259,9 @@
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
         if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=startup-20261007');
-        window.V2HeroAssets.prefetch('tramtrace').catch(()=>{});
+        window.V2HeroAssets.prefetch('tramtrace').then(() => {
+          if (motionAllowed()) projects.slice(1).forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
+        }).catch(()=>{});
       })().catch(()=>{});
       const lighting=(async()=>{
         if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=product-20261007');

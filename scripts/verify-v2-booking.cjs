@@ -147,7 +147,20 @@ async function browserChecks() {
   const output = process.env.V2_BOOKING_OUT || process.env.V2_SCREENSHOTS;
   if (output) fs.mkdirSync(output, { recursive: true });
   const screenshot = async (page, name) => {
-    if (output) await page.screenshot({ path: path.join(output, `${engine}-${name}.png`), fullPage: true });
+    if (!output) return;
+    // Keyboard and scroll assertions run separately. Capture clean review
+    // frames from the top so fixed/sticky UI does not land mid-page in a
+    // full-page image, and the calendar starts at its first day.
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      document.activeElement?.blur();
+      document.querySelector('[data-booking-days]')?.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+      window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+    await page.waitForFunction(() => Math.abs(scrollY) <= 1 && Math.abs(document.querySelector('.v2-header').getBoundingClientRect().top) <= 1);
+    await page.waitForTimeout(180);
+    await page.screenshot({ path: path.join(output, `${engine}-${name}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
   };
   const browser = await playwright[engine].launch({ headless: true, ...(engine === 'chromium' && process.env.CHROMIUM_EXECUTABLE ? { executablePath: process.env.CHROMIUM_EXECUTABLE } : {}) });
   const errors = [];

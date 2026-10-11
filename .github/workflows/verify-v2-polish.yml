@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [aircraft, startup, booking, polish]
+        suite: [aircraft, wheel, startup, booking, polish]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -61,6 +61,7 @@ jobs:
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
           case '${{ matrix.suite }}' in
             aircraft) node scripts/verify-v2-aircraft.cjs ;;
+            wheel) node scripts/verify-v2-wheel.cjs ;;
             startup) node scripts/verify-v2-hero-startup.cjs ;;
             booking) node scripts/verify-v2-booking.cjs ;;
             polish) node scripts/verify-v2-polish.cjs ;;

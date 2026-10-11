@@ -24,8 +24,9 @@ const cases=[],errors=[];
      await menu.click(); assert.equal(await menu.getAttribute('aria-expanded'),'true');
      const book=page.locator('[data-v2-nav] a[href="/v2/book/"]');assert.ok(await book.isVisible());assert.ok((await book.boundingBox()).height>=44);
      await page.keyboard.press('Escape');assert.equal(await menu.getAttribute('aria-expanded'),'false');assert.ok(await menu.evaluate(n=>n===document.activeElement));
-     await menu.click();await page.locator('main a').first().focus();assert.equal(await menu.getAttribute('aria-expanded'),'false','Tab outside closes open menu');
+     await menu.click();await page.locator('.v2-footer a').first().focus();assert.equal(await menu.getAttribute('aria-expanded'),'false','Tab outside closes open menu');
     }else assert.ok(await page.locator('[data-v2-nav] a[href="/v2/book/"]').isVisible());
+    await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
     await page.screenshot({path:path.join(out,`final-${width}-${route.replaceAll('/','_')}.png`)});
     cases.push({width,route,engine:isWebkit?'webkit':'chromium'});
    }

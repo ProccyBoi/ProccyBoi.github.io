@@ -83,7 +83,7 @@ async function progress(page, amount) {
 async function layout(page, pinned = true) {
   const result = await page.evaluate(() => {
     const root = document.querySelector('[data-aircraft-hero]'), rect = element => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, right: box.right, bottom: box.bottom, width: box.width, height: box.height }; };
-    return { overflow: document.documentElement.scrollWidth > innerWidth + 1, header: document.querySelector('header').getBoundingClientRect().bottom, navigation: [...root.querySelectorAll('[data-aircraft-go]')].map(rect), copy: [...root.querySelectorAll('[data-aircraft-chapter].is-current > *')].filter(element => getComputedStyle(element).display !== 'none').map(rect) };
+    return { overflow: document.documentElement.scrollWidth > innerWidth + 1, header: document.querySelector('header').getBoundingClientRect().bottom, navigation: [...root.querySelectorAll('[data-aircraft-go]')].map(rect), copy: [...root.querySelectorAll('article[data-aircraft-chapter].is-current > *')].filter(element => getComputedStyle(element).display !== 'none').map(rect) };
   });
   assert.equal(result.overflow, false, 'No horizontal overflow');
   for (const box of result.navigation) {
@@ -103,8 +103,8 @@ async function chapter(page, index, prefix = 'skylabs-') {
   await page.waitForFunction(({ index, hash }) => location.hash === hash && document.querySelector('[data-aircraft-hero]').dataset.aircraftChapter === String(index), { index, hash });
   await settle(page);
   assert.equal(await page.locator('[data-aircraft-go][aria-current="step"]').getAttribute('data-aircraft-go'), String(index));
-  assert.equal(await page.locator('[data-aircraft-chapter].is-current').getAttribute('aria-hidden'), 'false');
-  assert.equal(await page.locator('[data-aircraft-chapter]:not(.is-current)').evaluate(element => element.inert), true);
+  assert.equal(await page.locator('article[data-aircraft-chapter].is-current').getAttribute('aria-hidden'), 'false');
+  assert.equal(await page.locator('article[data-aircraft-chapter]:not(.is-current)').evaluate(element => element.inert), true);
 }
 async function captureContract(page) {
   // Capture seeks must be exact, even if the native scrollbar is elsewhere.
@@ -117,9 +117,10 @@ async function captureContract(page) {
     await settle(page, true);
     const state = await page.evaluate(() => {
       const root = document.querySelector('[data-aircraft-hero]'), { flight } = window.__v3Aircraft;
-      return { rendered: Number(root.dataset.aircraftRenderedProgress), chapter: Number(root.dataset.aircraftChapter), visibleFilms: flight.films.filter(patch => patch.mesh.visible).length, rigidMotion: Math.max(...flight.parts.filter(part => !part.filmPatches).map(part => Math.max(part.object.position.distanceTo(part.base), 1 - Math.abs(part.object.quaternion.dot(part.quaternion))))), electronicsVisible: flight.electronics.group.visible, assemblyError: flight.assemblyError() };
+      return { bar: Number(root.querySelector('[data-aircraft-progress]').style.transform.match(/scaleX\(([^)]+)\)/)?.[1]), rendered: Number(root.dataset.aircraftRenderedProgress), chapter: Number(root.dataset.aircraftChapter), visibleFilms: flight.films.filter(patch => patch.mesh.visible).length, rigidMotion: Math.max(...flight.parts.filter(part => !part.filmPatches).map(part => Math.max(part.object.position.distanceTo(part.base), 1 - Math.abs(part.object.quaternion.dot(part.quaternion))))), electronicsVisible: flight.electronics.group.visible, assemblyError: flight.assemblyError() };
     });
     assert.equal(state.rendered, amount, 'Capture reports the exact requested progress');
+    assert.equal(state.bar, amount, 'Capture progress indicator follows its exact pose');
     assert.equal(state.chapter, amount < .76 ? 0 : 1, 'Capture chapter follows capture pose, not native scrollbar');
     if (amount >= .60) assert.equal(state.visibleFilms, 0, 'Peel is fully gone by .60');
     if (amount <= .62) assert.ok(state.rigidMotion < 1e-12, 'Rigid exterior remains installed until .62');
@@ -206,7 +207,7 @@ async function mobile(browser, viewport = { width: 390, height: 844 }) {
     // Both destinations remain keyboard navigable; no hidden third chapter.
     await page.locator('[data-aircraft-go="0"]').focus(); await page.keyboard.press('ArrowRight');
     assert.equal(await page.locator('[data-aircraft-go="1"]').evaluate(element => element === document.activeElement), true);
-    await page.keyboard.press('Enter'); await page.waitForFunction(() => location.hash === '#skylabs-telemetry'); await settle(page);
+    await page.keyboard.press('Enter'); await page.waitForFunction(() => location.hash === '#skylabs-telemetry' && document.querySelector('[data-aircraft-hero]').dataset.aircraftChapter === '1'); await settle(page);
     passed(`mobile ${viewport.width}px deep link, Back/Forward, keyboard and layout`, {}, run);
   } finally { await run.context.close(); }
 }
@@ -216,6 +217,7 @@ async function staticCase(browser, name, options) {
     await page.goto(base + '/v2/?v=aircraft-integration-static#skylabs-aircraft', { waitUntil: 'domcontentloaded' });
     if (options.webglFailure) await page.locator('[data-aircraft-state="unavailable"]').waitFor({ timeout });
     assert.equal(await page.locator(aircraft + '.is-story').count(), 0, 'Static mode removes the long animation track');
+    assert.equal(await page.locator('article[data-aircraft-chapter]').count(), 2, 'Exactly two actual static articles remain');
     for (const id of ['skylabs-aircraft', 'skylabs-telemetry']) {
       assert.equal(await page.locator('#' + id).isVisible(), true, 'Both static chapters remain readable');
       assert.equal(await page.locator('#' + id).getAttribute('aria-hidden'), null);

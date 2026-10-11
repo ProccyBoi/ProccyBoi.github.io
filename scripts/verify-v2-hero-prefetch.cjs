@@ -84,6 +84,11 @@ function smallPack(textures) {
   assert.ok(early.scriptRequests[0].includes('three.min.js'), 'Request the renderer before geometry and images compete for the connection');
   assert.equal(early.requests.length, 2, 'Opening load prioritizes only lead geometry and prepared lighting');
   assert.deepEqual(early.images, packTextures.tramtrace, 'Only original lead textures compete for opening bandwidth');
+  const leadUrl = early.requests.find(url => url.includes('/tramtrace.'));
+  early.downloads.get(leadUrl).release(smallPack(packTextures.tramtrace));
+  await flush(); await flush();
+  assert.equal(early.requests.length, 4, 'Support transport starts once lead bytes are ready, even before the renderer');
+  assert.deepEqual(early.images, Object.values(packTextures).flat(), 'Staged transport retains all original texture quality');
   assert.equal(early.sandbox.THREE, undefined, 'Early preparation must not create or depend on a renderer instance');
   for (const mode of [{reduced:true}, {saveData:true}, {reduced:true, saveData:true}]) {
     const staticPage = context(mode); staticPage.run(startup); await flush();

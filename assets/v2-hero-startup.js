@@ -22,8 +22,12 @@
   loadScript('/assets/v2-hero-assets.js?v=startup-20261007').then(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
     // Keep the first visible CAD uncontested; the scene promotes a requested
-    // chapter and starts supporting packs once the lead board has painted.
-    window.V2HeroAssets.prefetch('tramtrace').catch(() => {});
+    // chapter. Once lead bytes arrive, supporting transport can overlap its
+    // first shader compile without competing for the lead download.
+    window.V2HeroAssets.prefetch('tramtrace').then(() => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
+      ['telemetry', 'pi'].forEach(name => window.V2HeroAssets.prefetch(name).catch(() => {}));
+    }).catch(() => {});
   }).catch(() => {});
   loadScript('/assets/v2-hero-environment.js?v=product-20261007').then(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
