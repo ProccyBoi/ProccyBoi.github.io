@@ -27,7 +27,18 @@
   const modelStates = Array(projects.length).fill('pending');
   let frame = 0, frames = 0, visible = true, ready = false, loading = false, failed = false;
   let target = 0, current = 0, active = -1, width = 0, height = 0, entry = 0;
-  let poses = [];
+  let poses = [], loadRequestedModel;
+  const promoteModel = index => {
+    if (!motionAllowed()) return;
+    // A visitor can choose a supporting chapter while Three is still loading.
+    // Promote its transport immediately; installation follows renderer setup.
+    const prefetch = async () => {
+      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=startup-20261007');
+      window.V2HeroAssets.prefetch(projects[index].name).catch(() => {});
+    };
+    prefetch().catch(() => {});
+    loadRequestedModel?.(index);
+  };
   const motionAllowed = () => !reduced.matches && !navigator.connection?.saveData;
   const pendingScripts = window.V2HeroScripts ||= new Map();
   const loadScript = source => {
@@ -122,6 +133,7 @@
     if (!motionAllowed() || !root.classList.contains('is-enhanced')) {target = 0; return;}
     const bounds = root.getBoundingClientRect();
     target = clamp(-bounds.top / Math.max(1,root.offsetHeight-stage.clientHeight));
+    if (target > .32) promoteModel?.(target >= .65 ? 2 : 1);
   };
   const pose = (t,x,y,s,rx,ry,rz,e=0) => ({t,x,y,s,rx,ry,rz,e});
   const layout = () => {
@@ -247,7 +259,7 @@
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
         if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=startup-20261007');
-        projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
+        window.V2HeroAssets.prefetch('tramtrace').catch(()=>{});
       })().catch(()=>{});
       const lighting=(async()=>{
         if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=product-20261007');
@@ -301,7 +313,9 @@
       gradient.addColorStop(0,'#060807');gradient.addColorStop(.5,'#06080780');gradient.addColorStop(1,'#06080700');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
       const shadowTexture=new T.CanvasTexture(shadowCanvas);
       layout();
-      const loadModel=async index=>{
+      const loadPromises = [];
+      const loadModel = index => loadPromises[index] ||= loadOneModel(index);
+      const loadOneModel=async index=>{
         modelStates[index]='loading';posters[index].dataset.assemblyModelState='loading';
         try {
           const name=projects[index].name;
@@ -358,10 +372,15 @@
       };
       // Give the lead board the first download/parse opportunity. Queue the
       // supporting models after the browser can paint its initial scene.
+      loadRequestedModel = loadModel;
       const lead=loadModel(0);
+      if (target > .32) promoteModel(target >= .65 ? 2 : 1);
+      await lead;
+      // Await the actual lead render, not just an early animation frame while
+      // its download is still pending. Posters already handle every chapter.
       await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
       const supporting=projects.slice(1).map((_,index)=>loadModel(index+1));
-      await Promise.allSettled([lead,...supporting]);
+      await Promise.allSettled(supporting);
       if(!models.some(Boolean)) root.dataset.assemblyState='unavailable';
       root.dataset.assemblyModelsSettled=String(modelStates.filter(state=>state!=='pending'&&state!=='loading').length);
       if(!motionAllowed()) staticMode();
@@ -380,6 +399,7 @@
   selectors.forEach((link,index)=>link.addEventListener('click',event=>{
     if(!ready || !motionAllowed() || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
+    promoteModel?.(index);
     const positions=[.265,.565,.88];
     const top=scrollY+root.getBoundingClientRect().top;
     scrollTo({top:top+positions[index]*(root.offsetHeight-stage.clientHeight),behavior:'smooth'});

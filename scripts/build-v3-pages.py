@@ -450,7 +450,7 @@ def main():
         validate_evidence()
     except (OSError, ValueError) as error:
         parser.exit(1, f"Invalid v3 evidence: {error}\n")
-    pages = [path.relative_to(SOURCE) for path in sorted(SOURCE.rglob("index.html")) if path.parent != SOURCE and path.relative_to(SOURCE).parts[0] != "render"]
+    pages = [path.relative_to(SOURCE) for path in sorted(SOURCE.rglob("index.html")) if path.parent != SOURCE and path.relative_to(SOURCE).parts[0] not in {"render", "book"}]
     changed = []
     for relative in pages:
         content = build(relative)

@@ -20,7 +20,7 @@ function fixture(detailed=true){
   };return node;
  }
  const chapterIds=detailed?ids:['aircraft','inside','telemetry'],chapters=chapterIds.map(id=>element(id)),links=chapterIds.map(()=>element());
- const root=element(),context={document,root,chapters,links,ids:chapterIds,detailed,currentChapter:-1,track:null,frame:0,previousTime:0,landingDone:false,skip:element(),stage:{clientWidth:1440,clientHeight:900},renderer:null,scrollY:0,rootTop:0,width:1,height:1,distance:1,location:{hash:'#telemetry'},
+ const root=element(),context={document,root,chapters,links,ids:chapterIds,detailed,currentChapter:-1,track:null,frame:0,previousTime:0,scrubTime:0,renderedProgress:0,progress:0,landingDone:false,skip:element(),stage:{clientWidth:1440,clientHeight:900},renderer:null,scrollY:0,rootTop:0,width:1,height:1,distance:1,location:{hash:'#telemetry'},
   cancelAnimationFrame(){},requestAnimationFrame(fn){fn()},getComputedStyle(){return{scrollPaddingTop:'76'}},showPoster(pose){context.poster=pose},updateScroll(){context.scrollUpdates=(context.scrollUpdates||0)+1},endLanding(){context.landingDone=true},request(){}
  };
  document.createElement=()=>element();document.getElementById=id=>root.children.flatMap(track=>track.children).find(node=>node.id===id)||chapters.find(node=>node.id===id);

@@ -38,7 +38,7 @@ const hardwareProjects = [
 // Only aircraft-specific downloads are prohibited by its static preference.
 const cadRequest = /\/assets\/(?:models\/aircraft\/|v3-aircraft-(?:scene|atmosphere)\.js)/;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
-const sourcePages = listPages('v2').filter(file => file !== 'index.html' && !file.startsWith('render/'));
+const sourcePages = listPages('v2').filter(file => file !== 'index.html' && !file.startsWith('render/') && !file.startsWith('book/'));
 const screenshotPaths = [];
 let browser;
 function listPages(folder) {

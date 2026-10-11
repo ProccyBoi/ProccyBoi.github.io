@@ -82,8 +82,8 @@ function smallPack(textures) {
   const early = context(); early.run(startup); early.run(startup); await flush();
   assert.equal(early.scriptRequests.length, 4, 'Concurrent startup calls must share runtime and helper requests');
   assert.ok(early.scriptRequests[0].includes('three.min.js'), 'Request the renderer before geometry and images compete for the connection');
-  assert.equal(early.requests.length, 4, 'The opted-in page starts three geometry files and one prepared environment');
-  assert.deepEqual(early.images, Object.values(packTextures).flat(), 'Early startup must request only the full-quality pack textures');
+  assert.equal(early.requests.length, 2, 'Opening load prioritizes only lead geometry and prepared lighting');
+  assert.deepEqual(early.images, packTextures.tramtrace, 'Only original lead textures compete for opening bandwidth');
   assert.equal(early.sandbox.THREE, undefined, 'Early preparation must not create or depend on a renderer instance');
   for (const mode of [{reduced:true}, {saveData:true}, {reduced:true, saveData:true}]) {
     const staticPage = context(mode); staticPage.run(startup); await flush();

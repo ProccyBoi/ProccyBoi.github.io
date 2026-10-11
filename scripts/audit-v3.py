@@ -219,7 +219,7 @@ def main():
     # home page. This follows the maintained source inventory, not a hard count.
     for source in sorted((ROOT / "v2").rglob("index.html")):
         relative = source.relative_to(ROOT / "v2")
-        if relative == Path("index.html") or relative.parts[0] == "render":
+        if relative == Path("index.html") or relative.parts[0] in {"render", "book"}:
             continue
         if not (SITE / relative).is_file():
             error(SITE / relative, "existing public interior is missing from v3")

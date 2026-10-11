@@ -1,0 +1,129 @@
+name: Verify v2 Skylabs and booking polish
+on:
+  push:
+    branches: [v2-skylabs-book-polish]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify routes, exact geometry and source contracts
+        run: |
+          python3 scripts/audit-v2.py
+          python3 scripts/build-v3-pages.py --check
+          python3 scripts/audit-v3.py
+          node scripts/verify-v2-hero-prefetch.cjs
+          node scripts/verify-v2-scroll-smoothing.cjs
+          node scripts/verify-v3-story-controller.cjs
+          node scripts/verify-v3-direct-transition.cjs
+          node scripts/verify-v3-film-peel.cjs
+          node scripts/verify-v3-aircraft-transport.cjs
+  browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [aircraft, startup, booking, polish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare official browser test dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+          git worktree add /tmp/v2-baseline 69b4327851e99a819dd77469fa46d0af4da44119
+      - name: Browser acceptance and real desktop/mobile pixels
+        env:
+          V2_BASE_URL: http://127.0.0.1:8080
+          V2_AIRCRAFT_OUT: /tmp/v2-evidence/aircraft
+          V2_WHEEL_OUT: /tmp/v2-evidence/wheel
+          HERO_STARTUP_OUT: /tmp/v2-evidence/startup
+          V2_BOOKING_OUT: /tmp/v2-evidence/booking
+          V2_POLISH_OUT: /tmp/v2-evidence/polish
+          V2_POLISH_BASELINE_URL: http://127.0.0.1:8081
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
+          python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-baseline >/tmp/baseline.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
+          case '${{ matrix.suite }}' in
+            aircraft) node scripts/verify-v2-aircraft.cjs ;;
+            startup) node scripts/verify-v2-hero-startup.cjs ;;
+            booking) node scripts/verify-v2-booking.cjs ;;
+            polish) node scripts/verify-v2-polish.cjs ;;
+          esac
+      - name: Save screenshots and acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-${{ matrix.suite }}-evidence
+          path: /tmp/v2-evidence/
+          retention-days: 14
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+          git worktree add /tmp/v2-baseline 69b4327851e99a819dd77469fa46d0af4da44119
+      - name: Measure baseline and final on the same runner
+        env:
+          HERO_PROFILE_GZIP: '1'
+          HERO_EXPECT_PACKS: '1'
+          HERO_PROFILE_RUNS: '3'
+        run: |
+          HERO_PROFILE_ROOT=/tmp/v2-baseline HERO_PROFILE_REVISION=69b4327851e99a819dd77469fa46d0af4da44119 HERO_PROFILE_OUT=/tmp/v2-performance/baseline.json node scripts/profile-v2-hero.cjs
+          HERO_EXPECT_PRIORITY=1 HERO_PROFILE_OUT=/tmp/v2-performance/final.json node scripts/profile-v2-hero.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-performance-evidence
+          path: /tmp/v2-performance/
+          retention-days: 14
+  webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps webkit
+      - name: Check WebKit mobile reading and booking fallbacks
+        env:
+          V2_BASE_URL: http://127.0.0.1:8080
+          V2_POLISH_OUT: /tmp/v2-webkit/polish
+          V2_BOOKING_OUT: /tmp/v2-webkit/booking
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
+          node scripts/verify-v2-polish.cjs --webkit
+          node scripts/verify-v2-booking.cjs --webkit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-webkit-evidence
+          path: /tmp/v2-webkit/
+          retention-days: 14

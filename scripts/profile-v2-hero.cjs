@@ -151,6 +151,7 @@ async function profile(browser,index){
       longTaskCount:measured.longTasks.length,
       longTaskTotalMs:round(measured.longTasks.reduce((sum,task)=>sum+task.duration,0)),
       maxLongTaskMs:round(Math.max(0,...measured.longTasks.map(task=>task.duration))),
+      totalBlockingTimeBeforeLeadCadMs:round(measured.longTasks.filter(task=>task.start<measured.leadCadMs).reduce((sum,task)=>sum+Math.max(0,Math.min(task.duration,measured.leadCadMs-task.start)-50),0)),
       totalBlockingTimeBeforeFirstCadMs:round(firstCadLongTasks.reduce((sum,task)=>sum+Math.max(0,Math.min(task.duration,measured.firstCadMs-task.start)-50),0)),
     }};
     assert.deepEqual(errors,[],'Hero must not produce uncaught JavaScript errors');
@@ -162,6 +163,13 @@ async function profile(browser,index){
       assert.ok(Object.values(measured.models).every(model=>model.factory==='V2HeroAssets'),'Measurements must use ready packs rather than silently falling back to original source parsing');
       assert.equal(measured.environment,'prepared','Measurements must use the identical prepared lighting instead of silently rebuilding it');
       assert.ok(measured.loadingAnimationMs>0&&measured.loadingAnimationMs<measured.firstCadMs,'The interactive loading animation must start before CAD is ready');
+    }
+    if(process.env.HERO_EXPECT_PRIORITY==='1') {
+      assert.equal(measured.firstModel,'tramtrace','Lead CAD renders first on untouched opening');
+      for(const name of ['telemetry','pi']) {
+        const request=modelRequests.find(record=>record.url.includes('/'+name+'.'));
+        assert.ok(request && request.startMs >= measured.firstCadMs-25, name+' transport waits for lead first render');
+      }
     }
     return result;
   }finally{await context.close();}

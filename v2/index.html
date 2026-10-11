@@ -16,17 +16,18 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/images/v2/tramtrace-cad.webp?v=product-20261007" as="image" type="image/webp" fetchpriority="high">
-  <script src="/assets/v2-hero-startup.js?v=product-20261007" async></script>
+  <script src="/assets/v2-hero-startup.js?v=priority-20261011" async></script>
   <link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-assembly.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
   <link rel="stylesheet" href="/assets/v2-gallery.css?v=product-20261007">
-  <link rel="stylesheet" href="/assets/aircraft-story.css?v=aircraft-feature-20261008">
+  <link rel="stylesheet" href="/assets/aircraft-story.css?v=v2-aircraft-20261011">
   <script src="/assets/v2.js?v=physical-20261007" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
-  <script src="/assets/v2-assembly.js?v=product-20261007" defer></script>
+  <script src="/assets/v2-assembly.js?v=priority-20261011" defer></script>
   <script src="/assets/v2-gallery.js?v=product-20261007" defer></script>
-  <script src="/assets/v3-aircraft-hero.js?v=aircraft-feature-20261008" defer></script>
+  <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
+  <script src="/assets/v3-aircraft-hero.js?v=v2-aircraft-20261011" defer></script>
 </head>
 <body class="v2 v2-home">
   <a class="v2-skip" href="#main">Skip to content</a>
@@ -34,7 +35,7 @@
     <div class="v2-nav-shell">
       <a class="v2-brand" href="/v2/">Andrew Chung</a>
       <nav class="v2-nav" id="v2-navigation" data-v2-nav aria-label="Primary navigation">
-        <a href="/v2/projects/">Projects</a><a href="/v2/about/">About</a><a class="v2-nav-contact" href="mailto:andrew.noah.chung@gmail.com">Contact <span aria-hidden="true">↗</span></a>
+        <a href="/v2/projects/">Projects</a><a href="/v2/about/">About</a><a href="/v2/book/">Book</a><a class="v2-nav-contact" href="mailto:andrew.noah.chung@gmail.com">Contact <span aria-hidden="true">↗</span></a>
       </nav>
       <button class="v2-menu" type="button" data-v2-menu aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div>
@@ -141,21 +142,20 @@
         <a class="v2-gallery-more-card" href="/v2/projects/tamagotchi-sd-card/"><div class="v2-gallery-more-photo is-board"><img data-gallery-src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Tamagotchi SD Card <span aria-hidden="true">↗</span></h3><p>An STM32, an SD-card socket and a seven-pin interface.</p></div></a>
       </div>
     </section>
-    <section class="v3-aircraft v2-aircraft-feature" data-aircraft-hero data-aircraft-deferred aria-labelledby="skylabs-title">
+    <section class="v3-aircraft v2-aircraft-feature" data-aircraft-hero data-aircraft-detailed data-aircraft-deferred data-aircraft-smooth aria-labelledby="skylabs-title">
       <div class="v3-aircraft-stage" data-aircraft-stage>
         <div class="v3-aircraft-visual" data-aircraft-visual>
           <picture data-aircraft-picture><source media="(max-width:760px)" srcset="/assets/images/v3/skylabs-stopped-mobile.webp?v=sky-20261008" data-approach="/assets/images/v3/skylabs-approach-mobile.webp?v=sky-20261008" data-stopped="/assets/images/v3/skylabs-stopped-mobile.webp?v=sky-20261008"><img data-aircraft-poster src="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" data-approach="/assets/images/v3/skylabs-approach.webp?v=sky-20261008" data-stopped="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" width="1600" height="1000" alt="The Skylabs trainer aircraft, with its wing, tail and landing gear assembled" loading="lazy" decoding="async" fetchpriority="low"></picture>
           <canvas data-aircraft-canvas aria-hidden="true"></canvas>
         </div>
         <div class="v3-aircraft-copy" data-aircraft-copy>
-          <article id="skylabs-aircraft" data-aircraft-chapter="0"><p class="v3-intro-line">UNSW Skylabs · Avionics</p><h2 id="skylabs-title">Skylabs.</h2><p>Avionics and payload systems for UNSW’s student-built aircraft.</p><a class="v3-story-next" href="#skylabs-inside">Take a closer look <span aria-hidden="true">↓</span></a></article>
-          <article id="skylabs-inside" data-aircraft-chapter="1"><h2>Under the wing.</h2><p>The telemetry board sits in the centre of the fuselage, beneath the wing.</p></article>
-          <article id="skylabs-telemetry" data-aircraft-chapter="2"><h2>Telemetry.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><div class="v2-aircraft-actions"><a class="v3-link" href="/v2/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a><a class="v3-story-next" href="#about">About me <span aria-hidden="true">↓</span></a></div><figure class="v3-aircraft-static-photo"><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low" alt="The populated Skylabs telemetry board"></figure></article>
+          <article id="skylabs-aircraft" data-aircraft-chapter="0"><p class="v3-intro-line">UNSW Skylabs · Avionics</p><h2 id="skylabs-title">Skylabs.</h2><p>Avionics and payload systems for UNSW’s student-built aircraft.</p><a class="v3-story-next" href="#skylabs-telemetry">Explore the transition <span aria-hidden="true">↓</span></a></article>
+          <article id="skylabs-telemetry" data-aircraft-chapter="1"><h2>Telemetry.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><div class="v2-aircraft-actions"><a class="v3-link" href="/v2/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a><a class="v3-story-next" href="#about">About me <span aria-hidden="true">↓</span></a></div><figure class="v3-aircraft-static-photo"><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low" alt="The populated Skylabs telemetry board"></figure></article>
         </div>
         <button class="v3-aircraft-skip" data-aircraft-skip type="button" hidden>Skip landing <span aria-hidden="true">↘</span></button>
         <div class="v3-aircraft-foot">
           <a class="v3-story-project" href="/v2/projects/skylabs/">View Skylabs <span aria-hidden="true">↗</span></a>
-          <nav class="v3-story-nav" aria-label="Explore Skylabs" data-aircraft-nav><a href="#skylabs-aircraft" data-aircraft-go="0">Aircraft</a><a href="#skylabs-inside" data-aircraft-go="1">Inside</a><a href="#skylabs-telemetry" data-aircraft-go="2">Telemetry</a></nav>
+          <nav class="v3-story-nav" aria-label="Explore Skylabs" data-aircraft-nav><a href="#skylabs-aircraft" data-aircraft-go="0">Aircraft</a><a href="#skylabs-telemetry" data-aircraft-go="1">Telemetry</a></nav>
           <a class="v3-story-skip" href="#about">About me <span aria-hidden="true">↓</span></a>
         </div>
         <div class="v3-aircraft-progress" aria-hidden="true"><span data-aircraft-progress></span></div>

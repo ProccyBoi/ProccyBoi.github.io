@@ -110,10 +110,7 @@ async function canvasHasInk(page) {
       await page.goto(base + '/v2/', { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => Number(document.querySelector('[data-assembly]')?.dataset.heroLoadingFrames) > 3, null, { timeout: 15000 });
       assert.equal(await page.evaluate(() => Boolean(window.THREE)), false, 'The interactive loading scene must appear before Three.js');
-      if (!requests.includes('/assets/models/framework-pi/framework-pi-silk-front.svg')) {
-        await page.waitForRequest(request => new URL(request.url()).pathname === '/assets/models/framework-pi/framework-pi-silk-front.svg', {timeout:15000});
-      }
-      assert.ok(requests.includes('/assets/models/framework-pi/framework-pi-silk-front.svg'), 'The original Pi silk must start while its geometry download is still blocked');
+      assert.ok(!requests.includes('/assets/models/framework-pi/framework-pi-silk-front.svg'), 'Unselected support textures wait while the lead renderer is blocked');
       earlyStartup.release();
       assert.equal(await page.locator('.v2-hero-loading').getAttribute('aria-hidden'), 'true', 'Decorative loading content must not be read as interface controls');
       assert.equal(await page.locator('.v2-hero-loading-canvas').evaluate(node => getComputedStyle(node).pointerEvents), 'none');

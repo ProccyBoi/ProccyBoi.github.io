@@ -4,6 +4,9 @@
   if (!root) return;
   const deferred = root.hasAttribute('data-aircraft-deferred');
   const detailed = root.hasAttribute('data-aircraft-detailed');
+  // Opt-in v2 wheel interpolation leaves the accepted v3 controller unchanged.
+  const scrub = root.hasAttribute('data-aircraft-smooth') && window.V2ScrollSmoothing;
+  let renderedProgress = 0, scrubTime = 0, directScrub = false;
   const stage = root.querySelector('[data-aircraft-stage]'), canvas = root.querySelector('canvas');
   const poster = root.querySelector('[data-aircraft-poster]'), skip = root.querySelector('[data-aircraft-skip]');
   const posterSources = [...root.querySelectorAll('[data-aircraft-picture] source')];
@@ -61,7 +64,7 @@
   }
   function fallback(state = 'static') {
     const restore = track && scrollY > rootTop + 200 ? Math.max(currentChapter, 0) : -1;
-    cancelAnimationFrame(frame); frame = 0; previousTime = 0; landingDone = true;
+    cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; landingDone = true;
     root.classList.remove('is-story', 'is-ready'); track?.remove(); track = null; skip.hidden = true;
     chapters.forEach((item, index) => { item.id = ids[index]; item.classList.remove('is-current'); item.removeAttribute('aria-hidden'); item.inert = false; });
     links.forEach(link => link.removeAttribute('aria-current'));
@@ -86,10 +89,11 @@
       landingEntered = bounds.top <= pinnedTop + height * .25 && bounds.bottom > pinnedTop;
     }
     if ((!deferred && Math.abs(scrollY - lastScroll) > 4) || next > .005) endLanding();
+    if (scrub && (!visible || directScrub || Math.abs(next - progress) > scrub.jump)) renderedProgress = next;
     lastScroll = scrollY; progress = next;
     const effective = flight && !flight.telemetryReady ? Math.min(progress, .61) : progress;
-    chapter(chapterAt(effective));
-    bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
+    if (!scrub) chapter(chapterAt(effective));
+    if (!scrub) bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
   }
   function layout() {
     if (!track) return;
@@ -136,14 +140,23 @@
   }
   function render(time) {
     frame = 0;
-    if (!track || !visible || !activePage || document.hidden || !allowed() || !ready) { previousTime = 0; return; }
+    if (!track || !visible || !activePage || document.hidden || !allowed() || !ready) { previousTime = 0; scrubTime = 0; return; }
     try {
       if (!landingDone && landingEntered && !capturePose) {
         if (previousTime) landingElapsed += time - previousTime;
         previousTime = time;
         if (landingElapsed >= 5400) endLanding();
       }
-      const effective = flight.telemetryReady ? progress : Math.min(progress, .61);
+      const targetProgress = flight.telemetryReady ? progress : Math.min(progress, .61);
+      if (scrub) {
+        if (!flight.telemetryReady) renderedProgress = Math.min(renderedProgress, .61);
+        renderedProgress = directScrub ? targetProgress : scrub.step(renderedProgress, targetProgress, scrubTime ? time - scrubTime : 1000 / 60);
+        scrubTime = time;
+        if (!capturePose) chapter(chapterAt(renderedProgress));
+        bar.style.transform = `scaleX(${capturePose?.type === 'progress' ? capturePose.value : renderedProgress})`;
+        root.dataset.aircraftRenderedProgress = (capturePose?.type === 'progress' ? capturePose.value : renderedProgress).toFixed(6);
+      }
+      const effective = scrub ? renderedProgress : targetProgress;
       const pose = capturePose?.type === 'landing' ? flight.setLanding(capturePose.value) : capturePose?.type === 'progress' ? flight.setProgress(capturePose.value) : !landingDone ? flight.setLanding(landingElapsed / 5400) : flight.setProgress(effective);
       const framing = flight.frame(camera, width, height); fitLight(framing.focus);
       const sky = atmosphere?.update({ landing: pose.landing, progress: pose.progress, width, height }) || 0;
@@ -160,6 +173,8 @@
       root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftFrames = String(++frameCount);
       root.dataset.aircraftAssemblyError = flight.assemblyError().toFixed(9);
       if (!landingDone && landingEntered && !capturePose) { skip.hidden = false; request(); }
+      else if (scrub && !capturePose && renderedProgress !== targetProgress) request();
+      else scrubTime = 0;
     } catch (error) { fail(error); }
   }
   function fail(error) {
@@ -252,16 +267,16 @@
     });
   });
   const interruptLanding = () => { if (landingEntered) endLanding(); };
-  root.addEventListener('wheel', interruptLanding, { passive: true });
-  root.addEventListener('touchmove', interruptLanding, { passive: true });
+  root.addEventListener('wheel', () => { directScrub = false; interruptLanding(); }, { passive: true });
+  root.addEventListener('touchmove', () => { directScrub = true; interruptLanding(); }, { passive: true });
   addEventListener('keydown', event => { if (['Escape', 'PageDown', 'ArrowDown', ' '].includes(event.key) && track && visible) interruptLanding(); });
   addEventListener('scroll', updateScroll, { passive: true }); addEventListener('resize', layout, { passive: true });
   if ('ResizeObserver' in window) new ResizeObserver(layout).observe(stage);
   if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
     visible = entries[0].isIntersecting;
-    if (visible) { updateScroll(); request(); } else { if (landingEntered) endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; }
+    if (visible) { updateScroll(); request(); } else { if (landingEntered) endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; }
   }).observe(root);
-  document.addEventListener('visibilitychange', () => { previousTime = 0; if (document.hidden) { cancelAnimationFrame(frame); frame = 0; } else request(); });
+  document.addEventListener('visibilitychange', () => { previousTime = 0; scrubTime = 0; renderedProgress = progress; if (document.hidden) { cancelAnimationFrame(frame); frame = 0; } else request(); });
   addEventListener('pagehide', () => { activePage = false; cancelAnimationFrame(frame); frame = 0; });
   addEventListener('pageshow', () => { activePage = true; previousTime = 0; updateScroll(); request(); });
   const storyLead = 420;

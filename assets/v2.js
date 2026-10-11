@@ -7,7 +7,7 @@
   const nav = document.querySelector('[data-v2-nav]');
   if (nav) {
     const links = [...nav.querySelectorAll('a')];
-    const currentLink = links.find(link => link.pathname !== '/v2/' && location.pathname.startsWith(link.pathname) && link.origin === location.origin);
+    const currentLink = links.find(link => ['http:', 'https:'].includes(link.protocol) && link.pathname !== '/v2/' && location.pathname.startsWith(link.pathname) && link.origin === location.origin);
     if (currentLink) currentLink.setAttribute('aria-current', 'page');
     let hoverLink;
     const placeIndicator = link => {
@@ -41,6 +41,8 @@
       if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') { setOpen(false); menu.focus(); }
     });
     document.addEventListener('click', event => { if (!event.target.closest('.v2-header')) setOpen(false); });
+    document.addEventListener('focusin', event => { if (!event.target.closest('.v2-header')) setOpen(false); });
+    addEventListener('pageshow', () => setOpen(false));
     matchMedia('(min-width:541px)').addEventListener('change', event => { if (event.matches) setOpen(false); });
   }
 })();
