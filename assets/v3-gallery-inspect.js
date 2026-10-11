@@ -3,21 +3,29 @@
 (() => {
   'use strict';
 
-  const root = document.querySelector('[data-gallery]');
+  const root = document.querySelector('[data-folio]') || document.querySelector('[data-gallery]');
   if (!root || root.dataset.galleryInspectReady || !window.HTMLDialogElement ||
       typeof HTMLDialogElement.prototype.showModal !== 'function') return;
 
+  const isFolio = root.hasAttribute('data-folio');
+  const selection = () => isFolio ? root.dataset.folioActive : root.dataset.galleryActive;
+  const currentView = () => isFolio ? root.dataset.folioView : root.dataset.galleryView;
+  const currentState = () => isFolio ? root.dataset.folioState : root.dataset.galleryState;
+
   function setup() {
-    if (root.dataset.galleryReady !== 'true') return false;
-    const views = root.querySelector('.v2-gallery-views');
-    const viewButtons = [...root.querySelectorAll('button[data-gallery-view]')];
+    if (root.dataset.galleryInspectReady) return true;
+    if ((isFolio ? root.dataset.folioReady : root.dataset.galleryReady) !== 'true') return false;
+    const views = root.querySelector(isFolio ? '[data-folio-views]' : '.v2-gallery-views');
+    const viewButtons = [...root.querySelectorAll(isFolio ? 'button[data-folio-view]' : 'button[data-gallery-view]')];
     if (!views || !viewButtons.length) return false;
     root.dataset.galleryInspectReady = 'true';
+    if (isFolio) root.dataset.folioInspectReady = 'true';
 
     const expand = document.createElement('button');
     expand.type = 'button';
     expand.className = 'v3-gallery-expand';
     expand.dataset.galleryExpand = '';
+    if (isFolio) expand.dataset.folioExpand = '';
     expand.setAttribute('aria-haspopup', 'dialog');
     expand.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><span>Expand photo</span>';
     viewButtons.at(-1).after(expand);
@@ -72,10 +80,12 @@
     let announceTimer = 0;
 
     function currentPhoto() {
-      if (root.dataset.galleryState !== 'ready') return null;
-      const article = [...root.querySelectorAll('[data-gallery-project]')]
-        .find(node => node.dataset.galleryProject === root.dataset.galleryActive);
-      const photo = root.querySelector('.v2-gallery-photo:not([hidden]):not([inert]) img.is-current:not([hidden])');
+      if (currentState() !== 'ready' || currentView() === 'copper') return null;
+      const article = [...root.querySelectorAll(isFolio ? '[data-folio-card]' : '[data-gallery-project]')]
+        .find(node => (isFolio ? node.dataset.folioCard : node.dataset.galleryProject) === selection());
+      const photo = isFolio ? article?.querySelector('[data-folio-image]')
+        : root.querySelector('.v2-gallery-photo:not([hidden]):not([inert]) img.is-current:not([hidden])');
+      if (isFolio && photo?.dataset.folioPhotoView !== currentView()) return null;
       if (!article || !photo || !photo.complete || !photo.naturalWidth) return null;
       return { article, photo };
     }
@@ -254,12 +264,13 @@
       // A native close event is queued. Finish its cleanup before a rapid reopen.
       if (unlock) end();
       const { article, photo } = current;
-      const view = root.dataset.galleryView === 'detail' ? 'detail' : 'overview';
+      const view = currentView() === 'detail' ? 'detail' : 'overview';
+      const name = isFolio ? article.dataset.name : article.dataset.galleryName;
       selected = { src: largestSource(photo), alt: photo.alt };
-      find('title').textContent = article.dataset.galleryName;
-      find('caption').textContent = article.dataset[view === 'detail' ? 'galleryDetailCaption' : 'galleryOverviewCaption'] || photo.alt;
-      dialog.setAttribute('aria-label', `${article.dataset.galleryName}: expanded ${view} photograph`);
-      dialog.dataset.project = root.dataset.galleryActive;
+      find('title').textContent = name;
+      find('caption').textContent = article.dataset[isFolio ? `${view}Caption` : view === 'detail' ? 'galleryDetailCaption' : 'galleryOverviewCaption'] || photo.alt;
+      dialog.setAttribute('aria-label', `${name}: expanded ${view} photograph`);
+      dialog.dataset.project = selection();
       dialog.dataset.view = view;
       hint.textContent = matchMedia('(pointer: coarse)').matches ? 'Pinch to zoom · Drag to pan' : 'Scroll to zoom · Drag to pan';
       opener = document.activeElement;
@@ -341,6 +352,7 @@
     dialog.addEventListener('contextmenu', () => { if (buttonTap) buttonTap.valid = false; });
 
     expand.addEventListener('click', open);
+    if (isFolio) root.addEventListener('v3:folio-inspect', open);
     activateButton(close, () => dialog.close());
     dialog.addEventListener('close', () => { if (!dialog.open) end(); });
     activateButton(retry, load);
@@ -424,7 +436,7 @@
     // Gallery mutations describe the selection; the inspector never changes it.
     new MutationObserver(reflectAvailability).observe(root, {
       subtree: true, attributes: true,
-      attributeFilter: ['data-gallery-state', 'data-gallery-active', 'data-gallery-view', 'hidden', 'inert']
+      attributeFilter: ['data-gallery-state', 'data-gallery-active', 'data-gallery-view', 'data-folio-state', 'data-folio-active', 'data-folio-view', 'hidden', 'inert']
     });
     root.addEventListener('load', reflectAvailability, true);
     root.addEventListener('error', reflectAvailability, true);
@@ -434,6 +446,6 @@
 
   if (!setup()) {
     const ready = new MutationObserver(() => { if (setup()) ready.disconnect(); });
-    ready.observe(root, { attributes: true, attributeFilter: ['data-gallery-ready'] });
+    ready.observe(root, { attributes: true, attributeFilter: ['data-gallery-ready', 'data-folio-ready'] });
   }
 })();

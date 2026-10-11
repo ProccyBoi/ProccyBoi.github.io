@@ -20,10 +20,10 @@ const primary = 'a[data-v2-project][href^="/v3/projects/"]';
 const hero = '[data-aircraft-hero]';
 const workbench = '#copper-data[data-board-inspector]';
 const chainCounts = { l1: 45, l2: 8, l3: 30, l4: 32, status: 1 };
-const galleryProjects = [
+const folioProjects = [
   { key: 'tramtrace', slug: 'tramtrace', overview: 'tramtrace-hero', detail: 'tramtrace-controller' },
   { key: 'skylabs', slug: 'skylabs', overview: 'skylabs-telemetry-hero', detail: 'skylabs-telemetry-macro' },
-  { key: 'dual-usb-c', slug: 'framework-dual-usb', overview: 'framework-dual-hero', detail: 'framework-dual-ports' }
+  { key: 'dual-usb-c', slug: 'framework-dual-usb', overview: 'framework-dual-installed', detail: 'framework-dual-ports' }
 ];
 const cadRequest = /\/assets\/(?:models\/(?:aircraft|hero)\/|vendor\/three\.min\.js|v3-aircraft-(?:scene|atmosphere)\.js)/;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -60,7 +60,7 @@ async function prepareFullPageImages(page) {
   try {
     for (const image of await page.locator('img[alt]').all()) {
       const meaningful = await image.evaluate(node => {
-        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src')) && !node.getAttribute('src') && document.body.classList.contains('v2-ready');
+        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src') || node.hasAttribute('data-folio-src')) && !node.getAttribute('src') && document.body.classList.contains('v2-ready');
         if (!node.alt.trim() || (!node.getClientRects().length && !deferred)) return false;
         // Offscreen photographs still qualify. Hidden alternate posters, modal
         // images and inactive states do not. Do not change loading attributes.
@@ -72,18 +72,18 @@ async function prepareFullPageImages(page) {
       });
       if (!meaningful) continue;
       await image.evaluate(node => {
-        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src')) && !node.getAttribute('src');
-        const target = deferred ? node.closest('[data-gallery-photo], .v2-gallery-more-photo') || node.parentElement : node;
+        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src') || node.hasAttribute('data-folio-src')) && !node.getAttribute('src');
+        const target = deferred ? node.closest('[data-folio-card], [data-gallery-photo], .v2-gallery-more-photo') || node.parentElement : node;
         target.scrollIntoView({ block: 'center', behavior: 'instant' });
       });
       const details = await image.evaluate(async node => {
-        // Scrolling triggers both native lazy loading and data-v3-src/data-gallery-src IO. Wait
+        // Scrolling triggers both native lazy loading and data-v3-src/data-folio-src/data-gallery-src IO. Wait
         // for that real load event before decoding, including src-less images.
         await new Promise((resolve, reject) => {
           if (node.complete && node.naturalWidth > 0) return resolve();
           const cleanup = () => { clearTimeout(timer); node.removeEventListener('load', success); node.removeEventListener('error', failure); };
           const success = () => { cleanup(); resolve(); };
-          const failure = () => { cleanup(); reject(new Error('Meaningful photograph failed: ' + node.alt + ' (' + (node.currentSrc || node.dataset.v3Src || node.dataset.gallerySrc || node.src) + ')')); };
+          const failure = () => { cleanup(); reject(new Error('Meaningful photograph failed: ' + node.alt + ' (' + (node.currentSrc || node.dataset.v3Src || node.dataset.folioSrc || node.dataset.gallerySrc || node.src) + ')')); };
           const timer = setTimeout(failure, 20000);
           node.addEventListener('load', success, { once: true }); node.addEventListener('error', failure, { once: true });
         });
@@ -252,59 +252,112 @@ async function assertStopped(page, board) {
   await page.waitForTimeout(800);
   assert.equal(await board.locator('[data-frame-slider]').inputValue(), value, 'Stopped playback cannot advance later');
 }
-async function approachGallery(page) {
-  await page.locator('[data-gallery]').evaluate(node => scrollTo({ top: scrollY + node.getBoundingClientRect().top - 100, behavior: 'instant' }));
+async function approachFolio(page) {
+  await page.locator('[data-folio]').evaluate(node => scrollTo({ top: Math.max(0, scrollY + node.getBoundingClientRect().top - 80), behavior: 'instant' }));
 }
-async function gallerySettled(page, project = 'tramtrace', view = 'overview', state = 'ready') {
+async function folioSettled(page, project = 'tramtrace', view = 'overview', state = 'ready') {
   await page.waitForFunction(({ project, view, state }) => {
-    const root = document.querySelector('[data-gallery]'), image = root?.querySelector('[data-gallery-photo]:not([hidden]):not([inert]) img.is-current');
-    return root?.dataset.galleryActive === project && root.dataset.galleryView === view && root.dataset.galleryState === state &&
-      !root.querySelector('[data-gallery-stage]').hasAttribute('aria-busy') &&
-      (state === 'error' || (image?.complete && image.naturalWidth > 0)) &&
+    const root = document.querySelector('[data-folio]'), image = root?.querySelector('[data-folio-card="' + project + '"] [data-folio-image]');
+    return root?.dataset.folioReady === 'true' && root.dataset.folioActive === project && root.dataset.folioView === view && root.dataset.folioState === state &&
+      (state === 'error' || view === 'copper' || (image?.complete && image.naturalWidth > 0)) &&
       root.getAnimations({ subtree: true }).every(animation => !['running', 'pending'].includes(animation.playState));
   }, { project, view, state });
 }
-async function gallerySelect(page, key, view = 'overview') {
-  await activateKeyboard(page, page.locator('[data-gallery-select="' + key + '"]'));
-  await gallerySettled(page, key);
-  if (view === 'detail') {
-    await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
-    await gallerySettled(page, key, 'detail');
-  }
+async function folioSelect(page, key, view = 'overview') {
+  await activateKeyboard(page, page.locator('[data-folio-tab="' + key + '"]'));
+  await page.waitForFunction(key => document.querySelector('[data-folio]').dataset.folioActive === key, key);
+  if (await page.locator('[data-folio]').getAttribute('data-folio-view') !== view) await activateKeyboard(page, page.locator('button[data-folio-view="' + view + '"]'));
+  await folioSettled(page, key, view);
 }
-async function assertGalleryLinks(page, key) {
-  const project = galleryProjects.find(item => item.key === key);
-  const info = page.locator('[data-gallery-project="' + key + '"] .v2-gallery-info');
+async function assertFolioLinks(page, key) {
+  const project = folioProjects.find(item => item.key === key);
+  const panel = page.locator('[data-folio-panel="' + key + '"]');
   const target = '/v3/projects/' + project.slug + '/';
-  const primaryLink = info.locator('a[href="' + target + '"]');
+  const primaryLink = panel.locator('a[href="' + target + '"]');
   assert.equal(await primaryLink.count(), 1, 'One exact primary project link');
-  assert.match((await primaryLink.textContent()).trim(), /^Explore\s+/);
+  assert.ok((await primaryLink.textContent()).trim(), 'Case link has an accessible text label');
   assert.equal(await primaryLink.isVisible(), true);
   if (key === 'tramtrace') {
-    const copper = info.locator('a[href="/v3/projects/tramtrace/#copper-data"]');
-    assert.equal(await copper.count(), 1); assert.match(await copper.textContent(), /Copper\s*&\s*LED data/);
+    const copper = page.locator('[data-folio] a[href="/v3/projects/tramtrace/#copper-data"]');
+    assert.equal(await copper.count(), 1);
     assert.ok(tags(read('v3/projects/tramtrace/index.html'), 'section').some(tag => tag.id === 'copper-data'), 'Copper CTA resolves to the real integrated workbench');
   }
   if (key === 'skylabs') {
-    const aircraft = info.locator('a[href="#aircraft"]');
-    assert.equal(await aircraft.count(), 1); assert.match(await aircraft.textContent(), /See the aircraft/);
+    const aircraft = panel.locator('a[href="#aircraft"]');
+    assert.equal(await aircraft.count(), 1);
     assert.equal(await page.locator('#aircraft').count(), 1, 'Aircraft CTA resolves to its real story destination');
   }
 }
-async function assertGallerySelection(page, key, view = 'overview') {
-  const project = galleryProjects.find(item => item.key === key);
-  assert.equal(await page.locator('[data-gallery-select][aria-expanded="true"]').count(), 1);
-  assert.equal(await page.locator('[data-gallery-select="' + key + '"]').getAttribute('aria-expanded'), 'true');
-  assert.equal(await page.locator('[data-gallery-project="' + key + '"] .v2-gallery-info').evaluate(node => node.inert), false);
-  await assertGalleryLinks(page, key);
-  const photo = page.locator('[data-gallery-photo]:not([hidden]):not([inert])');
-  assert.equal(await photo.count(), 1);
-  assert.equal(await page.locator('[data-gallery-photo]:not([hidden])').count(), 1, 'Settled gallery shows one unobstructed photograph');
-  const image = photo.locator('img.is-current');
-  assert.ok((await image.getAttribute('src')).includes(project[view]));
-  assert.equal(await image.evaluate(node => node.complete && node.naturalWidth > 0 && node.alt.trim().length > 0), true);
-  assert.equal(await page.locator('button[data-gallery-view="' + view + '"]').getAttribute('aria-pressed'), 'true');
-  await noOverflow(page, 'Selected project gallery');
+async function assertFolioSelection(page, key, view = 'overview') {
+  const project = folioProjects.find(item => item.key === key), active = page.locator('[data-folio-card="' + key + '"]');
+  assert.equal(await page.locator('[data-folio-select][aria-current="true"]').count(), 1);
+  assert.equal(await active.getAttribute('data-offset'), '0');
+  assert.equal(await page.locator('[data-folio-tab="' + key + '"]').getAttribute('aria-selected'), 'true');
+  assert.equal(await page.locator('[data-folio-tab][tabindex="0"]').count(), 1);
+  assert.equal(await page.locator('[data-folio-panel]:not([hidden])').count(), 1, 'Only selected project copy is exposed');
+  assert.equal(await page.locator('[data-folio-panel="' + key + '"]').evaluate(node => node.inert), false);
+  await assertFolioLinks(page, key);
+  if (view !== 'copper') {
+    const image = active.locator('[data-folio-image]');
+    assert.ok((await image.getAttribute('src')).includes(project[view]), 'The selected supplied photo matches the requested project and view');
+    assert.equal(await image.evaluate(node => node.complete && node.naturalWidth > 0 && node.alt.trim().length > 0), true);
+    assert.equal(await page.locator('[data-folio-deck]').evaluate(node => node.inert), false);
+  } else {
+    assert.equal(await page.locator('[data-folio-copper]').isVisible(), true);
+    assert.equal(await page.locator('[data-folio-deck]').evaluate(node => node.inert), true);
+  }
+  assert.equal(await page.locator('button[data-folio-view="' + view + '"]').getAttribute('aria-pressed'), 'true');
+  await noOverflow(page, 'Selected project folio');
+}
+async function clickExposedCard(page, key) {
+  const button = page.locator('[data-folio-select="' + key + '"]');
+  await button.scrollIntoViewIfNeeded();
+  const point = await button.evaluate(node => {
+    const box = node.getBoundingClientRect();
+    for (const y of [.1, .25, .5, .75, .9]) for (const x of [.02, .08, .25, .5, .75, .92, .98]) {
+      const point = { x: box.x + box.width * x, y: box.y + box.height * y };
+      if (point.x < 0 || point.x >= innerWidth || point.y < 0 || point.y >= innerHeight) continue;
+      if (node.contains(document.elementFromPoint(point.x, point.y))) return point;
+    }
+    return null;
+  });
+  assert.ok(point, key + ' has a genuinely exposed clickable card region');
+  await page.mouse.click(point.x, point.y);
+}
+async function pointerDrag(page, locator, dx, dy = 0) {
+  await locator.scrollIntoViewIfNeeded();
+  const bounds = await locator.boundingBox(), x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2;
+  await page.mouse.move(x, y); await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 8 }); await page.mouse.up();
+}
+async function touchDrag(context, page, locator, dx, dy = 0, cancel = false) {
+  await locator.scrollIntoViewIfNeeded();
+  const bounds = await locator.boundingBox(), x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2;
+  const client = await context.newCDPSession(page);
+  try {
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+    for (let step = 1; step <= 8; step++) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * step / 8, y: y + dy * step / 8, id: 1 }] });
+    await client.send('Input.dispatchTouchEvent', { type: cancel ? 'touchCancel' : 'touchEnd', touchPoints: [] });
+  } finally { await client.detach(); }
+}
+async function openComparison(page) {
+  await visit(page, '/v3/?qa=copper&project=tramtrace&view=copper#work');
+  await approachFolio(page); await folioSettled(page, 'tramtrace', 'copper');
+  const comparison = page.locator('[data-folio-copper]');
+  await comparison.locator('[data-copper-range]').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => document.querySelector('[data-folio-copper]').dataset.copperState === 'ready');
+  return comparison;
+}
+async function copperValue(comparison, expected) {
+  assert.equal(await comparison.getAttribute('data-copper-value'), String(expected));
+  assert.equal(await comparison.locator('[data-copper-range]').inputValue(), String(expected));
+  assert.equal(await comparison.locator('[data-copper-range]').getAttribute('aria-valuetext'), `${expected}% copper revealed`);
+  assert.equal((await comparison.locator('[data-copper-readout]').textContent()).trim(), `${expected}%`);
+  assert.equal(await comparison.evaluate(node => getComputedStyle(node).getPropertyValue('--reveal').trim()), `${expected}%`);
+}
+async function rangeViaKeyboard(page, range, value) {
+  await range.focus(); await page.keyboard.press(value <= 50 ? 'Home' : 'End');
+  for (let count = 0; count < (value <= 50 ? value : 100 - value); count++) await page.keyboard.press(value <= 50 ? 'ArrowRight' : 'ArrowLeft');
 }
 async function staticTests() {
   await test('15 public projects and 23 preserved interiors', () => {
@@ -338,25 +391,47 @@ async function staticTests() {
     }
     return { routes: [...paths].sort() };
   });
-  await test('Landing preview restores actual v2 gallery without assignment showcase', () => {
+  await test('Photo folio opening uses genuine sources without the rejected gallery', () => {
     const home = read('v3/index.html'), styles = tags(home, 'link').filter(tag => tag.rel === 'stylesheet').map(tag => tag.href.split('?')[0]);
-    assert.ok(styles.includes('/assets/v2.css')); assert.ok(styles.includes('/assets/v2-gallery.css'));
-    assert.ok(styles.includes('/assets/v3-landing.css')); assert.equal(styles.includes('/assets/v3.css'), false, 'Warm interior theme does not override the landing preview');
-    assert.equal(/class="[^"]*\b(?:v3-system|v3-tools|v3-evidence-note|v3-signal-path)\b|id="skylabs-system"/.test(home), false, 'Remove assignment/showcase sections from the landing');
+    const scripts = tags(home, 'script').filter(tag => tag.src).map(tag => tag.src.split('?')[0]);
+    assert.equal(styles.at(-1), '/assets/v3-folio.css');
+    assert.equal(styles.includes('/assets/v3.css'), false, 'Warm interior theme does not override the landing');
+    assert.equal(styles.includes('/assets/v2.css'), false, 'The new landing owns its base and typography');
+    assert.equal(styles.includes('/assets/v2-gallery.css'), false, 'The rejected gallery presentation is not reloaded');
+    assert.equal(scripts.includes('/assets/v2-gallery.js'), false);
+    assert.ok(scripts.includes('/assets/v3-folio.js'));
+    assert.equal(/class="[^"]*\b(?:v3-system|v3-tools|v3-evidence-note|v3-signal-path)\b|id="skylabs-system"/.test(home), false);
     const nav = home.match(/<nav\b[^>]*data-v2-nav[^>]*>([\s\S]*?)<\/nav>/)?.[1];
-    assert.ok(nav); assert.equal(/>\s*Tools\b|href="[^\"]*#tools"/i.test(nav), false);
-    const articles = tags(home, 'article').filter(tag => 'data-gallery-project' in tag);
-    assert.deepEqual(articles.map(tag => tag['data-gallery-project']), galleryProjects.map(item => item.key));
-    assert.deepEqual(articles.map(tag => tag['data-gallery-detail']), galleryProjects.map(item => item.detail));
-    for (const project of galleryProjects) {
-      assert.ok(tags(home, 'img').some(tag => tag['data-gallery-src']?.includes(project.overview)), project.key + ' genuine overview retained');
-      for (const size of [960, 1920]) assert.ok(fs.existsSync(path.join(root, 'assets/images/projects/' + project.detail + '-' + size + '.webp')));
+    assert.ok(nav); assert.equal(/>\s*Tools\b|href="[^"]*#tools"/i.test(nav), false);
+    const cards = tags(home, 'article').filter(tag => 'data-folio-card' in tag);
+    assert.deepEqual(cards.map(tag => tag['data-folio-card']), folioProjects.map(item => item.key));
+    for (const project of folioProjects) {
+      assert.ok(home.includes(project.overview), project.key + ' genuine overview retained');
+      assert.ok(home.includes(project.detail), project.key + ' genuine detail source declared');
+      for (const photo of [project.overview, project.detail]) for (const size of [960, 1920]) assert.ok(fs.existsSync(path.join(root, 'assets/images/projects/' + photo + '-' + size + '.webp')));
     }
-    assert.ok(tags(home, 'script').some(tag => tag.src?.split('?')[0] === '/assets/v2-gallery.js'), 'Use the actual v2 gallery controller');
-    for (const className of ['v2-about-preview', 'v2-contact']) assert.ok(home.includes(className));
+    assert.ok(home.indexOf('data-folio') < home.indexOf('data-aircraft-hero'), 'The photo folio precedes the preserved aircraft sequence');
+    const heading = home.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    assert.match(heading, /Andrew\s+Chung/);
+    assert.ok(!/<article\b[^>]*data-aircraft-chapter="0"[^>]*>[\s\S]*?<h1/.test(home), 'Aircraft story has a subordinate heading');
     const footer = home.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] || '';
-    for (const target of ['/shared/', '/book/', '/assets/documents/Andrew_Chung_Public_CV.pdf']) assert.ok(tags(footer, 'a').some(tag => tag.href === target), target + ' remains available in footer');
-    return { galleryProjects: galleryProjects.map(item => item.key), sharedGallery: true, previewOnly: true };
+    for (const target of ['/shared/', '/book/', '/assets/documents/Andrew_Chung_Public_CV.pdf']) assert.ok(tags(footer, 'a').some(tag => tag.href === target));
+    return { folioProjects: folioProjects.map(item => item.key), photoOpening: true, previewOnly: true };
+  });
+  await test('Copper comparison uses one registered source SVG family', () => {
+    const home = read('v3/index.html'), sources = tags(home, 'image').filter(tag => 'data-copper-source' in tag);
+    const expected = ['copper', 'mask', 'silk'].map(layer => '/assets/images/interactive/tramtrace/tramtrace-front-' + layer + '.svg');
+    assert.equal(sources.length, 4);
+    assert.deepEqual([...new Set(sources.map(item => item.href))].sort(), expected.sort());
+    for (const source of sources) {
+      for (const [attr, value] of Object.entries({ x: '0', y: '0', width: '223.7486', height: '111.1758', preserveAspectRatio: 'xMidYMid meet' })) assert.equal(source[attr], value, 'Source layers have exactly the same drawing frame');
+      assert.equal(source.transform, undefined);
+      const svg = tags(read(source.href.slice(1)), 'svg')[0];
+      assert.deepEqual(svg.viewBox.split(/\s+/).map(Number), [0, 0, 223.7486, 111.1758]);
+    }
+    const slider = tags(home, 'input').find(tag => 'data-copper-range' in tag);
+    assert.deepEqual([slider.type, slider.min, slider.max, slider.step, slider.value], ['range', '0', '100', '1', '50']);
+    return { frame: [0, 0, 223.7486, 111.1758], sources: expected, coordinatesUnchanged: true };
   });
   await test('TramTrace in-page workbench uses production electrical data', () => {
     const html = read('v3/projects/tramtrace/index.html'), data = tramTraceSourceData();
@@ -397,6 +472,7 @@ async function staticTests() {
 async function browserTests() {
   await browserTest('desktop navigation and meaningful first screen', {}, async ({ page }) => {
     await visit(page);
+    await folioSettled(page);
     const initialHomePerformance = await performanceData(page);
     assert.equal(await page.locator('h1').isVisible(), true);
     assert.match(await page.locator('main').textContent(), /Andrew Chung|electrical engineering/i);
@@ -414,120 +490,218 @@ async function browserTests() {
     await screenshot(page, 'desktop-collection');
     return { performance: { initialHome: initialHomePerformance, afterFullPageViewing: inspectedHomePerformance } };
   });
-  await browserTest('landing uses actual v2 dark palette and Archivo typography', {}, async ({ page }) => {
-    await visit(page);
-    const theme = await page.evaluate(() => {
-      const body = getComputedStyle(document.body), heading = getComputedStyle(document.querySelector('h1'));
-      return { background: body.backgroundColor, color: body.color, font: body.fontFamily, headingFont: heading.fontFamily,
-        tokens: Object.fromEntries(['--v2-bg', '--v2-ink', '--v2-muted', '--v2-line', '--v2-accent', '--v2-mono'].map(name => [name, body.getPropertyValue(name).trim()])) };
+  await browserTest('folio first screen has readable identity and real selectable work', {}, async ({ page }) => {
+    await visit(page); await folioSettled(page);
+    const appearance = await page.evaluate(() => {
+      const body = getComputedStyle(document.body), title = document.querySelector('h1'), rect = title.getBoundingClientRect();
+      const image = document.querySelector('[data-folio-card="tramtrace"] [data-folio-image]'), photo = image.getBoundingClientRect();
+      return { background: body.backgroundColor, color: body.color, font: body.fontFamily, title: title.textContent.replace(/\s+/g, ' ').trim(), titleBounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, photoBounds: { x: photo.x, y: photo.y, width: photo.width, height: photo.height }, viewport: { width: innerWidth, height: innerHeight } };
     });
-    assert.equal(theme.background, 'rgb(20, 20, 18)'); assert.equal(theme.color, 'rgb(236, 235, 227)');
-    assert.match(theme.font, /^Archivo(?:,|$)/); assert.match(theme.headingFont, /^Archivo(?:,|$)/);
-    for (const [token, value] of Object.entries({ '--v2-bg': '#141412', '--v2-ink': '#ecebe3', '--v2-muted': '#aaa99f', '--v2-line': '#393a34', '--v2-accent': '#fa7148' })) assert.equal(theme.tokens[token].toLowerCase(), value);
-    assert.match(theme.tokens['--v2-mono'], /IBM Plex Mono/);
-    assert.equal(await page.locator('.v3-system,.v3-tools,.v3-evidence-note,.v3-signal-path').count(), 0);
+    const luminance = color => {
+      const values = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => { const channel = value / 255; return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4; });
+      return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
+    };
+    const background = luminance(appearance.background), foreground = luminance(appearance.color);
+    assert.ok(background < .1, 'The opening uses a dark readable base');
+    assert.ok((Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05) >= 4.5, 'Default copy has at least 4.5:1 contrast');
+    assert.match(appearance.title, /Andrew\s+Chung/);
+    assert.ok(appearance.titleBounds.y >= 0 && appearance.titleBounds.y + appearance.titleBounds.height <= appearance.viewport.height, 'Identity is visible in the initial viewport');
+    assert.ok(appearance.photoBounds.y < appearance.viewport.height && appearance.photoBounds.y + appearance.photoBounds.height > 100, 'Real work appears alongside the introduction');
+    assert.equal(await page.locator('[data-folio-tab][role="tab"]').count(), 3);
+    for (const tab of await page.locator('[data-folio-tab]').all()) assert.ok(await tab.getAttribute('aria-controls'), 'Project tabs identify their panels');
     assert.equal(await page.locator('[data-v2-nav] a').filter({ hasText: /^Tools$/ }).count(), 0);
-    return theme;
+    return appearance;
   });
-  await browserTest('restored gallery real macros keyboard repeated selection and URL state', {}, async ({ page }) => {
-    await visit(page, '/v3/?qa=landing#work'); await approachGallery(page); await gallerySettled(page);
-    const historyLength = await page.evaluate(() => history.length);
-    for (const project of galleryProjects) {
-      await gallerySelect(page, project.key); await assertGallerySelection(page, project.key);
-      if (project.key === 'tramtrace') await screenshot(page, 'desktop-gallery-overview');
-      await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
-      await gallerySettled(page, project.key, 'detail'); await assertGallerySelection(page, project.key, 'detail');
-      await screenshot(page, 'desktop-gallery-' + project.key + '-detail');
-      const url = new URL(page.url()); assert.equal(url.searchParams.get('qa'), 'landing'); assert.equal(url.hash, '#work');
+  await browserTest('folio real photographs keyboard repeated selection and URL state', {}, async ({ page }) => {
+    await visit(page, '/v3/?qa=folio#work'); await approachFolio(page); await folioSettled(page);
+    for (const project of folioProjects) {
+      await folioSelect(page, project.key); await assertFolioSelection(page, project.key);
+      await screenshot(page, 'desktop-folio-' + project.key);
+      await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
+      await folioSettled(page, project.key, 'detail'); await assertFolioSelection(page, project.key, 'detail');
+      await screenshot(page, 'desktop-folio-' + project.key + '-detail');
+      const url = new URL(page.url()); assert.equal(url.searchParams.get('qa'), 'folio'); assert.equal(url.hash, '#work');
       assert.equal(url.searchParams.get('project'), project.key); assert.equal(url.searchParams.get('view'), 'detail');
-      assert.equal(await page.evaluate(() => history.length), historyLength, 'Photo selection replaces rather than spams history');
-      await gallerySelect(page, project.key); await gallerySelect(page, project.key); await assertGallerySelection(page, project.key);
+      await folioSelect(page, project.key); const historyLength = await page.evaluate(() => history.length);
+      await folioSelect(page, project.key); await assertFolioSelection(page, project.key);
+      assert.equal(await page.evaluate(() => history.length), historyLength, 'Repeated current selection cannot add redundant history');
     }
-    await page.locator('[data-gallery-select="tramtrace"]').focus(); await page.keyboard.press('ArrowDown');
-    assert.equal(await page.locator('[data-gallery-select="skylabs"]').evaluate(node => node === document.activeElement), true);
-    await page.keyboard.press('Enter'); await gallerySettled(page, 'skylabs');
-    await page.keyboard.press('End'); assert.equal(await page.locator('[data-gallery-select="dual-usb-c"]').evaluate(node => node === document.activeElement), true);
-    await page.keyboard.press('Home'); assert.equal(await page.locator('[data-gallery-select="tramtrace"]').evaluate(node => node === document.activeElement), true);
-    return { projectCount: 3, realMacroCount: 3, keyboard: true, repeatedSelection: true };
+    await folioSelect(page, 'tramtrace'); await page.locator('[data-folio-tab="tramtrace"]').focus(); await page.keyboard.press('ArrowRight');
+    await folioSettled(page, 'skylabs'); assert.equal(await page.locator('[data-folio-tab="skylabs"]').evaluate(node => node === document.activeElement), true);
+    await page.keyboard.press('End'); await folioSettled(page, 'dual-usb-c');
+    await page.keyboard.press('Home'); await folioSettled(page, 'tramtrace');
+    await page.locator('[data-folio-prev]').click(); await folioSettled(page, 'dual-usb-c');
+    await page.locator('[data-folio-next]').click(); await folioSettled(page, 'tramtrace');
+    await clickExposedCard(page, 'skylabs'); await folioSettled(page, 'skylabs');
+    assert.ok((await page.locator('[data-folio-count]').textContent()).trim());
+    assert.ok((await page.locator('[data-folio-caption]').textContent()).trim());
+    assert.equal(await page.locator('[data-folio-live]').getAttribute('aria-live'), 'polite');
+    return { projectCount: 3, realMacroCount: 3, keyboard: true, repeatedSelection: true, cycling: true };
   });
-  await browserTest('restored gallery detail deep link reload Back and Forward', {}, async ({ page }) => {
-    await visit(page, '/v3/?qa=shared&project=skylabs&view=detail#work'); await approachGallery(page);
-    await gallerySettled(page, 'skylabs', 'detail'); await assertGallerySelection(page, 'skylabs', 'detail');
-    await page.reload({ waitUntil: 'load' }); await approachGallery(page); await gallerySettled(page, 'skylabs', 'detail');
-    await page.evaluate(() => history.pushState({}, '', location.href));
-    await gallerySelect(page, 'dual-usb-c'); await page.goBack(); await gallerySettled(page, 'skylabs', 'detail');
-    await assertGallerySelection(page, 'skylabs', 'detail');
-    await page.goForward(); await gallerySettled(page, 'dual-usb-c'); await assertGallerySelection(page, 'dual-usb-c');
-    assert.equal(new URL(page.url()).searchParams.get('qa'), 'shared');
+  await browserTest('folio detail deep link reload native Back and Forward', {}, async ({ page }) => {
+    await visit(page, '/v3/?qa=shared&project=skylabs&view=detail#work'); await approachFolio(page);
+    await folioSettled(page, 'skylabs', 'detail'); await assertFolioSelection(page, 'skylabs', 'detail');
+    await page.reload({ waitUntil: 'load' }); await approachFolio(page); await folioSettled(page, 'skylabs', 'detail');
+    await activateKeyboard(page, page.locator('button[data-folio-view="overview"]')); await folioSettled(page, 'skylabs');
+    await folioSelect(page, 'dual-usb-c'); await page.goBack(); await folioSettled(page, 'skylabs');
+    await page.goBack(); await folioSettled(page, 'skylabs', 'detail'); await assertFolioSelection(page, 'skylabs', 'detail');
+    await page.goForward(); await folioSettled(page, 'skylabs');
+    await page.goForward(); await folioSettled(page, 'dual-usb-c'); await assertFolioSelection(page, 'dual-usb-c');
+    assert.equal(new URL(page.url()).searchParams.get('qa'), 'shared'); assert.equal(new URL(page.url()).hash, '#work');
   });
-  await browserTest('restored gallery narrow detail view and Save Data', { touch: true, saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, requests }) => {
-    await visit(page); await approachGallery(page); await gallerySettled(page);
-    for (const project of galleryProjects) await gallerySelect(page, project.key);
+  await browserTest('folio mobile detail Save Data and short viewport controls', { touch: true, saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, requests }) => {
+    await visit(page); await approachFolio(page); await folioSettled(page);
+    for (const project of folioProjects) await folioSelect(page, project.key);
     assert.equal(requests.some(url => /tramtrace-controller|skylabs-telemetry-macro|framework-dual-ports/.test(url)), false, 'Save Data does not prefetch unselected macros');
-    await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
-    await gallerySettled(page, 'dual-usb-c', 'detail'); await assertGallerySelection(page, 'dual-usb-c', 'detail');
-    await screenshot(page, 'mobile-gallery-detail');
+    await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
+    await folioSettled(page, 'dual-usb-c', 'detail'); await assertFolioSelection(page, 'dual-usb-c', 'detail');
+    await screenshot(page, 'mobile-folio-detail');
     assert.equal(requests.some(url => /tramtrace-controller|skylabs-telemetry-macro/.test(url)), false);
-    for (const button of await page.locator('button[data-gallery-view], [data-gallery-expand]').all()) {
+    for (const button of await page.locator('button[data-folio-view]:visible, [data-gallery-expand]:visible, [data-folio-prev], [data-folio-next]').all()) {
       const bounds = await button.boundingBox(); assert.ok(bounds.width >= 44 && bounds.height >= 44, 'Photo controls have usable touch targets');
     }
-    await page.setViewportSize({ width: 320, height: 740 }); await noOverflow(page, 'Gallery at 320px');
-    await page.setViewportSize({ width: 390, height: 600 });
-    assert.equal(await page.locator('[data-gallery-stage]').evaluate(node => getComputedStyle(node).position), 'static', 'Short viewports do not pin the gallery');
+    for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 600 }]) {
+      await page.setViewportSize(viewport); await noOverflow(page, 'Folio ' + viewport.width + '×' + viewport.height);
+      await page.locator('[data-folio-next]').scrollIntoViewIfNeeded(); assert.equal(await page.locator('[data-folio-next]').isVisible(), true);
+    }
   });
-  await browserTest('restored gallery image failure retry and missing detail recovery', { saveData: true }, async ({ page, context }) => {
-    let failOverview = true;
+  await browserTest('folio image failure retains case access and retry restores the requested photo', { saveData: true }, async ({ page, context }) => {
+    let failOverview = true, failDetail = true;
     await context.route(/\/skylabs-telemetry-hero-(?:960|1920)\.webp/, route => failOverview ? route.abort() : route.continue());
-    await context.route(/\/tramtrace-controller-(?:960|1920)\.webp/, route => route.abort());
-    await visit(page); await approachGallery(page); await gallerySettled(page);
-    await activateKeyboard(page, page.locator('[data-gallery-select="skylabs"]'));
-    await gallerySettled(page, 'skylabs', 'overview', 'error');
-    const error = page.locator('[data-gallery-error="skylabs"]'); assert.equal(await error.isVisible(), true);
-    assert.equal(await error.locator('a').getAttribute('href'), '/v3/projects/skylabs/');
-    failOverview = false; await page.locator('[data-gallery-retry="skylabs"]').click();
-    await gallerySettled(page, 'skylabs'); await assertGallerySelection(page, 'skylabs');
-    assert.equal(await page.locator('button[data-gallery-view="overview"]').evaluate(node => node === document.activeElement), true);
-    await gallerySelect(page, 'tramtrace'); await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
-    await gallerySettled(page, 'tramtrace'); await assertGallerySelection(page, 'tramtrace');
-    assert.equal(new URL(page.url()).searchParams.has('view'), false, 'Missing macro normalizes back to its genuine overview');
+    await context.route(/\/tramtrace-controller-(?:960|1920)\.webp/, route => failDetail ? route.abort() : route.continue());
+    await visit(page); await approachFolio(page); await folioSettled(page);
+    await activateKeyboard(page, page.locator('[data-folio-tab="skylabs"]'));
+    await folioSettled(page, 'skylabs', 'overview', 'error'); await assertFolioLinks(page, 'skylabs');
+    assert.equal(await page.locator('[data-folio-retry]').isVisible(), true);
+    failOverview = false; await page.locator('[data-folio-retry]').click();
+    await folioSettled(page, 'skylabs'); await assertFolioSelection(page, 'skylabs');
+    await folioSelect(page, 'tramtrace'); await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
+    await folioSettled(page, 'tramtrace', 'detail', 'error'); await assertFolioLinks(page, 'tramtrace');
+    failDetail = false; await page.locator('[data-folio-retry]').click();
+    await folioSettled(page, 'tramtrace', 'detail'); await assertFolioSelection(page, 'tramtrace', 'detail');
   });
-  for (const options of [{ name: 'no JavaScript', js: false }, { name: 'gallery controller failure', block: /\/assets\/v2-gallery\.js/ }]) {
-    await browserTest('restored gallery remains readable with ' + options.name, { ...options, viewport: { width: 390, height: 844 } }, async ({ page }) => {
+  for (const options of [{ name: 'no JavaScript', js: false }, { name: 'folio controller failure', block: /\/assets\/v3-folio\.js/ }]) {
+    await browserTest('folio remains readable with ' + options.name, { ...options, viewport: { width: 390, height: 844 } }, async ({ page }) => {
       await visit(page);
-      for (const project of galleryProjects) {
-        const article = page.locator('[data-gallery-project="' + project.key + '"]');
-        const image = article.locator(options.js === false ? 'noscript img' : '[data-gallery-original]');
-        await article.scrollIntoViewIfNeeded();
-        if (options.js !== false) await page.waitForFunction(key => {
-          const image = document.querySelector('[data-gallery-project="' + key + '"] [data-gallery-original]');
-          return image?.complete && image.naturalWidth > 0;
-        }, project.key);
-        await loaded(image); assert.equal(await article.locator('.v2-gallery-info').isVisible(), true);
-        await assertGalleryLinks(page, project.key);
+      for (const project of folioProjects) {
+        const article = page.locator('[data-folio-card="' + project.key + '"]');
+        const image = article.locator('[data-folio-image]');
+        await article.scrollIntoViewIfNeeded(); await loaded(image);
+        assert.equal(await page.locator('[data-folio-panel="' + project.key + '"]').isVisible(), true);
+        await assertFolioLinks(page, project.key);
       }
-      await noOverflow(page, options.name + ' gallery');
+      assert.equal(await page.locator('[data-folio-tab]:visible').count(), 0, 'Unenhanced page does not expose inoperative controls');
+      await noOverflow(page, options.name + ' folio');
     });
   }
-  await browserTest('gallery delayed detail cannot replace a newer project selection', { saveData: true }, async ({ page, context }) => {
+  await browserTest('folio delayed detail cannot replace a newer or reversed selection', { saveData: true, motion: 'no-preference' }, async ({ page, context }) => {
     let release;
     const delayed = new Promise(resolve => { release = resolve; });
     await context.route(/\/framework-dual-ports-(?:960|1920)\.webp/, async route => { await delayed; await route.continue(); });
     try {
-      await visit(page); await approachGallery(page); await gallerySettled(page); await gallerySelect(page, 'dual-usb-c');
-      await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
-      await page.waitForFunction(() => document.querySelector('[data-gallery-stage]').getAttribute('aria-busy') === 'true');
-      await gallerySelect(page, 'tramtrace'); release();
-      await page.waitForLoadState('networkidle'); await gallerySettled(page, 'tramtrace'); await assertGallerySelection(page, 'tramtrace');
+      await visit(page); await approachFolio(page); await folioSettled(page); await folioSelect(page, 'dual-usb-c');
+      await activateKeyboard(page, page.locator('button[data-folio-view="detail"]'));
+      await page.waitForFunction(() => document.querySelector('[data-folio]').dataset.folioState === 'loading');
+      for (const key of ['skylabs', 'tramtrace', 'skylabs', 'tramtrace']) await activateKeyboard(page, page.locator('[data-folio-tab="' + key + '"]'));
+      release(); await page.waitForLoadState('networkidle'); await folioSettled(page, 'tramtrace'); await assertFolioSelection(page, 'tramtrace');
       assert.equal(new URL(page.url()).searchParams.get('project'), 'tramtrace');
     } finally { release(); }
   });
+  await browserTest('folio pointer dragging selects and reverses without accidental small-drag changes', { motion: 'no-preference' }, async ({ page }) => {
+    await visit(page); await approachFolio(page); await folioSettled(page);
+    const activeImage = () => page.locator('[data-folio-card][data-offset="0"] [data-folio-image]');
+    await pointerDrag(page, activeImage(), -120); await folioSettled(page, 'skylabs');
+    await pointerDrag(page, activeImage(), 120); await folioSettled(page, 'tramtrace');
+    await pointerDrag(page, activeImage(), -20); await folioSettled(page, 'tramtrace');
+    await assertFolioSelection(page, 'tramtrace');
+  });
+  await browserTest('folio native touch swipe reversal cancellation and vertical page scroll', { touch: true, motion: 'no-preference', viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
+    await visit(page); await approachFolio(page); await folioSettled(page);
+    const activeImage = () => page.locator('[data-folio-card][data-offset="0"] [data-folio-image]');
+    await touchDrag(context, page, activeImage(), -100); await folioSettled(page, 'skylabs');
+    await touchDrag(context, page, activeImage(), 100); await folioSettled(page, 'tramtrace');
+    await touchDrag(context, page, activeImage(), -100, 0, true); await folioSettled(page, 'tramtrace');
+    await activeImage().scrollIntoViewIfNeeded(); const before = await page.evaluate(() => scrollY);
+    await touchDrag(context, page, activeImage(), 3, -170);
+    await page.waitForFunction(before => scrollY > before + 40, before);
+    assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-active'), 'tramtrace', 'Vertical touch scroll cannot change project');
+    await noOverflow(page, 'Native touch folio');
+    return { swipe: true, reverse: true, touchCancel: true, verticalPageScroll: true };
+  });
+  await browserTest('optional folio text animation failure cannot hide selection', { motion: 'no-preference', block: /\/assets\/vendor\/anime\.esm\.min\.js/ }, async ({ page }) => {
+    await visit(page); await approachFolio(page); await folioSettled(page);
+    for (const key of ['skylabs', 'dual-usb-c', 'tramtrace']) { await folioSelect(page, key); await assertFolioSelection(page, key); }
+    assert.equal(await page.locator('[data-folio-panel="tramtrace"]').evaluate(node => Number(getComputedStyle(node).opacity)), 1, 'Fallback text is fully readable');
+  });
+  await browserTest('registered copper keyboard endpoints and 15 50 85 comparisons', {}, async ({ page }) => {
+    const comparison = await openComparison(page), range = comparison.locator('[data-copper-range]');
+    await assertFolioSelection(page, 'tramtrace', 'copper'); await copperValue(comparison, 50);
+    assert.equal(await page.locator('[data-gallery-expand]').isDisabled(), true, 'Artwork comparison cannot masquerade as the selected photograph');
+    const layers = await comparison.locator('[data-copper-side] svg').evaluateAll(nodes => nodes.map(node => {
+      const b = node.getBoundingClientRect(); return { viewBox: node.getAttribute('viewBox'), x: b.x, y: b.y, width: b.width, height: b.height, transform: getComputedStyle(node).transform };
+    }));
+    assert.equal(layers.length, 2); assert.deepEqual(layers[0], layers[1], 'Both sides use the same pixel frame and transform');
+    for (const value of [0, 100, 15, 50, 85]) {
+      await rangeViaKeyboard(page, range, value); await copperValue(comparison, value);
+      assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-active'), 'tramtrace', 'Range keys never navigate the parent folio');
+      if ([15, 50, 85].includes(value)) { await comparison.scrollIntoViewIfNeeded(); await screenshot(page, 'desktop-copper-' + value); }
+    }
+    await comparison.locator('[data-copper-reset]').click(); await copperValue(comparison, 50);
+    await page.locator('button[data-folio-view="overview"]').click(); await folioSettled(page, 'tramtrace');
+    await page.goBack(); await folioSettled(page, 'tramtrace', 'copper');
+    await folioSelect(page, 'skylabs'); assert.equal(await page.locator('button[data-folio-view="copper"]').isVisible(), false);
+    assert.equal(await comparison.isVisible(), false);
+    await visit(page, '/v3/?project=skylabs&view=copper&qa=invalid#work'); await folioSettled(page, 'skylabs');
+    await assertFolioSelection(page, 'skylabs');
+    return { registeredFrame: layers[0], values: [0, 15, 50, 85, 100], keyboardAndHistory: true };
+  });
+  await browserTest('registered copper pointer and native touch preserve parent selection', { touch: true, noWebGL: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
+    const comparison = await openComparison(page), stage = comparison.locator('[data-copper-reveal]'), range = comparison.locator('[data-copper-range]');
+    await pointerDrag(page, stage, -60); const pointerValue = Number(await range.inputValue()); assert.ok(pointerValue < 50);
+    await comparison.locator('[data-copper-reset]').click(); await copperValue(comparison, 50);
+    await touchDrag(context, page, stage, 80); const touchValue = Number(await range.inputValue()); assert.ok(touchValue > 50);
+    assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-active'), 'tramtrace');
+    assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-view'), 'copper');
+    for (const value of [15, 50, 85]) { await rangeViaKeyboard(page, range, value); await copperValue(comparison, value); await comparison.scrollIntoViewIfNeeded(); await screenshot(page, 'mobile-copper-' + value); }
+    await page.setViewportSize({ width: 320, height: 740 }); await noOverflow(page, 'Registered copper at 320px');
+    await range.focus(); await page.keyboard.press('Home'); await copperValue(comparison, 0);
+    await page.keyboard.press('End'); await copperValue(comparison, 100);
+    assert.equal(await page.evaluate(() => document.createElement('canvas').getContext('webgl')), null);
+    return { pointerValue, touchValue, webglIndependent: true, narrowWidth: 320 };
+  });
+  await browserTest('registered copper asset failure exposes retry and real case access', {}, async ({ page, context }) => {
+    let fail = true;
+    await context.route(/\/tramtrace-front-mask\.svg/, route => fail ? route.abort() : route.continue());
+    await visit(page, '/v3/?project=tramtrace&view=copper#work'); await approachFolio(page); await folioSettled(page, 'tramtrace', 'copper');
+    const comparison = page.locator('[data-folio-copper]');
+    await page.waitForFunction(() => document.querySelector('[data-folio-copper]').dataset.copperState === 'error');
+    assert.equal(await comparison.locator('[data-copper-error]').isVisible(), true);
+    assert.equal(await comparison.locator('[data-copper-range]').isDisabled(), true);
+    assert.equal(await comparison.locator('a[href="/v3/projects/tramtrace/#copper-data"]').isVisible(), true);
+    fail = false; await comparison.locator('[data-copper-retry]').click();
+    await page.waitForFunction(() => document.querySelector('[data-folio-copper]').dataset.copperState === 'ready');
+    await rangeViaKeyboard(page, comparison.locator('[data-copper-range]'), 85); await copperValue(comparison, 85);
+    await noOverflow(page, 'Recovered registered comparison');
+  });
+  for (const options of [{ name: 'no JavaScript', js: false }, { name: 'comparison controller unavailable', block: /\/assets\/v3-copper-reveal\.js/ }]) {
+    await browserTest('registered artwork remains available with ' + options.name, { ...options, viewport: { width: 390, height: 844 } }, async ({ page }) => {
+      await visit(page, '/v3/?project=tramtrace&view=copper#work');
+      const comparison = page.locator('[data-folio-copper]'); await comparison.scrollIntoViewIfNeeded();
+      assert.equal(await comparison.isVisible(), true);
+      assert.equal(await comparison.locator('[data-copper-side="copper"] svg').isVisible(), true);
+      assert.equal(await comparison.locator('[data-copper-side="board"] svg').isVisible(), true);
+      assert.equal(await comparison.locator('[data-copper-range]').isVisible(), false, 'Nonfunctional controls remain hidden');
+      assert.equal(await comparison.locator('a[href="/v3/projects/tramtrace/#copper-data"]').isVisible(), true);
+      await noOverflow(page, 'Artwork fallback: ' + options.name);
+    });
+  }
   await browserTest('expanded hardware photo zoom pan keyboard close and repeat', {}, async ({ page }) => {
-    await visit(page); await approachGallery(page); await gallerySettled(page);
-    await gallerySelect(page, 'skylabs', 'detail');
+    await visit(page); await approachFolio(page); await folioSettled(page);
+    await folioSelect(page, 'skylabs', 'detail');
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await opener.scrollIntoViewIfNeeded(); await opener.focus();
     const before = { url: page.url(), scrollY: await page.evaluate(() => scrollY) };
-    const expectedSource = await page.locator('[data-gallery-photo]:not([hidden]):not([inert]) img.is-current').evaluate(image => {
+    const expectedSource = await page.locator('[data-folio-card][data-offset="0"] [data-folio-image]').evaluate(image => {
       const candidates = image.srcset.split(',').map(value => { const [url, size] = value.trim().split(/\s+/); return { url: new URL(url, location.href).href, size: parseInt(size) || 0 }; }).sort((a, b) => b.size - a.size);
       return candidates[0]?.url || image.currentSrc || image.src;
     });
@@ -558,13 +732,13 @@ async function browserTests() {
     await page.keyboard.press('Enter'); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     assert.equal(Number(await dialog.getAttribute('data-zoom')), 1, 'Reopening starts fitted rather than carrying stale pan/zoom');
     await dialog.locator('[data-inspect-close]').click(); await dialog.waitFor({ state: 'hidden' });
-    await gallerySelect(page, 'dual-usb-c'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
-    assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /framework-dual-hero/);
+    await folioSelect(page, 'dual-usb-c'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /framework-dual-installed/);
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
     return { suppliedLargestPhoto: true, boundedZoom: [1, 3], keyboardAndPointerPan: true, focusAndScrollRestored: true };
   });
   await browserTest('expanded hardware photo mobile pinch pan and dismissal', { touch: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
-    await visit(page); await approachGallery(page); await gallerySettled(page); await gallerySelect(page, 'tramtrace', 'detail');
+    await visit(page); await approachFolio(page); await folioSettled(page); await folioSelect(page, 'tramtrace', 'detail');
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await page.evaluate(() => {
       const log = window.__v3InputDiagnostics = { phase: 'fresh-mobile-open', events: [], checkpoints: [] };
@@ -619,11 +793,11 @@ async function browserTests() {
     await dialog.locator('[data-inspect-close]').tap(); await checkpoint('post-gesture-tap-dispatched');
     await dialog.waitFor({ state: 'hidden' });
     assert.equal(await opener.evaluate(node => node === document.activeElement), true);
-    await assertGallerySelection(page, 'tramtrace', 'detail');
+    await assertFolioSelection(page, 'tramtrace', 'detail');
     return { viewport: { width: 390, height: 844 }, freshMobileClose: true, touchPinch: true, touchPan: true, postGestureControlTaps: true, inputDiagnostics: await page.evaluate(() => window.__v3InputDiagnostics) };
   });
   await browserTest('expanded photo Close ignores touch-down drag cancellation and multitouch', { touch: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
-    await visit(page); await approachGallery(page); await gallerySettled(page);
+    await visit(page); await approachFolio(page); await folioSettled(page);
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await opener.tap(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     await page.evaluate(() => {
@@ -668,7 +842,7 @@ async function browserTests() {
   await browserTest('expanded photo resource failure retry and selected-source recovery', { saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
     let fail = true;
     await context.route(/\/tramtrace-controller-1920\.webp/, route => fail ? route.abort() : route.continue());
-    await visit(page); await approachGallery(page); await gallerySettled(page); await gallerySelect(page, 'tramtrace', 'detail');
+    await visit(page); await approachFolio(page); await folioSettled(page); await folioSelect(page, 'tramtrace', 'detail');
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
     await opener.click(); await page.locator('[data-gallery-inspect][data-state="error"]').waitFor();
     assert.equal(await dialog.locator('[data-inspect-retry]').isVisible(), true);
@@ -678,10 +852,10 @@ async function browserTests() {
     await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     assert.equal(await dialog.locator('[data-inspect-image]').evaluate(image => image.naturalWidth >= 1920), true);
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
-    await gallerySelect(page, 'skylabs'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    await folioSelect(page, 'skylabs'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
     assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /skylabs-telemetry-hero/);
     await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
-    await assertGallerySelection(page, 'skylabs');
+    await assertFolioSelection(page, 'skylabs');
   });
   await browserTest('collection query categories empty reset and history', {}, async ({ page }) => {
     await visit(page, '/v3/projects/?qa=portfolio&q=Framework&category=hardware');
@@ -959,7 +1133,8 @@ async function browserTests() {
       assert.equal(await page.locator('[data-aircraft-canvas]').isVisible(), true);
       if (chapter === 0) {
         assert.equal(await page.locator(hero).getAttribute('data-aircraft-assembly-error'), '0.000000000');
-        assert.match(await page.locator('[data-aircraft-copy] article[data-aircraft-chapter="0"] h1').textContent(), /Andrew Chung/);
+        assert.ok((await page.locator('[data-aircraft-copy] article[data-aircraft-chapter="0"] h2').textContent()).trim(), 'Aircraft has its own subordinate heading');
+        assert.match(await page.locator('[data-aircraft-copy] article[data-aircraft-chapter="0"]').textContent(), /Skylabs/);
       }
       await screenshot(page, 'mobile-aircraft-' + name);
       mobileStates.push({ viewport: { width: 390, height: 844 }, destination: name, state: await page.locator(hero).evaluate(node => ({ ...node.dataset })) });
@@ -973,6 +1148,7 @@ async function browserTests() {
     for (const viewport of sizes) for (const route of routes) {
       await page.setViewportSize(viewport); await visit(page, route);
       await noOverflow(page, route + ' ' + viewport.width + 'x' + viewport.height);
+      if (route === '/v3/') await folioSettled(page);
       if (viewport.width === 390) {
         await screenshot(page, 'mobile-' + (route === '/v3/' ? 'home' : route.replace(/^\/v3\/|\/$/g, '').replaceAll('/', '-')));
         if (route === '/v3/') await screenshot(page, 'mobile-home-full', true);
@@ -995,7 +1171,9 @@ async function browserTests() {
   await staticTests();
   if (!staticOnly) {
     try {
-      const playwright = require('playwright');
+      let playwright;
+      try { playwright = require('playwright'); }
+      catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; playwright = require('/opt/codex/cua_node/lib/node_modules/playwright'); }
       browser = await playwright.chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
       evidence.browser = { status: 'launched', version: browser.version(), executable: process.env.CHROMIUM_EXECUTABLE || 'Playwright bundled Chromium' };
       await browserTests();

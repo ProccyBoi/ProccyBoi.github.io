@@ -1,0 +1,251 @@
+/* The source export frame stays identical on both sides of this comparison. */
+[data-folio-copper] {
+  --copper-ink: #f1f3ef;
+  --copper-muted: #9fa6ad;
+  --copper-accent: var(--folio-accent, #e8ff7a);
+  --copper-ground: #0b0d0f;
+  --reveal: 50%;
+  width: 100%;
+  min-width: 0;
+  color: var(--copper-ink);
+}
+
+[data-folio-copper][hidden],
+[data-folio-copper] [hidden] { display: none !important; }
+
+.copper-reveal__labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  color: var(--copper-muted);
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: .68rem;
+  line-height: 1.5;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+[data-copper-reveal] {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  background: var(--copper-ground);
+  isolation: isolate;
+}
+
+[data-copper-side] {
+  margin: 0;
+  min-width: 0;
+  background: var(--copper-ground);
+}
+
+[data-copper-side] svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 223.7486 / 111.1758;
+  overflow: visible;
+}
+
+[data-copper-state="ready"] [data-copper-reveal] {
+  display: block;
+  aspect-ratio: 223.7486 / 111.1758;
+  touch-action: pan-y pinch-zoom;
+  cursor: ew-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-copper-state="ready"] [data-copper-side] {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+[data-copper-state="ready"] [data-copper-side="copper"] {
+  clip-path: inset(0 calc(100% - var(--reveal)) 0 0);
+}
+
+[data-copper-state="ready"] [data-copper-side="board"] {
+  clip-path: inset(0 0 0 var(--reveal));
+}
+
+.copper-reveal__divider {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  left: var(--reveal);
+  width: 1px;
+  background: rgb(241 243 239 / .72);
+  pointer-events: none;
+}
+
+[data-copper-state="ready"] .copper-reveal__divider { display: block; }
+
+/* The small drag cue sits in the source export's empty bottom margin. */
+.copper-reveal__divider::after {
+  content: "↔";
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 1.7rem;
+  transform: translateX(-50%);
+  border: 1px solid rgb(241 243 239 / .5);
+  border-radius: 99px;
+  color: var(--copper-ink);
+  background: var(--copper-ground);
+  font: 1rem/1 sans-serif;
+}
+
+[data-copper-value="0"] .copper-reveal__divider,
+[data-copper-value="100"] .copper-reveal__divider { visibility: hidden; }
+
+.copper-reveal__controls {
+  display: grid;
+  grid-template-columns: auto minmax(60px, 1fr) auto auto;
+  align-items: center;
+  gap: 1rem;
+  margin-top: .25rem;
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: .68rem;
+  line-height: 1.5;
+}
+
+.copper-reveal__controls label { color: var(--copper-muted); }
+
+[data-copper-range] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  accent-color: var(--copper-accent);
+  cursor: ew-resize;
+  touch-action: pan-y pinch-zoom;
+}
+
+[data-copper-range]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: #535b60;
+  border: 0;
+}
+
+[data-copper-range]::-moz-range-track {
+  height: 2px;
+  background: #535b60;
+  border: 0;
+}
+
+[data-copper-range]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -10px;
+  border: 5px solid var(--copper-ground);
+  border-radius: 50%;
+  background: var(--copper-accent);
+  box-shadow: 0 0 0 1px var(--copper-accent);
+}
+
+[data-copper-range]::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 5px solid var(--copper-ground);
+  border-radius: 50%;
+  background: var(--copper-accent);
+  box-shadow: 0 0 0 1px var(--copper-accent);
+}
+
+[data-copper-readout] { min-width: 4ch; color: var(--copper-muted); text-align: right; }
+
+[data-copper-reset],
+[data-copper-retry] {
+  min-width: 44px;
+  min-height: 44px;
+  padding: .5rem .65rem;
+  border: 1px solid #42494e;
+  border-radius: 0;
+  color: var(--copper-ink);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+[data-copper-reset]:hover,
+[data-copper-retry]:hover { border-color: var(--copper-accent); color: var(--copper-accent); }
+
+[data-copper-range]:focus-visible,
+[data-copper-reset]:focus-visible,
+[data-copper-retry]:focus-visible,
+.copper-reveal__context a:focus-visible {
+  outline: 2px solid var(--copper-accent);
+  outline-offset: 5px;
+}
+
+.copper-reveal__context {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+  margin: 1rem 0 0;
+  color: var(--copper-muted);
+  font-size: .78rem;
+  line-height: 1.6;
+}
+
+.copper-reveal__context a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--copper-ink);
+  text-decoration: underline;
+  text-underline-offset: .25em;
+}
+
+.copper-reveal__fallback,
+.copper-reveal__error {
+  color: var(--copper-muted);
+  font-size: .8rem;
+  line-height: 1.6;
+}
+
+[data-copper-state="ready"] .copper-reveal__fallback { display: none; }
+[data-copper-state="error"] [data-copper-reveal],
+[data-copper-state="error"] .copper-reveal__labels,
+[data-copper-state="error"] .copper-reveal__fallback { display: none; }
+.copper-reveal__error { padding-block: 2rem; }
+
+@media (max-width: 560px) {
+  [data-copper-reveal] { gap: .5rem; }
+  .copper-reveal__labels { margin-bottom: .75rem; font-size: .6rem; }
+  .copper-reveal__controls { grid-template-columns: minmax(0, 1fr) auto auto; gap: .65rem; }
+  .copper-reveal__controls label { grid-column: 1 / -1; margin-bottom: -.6rem; }
+  .copper-reveal__context { margin-top: .7rem; font-size: .72rem; }
+  .copper-reveal__divider::after { width: 1.5rem; height: 1.2rem; bottom: 1%; font-size: .85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-folio-copper], [data-folio-copper] * { animation: none !important; transition: none !important; }
+}
+
+@media (forced-colors: active) {
+  [data-copper-range] { appearance: auto; -webkit-appearance: auto; }
+  [data-copper-range]::-webkit-slider-thumb { appearance: auto; -webkit-appearance: auto; }
+  .copper-reveal__divider { background: CanvasText; }
+}

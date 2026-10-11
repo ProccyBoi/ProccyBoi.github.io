@@ -253,7 +253,7 @@ def main():
             if doc.url not in sitemap_urls:
                 error(page, "indexable route is missing from sitemap.xml")
             for tag in ["title", "h1", "main"]:
-                nodes = doc.tags(tag)
+                nodes = [item for item in doc.tags(tag) if tag != "title" or "head" in item.ancestors]
                 if len(nodes) != 1 or not "".join(nodes[0].text).strip():
                     error(page, f"expected one nonempty {tag}")
             descriptions = [item for item in doc.tags("meta") if item.attrs.get("name", "").lower() == "description" and item.attrs.get("content", "").strip()]
@@ -265,11 +265,28 @@ def main():
 
         if not redirect:
             styles = [item for item in doc.tags("link") if "stylesheet" in item.attrs.get("rel", "").split()]
-            final_style = "/assets/v3-landing.css" if page == ROOT / "v3/index.html" else "/assets/v3.css"
+            final_style = "/assets/v3-folio.css" if page == ROOT / "v3/index.html" else "/assets/v3.css"
             if not styles or urlsplit(urljoin(doc.base, styles[-1].attrs.get("href", ""))).path != final_style:
                 error(page, f"{final_style} must be the last stylesheet")
             elif any(item.tag == "style" and "head" in item.ancestors for item in doc.elements[doc.elements.index(styles[-1]) + 1:]):
                 error(page, "a later inline stylesheet overrides the final v3 layer")
+            if relative == "index.html":
+                style_paths = {urlsplit(urljoin(doc.base, item.attrs.get("href", ""))).path for item in styles}
+                script_paths = {urlsplit(urljoin(doc.base, item.attrs.get("src", ""))).path for item in doc.tags("script") if item.attrs.get("src")}
+                for rejected in {"/assets/v2.css", "/assets/v2-gallery.css", "/assets/v3.css", "/assets/v3-landing.css"} & style_paths:
+                    error(page, f"rejected landing presentation is still loaded: {rejected}")
+                if "/assets/v2-gallery.js" in script_paths:
+                    error(page, "the folio must not initialize the rejected v2 gallery")
+                for required in {"/assets/v3-folio.js", "/assets/v3-copper-reveal.js", "/assets/v3-gallery-inspect.js", "/assets/v3-aircraft-hero.js"} - script_paths:
+                    error(page, f"missing folio enhancement: {required}")
+                folio_cards = [item.attrs["data-folio-card"] for item in doc.elements if "data-folio-card" in item.attrs]
+                if folio_cards != ["tramtrace", "skylabs", "dual-usb-c"]:
+                    error(page, "folio must retain the three selected hardware projects")
+                for script in {"assets/v3-folio.js", "assets/v3-copper-reveal.js", "assets/v3-gallery-inspect.js"}:
+                    source = ROOT / script
+                    if source.is_file():
+                        for imported in re.findall(r"import\(\s*[\"'](/assets/[^\"']+)[\"']\s*\)", source.read_text(encoding="utf-8")):
+                            reference(source, imported, ORIGIN)
             bodies = doc.tags("body")
             if len(bodies) != 1 or "v3" not in bodies[0].attrs.get("class", "").split():
                 error(page, "missing v3 body class")
