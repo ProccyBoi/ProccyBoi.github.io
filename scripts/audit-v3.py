@@ -265,8 +265,9 @@ def main():
 
         if not redirect:
             styles = [item for item in doc.tags("link") if "stylesheet" in item.attrs.get("rel", "").split()]
-            if not styles or urlsplit(urljoin(doc.base, styles[-1].attrs.get("href", ""))).path != "/assets/v3.css":
-                error(page, "v3.css must be the last stylesheet")
+            final_style = "/assets/v3-landing.css" if page == ROOT / "v3/index.html" else "/assets/v3.css"
+            if not styles or urlsplit(urljoin(doc.base, styles[-1].attrs.get("href", ""))).path != final_style:
+                error(page, f"{final_style} must be the last stylesheet")
             elif any(item.tag == "style" and "head" in item.ancestors for item in doc.elements[doc.elements.index(styles[-1]) + 1:]):
                 error(page, "a later inline stylesheet overrides the final v3 layer")
             bodies = doc.tags("body")
@@ -288,7 +289,8 @@ def main():
                         reference(page, raw, doc.base, item.line)
             for name, raw in item.attrs.items():
                 if name.startswith("data-") and raw.startswith(("/assets/", "assets/", "/shared/")):
-                    reference(page, raw, doc.base, item.line)
+                    for asset_reference in (srcset_urls(raw) if name.endswith("srcset") else [raw]):
+                        reference(page, asset_reference, doc.base, item.line)
             if item.tag == "style":
                 for raw in css_urls("".join(item.text)):
                     if not raw.startswith("#"):

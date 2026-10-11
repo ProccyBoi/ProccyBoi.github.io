@@ -20,6 +20,11 @@ const primary = 'a[data-v2-project][href^="/v3/projects/"]';
 const hero = '[data-aircraft-hero]';
 const workbench = '#copper-data[data-board-inspector]';
 const chainCounts = { l1: 45, l2: 8, l3: 30, l4: 32, status: 1 };
+const galleryProjects = [
+  { key: 'tramtrace', slug: 'tramtrace', overview: 'tramtrace-hero', detail: 'tramtrace-controller' },
+  { key: 'skylabs', slug: 'skylabs', overview: 'skylabs-telemetry-hero', detail: 'skylabs-telemetry-macro' },
+  { key: 'dual-usb-c', slug: 'framework-dual-usb', overview: 'framework-dual-hero', detail: 'framework-dual-ports' }
+];
 const cadRequest = /\/assets\/(?:models\/(?:aircraft|hero)\/|vendor\/three\.min\.js|v3-aircraft-(?:scene|atmosphere)\.js)/;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const sourcePages = listPages('v2').filter(file => file !== 'index.html' && !file.startsWith('render/'));
@@ -55,7 +60,7 @@ async function prepareFullPageImages(page) {
   try {
     for (const image of await page.locator('img[alt]').all()) {
       const meaningful = await image.evaluate(node => {
-        const deferred = node.hasAttribute('data-v3-src') && !node.getAttribute('src') && document.body.classList.contains('v2-ready');
+        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src')) && !node.getAttribute('src') && document.body.classList.contains('v2-ready');
         if (!node.alt.trim() || (!node.getClientRects().length && !deferred)) return false;
         // Offscreen photographs still qualify. Hidden alternate posters, modal
         // images and inactive states do not. Do not change loading attributes.
@@ -66,15 +71,19 @@ async function prepareFullPageImages(page) {
         return true;
       });
       if (!meaningful) continue;
-      await image.evaluate(node => (node.hasAttribute('data-v3-src') && !node.getAttribute('src') ? node.parentElement : node).scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await image.evaluate(node => {
+        const deferred = (node.hasAttribute('data-v3-src') || node.hasAttribute('data-gallery-src')) && !node.getAttribute('src');
+        const target = deferred ? node.closest('[data-gallery-photo], .v2-gallery-more-photo') || node.parentElement : node;
+        target.scrollIntoView({ block: 'center', behavior: 'instant' });
+      });
       const details = await image.evaluate(async node => {
-        // Scrolling triggers both native lazy loading and data-v3-src IO. Wait
+        // Scrolling triggers both native lazy loading and data-v3-src/data-gallery-src IO. Wait
         // for that real load event before decoding, including src-less images.
         await new Promise((resolve, reject) => {
           if (node.complete && node.naturalWidth > 0) return resolve();
           const cleanup = () => { clearTimeout(timer); node.removeEventListener('load', success); node.removeEventListener('error', failure); };
           const success = () => { cleanup(); resolve(); };
-          const failure = () => { cleanup(); reject(new Error('Meaningful photograph failed: ' + node.alt + ' (' + (node.currentSrc || node.dataset.v3Src || node.src) + ')')); };
+          const failure = () => { cleanup(); reject(new Error('Meaningful photograph failed: ' + node.alt + ' (' + (node.currentSrc || node.dataset.v3Src || node.dataset.gallerySrc || node.src) + ')')); };
           const timer = setTimeout(failure, 20000);
           node.addEventListener('load', success, { once: true }); node.addEventListener('error', failure, { once: true });
         });
@@ -101,7 +110,7 @@ async function screenshot(page, name, fullPage = false) {
   return file;
 }
 async function newRun(options = {}) {
-  const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, reducedMotion: options.motion || 'reduce', javaScriptEnabled: options.js !== false });
+  const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, reducedMotion: options.motion || 'reduce', javaScriptEnabled: options.js !== false, hasTouch: !!options.touch, isMobile: !!options.touch });
   if (options.saveData) await context.addInitScript(() => Object.defineProperty(navigator, 'connection', { configurable: true, value: { saveData: true } }));
   if (options.noWebGL) await context.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
@@ -238,6 +247,41 @@ async function assertStopped(page, board) {
   await page.waitForTimeout(800);
   assert.equal(await board.locator('[data-frame-slider]').inputValue(), value, 'Stopped playback cannot advance later');
 }
+async function approachGallery(page) {
+  await page.locator('[data-gallery]').evaluate(node => scrollTo({ top: scrollY + node.getBoundingClientRect().top - 100, behavior: 'instant' }));
+}
+async function gallerySettled(page, project = 'tramtrace', view = 'overview', state = 'ready') {
+  await page.waitForFunction(({ project, view, state }) => {
+    const root = document.querySelector('[data-gallery]'), image = root?.querySelector('[data-gallery-photo]:not([hidden]):not([inert]) img.is-current');
+    return root?.dataset.galleryActive === project && root.dataset.galleryView === view && root.dataset.galleryState === state &&
+      !root.querySelector('[data-gallery-stage]').hasAttribute('aria-busy') &&
+      (state === 'error' || (image?.complete && image.naturalWidth > 0)) &&
+      root.getAnimations({ subtree: true }).every(animation => !['running', 'pending'].includes(animation.playState));
+  }, { project, view, state });
+}
+async function gallerySelect(page, key, view = 'overview') {
+  await activateKeyboard(page, page.locator('[data-gallery-select="' + key + '"]'));
+  await gallerySettled(page, key);
+  if (view === 'detail') {
+    await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
+    await gallerySettled(page, key, 'detail');
+  }
+}
+async function assertGallerySelection(page, key, view = 'overview') {
+  const project = galleryProjects.find(item => item.key === key);
+  assert.equal(await page.locator('[data-gallery-select][aria-expanded="true"]').count(), 1);
+  assert.equal(await page.locator('[data-gallery-select="' + key + '"]').getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.locator('[data-gallery-project="' + key + '"] .v2-gallery-info').evaluate(node => node.inert), false);
+  assert.equal(await page.locator('[data-gallery-project="' + key + '"] .v2-gallery-info a').getAttribute('href'), '/v3/projects/' + project.slug + '/');
+  const photo = page.locator('[data-gallery-photo]:not([hidden]):not([inert])');
+  assert.equal(await photo.count(), 1);
+  assert.equal(await page.locator('[data-gallery-photo]:not([hidden])').count(), 1, 'Settled gallery shows one unobstructed photograph');
+  const image = photo.locator('img.is-current');
+  assert.ok((await image.getAttribute('src')).includes(project[view]));
+  assert.equal(await image.evaluate(node => node.complete && node.naturalWidth > 0 && node.alt.trim().length > 0), true);
+  assert.equal(await page.locator('button[data-gallery-view="' + view + '"]').getAttribute('aria-pressed'), 'true');
+  await noOverflow(page, 'Selected project gallery');
+}
 async function staticTests() {
   await test('15 public projects and 23 preserved interiors', () => {
     assert.equal(sourcePages.length, 23);
@@ -248,14 +292,20 @@ async function staticTests() {
     for (const slug of toolSlugs) assert.ok(!collection.some(link => link.url.pathname === '/v3/projects/' + slug + '/'), 'Tools must not inflate the project count');
     return { projects: projectSlugs, interiors: sourcePages };
   });
-  await test('Core navigation and discoverable CV contact files booking and tools', () => {
+  await test('Core navigation CV contact files booking and preserved tool routes', () => {
     const core = ['v3/index.html', 'v3/projects/index.html', 'v3/about/index.html'];
     const all = core.flatMap(links), paths = new Set(all.filter(link => link.url.origin === origin).map(link => link.url.pathname));
-    for (const route of ['/v3/projects/', '/v3/about/', '/shared/', '/book/', '/shared/flight-review/', '/assets/documents/Andrew_Chung_Public_CV.pdf', ...toolSlugs.map(slug => '/v3/projects/' + slug + '/')]) {
+    for (const route of ['/v3/projects/', '/v3/about/', '/shared/', '/book/', '/assets/documents/Andrew_Chung_Public_CV.pdf']) {
       assert.ok(paths.has(route), 'Core v3 routes must expose ' + route);
       assert.ok(fs.existsSync(localFile(new URL(route, origin))), route + ' target exists');
     }
     assert.ok(all.some(link => link.href === 'mailto:andrew.noah.chung@gmail.com'));
+    assert.ok(links('v3/projects/skylabs/index.html').some(link => link.url.pathname === '/shared/flight-review/'));
+    const originalCollection = links('projects/index.html');
+    for (const slug of toolSlugs) {
+      assert.ok(fs.existsSync(localFile(new URL('/v3/projects/' + slug + '/', origin))), 'Existing v3 tool route preserved');
+      assert.ok(originalCollection.some(link => link.url.pathname === '/projects/' + slug + '/'), 'Original public tool index remains intact');
+    }
     for (const file of core) {
       const html = read(file);
       assert.equal(tags(html, 'h1').length, 1, file + ': one h1');
@@ -263,6 +313,26 @@ async function staticTests() {
       assert.ok(links(file).some(link => link.url.pathname === '/v3/'), file + ': home link');
     }
     return { routes: [...paths].sort() };
+  });
+  await test('Landing preview restores actual v2 gallery without assignment showcase', () => {
+    const home = read('v3/index.html'), styles = tags(home, 'link').filter(tag => tag.rel === 'stylesheet').map(tag => tag.href.split('?')[0]);
+    assert.ok(styles.includes('/assets/v2.css')); assert.ok(styles.includes('/assets/v2-gallery.css'));
+    assert.ok(styles.includes('/assets/v3-landing.css')); assert.equal(styles.includes('/assets/v3.css'), false, 'Warm interior theme does not override the landing preview');
+    assert.equal(/class="[^"]*\b(?:v3-system|v3-tools|v3-evidence-note|v3-signal-path)\b|id="skylabs-system"/.test(home), false, 'Remove assignment/showcase sections from the landing');
+    const nav = home.match(/<nav\b[^>]*data-v2-nav[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+    assert.ok(nav); assert.equal(/>\s*Tools\b|href="[^\"]*#tools"/i.test(nav), false);
+    const articles = tags(home, 'article').filter(tag => 'data-gallery-project' in tag);
+    assert.deepEqual(articles.map(tag => tag['data-gallery-project']), galleryProjects.map(item => item.key));
+    assert.deepEqual(articles.map(tag => tag['data-gallery-detail']), galleryProjects.map(item => item.detail));
+    for (const project of galleryProjects) {
+      assert.ok(tags(home, 'img').some(tag => tag['data-gallery-src']?.includes(project.overview)), project.key + ' genuine overview retained');
+      for (const size of [960, 1920]) assert.ok(fs.existsSync(path.join(root, 'assets/images/projects/' + project.detail + '-' + size + '.webp')));
+    }
+    assert.ok(tags(home, 'script').some(tag => tag.src?.split('?')[0] === '/assets/v2-gallery.js'), 'Use the actual v2 gallery controller');
+    for (const className of ['v2-about-preview', 'v2-contact']) assert.ok(home.includes(className));
+    const footer = home.match(/<footer\b[\s\S]*?<\/footer>/)?.[0] || '';
+    for (const target of ['/shared/', '/book/', '/assets/documents/Andrew_Chung_Public_CV.pdf']) assert.ok(tags(footer, 'a').some(tag => tag.href === target), target + ' remains available in footer');
+    return { galleryProjects: galleryProjects.map(item => item.key), sharedGallery: true, previewOnly: true };
   });
   await test('TramTrace in-page workbench uses production electrical data', () => {
     const html = read('v3/projects/tramtrace/index.html'), data = tramTraceSourceData();
@@ -319,6 +389,196 @@ async function browserTests() {
     await searchCount(page, 15);
     await screenshot(page, 'desktop-collection');
     return { performance: { initialHome: initialHomePerformance, afterFullPageViewing: inspectedHomePerformance } };
+  });
+  await browserTest('landing uses actual v2 dark palette and Archivo typography', {}, async ({ page }) => {
+    await visit(page);
+    const theme = await page.evaluate(() => {
+      const body = getComputedStyle(document.body), heading = getComputedStyle(document.querySelector('h1'));
+      return { background: body.backgroundColor, color: body.color, font: body.fontFamily, headingFont: heading.fontFamily,
+        tokens: Object.fromEntries(['--v2-bg', '--v2-ink', '--v2-muted', '--v2-line', '--v2-accent', '--v2-mono'].map(name => [name, body.getPropertyValue(name).trim()])) };
+    });
+    assert.equal(theme.background, 'rgb(20, 20, 18)'); assert.equal(theme.color, 'rgb(236, 235, 227)');
+    assert.match(theme.font, /^Archivo(?:,|$)/); assert.match(theme.headingFont, /^Archivo(?:,|$)/);
+    for (const [token, value] of Object.entries({ '--v2-bg': '#141412', '--v2-ink': '#ecebe3', '--v2-muted': '#aaa99f', '--v2-line': '#393a34', '--v2-accent': '#fa7148' })) assert.equal(theme.tokens[token].toLowerCase(), value);
+    assert.match(theme.tokens['--v2-mono'], /IBM Plex Mono/);
+    assert.equal(await page.locator('.v3-system,.v3-tools,.v3-evidence-note,.v3-signal-path').count(), 0);
+    assert.equal(await page.locator('[data-v2-nav] a').filter({ hasText: /^Tools$/ }).count(), 0);
+    return theme;
+  });
+  await browserTest('restored gallery real macros keyboard repeated selection and URL state', {}, async ({ page }) => {
+    await visit(page, '/v3/?qa=landing#work'); await approachGallery(page); await gallerySettled(page);
+    const historyLength = await page.evaluate(() => history.length);
+    for (const project of galleryProjects) {
+      await gallerySelect(page, project.key); await assertGallerySelection(page, project.key);
+      if (project.key === 'tramtrace') await screenshot(page, 'desktop-gallery-overview');
+      await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
+      await gallerySettled(page, project.key, 'detail'); await assertGallerySelection(page, project.key, 'detail');
+      await screenshot(page, 'desktop-gallery-' + project.key + '-detail');
+      const url = new URL(page.url()); assert.equal(url.searchParams.get('qa'), 'landing'); assert.equal(url.hash, '#work');
+      assert.equal(url.searchParams.get('project'), project.key); assert.equal(url.searchParams.get('view'), 'detail');
+      assert.equal(await page.evaluate(() => history.length), historyLength, 'Photo selection replaces rather than spams history');
+      await gallerySelect(page, project.key); await gallerySelect(page, project.key); await assertGallerySelection(page, project.key);
+    }
+    await page.locator('[data-gallery-select="tramtrace"]').focus(); await page.keyboard.press('ArrowDown');
+    assert.equal(await page.locator('[data-gallery-select="skylabs"]').evaluate(node => node === document.activeElement), true);
+    await page.keyboard.press('Enter'); await gallerySettled(page, 'skylabs');
+    await page.keyboard.press('End'); assert.equal(await page.locator('[data-gallery-select="dual-usb-c"]').evaluate(node => node === document.activeElement), true);
+    await page.keyboard.press('Home'); assert.equal(await page.locator('[data-gallery-select="tramtrace"]').evaluate(node => node === document.activeElement), true);
+    return { projectCount: 3, realMacroCount: 3, keyboard: true, repeatedSelection: true };
+  });
+  await browserTest('restored gallery detail deep link reload Back and Forward', {}, async ({ page }) => {
+    await visit(page, '/v3/?qa=shared&project=skylabs&view=detail#work'); await approachGallery(page);
+    await gallerySettled(page, 'skylabs', 'detail'); await assertGallerySelection(page, 'skylabs', 'detail');
+    await page.reload({ waitUntil: 'load' }); await approachGallery(page); await gallerySettled(page, 'skylabs', 'detail');
+    await page.evaluate(() => history.pushState({}, '', location.href));
+    await gallerySelect(page, 'dual-usb-c'); await page.goBack(); await gallerySettled(page, 'skylabs', 'detail');
+    await assertGallerySelection(page, 'skylabs', 'detail');
+    await page.goForward(); await gallerySettled(page, 'dual-usb-c'); await assertGallerySelection(page, 'dual-usb-c');
+    assert.equal(new URL(page.url()).searchParams.get('qa'), 'shared');
+  });
+  await browserTest('restored gallery narrow detail view and Save Data', { touch: true, saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, requests }) => {
+    await visit(page); await approachGallery(page); await gallerySettled(page);
+    for (const project of galleryProjects) await gallerySelect(page, project.key);
+    assert.equal(requests.some(url => /tramtrace-controller|skylabs-telemetry-macro|framework-dual-ports/.test(url)), false, 'Save Data does not prefetch unselected macros');
+    await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
+    await gallerySettled(page, 'dual-usb-c', 'detail'); await assertGallerySelection(page, 'dual-usb-c', 'detail');
+    await screenshot(page, 'mobile-gallery-detail');
+    assert.equal(requests.some(url => /tramtrace-controller|skylabs-telemetry-macro/.test(url)), false);
+    for (const button of await page.locator('button[data-gallery-view], [data-gallery-expand]').all()) {
+      const bounds = await button.boundingBox(); assert.ok(bounds.width >= 44 && bounds.height >= 44, 'Photo controls have usable touch targets');
+    }
+    await page.setViewportSize({ width: 320, height: 740 }); await noOverflow(page, 'Gallery at 320px');
+    await page.setViewportSize({ width: 390, height: 600 });
+    assert.equal(await page.locator('[data-gallery-stage]').evaluate(node => getComputedStyle(node).position), 'static', 'Short viewports do not pin the gallery');
+  });
+  await browserTest('restored gallery image failure retry and missing detail recovery', { saveData: true }, async ({ page, context }) => {
+    let failOverview = true;
+    await context.route(/\/skylabs-telemetry-hero-(?:960|1920)\.webp/, route => failOverview ? route.abort() : route.continue());
+    await context.route(/\/tramtrace-controller-(?:960|1920)\.webp/, route => route.abort());
+    await visit(page); await approachGallery(page); await gallerySettled(page);
+    await activateKeyboard(page, page.locator('[data-gallery-select="skylabs"]'));
+    await gallerySettled(page, 'skylabs', 'overview', 'error');
+    const error = page.locator('[data-gallery-error="skylabs"]'); assert.equal(await error.isVisible(), true);
+    assert.equal(await error.locator('a').getAttribute('href'), '/v3/projects/skylabs/');
+    failOverview = false; await page.locator('[data-gallery-retry="skylabs"]').click();
+    await gallerySettled(page, 'skylabs'); await assertGallerySelection(page, 'skylabs');
+    assert.equal(await page.locator('button[data-gallery-view="overview"]').evaluate(node => node === document.activeElement), true);
+    await gallerySelect(page, 'tramtrace'); await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
+    await gallerySettled(page, 'tramtrace'); await assertGallerySelection(page, 'tramtrace');
+    assert.equal(new URL(page.url()).searchParams.has('view'), false, 'Missing macro normalizes back to its genuine overview');
+  });
+  for (const options of [{ name: 'no JavaScript', js: false }, { name: 'gallery controller failure', block: /\/assets\/v2-gallery\.js/ }]) {
+    await browserTest('restored gallery remains readable with ' + options.name, { ...options, viewport: { width: 390, height: 844 } }, async ({ page }) => {
+      await visit(page);
+      for (const project of galleryProjects) {
+        const article = page.locator('[data-gallery-project="' + project.key + '"]');
+        const image = article.locator(options.js === false ? 'noscript img' : '[data-gallery-original]');
+        await article.scrollIntoViewIfNeeded();
+        if (options.js !== false) await page.waitForFunction(key => {
+          const image = document.querySelector('[data-gallery-project="' + key + '"] [data-gallery-original]');
+          return image?.complete && image.naturalWidth > 0;
+        }, project.key);
+        await loaded(image); assert.equal(await article.locator('.v2-gallery-info').isVisible(), true);
+        assert.equal(await article.locator('.v2-gallery-info a').getAttribute('href'), '/v3/projects/' + project.slug + '/');
+      }
+      await noOverflow(page, options.name + ' gallery');
+    });
+  }
+  await browserTest('gallery delayed detail cannot replace a newer project selection', { saveData: true }, async ({ page, context }) => {
+    let release;
+    const delayed = new Promise(resolve => { release = resolve; });
+    await context.route(/\/framework-dual-ports-(?:960|1920)\.webp/, async route => { await delayed; await route.continue(); });
+    try {
+      await visit(page); await approachGallery(page); await gallerySettled(page); await gallerySelect(page, 'dual-usb-c');
+      await activateKeyboard(page, page.locator('button[data-gallery-view="detail"]'));
+      await page.waitForFunction(() => document.querySelector('[data-gallery-stage]').getAttribute('aria-busy') === 'true');
+      await gallerySelect(page, 'tramtrace'); release();
+      await page.waitForLoadState('networkidle'); await gallerySettled(page, 'tramtrace'); await assertGallerySelection(page, 'tramtrace');
+      assert.equal(new URL(page.url()).searchParams.get('project'), 'tramtrace');
+    } finally { release(); }
+  });
+  await browserTest('expanded hardware photo zoom pan keyboard close and repeat', {}, async ({ page }) => {
+    await visit(page); await approachGallery(page); await gallerySettled(page);
+    await gallerySelect(page, 'skylabs', 'detail');
+    const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
+    await opener.scrollIntoViewIfNeeded(); await opener.focus();
+    const before = { url: page.url(), scrollY: await page.evaluate(() => scrollY) };
+    const expectedSource = await page.locator('[data-gallery-photo]:not([hidden]):not([inert]) img.is-current').evaluate(image => {
+      const candidates = image.srcset.split(',').map(value => { const [url, size] = value.trim().split(/\s+/); return { url: new URL(url, location.href).href, size: parseInt(size) || 0 }; }).sort((a, b) => b.size - a.size);
+      return candidates[0]?.url || image.currentSrc || image.src;
+    });
+    await page.keyboard.press('Enter'); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    assert.equal(await dialog.isVisible(), true);
+    assert.equal(await dialog.locator('[data-inspect-image]').evaluate(image => image.currentSrc || image.src), expectedSource, 'Expand the real selected macro at its largest supplied resolution');
+    assert.equal(await dialog.locator('[data-inspect-image]').evaluate(image => image.complete && image.naturalWidth > 0 && image.alt.trim().length > 0), true);
+    assert.equal(Number(await dialog.getAttribute('data-zoom')), 1);
+    const stage = dialog.locator('[data-inspect-stage]');
+    await stage.focus(); await page.keyboard.press('+');
+    assert.ok(Number(await dialog.getAttribute('data-zoom')) > 1, 'Keyboard zoom in');
+    await page.keyboard.press('Home'); assert.equal(Number(await dialog.getAttribute('data-zoom')), 1);
+    for (let i = 0; i < 6 && await dialog.locator('[data-inspect-in]').isEnabled(); i++) await dialog.locator('[data-inspect-in]').click();
+    assert.equal(Number(await dialog.getAttribute('data-zoom')), 3, 'Zoom is bounded at 3×');
+    await stage.focus(); const panBefore = Number(await dialog.getAttribute('data-pan-x'));
+    await page.keyboard.press('ArrowRight'); assert.notEqual(Number(await dialog.getAttribute('data-pan-x')), panBefore);
+    const bounds = await stage.boundingBox(), dragBefore = Number(await dialog.getAttribute('data-pan-x'));
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2); await page.mouse.down();
+    await page.mouse.move(bounds.x + bounds.width / 2 - 85, bounds.y + bounds.height / 2 - 30, { steps: 6 }); await page.mouse.up();
+    assert.notEqual(Number(await dialog.getAttribute('data-pan-x')), dragBefore, 'Pointer dragging pans the enlarged photograph');
+    await screenshot(page, 'desktop-expanded-hardware-photo');
+    await dialog.locator('[data-inspect-reset]').click(); assert.equal(Number(await dialog.getAttribute('data-zoom')), 1);
+    assert.equal(Number(await dialog.getAttribute('data-pan-x')), 0); assert.equal(Number(await dialog.getAttribute('data-pan-y')), 0);
+    for (let i = 0; i < 12; i++) { await page.keyboard.press(i > 8 ? 'Shift+Tab' : 'Tab'); assert.equal(await dialog.evaluate(node => node.contains(document.activeElement)), true, 'Expanded photo contains forward and reverse keyboard focus'); }
+    await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
+    assert.equal(await opener.evaluate(node => node === document.activeElement), true);
+    assert.equal(page.url(), before.url); assert.ok(Math.abs(await page.evaluate(() => scrollY) - before.scrollY) <= 2);
+    await page.keyboard.press('Enter'); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    assert.equal(Number(await dialog.getAttribute('data-zoom')), 1, 'Reopening starts fitted rather than carrying stale pan/zoom');
+    await dialog.locator('[data-inspect-close]').click(); await dialog.waitFor({ state: 'hidden' });
+    await gallerySelect(page, 'dual-usb-c'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /framework-dual-hero/);
+    await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
+    return { suppliedLargestPhoto: true, boundedZoom: [1, 3], keyboardAndPointerPan: true, focusAndScrollRestored: true };
+  });
+  await browserTest('expanded hardware photo mobile pinch pan and dismissal', { touch: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
+    await visit(page); await approachGallery(page); await gallerySettled(page); await gallerySelect(page, 'tramtrace', 'detail');
+    const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
+    await opener.tap(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    const stage = dialog.locator('[data-inspect-stage]'), box = await stage.boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
+    const client = await context.newCDPSession(page);
+    try {
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 28, y, id: 1 }, { x: x + 28, y, id: 2 }] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 90, y, id: 1 }, { x: x + 90, y, id: 2 }] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      assert.ok(Number(await dialog.getAttribute('data-zoom')) > 1, 'Two real touch contacts zoom the photograph');
+      const panBefore = Number(await dialog.getAttribute('data-pan-x'));
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 65, y: y - 20, id: 1 }] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      assert.notEqual(Number(await dialog.getAttribute('data-pan-x')), panBefore, 'One-finger drag pans');
+    } finally { await client.detach(); }
+    await noOverflow(page, 'Expanded photo at 390px'); await screenshot(page, 'mobile-expanded-hardware-photo');
+    await dialog.locator('[data-inspect-close]').tap(); await dialog.waitFor({ state: 'hidden' });
+    assert.equal(await opener.evaluate(node => node === document.activeElement), true);
+    await assertGallerySelection(page, 'tramtrace', 'detail');
+    return { viewport: { width: 390, height: 844 }, touchPinch: true, touchPan: true };
+  });
+  await browserTest('expanded photo resource failure retry and selected-source recovery', { saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
+    let fail = true;
+    await context.route(/\/tramtrace-controller-1920\.webp/, route => fail ? route.abort() : route.continue());
+    await visit(page); await approachGallery(page); await gallerySettled(page); await gallerySelect(page, 'tramtrace', 'detail');
+    const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
+    await opener.click(); await page.locator('[data-gallery-inspect][data-state="error"]').waitFor();
+    assert.equal(await dialog.locator('[data-inspect-retry]').isVisible(), true);
+    assert.equal(await dialog.locator('[data-inspect-in]').isDisabled(), true);
+    assert.equal(await dialog.locator('[data-inspect-out]').isDisabled(), true);
+    fail = false; await dialog.locator('[data-inspect-retry]').click();
+    await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    assert.equal(await dialog.locator('[data-inspect-image]').evaluate(image => image.naturalWidth >= 1920), true);
+    await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
+    await gallerySelect(page, 'skylabs'); await opener.click(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /skylabs-telemetry-hero/);
+    await page.keyboard.press('Escape'); await dialog.waitFor({ state: 'hidden' });
+    await assertGallerySelection(page, 'skylabs');
   });
   await browserTest('collection query categories empty reset and history', {}, async ({ page }) => {
     await visit(page, '/v3/projects/?qa=portfolio&q=Framework&category=hardware');

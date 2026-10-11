@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f3f2eb">
+  <meta name="theme-color" content="#141412">
   <title>Andrew Chung — Electrical engineering</title>
   <meta name="description" content="Circuit boards, embedded systems and the tools around them. Explore Andrew Chung’s work in electrical engineering and avionics.">
   <link rel="canonical" href="https://proccyboi.github.io/v3/">
@@ -14,20 +14,24 @@
   <meta property="og:image" content="https://proccyboi.github.io/assets/images/v3/skylabs-stopped.webp?v=sky-20261008">
   <meta property="og:image:alt" content="The Skylabs trainer aircraft">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="/assets/fonts/ibm-plex-sans-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" as="image" type="image/webp" fetchpriority="high" media="(min-width:761px)">
   <link rel="preload" href="/assets/images/v3/skylabs-stopped-mobile.webp?v=sky-20261008" as="image" type="image/webp" fetchpriority="high" media="(max-width:760px)">
   <link rel="stylesheet" href="/assets/v2.css?v=folio-20261007">
   <link rel="stylesheet" href="/assets/aircraft-story.css?v=aircraft-transition-20261010">
-  <link rel="stylesheet" href="/assets/v3.css?v=field-notebook-20261010">
+  <link rel="stylesheet" href="/assets/v2-gallery.css?v=product-20261007">
+  <link rel="stylesheet" href="/assets/v3-gallery-inspect.css?v=dark-preview-20261011">
+  <link rel="stylesheet" href="/assets/v3-landing.css?v=dark-preview-20261011">
   <script src="/assets/v2.js" defer></script>
+  <script src="/assets/v2-gallery.js?v=product-20261007" defer></script>
+  <script src="/assets/v3-gallery-inspect.js?v=dark-preview-20261011" defer></script>
   <script src="/assets/v3-aircraft-hero.js?v=aircraft-transition-20261010" defer></script>
 </head>
-<body class="v2 v3 v3-home">
+<body class="v2 v2-home v3 v3-home v3-landing-preview">
   <a class="v2-skip" href="#main">Skip to content</a>
   <header class="v2-header"><div class="v2-nav-shell">
     <a class="v2-brand" href="/v3/">Andrew Chung</a>
-    <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav><a href="/v3/projects/">Projects</a><a href="/v3/about/">About</a><a href="/projects/#interactive">Tools</a><a href="/shared/">Files</a><a href="/book/">Book</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV</a><a class="v2-nav-contact" href="mailto:andrew.noah.chung@gmail.com">Contact <span aria-hidden="true">↗</span></a></nav>
+    <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav><a href="/v3/projects/">Projects</a><a href="/v3/about/">About</a><a class="v2-nav-contact" href="mailto:andrew.noah.chung@gmail.com">Contact <span aria-hidden="true">↗</span></a></nav>
     <button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
   </div></header>
   <main id="main">
@@ -38,7 +42,7 @@
           <canvas data-aircraft-canvas aria-hidden="true"></canvas>
         </div>
         <div class="v3-aircraft-copy" data-aircraft-copy>
-          <article id="aircraft" data-aircraft-chapter="0"><p class="v3-intro-line">Electrical engineering · UNSW, Sydney</p><h1 id="intro-title">Andrew Chung.</h1><p>I build circuit boards, embedded systems and the tools around them. At UNSW Skylabs, I lead avionics and payload work.</p><a class="v3-story-next" href="#telemetry">Explore the telemetry <span aria-hidden="true">↓</span></a></article>
+          <article id="aircraft" data-aircraft-chapter="0"><h1 id="intro-title"><span>Andrew</span> <span>Chung.</span></h1><p>Electrical engineering student<br>UNSW, Sydney</p><a class="v3-story-next" href="#work">View projects <span aria-hidden="true">↓</span></a></article>
           <article id="telemetry" data-aircraft-chapter="1"><h2>Telemetry.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><a class="v3-link" href="/v3/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a><figure class="v3-aircraft-static-photo"><img data-v3-src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="lazy" decoding="async" alt="The populated Skylabs telemetry board"><noscript><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="lazy" alt="The populated Skylabs telemetry board"></noscript></figure></article>
         </div>
         <button class="v3-aircraft-skip" data-aircraft-skip type="button" hidden>Skip landing <span aria-hidden="true">↘</span></button>
@@ -50,42 +54,81 @@
         <div class="v3-aircraft-progress" aria-hidden="true"><span data-aircraft-progress></span></div>
       </div>
     </section>
-    <section class="v3-system v3-shell" id="skylabs-system" aria-labelledby="system-title">
-      <div class="v3-section-heading"><h2 id="system-title">A flight is more than<br>the aircraft.</h2><p>My work connects the onboard logger, the radio receiver and the tools used after landing.</p></div>
-      <div class="v3-system-layout">
-        <figure class="v3-system-photo"><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="lazy" decoding="async" alt="The assembled Skylabs telemetry board, with its sensors, radio and microSD socket"><figcaption>Aircraft telemetry board, assembled. <a href="/v3/projects/skylabs/boards/telemetry/">Inspect the hardware ↗</a></figcaption></figure>
-        <div class="v3-system-story">
-          <ol class="v3-signal-path" aria-label="Skylabs data path">
-            <li><h3>Acquire &amp; keep a record</h3><p>The STM32 board reads navigation and sensor data, then writes the aircraft’s binary log to microSD.</p><a href="/v3/projects/skylabs/boards/telemetry/">Aircraft logger <span aria-hidden="true">↗</span></a></li>
-            <li><h3>Send a smaller picture</h3><p>A 915 MHz LoRa link carries telemetry to the ESP32 ground station, which keeps its own SD record.</p><a href="/v3/projects/skylabs/boards/ground-station/">Ground station <span aria-hidden="true">↗</span></a></li>
-            <li><h3>Look back at what happened</h3><p>Flight Review puts attitude, route and sensor readings on one timeline. The F110211 reference includes the logging diagnostics, not just the flight path.</p><a href="/v3/projects/skylabs/#system">Read the system story <span aria-hidden="true">↗</span></a></li>
-          </ol>
+    <section class="v2-work v2-shell v2-gallery" data-gallery aria-labelledby="work-title">
+      <div class="v2-gallery-heading" id="work"><h2 id="work-title">Selected work</h2><a class="v2-text-link" href="/v3/projects/">All projects <span aria-hidden="true">↗</span></a></div>
+      <div class="v2-gallery-featured">
+        <div class="v2-gallery-stage" data-gallery-stage hidden>
+          <div class="v2-gallery-media" data-gallery-media></div>
+          <div class="v2-gallery-views" aria-label="Photograph views">
+            <button class="v2-gallery-view" type="button" data-gallery-view="overview" aria-pressed="true"><span class="v2-gallery-view-label">Overview</span></button>
+            <button class="v2-gallery-view" type="button" data-gallery-view="detail" aria-pressed="false"><span class="v2-gallery-view-label">Detail</span></button>
+            <p class="v2-gallery-view-caption" data-gallery-caption aria-live="polite" aria-atomic="true"></p>
+          </div>
+        </div>
+        <div class="v2-gallery-projects" data-gallery-projects>
+          <article class="v2-gallery-project" data-gallery-project="tramtrace" data-gallery-name="TramTrace" data-gallery-detail="tramtrace-controller" data-gallery-detail-alt="USB connector, ESP32 and controller circuitry on TramTrace" data-gallery-overview-caption="Sydney &amp; Parramatta light rail" data-gallery-detail-caption="The controller">
+            <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v3/projects/tramtrace/"><img data-gallery-original data-gallery-src="/assets/images/projects/tramtrace-hero-960.webp" data-gallery-srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="TramTrace displaying live light-rail positions" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/tramtrace-hero-960.webp" srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="TramTrace displaying live light-rail positions" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
+            <h3><a class="v2-gallery-static-title" href="/v3/projects/tramtrace/">TramTrace</a><button class="v2-gallery-selector" type="button" data-gallery-select="tramtrace" aria-expanded="true" aria-controls="gallery-tramtrace-info" hidden><span class="v2-gallery-selector-thumb" aria-hidden="true"></span><span class="v2-gallery-selector-title">TramTrace</span><span class="v2-gallery-selector-mark" aria-hidden="true"></span></button></h3>
+            <div class="v2-gallery-info" id="gallery-tramtrace-info"><div><p>A live map of Sydney and Parramatta light rail. An ESP32 turns service data into 116 RGB pixels across a custom PCB.</p><a class="v2-text-link" href="/v3/projects/tramtrace/">Explore TramTrace <span aria-hidden="true">↗</span></a><a class="v2-text-link" href="/v3/projects/tramtrace/#copper-data">Copper &amp; LED data <span aria-hidden="true">↗</span></a></div></div>
+          </article>
+          <article class="v2-gallery-project" data-gallery-project="skylabs" data-gallery-name="Skylabs" data-gallery-detail="skylabs-telemetry-macro" data-gallery-detail-alt="Close-up of components and controls on the Skylabs telemetry board" data-gallery-overview-caption="The telemetry board" data-gallery-detail-caption="Telemetry, up close">
+            <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v3/projects/skylabs/"><img data-gallery-original data-gallery-src="/assets/images/projects/skylabs-telemetry-hero-960.webp" data-gallery-srcset="/assets/images/projects/skylabs-telemetry-hero-960.webp 960w, /assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Populated Skylabs aircraft telemetry board" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" srcset="/assets/images/projects/skylabs-telemetry-hero-960.webp 960w, /assets/images/projects/skylabs-telemetry-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Populated Skylabs aircraft telemetry board" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
+            <h3><a class="v2-gallery-static-title" href="/v3/projects/skylabs/">Skylabs</a><button class="v2-gallery-selector" type="button" data-gallery-select="skylabs" aria-expanded="false" aria-controls="gallery-skylabs-info" hidden><span class="v2-gallery-selector-thumb" aria-hidden="true"></span><span class="v2-gallery-selector-title">Skylabs</span><span class="v2-gallery-selector-mark" aria-hidden="true"></span></button></h3>
+            <div class="v2-gallery-info" id="gallery-skylabs-info"><div><p>Aircraft telemetry, a ground station, and the software to review a flight.</p><div class="v2-aircraft-entry-links"><a class="v2-text-link" href="/v3/projects/skylabs/">Explore Skylabs <span aria-hidden="true">↗</span></a><a class="v2-text-link" href="#aircraft">See the aircraft <span aria-hidden="true">↓</span></a></div></div></div>
+          </article>
+          <article class="v2-gallery-project" data-gallery-project="dual-usb-c" data-gallery-name="Dual USB-C" data-gallery-detail="framework-dual-ports" data-gallery-detail-alt="The two USB-C ports and mounting screw in the clear Framework enclosure" data-gallery-overview-caption="One Framework expansion bay" data-gallery-detail-caption="The two USB-C ports">
+            <figure class="v2-gallery-photo" data-gallery-photo><a class="v2-gallery-photo-link" href="/v3/projects/framework-dual-usb/"><img data-gallery-original data-gallery-src="/assets/images/projects/framework-dual-hero-960.webp" data-gallery-srcset="/assets/images/projects/framework-dual-hero-960.webp 960w, /assets/images/projects/framework-dual-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Dual USB-C expansion card with its clear housing and mounting screws" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/framework-dual-hero-960.webp" srcset="/assets/images/projects/framework-dual-hero-960.webp 960w, /assets/images/projects/framework-dual-hero-1920.webp 1920w" sizes="(min-width: 821px) 60vw, 90vw" alt="Dual USB-C expansion card with its clear housing and mounting screws" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></a></figure>
+            <h3><a class="v2-gallery-static-title" href="/v3/projects/framework-dual-usb/">Dual USB-C</a><button class="v2-gallery-selector" type="button" data-gallery-select="dual-usb-c" aria-expanded="false" aria-controls="gallery-dual-usb-c-info" hidden><span class="v2-gallery-selector-thumb" aria-hidden="true"></span><span class="v2-gallery-selector-title">Dual USB-C</span><span class="v2-gallery-selector-mark" aria-hidden="true"></span></button></h3>
+            <div class="v2-gallery-info" id="gallery-dual-usb-c-info"><div><p>Two USB 2.0 Type-C ports in one Framework expansion bay.</p><a class="v2-text-link" href="/v3/projects/framework-dual-usb/">Explore Dual USB-C <span aria-hidden="true">↗</span></a></div></div>
+          </article>
         </div>
       </div>
-      <div class="v3-evidence-note"><p>The logger’s 40 Hz rate is a design target. F110211 reports 50.0 ms log dt, 13,402 log overruns and 0 SD write errors.</p><a href="/shared/projects/skylabs/f110211/">Open the recorded flight <span aria-hidden="true">↗</span></a><small>The replay includes the exact recorded GPS route. Maps may send relevant coordinates to their providers.</small></div>
+      <script>
+        (() => {
+          const gallery = document.currentScript.closest('[data-gallery]');
+          const fallback = () => {
+            if (!gallery || gallery.dataset.galleryReady) return;
+            const frames = new Set(gallery.querySelectorAll('.v2-gallery-photo, .v2-gallery-more-photo'));
+            const load = frame => {
+              frame.querySelectorAll('img[data-gallery-src]').forEach(image => {
+                if (image.dataset.gallerySrcset) image.srcset = image.dataset.gallerySrcset;
+                image.src = image.dataset.gallerySrc;
+              });
+              frames.delete(frame);
+            };
+            if ('IntersectionObserver' in window) {
+              const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+                if (entry.isIntersecting) { load(entry.target); observer.unobserve(entry.target); }
+              }), { rootMargin: '240px 0px' });
+              frames.forEach(frame => observer.observe(frame));
+            } else {
+              const check = () => {
+                frames.forEach(frame => {
+                  const bounds = frame.getBoundingClientRect();
+                  if (bounds.top < innerHeight + 240 && bounds.bottom > -240) load(frame);
+                });
+                if (!frames.size) { removeEventListener('scroll', check); removeEventListener('resize', check); }
+              };
+              addEventListener('scroll', check, { passive: true });
+              addEventListener('resize', check, { passive: true });
+              check();
+            }
+          };
+          if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fallback, { once: true });
+          else fallback();
+        })();
+      </script>
+      <div class="v2-gallery-more">
+        <a class="v2-gallery-more-card" href="/v3/projects/coaster/"><div class="v2-gallery-more-photo"><img data-gallery-src="/assets/images/projects/coaster-hero-960.webp" alt="Coaster circuit board and enclosure" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/coaster-hero-960.webp" alt="Coaster circuit board and enclosure" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Coaster <span aria-hidden="true">↗</span></h3><p>A light-sensing coaster with an RGB ring and printed enclosure.</p></div></a>
+        <a class="v2-gallery-more-card" href="/v3/projects/rf-test-board/"><div class="v2-gallery-more-photo"><img data-gallery-src="/assets/images/projects/rf-test-hero-960.webp" alt="RF test board with transmission-line structures" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/projects/rf-test-hero-960.webp" alt="RF test board with transmission-line structures" width="960" height="640" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>RF test board <span aria-hidden="true">↗</span></h3><p>Transmission lines and filter footprints, made to compare on a VNA.</p></div></a>
+        <a class="v2-gallery-more-card" href="/v3/projects/framework-logic-analyser/"><div class="v2-gallery-more-photo is-board"><img data-gallery-src="/assets/images/v2/hardware/framework-logic-analyser.webp" alt="STM32 logic analyser expansion card" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/v2/hardware/framework-logic-analyser.webp" alt="STM32 logic analyser expansion card" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Logic analyser <span aria-hidden="true">↗</span></h3><p>Logic and serial-bus capture in a Framework expansion card.</p></div></a>
+        <a class="v2-gallery-more-card" href="/v3/projects/tamagotchi-sd-card/"><div class="v2-gallery-more-photo is-board"><img data-gallery-src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"><noscript><img src="/assets/images/v2/hardware/tamagotchi-sd-card.webp" alt="Tamagotchi SD-card interface board" width="1600" height="1200" loading="lazy" decoding="async" fetchpriority="low"></noscript></div><div><h3>Tamagotchi SD Card <span aria-hidden="true">↗</span></h3><p>An STM32, an SD-card socket and a seven-pin interface.</p></div></a>
+      </div>
     </section>
-    <section class="v3-work v3-shell" id="work" aria-labelledby="work-title">
-      <div class="v3-section-heading"><h2 id="work-title">Built to do<br>something useful.</h2><a class="v3-link" href="/v3/projects/">Browse all 15 projects <span aria-hidden="true">↗</span></a></div>
-      <article class="v3-feature v3-feature-tramtrace">
-        <a class="v3-feature-photo" href="/v3/projects/tramtrace/"><img src="/assets/images/projects/tramtrace-hero-1920.webp" srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(max-width:800px) 100vw, 65vw" width="1920" height="1280" loading="lazy" decoding="async" alt="TramTrace illuminated, with Sydney and Parramatta light-rail lines laid out across its circuit board"></a>
-        <div class="v3-feature-copy"><p class="v3-material">Personal build · PCB + firmware + data service</p><h3><a href="/v3/projects/tramtrace/">TramTrace</a></h3><p>A transport map where the circuit board is the display. Live vehicle positions become light along four routes and 116 RGB pixels.</p><dl><div><dt>The constraint</dt><dd>Route labels, LEDs and control circuitry all share the board.</dd></div><div><dt>The evidence</dt><dd>Assembled hardware, source-derived copper and the real LED order.</dd></div></dl><div class="v3-feature-links"><a href="/v3/projects/tramtrace/">Read the case <span aria-hidden="true">↗</span></a><a href="/v3/projects/tramtrace/#copper-data">Inspect copper &amp; data frames <span aria-hidden="true">↗</span></a></div></div>
-      </article>
-      <article class="v3-feature v3-feature-framework">
-        <a class="v3-feature-photo" href="/v3/projects/framework-dual-usb/"><img src="/assets/images/projects/framework-dual-installed-1920.webp" srcset="/assets/images/projects/framework-dual-installed-960.webp 960w, /assets/images/projects/framework-dual-installed-1920.webp 1920w" sizes="(max-width:800px) 100vw, 60vw" width="1920" height="1280" loading="lazy" decoding="async" alt="The assembled Dual USB-C expansion card installed in a Framework laptop"></a>
-        <div class="v3-feature-copy"><p class="v3-material">Personal build · USB hardware</p><h3><a href="/v3/projects/framework-dual-usb/">Two ports.<br>One expansion bay.</a></h3><p>A custom USB 2.0 hub in a standard Framework shell. Three Type-C connectors, power switching and ESD protection have to fit before anything else can.</p><dl><div><dt>The decision</dt><dd>Keep the scope at USB 2.0 for the peripherals I use.</dd></div><div><dt>The evidence</dt><dd>The populated PCB and its fit in the laptop, photographed.</dd></div></dl><div class="v3-feature-links"><a href="/v3/projects/framework-dual-usb/">Explore Dual USB-C <span aria-hidden="true">↗</span></a><a href="/v3/projects/?category=hardware&amp;q=Framework">See the other expansion cards <span aria-hidden="true">↗</span></a></div></div>
-      </article>
-      <div class="v3-work-index" aria-label="More engineering work"><a href="/v3/projects/rf-test-board/"><span>RF test board</span><span>Feedlines and filter footprints for VNA comparison</span><span aria-hidden="true">↗</span></a><a href="/v3/projects/metroboard/"><span>Metroboard</span><span>Sydney’s railway network in 291 LEDs</span><span aria-hidden="true">↗</span></a><a href="/v3/projects/switch-mode-power-supplies/"><span>Power supply test hardware</span><span>Isolated test boards from my trainee role</span><span aria-hidden="true">↗</span></a><a href="/v3/projects/runswift/"><span>rUNSWift</span><span>Robot behaviour, integration and competition</span><span aria-hidden="true">↗</span></a></div>
-    </section>
-    <section class="v3-tools v3-shell" id="tools" aria-labelledby="tools-title">
-      <div class="v3-section-heading"><h2 id="tools-title">Tools that make<br>the idea visible.</h2><p>I teach engineering labs at UNSW. These browser tools let you work with a signal, a device model or a recorded flight.</p></div>
-      <a class="v3-tool-feature" href="/v3/projects/scopelab/"><figure><img src="/assets/images/projects/scopelab-og.webp" width="1731" height="909" loading="lazy" decoding="async" alt="ScopeLab's micro:bit teaching bench showing the oscilloscope and serial-bus controls"></figure><div><h3>ScopeLab <span aria-hidden="true">↗</span></h3><p>A micro:bit teaching bench for GPIO and serial-bus waveform labs.</p><span class="v3-tool-action">Open the teaching bench</span></div></a>
-      <div class="v3-tool-list"><a href="/v3/projects/mosfet-operating-regions/"><h3>MOSFET Region Explorer <span aria-hidden="true">↗</span></h3><p>Change the bias and inspect a long-channel device model. A teaching model, with its assumptions visible.</p></a><a href="/v3/projects/lithography-animation/"><h3>Lithography <span aria-hidden="true">↗</span></h3><p>Explore pattern transfer, resolution, focus, resist tone and photon statistics.</p></a><a href="/shared/flight-review/"><h3>Flight Review <span aria-hidden="true">↗</span></h3><p>Open a local flight log for synchronized instruments, charts, map and sample inspection.</p></a></div>
-      <p class="v3-tool-note">Flight files are processed locally. Optional map and elevation requests can share relevant coordinates with their providers. <a href="/shared/">Browse shared files ↗</a></p>
-    </section>
-    <section class="v3-about v3-shell" aria-labelledby="about-title"><div><h2 id="about-title">Hardware, software,<br>and the lab bench.</h2></div><div><p>I study electrical engineering at UNSW, teach engineering labs and work as an Electronics Engineer Trainee at Switchmode Power Supplies.</p><p>My work spans PCB design, embedded firmware, RF/GNSS, and electronics testing and repair.</p><div class="v3-about-links"><a class="v3-link" href="/v3/about/">Experience &amp; background <span aria-hidden="true">↗</span></a><a class="v3-link" href="/assets/documents/Andrew_Chung_Public_CV.pdf">Download CV <span aria-hidden="true">↗</span></a></div></div></section>
-    <section class="v3-contact v3-shell" id="contact" aria-labelledby="contact-title"><h2 id="contact-title">Let’s talk engineering.</h2><div><a class="v3-contact-email" href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com <span aria-hidden="true">↗</span></a><a class="v3-link" href="/book/">Book a time <span aria-hidden="true">↗</span></a></div></section>
+    <section class="v2-about-preview v2-shell" id="about" aria-labelledby="about-title"><h2 id="about-title">About me.</h2><div class="v2-about-copy"><p>I’m an electrical engineering student at UNSW, working in power electronics and leading avionics and payload work at UNSW Skylabs.</p><a class="v2-text-link" href="/v3/about/">More about me <span aria-hidden="true">↗</span></a></div></section>
+    <section class="v2-contact" aria-labelledby="contact-title"><div class="v2-shell"><h2 id="contact-title">Get in touch.</h2><a class="v2-contact-email" href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com <span aria-hidden="true">↗</span></a></div></section>
   </main>
-  <footer class="v2-footer"><div class="v3-shell"><a class="v2-brand" href="/v3/">Andrew Chung</a><div><a href="https://github.com/ProccyBoi">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/">LinkedIn ↗</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV ↗</a><a href="/shared/">Files</a><a href="/book/">Book</a><a href="/v2/">View v2</a></div><p>Sydney, Australia</p></div></footer>
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-brand" href="/v3/">Andrew Chung</a><div><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV ↗</a><a href="/shared/">Files</a><a href="/book/">Book</a></div><p>© <span data-v2-year>2026</span> Andrew Chung</p></div></footer>
   <script>
     addEventListener('DOMContentLoaded', () => {
       const images = [...document.querySelectorAll('img[data-v3-src]')];
