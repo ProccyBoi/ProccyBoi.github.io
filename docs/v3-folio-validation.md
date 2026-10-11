@@ -45,6 +45,9 @@ while preserving every existing interior/controller and aircraft asset check.
   close-up changes, repeated selection without redundant history entries.
 - Project/view URLs preserve unrelated query parameters and fragments. Shared
   detail URLs, reload and native Back/Forward restore the intended state.
+- The complete active sheet, including its printed header and footer, fits its
+  reserved stage. Supporting build photographs retain the intended 3:2 CSS frame
+  at desktop, mobile and short sizes, independently of source-image dimensions.
 - Real pointer dragging and native mobile touch swipes work in both directions.
   A small drag and cancelled contact do not select another project. Vertical
   touch movement scrolls the page rather than navigating the deck.
@@ -119,8 +122,14 @@ CI diagnostics, not physical-phone/network benchmarks or synthetic scores.
 ## Current verification
 
 Six source groups, JavaScript syntax, whitespace validation and the structural
-v3 audit pass against the assembled folio. Browser acceptance for this new
-presentation is pending the first isolated review-branch run. Prior landing
-results do not count as a pass for this design. Local Chromium still fails before
+v3 audit pass against the assembled folio. The first isolated review-branch run passed 40 of 45 groups. All registered
+comparison, actual WebGL, expanded-photo and interior/workbench groups passed.
+Remaining failures were the first native folio swipe, an obsolete mobile-menu
+About destination assertion, and three real horizontal-overflow cases. The menu
+now verifies the designed All projects route and its full collection. The swipe
+inputs and overflow limits remain unchanged; the next run records trusted
+pointer/touch/capture events, hit targets, state checkpoints and out-of-bounds
+element geometry to establish the fixes. Browser acceptance remains pending the
+rerun. Prior landing results do not count as a pass for this design. Local Chromium still fails before
 opening a page with `socket() failed: Operation not permitted`; CI is the browser
 execution route for this review.

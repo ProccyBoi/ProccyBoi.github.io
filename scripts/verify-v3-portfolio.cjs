@@ -142,7 +142,7 @@ async function browserTest(name, options, action) {
         await screenshot(run.page, 'failure-' + name, !modalOpen);
       } catch {}
       const file = 'failure-' + name.replace(/[^a-z0-9_-]/gi, '-').toLowerCase() + '.json';
-      fs.writeFileSync(path.join(output, file), JSON.stringify({ url: run.page.url(), errors: run.errors, badResponses: run.badResponses, shaders: run.shaders, requests: run.requests, inputDiagnostics: await run.page.evaluate(() => window.__v3InputDiagnostics || null).catch(() => null) }, null, 2));
+      fs.writeFileSync(path.join(output, file), JSON.stringify({ url: run.page.url(), errors: run.errors, badResponses: run.badResponses, shaders: run.shaders, requests: run.requests, inputDiagnostics: await run.page.evaluate(() => window.__v3InputDiagnostics || null).catch(() => null), layoutDiagnostics: await run.page.evaluate(() => window.__v3LayoutDiagnostics || null).catch(() => null) }, null, 2));
       throw error;
     } finally { await run.context.close(); }
   });
@@ -171,7 +171,28 @@ async function performanceData(page) {
   });
 }
 async function noOverflow(page, label) {
-  const dimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: innerWidth }));
+  const dimensions = await page.evaluate(label => {
+    const result = { scroll: document.documentElement.scrollWidth, viewport: innerWidth, scrollX, scrollY };
+    if (result.scroll <= result.viewport + 1) return result;
+    const describe = node => ({ tag: node.tagName.toLowerCase(), id: node.id || undefined,
+      className: typeof node.className === 'string' ? node.className : node.className?.baseVal,
+      data: Object.fromEntries(Object.entries(node.dataset || {}).filter(([key]) => /folio|aircraft|copper/.test(key))) });
+    const bounds = rect => Object.fromEntries(['x', 'y', 'width', 'height', 'left', 'right'].map(key => [key, Math.round(rect[key] * 100) / 100]));
+    result.outOfBounds = [...document.body.querySelectorAll('*')].flatMap(node => {
+      const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
+      if (!rect.width || !rect.height || style.display === 'none' || !(rect.left < -1 || rect.right > innerWidth + 1)) return [];
+      const ancestors = [];
+      for (let ancestor = node.parentElement; ancestor && ancestors.length < 5; ancestor = ancestor.parentElement) {
+        const css = getComputedStyle(ancestor);
+        ancestors.push({ ...describe(ancestor), ...bounds(ancestor.getBoundingClientRect()), overflowX: css.overflowX, overflowY: css.overflowY, position: css.position, transform: css.transform });
+      }
+      return [{ ...describe(node), ...bounds(rect), overflowX: style.overflowX, overflowY: style.overflowY, position: style.position,
+        display: style.display, visibility: style.visibility, transform: style.transform, minWidth: style.minWidth, maxWidth: style.maxWidth,
+        scrollWidth: node.scrollWidth, clientWidth: node.clientWidth, ancestors }];
+    }).sort((a, b) => Math.max(b.right - innerWidth, -b.left) - Math.max(a.right - innerWidth, -a.left)).slice(0, 80);
+    (window.__v3LayoutDiagnostics ||= []).push({ label, url: location.href, ...result });
+    return result;
+  }, label);
   assert.ok(dimensions.scroll <= dimensions.viewport + 1, label + ': horizontal overflow ' + JSON.stringify(dimensions));
 }
 async function loaded(image) {
@@ -288,6 +309,28 @@ async function assertFolioLinks(page, key) {
     assert.equal(await page.locator('#aircraft').count(), 1, 'Aircraft CTA resolves to its real story destination');
   }
 }
+async function folioCardFits(page) {
+  const geometry = await page.locator('[data-folio-card][data-offset="0"]').evaluate(card => {
+    const stage = card.closest('[data-folio-deck]').parentElement;
+    const rect = node => { const b = node.getBoundingClientRect(); return { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height }; };
+    return { project: card.dataset.folioCard, viewport: { width: innerWidth, height: innerHeight }, card: rect(card), stage: rect(stage), image: rect(card.querySelector('[data-folio-image]')) };
+  });
+  const { card, stage } = geometry;
+  assert.ok(card.left >= stage.left - 1 && card.right <= stage.right + 1 && card.top >= stage.top - 1 && card.bottom <= stage.bottom + 1,
+    'Entire active photograph sheet, including header and footer, fits its stage: ' + JSON.stringify(geometry));
+  return geometry;
+}
+async function supportingPhotoFrames(page) {
+  const frames = [];
+  for (const image of await page.locator('.v3-more-grid img').all()) {
+    await loaded(image);
+    const frame = await image.evaluate(node => { const b = node.getBoundingClientRect(); return { source: node.currentSrc, width: b.width, height: b.height, naturalWidth: node.naturalWidth, naturalHeight: node.naturalHeight, objectFit: getComputedStyle(node).objectFit }; });
+    assert.ok(frame.width > 0 && frame.height > 0 && Math.abs(frame.width / frame.height - 1.5) < .01, 'Supporting photograph uses its intended 3:2 frame: ' + JSON.stringify(frame));
+    frames.push(frame);
+  }
+  assert.equal(frames.length, 3, 'All three supporting builds are measured');
+  return frames;
+}
 async function assertFolioSelection(page, key, view = 'overview') {
   const project = folioProjects.find(item => item.key === key), active = page.locator('[data-folio-card="' + key + '"]');
   assert.equal(await page.locator('[data-folio-select][aria-current="true"]').count(), 1);
@@ -302,6 +345,7 @@ async function assertFolioSelection(page, key, view = 'overview') {
     assert.ok((await image.getAttribute('src')).includes(project[view]), 'The selected supplied photo matches the requested project and view');
     assert.equal(await image.evaluate(node => node.complete && node.naturalWidth > 0 && node.alt.trim().length > 0), true);
     assert.equal(await page.locator('[data-folio-deck]').evaluate(node => node.inert), false);
+    await folioCardFits(page);
   } else {
     assert.equal(await page.locator('[data-folio-copper]').isVisible(), true);
     assert.equal(await page.locator('[data-folio-deck]').evaluate(node => node.inert), true);
@@ -333,6 +377,17 @@ async function pointerDrag(page, locator, dx, dy = 0) {
 async function touchDrag(context, page, locator, dx, dy = 0, cancel = false) {
   await locator.scrollIntoViewIfNeeded();
   const bounds = await locator.boundingBox(), x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2;
+  await page.evaluate(({ x, y, dx, dy, cancel }) => {
+    const log = window.__v3InputDiagnostics;
+    if (!log?.folio) return;
+    const hit = document.elementFromPoint(x, y), ancestry = [];
+    for (let node = hit; node; node = node.parentElement) {
+      const css = getComputedStyle(node);
+      ancestry.push({ tag: node.tagName, className: typeof node.className === 'string' ? node.className : undefined,
+        select: node.dataset?.folioSelect, touchAction: css.touchAction, pointerEvents: css.pointerEvents, overflowX: css.overflowX, overflowY: css.overflowY });
+    }
+    (log.inputs ||= []).push({ phase: log.phase, x, y, dx, dy, cancel, scrollX, scrollY, ancestry });
+  }, { x, y, dx, dy, cancel });
   const client = await context.newCDPSession(page);
   try {
     await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
@@ -505,6 +560,7 @@ async function browserTests() {
     assert.ok(background < .1, 'The opening uses a dark readable base');
     assert.ok((Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05) >= 4.5, 'Default copy has at least 4.5:1 contrast');
     assert.match(appearance.title, /Andrew\s+Chung/);
+    assert.match(await page.locator('.v3-identity').textContent(), /electrical engineering student/i);
     assert.ok(appearance.titleBounds.y >= 0 && appearance.titleBounds.y + appearance.titleBounds.height <= appearance.viewport.height, 'Identity is visible in the initial viewport');
     assert.ok(appearance.photoBounds.y < appearance.viewport.height && appearance.photoBounds.y + appearance.photoBounds.height > 100, 'Real work appears alongside the introduction');
     assert.equal(await page.locator('[data-folio-tab][role="tab"]').count(), 3);
@@ -617,16 +673,44 @@ async function browserTests() {
   });
   await browserTest('folio native touch swipe reversal cancellation and vertical page scroll', { touch: true, motion: 'no-preference', viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
     await visit(page); await approachFolio(page); await folioSettled(page);
+    await page.evaluate(() => {
+      const log = window.__v3InputDiagnostics = { folio: true, phase: 'initial', events: [], checkpoints: [], inputs: [] };
+      const target = node => ({ tag: node?.tagName, select: node?.closest?.('[data-folio-select]')?.dataset.folioSelect,
+        card: node?.closest?.('[data-folio-card]')?.dataset.folioCard, inDeck: !!node?.closest?.('[data-folio-deck]'), isDeck: !!node?.hasAttribute?.('data-folio-deck'),
+        className: typeof node?.className === 'string' ? node.className : undefined });
+      for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'gotpointercapture', 'lostpointercapture', 'touchstart', 'touchmove', 'touchend', 'touchcancel', 'click']) document.addEventListener(type, event => {
+        const root = document.querySelector('[data-folio]'), deck = root.querySelector('[data-folio-deck]');
+        const item = { phase: log.phase, type, target: target(event.target), currentTarget: event.currentTarget.nodeName, pointerId: event.pointerId, pointerType: event.pointerType,
+          buttons: event.buttons, isPrimary: event.isPrimary, x: event.clientX, y: event.clientY, trusted: event.isTrusted,
+          touches: event.touches ? [...event.touches].map(touch => ({ id: touch.identifier, x: touch.clientX, y: touch.clientY })) : undefined,
+          changedTouches: event.changedTouches ? [...event.changedTouches].map(touch => ({ id: touch.identifier, x: touch.clientX, y: touch.clientY })) : undefined,
+          captured: event.pointerId !== undefined ? deck.hasPointerCapture(event.pointerId) : undefined, state: { ...root.dataset }, scrollX, scrollY };
+        log.events.push(item); queueMicrotask(() => { item.defaultPrevented = event.defaultPrevented; item.afterState = { ...root.dataset }; });
+      }, { capture: true, passive: true });
+    });
+    const checkpoint = async phase => page.evaluate(phase => {
+      const log = window.__v3InputDiagnostics; log.phase = phase;
+      const root = document.querySelector('[data-folio]'), image = root.querySelector('[data-folio-card][data-offset="0"] [data-folio-image]');
+      const box = image.getBoundingClientRect(), viewport = visualViewport, hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      log.checkpoints.push({ phase, state: { ...root.dataset }, url: location.href, scrollX, scrollY,
+        image: { x: box.x, y: box.y, width: box.width, height: box.height, source: image.currentSrc, complete: image.complete },
+        centerHit: { tag: hit?.tagName, card: hit?.closest('[data-folio-card]')?.dataset.folioCard },
+        viewport: viewport ? { width: viewport.width, height: viewport.height, scale: viewport.scale, offsetLeft: viewport.offsetLeft, offsetTop: viewport.offsetTop } : null });
+    }, phase);
     const activeImage = () => page.locator('[data-folio-card][data-offset="0"] [data-folio-image]');
-    await touchDrag(context, page, activeImage(), -100); await folioSettled(page, 'skylabs');
-    await touchDrag(context, page, activeImage(), 100); await folioSettled(page, 'tramtrace');
-    await touchDrag(context, page, activeImage(), -100, 0, true); await folioSettled(page, 'tramtrace');
+    await checkpoint('first-swipe');
+    await touchDrag(context, page, activeImage(), -100); await checkpoint('first-swipe-dispatched'); await folioSettled(page, 'skylabs');
+    await checkpoint('reverse-swipe');
+    await touchDrag(context, page, activeImage(), 100); await checkpoint('reverse-swipe-dispatched'); await folioSettled(page, 'tramtrace');
+    await checkpoint('cancelled-swipe');
+    await touchDrag(context, page, activeImage(), -100, 0, true); await checkpoint('cancel-dispatched'); await folioSettled(page, 'tramtrace');
     await activeImage().scrollIntoViewIfNeeded(); const before = await page.evaluate(() => scrollY);
-    await touchDrag(context, page, activeImage(), 3, -170);
+    await checkpoint('vertical-scroll');
+    await touchDrag(context, page, activeImage(), 3, -170); await checkpoint('vertical-scroll-dispatched');
     await page.waitForFunction(before => scrollY > before + 40, before);
     assert.equal(await page.locator('[data-folio]').getAttribute('data-folio-active'), 'tramtrace', 'Vertical touch scroll cannot change project');
     await noOverflow(page, 'Native touch folio');
-    return { swipe: true, reverse: true, touchCancel: true, verticalPageScroll: true };
+    return { swipe: true, reverse: true, touchCancel: true, verticalPageScroll: true, inputDiagnostics: await page.evaluate(() => window.__v3InputDiagnostics) };
   });
   await browserTest('optional folio text animation failure cannot hide selection', { motion: 'no-preference', block: /\/assets\/vendor\/anime\.esm\.min\.js/ }, async ({ page }) => {
     await visit(page); await approachFolio(page); await folioSettled(page);
@@ -891,10 +975,11 @@ async function browserTests() {
     await page.keyboard.press('Escape');
     assert.equal(await menu.getAttribute('aria-expanded'), 'false');
     assert.equal(await menu.evaluate(node => node === document.activeElement), true);
-    await menu.click(); await page.locator('[data-v2-nav] a[href="/v3/about/"]').click();
-    await page.waitForURL('**/v3/about/');
+    await menu.click(); await page.locator('[data-v2-nav] a[href="/v3/projects/"]').click();
+    await page.waitForURL('**/v3/projects/');
+    await searchCount(page, 15);
     assert.equal(await menu.getAttribute('aria-expanded'), 'false');
-    await noOverflow(page, 'Mobile About');
+    await noOverflow(page, 'Mobile project collection');
   });
   await browserTest('photo gallery keyboard focus Escape and repeat opening', {}, async ({ page }) => {
     await visit(page, '/v3/projects/tramtrace/');
@@ -1148,7 +1233,12 @@ async function browserTests() {
     for (const viewport of sizes) for (const route of routes) {
       await page.setViewportSize(viewport); await visit(page, route);
       await noOverflow(page, route + ' ' + viewport.width + 'x' + viewport.height);
-      if (route === '/v3/') await folioSettled(page);
+      if (route === '/v3/') {
+        await folioSettled(page);
+        const card = await folioCardFits(page), supportingPhotos = await supportingPhotoFrames(page);
+        (evidence.landingGeometry ||= []).push({ viewport, card, supportingPhotos });
+        await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      }
       if (viewport.width === 390) {
         await screenshot(page, 'mobile-' + (route === '/v3/' ? 'home' : route.replace(/^\/v3\/|\/$/g, '').replaceAll('/', '-')));
         if (route === '/v3/') await screenshot(page, 'mobile-home-full', true);

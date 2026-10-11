@@ -430,6 +430,10 @@
     if (gesture?.id === event.pointerId) resetGesture();
   });
   deck.addEventListener('lostpointercapture', event => {
+    // Touch starts with implicit capture on the card button. Transferring it
+    // to the deck emits a bubbling lostpointercapture from that button; this
+    // is not a lost deck gesture. Only cancel capture actually lost by us.
+    if (event.target !== deck || deck.hasPointerCapture?.(event.pointerId)) return;
     if (gesture?.id === event.pointerId) resetGesture();
   });
   deck.addEventListener('click', event => {
