@@ -28,7 +28,7 @@
 /* Full touch targets at every width, independent of the compact visual rhythm. */
 .v3-folio-paging button{min-width:44px;width:44px;min-height:44px}
 /* Reserve the complete photograph sheet, including both printed edges. */
-@media(min-width:801px){.v3-folio-stage,.v3-folio-deck{min-height:clamp(480px,47vw,620px)}[data-folio-ready=true] .v3-folio-card{max-width:680px}}
+@media(min-width:801px){.v3-folio-stage,.v3-folio-deck{min-height:clamp(480px,47vw,580px)}[data-folio-ready=true] .v3-folio-card{max-width:660px}}
 @media(min-width:541px) and (max-width:800px){.v3-folio-stage,.v3-folio-deck{min-height:calc(56vw + 125px)}}
 @media(max-width:540px){.v3-folio-stage,.v3-folio-deck{min-height:calc(55vw + 106px)}}
 @media(min-width:801px){[data-folio-view=copper] .v3-folio-stage,[data-folio-view=copper] .v3-folio-deck{min-height:clamp(470px,43vw,600px)}}
@@ -42,3 +42,8 @@
 .v3-folio-feedback [data-folio-retry]:not([hidden]){margin-block:10px}
 @media(max-width:560px){.copper-reveal__controls label{margin-bottom:0}}
 @media(max-width:540px){[data-folio-view=copper] .v3-folio-stage,[data-folio-view=copper] .v3-folio-deck{min-height:365px}}
+/* Keep rear sheet corners inside the narrow desktop canvas, including mid-transition. */
+@media(min-width:801px) and (max-width:1150px){
+  [data-folio-ready=true] .v3-folio-card[data-offset='-1']{transform:translate(calc(-50% - 24px),calc(-50% - 22px)) rotate(-6deg) scale(.9)}
+  [data-folio-ready=true] .v3-folio-card[data-offset='1']{transform:translate(calc(-50% + 22px),calc(-50% - 16px)) rotate(6deg) scale(.91)}
+}

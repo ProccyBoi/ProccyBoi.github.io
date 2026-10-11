@@ -518,6 +518,13 @@ async function staticTests() {
     assert.deepEqual(tags(home, 'article').filter(tag => 'data-aircraft-chapter' in tag).map(tag => tag.id), ['aircraft', 'telemetry']);
     assert.equal(/Anatomy of an aircraft|id="inside"|href="#inside"|data-aircraft-detail=|v3-aircraft-details/.test(home), false);
     assert.deepEqual(tags(home, 'a').filter(tag => 'data-aircraft-go' in tag).map(tag => tag.href), ['#aircraft', '#telemetry']);
+    const aircraftFooter = home.match(/<div\b[^>]*class="v3-aircraft-foot"[^>]*>([\s\S]*?)<\/div>/)?.[1];
+    assert.ok(aircraftFooter, 'Aircraft footer exists');
+    const onward = tags(aircraftFooter, 'a').filter(tag => tag.class?.split(/\s+/).includes('v3-story-skip'));
+    assert.equal(onward.length, 1); assert.equal(onward[0].href, '#more-work', 'Downward aircraft footer navigation goes onward to More builds');
+    assert.match(aircraftFooter, />More builds\s*</);
+    assert.equal(tags(home, 'section').filter(tag => tag.id === 'more-work').length, 1);
+    assert.ok(home.indexOf('id="more-work"') > home.indexOf('data-aircraft-hero'), 'More builds is below the aircraft');
     const gallery = read('v3/projects/tramtrace/index.html');
     assert.ok(tags(gallery, 'img').filter(tag => 'data-zoomable' in tag).length >= 3);
     assert.equal(tags(gallery, 'dialog').filter(tag => 'data-lightbox' in tag).length, 1);
@@ -663,13 +670,16 @@ async function browserTests() {
       assert.equal(new URL(page.url()).searchParams.get('project'), 'tramtrace');
     } finally { release(); }
   });
-  await browserTest('folio pointer dragging selects and reverses without accidental small-drag changes', { motion: 'no-preference' }, async ({ page }) => {
+  await browserTest('folio pointer dragging selects and reverses without accidental small-drag changes', { motion: 'no-preference' }, async ({ page, requests }) => {
     await visit(page); await approachFolio(page); await folioSettled(page);
     const activeImage = () => page.locator('[data-folio-card][data-offset="0"] [data-folio-image]');
     await pointerDrag(page, activeImage(), -120); await folioSettled(page, 'skylabs');
+    await page.waitForFunction(() => document.querySelector('[data-folio]').dataset.folioMotion === 'anime');
+    assert.ok(requests.some(url => new URL(url).pathname === '/assets/vendor/anime.esm.min.js'), 'Normal-motion selection requests the actual vendored Anime module');
     await pointerDrag(page, activeImage(), 120); await folioSettled(page, 'tramtrace');
     await pointerDrag(page, activeImage(), -20); await folioSettled(page, 'tramtrace');
     await assertFolioSelection(page, 'tramtrace');
+    return { pointerDragAndReverse: true, smallDragPreserved: true, textAnimation: 'anime', vendoredAnimationRequested: true };
   });
   await browserTest('folio native touch swipe reversal cancellation and vertical page scroll', { touch: true, motion: 'no-preference', viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
     await visit(page); await approachFolio(page); await folioSettled(page);

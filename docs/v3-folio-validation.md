@@ -55,8 +55,10 @@ while preserving every existing interior/controller and aircraft asset check.
   retains case-study access and retry restores the requested genuine source.
 - Save Data does not prefetch unselected macros. No-JavaScript and failed-folio
   controller states retain all three source photos and real case links.
-- The optional local text-animation module can fail without hiding copy or
-  blocking selection. Narrow and short viewports retain useful controls.
+- Normal-motion selection must request the actual vendored Anime module and
+  activate its timeline path. The independent optional-module failure case must
+  still leave copy visible and selection working. Narrow and short viewports
+  retain useful controls.
 
 ## Registered copper comparison
 
@@ -100,7 +102,9 @@ pass them. Aircraft copy is checked against its new subordinate heading and
 Skylabs identity, with the same viewport/header/navigation bounds. No-JavaScript,
 reduced motion, Save Data, short viewports, denied WebGL, controller failure and
 model failure retain their independent fallback checks. The approved two chapters
-and separate peel/rigid-clearance geometry suites are unchanged.
+and separate peel/rigid-clearance geometry suites are unchanged. The downward
+Aircraft footer link goes onward to the actual More builds section, rather than
+back to the opening folio.
 
 ## Review artifacts
 
@@ -122,14 +126,19 @@ CI diagnostics, not physical-phone/network benchmarks or synthetic scores.
 ## Current verification
 
 Six source groups, JavaScript syntax, whitespace validation and the structural
-v3 audit pass against the assembled folio. The first isolated review-branch run passed 40 of 45 groups. All registered
-comparison, actual WebGL, expanded-photo and interior/workbench groups passed.
-Remaining failures were the first native folio swipe, an obsolete mobile-menu
-About destination assertion, and three real horizontal-overflow cases. The menu
-now verifies the designed All projects route and its full collection. The swipe
-inputs and overflow limits remain unchanged; the next run records trusted
-pointer/touch/capture events, hit targets, state checkpoints and out-of-bounds
-element geometry to establish the fixes. Browser acceptance remains pending the
-rerun. Prior landing results do not count as a pass for this design. Local Chromium still fails before
-opening a page with `socket() failed: Operation not permitted`; CI is the browser
-execution route for this review.
+v3 audit pass against the assembled folio. The first isolated review run passed
+40 of 45 groups. The second passed 44 of 45: native touch swipe, all active-sheet
+and image geometry, registered comparison, actual desktop/mobile WebGL, expanded
+photo gestures, and preserved interiors/workbench passed. Independent visual
+review verified complete photographs and corrected supporting-image proportions.
+
+The remaining failure was a six-pixel overflow from an inactive rotating sheet
+at 844×390. The final pass reduces only the narrow-desktop rear-sheet offsets,
+keeps the strict overflow limit, and tightens the desktop stage/photo width so
+project names fit the first 1440×900 viewport. It also positively verifies that
+normal-motion selection actually requests and activates vendored Anime, alongside
+the existing failure fallback, and corrects the aircraft footer to continue to
+More builds. Final exact-tree browser acceptance is pending that rerun; earlier
+landing results do not count as a pass for this design. Local Chromium fails
+before opening a page with `socket() failed: Operation not permitted`; CI is the
+browser execution route. Physical iOS Safari has not been tested.
