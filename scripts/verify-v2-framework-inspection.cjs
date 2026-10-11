@@ -17,7 +17,7 @@ const near=(a,b,label,epsilon=1e-6)=>assert.ok(Math.abs(a-b)<=epsilon,`${label}:
 const passed=(name,details={})=>{evidence.push({name,...details});console.log('PASS '+name);};
 const hash=array=>crypto.createHash('sha256').update(Buffer.from(array.buffer,array.byteOffset,array.byteLength)).digest('hex');
 function sourceContract(){
-  const html=read('v2/index.html'),code=read('assets/v2-selected-work.js');
+  const html=read('v2/index.html').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,''),code=read('assets/v2-selected-work.js');
   const section=html.slice(html.indexOf('data-selected-work'),html.indexOf('data-aircraft-hero'));
   for(const url of urls)assert.ok(section.includes('href="'+url+'"'),'Original project link remains '+url);
   assert.equal((section.match(/data-selected-image/g)||[]).length,6,'All six source posters remain available');

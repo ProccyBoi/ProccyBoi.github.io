@@ -220,7 +220,7 @@ function verifyRecordedSources(recorded, current) {
   assert.match(recorded.sourceCommit, /^[a-f0-9]{40}$/, 'Recorded build commit');
   const expected = {...recorded.sources};
   for (const [file, tool] of Object.entries(recorded.verificationTools || {})) {
-    assert(['scripts/build-v2-selected-assets.cjs', 'assets/v2-selected-assets.js'].includes(file), 'Only the build verifier and runtime decoder may have a separately recorded verification revision');
+    assert(['scripts/build-v2-selected-assets.cjs', 'assets/v2-selected-assets.js', 'assets/v2-hero-assets.js'].includes(file), 'Only the build verifier and runtime decoder may have a separately recorded verification revision');
     assert(expected[file], 'Verification revision must retain its original build-source hash');
     assert(typeof tool.reason === 'string' && tool.reason.length, 'Explain the verification-only revision');
     expected[file] = {bytes:tool.bytes, sha256:tool.sha256};

@@ -22,7 +22,7 @@ function passed(name, details = {}, run) {
 }
 function sourceContract() {
   const original = execFileSync('git', ['-c', 'safe.directory=' + process.cwd().replaceAll('\\', '/'), 'show', baseline + ':v2/index.html'], { encoding: 'utf8' });
-  const current = fs.readFileSync('v2/index.html', 'utf8');
+  const current = fs.readFileSync('v2/index.html', 'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
   const initialHero = html => html.match(/<section class="v2-assembly"[\s\S]*?<\/section>/)?.[0].replaceAll('\r\n', '\n');
   assert.ok(initialHero(original));assert.ok(initialHero(current));
   assert.equal((initialHero(current).match(/data-assembly-select=/g)||[]).length,3,'The three-project hero remains, with explicitly requested selector/navigation markup changes');

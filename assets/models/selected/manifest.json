@@ -285,14 +285,19 @@
   },
   "verificationTools": {
     "scripts/build-v2-selected-assets.cjs": {
-      "bytes": 38019,
-      "sha256": "686e72ffb06c065bb4f3532652e931e572f1f26f65c9becb60f073ad82147795",
-      "reason": "Strict explicit editorial-source revision verifies the detached Dual inspector byte-for-byte; original geometry, runtime capture, pack generation hash and commit remain retained."
+      "bytes": 38047,
+      "sha256": "25cf32cb1d9fc9502bf79264aef2565f3a519e31d926754a105211f8fb0841c9",
+      "reason": "Strict explicit editorial-source revision verifies the detached Dual inspector byte-for-byte; original geometry, runtime capture, pack generation hash and commit remain retained. Explicitly records shared HeroAssets scheduling revision alongside the Selected runtime decoder; every source still requires its exact recorded hash and complete geometry capture parity."
     },
     "assets/v2-selected-assets.js": {
       "bytes": 23220,
       "sha256": "37041778738d0dc5e8c39a36116a2e824143ae6f63ab9898744a908f9c39ec68",
       "reason": "Current runtime decoder used by verification: image scheduling, texture prefetch and shared transfer delegation; additive Selected-only loadStatic batches independent Metro/TramTrace instances with cooperative transactional cancellation. Exact load() and pack-generation sources remain unchanged. Exact pure-translation fast path byte-compared to the generic Vector3 reference, including signed zeros, materials, part groups, source immutability and transactional cancellation; packed CAD bytes are unchanged."
+    },
+    "assets/v2-hero-assets.js": {
+      "bytes": 9816,
+      "sha256": "73795766b9880015cbec533aad0e6b72536b275bd994a9a02dabb67e2a57159a",
+      "reason": "Direct-aircraft raw-transfer scheduling only; source pack decoder, reconstruction, original geometry/material/part buffers and pack-generation source hash are retained and independently byte-verified."
     }
   },
   "editorialSources": {

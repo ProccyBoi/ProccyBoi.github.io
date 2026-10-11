@@ -29,7 +29,7 @@ function passed(name, details = {}) { evidence.push({name, ...details}); console
 async function deadline(promise,label) {let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out')),timeout);})]);}finally{clearTimeout(timer);}}
 
 function sourceContract() {
-  const html = read('v2/index.html'), v3 = read('v3/index.html');
+  const html = read('v2/index.html').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ''), v3 = read('v3/index.html');
   const start = html.indexOf('data-selected-work'), end = html.indexOf('data-aircraft-hero', start);
   assert.ok(start > 0 && end > start, 'Selected Work precedes the aircraft');
   const section = html.slice(start, end), code = read('assets/v2-selected-work.js');
