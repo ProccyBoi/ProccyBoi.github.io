@@ -447,14 +447,15 @@ function instrument() {
   };
   const heroSample=()=>{
     const root=document.querySelector('[data-assembly]');if(!root)return null;
-    const box=root.getBoundingClientRect();
-    return{t:performance.now(),y:scrollY,visible:box.top<innerHeight&&box.bottom>0,top:box.top,bottom:box.bottom,frames:Number(root.dataset.assemblyFrames||0),submitted:Number(root.dataset.assemblySubmittedFrames||0),completed:Number(root.dataset.assemblyCompletedFrames||0),pending:root.dataset.assemblyGPUPending,phase:root.dataset.assemblyGPUPhase,completion:root.dataset.assemblyGPUCompletion,lastCompletedMs:Number(root.dataset.assemblyLastCompletedMs||0),lastSubmission:root.dataset.assemblyLastSubmission?JSON.parse(root.dataset.assemblyLastSubmission):null};
+    const box=root.getBoundingClientRect(),stage=root.querySelector('.v2-assembly-sticky').getBoundingClientRect(),header=document.querySelector('.v2-header').getBoundingClientRect();
+    const readableArea=Math.max(0,Math.min(innerWidth,stage.right)-Math.max(0,stage.left))*Math.max(0,Math.min(innerHeight,stage.bottom)-Math.max(0,header.bottom,stage.top));
+    return{t:performance.now(),y:scrollY,visible:box.top<innerHeight&&box.bottom>0,top:box.top,bottom:box.bottom,readableArea,stage:{top:stage.top,bottom:stage.bottom,left:stage.left,right:stage.right},headerBottom:header.bottom,frames:Number(root.dataset.assemblyFrames||0),submitted:Number(root.dataset.assemblySubmittedFrames||0),completed:Number(root.dataset.assemblyCompletedFrames||0),pending:root.dataset.assemblyGPUPending,phase:root.dataset.assemblyGPUPhase,completion:root.dataset.assemblyGPUCompletion,lastCompletedMs:Number(root.dataset.assemblyLastCompletedMs||0),lastSubmission:root.dataset.assemblyLastSubmission?JSON.parse(root.dataset.assemblyLastSubmission):null};
   };
   probe.heroSnapshot=heroSample;
   new MutationObserver(records=>{
     const value=heroSample();if(!value)return;
     probe.heroSamples.push(value);
-    if(records.some(record=>record.attributeName==='data-assembly-last-submission')&&value.lastSubmission&&value.lastSubmission.sequence!==probe.heroSubmissions.at(-1)?.sequence)probe.heroSubmissions.push(value.lastSubmission);
+    if(records.some(record=>record.attributeName==='data-assembly-last-submission')&&value.lastSubmission&&value.lastSubmission.sequence!==probe.heroSubmissions.at(-1)?.sequence)probe.heroSubmissions.push({...value.lastSubmission,observedMs:value.t,geometry:{y:value.y,readableArea:value.readableArea,stage:value.stage,headerBottom:value.headerBottom}});
   }).observe(document,{subtree:true,attributes:true,attributeFilter:['data-assembly-submitted-frames','data-assembly-completed-frames','data-assembly-g-p-u-pending','data-assembly-g-p-u-phase','data-assembly-g-p-u-completion','data-assembly-last-submission','data-assembly-last-completed-ms']});
   new MutationObserver(records=>{if(records.some(record=>record.attributeName==='data-selected-frames')){const value=sample();if(value?.frame>0){if(!probe.firstLive)probe.firstLive=value;if(probe.recording&&value.frame!==probe.samples.at(-1)?.frame)probe.samples.push(value);}}if(probe.recording&&records.some(record=>record.attributeName==='data-selected-last-frame')){const value=sample();if(value?.lastFrame&&value.lastFrame.sequence!==probe.frameRecords.at(-1)?.sequence)probe.frameRecords.push(value.lastFrame);}}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-frames','data-selected-last-frame']});
   probe.end=()=>{probe.recording=false;return{samples:probe.samples,events:probe.events,prevention:probe.prevention,frameRecords:probe.frameRecords};};
@@ -748,8 +749,10 @@ async function initialAndInput(browser) {
     assert.ok(heroReturn.visibility.some(entry=>entry.visible&&entry.t>=heroReturn.started&&entry.t<=heroReturn.hashRequested),'The existing top return really resumes the visible opening hero');
     assert.ok(heroReturn.visibility.some(entry=>!entry.visible&&entry.t>=heroReturn.hashRequested),'Actual hash navigation suspends the offscreen opening hero');
     for(const submission of heroReturn.submissions.filter(entry=>entry.at>=heroReturn.started)){
-      const visibility=heroReturn.visibility.filter(entry=>entry.t<=submission.at).at(-1);
-      assert.equal(visibility?.visible,true,'No new hero GPU submission starts after its real offscreen observer callback; an earlier in-flight completion remains honest');
+      // Native scroll can make the stage readable before the next asynchronous
+      // IntersectionObserver callback. Inspect the real geometry in the same
+      // mutation microtask as this submission, never a stale observer boolean.
+      assert.ok(submission.geometry?.readableArea>0,'Every resumed hero submission has actual positive stage area below the fixed header');
     }
     await save(run,'top-return-to-selected-hashes-no-offscreen-hero-submissions',{heroReturn});
     for(const viewport of [{width:390,height:844},{width:320,height:740},{width:1440,height:900}]){
