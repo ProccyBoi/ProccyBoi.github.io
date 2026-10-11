@@ -13,7 +13,8 @@ const root = path.resolve(__dirname, '..');
 const origin = new URL(process.env.V3_BASE_URL || 'http://localhost:8080/v3/').origin;
 const output = path.resolve(process.env.V3_SCREENSHOTS || path.join(root, '.codex-temp/v3-portfolio'));
 const staticOnly = process.argv.includes('--static-only');
-const evidence = { started: new Date().toISOString(), origin, mode: staticOnly ? 'static-only' : 'full', tests: [], browser: null };
+const webkitSmoke = process.argv.includes('--webkit-smoke');
+const evidence = { started: new Date().toISOString(), origin, mode: staticOnly ? 'static-only' : webkitSmoke ? 'webkit-mobile-fallback-smoke' : 'full', tests: [], browser: null };
 const projectSlugs = ['coaster', 'dash', 'framework-dual-usb', 'framework-expansion-card', 'framework-logic-analyser', 'framework-raspberry-pi', 'lora-receiver', 'lora-talkie', 'metroboard', 'rf-test-board', 'runswift', 'skylabs', 'switch-mode-power-supplies', 'tamagotchi-sd-card', 'tramtrace'];
 const toolSlugs = ['scopelab', 'lithography-animation', 'mosfet-operating-regions'];
 const primary = 'a[data-v2-project][href^="/v3/projects/"]';
@@ -363,13 +364,13 @@ async function assertHardwareIdle(page, project = 'tramtrace', view = 'overview'
   assert.deepEqual(after.models.filter(model => model.visible).map(model => model.key), [project], 'Background preloads stay hidden');
   return { framesBefore: before.frames, framesAfter: after.frames, observedMs: 900 };
 }
-async function assertUsableControl(page, locator, label) {
+async function assertUsableControl(page, locator, label, minimumWidth = 24) {
   await locator.scrollIntoViewIfNeeded();
   const geometry = await locator.evaluate(node => {
     const b = node.getBoundingClientRect(), hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
     return { x: b.x, y: b.y, width: b.width, height: b.height, inViewport: b.left >= 0 && b.right <= innerWidth + 1 && b.top >= 0 && b.bottom <= innerHeight + 1, exposed: !!hit && (hit === node || node.contains(hit)) };
   });
-  assert.ok(geometry.width >= 24 && geometry.height >= 24, label + ' meets minimum native touch target size: ' + JSON.stringify(geometry));
+  assert.ok(geometry.width >= minimumWidth && geometry.height >= 24, label + ' has a readable native target: ' + JSON.stringify(geometry));
   assert.ok(geometry.inViewport && geometry.exposed, label + ' is reachable and not covered by the model/copy: ' + JSON.stringify(geometry));
   await locator.focus();
   assert.equal(await locator.evaluate(node => node === document.activeElement), true, label + ' accepts keyboard focus');
@@ -954,7 +955,7 @@ async function browserTests() {
       const nav = page.locator('nav[aria-label="Primary navigation"]');
       assert.equal(await nav.isVisible(), true);
       assert.equal(await nav.locator('a:visible').count(), 3, 'Projects, CV and Contact remain directly available');
-      for (const link of await nav.locator('a').all()) await assertUsableControl(page, link, 'Primary navigation link');
+      for (const link of await nav.locator('a').all()) await assertUsableControl(page, link, 'Primary navigation link', 1);
       await activateKeyboard(page, nav.locator('a[href="/v3/projects/"]'));
       await page.waitForURL('**/v3/projects/'); await searchCount(page, 15);
       await noOverflow(page, '320px native collection navigation');
@@ -1264,6 +1265,65 @@ async function browserTests() {
     return { interiorsChecked: sourcePages.length - 1, viewport: { width: 320, height: 740 } };
   });
 }
+async function webkitSmokeTests() {
+  // WebKit with mobile emulation is useful cross-engine evidence. It does not
+  // represent a native iPhone/Safari, an iOS screenshot, or hardware GPU QA.
+  evidence.platformLimit = 'Official Playwright WebKit with mobile viewport and touch emulation on Linux; no native iOS device or Safari application was tested.';
+  for (const width of [390, 320]) for (const scenario of [{ name: 'WebGL unavailable', noWebGL: true }, { name: 'Save Data', saveData: true }]) {
+    await browserTest('WebKit ' + width + 'px ' + scenario.name + ' fallback photos and native navigation', { viewport: { width, height: 844 }, touch: true, ...scenario }, async ({ page, requests }) => {
+      await visit(page);
+      const section = page.locator(hardware);
+      await page.waitForFunction(() => document.querySelector('[data-hardware-portfolio]').dataset.model === 'fallback');
+      for (const project of hardwareProjects) {
+        await section.locator('button[data-project="' + project.key + '"]').tap();
+        await page.waitForFunction(key => document.querySelector('[data-hardware-portfolio]').dataset.project === key, project.key);
+        await loaded(section.locator('.poster:visible').first());
+        assert.equal(await section.locator('.project a').getAttribute('href'), '/v3/projects/' + project.slug + '/');
+        assert.equal(await section.locator('button[data-view]:visible, .pixel-toggle:visible').count(), 0, 'Unusable 3D controls stay absent');
+        await noOverflow(page, 'WebKit fallback ' + width + ' ' + project.key);
+      }
+      if (scenario.saveData) assert.equal(requests.some(url => /\/assets\/models\/(?:hero|aircraft)\//.test(url)), false);
+      await section.locator('button[data-project="tramtrace"]').tap(); await loaded(section.locator('.poster:visible').first());
+      const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
+      await opener.scrollIntoViewIfNeeded(); const before = await page.evaluate(() => scrollY);
+      await opener.tap(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+      assert.match(await dialog.locator('[data-inspect-image]').getAttribute('src'), /tramtrace-hero-1920/);
+      await dialog.locator('[data-inspect-photo-view="detail"]').tap();
+      await page.waitForFunction(() => document.querySelector('[data-gallery-inspect]').dataset.state === 'ready' && /tramtrace-controller-1920/.test(document.querySelector('[data-inspect-image]')?.src || ''));
+      await dialog.locator('[data-inspect-in]').tap(); assert.equal(Number(await dialog.getAttribute('data-zoom')), 1.5);
+      await dialog.locator('[data-inspect-photo-view="overview"]').tap();
+      await page.waitForFunction(() => document.querySelector('[data-gallery-inspect]').dataset.state === 'ready' && /tramtrace-hero-1920/.test(document.querySelector('[data-inspect-image]')?.src || ''));
+      assert.equal(Number(await dialog.getAttribute('data-zoom')), 1, 'Touch photo change resets its previous zoom');
+      await screenshot(page, 'webkit-' + width + '-' + scenario.name + '-photo');
+      await dialog.locator('[data-inspect-close]').tap(); await dialog.waitFor({ state: 'hidden' });
+      assert.equal(await opener.evaluate(node => node === document.activeElement), true);
+      assert.ok(Math.abs(await page.evaluate(() => scrollY) - before) <= 2, 'Closing restores pre-dialog reading position');
+      assert.equal(await page.evaluate(() => document.body.style.position === 'fixed' || document.documentElement.style.overflow === 'hidden'), false, 'The modal releases the document scroll lock');
+      await page.keyboard.press('PageDown');
+      await page.waitForFunction(previous => scrollY > previous + 40, before);
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+      await screenshot(page, 'webkit-' + width + '-' + scenario.name + '-fallback-full', true);
+      await page.reload({ waitUntil: 'load' });
+      await page.waitForFunction(() => document.querySelector('[data-hardware-portfolio]').dataset.model === 'fallback');
+      await loaded(page.locator(hardware + ' .poster:visible').first());
+      assert.equal(await page.locator(hardware + ' .project a').getAttribute('href'), '/v3/projects/tramtrace/');
+      for (const [name, route] of [['collection', '/v3/projects/'], ['about', '/v3/about/']]) {
+        await visit(page, route); assert.equal(await page.locator('h1').isVisible(), true);
+        const nav = page.locator('nav[aria-label="Primary navigation"]'); assert.equal(await nav.isVisible(), true); assert.equal(await nav.locator('a:visible').count(), 3);
+        if (name === 'collection') await searchCount(page, 15);
+        await noOverflow(page, 'WebKit ' + width + ' ' + name); await screenshot(page, 'webkit-' + width + '-' + scenario.name + '-' + name, true);
+      }
+      return { engine: 'WebKit', viewport: { width, height: 844 }, nativeIOS: false, posterProjects: hardwareProjects.map(item => item.key), photoTouchSwitch: true, modalScrollReleased: true, reload: true };
+    });
+  }
+  await browserTest('WebKit 320px without JavaScript keeps native reading and case routes', { viewport: { width: 320, height: 844 }, touch: true, js: false }, async ({ page }) => {
+    await visit(page); await loaded(page.locator(hardware + ' .poster:visible').first());
+    for (const item of hardwareProjects) assert.equal(await page.locator('noscript a[href="/v3/projects/' + item.slug + '/"]').isVisible(), true);
+    await noOverflow(page, 'WebKit no-JS hardware'); await screenshot(page, 'webkit-320-no-javascript-full', true);
+    await visit(page, '/v3/projects/'); await searchCount(page, 15); await noOverflow(page, 'WebKit no-JS collection');
+    return { engine: 'WebKit', nativeIOS: false, javaScript: false, completeCollection: true };
+  });
+}
 (async () => {
   fs.mkdirSync(output, { recursive: true });
   await staticTests();
@@ -1272,9 +1332,9 @@ async function browserTests() {
       let playwright;
       try { playwright = require('playwright'); }
       catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; playwright = require('/opt/codex/cua_node/lib/node_modules/playwright'); }
-      browser = await playwright.chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-      evidence.browser = { status: 'launched', version: browser.version(), executable: process.env.CHROMIUM_EXECUTABLE || 'Playwright bundled Chromium' };
-      await browserTests();
+      browser = webkitSmoke ? await playwright.webkit.launch({ headless: true }) : await playwright.chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+      evidence.browser = { status: 'launched', engine: webkitSmoke ? 'WebKit' : 'Chromium', version: browser.version(), executable: webkitSmoke ? 'Official Playwright bundled WebKit' : process.env.CHROMIUM_EXECUTABLE || 'Playwright bundled Chromium' };
+      if (webkitSmoke) await webkitSmokeTests(); else await browserTests();
     } catch (error) { evidence.browser = { status: 'blocked', error: error.stack || String(error) }; console.error('BLOCKED browser suite: ' + evidence.browser.error); }
     finally { if (browser) await browser.close(); }
   }
@@ -1282,7 +1342,7 @@ async function browserTests() {
   evidence.finished = new Date().toISOString();
   evidence.screenshots = screenshotPaths;
   evidence.status = evidence.tests.some(item => item.status === 'failed') ? 'failed' : evidence.browser?.status === 'blocked' ? 'blocked' : 'passed';
-  evidence.coverage = staticOnly ? 'Source checks only; browser rendering and interactions were not run.' : evidence.browser?.status === 'blocked' ? 'Browser launch failed; static results are not a browser pass.' : 'Source inventory, original geometry, actual WebGL pixels, native keyboard/touch, idle rendering, fallbacks, routes, workbench and fully decoded screenshots. Passing assertions do not replace human visual review of the captured images.';
+  evidence.coverage = staticOnly ? 'Source checks only; browser rendering and interactions were not run.' : evidence.browser?.status === 'blocked' ? 'Browser launch failed; static results are not a browser pass.' : webkitSmoke ? 'Official WebKit mobile emulation fallback, Photos touch controls, reload, scroll unlock, native navigation and complete collection. Not native iOS or actual WebGL evidence.' : 'Source inventory, original geometry, actual WebGL pixels, native keyboard/touch, idle rendering, fallbacks, routes, workbench and fully decoded screenshots. Passing assertions do not replace human visual review of the captured images.';
   fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(evidence, null, 2));
   console.log(evidence.status.toUpperCase() + ': ' + evidence.tests.filter(item => item.status === 'passed').length + '/' + evidence.tests.length + ' checks; artifacts ' + output);
   if (evidence.status !== 'passed') process.exitCode = 1;
