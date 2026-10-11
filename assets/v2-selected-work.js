@@ -135,8 +135,25 @@
     key.target.position.copy(target);key.position.copy(target).addScaledVector(key.userData.direction,span*2);key.target.updateMatrixWorld();
     const shadow=key.shadow.camera;shadow.left=-span/2;shadow.right=span/2;shadow.top=span/2;shadow.bottom=-span/2;shadow.near=.01;shadow.far=span*4;shadow.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
   }
-  function draw(value) {
-    const pose=composition.frame(camera,value,width,height);fitLight(pose);renderer.render(scene,camera);return pose;
+  function pixelRatio(warm=false) {
+    const live=Math.min(devicePixelRatio||1,width<=760?1.25:1.5);
+    const ratio=warm?Math.min(live,640/Math.max(width,height)):live;
+    if(renderer.getPixelRatio()!==ratio)renderer.setPixelRatio(ratio);
+    root.dataset.selectedLivePixelRatio=String(live);
+    if(warm)root.dataset.selectedWarmPixelRatio=String(ratio);
+    root.dataset.selectedBufferWidth=String(canvas.width);root.dataset.selectedBufferHeight=String(canvas.height);
+    return ratio;
+  }
+  function draw(value,warm=false) {
+    const started=performance.now(),ratio=pixelRatio(warm);
+    const pose=composition.frame(camera,value,width,height);fitLight(pose);
+    // r128 resets its counters after the shadow pass by default. Explicitly
+    // bracket the full draw so diagnostics include both shadow and main work.
+    const autoReset=renderer.info.autoReset;renderer.info.autoReset=false;renderer.info.reset();
+    try{renderer.render(scene,camera);}finally{renderer.info.autoReset=autoReset;}
+    const measurement={durationMs:performance.now()-started,...renderer.info.render,programs:renderer.info.programs.length,warm,pixelRatio:ratio,width:canvas.width,height:canvas.height};
+    root.dataset.selectedLastDraw=JSON.stringify(measurement);
+    return {...pose,measurement};
   }
   function render(time) {
     frame=0;if(!ready||!track||!visible||document.hidden||!activePage||!allowed())return;
@@ -155,7 +172,7 @@
       window.THREE?Promise.resolve():script('/assets/vendor/three.min.js'),
       window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=transfer-20261011'),
       window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=product-20261007'),
-      script('/assets/v2-selected-assets.js?v=shared-cad-20261011'),
+      script('/assets/v2-selected-assets.js?v=shared-batched-20261011'),
       script('/assets/v2-selected-scene.js?v=shared-cad-20261011')
     ]).then(()=>{if(allowed()&&!failed){window.V2HeroEnvironment.prefetch().catch(()=>{});window.V2SelectedAssets.prefetchTextures().catch(()=>{});}});
   }
@@ -198,8 +215,11 @@
       for(const name of names){
         await idleTurn();if(!allowed()||failed||!activePage||document.hidden)return;
         if(assemblies[name])continue;
-        assemblies[name]=await window.V2SelectedAssets.load(name);
-        if(name==='pi'||name==='tramtrace')window.V2ProductStudio.applyMaterials(assemblies[name],name);
+        const assembly=await window.V2SelectedAssets.loadStatic(name,assembly=>{
+          if(name==='pi'||name==='tramtrace')window.V2ProductStudio.applyMaterials(assembly,name);
+        },{shouldContinue:()=>allowed()&&!failed&&track&&activePage&&!document.hidden});
+        if(!assembly||!allowed()||failed||!track||!activePage||document.hidden)return;
+        assemblies[name]=assembly;
         root.dataset.selectedModelsReady=String(Object.keys(assemblies).length);
       }
       await idleTurn();if(!allowed()||failed||!track||document.hidden||!activePage)return;
@@ -218,6 +238,7 @@
       ready=true;root.dataset.selectedState='prepared';layout();request();
       if(new URLSearchParams(location.search).has('selectedCapture'))window.__v2Selected={renderer,scene,camera,assemblies,composition,
         seekProgress(value){capturePose=clamp(value);current=capturePose;const pose=draw(capturePose);chapter(pose.chapter);canvas.style.visibility='';root.classList.add('is-live');root.dataset.selectedWarmMask='false';root.dataset.selectedRenderedProgress=capturePose.toFixed(6);bar.style.transform=`scaleX(${capturePose})`;},
+        drawProgress(value,{warm=false,shadows=true}={}){const enabled=renderer.shadowMap.enabled;renderer.shadowMap.enabled=shadows;try{return draw(clamp(value),warm).measurement;}finally{renderer.shadowMap.enabled=enabled;renderer.shadowMap.needsUpdate=true;}},
         resume(){capturePose=undefined;previousTime=0;updateScroll();request();}};
     })().catch(fail).finally(()=>{
       initialization=null;
@@ -234,11 +255,11 @@
     try{
       await prepareSources();prepareTransfers().catch(fail);await foregroundSettled();await idleTurn();if(!valid())return;
       await initialize();if(!valid()||!ready)return;
-      for(const pose of [0,1]){await idleTurn();if(!valid())return;draw(pose);root.dataset.selectedWarmFrames=String(++warmFrames);}
+      for(const pose of [0,1]){await idleTurn();if(!valid())return;draw(pose,true);root.dataset.selectedWarmFrames=String(++warmFrames);}
       // Restore CPU pose without an extra GPU frame; keep the canvas masked.
       composition.frame(camera,progress,width,height);backgroundDone=true;root.dataset.selectedBackgroundReady='true';root.dataset.selectedBackgroundReadyMs=performance.now().toFixed(1);root.dataset.selectedBackgroundState='ready';settleBackground({state:'ready',at:performance.now()});
     }catch(error){fail(error);}
-    finally{backgroundBusy=false;if(token!==generation&&!backgroundDone&&!failed&&!visible&&!document.hidden&&activePage&&allowed())setTimeout(prepareInBackground,0);}
+    finally{if(renderer&&!failed)pixelRatio();backgroundBusy=false;if(token!==generation&&!backgroundDone&&!failed&&!visible&&!document.hidden&&activePage&&allowed())setTimeout(prepareInBackground,0);}
   }
   function start(){
     if(failed)return;if(!allowed()){fallback();return;}enable();

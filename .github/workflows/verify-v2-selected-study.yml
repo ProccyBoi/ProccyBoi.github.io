@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -37,7 +39,25 @@ jobs:
             study) node scripts/verify-v2-selected-scene.cjs --study ;;
             core|lifecycle|entry) node scripts/verify-v2-selected-scene.cjs --group=${{ matrix.suite }} ;;
             assets) V2_SELECTED_OUT=assets/models/selected node scripts/build-v2-selected-assets.cjs --verify && node scripts/build-v2-hero-assets.cjs --verify ;;
-            profile) node scripts/verify-v2-background.cjs --profile-only ;;
+            profile)
+              # Same runner, browser, standard HTTP fixture and cold 10Mbps
+              # contexts. Keep the old aircraft-only horizon honest.
+              git worktree add --detach /tmp/v2-published 68833d90122e16de5cb9fa993c4b4b27f6cd221f
+              git worktree add --detach /tmp/v2-selected-uncapped a386fb5e32a71ebc82ccbf87aa7714db224309a9
+              python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-published >/tmp/baseline.log 2>&1 &
+              python3 -m http.server 8082 --bind 127.0.0.1 --directory /tmp/v2-selected-uncapped >/tmp/uncapped.log 2>&1 &
+              for port in 8081 8082; do
+                for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:$port/v2/ >/dev/null && break; sleep 1; done
+              done
+              V2_BASE_URL=http://127.0.0.1:8081 V2_BACKGROUND_EXPECT_SELECTED_CAD=0 V2_BACKGROUND_OUT=/tmp/v2-selected-study/background-baseline node scripts/verify-v2-background.cjs --profile-only
+              V2_BASE_URL=http://127.0.0.1:8082 V2_BACKGROUND_OUT=/tmp/v2-selected-study/background-uncapped node scripts/verify-v2-background.cjs --profile-only
+              node scripts/verify-v2-background.cjs --profile-only
+              # A second cold run reverses the order to expose obvious
+              # software-renderer/order variability rather than select a win.
+              V2_BACKGROUND_OUT=/tmp/v2-selected-study/repeat/background node scripts/verify-v2-background.cjs --profile-only
+              V2_BASE_URL=http://127.0.0.1:8082 V2_BACKGROUND_OUT=/tmp/v2-selected-study/repeat/background-uncapped node scripts/verify-v2-background.cjs --profile-only
+              V2_BASE_URL=http://127.0.0.1:8081 V2_BACKGROUND_EXPECT_SELECTED_CAD=0 V2_BACKGROUND_OUT=/tmp/v2-selected-study/repeat/background-baseline node scripts/verify-v2-background.cjs --profile-only
+              ;;
           esac
       - uses: actions/upload-artifact@v4
         if: always()

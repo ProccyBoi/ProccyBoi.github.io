@@ -11,6 +11,9 @@ const path = require('node:path');
 const base = (process.env.V2_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '').replace(/\/v2$/, '');
 const output = process.env.V2_BACKGROUND_OUT || '.codex-temp/v2-background';
 const timeout = Number(process.env.V2_BROWSER_TIMEOUT || 120000);
+// Explicit comparison-only mode for the old image-only Selected Work page.
+// Never manufacture CAD readiness for a baseline that does not implement it.
+const expectSelectedCAD = process.env.V2_BACKGROUND_EXPECT_SELECTED_CAD !== '0';
 const aircraft = '[data-aircraft-hero]', selected = '[data-selected-work]';
 const aircraftDependency = /\/assets\/(?:models\/aircraft\/|v3-aircraft-(?:scene|atmosphere|electronics)\.js)/;
 const airframeBytes = /\/assets\/models\/aircraft\/skylabs-trainer\/airframe(?:\.meshopt)?\.glb(?:\.gz)?(?:\?|$)/;
@@ -37,7 +40,7 @@ function sourceContract() {
 }
 function probe() {
   performance.setResourceTimingBufferSize(2000);
-  const data = window.__v2BackgroundProbe = { scrolls: [], changes: [], longTasks: [], transportGates: [], cpuGates: [], selectedGates: [], fetches: [], contexts: [], visibility: [] };
+  const data = window.__v2BackgroundProbe = { scrolls: [], changes: [], longTasks: [], transportGates: [], cpuGates: [], selectedGates: [], fetches: [], contexts: [], visibility: [], selectedFirstLive: null };
   const nativeTimeout = window.setTimeout.bind(window), nativeFetch = window.fetch.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext;
   window.setTimeout = (callback, delay, ...args) => {
     const root = document.querySelector('[data-aircraft-background]');
@@ -73,6 +76,10 @@ function probe() {
   const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-settled', 'data-image-decoded', 'data-selected-ready', 'data-selected-models-ready', 'data-selected-background-ready', 'data-selected-warm-frames', 'data-selected-frames'];
   new MutationObserver(records => {
     for (const record of records) if (data.changes.length < 2000) data.changes.push({ t: performance.now(), attribute: record.attributeName, value: record.target.getAttribute(record.attributeName), tag: record.target.tagName, scrollY });
+    if (!data.selectedFirstLive && records.some(record => record.attributeName === 'data-selected-frames')) {
+      const work = document.querySelector('[data-selected-work]');
+      if (Number(work?.dataset.selectedFrames) > 0) data.selectedFirstLive = { t: performance.now(), frame: Number(work.dataset.selectedFrames), progress: Number(work.dataset.selectedProgress), renderedProgress: Number(work.dataset.selectedRenderedProgress), mask: work.dataset.selectedWarmMask, lastDraw: work.dataset.selectedLastDraw ? JSON.parse(work.dataset.selectedLastDraw) : null };
+    }
   }).observe(document, { subtree: true, attributes: true, attributeFilter: attributes });
   try { new PerformanceObserver(list => data.longTasks.push(...list.getEntries().map(entry => ({ start: entry.startTime, duration: entry.duration })))).observe({ type: 'longtask', buffered: true }); } catch (_) { /* Unsupported performance entry type is not a test failure. */ }
 }
@@ -130,7 +137,7 @@ function assertCPUGate(state) {
   // while genuinely distant no-scroll initialization retains both gates.
   for (const context of state.probe.contexts.filter(context => !context.visible && !context.near && !context.promoted)) {
     if (context.modelsSettled !== '3' && context.heroState !== 'unavailable') assert.ok(context.cpuGateStart !== null && context.t - context.cpuGateStart >= 11900, 'Offscreen renderer/CPU initialization waits for foreground settling or the 12s fallback');
-    if (context.selectedReady !== 'true' && !['static', 'unavailable'].includes(context.selectedState)) assert.ok(context.selectedGateStart !== null && context.t - context.selectedGateStart >= 17900, 'Offscreen aircraft CPU waits for Selected Work preparation or its bounded 18s fallback');
+    if (expectSelectedCAD && context.selectedReady !== 'true' && !['static', 'unavailable'].includes(context.selectedState)) assert.ok(context.selectedGateStart !== null && context.t - context.selectedGateStart >= 17900, 'Offscreen aircraft CPU waits for Selected Work preparation or its bounded 18s fallback');
   }
 }
 async function initialViewport(browser) {
@@ -179,7 +186,7 @@ async function initialViewport(browser) {
     const landing = Number(await page.locator(aircraft).getAttribute('data-aircraft-landing'));
     assert.ok(landing < .7, 'First visible entry starts the preserved landing instead of skipping it');
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-warm-frames'), '2', 'Entry does not repeat the warm draw sequence');
-    await save(run, 'prepared-entry-and-finite-selected-scene', { firstVisibleResponseMs: Date.now() - entry, landing, selectedFrames });
+    await save(run, 'prepared-entry-and-finite-selected-scene', { firstVisibleResponseMs: Date.now() - entry, landing, selectedFrames, selectedFirstLive: (await snapshot(page)).probe.selectedFirstLive });
   } catch (error) { await diagnostic(run, 'initial-viewport', error); throw error; } finally { await run.context.close(); }
 }
 async function heldTransport(browser) {
@@ -421,11 +428,18 @@ async function throttledWarmTrace(browser) {
     const started = Date.now();
     await page.goto(base + '/v2/?v=background-throttled-full-warm', { waitUntil: 'domcontentloaded' });
     await decodedImages(page); const imageReadyMs = Date.now() - started;
-    await selectedWarmed(page); await warmed(page); await page.locator('[data-assembly-models-ready="3"]').waitFor({ timeout }); const backgroundReadyMs = Date.now() - started;
+    if (expectSelectedCAD) await selectedWarmed(page);
+    await warmed(page); await page.locator('[data-assembly-models-ready="3"]').waitFor({ timeout }); const backgroundReadyMs = Date.now() - started;
     const selectedBefore = await page.locator(selected).evaluate(root => ({ live: root.dataset.selectedFrames, warm: root.dataset.selectedWarmFrames }));
     const hidden = await stableHidden(page), state = await snapshot(page); assertCPUGate(state);
-    assert.deepEqual({ live: state.selected.selectedFrames, warm: state.selected.selectedWarmFrames }, selectedBefore, 'Selected Work is also stable during the measured hidden idle interval');
-    assert.equal(Number(state.selected.selectedFrames || 0), 0); assert.equal(state.selected.selectedWarmFrames, '2');
+    if (expectSelectedCAD) {
+      assert.deepEqual({ live: state.selected.selectedFrames, warm: state.selected.selectedWarmFrames }, selectedBefore, 'Selected Work is also stable during the measured hidden idle interval');
+      assert.equal(Number(state.selected.selectedFrames || 0), 0); assert.equal(state.selected.selectedWarmFrames, '2');
+    } else {
+      assert.equal(await page.locator('canvas[data-selected-canvas]').count(), 0, 'The declared baseline genuinely has no Selected CAD renderer');
+      assert.notEqual(state.selected.selectedSceneReady, 'true'); assert.notEqual(state.selected.selectedBackgroundReady, 'true');
+      assert.equal(state.resources.filter(resource => /\/assets\/models\/selected\//.test(resource.name)).length, 0, 'Image-only baseline has no Selected geometry transport');
+    }
     assert.equal(state.hero.assemblyModelsReady, '3', 'Measurement continues through all three actual hero assemblies');
     assert.equal(state.scrollY, 0); assert.ok(state.aircraftTop > state.viewportHeight + 420);
     assert.ok(state.probe.scrolls.every(sample => sample.y === 0), 'The complete throttled trace stays in the initial viewport');
@@ -436,14 +450,15 @@ async function throttledWarmTrace(browser) {
     const resourceBytes = Object.fromEntries(['transferSize', 'encodedBodySize', 'decodedBodySize'].map(key => [key, state.resources.reduce((sum, resource) => sum + resource[key], 0)]));
     const longTasks = state.probe.longTasks;
     const firstChange = (attribute, value) => state.probe.changes.find(change => change.attribute === attribute && change.value === value)?.t ?? null;
-    const milestones = { imagesDecodedMs: firstChange('data-selected-ready', 'true'), allHeroReadyMs: firstChange('data-assembly-models-ready', '3'), allSelectedModelsReadyMs: firstChange('data-selected-models-ready', '6'), selectedGPUWarmMs: Number(state.selected.selectedBackgroundReadyMs), aircraftGPUWarmMs: Number(state.aircraft.aircraftBackgroundReadyMs) };
+    const milestones = { imagesDecodedMs: firstChange('data-selected-ready', 'true'), allHeroReadyMs: firstChange('data-assembly-models-ready', '3'), allSelectedModelsReadyMs: expectSelectedCAD ? firstChange('data-selected-models-ready', '6') : null, selectedGPUWarmMs: expectSelectedCAD ? Number(state.selected.selectedBackgroundReadyMs) : null, aircraftGPUWarmMs: Number(state.aircraft.aircraftBackgroundReadyMs) };
     const resourcesByKind = Object.fromEntries(Object.entries({ images: /\.(?:webp|png|jpe?g|svg)(?:\?|$)/i, selectedPacks: /\/models\/selected\//, heroPacks: /\/models\/hero\/.*\.(?:gz|bin)(?:\?|$)/, aircraftPacks: /\/models\/aircraft\// }).map(([kind, pattern]) => [kind, state.resources.filter(resource => pattern.test(resource.name))]));
     await save(run, 'cold-10mbps-through-gpu-warm', {
       network, cacheDisabled: true, imageReadyMs, backgroundReadyMs, hidden, resourceBytes,
       milestones, resourcesByKind,
+      selectedCAD: expectSelectedCAD ? { present: true, modelsReady: 6, warmFrames: 2, gpuReady: true, lastDraw: state.selected.selectedLastDraw ? JSON.parse(state.selected.selectedLastDraw) : null } : { present: false, modelsReady: null, warmFrames: null, gpuReady: null, note: 'This baseline has image-only Selected Work. CAD readiness is inapplicable, not a measured success.' },
       resourceCount: state.resources.length,
       longTaskSummary: { count: longTasks.length, totalMs: longTasks.reduce((sum, task) => sum + task.duration, 0), longestMs: Math.max(0, ...longTasks.map(task => task.duration)) },
-      measurementHorizon: 'Initial navigation through six decoded Selected Work images and six actual CAD models, both Selected GPU warm poses, aircraft telemetry attachment, both aircraft GPU warm draws, and one second of hidden idle',
+      measurementHorizon: expectSelectedCAD ? 'Initial navigation through six decoded Selected Work images and six actual CAD models, both Selected GPU warm poses, aircraft telemetry attachment, both aircraft GPU warm draws, and one second of hidden idle' : 'Image-only baseline: initial navigation through six decoded Selected Work images, all three hero models, aircraft telemetry attachment, both aircraft GPU warm draws, and one second of hidden idle. Selected CAD does not exist in this baseline.',
       fixture: 'Standard Python HTTP server: uncompressed HTTP responses, unlike the hero gzip-response profiling fixture; precompressed asset files retain their own format',
       timingEnvironment: 'Single cold Chromium software-WebGL trace at 10 Mbps / 40 ms; not a real-device benchmark or a gzip-fixture comparison'
     });
@@ -573,6 +588,7 @@ async function v3Deferred(browser) {
 (async () => {
   fs.mkdirSync(output, { recursive: true }); sourceContract();
   if (process.argv.includes('--source-only')) return;
+  assert.ok(expectSelectedCAD || process.argv.includes('--profile-only'), 'V2_BACKGROUND_EXPECT_SELECTED_CAD=0 is reserved for the explicit --profile-only baseline comparison');
   const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   try {

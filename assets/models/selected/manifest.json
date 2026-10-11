@@ -290,9 +290,9 @@
       "reason": "Compressed-only verification and manifest metadata update; original pack-generation script hash and build commit are retained in sources and sourceCommit."
     },
     "assets/v2-selected-assets.js": {
-      "bytes": 10154,
-      "sha256": "58aed62455b6562d062e517e88325fc6f7528e3d08c4156664fe83f947ef1822",
-      "reason": "Current runtime decoder used by verification: image fetch priority, async image decoding, texture prefetch and shared transfer delegation added after the original build. Pack-generation source hashes remain unchanged."
+      "bytes": 21500,
+      "sha256": "5f67a28c25fd00e996814a20b351975ca0f414ca3f416c4134dd637fdb7b66c3",
+      "reason": "Current runtime decoder used by verification: image scheduling, texture prefetch and shared transfer delegation; additive Selected-only loadStatic batches independent Metro/TramTrace instances with cooperative transactional cancellation. Exact load() and pack-generation sources remain unchanged."
     }
   }
 }

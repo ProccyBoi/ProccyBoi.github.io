@@ -57,7 +57,15 @@ The four new geometry transfers start after all three hero transfers settle or
 a 4.5-second timeout, with immediate entry promotion. CPU reconstruction yields
 between models after the foreground settles. Two finite, masked draws warm the
 Framework and transit compositions. Only a successful current live draw reveals
-the canvas. Hidden/offscreen scenes have no continuing render loop. The page has
+the canvas. The two offscreen draws cap their backing buffer's longest side at
+640 pixels; live draws restore the normal device-pixel-ratio limit before
+revealing the canvas. This prepares geometry, shaders and textures without a
+full-size offscreen fill, but is not a claim that the first full-size frame is
+free. Compatible opaque MetroBoard and TramTrace meshes are batched only in
+Selected Work's separate instances; transparent meshes and source hero packs
+remain unchanged. Batching yields between construction slices and cancels
+transactionally when the page or motion preference no longer permits work.
+Hidden/offscreen scenes have no continuing render loop. The page has
 three WebGL contexts total: hero, Selected Work, and aircraft. Preference changes
 restore the original static collections; renderer reuse avoids context growth.
 

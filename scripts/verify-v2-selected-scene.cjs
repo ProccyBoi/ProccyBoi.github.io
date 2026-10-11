@@ -10,6 +10,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const base = (process.env.V2_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '').replace(/\/v2$/, '');
 const output = process.env.V2_SELECTED_OUT || '.codex-temp/v2-selected-scene';
@@ -42,6 +43,108 @@ function sourceContract() {
   passed('source-contract-one-canvas-two-native-chapters-six-fallbacks');
 }
 
+const arrayHash = array => crypto.createHash('sha256').update(Buffer.from(array.buffer,array.byteOffset,array.byteLength)).digest('hex');
+function geometrySignature(geometry) {
+  return JSON.stringify({attributes:Object.fromEntries(Object.entries(geometry.attributes).map(([name,attribute])=>[name,{type:attribute.array.constructor.name,size:attribute.itemSize,normalized:attribute.normalized,count:attribute.count,bytes:arrayHash(attribute.array)}])),index:geometry.index?arrayHash(geometry.index.array):null,groups:geometry.groups,drawRange:geometry.drawRange});
+}
+function meshFlags(node) {
+  let groupOrder=0;for(let parent=node.parent;parent;parent=parent.parent)if(parent.isGroup){groupOrder=parent.renderOrder;break;}
+  return{renderOrder:node.renderOrder,groupOrder,castShadow:node.castShadow,receiveShadow:node.receiveShadow,frustumCulled:node.frustumCulled,layers:node.layers.mask};
+}
+function graphSignature(assembly) {
+  const nodes=[],geometries=new Map();
+  assembly.group.traverse(node=>{
+    if(node.geometry&&!geometries.has(node.geometry))geometries.set(node.geometry,geometrySignature(node.geometry));
+    nodes.push({id:node.uuid,parent:node.parent?.uuid,children:node.children.map(child=>child.uuid),position:node.position.toArray(),quaternion:node.quaternion.toArray(),scale:node.scale.toArray(),visible:node.visible,flags:meshFlags(node),geometry:node.geometry?.uuid,geometrySignature:node.geometry?geometries.get(node.geometry):null,materials:[].concat(node.material||[]).map(material=>({id:material.uuid,type:material.type,name:material.name,properties:Object.fromEntries(Object.entries(material).filter(([,value])=>value===null||['string','number','boolean'].includes(typeof value))),color:material.color?.toArray()}))});
+  });
+  return JSON.stringify({nodes,parts:assembly.parts.map(part=>({ref:part.ref,object:part.object.uuid}))});
+}
+async function staticAssemblyProof(api,studio,T,name,options={}) {
+  let captured;
+  const assembly=await api.loadStatic(name,source=>{
+    if(name==='pi'||name==='tramtrace')studio.applyMaterials(source,name);
+    if(options.mirror){let mirrored=false,index=0;source.group.traverse(node=>{if(index++===options.mirrorSourceNode&&node.isMesh){node.scale.x*=-1;mirrored=true;}});assert.ok(mirrored,'A known eligible real mesh is reflected for winding coverage');}
+    source.group.updateMatrixWorld(true);
+    const inverse=new T.Matrix4().copy(source.group.matrixWorld).invert(),nodes=[],facts=new Map(),groups=[];
+    source.group.traverse(node=>{
+      nodes.push(node);if(node.isGroup)groups.push({node,parent:node.parent,position:node.position.toArray(),quaternion:node.quaternion.toArray(),scale:node.scale.toArray()});
+      if(node.isMesh)facts.set(node,{parent:node.parent,geometry:node.geometry,material:node.material,signature:geometrySignature(node.geometry),transform:new T.Matrix4().multiplyMatrices(inverse,node.matrixWorld),flags:meshFlags(node)});
+    });
+    captured={source,nodes,facts,groups,parts:source.parts.map(part=>({part,object:part.object})),signature:graphSignature(source)};
+  },options.cancel?{shouldContinue:()=>++options.cancel.checks<4}:undefined);
+  if(options.cancel){
+    assert.equal(assembly,null,'Guarded cooperative cancellation returns no partially batched assembly');
+    assert.ok(options.cancel.checks>=4,'Cancellation interrupts real cooperative work');
+    assert.equal(graphSignature(captured.source),captured.signature,'Cancellation commits no graph, index, attribute, material, flag or part changes');
+    assert.equal(captured.source.staticBatches,undefined,'Canceled staging never claims committed batches');
+    return{canceled:true,guardChecks:options.cancel.checks,unchangedSource:true};
+  }
+  if(!['metro','tramtrace'].includes(name)){assert.equal(assembly.staticBatches,undefined,'Other source assemblies do not opt into batching');return{assembly,report:{name,batched:false}};}
+  const report=assembly.staticBatches;assert.ok(report?.batches.length>0,name+': actual production static batching is exercised');
+  const actualNodes=new Set();assembly.group.traverse(node=>actualNodes.add(node));
+  const processed=new Set(),materials=new Map();let vertices=0,indices=0,mirrored=0,maxPositionError=0,maxNormalError=0;
+  for(const batch of report.batches){
+    const output=assembly.group.getObjectByName(batch.name);assert.ok(output?.isMesh,'Batch corresponds to an actual mesh');
+    assert.equal(output.material.transparent,false,'Only opaque materials enter a static batch');assert.ok(!(output.material.transmission>0));
+    const schema=Object.entries(output.geometry.attributes).sort(([a],[b])=>a.localeCompare(b)).map(([key,attribute])=>[key,attribute.array.constructor.name,attribute.itemSize,attribute.normalized]);
+    assert.equal(JSON.stringify(schema),JSON.stringify(batch.schema),'All declared attribute schemas match the real output');
+    assert.equal(JSON.stringify(meshFlags(output)),JSON.stringify(batch.flags),'Output keeps renderer/shadow/culling/layer/group-order flags');
+    assert.equal(output.geometry.attributes.position.count,batch.vertices);assert.equal(output.geometry.index.count,batch.indices);
+    if(materials.has(batch.materialId))assert.equal(materials.get(batch.materialId),output.material,'A material ID never aliases different material objects');else materials.set(batch.materialId,output.material);
+    let nextVertex=0,nextIndex=0;
+    for(const member of batch.members){
+      const source=captured.nodes[member.sourceNode],fact=captured.facts.get(source);assert.ok(fact,'Source traversal membership resolves independently');assert.ok(!processed.has(source),'No original mesh is packed twice');processed.add(source);
+      assert.equal(source.name,member.sourceName);assert.equal(source.geometry.uuid,member.sourceGeometry);assert.equal(source.material,output.material,'Material object identity is preserved, not approximated or cloned');assert.equal(member.sourceMaterial,batch.materialId);
+      assert.equal(JSON.stringify(fact.flags),JSON.stringify(batch.flags),'Only equivalent flags are grouped');
+      const sourceSchema=Object.entries(source.geometry.attributes).sort(([a],[b])=>a.localeCompare(b)).map(([key,attribute])=>[key,attribute.array.constructor.name,attribute.itemSize,attribute.normalized]);assert.equal(JSON.stringify(sourceSchema),JSON.stringify(schema),'Incompatible source attribute layouts never merge');
+      assert.equal(member.vertexStart,nextVertex);assert.equal(member.indexStart,nextIndex);assert.equal(member.vertexCount,source.geometry.attributes.position.count);assert.equal(member.indexCount,source.geometry.index?.count||source.geometry.attributes.position.count);
+      fact.transform.elements.forEach((value,index)=>near(member.sourceTransform[index],value,'Independent root-local source transform',1e-12));
+      const reflected=fact.transform.determinant()<0;assert.equal(member.mirrored,reflected);if(reflected)mirrored++;
+      const normalMatrix=new T.Matrix3().getNormalMatrix(fact.transform),vector=new T.Vector3();
+      for(const [attributeName,attribute]of Object.entries(source.geometry.attributes)){
+        const target=output.geometry.attributes[attributeName],offset=member.vertexStart*attribute.itemSize;
+        if(attributeName==='position'||attributeName==='normal'){
+          for(let vertex=0;vertex<attribute.count;vertex++){
+            vector.fromBufferAttribute(attribute,vertex);if(attributeName==='position')vector.applyMatrix4(fact.transform);else vector.applyMatrix3(normalMatrix);
+            for(let axis=0;axis<3;axis++){
+              const expected=vector.getComponent(axis),actual=target.array[offset+vertex*3+axis];
+              assert.equal(actual,Math.fround(expected),name+': every '+attributeName+' component equals the independently transformed Float32 value');
+              const error=Math.abs(actual-expected);if(attributeName==='position')maxPositionError=Math.max(maxPositionError,error);else maxNormalError=Math.max(maxNormalError,error);
+            }
+          }
+        }else{
+          const segment=target.array.subarray(offset,offset+attribute.array.length);assert.equal(arrayHash(segment),arrayHash(attribute.array),'UV/color/other attribute bytes remain exact');
+        }
+      }
+      for(let index=0;index<member.indexCount;index++){
+        const sourceIndex=reflected?(index%3===1?index+1:index%3===2?index-1:index):index;
+        const expected=(source.geometry.index?source.geometry.index.getX(sourceIndex):sourceIndex)+member.vertexStart;
+        assert.equal(output.geometry.index.getX(member.indexStart+index),expected,'Exact triangle membership and reflected-transform winding');
+      }
+      assert.equal(geometrySignature(source.geometry),fact.signature,'Packing never mutates the original cached attribute/index bytes');
+      assert.equal(actualNodes.has(source),false,'Merged source mesh is removed instead of double-rendered');
+      nextVertex+=member.vertexCount;nextIndex+=member.indexCount;vertices+=member.vertexCount;indices+=member.indexCount;
+    }
+    assert.equal(nextVertex,batch.vertices);assert.equal(nextIndex,batch.indices);
+  }
+  let protectedNodes=0,sourceTriangles=0,packedTriangles=0;
+  for(const [node,fact]of captured.facts){
+    let visible=true;for(let parent=node;parent;parent=parent.parent)if(!parent.visible)visible=false;
+    // All actual source meshes in these packs are visible. Their original
+    // triangle count is checked before/after, independently of report totals.
+    if(visible)sourceTriangles+=(fact.geometry.index?.count||fact.geometry.attributes.position.count)/3;
+    if(!processed.has(node)){assert.ok(actualNodes.has(node),'Unmerged primitives remain original scene objects');assert.equal(node.parent,fact.parent);assert.equal(node.geometry,fact.geometry);assert.equal(node.material,fact.material);assert.equal(geometrySignature(node.geometry),fact.signature);}
+    if(Array.isArray(fact.material)||fact.material.transparent||fact.material.transmission>0){protectedNodes++;assert.ok(!processed.has(node),'Transparent/multi-material meshes preserve their original sorting identity');}
+  }
+  assembly.group.traverseVisible(node=>{if(node.isMesh)packedTriangles+=(node.geometry.index?.count||node.geometry.attributes.position.count)/3;});
+  assert.equal(packedTriangles,sourceTriangles,'Exact whole-assembly triangle parity');assert.equal(report.sourceTriangles,sourceTriangles);assert.equal(report.packedTriangles,packedTriangles);
+  for(const group of captured.groups){assert.ok(actualNodes.has(group.node),'Original part/ancestor groups remain attached');assert.equal(group.node.parent,group.parent);assert.deepEqual(group.node.position.toArray(),group.position);assert.deepEqual(group.node.quaternion.toArray(),group.quaternion);assert.deepEqual(group.node.scale.toArray(),group.scale);}
+  for(const part of captured.parts){assert.ok(assembly.parts.includes(part.part));assert.equal(part.part.object,part.object);assert.ok(actualNodes.has(part.object),'Part references retain their original objects');}
+  assert.ok(maxPositionError<=1e-6&&maxNormalError<=1e-6,'Only bounded Float32 transform rounding is introduced');
+  if(options.mirror)assert.ok(mirrored>0,'The adversarial parity case actually exercises reflected winding');
+  return{assembly,report:{name,sourceTriangles,packedTriangles,vertices,indices,protectedNodes,mirrored,maxPositionError,maxNormalError,sourceOpaqueDraws:report.sourceOpaqueDraws,opaqueDraws:report.opaqueDraws,mergedBatches:report.mergedBatches,workMs:report.workMs,maxWorkSliceMs:report.maxWorkSliceMs,yields:report.yields}};
+}
+
 async function sourceGeometry() {
   const T = require('../assets/vendor/three.min.js'), requests = new Map();
   // Real production loaders construct all geometry/materials. Only HTTP and
@@ -54,10 +157,17 @@ async function sourceGeometry() {
       const file = url.split('?')[0]; requests.set(file, (requests.get(file) || 0) + 1);
       return new Response(fs.readFileSync(path.join(root, file.replace(/^\//, ''))));
     }});
-  for (const file of ['v2-hero-assets.js', 'v2-selected-assets.js', 'v2-selected-scene.js']) vm.runInContext(read('assets/' + file), context, {filename:file});
-  const hero = {}, assemblies = {}, heroParents = new T.Group();
+  for (const file of ['v2-hero-assets.js', 'v2-hero-environment.js', 'v2-selected-assets.js', 'v2-selected-scene.js']) vm.runInContext(read('assets/' + file), context, {filename:file});
+  const hero = {}, sourceAssemblies = {}, staticAssemblies = {}, heroParents = new T.Group(),parity=[];
   for (const name of ['pi', 'tramtrace']) { hero[name] = await window.V2HeroAssets.load(name); heroParents.add(hero[name].group); }
-  for (const name of names) assemblies[name] = await window.V2SelectedAssets.load(name);
+  for (const name of names) sourceAssemblies[name] = await window.V2SelectedAssets.load(name);
+  const originalSources=Object.fromEntries(names.map(name=>[name,graphSignature(sourceAssemblies[name])]));
+  for(const name of names){const result=await staticAssemblyProof(window.V2SelectedAssets,window.V2ProductStudio,T,name);staticAssemblies[name]=result.assembly;parity.push(result.report);}
+  const mirrored=await staticAssemblyProof(window.V2SelectedAssets,window.V2ProductStudio,T,'metro',{mirror:true,mirrorSourceNode:staticAssemblies.metro.staticBatches.batches[0].members[0].sourceNode});parity.push({...mirrored.report,adversarialMirror:true});
+  const cancellation=await staticAssemblyProof(window.V2SelectedAssets,window.V2ProductStudio,T,'metro',{cancel:{checks:0}});
+  for(const name of names){assert.equal(sourceAssemblies[name].staticBatches,undefined,'Unopted source load() stays exact and unbatched');assert.equal(graphSignature(sourceAssemblies[name]),originalSources[name],'Static batching leaves separately loaded source graphs and cached bytes unchanged');}
+  passed('independent-static-batch-attribute-winding-material-transparency-and-cancellation-parity',{parity,cancellation});
+  for(const [variant,assemblies]of [['source',sourceAssemblies],['production-static',staticAssemblies]]){
   const scene = new T.Scene(), composition = window.V2SelectedScene.create(T, assemblies); scene.add(composition.group);
   assert.deepEqual(Array.from(composition.names), names);
   assert.equal(composition.group.children.length, 6, 'All six assemblies share a single parent space');
@@ -128,7 +238,8 @@ async function sourceGeometry() {
   }
   assert.deepEqual(localPose(), original, 'Scene choreography never deforms/reparents source parts');
   for (const name of ['pi', 'tramtrace']) assert.equal(hero[name].group.parent, heroParents);
-  passed('real-six-model-geometry-shared-space-independent-hero-and-reversible-camera', {stats,fitReports,journeyReports,requests:Object.fromEntries(requests)});
+  passed('real-six-model-geometry-shared-space-independent-hero-and-reversible-camera-'+variant, {stats,fitReports,journeyReports,requests:Object.fromEntries(requests)});
+  }
 }
 
 function easingMath() {
@@ -155,15 +266,16 @@ function easingMath() {
 function instrument() {
   const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext, nativeTimeout=setTimeout.bind(window), nativeFetch=fetch.bind(window);
   const contexts = new Map();
-  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],recording:false};
+  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],firstLive:null,recording:false};
   window.setTimeout=(callback,delay,...args)=>{if(/v2-selected-work\.js/.test(new Error().stack)){if(delay===4500)probe.transportGates.push(performance.now());if(delay===12000)probe.cpuGates.push(performance.now());}return nativeTimeout(callback,delay,...args);};
   window.fetch=(...args)=>{const url=typeof args[0]==='string'?args[0]:args[0]?.url||String(args[0]);probe.fetches.push({url,t:performance.now()});return nativeFetch(...args);};
   const sample = () => {
     const root=document.querySelector('[data-selected-work]'); if(!root)return null;
-    const canvas=root.querySelector('[data-selected-canvas]');
-    return {t:performance.now(),y:scrollY,raw:Number(root.dataset.selectedProgress||0),rendered:Number(root.dataset.selectedRenderedProgress||0),frame:Number(root.dataset.selectedFrames||0),warm:Number(root.dataset.selectedWarmFrames||0),mask:root.dataset.selectedWarmMask,state:root.dataset.selectedState,chapter:root.dataset.selectedChapter,readyClass:root.classList.contains('is-live'),canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,canvasOpacity:canvas?Number(getComputedStyle(canvas).opacity):0};
+    const canvas=root.querySelector('[data-selected-canvas]'),stage=root.querySelector('.v2-selected-stage');
+    return {t:performance.now(),y:scrollY,raw:Number(root.dataset.selectedProgress||0),rendered:Number(root.dataset.selectedRenderedProgress||0),frame:Number(root.dataset.selectedFrames||0),warm:Number(root.dataset.selectedWarmFrames||0),mask:root.dataset.selectedWarmMask,state:root.dataset.selectedState,chapter:root.dataset.selectedChapter,readyClass:root.classList.contains('is-live'),canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,canvasOpacity:canvas?Number(getComputedStyle(canvas).opacity):0,lastDraw:root.dataset.selectedLastDraw?JSON.parse(root.dataset.selectedLastDraw):null,warmPixelRatio:Number(root.dataset.selectedWarmPixelRatio),livePixelRatio:Number(root.dataset.selectedLivePixelRatio),bufferWidth:Number(root.dataset.selectedBufferWidth),bufferHeight:Number(root.dataset.selectedBufferHeight),cssWidth:stage?.clientWidth||0,cssHeight:stage?.clientHeight||0,expectedLivePixelRatio:Math.min(devicePixelRatio||1,(stage?.clientWidth||innerWidth)<=760?1.25:1.5)};
   };
   probe.snapshot=sample; probe.begin=()=>{probe.samples=[];probe.events=[];probe.prevention=[];probe.recording=true;probe.samples.push(sample());};
+  new MutationObserver(records=>{if(!probe.firstLive&&records.some(record=>record.attributeName==='data-selected-frames')){const value=sample();if(value?.frame>0)probe.firstLive=value;}}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-frames']});
   probe.end=()=>{probe.recording=false;return{samples:probe.samples,events:probe.events,prevention:probe.prevention};};
   window.requestAnimationFrame=callback=>nativeRAF(t=>{callback(t);if(probe.recording){const next=sample();if(next&&next.frame!==probe.samples.at(-1)?.frame)probe.samples.push(next);}});
   HTMLCanvasElement.prototype.getContext=function(type,...args){const context=nativeContext.call(this,type,...args);if(context&&/webgl/i.test(type)&&!contexts.has(context)){const kind=this.matches('[data-selected-canvas]')?'selected':this.matches('[data-aircraft-canvas]')?'aircraft':this.closest('[data-assembly]')?'hero':'other';contexts.set(context,true);probe.contexts.push({kind,t:performance.now()});}return context;};
@@ -174,7 +286,7 @@ function instrument() {
   window.IntersectionObserver=class extends NativeObserver{constructor(callback,options){super((entries,observer)=>{callback(entries,observer);if(!options?.rootMargin)for(const entry of entries)if(entry.target.matches('[data-selected-work]'))probe.visibility.push({visible:entry.isIntersecting,t:performance.now(),y:scrollY});},options);}};
 }
 async function open(browser, options={}) {
-  const context=await browser.newContext({viewport:options.viewport||{width:1440,height:900},hasTouch:!!options.touch,isMobile:!!options.touch,javaScriptEnabled:!options.noJS,reducedMotion:options.reduced?'reduce':'no-preference'});
+  const context=await browser.newContext({viewport:options.viewport||{width:1440,height:900},deviceScaleFactor:options.dpr||1,hasTouch:!!options.touch,isMobile:!!options.touch,javaScriptEnabled:!options.noJS,reducedMotion:options.reduced?'reduce':'no-preference'});
   await context.addInitScript(instrument);
   if(options.saveData)await context.addInitScript(()=>Object.defineProperty(navigator,'connection',{configurable:true,value:{saveData:true}}));
   if(options.noDecompression)await context.addInitScript(()=>{window.DecompressionStream=undefined;});
@@ -235,6 +347,19 @@ function bounded(trace,before,after) {
   near(after.raw,after.rendered,'Converges to native target',tolerance);
 }
 async function noLoop(page,label) {await settled(page);const before=await state(page);await page.waitForTimeout(800);assert.equal((await state(page)).frame,before.frame,label);}
+function assertWarmDraw(sample,label) {
+  const draw=sample.lastDraw;assert.ok(draw,label+': actual last-draw telemetry exists');assert.equal(draw.warm,true,label+': measured draw is a warm pose');
+  assert.ok(draw.width>0&&draw.height>0&&Math.max(draw.width,draw.height)<=640,label+': actual warm GPU draw is capped at 640 pixels on its long side');
+  const expected=Math.min(sample.expectedLivePixelRatio,640/Math.max(sample.cssWidth,sample.cssHeight));
+  near(draw.pixelRatio,expected,label+': warm DPR',.000001);near(sample.warmPixelRatio,expected,label+': exposed warm DPR',.000001);
+  assert.ok(Number.isFinite(draw.durationMs)&&draw.durationMs>=0&&draw.calls>0&&draw.triangles>1000&&draw.programs>0,label+': duration and complete render counters are recorded');
+}
+function assertLiveDraw(sample,label) {
+  const draw=sample.lastDraw;assert.ok(draw,label+': actual last-draw telemetry exists');assert.equal(draw.warm,false,label+': measured draw is live');
+  near(draw.pixelRatio,sample.expectedLivePixelRatio,label+': original full live DPR',.000001);near(sample.livePixelRatio,sample.expectedLivePixelRatio,label+': exposed live DPR',.000001);
+  assert.equal(draw.width,Math.floor(sample.cssWidth*sample.expectedLivePixelRatio),label+': full-resolution width');assert.equal(draw.height,Math.floor(sample.cssHeight*sample.expectedLivePixelRatio),label+': full-resolution height');
+  assert.equal(sample.bufferWidth,draw.width,label+': buffer matches completed live draw');assert.equal(sample.bufferHeight,draw.height,label+': buffer matches completed live draw');
+}
 
 async function initialAndInput(browser) {
   const run=await open(browser),{page}=run;
@@ -245,13 +370,19 @@ async function initialAndInput(browser) {
     assert.ok(first.scrolls.every(sample=>sample.y===0),'No-scroll preparation genuinely never enters Selected Work');
     assert.ok(first.images.length===6&&first.images.every(image=>image.decoded==='true'&&image.complete&&image.width>0));
     assert.equal(Number(first.selected.selectedFrames||0),0,'Warm draws never count as live draws');
+    assertWarmDraw(await state(page),'Initial hidden preparation');
     assert.deepEqual(first.contexts.map(context=>context.kind).sort(),['aircraft','hero','selected'],'Exactly three real WebGL contexts across the page');
     for(const name of ['pi','tramtrace'])assert.equal(run.requests.filter(request=>heroPack(name).test(request.url)).length,1,'No duplicate '+name+' transfer');
     assert.equal(run.requests.filter(request=>packs.test(request.url)).length,4,'Four new model packs, each once');
     await page.waitForTimeout(900);const hidden=await snapshot(page);assert.equal(hidden.selected.selectedFrames,first.selected.selectedFrames);assert.equal(hidden.selected.selectedWarmFrames,'2');
     await save(run,'initial-no-scroll-six-models-two-hidden-warm-poses-three-contexts',{readyMs:Date.now()-started,timingEnvironment:'Chromium software WebGL; not a real-device benchmark'});
     for(const [label,start,deltas]of[['forward',.15,[120,120,120]],['reverse',.7,[-120,-120,-120]]]) {
-      const before=await jump(page,start);await page.mouse.move(720,470);await begin(page);
+      const before=await jump(page,start);assertLiveDraw(before,'Native entry after capped warming');
+      if(label==='forward'){
+        const firstLive=await page.evaluate(()=>window.__selectedProbe.firstLive);assertLiveDraw(firstLive,'First actual live draw following capped warm');
+        await save(run,'first-full-size-live-draw-after-capped-warm',{firstLive,measurementNote:'Actual first production draw, before any capture API or diagnostic rendering'});
+      }
+      await page.mouse.move(720,470);await begin(page);
       for(const delta of deltas){const previous=await state(page);await page.mouse.wheel(0,delta);await page.waitForFunction(({y,direction})=>(scrollY-y)*direction>40,{y:previous.y,direction:Math.sign(delta)});await page.waitForTimeout(35);}
       const expected=before.y+deltas.reduce((a,b)=>a+b,0);await page.waitForFunction(expected=>Math.abs(scrollY-expected)<2,expected);await settled(page);
       const after=await state(page),trace=await end(page);trusted(trace);bounded(trace,before,after);
@@ -324,7 +455,7 @@ async function fastEntry(browser) {
     assert.equal(await page.locator(selected+' [data-selected-chapter="1"] [data-selected-image]').evaluateAll(images=>images.length===2&&images.every(image=>getComputedStyle(image).visibility==='visible')),true,'Both requested Transit fallback images are visible before geometry resolves');
     const fallback=await page.locator('[data-selected-image]').evaluateAll(images=>images.some(image=>{const css=getComputedStyle(image);return css.visibility!=='hidden'&&Number(css.opacity)>0;}));assert.equal(fallback,true,'Early entry retains a visible fallback while actual geometry is pending');
     await release();await settled(page);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').dataset.selectedModelsReady==='6');
-    const current=await state(page);assert.equal(current.chapter,'1');near(current.raw,current.rendered,'Fast entry draws its current native destination',tolerance);assert.equal(current.mask,'false');
+    const current=await state(page);assert.equal(current.chapter,'1');near(current.raw,current.rendered,'Fast entry draws its current native destination',tolerance);assert.equal(current.mask,'false');assertLiveDraw(current,'Fast entry retains full live resolution');
     await page.waitForTimeout(700);assert.equal((await state(page)).chapter,'1','Late warming never resets the requested destination');
     await save(run,'fast-transit-entry-promotes-held-transport-without-blank',{current});
   }catch(error){await diagnose(run,'fast-entry',error);throw error;}finally{await release().catch(()=>{});await run.context.close();}
@@ -350,13 +481,13 @@ async function heldHeroTextures(browser) {
 }
 
 async function mobileTouch(browser) {
-  const run=await open(browser,{touch:true,viewport:{width:390,height:844}}),{page,context}=run;
+  const run=await open(browser,{touch:true,dpr:2,viewport:{width:390,height:844}}),{page,context}=run;
   try{
     await page.goto(base+'/v2/?v=selected-touch#work-framework',{waitUntil:'domcontentloaded'});await settled(page);const before=await jump(page,.2),cdp=await context.newCDPSession(page);await begin(page);
     const point=y=>[{x:195,y,id:1,radiusX:4,radiusY:4,force:1}];await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:point(650)});
     for(const y of [625,600,575,550,525,500,475,450]){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:point(y)});await page.waitForTimeout(65);}
     await page.waitForTimeout(120);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForFunction(y=>scrollY>y+80,before.y);await settled(page);
-    const after=await state(page),trace=await end(page);trusted(trace);assert.ok(trace.events.some(event=>event.type==='touchmove'));assert.ok(trace.samples.length>1&&trace.samples.every(sample=>Math.abs(sample.raw-sample.rendered)<=tolerance),'Touch follows native scrolling directly');
+    const after=await state(page),trace=await end(page);trusted(trace);assert.ok(trace.events.some(event=>event.type==='touchmove'));assert.ok(trace.samples.length>1&&trace.samples.every(sample=>Math.abs(sample.raw-sample.rendered)<=tolerance),'Touch follows native scrolling directly');assertLiveDraw(after,'High-DPR mobile keeps its accepted 1.25 live cap');near(after.livePixelRatio,1.25,'High-DPR mobile cap');
     await noLoop(page,'Touch scene settles without residual rendering');await save(run,'native-mobile-touch-directness',{before,after,trace});
   }catch(error){await diagnose(run,'mobile-touch',error);throw error;}finally{await run.context.close();}
 }
@@ -412,7 +543,7 @@ async function interruptedWarmMask(browser) {
     await releaseIdle(); // background foreground-settled/initialize boundary
     await releaseIdle(); // first real GPU warm pose
     await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.warm===1&&value.idlePending>0;});
-    const warmed=await sample();assertMasked(warmed,'First offscreen warm pose stays hidden');assert.equal(warmed.frame,remasked.frame);
+    const warmed=await sample();assertMasked(warmed,'First offscreen warm pose stays hidden');assert.equal(warmed.frame,remasked.frame);assertWarmDraw(warmed,'Interrupted offscreen warm pose');
     await page.evaluate(()=>{window.__selectedMaskControl.holdLive=true;});await scrollProgress(page,.85);
     await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.livePending>0&&Math.abs(value.raw-.85)<.001;});
     assertMasked(await sample(),'Rapid re-entry stays masked until a current live draw');
@@ -424,6 +555,7 @@ async function interruptedWarmMask(browser) {
     near(final.rendered,final.raw,'Current live draw matches the promoted native target',tolerance);
     const firstUnmasked=final.samples.find(value=>value.label==='after-live'&&value.frame>canceled.frame);
     assert.ok(firstUnmasked&&firstUnmasked.mask==='false');near(firstUnmasked.rendered,canceled.raw,'First unmasked frame is current, not a warm endpoint',tolerance);
+    assertLiveDraw(firstUnmasked,'The very first unmasked frame restores full live resolution');assertLiveDraw(final,'Promoted current frame retains full live resolution');
     await save(run,'interrupted-live-offscreen-warm-current-frame-unmask',{firstLive,remasked,duringFade,warmed,canceled,final,schedulingControl:'Only Selected production idle callbacks and render RAF are held; native scroll continues normally'});
   }catch(error){await diagnose(run,'interrupted-warm-mask',error);throw error;}finally{await run.context.close();}
 }
@@ -491,8 +623,13 @@ async function readyPreferenceChange(browser) {
 async function studies(browser) {
   const run=await open(browser),{page}=run;try{
     await page.goto(base+'/v2/?selectedCapture=1',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__v2Selected?.assemblies&&Object.keys(window.__v2Selected.assemblies).length===6,null,{timeout});
+    await ready(page);const cappedWarm=await state(page);assertWarmDraw(cappedWarm,'Study begins after actual capped background warming');
+    await page.evaluate(()=>{window.__selectedStudyEntryStarted=performance.now();});await jump(page,0);
+    const firstProduction=await page.evaluate(()=>({entryStartedMs:window.__selectedStudyEntryStarted,firstLive:window.__selectedProbe.firstLive}));
+    assertLiveDraw(firstProduction.firstLive,'Study records the first actual full-size production draw before capture renders');
+    fs.writeFileSync(path.join(output,'first-production-live-after-capped-warm.json'),JSON.stringify({cappedWarm,...firstProduction,entryToLiveMs:firstProduction.firstLive.t-firstProduction.entryStartedMs,measurementNote:'Native entry after two capped warm poses; captured before any seekProgress/drawProgress diagnostics'},null,2)+'\n');
     const api=await page.evaluate(()=>{const a=window.__v2Selected;return{keys:Object.keys(a),scene:a.scene?.isScene,renderer:!!a.renderer,camera:a.camera?.isPerspectiveCamera,names:Object.keys(a.assemblies),stats:a.composition.stats()};});
-    assert.ok(api.scene&&api.renderer&&api.camera);for(const key of ['seekProgress','resume','composition'])assert.ok(api.keys.includes(key));
+    assert.ok(api.scene&&api.renderer&&api.camera);for(const key of ['seekProgress','drawProgress','resume','composition'])assert.ok(api.keys.includes(key));
     for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:320,height:740}]) {
       await page.setViewportSize(viewport);await scrollProgress(page,.4);
       for(const progress of [0,.25,.5,.75,1]){await page.evaluate(progress=>window.__v2Selected.seekProgress(progress),progress);await page.waitForTimeout(450);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').getAnimations({subtree:true}).every(animation=>!['running','pending'].includes(animation.playState)));await page.screenshot({path:path.join(output,`study-${viewport.width}-${String(progress).replace('.','_')}.png`)});}
@@ -515,7 +652,25 @@ async function studies(browser) {
     await page.screenshot({path:path.join(output,'diagnostic-transit-no-shadows.png')});
     await page.evaluate(()=>{window.__v2Selected.renderer.shadowMap.enabled=true;window.__v2Selected.seekProgress(1);});
     fs.writeFileSync(path.join(output,'diagnostic-transit-materials.json'),JSON.stringify(materials,null,2)+'\n');
-    await page.evaluate(()=>window.__v2Selected.resume());await save(run,'capture-only-render-studies',{api,viewports:[1440,390,320],captureOnly:true});
+    const drawMeasurements=[];
+    for(let repetition=0;repetition<3;repetition++)for(const shadows of [true,false]){
+      const result=await page.evaluate(({repetition,shadows})=>{
+        const api=window.__v2Selected,stage=document.querySelector('.v2-selected-stage'),before={shadows:api.renderer.shadowMap.enabled,autoReset:api.renderer.info.autoReset};
+        const measurement=api.drawProgress(1,{warm:false,shadows});
+        return{repetition,shadows,measurement,before,after:{shadows:api.renderer.shadowMap.enabled,autoReset:api.renderer.info.autoReset},cssWidth:stage.clientWidth,cssHeight:stage.clientHeight,expectedLivePixelRatio:Math.min(devicePixelRatio||1,stage.clientWidth<=760?1.25:1.5)};
+      },{repetition,shadows});
+      assert.deepEqual(result.after,result.before,'Capture measurement restores production shadow and info-reset settings');
+      assert.equal(result.measurement.warm,false);near(result.measurement.pixelRatio,result.expectedLivePixelRatio,'Diagnostic uses unchanged full live DPR',.000001);
+      assert.equal(result.measurement.width,Math.floor(result.cssWidth*result.expectedLivePixelRatio));assert.equal(result.measurement.height,Math.floor(result.cssHeight*result.expectedLivePixelRatio));
+      assert.ok(result.measurement.durationMs>=0&&result.measurement.calls>0&&result.measurement.triangles>0&&result.measurement.programs>0,'Measured full render includes actual calls, triangles and programs');
+      drawMeasurements.push(result);
+    }
+    for(let repetition=0;repetition<3;repetition++){
+      const on=drawMeasurements.find(result=>result.repetition===repetition&&result.shadows).measurement,off=drawMeasurements.find(result=>result.repetition===repetition&&!result.shadows).measurement;
+      assert.ok(on.calls>off.calls&&on.triangles>off.triangles,'Full render counters include the shadow pass instead of resetting before the main pass');
+    }
+    fs.writeFileSync(path.join(output,'diagnostic-transit-full-draws.json'),JSON.stringify({captureOnly:true,measurementMethod:'Production drawProgress brackets the complete renderer.render call with info.autoReset=false. Wall-clock JavaScript/render-call durations include software-driver work; these are not hardware GPU timings or real-device benchmarks.',drawMeasurements},null,2)+'\n');
+    await page.evaluate(()=>window.__v2Selected.resume());await save(run,'capture-only-render-studies',{api,viewports:[1440,390,320],captureOnly:true,cappedWarm,firstProduction,drawMeasurements});
   }catch(error){await diagnose(run,'study',error);throw error;}finally{await run.context.close();}
 }
 
