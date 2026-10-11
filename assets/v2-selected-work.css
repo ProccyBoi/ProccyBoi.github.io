@@ -160,6 +160,10 @@
   }
   .v2-selected-work.is-scene .v2-framework-object{transform:none!important}
   .v2-selected-work.is-scene .v2-transport-photo img{object-fit:contain;transform:none}
+  /* A resumed warm draw masks the canvas synchronously. Restore its poster
+     in that same frame rather than waiting for a visibility transition. */
+  .v2-selected-work.is-scene:not(.is-live) .v2-framework-art,
+  .v2-selected-work.is-scene:not(.is-live) .v2-transport-photo{opacity:1;visibility:visible;transition:none}
   .v2-selected-work.is-scene.is-live .v2-framework-art,
   .v2-selected-work.is-scene.is-live .v2-transport-photo{opacity:0;visibility:hidden;pointer-events:none}
   .v2-selected-work.is-scene .v2-framework-copy,

@@ -529,7 +529,14 @@ async function studies(browser) {
     if(process.argv.includes('--study'))await studies(browser);
     else{
       if(!group||group==='core'){await guards(browser);await initialAndInput(browser);}
-      if(!group||group==='lifecycle'){await interruptedWarmMask(browser);await pendingPreferenceChange(browser);await readyPreferenceChange(browser);}
+      if(!group||group==='lifecycle'){
+        const failures=[];
+        for(const test of [interruptedWarmMask,pendingPreferenceChange,readyPreferenceChange]){
+          try{await test(browser);}
+          catch(error){failures.push(error);evidence.push({name:test.name+'-failure',error:error.stack});console.error('FAIL '+test.name+': '+error.message);}
+        }
+        if(failures.length)throw new AggregateError(failures,failures.length+' independent Selected lifecycle case(s) failed');
+      }
       if(!group||group==='entry'){await heldHeroTextures(browser);await fastEntry(browser);await mobileTouch(browser);}
     }
   }
