@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [study, core, lifecycle, entry, profile, assets]
+        suite: [study, core, lifecycle, entry, profile, responsiveness, assets]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -39,6 +39,15 @@ jobs:
             study) node scripts/verify-v2-selected-scene.cjs --study ;;
             core|lifecycle|entry) node scripts/verify-v2-selected-scene.cjs --group=${{ matrix.suite }} ;;
             assets) V2_SELECTED_OUT=assets/models/selected node scripts/build-v2-selected-assets.cjs --verify && node scripts/build-v2-hero-assets.cjs --verify ;;
+            responsiveness)
+              git worktree add --detach /tmp/v2-published de2d03d7f98a1b435bd92e6682d081e6194a14b5
+              python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-published >/tmp/baseline.log 2>&1 &
+              for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8081/v2/ >/dev/null && break; sleep 1; done
+              V2_BASE_URL=http://127.0.0.1:8081 V2_SELECTED_OUT=/tmp/v2-selected-study/input-baseline node scripts/verify-v2-selected-scene.cjs --responsiveness-only
+              V2_SELECTED_OUT=/tmp/v2-selected-study/input-final node scripts/verify-v2-selected-scene.cjs --responsiveness-only
+              V2_SELECTED_OUT=/tmp/v2-selected-study/repeat/input-final node scripts/verify-v2-selected-scene.cjs --responsiveness-only
+              V2_BASE_URL=http://127.0.0.1:8081 V2_SELECTED_OUT=/tmp/v2-selected-study/repeat/input-baseline node scripts/verify-v2-selected-scene.cjs --responsiveness-only
+              ;;
             profile)
               # Matched cold baseline/final runs, then reversed order, on one
               # runner through actual background GPU preparation.

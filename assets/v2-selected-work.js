@@ -40,9 +40,12 @@
   let stage,canvas,track,nav,bar,links=[],renderer,scene,camera,composition,key,environment;
   let sourceTask,transferTask,releaseTransfer,initialization,backgroundBusy=false,backgroundDone=false;
   let ready=false,failed=false,visible=false,activePage=true,generation=0,frame=0,frames=0,warmFrames=0;
+  let liveBusy=false,gpuAbort,releaseForeground,needsDrain=true,preparationFrames=0,poseRevision=0,presentedRevision=-1,layoutDPR=0,submittedFrames=0,completedFrames=0;
+  const preparedModels=new Set(),preparedPoses=new Set(),preparationMeasurements=[];
+  let lastGPUResult;
   let width=1,height=1,top=0,distance=1,progress=0,current=0,previousTime=0,currentChapter=-1,direct=false,capturePose;
   const assemblies = {};
-  const request = () => { if (!frame && ready && track && visible && activePage && !document.hidden && allowed()) frame=requestAnimationFrame(render); };
+  const request = () => { if (!frame && !liveBusy && !backgroundBusy && backgroundDone && ready && track && visible && activePage && !document.hidden && allowed()) frame=requestAnimationFrame(render); };
   const near = () => { const b=root.getBoundingClientRect(); return b.top<innerHeight+500 && b.bottom>-500; };
   function chapter(index) {
     if (currentChapter===index || !track) return;
@@ -92,8 +95,11 @@
     scene.traverse(object=>{if(object.geometry)geometries.add(object.geometry);for(const material of [].concat(object.material||[])){materials.add(material);for(const value of Object.values(material))if(value?.isTexture)textures.add(value);}});
     geometries.forEach(item=>item.dispose());materials.forEach(item=>item.dispose());textures.forEach(item=>item.dispose());environment?.dispose();renderer?.dispose();
   }
+  function invalidate() {
+    generation++;needsDrain=true;gpuAbort?.abort();gpuAbort=undefined;releaseForeground?.();
+  }
   function fallback(state='static') {
-    generation++;cancelAnimationFrame(frame);frame=0;previousTime=0;mask();
+    invalidate();cancelAnimationFrame(frame);frame=0;previousTime=0;mask();
     const restore=track&&visible&&currentChapter>=0?currentChapter:-1;
     root.classList.remove('is-scene','is-live');
     articles.forEach((article,i)=>{article.id=ids[i];article.inert=false;article.removeAttribute('aria-hidden');article.classList.remove('is-current');root.append(article);});
@@ -108,64 +114,112 @@
     if(!track)return;
     const b=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(stage).top)||0;
     const nextVisible=b.top<innerHeight&&b.bottom>pinned;
-    const entered=nextVisible&&!visible;visible=nextVisible;
+    const entered=nextVisible&&!visible,left=!nextVisible&&visible;visible=nextVisible;
     // The negative-margin track is the stage's stable flow placeholder; its
     // document position does not change when the stage becomes sticky.
     top=scrollY+track.getBoundingClientRect().top;
     const next=clamp((scrollY-top+pinned)/distance);
     const smoother=window.V2ScrollSmoothing;
-    if(!visible||direct||Math.abs(next-progress)>(smoother?.jump||.18))current=next;
-    progress=next;root.dataset.selectedProgress=progress.toFixed(6);
+    const jumped=Math.abs(next-progress)>(smoother?.jump||.18);
+    if(!visible||direct||jumped)current=next;
+    if(next!==progress)poseRevision++;
+    progress=next;root.dataset.selectedProgress=progress.toFixed(6);root.dataset.selectedPoseRevision=String(poseRevision);
+    if(entered||left||jumped){invalidate();mask();if(entered&&!backgroundDone)root.dataset.selectedBackgroundState='promoted';}
     if(!root.classList.contains('is-live')){chapter(progress<.57?0:1);bar.style.transform=`scaleX(${progress})`;}
-    if(entered){generation++;if(!backgroundDone)root.dataset.selectedBackgroundState='promoted';}
-    if(visible){prepareTransfers(true).catch(fail);initialize(true).catch(fail);request();}
+    if(visible){prepareTransfers(true).catch(fail);initialize(true).catch(fail);prepareInBackground();request();}
     else {cancelAnimationFrame(frame);frame=0;previousTime=0;current=progress;prepareInBackground();}
   }
   function layout() {
     if(!track)return;
-    width=stage.clientWidth;height=stage.clientHeight;distance=height*(width<=760?2.8:2.5);
+    const nextWidth=stage.clientWidth,nextHeight=stage.clientHeight;
+    const nextDPR=Math.min(devicePixelRatio||1,nextWidth<=760?1.25:1.5);
+    const sizeChanged=width!==nextWidth||height!==nextHeight,dprChanged=layoutDPR!==nextDPR;
+    if(sizeChanged||dprChanged){invalidate();mask();poseRevision++;}
+    width=nextWidth;height=nextHeight;layoutDPR=nextDPR;distance=height*(width<=760?2.8:2.5);
     track.style.height=`${distance+height}px`;track.style.marginTop=`${-height}px`;
     const padding=parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0;
     const pinned=parseFloat(getComputedStyle(stage).top)||0;
     [...track.children].forEach((step,i)=>step.style.top=`${i*distance+padding-pinned}px`);
-    renderer?.setSize(width,height,false);previousTime=0;updateScroll();
+    if(renderer&&dprChanged)renderer.setPixelRatio(nextDPR);
+    if(renderer&&sizeChanged)renderer.setSize(width,height,false);
+    previousTime=0;updateScroll();
   }
   function fitLight(pose) {
     const span=Math.max(3,pose.distance*.8),target=pose.target;
     key.target.position.copy(target);key.position.copy(target).addScaledVector(key.userData.direction,span*2);key.target.updateMatrixWorld();
     const shadow=key.shadow.camera;shadow.left=-span/2;shadow.right=span/2;shadow.top=span/2;shadow.bottom=-span/2;shadow.near=.01;shadow.far=span*4;shadow.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
   }
-  function pixelRatio(warm=false) {
+  function pixelRatio(warm=false,longSide=640) {
     const live=Math.min(devicePixelRatio||1,width<=760?1.25:1.5);
-    const ratio=warm?Math.min(live,640/Math.max(width,height)):live;
+    const ratio=warm?Math.min(live,longSide/Math.max(width,height)):live;
     if(renderer.getPixelRatio()!==ratio)renderer.setPixelRatio(ratio);
     root.dataset.selectedLivePixelRatio=String(live);
     if(warm)root.dataset.selectedWarmPixelRatio=String(ratio);
     root.dataset.selectedBufferWidth=String(canvas.width);root.dataset.selectedBufferHeight=String(canvas.height);
     return ratio;
   }
-  function draw(value,warm=false) {
-    const started=performance.now(),ratio=pixelRatio(warm);
+  function draw(value,warm=false,longSide=640) {
+    const started=performance.now(),programsBefore=renderer.info.programs.length,ratio=pixelRatio(warm,longSide);
     const pose=composition.frame(camera,value,width,height);fitLight(pose);
     // r128 resets its counters after the shadow pass by default. Explicitly
     // bracket the full draw so diagnostics include both shadow and main work.
     const autoReset=renderer.info.autoReset;renderer.info.autoReset=false;renderer.info.reset();
     try{renderer.render(scene,camera);}finally{renderer.info.autoReset=autoReset;}
-    const measurement={durationMs:performance.now()-started,...renderer.info.render,programs:renderer.info.programs.length,warm,pixelRatio:ratio,width:canvas.width,height:canvas.height};
+    const measurement={durationMs:performance.now()-started,...renderer.info.render,programs:renderer.info.programs.length,programsBefore,warm,pixelRatio:ratio,width:canvas.width,height:canvas.height};
     root.dataset.selectedLastDraw=JSON.stringify(measurement);
     return {...pose,measurement};
   }
-  function render(time) {
-    frame=0;if(!ready||!track||!visible||document.hidden||!activePage||!allowed())return;
-    const smoother=window.V2ScrollSmoothing;
-    current=direct||!smoother?progress:smoother.step(current,progress,previousTime?time-previousTime:16.67);previousTime=time;
-    const value=capturePose??current;
-    try {const pose=draw(value);chapter(pose.chapter);}
-    catch(error){fail(error);return;}
-    canvas.style.visibility='';root.classList.add('is-live');root.dataset.selectedWarmMask='false';root.dataset.selectedState='ready';
-    root.dataset.selectedFrames=String(++frames);root.dataset.selectedRenderedProgress=value.toFixed(6);bar.style.transform=`scaleX(${value})`;
-    root.dataset.selectedFirstLiveMs ||= performance.now().toFixed(1);
-    if(capturePose===undefined&&current!==progress)request();else previousTime=0;
+  async function gpuComplete(valid,live=false) {
+    if(!valid()){lastGPUResult={state:'canceled',waitMs:0,polls:0};return false;}
+    const abort=new AbortController();gpuAbort=abort;root.dataset.selectedGPUPending='true';
+    const result=await window.V2GPUPreparation.wait(renderer,{signal:abort.signal,valid,pollMs:live?4:16});
+    lastGPUResult=result;if(gpuAbort===abort)gpuAbort=undefined;
+    root.dataset.selectedGPUPending='false';root.dataset.selectedGPUCompletion=result.state;
+    root.dataset.selectedGPUWaitMs=result.waitMs.toFixed(1);
+    if(result.state==='timeout'||result.state==='lost')throw new Error('Selected Work GPU preparation '+result.state);
+    if(result.state==='canceled'||!valid())return false;
+    // WebGL1 has no completion fence. Keep its bounded staged fallback honest:
+    // a paint/input opportunity is useful, but is not proof of GPU completion.
+    if(result.state==='unsupported')await idleTurn();
+    return valid();
+  }
+  async function finishPreparation(kind,name,measurement,valid) {
+    let completed=false;
+    try{completed=await gpuComplete(valid);return completed;}
+    finally{
+      preparationMeasurements.push({kind,name,completed,completedMs:performance.now(),...measurement,gpu:lastGPUResult});
+      if(preparationMeasurements.length>32)preparationMeasurements.shift();
+      root.dataset.selectedPreparationMeasurements=JSON.stringify(preparationMeasurements);
+    }
+  }
+  async function render(time) {
+    frame=0;if(!ready||!backgroundDone||backgroundBusy||liveBusy||!track||!visible||document.hidden||!activePage||!allowed())return;
+    liveBusy=true;const token=generation;let report;
+    const valid=()=>token===generation&&track&&visible&&!document.hidden&&activePage&&allowed()&&!failed;
+    try {
+      if(needsDrain){if(!await gpuComplete(valid,true))return;needsDrain=false;time=performance.now();}
+      const smoother=window.V2ScrollSmoothing;
+      current=direct||!smoother||root.dataset.selectedWarmMask==='true'?progress:smoother.step(current,progress,previousTime?time-previousTime:16.67);previousTime=time;
+      const value=capturePose??current,revision=poseRevision,rawAtSubmit=progress,submittedMs=performance.now();
+      const pose=draw(value);
+      report={sequence:++submittedFrames,submittedMs,value,rawAtSubmit,direct,revision,masked:root.dataset.selectedWarmMask==='true',published:false,measurement:pose.measurement};
+      root.dataset.selectedSubmittedFrames=String(submittedFrames);
+      // There is at most one outstanding live Selected frame. While it is in
+      // flight native input stays responsive; the next frame samples the latest
+      // target rather than replaying old wheel steps into a growing GPU queue.
+      if(!await gpuComplete(valid,true))return;
+      if(lastGPUResult.state==='complete')root.dataset.selectedCompletedFrames=String(++completedFrames);
+      if((direct&&revision!==poseRevision)||(root.dataset.selectedWarmMask==='true'&&Math.abs(value-progress)>.00008))return;
+      chapter(pose.chapter);canvas.style.visibility='';root.classList.add('is-live');root.dataset.selectedWarmMask='false';root.dataset.selectedState='ready';
+      report.published=true;presentedRevision=revision;root.dataset.selectedPresentedRevision=String(revision);
+      root.dataset.selectedFrames=String(++frames);root.dataset.selectedRenderedProgress=value.toFixed(6);bar.style.transform=`scaleX(${value})`;
+      root.dataset.selectedFirstLiveMs ||= performance.now().toFixed(1);
+      if(capturePose!==undefined||current===progress)previousTime=0;
+    }catch(error){fail(error);}
+    finally{
+      if(report)root.dataset.selectedLastFrame=JSON.stringify({...report,observedMs:performance.now(),completedMs:lastGPUResult?.state==='complete'?performance.now():null,rawAtComplete:progress,gpu:lastGPUResult});
+      liveBusy=false;if(!failed&&backgroundDone&&capturePose===undefined&&(needsDrain||presentedRevision!==poseRevision||current!==progress||root.dataset.selectedWarmMask==='true'))request();
+    }
   }
   function prepareSources() {
     return sourceTask ||= Promise.all([
@@ -173,7 +227,8 @@
       window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=transfer-20261011'),
       window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=product-20261007'),
       script('/assets/v2-selected-assets.js?v=shared-batched-20261011'),
-      script('/assets/v2-selected-scene.js?v=part-assembly-20261011')
+      script('/assets/v2-selected-scene.js?v=part-assembly-20261011'),
+      script('/assets/v2-gpu-preparation.js?v=paced-20261011')
     ]).then(()=>{if(allowed()&&!failed){window.V2HeroEnvironment.prefetch().catch(()=>{});window.V2SelectedAssets.prefetchTextures().catch(()=>{});}});
   }
   async function prepareTransfers(promote=false) {
@@ -198,12 +253,12 @@
   const foregroundSettled=()=>new Promise(resolve=>{
     const hero=document.querySelector('[data-assembly]');
     if(!hero||hero.dataset.assemblyModelsSettled==='3'||hero.dataset.assemblyState==='unavailable'){resolve();return;}
-    let observer;const finish=()=>{clearTimeout(timer);observer?.disconnect();resolve();};const timer=setTimeout(finish,12000);
+    let observer;const finish=()=>{clearTimeout(timer);observer?.disconnect();if(releaseForeground===finish)releaseForeground=undefined;resolve();};const timer=setTimeout(finish,12000);releaseForeground=finish;
     observer=new MutationObserver(()=>{if(hero.dataset.assemblyModelsSettled==='3'||hero.dataset.assemblyState==='unavailable')finish();});
     observer.observe(hero,{attributes:true,attributeFilter:['data-assembly-models-settled','data-assembly-state']});
   });
   async function initialize(promote=false) {
-    if(ready){request();return;}
+    if(ready){prepareInBackground();request();return;}
     if(!allowed()||failed||!track)return;
     if(promote)prepareTransfers(true).catch(fail);
     if(initialization)return initialization;
@@ -243,23 +298,50 @@
     })().catch(fail).finally(()=>{
       initialization=null;
       if(!ready&&!failed&&allowed()&&track&&!document.hidden&&activePage)setTimeout(()=>visible?initialize(true):prepareInBackground(),0);
-      if(ready&&!visible)prepareInBackground();
+      if(ready)prepareInBackground();
     });
     return initialization;
   }
   async function prepareInBackground() {
-    if(backgroundBusy||backgroundDone||failed||!allowed()||visible||document.hidden||!activePage||!track)return;
-    backgroundBusy=true;mask();const token=++generation;
-    const valid=()=>token===generation&&!visible&&!document.hidden&&activePage&&allowed()&&!failed&&track;
-    root.dataset.selectedBackgroundState='warming';root.dataset.selectedBackgroundStartedMs ||= performance.now().toFixed(1);
+    if(backgroundBusy||backgroundDone||liveBusy||failed||!allowed()||document.hidden||!activePage||!track)return;
+    backgroundBusy=true;mask();const token=generation;
+    const valid=()=>token===generation&&!document.hidden&&activePage&&allowed()&&!failed&&track;
+    root.dataset.selectedBackgroundState=visible?'promoted':'warming';root.dataset.selectedBackgroundStartedMs ||= performance.now().toFixed(1);
     try{
-      await prepareSources();prepareTransfers().catch(fail);await foregroundSettled();await idleTurn();if(!valid())return;
-      await initialize();if(!valid()||!ready)return;
-      for(const pose of [0,1]){await idleTurn();if(!valid())return;draw(pose,true);root.dataset.selectedWarmFrames=String(++warmFrames);}
-      // Restore CPU pose without an extra GPU frame; keep the canvas masked.
-      composition.frame(camera,progress,width,height);backgroundDone=true;root.dataset.selectedBackgroundReady='true';root.dataset.selectedBackgroundReadyMs=performance.now().toFixed(1);root.dataset.selectedBackgroundState='ready';settleBackground({state:'ready',at:performance.now()});
+      await prepareSources();prepareTransfers(visible).catch(fail);
+      if(!visible)await foregroundSettled();
+      await idleTurn();if(!valid())return;
+      await initialize(visible);if(!valid()||!ready)return;
+      if(needsDrain){if(!await gpuComplete(valid))return;needsDrain=false;}
+      while(preparedModels.size<names.length){
+        await idleTurn();if(!valid())return;
+        const order=progress<.57?names:['metro','tramtrace','esp32','dual','pi','logic'];
+        const name=order.find(name=>!preparedModels.has(name));
+        const visibility=names.map(name=>assemblies[name].group.visible);
+        root.dataset.selectedPreparationStage=name;let measurement;
+        try{
+          names.forEach(other=>{assemblies[other].group.visible=other===name;});
+          measurement=draw(name==='metro'||name==='tramtrace'?1:0,true,64).measurement;
+          root.dataset.selectedPreparationFrames=String(++preparationFrames);
+        }finally{names.forEach((name,index)=>{assemblies[name].group.visible=visibility[index];});}
+        if(!await finishPreparation('model',name,measurement,valid))return;
+        preparedModels.add(name);root.dataset.selectedPreparedModels=[...preparedModels].join(',');
+      }
+      for(const pose of [0,1]){
+        if(preparedPoses.has(pose))continue;
+        await idleTurn();if(!valid())return;
+        const measurement=draw(pose,true).measurement;root.dataset.selectedWarmFrames=String(++warmFrames);
+        if(!await finishPreparation('composition',String(pose),measurement,valid))return;preparedPoses.add(pose);root.dataset.selectedWarmPosesCompleted=String(preparedPoses.size);
+      }
+      // Restore CPU pose without another GPU frame. Even on an early jump the
+      // poster stays until a full-size draw of the latest live pose completes.
+      composition.frame(camera,progress,width,height);backgroundDone=true;root.dataset.selectedBackgroundReady='true';root.dataset.selectedBackgroundReadyMs=performance.now().toFixed(1);root.dataset.selectedBackgroundState='ready';root.dataset.selectedPreparationStage='complete';settleBackground({state:'ready',at:performance.now()});
     }catch(error){fail(error);}
-    finally{if(renderer&&!failed)pixelRatio();backgroundBusy=false;if(token!==generation&&!backgroundDone&&!failed&&!visible&&!document.hidden&&activePage&&allowed())setTimeout(prepareInBackground,0);}
+    finally{
+      if(renderer&&!failed)pixelRatio();backgroundBusy=false;
+      if(backgroundDone)request();
+      else if(!failed&&!document.hidden&&activePage&&allowed()&&track)setTimeout(prepareInBackground,0);
+    }
   }
   function start(){
     if(failed)return;if(!allowed()){fallback();return;}enable();
@@ -269,10 +351,10 @@
   root.addEventListener('wheel',()=>{direct=false;},{passive:true});root.addEventListener('touchmove',()=>{direct=true;},{passive:true});
   addEventListener('scroll',updateScroll,{passive:true});addEventListener('resize',()=>{if(allowed()){start();layout();}else fallback();},{passive:true});
   addEventListener('hashchange',()=>{previousTime=0;current=progress;updateScroll();});
-  document.addEventListener('visibilitychange',()=>{generation++;previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
-  addEventListener('pagehide',()=>{activePage=false;generation++;cancelAnimationFrame(frame);frame=0;previousTime=0;});
+  document.addEventListener('visibilitychange',()=>{invalidate();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
+  addEventListener('pagehide',()=>{activePage=false;invalidate();cancelAnimationFrame(frame);frame=0;previousTime=0;});
   addEventListener('pageshow',()=>{activePage=true;previousTime=0;updateScroll();prepareInBackground();});
   reduced.addEventListener?.('change',start);short.addEventListener?.('change',start);navigator.connection?.addEventListener?.('change',start);
-  root.dataset.selectedFrames='0';root.dataset.selectedWarmFrames='0';root.dataset.selectedModelsReady='0';
+  root.dataset.selectedFrames='0';root.dataset.selectedSubmittedFrames='0';root.dataset.selectedCompletedFrames='0';root.dataset.selectedWarmFrames='0';root.dataset.selectedPreparationFrames='0';root.dataset.selectedWarmPosesCompleted='0';root.dataset.selectedModelsReady='0';
   start();
 })();

@@ -20,7 +20,7 @@ const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 const sourcePath = 'assets/v2-selected-work.js';
-const source = fs.readFileSync(path.join(root, sourcePath), 'utf8');
+const source = fs.readFileSync(path.join(process.env.V2_STALL_SOURCE_ROOT || root, sourcePath), 'utf8');
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const base = (process.env.V2_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '').replace(/\/v2$/, '');
 const output = path.resolve(process.env.V2_STALL_OUT || '.codex-temp/v2-selected-stall');

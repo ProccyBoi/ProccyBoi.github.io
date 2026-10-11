@@ -73,7 +73,7 @@ function probe() {
     }
   };
   addEventListener('scroll', () => data.scrolls.push({ t: performance.now(), y: scrollY }), { passive: true });
-  const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-settled', 'data-image-decoded', 'data-selected-ready', 'data-selected-models-ready', 'data-selected-background-ready', 'data-selected-warm-frames', 'data-selected-frames'];
+  const attributes = ['data-aircraft-transport-state', 'data-aircraft-background-state', 'data-aircraft-background-ready', 'data-aircraft-warm-frames', 'data-aircraft-frames', 'data-aircraft-landing', 'data-aircraft-telemetry-ready', 'data-assembly-models-ready', 'data-assembly-models-settled', 'data-image-decoded', 'data-selected-ready', 'data-selected-models-ready', 'data-selected-background-ready', 'data-selected-preparation-frames', 'data-selected-prepared-models', 'data-selected-warm-poses-completed', 'data-selected-warm-frames', 'data-selected-frames'];
   new MutationObserver(records => {
     for (const record of records) if (data.changes.length < 2000) data.changes.push({ t: performance.now(), attribute: record.attributeName, value: record.target.getAttribute(record.attributeName), tag: record.target.tagName, scrollY });
     if (!data.selectedFirstLive && records.some(record => record.attributeName === 'data-selected-frames')) {
@@ -111,6 +111,17 @@ async function warmed(page) {
 }
 async function selectedWarmed(page) {
   await page.locator('[data-selected-models-ready="6"][data-selected-background-ready="true"][data-selected-warm-frames="2"]').waitFor({ timeout });
+}
+function selectedPreparation(state) {
+  assert.equal(state.selectedPreparationFrames,'6','Six individual models are submitted once before full composition warming');
+  assert.deepEqual((state.selectedPreparedModels||'').split(',').sort(),['dual','esp32','logic','metro','pi','tramtrace'],'All six per-model GPU stages actually complete');
+  assert.equal(state.selectedWarmPosesCompleted,'2','Both full-composition GPU poses have completed');
+  assert.equal(state.selectedGPUPending,'false','No Selected-context preparation fence is pending at background readiness');
+  assert.equal(state.selectedGPUCompletion,'complete','WebGL2 background readiness follows actual own-context completion');
+  const measurements=JSON.parse(state.selectedPreparationMeasurements||'[]');
+  assert.equal(measurements.length,8,'Uninterrupted preparation is finite: six model draws and two composition draws');
+  assert.ok(measurements.every(item=>item.completed&&item.gpu?.state==='complete'),'Every declared completed stage has its real completion result');
+  return{preparationFrames:6,warmPosesCompleted:2,measurements};
 }
 async function stableHidden(page) {
   const before = await page.locator(aircraft).evaluate(root => ({ live: Number(root.dataset.aircraftFrames || 0), warm: Number(root.dataset.aircraftWarmFrames || 0), landing: Number(root.dataset.aircraftLanding || 0) }));
@@ -157,6 +168,7 @@ async function initialViewport(browser) {
     assert.equal(state.aircraft.aircraftWarmFrames, '2');
     assert.equal(state.selected.selectedModelsReady, '6', 'All six actual Selected Work assemblies prepare without scrolling');
     assert.equal(state.selected.selectedWarmFrames, '2', 'Both Selected Work GPU poses are warmed once');
+    selectedPreparation(state.selected);
     assert.equal(Number(state.selected.selectedFrames || 0), 0, 'Selected warm draws never count as live frames');
     assert.ok(run.requests.some(request => airframeBytes.test(request.url)), 'Aircraft bytes were requested from the initial viewport');
     assert.equal(run.requests.filter(request => telemetryBytes.test(request.url)).length, 1, 'Background aircraft and foreground hero share telemetry transport');
@@ -430,10 +442,10 @@ async function throttledWarmTrace(browser) {
     await decodedImages(page); const imageReadyMs = Date.now() - started;
     if (expectSelectedCAD) await selectedWarmed(page);
     await warmed(page); await page.locator('[data-assembly-models-ready="3"]').waitFor({ timeout }); const backgroundReadyMs = Date.now() - started;
-    const selectedBefore = await page.locator(selected).evaluate(root => ({ live: root.dataset.selectedFrames, warm: root.dataset.selectedWarmFrames }));
+    const selectedBefore = await page.locator(selected).evaluate(root => ({ live: root.dataset.selectedFrames, warm: root.dataset.selectedWarmFrames, preparation:root.dataset.selectedPreparationFrames, completed:root.dataset.selectedWarmPosesCompleted }));
     const hidden = await stableHidden(page), state = await snapshot(page); assertCPUGate(state);
     if (expectSelectedCAD) {
-      assert.deepEqual({ live: state.selected.selectedFrames, warm: state.selected.selectedWarmFrames }, selectedBefore, 'Selected Work is also stable during the measured hidden idle interval');
+      assert.deepEqual({ live: state.selected.selectedFrames, warm: state.selected.selectedWarmFrames, preparation:state.selected.selectedPreparationFrames, completed:state.selected.selectedWarmPosesCompleted }, selectedBefore, 'Selected Work is also stable during the measured hidden idle interval');
       assert.equal(Number(state.selected.selectedFrames || 0), 0); assert.equal(state.selected.selectedWarmFrames, '2');
     } else {
       assert.equal(await page.locator('canvas[data-selected-canvas]').count(), 0, 'The declared baseline genuinely has no Selected CAD renderer');
@@ -455,7 +467,7 @@ async function throttledWarmTrace(browser) {
     await save(run, 'cold-10mbps-through-gpu-warm', {
       network, cacheDisabled: true, imageReadyMs, backgroundReadyMs, hidden, resourceBytes,
       milestones, resourcesByKind,
-      selectedCAD: expectSelectedCAD ? { present: true, modelsReady: 6, warmFrames: 2, gpuReady: true, lastDraw: state.selected.selectedLastDraw ? JSON.parse(state.selected.selectedLastDraw) : null } : { present: false, modelsReady: null, warmFrames: null, gpuReady: null, note: 'This baseline has image-only Selected Work. CAD readiness is inapplicable, not a measured success.' },
+      selectedCAD: expectSelectedCAD ? { present: true, modelsReady: 6, warmFrames: 2, gpuReady: true, ...selectedPreparation(state.selected), lastDraw: state.selected.selectedLastDraw ? JSON.parse(state.selected.selectedLastDraw) : null } : { present: false, modelsReady: null, warmFrames: null, gpuReady: null, note: 'This baseline has image-only Selected Work. CAD readiness is inapplicable, not a measured success.' },
       resourceCount: state.resources.length,
       longTaskSummary: { count: longTasks.length, totalMs: longTasks.reduce((sum, task) => sum + task.duration, 0), longestMs: Math.max(0, ...longTasks.map(task => task.duration)) },
       measurementHorizon: expectSelectedCAD ? 'Initial navigation through six decoded Selected Work images and six actual CAD models, both Selected GPU warm poses, aircraft telemetry attachment, both aircraft GPU warm draws, and one second of hidden idle' : 'Image-only baseline: initial navigation through six decoded Selected Work images, all three hero models, aircraft telemetry attachment, both aircraft GPU warm draws, and one second of hidden idle. Selected CAD does not exist in this baseline.',

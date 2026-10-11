@@ -23,6 +23,7 @@ jobs:
           python3 scripts/audit-v3.py
           node scripts/verify-v2-hero-prefetch.cjs
           node scripts/verify-v2-scroll-smoothing.cjs
+          node scripts/verify-v2-gpu-preparation.cjs
           node scripts/verify-v3-story-controller.cjs
           node scripts/verify-v3-direct-transition.cjs
           node scripts/verify-v3-film-peel.cjs

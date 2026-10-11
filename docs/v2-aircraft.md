@@ -37,7 +37,11 @@ capture seeks remain exact. Native scrolling is never intercepted.
 Six genuine assemblies share one viewport-sized canvas, renderer, scene and
 camera. ESP32-S3, Dual USB-C, RP2354B and Logic analyser form one composition;
 a continuous pullback and pan carries the same space into MetroBoard and
-TramTrace together. Whole-assembly transforms preserve source parts. One world
+TramTrace together. Real PCB, electronics, connector and screw groups seat
+reversibly over the first .311 of scroll; the camera journey begins afterward.
+Dual connector/screw views use verified provenance ranges and share the original
+attributes, indices and materials. Assembled source poses are restored exactly.
+The transit camera looks down at roughly 63–65 degrees for legibility. One world
 unit is 30 mm, retaining relative physical board sizes. Mobile rearranges the
 quartet into two rows and the transit pair vertically. Native chapter anchors
 and all six ordinary project links remain keyboard accessible.
@@ -55,13 +59,28 @@ bytes and the accepted aircraft scene geometry are unchanged.
 Scripts, original fallback images and silk textures prepare without scrolling.
 The four new geometry transfers start after all three hero transfers settle or
 a 4.5-second timeout, with immediate entry promotion. CPU reconstruction yields
-between models after the foreground settles. Two finite, masked draws warm the
-Framework and transit compositions. Only a successful current live draw reveals
-the canvas. The two offscreen draws cap their backing buffer's longest side at
-640 pixels; live draws restore the normal device-pixel-ratio limit before
-revealing the canvas. This prepares geometry, shaders and textures without a
-full-size offscreen fill, but is not a claim that the first full-size frame is
-free. Compatible opaque MetroBoard and TramTrace meshes are batched only in
+between models after the foreground settles. GPU preparation is also staged:
+six real model-only draws use a 64-pixel long-side buffer with the final lights,
+materials and shadows, followed by two complete 640-pixel composition draws.
+Each stage yields to input and waits on an owned WebGL2 fence using zero-timeout
+polling. An initial fence avoids immediately forcing queued work into a new
+synchronous render call. No production code calls `gl.finish`.
+
+Early entry promotes the same masked queue instead of bypassing it with a cold
+full-scene draw. Completed model stages survive interruption; canceled stages
+resume safely. Hide, pagehide, preference changes and context loss release owned
+syncs. A 12-second fence timeout restores static fallback rather than claiming
+completion. WebGL1 retains finite staged preparation but reports `unsupported`
+GPU completion honestly. Only a completed full-size current-target live draw
+reveals the canvas. Live frames are similarly paced one at a time, sampling the
+latest native-scroll target when free, with no queued wheel replay. Pose/layout
+revisions prevent a stale completion from stranding touch, jump or resize input.
+
+Separate counters distinguish model preparation, composition submissions and
+completed composition poses. Bounded per-stage measurements record CPU draw
+work, program counts and asynchronous completion waits. The first full-size
+frame still has its own allocation/fill cost; preparation does not make it free.
+Compatible opaque MetroBoard and TramTrace meshes are batched only in
 Selected Work's separate instances; transparent meshes and source hero packs
 remain unchanged. Batching yields between construction slices and cancels
 transactionally when the page or motion preference no longer permits work.
@@ -79,6 +98,8 @@ Pack provenance and exact source hashes are in `assets/models/selected/`;
 
 Serve the repository on port 8080 and run:
 
+- `node scripts/verify-v2-gpu-preparation.cjs`: deterministic fence ownership,
+  cancellation, timeout, unsupported-path and exactly-once cleanup checks.
 - `node scripts/verify-v2-selected-scene.cjs`: real six-model parity, shared
   camera framing/reversal, three-context budget, native input and lifecycle.
   `--source-only` needs no browser; `--study` captures desktop/mobile renderings.
@@ -96,6 +117,9 @@ the wheel-only historical comparison uses the original unfiltered controller.
 Chromium uses software WebGL, so timing evidence does not prove hardware-GPU FPS
 or physical-iOS performance. Readiness requires decoded images and real warm
 draws, not merely completed downloads. `verify-v2-background.cjs --profile-only`
-records a full cold 10Mbps/40ms trace through both background GPU-ready states.
+records a full cold 10Mbps/40ms trace through Selected completion and aircraft
+warm submissions. Old Selected readiness marked submission; the paced controller
+marks fence completion on WebGL2. Label this stricter milestone when comparing
+readiness times. Compare blocking tasks and native input response separately.
 Fast arrival can still precede preparation; posters and priority promotion cover
 that path. No test result claims instant loading or hardware-GPU frame rates.

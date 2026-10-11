@@ -1,10 +1,5 @@
 name: Attribute Selected Work first-render stall
 on:
-  push:
-    branches: [v2-selected-responsive]
-    paths:
-      - scripts/profile-v2-selected-stall.cjs
-      - .github/workflows/profile-v2-selected-stall.yml
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +20,7 @@ jobs:
       - name: Compare isolated renderer paths on unchanged production baseline
         env:
           V2_BASE_URL: http://127.0.0.1:8081
+          V2_STALL_SOURCE_ROOT: /tmp/v2-stall-baseline
           V2_STALL_OUT: /tmp/v2-stall-profile
           V2_STALL_DPR: '1'
         run: |

@@ -394,18 +394,18 @@ function easingMath() {
 function instrument() {
   const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext, nativeTimeout=setTimeout.bind(window), nativeFetch=fetch.bind(window);
   const contexts = new Map();
-  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],longTasks:[],firstLive:null,recording:false};
+  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],longTasks:[],frameRecords:[],firstLive:null,recording:false};
   try{new PerformanceObserver(list=>probe.longTasks.push(...list.getEntries().map(entry=>({start:entry.startTime,duration:entry.duration})))).observe({type:'longtask',buffered:true});}catch(_){/* Long Tasks is unavailable in some engines. */}
   window.setTimeout=(callback,delay,...args)=>{if(/v2-selected-work\.js/.test(new Error().stack)){if(delay===4500)probe.transportGates.push(performance.now());if(delay===12000)probe.cpuGates.push(performance.now());}return nativeTimeout(callback,delay,...args);};
   window.fetch=(...args)=>{const url=typeof args[0]==='string'?args[0]:args[0]?.url||String(args[0]);probe.fetches.push({url,t:performance.now()});return nativeFetch(...args);};
   const sample = () => {
     const root=document.querySelector('[data-selected-work]'); if(!root)return null;
     const canvas=root.querySelector('[data-selected-canvas]'),stage=root.querySelector('.v2-selected-stage');
-    return {t:performance.now(),y:scrollY,raw:Number(root.dataset.selectedProgress||0),rendered:Number(root.dataset.selectedRenderedProgress||0),frame:Number(root.dataset.selectedFrames||0),warm:Number(root.dataset.selectedWarmFrames||0),mask:root.dataset.selectedWarmMask,state:root.dataset.selectedState,chapter:root.dataset.selectedChapter,readyClass:root.classList.contains('is-live'),canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,canvasOpacity:canvas?Number(getComputedStyle(canvas).opacity):0,lastDraw:root.dataset.selectedLastDraw?JSON.parse(root.dataset.selectedLastDraw):null,warmPixelRatio:Number(root.dataset.selectedWarmPixelRatio),livePixelRatio:Number(root.dataset.selectedLivePixelRatio),bufferWidth:Number(root.dataset.selectedBufferWidth),bufferHeight:Number(root.dataset.selectedBufferHeight),cssWidth:stage?.clientWidth||0,cssHeight:stage?.clientHeight||0,expectedLivePixelRatio:Math.min(devicePixelRatio||1,(stage?.clientWidth||innerWidth)<=760?1.25:1.5)};
+    return {t:performance.now(),y:scrollY,raw:Number(root.dataset.selectedProgress||0),rendered:Number(root.dataset.selectedRenderedProgress||0),frame:Number(root.dataset.selectedFrames||0),submittedFrames:Number(root.dataset.selectedSubmittedFrames||0),completedFrames:Number(root.dataset.selectedCompletedFrames||0),lastFrame:root.dataset.selectedLastFrame?JSON.parse(root.dataset.selectedLastFrame):null,warm:Number(root.dataset.selectedWarmFrames||0),warmPosesCompleted:Number(root.dataset.selectedWarmPosesCompleted||0),preparationMeasurements:root.dataset.selectedPreparationMeasurements?JSON.parse(root.dataset.selectedPreparationMeasurements):[],preparationFrames:Number(root.dataset.selectedPreparationFrames||0),preparedModels:(root.dataset.selectedPreparedModels||'').split(',').filter(Boolean),preparationStage:root.dataset.selectedPreparationStage,gpuPending:root.dataset.selectedGPUPending,gpuCompletion:root.dataset.selectedGPUCompletion,mask:root.dataset.selectedWarmMask,state:root.dataset.selectedState,chapter:root.dataset.selectedChapter,readyClass:root.classList.contains('is-live'),canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,canvasOpacity:canvas?Number(getComputedStyle(canvas).opacity):0,lastDraw:root.dataset.selectedLastDraw?JSON.parse(root.dataset.selectedLastDraw):null,warmPixelRatio:Number(root.dataset.selectedWarmPixelRatio),livePixelRatio:Number(root.dataset.selectedLivePixelRatio),bufferWidth:Number(root.dataset.selectedBufferWidth),bufferHeight:Number(root.dataset.selectedBufferHeight),cssWidth:stage?.clientWidth||0,cssHeight:stage?.clientHeight||0,expectedLivePixelRatio:Math.min(devicePixelRatio||1,(stage?.clientWidth||innerWidth)<=760?1.25:1.5)};
   };
-  probe.snapshot=sample; probe.begin=()=>{probe.samples=[];probe.events=[];probe.prevention=[];probe.recording=true;probe.samples.push(sample());};
-  new MutationObserver(records=>{if(!probe.firstLive&&records.some(record=>record.attributeName==='data-selected-frames')){const value=sample();if(value?.frame>0)probe.firstLive=value;}}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-frames']});
-  probe.end=()=>{probe.recording=false;return{samples:probe.samples,events:probe.events,prevention:probe.prevention};};
+  probe.snapshot=sample; probe.begin=()=>{probe.samples=[];probe.events=[];probe.prevention=[];probe.frameRecords=[];probe.recording=true;probe.samples.push(sample());};
+  new MutationObserver(records=>{if(records.some(record=>record.attributeName==='data-selected-frames')){const value=sample();if(value?.frame>0){if(!probe.firstLive)probe.firstLive=value;if(probe.recording&&value.frame!==probe.samples.at(-1)?.frame)probe.samples.push(value);}}if(probe.recording&&records.some(record=>record.attributeName==='data-selected-last-frame')){const value=sample();if(value?.lastFrame&&value.lastFrame.sequence!==probe.frameRecords.at(-1)?.sequence)probe.frameRecords.push(value.lastFrame);}}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-frames','data-selected-last-frame']});
+  probe.end=()=>{probe.recording=false;return{samples:probe.samples,events:probe.events,prevention:probe.prevention,frameRecords:probe.frameRecords};};
   window.requestAnimationFrame=callback=>nativeRAF(t=>{callback(t);if(probe.recording){const next=sample();if(next&&next.frame!==probe.samples.at(-1)?.frame)probe.samples.push(next);}});
   HTMLCanvasElement.prototype.getContext=function(type,...args){const context=nativeContext.call(this,type,...args);if(context&&/webgl/i.test(type)&&!contexts.has(context)){const kind=this.matches('[data-selected-canvas]')?'selected':this.matches('[data-aircraft-canvas]')?'aircraft':this.closest('[data-assembly]')?'hero':'other';contexts.set(context,true);probe.contexts.push({kind,t:performance.now()});}return context;};
   for(const type of ['wheel','touchstart','touchmove','touchend'])addEventListener(type,event=>{if(!probe.recording)return;const record={type,trusted:event.isTrusted,deltaY:event.deltaY??null,t:performance.now(),prevented:event.defaultPrevented};probe.events.push(record);queueMicrotask(()=>{record.prevented=event.defaultPrevented;});},{capture:true,passive:true});
@@ -420,6 +420,7 @@ async function open(browser, options={}) {
   if(options.saveData)await context.addInitScript(()=>Object.defineProperty(navigator,'connection',{configurable:true,value:{saveData:true}}));
   if(options.noDecompression)await context.addInitScript(()=>{window.DecompressionStream=undefined;});
   if(options.noWebGL)await context.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/i.test(type)?null:original.call(this,type,...args);};});
+  if(options.webgl1)await context.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type==='webgl2'&&this.matches('[data-selected-canvas]')?null:original.call(this,type,...args);};});
   const page=await context.newPage(),requests=[],errors=[],shaders=[];page.setDefaultTimeout(timeout);page.setDefaultNavigationTimeout(timeout);
   page.on('request',request=>requests.push({url:request.url(),t:Date.now()}));page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(/Shader Error|VALIDATE_STATUS|Error compiling shader|THREE.WebGLProgram/.test(message.text()))shaders.push(message.text());});
@@ -475,7 +476,33 @@ function bounded(trace,before,after) {
   for(const sample of trace.samples){assert.ok(Number.isFinite(sample.raw)&&Number.isFinite(sample.rendered));assert.ok(sample.rendered>=low&&sample.rendered<=high,'No overshoot');assert.ok((sample.rendered-previous)*direction>=-tolerance,'Monotonic one-direction detents');previous=sample.rendered;}
   near(after.raw,after.rendered,'Converges to native target',tolerance);
 }
+function directSubmissions(trace,before,after) {
+  const records=trace.frameRecords,direct=records.filter(record=>record.direct),completed=records.filter(record=>record.gpu?.state==='complete');
+  assert.ok(direct.length>0,'Actual direct-touch GPU submissions were observed');
+  assert.equal(records.length,after.submittedFrames-before.submittedFrames,'Every actual live submission has an honest terminal record, including canceled or superseded draws');
+  assert.equal(completed.length,after.completedFrames-before.completedFrames,'Completed stale submissions remain counted as real GPU work');
+  assert.equal(records.filter(record=>record.published).length,after.frame-before.frame,'Published-current frames are counted separately from all completed submissions');
+  for(const [index,record]of records.entries()){
+    assert.ok(Number.isFinite(record.submittedMs)&&Number.isFinite(record.observedMs)&&record.observedMs>=record.submittedMs,'Every submission retains its actual completion/cancellation timing');
+    assert.equal(record.sequence,before.submittedFrames+index+1,'No submitted draw disappears from the evidence');
+    if(index)assert.ok(record.submittedMs>=records[index-1].observedMs,'At most one live Selected draw is in flight');
+    if(record.direct)near(record.value,record.rawAtSubmit,'Direct touch submits the exact native target without interpolation',tolerance);
+    assert.ok(['complete','canceled'].includes(record.gpu?.state),'Every observed WebGL2 draw has an explicit completion/cancellation result');
+    if(record.gpu.state==='complete')assert.ok(Number.isFinite(record.completedMs)&&record.completedMs>=record.submittedMs,'Actual GPU completion retains its timestamp even when the pose is superseded');
+    else assert.equal(record.completedMs,null,'Canceled work never manufactures a completion timestamp');
+  }
+  assert.equal(records.at(-1).published,true,'The terminal completed draw is published as current');
+  near(records.at(-1).value,after.raw,'The latest target is eventually submitted and completed',tolerance);
+  near(after.raw,after.rendered,'Direct touch converges to the latest native target',tolerance);
+  return{completedDraws:completed.length,completedSupersededDraws:completed.filter(record=>!record.published).length,maxCompletionLatencyMs:Math.max(...records.map(record=>record.observedMs-record.submittedMs)),maxTargetChangeWhileInFlight:Math.max(...records.map(record=>Math.abs(record.rawAtComplete-record.rawAtSubmit))),measurementNote:'Directness is measured at submission. Later native input during a GPU wait is retained as measurable pipeline latency, not mislabeled as interpolation or erased from completion counts.'};
+}
 async function noLoop(page,label) {await settled(page);const before=await state(page);await page.waitForTimeout(800);assert.equal((await state(page)).frame,before.frame,label);}
+async function visualSettled(page) {
+  await page.waitForFunction(()=>{
+    const root=document.querySelector('[data-selected-work]'),canvas=root.querySelector('[data-selected-canvas]');
+    return root.getAnimations({subtree:true}).every(animation=>!['running','pending'].includes(animation.playState))&&(!root.classList.contains('is-live')||Number(getComputedStyle(canvas).opacity)>.99);
+  },null,{timeout});
+}
 function assertWarmDraw(sample,label) {
   const draw=sample.lastDraw;assert.ok(draw,label+': actual last-draw telemetry exists');assert.equal(draw.warm,true,label+': measured draw is a warm pose');
   assert.ok(draw.width>0&&draw.height>0&&Math.max(draw.width,draw.height)<=640,label+': actual warm GPU draw is capped at 640 pixels on its long side');
@@ -489,6 +516,25 @@ function assertLiveDraw(sample,label) {
   assert.equal(draw.width,Math.floor(sample.cssWidth*sample.expectedLivePixelRatio),label+': full-resolution width');assert.equal(draw.height,Math.floor(sample.cssHeight*sample.expectedLivePixelRatio),label+': full-resolution height');
   assert.equal(sample.bufferWidth,draw.width,label+': buffer matches completed live draw');assert.equal(sample.bufferHeight,draw.height,label+': buffer matches completed live draw');
 }
+function assertPreparation(sample,label,{interrupted=false,unsupported=false}={}) {
+  assert.deepEqual([...sample.preparedModels].sort(),[...names].sort(),label+': all six actual model stages complete');
+  if(interrupted)assert.ok(sample.preparationFrames>=6,label+': canceled submissions never substitute for completed model stages');
+  else assert.equal(sample.preparationFrames,6,label+': each model gets exactly one finite preparation draw');
+  assert.equal(sample.preparationStage,'complete',label+': preparation reaches a terminal stage');
+  assert.equal(sample.gpuPending,'false',label+': no outstanding own-context GPU fence remains');
+  assert.equal(sample.gpuCompletion,unsupported?'unsupported':'complete',label+': the real completion mechanism is reported honestly');
+  assert.equal(sample.warmPosesCompleted,2,label+': exactly two full-composition poses have completed');
+  const completed=sample.preparationMeasurements.filter(measurement=>measurement.completed),models=completed.filter(measurement=>measurement.kind==='model'),compositions=completed.filter(measurement=>measurement.kind==='composition');
+  assert.deepEqual(models.map(measurement=>measurement.name).sort(),[...names].sort(),label+': every real model completes once in bounded per-stage evidence');
+  assert.deepEqual(compositions.map(measurement=>measurement.name).sort(),['0','1'],label+': both actual composition endpoints complete once');
+  assert.ok(sample.preparationMeasurements.length<=32,label+': preparation evidence remains bounded');
+  for(const measurement of completed){
+    assert.equal(measurement.gpu.state,unsupported?'unsupported':'complete',label+': model/pose records never confuse a yield with fenced completion');
+    assert.ok(measurement.width>0&&measurement.height>0&&Math.max(measurement.width,measurement.height)<=(measurement.kind==='model'?64:640),label+': actual per-stage draw sizes match their documented caps');
+    assert.ok(measurement.warm&&measurement.calls>0&&measurement.triangles>1000&&Number.isFinite(measurement.durationMs)&&Number.isFinite(measurement.gpu.waitMs),label+': actual rendering and completion timings are recorded');
+    assert.ok(Number.isInteger(measurement.programsBefore)&&measurement.programs>=measurement.programsBefore,label+': shader-program changes remain observable');
+  }
+}
 
 async function initialAndInput(browser) {
   const run=await open(browser),{page}=run;
@@ -499,6 +545,7 @@ async function initialAndInput(browser) {
     assert.ok(first.scrolls.every(sample=>sample.y===0),'No-scroll preparation genuinely never enters Selected Work');
     assert.ok(first.images.length===6&&first.images.every(image=>image.decoded==='true'&&image.complete&&image.width>0));
     assert.equal(Number(first.selected.selectedFrames||0),0,'Warm draws never count as live draws');
+    assertPreparation(await state(page),'Initial hidden preparation');
     assertWarmDraw(await state(page),'Initial hidden preparation');
     assert.deepEqual(first.contexts.map(context=>context.kind).sort(),['aircraft','hero','selected'],'Exactly three real WebGL contexts across the page');
     for(const name of ['pi','tramtrace'])assert.equal(run.requests.filter(request=>heroPack(name).test(request.url)).length,1,'No duplicate '+name+' transfer');
@@ -545,6 +592,7 @@ async function initialAndInput(browser) {
       await page.setViewportSize(viewport);
       for(const [label,progress]of[['framework-separated',0],['framework-seating',.155],['framework-assembled',.32],['transit',1]]){
         await jump(page,progress);assert.equal((await snapshot(page)).overflow,false);
+        await visualSettled(page);
         await page.screenshot({path:path.join(output,`native-${label}-${viewport.width}.png`)});
       }
     }
@@ -622,8 +670,8 @@ async function mobileTouch(browser) {
     const point=y=>[{x:195,y,id:1,radiusX:4,radiusY:4,force:1}];await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:point(650)});
     for(const y of [625,600,575,550,525,500,475,450]){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:point(y)});await page.waitForTimeout(65);}
     await page.waitForTimeout(120);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForFunction(y=>scrollY>y+80,before.y);await settled(page);
-    const after=await state(page),trace=await end(page);trusted(trace);assert.ok(trace.events.some(event=>event.type==='touchmove'));assert.ok(trace.samples.length>1&&trace.samples.every(sample=>Math.abs(sample.raw-sample.rendered)<=tolerance),'Touch follows native scrolling directly');assertLiveDraw(after,'High-DPR mobile keeps its accepted 1.25 live cap');near(after.livePixelRatio,1.25,'High-DPR mobile cap');
-    await noLoop(page,'Touch scene settles without residual rendering');await save(run,'native-mobile-touch-directness',{before,after,trace});
+    const after=await state(page),trace=await end(page);trusted(trace);assert.ok(trace.events.some(event=>event.type==='touchmove'));const completionEvidence=directSubmissions(trace,before,after);assertLiveDraw(after,'High-DPR mobile keeps its accepted 1.25 live cap');near(after.livePixelRatio,1.25,'High-DPR mobile cap');
+    await noLoop(page,'Touch scene settles without residual rendering');await save(run,'native-mobile-touch-directness',{before,after,trace,completionEvidence});
   }catch(error){await diagnose(run,'mobile-touch',error);throw error;}finally{await run.context.close();}
 }
 
@@ -637,7 +685,7 @@ async function warmingInput(browser) {
       const root=document.querySelector('[data-selected-work]'),canvas=root?.querySelector('[data-selected-canvas]');
       const current=root?.querySelector('[data-selected-chapter].is-current')||root?.querySelector('[data-selected-chapter="0"]');
       const posters=current?[...current.querySelectorAll('[data-selected-image]')]:[];
-      return{t:performance.now(),y:scrollY,background:root?.dataset.selectedBackgroundState,sceneReady:root?.dataset.selectedSceneReady,models:Number(root?.dataset.selectedModelsReady||0),warm:Number(root?.dataset.selectedWarmFrames||0),live:Number(root?.dataset.selectedFrames||0),mask:root?.dataset.selectedWarmMask,canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,posterCount:posters.length,postersVisible:posters.every(image=>getComputedStyle(image).visibility==='visible'&&Number(getComputedStyle(image).opacity)>0),menu:document.querySelector('[data-v2-menu]')?.getAttribute('aria-expanded')};
+      return{t:performance.now(),y:scrollY,background:root?.dataset.selectedBackgroundState,sceneReady:root?.dataset.selectedSceneReady,models:Number(root?.dataset.selectedModelsReady||0),preparationFrames:Number(root?.dataset.selectedPreparationFrames||0),warm:Number(root?.dataset.selectedWarmFrames||0),live:Number(root?.dataset.selectedFrames||0),mask:root?.dataset.selectedWarmMask,canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,posterCount:posters.length,postersVisible:posters.every(image=>getComputedStyle(image).visibility==='visible'&&Number(getComputedStyle(image).opacity)>0),menu:document.querySelector('[data-v2-menu]')?.getAttribute('aria-expanded')};
     };
     data.read=read;
     data.stop=()=>{data.active=false;clearTimeout(timer);clearTimeout(deadline);data.stopped=performance.now();};
@@ -661,7 +709,7 @@ async function warmingInput(browser) {
         data.beats.push({t:sample.t,gap:sample.t-previous,background:sample.background,sceneReady:sample.sceneReady,boundary:'selected-ready'});
         data.posterSamples.push(sample);clearTimeout(timer);
       }
-    }).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-models-ready','data-selected-scene-ready','data-selected-warm-frames','data-selected-background-ready','data-selected-background-state']});
+    }).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-models-ready','data-selected-scene-ready','data-selected-preparation-frames','data-selected-warm-frames','data-selected-background-ready','data-selected-background-state']});
   },{budget:timeout});
   try{
     await page.goto(base+'/v2/?v=selected-warming-input',{waitUntil:'domcontentloaded'});
@@ -696,76 +744,135 @@ async function warmingInput(browser) {
     const readyAt=response.preparationReady;
     const preparationTasks=response.longTasks.filter(task=>task.start<readyAt&&task.start+task.duration>=response.started);
     const metrics={maxHeartbeatGapMs:Math.max(...response.beats.map(beat=>beat.gap)),maxLongTaskMs:Math.max(0,...preparationTasks.map(task=>task.duration)),totalLongTaskMs:preparationTasks.reduce((sum,task)=>sum+task.duration,0),maxClickPromiseMs:Math.max(...actions.map(action=>action.clickPromiseMs)),maxEscapePromiseMs:Math.max(...actions.map(action=>action.escapePromiseMs)),maxInputToNextFrameMs:Math.max(...response.inputs.map(input=>input.nextFrame.t-input.received.t)),maxInputToAfterPaintMs:Math.max(...response.inputs.map(input=>input.afterPaint.t-input.received.t))};
-    await save(run,'native-menu-key-during-selected-preparation-stall-evidence',{actions,response,metrics,measurementNote:'Native Playwright click/key promises include input dispatch and driver overhead. Browser timestamps measure trusted event receipt to RAF/after-paint; the explicitly bounded 25ms test heartbeat measures event-loop stalls. Values are recorded for same-environment baseline comparison, with no unmeasured timing threshold.'});
+    const maximum=values=>values.length?Math.max(...values):null;
+    const summarizePhase=(start,end)=>{
+      const tasks=response.longTasks.filter(task=>task.start<end&&task.start+task.duration>=start),beats=response.beats.filter(beat=>beat.t>=start&&beat.t-beat.gap<end),inputs=response.inputs.filter(input=>input.received.t>=start&&input.received.t<end),operations=actions.filter(action=>action.after.t>=start&&action.before.t<end);
+      return{start,end,durationMs:end-start,longTaskCount:tasks.length,maxLongTaskMs:Math.max(0,...tasks.map(task=>task.duration)),totalLongTaskMs:tasks.reduce((sum,task)=>sum+task.duration,0),heartbeatCount:beats.length,maxHeartbeatGapMs:maximum(beats.map(beat=>beat.gap)),inputCount:inputs.length,maxInputToNextFrameMs:maximum(inputs.map(input=>input.nextFrame.t-input.received.t)),maxInputToAfterPaintMs:maximum(inputs.map(input=>input.afterPaint.t-input.received.t)),nativeOperationCount:operations.length,maxClickPromiseMs:maximum(operations.map(action=>action.clickPromiseMs)),maxEscapePromiseMs:maximum(operations.map(action=>action.escapePromiseMs))};
+    };
+    const sceneReadyAt=response.phases.find(phase=>phase.attribute==='data-selected-scene-ready'&&phase.value==='true')?.t,firstModelAt=response.phases.find(phase=>phase.attribute==='data-selected-models-ready'&&Number(phase.value)>0)?.t;
+    assert.ok(Number.isFinite(sceneReadyAt)&&sceneReadyAt<=readyAt,'The real own-context scene-ready boundary is captured before completed GPU preparation');
+    const phaseMetrics={wholePreparation:summarizePhase(response.started,readyAt),sceneReadyThroughGPUPreparation:summarizePhase(sceneReadyAt,readyAt),afterFirstModelThroughSceneReady:Number.isFinite(firstModelAt)?summarizePhase(firstModelAt,sceneReadyAt):null};
+    await save(run,'native-menu-key-during-selected-preparation-stall-evidence',{actions,response,metrics,phaseMetrics,measurementNote:'Native Playwright click/key promises include input dispatch and driver overhead. Browser timestamps measure trusted event receipt to RAF/after-paint; the explicitly bounded 25ms test heartbeat measures event-loop stalls. Phase summaries count complete tasks/gaps intersecting each phase, so they do not conceal a stall by clipping its duration. Null means no corresponding input/heartbeat was observed. Values are recorded for same-environment baseline comparison, with no unmeasured timing threshold.'});
   }catch(error){await diagnose(run,'warming-input',error);throw error;}finally{await page.evaluate(()=>window.__selectedResponseProbe?.stop()).catch(()=>{});await run.context.close();}
 }
 
-async function interruptedWarmMask(browser) {
-  const run=await open(browser),{page,context}=run;
-  await context.addInitScript(()=>{
-    const idle=requestIdleCallback.bind(window),raf=requestAnimationFrame.bind(window),cancelIdle=cancelIdleCallback.bind(window),cancelRAF=cancelAnimationFrame.bind(window);
-    const idleQueue=new Map(),liveQueue=new Map(),samples=[];let next=-1,dispatched=0;
-    const control=window.__selectedMaskControl={holdLive:false};
-    const selectedCall=()=>/v2-selected-work\.js/.test(new Error().stack);
+async function controlledFences(context,{hold=false,afterPreparation=0}={}) {
+  await context.addInitScript(({hold,afterPreparation})=>{
+    const native=HTMLCanvasElement.prototype.getContext,seen=new WeakSet(),fences=new Map(),records=[],samples=[],draws=[];
+    const control=window.__selectedFenceControl={hold,afterPreparation};
     const read=label=>{
-      const root=document.querySelector('[data-selected-work]'),sample=window.__selectedProbe.snapshot();
-      const image=root?.querySelector('[data-selected-chapter].is-current [data-selected-image]');
-      return{label,...sample,background:root?.dataset.selectedBackgroundState,posterVisibility:image?getComputedStyle(image).visibility:null};
+      const root=document.querySelector('[data-selected-work]'),poster=root?.querySelector('[data-selected-chapter].is-current [data-selected-image]');
+      return{label,...window.__selectedProbe?.snapshot(),background:root?.dataset.selectedBackgroundState,posterVisibility:poster?getComputedStyle(poster).visibility:null};
     };
-    window.requestIdleCallback=(callback,options)=>{if(!selectedCall())return idle(callback,options);const id=next--;idleQueue.set(id,()=>idle(deadline=>{callback(deadline);dispatched++;},options));return id;};
-    window.cancelIdleCallback=id=>{if(!idleQueue.delete(id))cancelIdle(id);};
-    window.requestAnimationFrame=callback=>{
-      if(callback.name!=='render'||!selectedCall())return raf(callback);
-      const observed=time=>{samples.push(read('before-live'));callback(time);samples.push(read('after-live'));};
-      if(!control.holdLive)return raf(observed);const id=next--;liveQueue.set(id,observed);return id;
+    control.state=()=>({...read('snapshot'),fences:records.map(record=>({...record})),pending:records.filter(record=>record.deleted===undefined).length,samples,draws});
+    HTMLCanvasElement.prototype.getContext=function(type,...args){
+      const gl=native.call(this,type,...args);
+      if(!gl||!this.matches('[data-selected-canvas]')||seen.has(gl)||typeof gl.fenceSync!=='function')return gl;
+      seen.add(gl);
+      const create=gl.fenceSync.bind(gl),poll=gl.clientWaitSync.bind(gl),remove=gl.deleteSync.bind(gl);
+      gl.fenceSync=(...args)=>{const sync=create(...args);if(sync){const record={id:records.length+1,created:performance.now(),polls:0,heldPolls:0,outstandingAtCreate:records.filter(record=>record.deleted===undefined).length+1,atCreate:read('fence-created')};fences.set(sync,record);records.push(record);}return sync;};
+      gl.clientWaitSync=(sync,flags,timeout)=>{
+        const record=fences.get(sync);if(record){record.polls++;record.maxWaitTimeout=Math.max(record.maxWaitTimeout||0,timeout);}
+        if(control.hold&&Number(document.querySelector('[data-selected-work]').dataset.selectedPreparationFrames||0)>=control.afterPreparation){if(record)record.heldPolls++;return gl.TIMEOUT_EXPIRED;}
+        return poll(sync,flags,timeout);
+      };
+      gl.deleteSync=sync=>{const record=fences.get(sync);if(record){record.deleteCalls=(record.deleteCalls||0)+1;record.deleted=performance.now();}return remove(sync);};
+      return gl;
     };
-    window.cancelAnimationFrame=id=>{if(!liveQueue.delete(id))cancelRAF(id);};
-    control.releaseIdle=()=>{const entry=idleQueue.entries().next().value;if(!entry)return false;idleQueue.delete(entry[0]);entry[1]();return true;};
-    control.releaseLive=()=>{control.holdLive=false;for(const callback of liveQueue.values())raf(callback);liveQueue.clear();};
-    control.state=()=>({...read('snapshot'),idlePending:idleQueue.size,livePending:liveQueue.size,dispatched,samples});
-    new MutationObserver(records=>{if(records.some(record=>record.attributeName==='data-selected-warm-mask'))samples.push(read('mask-change'));}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-warm-mask']});
-  });
-  const sample=()=>page.evaluate(()=>window.__selectedMaskControl.state());
-  const releaseIdle=async()=>{
-    await page.waitForFunction(()=>window.__selectedMaskControl.state().idlePending>0);
-    const before=(await sample()).dispatched;assert.equal(await page.evaluate(()=>window.__selectedMaskControl.releaseIdle()),true);
-    await page.waitForFunction(previous=>window.__selectedMaskControl.state().dispatched>previous,before);
-  };
-  const assertMasked=(value,label)=>{assert.equal(value.mask,'true',label);assert.equal(value.readyClass,false,label);assert.equal(value.canvasVisibility,'hidden',label);assert.equal(value.posterVisibility,'visible',label);};
+    new MutationObserver(records=>{
+      if(records.some(record=>['data-selected-frames','data-selected-warm-mask','data-selected-g-p-u-completion'].includes(record.attributeName)))samples.push(read('state-change'));
+      if(records.some(record=>record.attributeName==='data-selected-preparation-frames')){const sample=read('model-submission');if(sample.preparationFrames>0&&sample.preparationFrames!==draws.at(-1)?.preparationFrames)draws.push(sample);}
+    }).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-frames','data-selected-warm-mask','data-selected-g-p-u-completion','data-selected-preparation-frames']});
+  },{hold,afterPreparation});
+}
+const fenceState=page=>page.evaluate(()=>window.__selectedFenceControl.state());
+async function heldFence(page){await page.waitForFunction(()=>window.__selectedFenceControl.state().fences.some(fence=>fence.deleted===undefined&&fence.heldPolls>0),null,{timeout});return fenceState(page);}
+function maskedFence(sample,label){assert.equal(sample.mask,'true',label);assert.equal(sample.readyClass,false,label);assert.equal(sample.canvasVisibility,'hidden',label);assert.equal(sample.posterVisibility,'visible',label);}
+function releasedFences(sample,label){assert.equal(sample.pending,0,label+': no outstanding sync remains');assert.ok(sample.fences.every(fence=>fence.deleteCalls===1),label+': each real allocated fence is deleted exactly once');assert.ok(sample.fences.every(fence=>fence.outstandingAtCreate===1&&(fence.maxWaitTimeout||0)===0),label+': at most one nonblocking own-context fence is in flight');}
+
+async function interruptedWarmMask(browser) {
+  const run=await open(browser),{page,context}=run;await controlledFences(context);
   try{
-    await page.goto(base+'/v2/?v=selected-interrupted-warm-mask',{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(()=>window.__selectedMaskControl.state().idlePending>0);await scrollProgress(page,.3);
-    // Visible promotion must work through the same real per-model idle turns.
-    // Release only actual production idle callbacks; no model/promise is faked.
-    for(let turn=0;turn<16;turn++){
-      const status=await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.frame>0||value.idlePending>0?value:false;});
-      const value=await status.jsonValue();await status.dispose();if(value.frame>0)break;await releaseIdle();
-    }
-    await settled(page);await page.waitForFunction(()=>window.__selectedMaskControl.state().canvasOpacity>.99);
-    const firstLive=await sample();assert.equal(firstLive.warm,0,'A true visible frame precedes any background warm pose');assert.equal(firstLive.mask,'false');
-    await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
-    await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return scrollY===0&&value.mask==='true'&&value.idlePending>0;});
-    const remasked=await sample();assertMasked(remasked,'Returning offscreen immediately masks the previously live canvas');
-    const duringFade=remasked.samples.find(value=>value.label==='mask-change'&&value.frame>0&&value.mask==='true');
-    assert.ok(duringFade&&duringFade.canvasOpacity>0,'Mask transition is observed while the old live canvas still has opacity');assertMasked(duringFade,'Visibility mask covers the whole fade');
-    await releaseIdle(); // background foreground-settled/initialize boundary
-    await releaseIdle(); // first real GPU warm pose
-    await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.warm===1&&value.idlePending>0;});
-    const warmed=await sample();assertMasked(warmed,'First offscreen warm pose stays hidden');assert.equal(warmed.frame,remasked.frame);assertWarmDraw(warmed,'Interrupted offscreen warm pose');
-    await page.evaluate(()=>{window.__selectedMaskControl.holdLive=true;});await scrollProgress(page,.85);
-    await page.waitForFunction(()=>{const value=window.__selectedMaskControl.state();return value.livePending>0&&Math.abs(value.raw-.85)<.001;});
-    assertMasked(await sample(),'Rapid re-entry stays masked until a current live draw');
-    await releaseIdle(); // canceled old second warm continuation
-    await page.waitForFunction(()=>window.__selectedMaskControl.state().idlePending===0);
-    const canceled=await sample();assertMasked(canceled,'Canceled continuation never unmasks a stale GPU pose');assert.equal(canceled.warm,1);assert.equal(canceled.frame,warmed.frame);
-    await page.evaluate(()=>window.__selectedMaskControl.releaseLive());await settled(page);const final=await sample();
-    assert.ok(final.frame>canceled.frame);assert.equal(final.mask,'false');assert.equal(final.canvasVisibility,'visible');assert.equal(final.chapter,'1');
-    near(final.rendered,final.raw,'Current live draw matches the promoted native target',tolerance);
-    const firstUnmasked=final.samples.find(value=>value.label==='after-live'&&value.frame>canceled.frame);
-    assert.ok(firstUnmasked&&firstUnmasked.mask==='false');near(firstUnmasked.rendered,canceled.raw,'First unmasked frame is current, not a warm endpoint',tolerance);
-    assertLiveDraw(firstUnmasked,'The very first unmasked frame restores full live resolution');assertLiveDraw(final,'Promoted current frame retains full live resolution');
-    await save(run,'interrupted-live-offscreen-warm-current-frame-unmask',{firstLive,remasked,duringFade,warmed,canceled,final,schedulingControl:'Only Selected production idle callbacks and render RAF are held; native scroll continues normally'});
-  }catch(error){await diagnose(run,'interrupted-warm-mask',error);throw error;}finally{await run.context.close();}
+    await page.goto(base+'/v2/?v=selected-interrupted-gpu-mask',{waitUntil:'domcontentloaded'});await ready(page);await jump(page,.3);await visualSettled(page);
+    const firstLive=await fenceState(page);assert.equal(firstLive.warm,2);assertPreparation(firstLive,'Fully prepared initial live frame');
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=true;scrollTo({top:0,behavior:'instant'});});
+    await page.waitForFunction(()=>{const value=window.__selectedFenceControl.state();return scrollY===0&&value.mask==='true';});
+    const remasked=await fenceState(page);maskedFence(remasked,'Leaving the section masks the previously opaque canvas');
+    const duringFade=remasked.samples.find(sample=>sample.mask==='true'&&sample.frame===firstLive.frame&&sample.canvasOpacity>0);
+    assert.ok(duringFade,'The visibility mask is observed during the old live canvas fade');maskedFence(duringFade,'Posters cover the whole live-to-hidden fade');
+    await scrollProgress(page,.85);const held=await heldFence(page);maskedFence(held,'Native re-entry stays masked while its own-context drain is pending');
+    assert.equal(held.frame,firstLive.frame,'A pending drain cannot count or publish another live frame');
+    await scrollProgress(page,.1);await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-selected-work]').dataset.selectedProgress)-.1)<.001);
+    const changed=await heldFence(page);maskedFence(changed,'A newer native jump remains masked until a current completed draw');
+    assert.ok(changed.fences.some(fence=>fence.id===held.fences.find(fence=>fence.deleted===undefined).id&&fence.deleted!==undefined),'A superseded pending fence is canceled and deleted');
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=false;});await settled(page);const final=await fenceState(page);
+    const firstUnmasked=final.samples.find(sample=>sample.frame>firstLive.frame&&sample.mask==='false');
+    assert.ok(firstUnmasked,'A newly completed live frame eventually reveals the canvas');near(firstUnmasked.rendered,.1,'The first unmasked frame uses the latest large-jump target',.001);
+    assertLiveDraw(firstUnmasked,'First completed reveal restores current full live resolution');assertPreparation(final,'Re-entry reuses the six completed model stages');releasedFences(final,'Re-entry');
+    assert.equal(final.warm,2,'Re-entry never repeats completed composition preparation');await noLoop(page,'Re-entry settles without a GPU polling or render loop');
+    await save(run,'interrupted-live-mask-held-gpu-current-frame-unmask',{firstLive,remasked,duringFade,held,changed,final,schedulingControl:'Only real Selected-context clientWaitSync observations are held at TIMEOUT_EXPIRED. Fence allocation/deletion, native scrolling, and production rendering remain real.'});
+  }catch(error){await diagnose(run,'interrupted-gpu-mask',error);throw error;}finally{await run.context.close();}
+}
+
+async function pendingGPUPreference(browser) {
+  const run=await open(browser),{page,context}=run;await controlledFences(context,{hold:true,afterPreparation:2});
+  try{
+    await page.goto(base+'/v2/?v=selected-pending-gpu-preference',{waitUntil:'domcontentloaded'});const pending=await heldFence(page);
+    assert.equal(pending.preparationFrames,2,'Two real model-only draws were submitted before the held fence');assert.equal(pending.preparedModels.length,1,'Only the actually completed model is marked prepared');
+    assert.equal(pending.warm,0);assert.equal(pending.frame,0);maskedFence(pending,'Cold model preparation retains its posters');
+    for(const draw of pending.draws){assert.ok(draw.lastDraw.warm&&Math.max(draw.lastDraw.width,draw.lastDraw.height)<=64,'Real model-only preparation uses the documented 64px target');}
+    const completed=pending.preparedModels[0],originalCanvas=await page.locator(canvas).elementHandle();
+    await scrollProgress(page,.85);await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return Math.abs(Number(root.dataset.selectedProgress)-.85)<.001&&root.dataset.selectedChapter==='1'&&root.dataset.selectedBackgroundState==='promoted';});
+    const promoted=await heldFence(page);maskedFence(promoted,'Visible promotion cannot bypass cold GPU preparation');assert.equal(promoted.frame,0);assert.deepEqual(promoted.preparedModels,[completed]);
+    await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-selected-state="static"]').waitFor();await readable(page);
+    const paused=await fenceState(page);releasedFences(paused,'Reduced-motion cancellation');assert.deepEqual(paused.preparedModels,[completed],'Completed work survives cancellation');
+    await page.waitForTimeout(350);const idle=await fenceState(page);assert.deepEqual(idle.fences,paused.fences,'Canceled preparation stops polling and allocating fences');assert.equal(idle.preparationFrames,paused.preparationFrames);
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=false;});await page.emulateMedia({reducedMotion:'no-preference'});await page.locator(selected+'.is-scene').waitFor();await jump(page,.85);
+    const resumed=await fenceState(page);assertPreparation(resumed,'Resumed cold preparation',{interrupted:true});assert.equal(resumed.warm,2);releasedFences(resumed,'Resumed cold preparation');
+    assert.equal(await originalCanvas.evaluate(node=>node===document.querySelector('[data-selected-canvas]')),true,'Preference restoration reuses the original Selected canvas');
+    assert.equal(resumed.draws.filter(draw=>draw.preparationStage===completed).length,1,'An already completed model is never redrawn during resumed preparation');
+    const firstUnmasked=resumed.samples.find(sample=>sample.frame>0&&sample.mask==='false');assert.ok(firstUnmasked);near(firstUnmasked.rendered,.85,'Resumed first reveal uses the current native destination',.001);assertLiveDraw(firstUnmasked,'Resumed first reveal');
+    await noLoop(page,'Resumed preparation terminates without an idle loop');await save(run,'held-model-fence-visible-promotion-reduced-motion-resume',{pending,promoted,paused,idle,resumed,completed});await originalCanvas.dispose();
+  }catch(error){await diagnose(run,'pending-gpu-preference',error);throw error;}finally{await run.context.close();}
+}
+
+async function webgl1Preparation(browser) {
+  const run=await open(browser,{webgl1:true}),{page}=run;
+  try{
+    await page.goto(base+'/v2/?v=selected-webgl1-preparation',{waitUntil:'domcontentloaded'});await ready(page);
+    const hidden=await state(page);assertPreparation(hidden,'WebGL1 staged preparation',{unsupported:true});assert.equal(hidden.warm,2);assert.equal(hidden.frame,0);assertWarmDraw(hidden,'WebGL1 hidden composition');
+    const api=await page.locator(canvas).evaluate(node=>{const gl=node.getContext('webgl')||node.getContext('experimental-webgl');return{version:gl.getParameter(gl.VERSION),hasFence:typeof gl.fenceSync==='function'};});
+    assert.match(api.version,/WebGL 1/,'The fallback uses a real WebGL1 context');assert.equal(api.hasFence,false,'The tested graphics API genuinely lacks completion fences');
+    await jump(page,.32);const live=await state(page);assert.equal(live.gpuCompletion,'unsupported','Live WebGL1 never claims fenced GPU completion');assertLiveDraw(live,'WebGL1 live entry');await noLoop(page,'WebGL1 staged fallback remains finite');
+    await save(run,'real-webgl1-unsupported-fence-finite-staged-preparation',{api,hidden,live});
+  }catch(error){await diagnose(run,'webgl1-preparation',error);throw error;}finally{await run.context.close();}
+}
+
+async function pendingGPUTouchResize(browser) {
+  const run=await open(browser,{touch:true,dpr:2,viewport:{width:390,height:844}}),{page,context}=run;await controlledFences(context);
+  try{
+    await page.goto(base+'/v2/?v=selected-pending-gpu-touch-resize',{waitUntil:'domcontentloaded'});await ready(page);const before=await jump(page,.15),contexts=(await snapshot(page)).contexts.filter(context=>context.kind==='selected');
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=true;});await begin(page);
+    await page.mouse.move(195,460);await page.mouse.wheel(0,40);const pending=await heldFence(page);
+    assert.equal(pending.frame,before.frame,'A held GPU completion is not published as a finished live frame');
+    const cdp=await context.newCDPSession(page),point=y=>[{x:195,y,id:1,radiusX:4,radiusY:4,force:1}];
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:point(650)});
+    for(const y of [625,600,575,550,525,500]){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:point(y)});await page.waitForTimeout(65);}
+    await page.waitForTimeout(120);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await page.waitForFunction(y=>scrollY>y+80,before.y);
+    await page.setViewportSize({width:320,height:740});await page.waitForTimeout(160);
+    const changed=await heldFence(page);assert.equal(changed.frame,before.frame,'Touch and resize cannot publish the superseded pending draw');
+    assert.ok(changed.fences.find(fence=>fence.id===pending.fences.find(fence=>fence.deleted===undefined).id)?.deleted!==undefined,'Resizing cancels the old drawing-buffer generation fence');
+    const target=changed.raw;
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=false;});await settled(page);const final=await fenceState(page),trace=await end(page);trusted(trace);const submissionEvidence=directSubmissions(trace,before,final);
+    assert.ok(trace.events.some(event=>event.type==='touchmove'),'The superseding direct touch is actual trusted browser input');
+    const firstCurrent=final.samples.find(sample=>sample.frame>before.frame);
+    assert.ok(firstCurrent);near(firstCurrent.rendered,target,'First completed post-resize frame samples the latest direct-touch target',.001);assertLiveDraw(firstCurrent,'First post-resize completed frame has current buffer dimensions');
+    assertLiveDraw(final,'Post-resize final live frame');assertPreparation(final,'Touch and resize reuse completed preparation');releasedFences(final,'Touch and resize');
+    assert.deepEqual((await snapshot(page)).contexts.filter(context=>context.kind==='selected'),contexts,'Pending-frame resize creates no additional renderer context');
+    await noLoop(page,'Latest direct touch and resize converge without a residual GPU/render queue');
+    await save(run,'pending-live-fence-native-touch-resize-current-frame',{before,pending,changed,target,final,trace,submissionEvidence});
+  }catch(error){await diagnose(run,'pending-gpu-touch-resize',error);throw error;}finally{await run.context.close();}
 }
 
 async function pendingPreferenceChange(browser) {
@@ -896,7 +1003,7 @@ async function studies(browser) {
       if(!group||group==='core'){await guards(browser);await initialAndInput(browser);}
       if(!group||group==='lifecycle'){
         const failures=[];
-        for(const test of [interruptedWarmMask,pendingPreferenceChange,readyPreferenceChange]){
+        for(const test of [interruptedWarmMask,pendingGPUPreference,pendingGPUTouchResize,webgl1Preparation,pendingPreferenceChange,readyPreferenceChange]){
           try{await test(browser);}
           catch(error){failures.push(error);evidence.push({name:test.name+'-failure',error:error.stack});console.error('FAIL '+test.name+': '+error.message);}
         }
