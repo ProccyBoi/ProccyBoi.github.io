@@ -1,0 +1,47 @@
+name: Render v2 Framework collection CAD
+on:
+  push:
+    branches: [v2-background-collections]
+    paths:
+      - scripts/render-framework-dual-poster.cjs
+      - .github/workflows/render-v2-collection.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official render dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+          python3 -m pip install Pillow==12.0.0
+      - name: Render and validate the unchanged source assembly
+        env:
+          V2_BASE_URL: http://127.0.0.1:8080
+          FRAMEWORK_COLLECTION_OUT: /tmp/framework-collection
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/framework-collection-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/v2/ >/dev/null
+          node scripts/render-framework-dual-poster.cjs --check
+          node scripts/render-framework-dual-poster.cjs
+      - name: Save transparent poster and provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: framework-dual-usb-poster
+          path: /tmp/framework-collection/
+          if-no-files-found: error
+          retention-days: 14
