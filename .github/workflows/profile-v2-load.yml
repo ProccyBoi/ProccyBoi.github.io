@@ -1,0 +1,36 @@
+name: Measure v2 cold and repeat readiness
+on:
+  push:
+    branches: [v2-load-speed]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install official browser fixture dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+          git worktree add --detach /tmp/v2-load-baseline b5965978db351e5c6d3ee2a7a2d25ed1ad2a976f
+      - name: Measure current deployment cold and cached phase costs
+        env:
+          V2_LOAD_ROOT: ${{ github.workspace }}
+          V2_LOAD_BASELINE_ROOT: /tmp/v2-load-baseline
+          V2_LOAD_OUT: /tmp/v2-load-evidence/profile.json
+          V2_LOAD_RUNS: '1'
+        run: node scripts/profile-v2-load.cjs --baseline-only
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-load-measurements
+          path: /tmp/v2-load-evidence/
+          retention-days: 14
