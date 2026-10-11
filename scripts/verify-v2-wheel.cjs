@@ -303,7 +303,9 @@ async function pendingTelemetry(browser) {
     await Promise.all(releases.splice(0).map(release => release()));
     await page.locator('[data-aircraft-telemetry-ready="true"]').waitFor({ timeout });
     await waitSettled(page); const trace = await end(page);
-    const pending = trace.samples.filter(sample => sample.kind === 'aircraft' && !sample.telemetryReady);
+    // The legacy baseline adapter can record raw progress before frame one.
+    // Only actual renderer output is a pose; the loading poster is not.
+    const pending = trace.samples.filter(sample => sample.kind === 'aircraft' && sample.frame > 0 && sample.renderedSource === 'rendered-progress' && !sample.telemetryReady);
     assert.ok(pending.length >= 2 && pending.every(sample => sample.rendered <= .610002), 'Every pending-board rendered frame respects the .61 availability cap');
     const final = await state(page); assert.equal(final.raw, 1); assert.equal(final.rendered, 1);
     assert.equal(await page.locator(aircraft).getAttribute('data-aircraft-chapter'), '1', 'Telemetry release reaches its destination');
