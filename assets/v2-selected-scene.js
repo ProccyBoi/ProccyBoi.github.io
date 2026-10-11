@@ -193,7 +193,7 @@
       if(!total)return;
       const normalization=gate/Math.max(1,total);
       screenRight.setFromMatrixColumn(camera.matrixWorld,0);screenUp.setFromMatrixColumn(camera.matrixWorld,1);
-      const top=compact ? .38 : .50,bottom=compact ? -.48 : -.72,side=.95;
+      const top=compact ? .38 : .46,bottom=compact ? -.48 : -.72,side=.95;
       for(let i=0;i<4;i++) {
         const weight=inspectionWeights[i]*normalization,entry=objects.get(names[i]),box=bounds.get(names[i]);
         if(!weight)continue;

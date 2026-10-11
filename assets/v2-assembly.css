@@ -132,6 +132,20 @@
   .v2-assembly.is-loaded canvas{opacity:0}
   .v2-assembly-stage canvas,.v2-assembly-posters img{transition:none}
 }
+/* Without JavaScript the mobile header exposes its second navigation row.
+   Keep all project actions in normal flow before the static artwork instead
+   of positioning them against a viewport that begins below that taller header. */
+@media(max-width:540px){
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced){margin-top:0;height:auto}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-sticky{display:flex;flex-direction:column;position:relative;height:auto;min-height:0;padding:32px var(--v2-gutter) 24px}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-intro{position:relative;inset:auto}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-bottom{position:relative;inset:auto;order:2;display:block;margin-top:16px}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-stage{position:relative;inset:auto;order:3;height:clamp(230px,65vw,320px);margin-top:16px}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-stage canvas,.v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-progress{display:none}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-telemetry{width:29%;height:75%;left:0;top:7%;transform:rotate(-15deg)}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-pi{width:29%;height:75%;left:auto;right:0;top:7%;transform:rotate(15deg)}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-tram{width:74%;height:100%;left:13%;top:5%;transform:rotate(-8deg)}
+}
 @media print{
   .v2-assembly,.v2-assembly.is-enhanced{height:650px;margin-top:0}
   .v2-assembly-sticky,.v2-assembly.is-enhanced .v2-assembly-sticky{height:650px;position:relative;min-height:0}

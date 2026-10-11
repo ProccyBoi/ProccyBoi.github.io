@@ -58,10 +58,10 @@ jobs:
               git worktree add --detach /tmp/v2-published d725a378806eb05c8d5b981f8e54d33dde502cac
               python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-published >/tmp/baseline.log 2>&1 &
               for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8081/v2/ >/dev/null && break; sleep 1; done
-              V2_BASE_URL=http://127.0.0.1:8081 V2_BACKGROUND_OUT=/tmp/v2-selected-study/background-baseline node scripts/verify-v2-background.cjs --profile-only
+              V2_BACKGROUND_LOADING_POLICY=legacy-eager V2_BASE_URL=http://127.0.0.1:8081 V2_BACKGROUND_OUT=/tmp/v2-selected-study/background-baseline node scripts/verify-v2-background.cjs --profile-only
               node scripts/verify-v2-background.cjs --profile-only
               V2_BACKGROUND_OUT=/tmp/v2-selected-study/repeat/background node scripts/verify-v2-background.cjs --profile-only
-              V2_BASE_URL=http://127.0.0.1:8081 V2_BACKGROUND_OUT=/tmp/v2-selected-study/repeat/background-baseline node scripts/verify-v2-background.cjs --profile-only
+              V2_BACKGROUND_LOADING_POLICY=legacy-eager V2_BASE_URL=http://127.0.0.1:8081 V2_BACKGROUND_OUT=/tmp/v2-selected-study/repeat/background-baseline node scripts/verify-v2-background.cjs --profile-only
               ;;
           esac
       - uses: actions/upload-artifact@v4

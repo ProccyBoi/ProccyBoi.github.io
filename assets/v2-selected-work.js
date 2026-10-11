@@ -1,5 +1,6 @@
 /* Selected Work: six real assemblies, one physical space and one renderer.
- * Native scrolling remains in charge. Preparation does not wait for scrolling. */
+ * Native scrolling remains in charge. Transports prefetch immediately;
+ * scene construction and GPU preparation follow proximity or explicit intent. */
 (() => {
   'use strict';
   const root = document.querySelector('[data-selected-work]');
@@ -411,6 +412,9 @@
         resume(){capturePose=undefined;previousTime=0;updateScroll();request();}};
     })().catch(fail).finally(()=>{
       initialization=null;
+      // Async completion also reconciles the current preference; a media-query
+      // change notification may follow its CSS/matches update.
+      if(!failed&&!allowed()){fallback();return;}
       if(!ready&&!failed&&allowed()&&track&&!document.hidden&&activePage&&!aircraftHasPriority()&&preparationEligible())setTimeout(()=>visible?initialize(true):prepareInBackground(),0);
       if(ready)prepareInBackground();
     });
@@ -455,7 +459,9 @@
       composition.frame(camera,progress,width,height);backgroundDone=true;root.dataset.selectedBackgroundReady='true';root.dataset.selectedBackgroundReadyMs=performance.now().toFixed(1);root.dataset.selectedBackgroundState='ready';root.dataset.selectedPreparationStage='complete';settleBackground({state:'ready',at:performance.now()});
     }catch(error){fail(error);}
     finally{
-      if(renderer&&!failed)pixelRatio();backgroundBusy=false;
+      backgroundBusy=false;
+      if(!failed&&!allowed()){fallback();return;}
+      if(renderer&&!failed)pixelRatio();
       if(backgroundDone)request();
       else if(!failed&&!document.hidden&&activePage&&allowed()&&track&&!aircraftHasPriority()&&preparationEligible())setTimeout(prepareInBackground,0);
     }

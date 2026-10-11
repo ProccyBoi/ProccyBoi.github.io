@@ -285,14 +285,22 @@
   },
   "verificationTools": {
     "scripts/build-v2-selected-assets.cjs": {
-      "bytes": 36503,
-      "sha256": "a16a197f89ea0ce20e9a5147540317d078414b442e16f0cb2da935f571e5218b",
-      "reason": "Compressed-only verification and manifest metadata update; original pack-generation script hash and build commit are retained in sources and sourceCommit."
+      "bytes": 38019,
+      "sha256": "686e72ffb06c065bb4f3532652e931e572f1f26f65c9becb60f073ad82147795",
+      "reason": "Strict explicit editorial-source revision verifies the detached Dual inspector byte-for-byte; original geometry, runtime capture, pack generation hash and commit remain retained."
     },
     "assets/v2-selected-assets.js": {
       "bytes": 21500,
       "sha256": "5f67a28c25fd00e996814a20b351975ca0f414ca3f416c4134dd637fdb7b66c3",
       "reason": "Current runtime decoder used by verification: image scheduling, texture prefetch and shared transfer delegation; additive Selected-only loadStatic batches independent Metro/TramTrace instances with cooperative transactional cancellation. Exact load() and pack-generation sources remain unchanged."
+    }
+  },
+  "editorialSources": {
+    "v2/projects/framework-dual-usb/index.html": {
+      "bytes": 14236,
+      "sha256": "ef19097e876903ecac0c5a389e8fa788613f2689d3bfb768aa05c24a09ba2684",
+      "fixtureSha256": "5dda9178cc5fc9e667054d6c4eb5a7526ded0182b41259dfd1c182c19eeaa07a",
+      "reason": "Source-backed case-study notes and CAD labeling outside the exact original detached inspector. Original whole-page build hash remains in sources; this fixture was byte-compared to d725a378."
     }
   }
 }

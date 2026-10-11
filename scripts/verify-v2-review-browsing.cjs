@@ -249,7 +249,7 @@ function compactPreparationProbe(){
   new MutationObserver(records=>{for(const record of records)data.phases.push({t:performance.now(),attribute:record.attributeName,value:record.target.getAttribute(record.attributeName)});}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-assembly-state','data-selected-models-ready','data-selected-background-ready','data-aircraft-background-ready','data-aircraft-cpu-phase']});
 }
 async function compactStaticHeroPreparation(browser){
-  await safely(browser,'compact-static-hero-secondary-preparation',{viewport:{width:390,height:667},touch:true},async run=>{
+  await safely(browser,'compact-static-hero-secondary-preparation',{viewport:{width:390,height:621},touch:true},async run=>{
     const {page,context}=run;await context.addInitScript(compactPreparationProbe);
     await page.goto(base+'/v2/?review=compact-static-hero-preparation',{waitUntil:'domcontentloaded'});
     await page.locator('[data-assembly-state="static"]').waitFor();
@@ -266,7 +266,7 @@ async function compactStaticHeroPreparation(browser){
     assert.deepEqual(selected.probe.contexts.map(item=>item.kind),['selected'],'Only the required Selected context exists; the static hero has none');
     const aircraftRequested=await page.evaluate(()=>performance.now());
     await page.locator('[data-aircraft-hero]').evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().bottom+1,behavior:'instant'}));
-    await page.waitForFunction(()=>{const root=document.querySelector('[data-aircraft-hero]'),box=root.getBoundingClientRect();return box.bottom<=0&&box.bottom>-innerHeight&&!window.V2AircraftPreparation.isVisible()&&!window.V2SelectedWork.isVisible();});
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-aircraft-hero]'),box=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(root.querySelector('[data-aircraft-stage]')).top)||0,header=document.querySelector('.v2-header'),headerBox=header.getBoundingClientRect(),hit=box.bottom>0?document.elementFromPoint(innerWidth/2,box.bottom/2):null;const covered=box.bottom<=0||(headerBox.top<=0&&headerBox.bottom>=box.bottom&&(hit===header||header.contains(hit)));return box.bottom<=pinned&&covered&&!window.V2AircraftPreparation.isVisible()&&box.bottom>-innerHeight&&!window.V2AircraftPreparation.isVisible()&&!window.V2SelectedWork.isVisible();});
     await page.locator('[data-aircraft-background-ready="true"][data-aircraft-warm-poses-completed="2"]').waitFor();
     const completed=await page.evaluate(()=>({t:performance.now(),hero:{...document.querySelector('[data-assembly]').dataset},selected:{...document.querySelector('[data-selected-work]').dataset},aircraft:{...document.querySelector('[data-aircraft-hero]').dataset},probe:window.__compactPreparation}));
     assert.equal(completed.hero.assemblyState,'static');assert.equal(Number(completed.hero.assemblyFrames||0),0);assert.equal(await page.locator('.v2-assembly.is-enhanced').count(),0);
@@ -274,7 +274,7 @@ async function compactStaticHeroPreparation(browser){
     assert.deepEqual(completed.probe.contexts.map(item=>item.kind).sort(),['aircraft','selected'],'Exactly the two requested secondary contexts exist, with no extra hero or replacement renderer');
     assert.ok(completed.probe.contexts.every(item=>item.hero==='static'&&item.top<2*item.viewportHeight&&item.bottom>-item.viewportHeight),'Both real renderers were created while near and the hero was static');
     assert.equal(Number(completed.aircraft.aircraftFrames||0),0);assert.equal(completed.selected.selectedWarmPosesCompleted,'2');
-    await save(run,'compact-390x667-static-hero-without-secondary-foreground-delay',{initial,selected,aircraftRequested,completed,selectedPreparationMs:selected.t-initial.t,aircraftPreparationMs:completed.t-aircraftRequested,measurementNote:'Real390x667 geometry and actual model/GPU completion. Timer instrumentation observes the production foregroundSettled helpers without replacing them. No12-second hero fallback may be scheduled; real network, CPU and GPU duration is reported without an artificial under12s performance threshold.'});
+    await save(run,'compact-390x621-static-hero-without-secondary-foreground-delay',{initial,selected,aircraftRequested,completed,selectedPreparationMs:selected.t-initial.t,aircraftPreparationMs:completed.t-aircraftRequested,measurementNote:'Real390x621 geometry and actual model/GPU completion. Timer instrumentation observes the production foregroundSettled helpers without replacing them. No12-second hero fallback may be scheduled; real network, CPU and GPU duration is reported without an artificial under12s performance threshold.'});
   });
 }
 async function fallbacks(browser){
@@ -319,6 +319,15 @@ async function sources(browser){
         })));
         assert.ok(decodedImages.length>0&&decodedImages.every(image=>image.complete&&image.width>0&&image.height>0),'Case-study presentation imagery is genuinely decoded');
         await page.waitForFunction(()=>document.documentElement.scrollWidth<=innerWidth+1);
+        await page.locator('.v2-case-nav-links a[href="'+route+'#engineering"][aria-current="location"]').waitFor({state:'visible'});
+        const inspectHeading=node=>{
+          const box=node.getBoundingClientRect(),bars=[...document.querySelectorAll('body>header,.v2-header,.v2-case-nav')].map(bar=>{const r=bar.getBoundingClientRect();return{className:bar.className,top:r.top,bottom:r.bottom};});
+          const stickyBottom=Math.max(0,...bars.filter(bar=>bar.bottom>0&&bar.top<innerHeight).map(bar=>bar.bottom)),hit=document.elementFromPoint(box.left+box.width/2,box.top+Math.min(10,box.height/2));
+          return{text:node.textContent.trim(),top:box.top,bottom:box.bottom,stickyBottom,uncovered:hit===node||node.contains(hit),y:scrollY,hash:location.hash,bars,current:[...document.querySelectorAll('.v2-case-nav-links a[aria-current]')].map(link=>({href:link.getAttribute('href'),current:link.getAttribute('aria-current')}))};
+        };
+        const headingProof=await notes.locator('h2').evaluate(inspectHeading);
+        assert.ok(headingProof.top>=headingProof.stickyBottom-1&&headingProof.bottom<=viewport.height&&headingProof.uncovered,'Engineering heading is fully below both sticky navigation bars and genuinely uncovered: '+JSON.stringify(headingProof));
+        assert.deepEqual(headingProof.current,[{href:route+'#engineering',current:'location'}],'Engineering is the sole current section at its native hash');
         const layout=await notes.evaluate(node=>{
           const box=node.getBoundingClientRect();
           return{viewport:{width:innerWidth,height:innerHeight},x:box.x,width:box.width,height:box.height,headings:[...node.querySelectorAll('h3')].map(item=>item.textContent.trim()),links:[...node.querySelectorAll('a[href]')].map(link=>{const r=link.getBoundingClientRect(),style=getComputedStyle(link);return{text:link.textContent.trim(),href:link.getAttribute('href'),x:r.x,right:r.right,width:r.width,height:r.height,visible:style.visibility==='visible'&&Number(style.opacity)>0};})};
@@ -328,8 +337,20 @@ async function sources(browser){
         assert.ok(layout.links.length>0&&layout.links.every(link=>link.visible&&link.width>=24&&link.height>=24&&link.x>=-1&&link.right<=viewport.width+1),'Evidence links are readable native targets without horizontal clipping');
         const label='case-notes-'+name+'-'+viewport.width;
         await page.screenshot({path:path.join(output,label+'-viewport.png'),animations:'disabled'});
-        await notes.screenshot({path:path.join(output,label+'-full.png'),animations:'disabled'});
-        await save(run,label,{route,viewport,layout,decodedImages,scope:'Actual reduced-motion document rendering at the native engineering hash; viewport and complete notes screenshots. No 3D viewer preparation required.'});
+        // Capture the document-coordinate region without locator.screenshot's
+        // scroll-into-view behavior. Preserve the verified native hash landing.
+        const clip=await notes.evaluate(node=>{const r=node.getBoundingClientRect();return{x:r.left+scrollX,y:r.top+scrollY,width:r.width,height:r.height,scale:1};});
+        const capture=await run.context.newCDPSession(page);
+        try{
+          const {data}=await capture.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:true,clip});
+          fs.writeFileSync(path.join(output,label+'-full.png'),Buffer.from(data,'base64'));
+        }finally{await capture.detach();}
+        const afterCapture=await notes.locator('h2').evaluate(inspectHeading);
+        assert.equal(afterCapture.y,headingProof.y,'Full notes capture preserves native hash scroll position');
+        assert.equal(afterCapture.hash,'#engineering');
+        assert.ok(afterCapture.top>=afterCapture.stickyBottom-1&&afterCapture.bottom<=viewport.height&&afterCapture.uncovered,'Engineering heading remains uncovered after both captures: '+JSON.stringify(afterCapture));
+        assert.deepEqual(afterCapture.current,[{href:route+'#engineering',current:'location'}],'Engineering stays the sole current section after capture');
+        await save(run,label,{route,viewport,layout,headingProof,afterCapture,decodedImages,scope:'Actual reduced-motion document rendering at the native engineering hash; viewport and complete notes screenshots. No 3D viewer preparation required.'});
       }
     }
   });

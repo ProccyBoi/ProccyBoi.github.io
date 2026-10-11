@@ -225,9 +225,17 @@ function verifyRecordedSources(recorded, current) {
     assert(typeof tool.reason === 'string' && tool.reason.length, 'Explain the verification-only revision');
     expected[file] = {bytes:tool.bytes, sha256:tool.sha256};
   }
+  for (const [file, revision] of Object.entries(recorded.editorialSources || {})) {
+    assert.equal(file, 'v2/projects/framework-dual-usb/index.html', 'Only the Dual case-study shell supports an editorial revision');
+    assert(expected[file], 'Retain the original whole-page build-source hash');
+    assert(typeof revision.reason === 'string' && revision.reason.length, 'Explain the editorial-only revision');
+    assert.equal(hash(Buffer.from(fixture(checks()))), revision.fixtureSha256, 'Editorial revision must preserve the exact detached source inspector fixture');
+    expected[file] = {bytes:revision.bytes, sha256:revision.sha256};
+  }
   assert.deepEqual(current, expected, 'Every current source hash must match recorded build or explicit verifier provenance');
   return {sourceCommit:recorded.sourceCommit, sources:recorded.sources,
-    ...(recorded.verificationTools ? {verificationTools:recorded.verificationTools} : {})};
+    ...(recorded.verificationTools ? {verificationTools:recorded.verificationTools} : {}),
+    ...(recorded.editorialSources ? {editorialSources:recorded.editorialSources} : {})};
 }
 
 function verifyPackFiles(directory, name, freshPlain, indexTransport) {
@@ -280,6 +288,10 @@ function selfTest() {
     recorded.verificationTools={'scripts/build-v2-selected-assets.cjs':{bytes:3,sha256:'c',reason:'Verification-only regression fixture'}};
     verifyRecordedSources(recorded,{...source,'scripts/build-v2-selected-assets.cjs':{bytes:3,sha256:'c'}});
     assert.throws(()=>verifyRecordedSources({...recorded,verificationTools:{'model.glb':{bytes:2,sha256:'d',reason:'Cannot override a model'}}},source),/Only the build verifier and runtime decoder/);
+    const editorialFile='v2/projects/framework-dual-usb/index.html',editorial={sourceCommit:'a'.repeat(40),sources:{[editorialFile]:{bytes:1,sha256:'old'}},editorialSources:{[editorialFile]:{bytes:2,sha256:'new',fixtureSha256:hash(Buffer.from(fixture(checks()))),reason:'New case-study copy outside the unchanged inspector'}}};
+    verifyRecordedSources(editorial,{[editorialFile]:{bytes:2,sha256:'new'}});
+    assert.throws(()=>verifyRecordedSources({...editorial,editorialSources:{'model.glb':editorial.editorialSources[editorialFile]}},{}),/Only the Dual case-study shell/);
+    assert.throws(()=>verifyRecordedSources({...editorial,editorialSources:{[editorialFile]:{...editorial.editorialSources[editorialFile],fixtureSha256:'changed'}}},{}),/exact detached source inspector/);
   } finally {fs.rmSync(temporary,{recursive:true,force:true});}
   console.log('Selected build self-test passed: exact attributes, mirrored winding, material clones, render order, transparent/hidden primitives, LineSegments, original hero capture, compressed-only and optional plain verification, recorded build commit and strict source hashes.');
 }

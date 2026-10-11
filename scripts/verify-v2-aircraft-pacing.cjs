@@ -330,7 +330,7 @@ async function browserTests() {
     // Cold landing is now established independently. Complete the optional
     // warm stages on a real offscreen trailing approach before reuse tests.
     await page.locator('[data-aircraft-hero]').evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().bottom+1,behavior:'instant'}));
-    await page.waitForFunction(()=>{const root=document.querySelector('[data-aircraft-hero]'),box=root.getBoundingClientRect();return box.bottom<=0&&box.bottom>-innerHeight&&root.dataset.aircraftBackgroundReady==='true'&&root.dataset.aircraftWarmPosesCompleted==='2';});
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-aircraft-hero]'),box=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(root.querySelector('[data-aircraft-stage]')).top)||0,header=document.querySelector('.v2-header'),headerBox=header.getBoundingClientRect(),hit=box.bottom>0?document.elementFromPoint(innerWidth/2,box.bottom/2):null;const covered=box.bottom<=0||(headerBox.top<=0&&headerBox.bottom>=box.bottom&&(hit===header||header.contains(hit)));return box.bottom<=pinned&&covered&&!window.V2AircraftPreparation.isVisible()&&box.bottom>-innerHeight&&root.dataset.aircraftBackgroundReady==='true'&&root.dataset.aircraftWarmPosesCompleted==='2';});
     const warmed=await snapshot();assert.equal(warmed.dataset.aircraftWarmFrames,'2');assert.ok(warmed.fences.length>=3&&warmed.fences.every(record=>record.deleteCalls===1),'Real optional warm-context fences complete once before reuse/lifecycle tests');
     evidence.push({name:'near-offscreen-preparation-after-cold-landing',warmed});
     await scroll(0);await settled();

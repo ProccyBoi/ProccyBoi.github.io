@@ -663,9 +663,11 @@ def enrich_case(source, slug):
     if brief:
         source = source[:brief.end] + '\n' + block + source[brief.end:]
     path = '/v2/projects/' + slug + '/'
-    if path + '#engineering' not in source:
-        source = source.replace('<div class="v2-case-nav-links">', '<div class="v2-case-nav-links"><a href="' + path + '#engineering" data-v2-section data-v2-only>Engineering</a>', 1)
-    source = source.replace('href="' + path + '#engineering" data-v2-section>', 'href="' + path + '#engineering" data-v2-section data-v2-only>')
+    # Keep navigation in document order so the existing scrollspy can select
+    # the last section above its marker without Overview overriding the notes.
+    source = re.sub(r'<a[^>]*href="' + re.escape(path + '#engineering') + r'"[^>]*>Engineering</a>', '', source)
+    overview = '<a href="' + path + '#overview" data-v2-section>Overview</a>'
+    source = source.replace(overview, overview + '<a href="' + path + '#engineering" data-v2-section data-v2-only>Engineering</a>', 1)
     tree = Tree(source)
     hero_media = tree.find('figure', 'project-hero-media')
     if hero_media and record.get('media_label') and not any(node.tag == 'figcaption' for node in hero_media.children):

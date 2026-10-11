@@ -395,7 +395,37 @@ function easingMath() {
 function instrument() {
   const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext, nativeTimeout=setTimeout.bind(window), nativeFetch=fetch.bind(window);
   const contexts = new Map();
-  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],heroVisibility:[],heroSamples:[],heroSubmissions:[],heroReturn:null,transportGates:[],cpuGates:[],fetches:[],reconstructionAPIObserved:false,reconstructions:[],longTasks:[],frameRecords:[],firstLive:null,recording:false};
+  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],heroVisibility:[],heroSamples:[],heroSubmissions:[],heroReturn:null,transportGates:[],cpuGates:[],fetches:[],reconstructionAPIObserved:false,reconstructions:[],mediaChanges:[],preferenceMutations:[],windowErrors:[],unhandledRejections:[],longTasks:[],frameRecords:[],firstLive:null,recording:false};
+  // Observe every real reduced-motion MediaQueryList, including the exact
+  // objects returned to production. Do not synthesize changes or replace its
+  // listeners: the additional observer records delivery, matches and DOM state.
+  const nativeMatchMedia=window.matchMedia.bind(window),mediaInstances=[];
+  const readPreference=()=>{
+    const root=document.querySelector('[data-selected-work]'),hero=document.querySelector('[data-assembly]');
+    return{t:performance.now(),y:scrollY,hidden:document.hidden,selectedState:root?.dataset.selectedState,background:root?.dataset.selectedBackgroundState,classes:root?.className,sceneClass:root?.classList.contains('is-scene'),liveClass:root?.classList.contains('is-live'),trackCount:root?.querySelectorAll('.v2-selected-track').length||0,stageConnected:!!root?.querySelector('.v2-selected-stage'),heroClasses:hero?.className};
+  };
+  probe.mediaStatus=()=>mediaInstances.map(({media,...record})=>({...record,matches:media.matches}));
+  window.matchMedia=query=>{
+    const media=nativeMatchMedia(query);
+    if(/prefers-reduced-motion/.test(query)){
+      const record={id:mediaInstances.length+1,query:String(query),created:performance.now(),initialMatches:media.matches,caller:new Error().stack?.split('\n').slice(2,5).join('\n'),media};mediaInstances.push(record);
+      media.addEventListener('change',event=>{
+        probe.mediaChanges.push({id:record.id,query:record.query,caller:record.caller,eventMatches:event.matches,matches:media.matches,phase:'event',...readPreference()});
+        nativeTimeout(()=>probe.mediaChanges.push({id:record.id,query:record.query,matches:media.matches,phase:'after-dispatch-task',...readPreference()}),0);
+      });
+    }
+    return media;
+  };
+  const reducedProbe=window.matchMedia('(prefers-reduced-motion: reduce)');
+  probe.preferenceState=()=>({reducedMotion:reducedProbe.matches,shortViewport:nativeMatchMedia('(max-height:600px)').matches,...readPreference()});
+  new MutationObserver(records=>{
+    for(const record of records){
+      const own=record.target.matches?.('[data-selected-work]'),heroClass=record.target.matches?.('[data-assembly]')&&record.attributeName==='class';
+      if((own||heroClass)&&probe.preferenceMutations.length<500)probe.preferenceMutations.push({type:record.type,attribute:record.attributeName,oldValue:record.oldValue,currentValue:record.attributeName?record.target.getAttribute(record.attributeName):null,target:own?'selected':'hero',added:record.addedNodes.length,removed:record.removedNodes.length,...readPreference()});
+    }
+  }).observe(document,{subtree:true,childList:true,attributes:true,attributeOldValue:true,attributeFilter:['data-selected-state','data-selected-background-state','class']});
+  addEventListener('error',event=>probe.windowErrors.push({message:event.message,stack:event.error?.stack,filename:event.filename,line:event.lineno,column:event.colno,...readPreference()}));
+  addEventListener('unhandledrejection',event=>probe.unhandledRejections.push({reason:event.reason?.stack||String(event.reason),...readPreference()}));
   let selectedAssets;
   Object.defineProperty(window,'V2SelectedAssets',{configurable:true,get:()=>selectedAssets,set:value=>{
     probe.reconstructionAPIObserved=typeof value.loadStatic==='function';
@@ -478,7 +508,9 @@ async function prepareAircraftOffscreen(page) {
   await page.locator('[data-aircraft-hero]').evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().bottom+1,behavior:'instant'}));
   await page.waitForFunction(()=>{
     const air=document.querySelector('[data-aircraft-hero]'),bounds=air.getBoundingClientRect();
-    return bounds.bottom<=0&&bounds.bottom>-innerHeight&&!window.V2AircraftPreparation.isVisible()&&!window.V2SelectedWork.isVisible();
+    const pinned=parseFloat(getComputedStyle(air.querySelector('[data-aircraft-stage]')).top)||0,header=document.querySelector('.v2-header'),headerBox=header.getBoundingClientRect(),hit=bounds.bottom>0?document.elementFromPoint(innerWidth/2,bounds.bottom/2):null;
+    const covered=bounds.bottom<=0||(headerBox.top<=0&&headerBox.bottom>=bounds.bottom&&(hit===header||header.contains(hit)));
+    return bounds.bottom<=pinned&&covered&&bounds.bottom>-innerHeight&&!window.V2AircraftPreparation.isVisible()&&!window.V2SelectedWork.isVisible();
   },null,{timeout});
   await page.locator('[data-aircraft-background-ready="true"]').waitFor({timeout});
   return page.evaluate(()=>{
@@ -546,14 +578,14 @@ async function ready(page) {
   await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedReady==='true'&&root.dataset.selectedModelsReady==='6'&&root.dataset.selectedSceneReady==='true'&&root.dataset.selectedBackgroundReady==='true'&&root.dataset.selectedWarmFrames==='2';},null,{timeout});
 }
 async function snapshot(page) {
-  return page.evaluate(()=>({y:scrollY,url:location.href,selected:{...document.querySelector('[data-selected-work]')?.dataset},geometry:window.__selectedProbe.geometry(),scrollRequest:window.__selectedProbe.scrollRequest,resizeLayout:window.__selectedProbe.resizeLayout,hero:{...document.querySelector('[data-assembly]')?.dataset},heroTrace:{visibility:window.__selectedProbe.heroVisibility,samples:window.__selectedProbe.heroSamples,submissions:window.__selectedProbe.heroSubmissions,return:window.__selectedProbe.heroReturn},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,reconstructionAPIObserved:window.__selectedProbe.reconstructionAPIObserved,reconstructions:window.__selectedProbe.reconstructions,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
+  return page.evaluate(()=>({y:scrollY,url:location.href,preferenceToggle:window.__selectedProbe.preferenceToggle,preferences:window.__selectedProbe.preferenceState(),mediaStatus:window.__selectedProbe.mediaStatus(),mediaChanges:window.__selectedProbe.mediaChanges,preferenceMutations:window.__selectedProbe.preferenceMutations,windowErrors:window.__selectedProbe.windowErrors,unhandledRejections:window.__selectedProbe.unhandledRejections,selectedPresentation:{classes:document.querySelector('[data-selected-work]')?.className,trackCount:document.querySelectorAll('[data-selected-work] .v2-selected-track').length,preparationState:window.V2SelectedWork?.preparationState?.()},selected:{...document.querySelector('[data-selected-work]')?.dataset},geometry:window.__selectedProbe.geometry(),scrollRequest:window.__selectedProbe.scrollRequest,resizeLayout:window.__selectedProbe.resizeLayout,hero:{...document.querySelector('[data-assembly]')?.dataset},heroTrace:{visibility:window.__selectedProbe.heroVisibility,samples:window.__selectedProbe.heroSamples,submissions:window.__selectedProbe.heroSubmissions,return:window.__selectedProbe.heroReturn},aircraft:{...document.querySelector('[data-aircraft-hero]')?.dataset},contexts:window.__selectedProbe.contexts,reconstructionAPIObserved:window.__selectedProbe.reconstructionAPIObserved,reconstructions:window.__selectedProbe.reconstructions,scrolls:window.__selectedProbe.scrolls,images:[...document.querySelectorAll('[data-selected-image]')].map(image=>({src:image.currentSrc||image.src,decoded:image.dataset.imageDecoded,complete:image.complete,width:image.naturalWidth})),capture:typeof window.__v2Selected,overflow:document.documentElement.scrollWidth>innerWidth+1}));
 }
 async function save(run,name,details={}) {
   assert.deepEqual(run.errors,[],'No unhandled browser errors');assert.deepEqual(run.shaders,[],'No shader errors');
   fs.writeFileSync(path.join(output,name+'.json'),JSON.stringify({...details,state:await snapshot(run.page),requests:run.requests},null,2)+'\n');passed(name,details);
 }
 async function diagnose(run,name,error) {
-  const report={error:error.stack,requests:run.requests};try{report.state=await snapshot(run.page);report.trace=await end(run.page);}catch(failure){report.collectionError=failure.message;}
+  const report={error:error.stack,requests:run.requests,errors:[...run.errors],shaders:[...run.shaders]};try{report.state=await snapshot(run.page);report.trace=await end(run.page);}catch(failure){report.collectionError=failure.message;}
   try{report.controls=await run.page.evaluate(()=>({fences:window.__selectedFenceControl?.state(),response:window.__selectedResponseProbe?(()=>{const {read,stop,...data}=window.__selectedResponseProbe;return data;})():null}));}catch(failure){report.controlCollectionError=failure.message;}
   fs.writeFileSync(path.join(output,name+'-failure.json'),JSON.stringify(report,null,2)+'\n');await run.page.screenshot({path:path.join(output,name+'-failure.png'),timeout:15000}).catch(()=>{});
 }
@@ -853,11 +885,16 @@ async function warmingInput(browser) {
     while(!prepared){
       const before=await page.evaluate(()=>window.__selectedResponseProbe.read());
       if(before.background==='ready')break;
-      const clickStarted=Date.now();await page.locator('[data-v2-menu]').click();const clickPromiseMs=Date.now()-clickStarted;
+      // locator.click() centers this sticky control by scrolling its document
+      // ancestor on Chromium, unintentionally taking the scene out of range.
+      // A visitor clicks its already-visible viewport position instead.
+      const menuPoint=await page.locator('[data-v2-menu]').evaluate(node=>{const box=node.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+box.height/2,hit=document.elementFromPoint(x,y);return{x,y,visible:box.width>0&&box.height>0&&x>=0&&x<innerWidth&&y>=0&&y<innerHeight,hits:hit===node||node.contains(hit)};});
+      assert.ok(menuPoint.visible&&menuPoint.hits,'The real sticky menu is visible and unobstructed before native input');
+      const clickStarted=Date.now();await page.mouse.click(menuPoint.x,menuPoint.y);const clickPromiseMs=Date.now()-clickStarted;
       assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'true','A real native menu click responds while preparation is pending');
       const escapeStarted=Date.now();await page.keyboard.press('Escape');const escapePromiseMs=Date.now()-escapeStarted;
       assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'false','A real Escape key closes the menu during preparation');
-      const after=await page.evaluate(()=>window.__selectedResponseProbe.read());actions.push({before,after,clickPromiseMs,escapePromiseMs});
+      const after=await page.evaluate(()=>window.__selectedResponseProbe.read());near(after.y,before.y,'Native sticky-menu click and Escape do not move the preparation fixture out of proximity',1);actions.push({before,after,menuPoint,clickPromiseMs,escapePromiseMs});
       if(!prepared)await page.waitForTimeout(50);
     }
     await preparation;if(preparationFailure)throw preparationFailure;
@@ -945,16 +982,23 @@ async function interruptedWarmMask(browser) {
   }catch(error){await diagnose(run,'interrupted-gpu-mask',error);throw error;}finally{await run.context.close();}
 }
 
-async function pendingGPUPreference(browser) {
+async function pendingGPUPreference(browser,{promote=true}={}) {
+  const scenario=promote?'pending-gpu-preference':'pending-gpu-preference-near-only';
   const run=await open(browser),{page,context}=run;await controlledFences(context,{hold:true,afterPreparation:2});
   try{
-    await page.goto(base+'/v2/?v=selected-pending-gpu-preference',{waitUntil:'domcontentloaded'});await approachSelected(page);const pending=await heldFence(page);
+    await page.goto(base+'/v2/?v=selected-'+scenario,{waitUntil:'domcontentloaded'});await approachSelected(page);const pending=await heldFence(page);
     assert.equal(pending.preparationFrames,2,'Two real model-only draws were submitted before the held fence');assert.equal(pending.preparedModels.length,1,'Only the actually completed model is marked prepared');
     assert.equal(pending.warm,0);assert.equal(pending.frame,0);maskedFence(pending,'Cold model preparation retains its posters');
     for(const draw of pending.draws){assert.ok(draw.lastDraw.warm&&Math.max(draw.lastDraw.width,draw.lastDraw.height)<=64,'Real model-only preparation uses the documented 64px target');}
     const completed=pending.preparedModels[0],originalCanvas=await page.locator(canvas).elementHandle();
-    await scrollProgress(page,.85);await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return Math.abs(Number(root.dataset.selectedProgress)-.85)<.001&&root.dataset.selectedChapter==='1'&&root.dataset.selectedBackgroundState==='promoted';});
-    const promoted=await heldFence(page);maskedFence(promoted,'Visible promotion cannot bypass cold GPU preparation');assert.equal(promoted.frame,0);assert.deepEqual(promoted.preparedModels,[completed]);
+    let promoted=null;
+    if(promote){
+      await scrollProgress(page,.85);await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return Math.abs(Number(root.dataset.selectedProgress)-.85)<.001&&root.dataset.selectedChapter==='1'&&root.dataset.selectedBackgroundState==='promoted';});
+      promoted=await heldFence(page);maskedFence(promoted,'Visible promotion cannot bypass cold GPU preparation');assert.equal(promoted.frame,0);assert.deepEqual(promoted.preparedModels,[completed]);
+    }else{
+      const proximity=await selectedProximity(page);assert.equal(proximity.visible,false);assert.ok(proximity.top>=proximity.height&&proximity.top<2*proximity.height,'The comparison toggles preferences during real near-but-offscreen preparation');
+    }
+    await page.evaluate(promote=>{window.__selectedProbe.preferenceToggle={promote,requested:performance.now(),before:window.__selectedProbe.preferenceState(),media:window.__selectedProbe.mediaStatus()};},promote);
     await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-selected-state="static"]').waitFor();await readable(page);
     const paused=await fenceState(page);releasedFences(paused,'Reduced-motion cancellation');assert.deepEqual(paused.preparedModels,[completed],'Completed work survives cancellation');
     await page.waitForTimeout(350);const idle=await fenceState(page);assert.deepEqual(idle.fences,paused.fences,'Canceled preparation stops polling and allocating fences');assert.equal(idle.preparationFrames,paused.preparationFrames);
@@ -963,9 +1007,10 @@ async function pendingGPUPreference(browser) {
     assert.equal(await originalCanvas.evaluate(node=>node===document.querySelector('[data-selected-canvas]')),true,'Preference restoration reuses the original Selected canvas');
     assert.equal(resumed.draws.filter(draw=>draw.preparationStage===completed).length,1,'An already completed model is never redrawn during resumed preparation');
     const firstUnmasked=resumed.samples.find(sample=>sample.frame>0&&sample.mask==='false');assert.ok(firstUnmasked);near(firstUnmasked.rendered,.85,'Resumed first reveal uses the current native destination',.001);assertLiveDraw(firstUnmasked,'Resumed first reveal');
-    await noLoop(page,'Resumed preparation terminates without an idle loop');await save(run,'held-model-fence-visible-promotion-reduced-motion-resume',{pending,promoted,paused,idle,resumed,completed});await originalCanvas.dispose();
-  }catch(error){await diagnose(run,'pending-gpu-preference',error);throw error;}finally{await run.context.close();}
+    await noLoop(page,'Resumed preparation terminates without an idle loop');await save(run,promote?'held-model-fence-visible-promotion-reduced-motion-resume':'held-model-fence-offscreen-reduced-motion-resume',{promote,pending,promoted,paused,idle,resumed,completed});await originalCanvas.dispose();
+  }catch(error){await diagnose(run,scenario,error);throw error;}finally{await run.context.close();}
 }
+async function pendingGPUPreferenceWithoutPromotion(browser){await pendingGPUPreference(browser,{promote:false});}
 
 async function webgl1Preparation(browser) {
   const run=await open(browser,{webgl1:true}),{page}=run;
@@ -1197,7 +1242,7 @@ async function studies(browser) {
     else if(process.argv.includes('--study'))await studies(browser);
     else{
       if(!group||group==='core'){await guards(browser);await initialAndInput(browser);}
-      const lifecycleGroups={mask:[interruptedWarmMask,pendingGPUTouchResize],preference:[pendingGPUPreference,pendingPreferenceChange,readyPreferenceChange],priority:[farReturnDuringSelectedPreparation,aircraftPriorityDuringSelectedPreparation],webgl1:[webgl1Preparation]};
+      const lifecycleGroups={mask:[interruptedWarmMask,pendingGPUTouchResize],preference:[pendingGPUPreference,pendingGPUPreferenceWithoutPromotion,pendingPreferenceChange,readyPreferenceChange],priority:[farReturnDuringSelectedPreparation,aircraftPriorityDuringSelectedPreparation],webgl1:[webgl1Preparation]};
       if(!group||group==='lifecycle'||lifecycleGroups[group]){
         const failures=[],tests=lifecycleGroups[group]||Object.values(lifecycleGroups).flat();
         for(const test of tests){
