@@ -125,3 +125,20 @@ before opening a page by `socket() failed: Operation not permitted`.
 The unchanged interior Tools links point to `/projects/#interactive`, not to a
 removed landing section. The original public tools index remains available; no
 interior navigation change is needed for this preview.
+
+
+## First landing CI review
+
+The first landing review run passed 27 of 35 groups, including the actual desktop
+and mobile aircraft renderer checks and all preserved interior/copper coverage.
+Seven failures were test-selector ambiguities: TramTrace and Skylabs legitimately
+have both a primary project link and a secondary destination. The assertion now
+matches the exact canonical project href and separately verifies TramTrace's
+Copper & LED data link and Skylabs's Aircraft anchor.
+
+The eighth failure occurred after mobile pinch and pan succeeded: a subsequent
+real Close tap did not dismiss the expanded photo. The next run keeps that strict
+tap/dismissal assertion, adds a fresh mobile open/close baseline before gestures,
+and records pointer/touch/click events, the Close hit target and visual-viewport
+state. No click/Escape substitute is accepted as a mobile tap pass. That behavior
+remains unresolved until the browser rerun establishes the cause and outcome.

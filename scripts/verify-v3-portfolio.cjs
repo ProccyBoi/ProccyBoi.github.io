@@ -135,9 +135,14 @@ async function browserTest(name, options, action) {
       assert.deepEqual(run.shaders, [], 'Shader compilation errors');
       return details;
     } catch (error) {
-      try { await screenshot(run.page, 'failure-' + name, true); } catch {}
+      try {
+        // A modal makes the background inert and may lock its scroll. Capture
+        // that visible failure directly; do not wait for unreachable lazy photos.
+        const modalOpen = await run.page.locator('dialog[open]').count() > 0;
+        await screenshot(run.page, 'failure-' + name, !modalOpen);
+      } catch {}
       const file = 'failure-' + name.replace(/[^a-z0-9_-]/gi, '-').toLowerCase() + '.json';
-      fs.writeFileSync(path.join(output, file), JSON.stringify({ url: run.page.url(), errors: run.errors, badResponses: run.badResponses, shaders: run.shaders, requests: run.requests }, null, 2));
+      fs.writeFileSync(path.join(output, file), JSON.stringify({ url: run.page.url(), errors: run.errors, badResponses: run.badResponses, shaders: run.shaders, requests: run.requests, inputDiagnostics: await run.page.evaluate(() => window.__v3InputDiagnostics || null).catch(() => null) }, null, 2));
       throw error;
     } finally { await run.context.close(); }
   });
@@ -267,12 +272,31 @@ async function gallerySelect(page, key, view = 'overview') {
     await gallerySettled(page, key, 'detail');
   }
 }
+async function assertGalleryLinks(page, key) {
+  const project = galleryProjects.find(item => item.key === key);
+  const info = page.locator('[data-gallery-project="' + key + '"] .v2-gallery-info');
+  const target = '/v3/projects/' + project.slug + '/';
+  const primaryLink = info.locator('a[href="' + target + '"]');
+  assert.equal(await primaryLink.count(), 1, 'One exact primary project link');
+  assert.match((await primaryLink.textContent()).trim(), /^Explore\s+/);
+  assert.equal(await primaryLink.isVisible(), true);
+  if (key === 'tramtrace') {
+    const copper = info.locator('a[href="/v3/projects/tramtrace/#copper-data"]');
+    assert.equal(await copper.count(), 1); assert.match(await copper.textContent(), /Copper\s*&\s*LED data/);
+    assert.ok(tags(read('v3/projects/tramtrace/index.html'), 'section').some(tag => tag.id === 'copper-data'), 'Copper CTA resolves to the real integrated workbench');
+  }
+  if (key === 'skylabs') {
+    const aircraft = info.locator('a[href="#aircraft"]');
+    assert.equal(await aircraft.count(), 1); assert.match(await aircraft.textContent(), /See the aircraft/);
+    assert.equal(await page.locator('#aircraft').count(), 1, 'Aircraft CTA resolves to its real story destination');
+  }
+}
 async function assertGallerySelection(page, key, view = 'overview') {
   const project = galleryProjects.find(item => item.key === key);
   assert.equal(await page.locator('[data-gallery-select][aria-expanded="true"]').count(), 1);
   assert.equal(await page.locator('[data-gallery-select="' + key + '"]').getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('[data-gallery-project="' + key + '"] .v2-gallery-info').evaluate(node => node.inert), false);
-  assert.equal(await page.locator('[data-gallery-project="' + key + '"] .v2-gallery-info a').getAttribute('href'), '/v3/projects/' + project.slug + '/');
+  await assertGalleryLinks(page, key);
   const photo = page.locator('[data-gallery-photo]:not([hidden]):not([inert])');
   assert.equal(await photo.count(), 1);
   assert.equal(await page.locator('[data-gallery-photo]:not([hidden])').count(), 1, 'Settled gallery shows one unobstructed photograph');
@@ -479,7 +503,7 @@ async function browserTests() {
           return image?.complete && image.naturalWidth > 0;
         }, project.key);
         await loaded(image); assert.equal(await article.locator('.v2-gallery-info').isVisible(), true);
-        assert.equal(await article.locator('.v2-gallery-info a').getAttribute('href'), '/v3/projects/' + project.slug + '/');
+        await assertGalleryLinks(page, project.key);
       }
       await noOverflow(page, options.name + ' gallery');
     });
@@ -542,7 +566,26 @@ async function browserTests() {
   await browserTest('expanded hardware photo mobile pinch pan and dismissal', { touch: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
     await visit(page); await approachGallery(page); await gallerySettled(page); await gallerySelect(page, 'tramtrace', 'detail');
     const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
+    await page.evaluate(() => {
+      const log = window.__v3InputDiagnostics = { phase: 'fresh-mobile-open', events: [], checkpoints: [] };
+      const targetName = node => node?.closest?.('[data-inspect-close]') ? 'close' : node?.closest?.('[data-inspect-stage]') ? 'stage' : node?.closest?.('[data-gallery-expand]') ? 'expand' : node?.tagName || '';
+      for (const type of ['pointerdown', 'pointerup', 'pointercancel', 'gotpointercapture', 'lostpointercapture', 'touchstart', 'touchend', 'touchcancel', 'click']) document.addEventListener(type, event => {
+        const item = { phase: log.phase, type, target: targetName(event.target), pointerId: event.pointerId, pointerType: event.pointerType, buttons: event.buttons, isPrimary: event.isPrimary, x: event.clientX, y: event.clientY, trusted: event.isTrusted, touches: event.touches ? event.touches.length : undefined, changedTouches: event.changedTouches ? [...event.changedTouches].map(touch => ({ id: touch.identifier, x: touch.clientX, y: touch.clientY })) : undefined };
+        log.events.push(item); queueMicrotask(() => { item.defaultPrevented = event.defaultPrevented; });
+      }, { capture: true, passive: true });
+    });
+    const checkpoint = async phase => page.evaluate(phase => {
+      const log = window.__v3InputDiagnostics; log.phase = phase;
+      const dialog = document.querySelector('[data-gallery-inspect]'), close = dialog.querySelector('[data-inspect-close]'), box = close.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      const viewport = window.visualViewport;
+      log.checkpoints.push({ phase, open: dialog.open, state: { ...dialog.dataset }, className: dialog.className, close: { x: box.x, y: box.y, width: box.width, height: box.height }, hit: { tag: hit?.tagName, isClose: !!hit?.closest('[data-inspect-close]') }, viewport: viewport ? { width: viewport.width, height: viewport.height, scale: viewport.scale, offsetLeft: viewport.offsetLeft, offsetTop: viewport.offsetTop } : null, scrollX, scrollY });
+    }, phase);
     await opener.tap(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    await checkpoint('fresh-mobile-close'); await dialog.locator('[data-inspect-close]').tap(); await dialog.waitFor({ state: 'hidden' });
+    assert.equal(await opener.evaluate(node => node === document.activeElement), true, 'A fresh mobile tap closes and restores focus before gestures');
+    await opener.tap(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    await checkpoint('pinch-and-pan');
     const stage = dialog.locator('[data-inspect-stage]'), box = await stage.boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
     const client = await context.newCDPSession(page);
     try {
@@ -557,10 +600,12 @@ async function browserTests() {
       assert.notEqual(Number(await dialog.getAttribute('data-pan-x')), panBefore, 'One-finger drag pans');
     } finally { await client.detach(); }
     await noOverflow(page, 'Expanded photo at 390px'); await screenshot(page, 'mobile-expanded-hardware-photo');
-    await dialog.locator('[data-inspect-close]').tap(); await dialog.waitFor({ state: 'hidden' });
+    await checkpoint('post-gesture-close');
+    await dialog.locator('[data-inspect-close]').tap(); await checkpoint('post-gesture-tap-dispatched');
+    await dialog.waitFor({ state: 'hidden' });
     assert.equal(await opener.evaluate(node => node === document.activeElement), true);
     await assertGallerySelection(page, 'tramtrace', 'detail');
-    return { viewport: { width: 390, height: 844 }, touchPinch: true, touchPan: true };
+    return { viewport: { width: 390, height: 844 }, freshMobileClose: true, touchPinch: true, touchPan: true, inputDiagnostics: await page.evaluate(() => window.__v3InputDiagnostics) };
   });
   await browserTest('expanded photo resource failure retry and selected-source recovery', { saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
     let fail = true;
