@@ -150,7 +150,7 @@ function save(name, details, run, trace) {
 }
 async function diagnostics(run, name, error) {
   const diagnostic = { error: error.stack };
-  try { diagnostic.url = run.page.url(); diagnostic.trace = await end(run.page); diagnostic.state = await run.page.evaluate(() => ({ scrollY, aircraft: { ...document.querySelector('[data-aircraft-hero]')?.dataset }, assembly: { ...document.querySelector('[data-assembly]')?.dataset } })); } catch (unavailable) { diagnostic.collectionError = unavailable.message; }
+  try { diagnostic.url = run.page.url(); diagnostic.trace = await end(run.page); diagnostic.state = await run.page.evaluate(() => ({ scrollY, aircraft: { ...document.querySelector('[data-aircraft-hero]')?.dataset }, selected: { ...document.querySelector('[data-selected-work]')?.dataset }, assembly: { ...document.querySelector('[data-assembly]')?.dataset } })); } catch (unavailable) { diagnostic.collectionError = unavailable.message; }
   fs.writeFileSync(path.join(output, name + '-failure.json'), JSON.stringify(diagnostic, null, 2) + '\n');
   await run.page.screenshot({ path: path.join(output, name + '-failure.png'), timeout: 15000 }).catch(() => {});
 }

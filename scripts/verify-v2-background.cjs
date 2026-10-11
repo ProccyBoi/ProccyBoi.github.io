@@ -14,6 +14,10 @@ const timeout = Number(process.env.V2_BROWSER_TIMEOUT || 120000);
 // Explicit comparison-only mode for the old image-only Selected Work page.
 // Never manufacture CAD readiness for a baseline that does not implement it.
 const expectSelectedCAD = process.env.V2_BACKGROUND_EXPECT_SELECTED_CAD !== '0';
+// Historical CAD baseline has two real warm draws but no own-context fences or
+// per-model preparation. Selecting it is explicit; final acceptance stays paced.
+const preparationContract=process.env.V2_BACKGROUND_PREPARATION_CONTRACT||'paced';
+assert.ok(['paced','legacy-batched'].includes(preparationContract),'Unknown Selected preparation contract: '+preparationContract);
 const aircraft = '[data-aircraft-hero]', selected = '[data-selected-work]';
 const aircraftDependency = /\/assets\/(?:models\/aircraft\/|v3-aircraft-(?:scene|atmosphere|electronics)\.js)/;
 const airframeBytes = /\/assets\/models\/aircraft\/skylabs-trainer\/airframe(?:\.meshopt)?\.glb(?:\.gz)?(?:\?|$)/;
@@ -113,6 +117,15 @@ async function selectedWarmed(page) {
   await page.locator('[data-selected-models-ready="6"][data-selected-background-ready="true"][data-selected-warm-frames="2"]').waitFor({ timeout });
 }
 function selectedPreparation(state) {
+  if(preparationContract==='legacy-batched'){
+    assert.equal(state.selectedModelsReady,'6','Historical baseline still loads all six genuine CAD assemblies');
+    assert.equal(state.selectedSceneReady,'true');assert.equal(state.selectedBackgroundReady,'true');assert.equal(state.selectedWarmFrames,'2');
+    for(const key of ['selectedPreparationFrames','selectedPreparedModels','selectedWarmPosesCompleted','selectedPreparationMeasurements','selectedGPUCompletion'])assert.equal(state[key],undefined,'Historical baseline must not pretend to implement paced preparation: '+key);
+    const statistics=JSON.parse(state.selectedModelStatistics||'[]'),draw=JSON.parse(state.selectedLastDraw||'null');
+    assert.deepEqual(statistics.map(item=>item.name).sort(),['dual','esp32','logic','metro','pi','tramtrace']);assert.ok(statistics.every(item=>item.triangles>1000&&item.meshes>0),'Historical baseline keeps its actual six-model rendering work');
+    assert.ok(draw?.warm&&draw.width>0&&draw.height>0&&Math.max(draw.width,draw.height)<=640&&draw.calls>0&&draw.triangles>1000,'Historical baseline completed its genuine capped full-composition draw');
+    return{preparationContract,preparationFrames:null,warmPosesCompleted:null,measurements:null,completionEvidence:'Two returned warm render calls; historical code has no per-model staging or GPU completion fence.'};
+  }
   assert.equal(state.selectedPreparationFrames,'6','Six individual models are submitted once before full composition warming');
   assert.deepEqual((state.selectedPreparedModels||'').split(',').sort(),['dual','esp32','logic','metro','pi','tramtrace'],'All six per-model GPU stages actually complete');
   assert.equal(state.selectedWarmPosesCompleted,'2','Both full-composition GPU poses have completed');
@@ -120,8 +133,9 @@ function selectedPreparation(state) {
   assert.equal(state.selectedGPUCompletion,'complete','WebGL2 background readiness follows actual own-context completion');
   const measurements=JSON.parse(state.selectedPreparationMeasurements||'[]');
   assert.equal(measurements.length,8,'Uninterrupted preparation is finite: six model draws and two composition draws');
+  assert.ok(measurements.every(item=>typeof item.completed==='boolean'),'Paced completion evidence uses real booleans, never serialized truthy objects');
   assert.ok(measurements.every(item=>item.completed&&item.gpu?.state==='complete'),'Every declared completed stage has its real completion result');
-  return{preparationFrames:6,warmPosesCompleted:2,measurements};
+  return{preparationContract,preparationFrames:6,warmPosesCompleted:2,measurements,completionEvidence:'Six model stages and two full-composition poses, each completed by its own-context WebGL2 fence.'};
 }
 async function stableHidden(page) {
   const before = await page.locator(aircraft).evaluate(root => ({ live: Number(root.dataset.aircraftFrames || 0), warm: Number(root.dataset.aircraftWarmFrames || 0), landing: Number(root.dataset.aircraftLanding || 0) }));
@@ -201,6 +215,77 @@ async function initialViewport(browser) {
     await save(run, 'prepared-entry-and-finite-selected-scene', { firstVisibleResponseMs: Date.now() - entry, landing, selectedFrames, selectedFirstLive: (await snapshot(page)).probe.selectedFirstLive });
   } catch (error) { await diagnostic(run, 'initial-viewport', error); throw error; } finally { await run.context.close(); }
 }
+async function selectedPriorityDuringAircraftWarm(browser) {
+  const run=await open(browser,{viewport:{width:390,height:844}}),{page,context}=run;
+  await context.addInitScript(()=>{
+    const native=HTMLCanvasElement.prototype.getContext,seen=new WeakSet(),fences=new Map(),records=[];
+    const data=window.__aircraftPriorityProbe={hold:true,submissions:[],inputs:[],visibility:[]};
+    const read=()=>{
+      const work=document.querySelector('[data-selected-work]'),aircraft=document.querySelector('[data-aircraft-hero]'),box=work?.getBoundingClientRect(),airbox=aircraft?.getBoundingClientRect(),stage=work?.querySelector('.v2-selected-stage'),pinned=stage?parseFloat(getComputedStyle(stage).top)||0:0;
+      return{t:performance.now(),y:scrollY,viewportHeight:innerHeight,selectedTop:box?.top,selectedBottom:box?.bottom,selectedVisible:!!box&&box.top<innerHeight&&box.bottom>pinned,aircraftVisible:!!airbox&&airbox.top<innerHeight&&airbox.bottom>0,selected:{...work?.dataset},aircraft:{...aircraft?.dataset}};
+    };
+    data.read=read;data.state=()=>({...read(),fences:records.map(record=>({...record})),submissions:data.submissions,inputs:data.inputs,visibility:data.visibility});
+    HTMLCanvasElement.prototype.getContext=function(type,...args){
+      const gl=native.call(this,type,...args);if(!gl||!this.matches('[data-aircraft-canvas]')||seen.has(gl)||typeof gl.fenceSync!=='function')return gl;seen.add(gl);
+      const create=gl.fenceSync.bind(gl),poll=gl.clientWaitSync.bind(gl),remove=gl.deleteSync.bind(gl);
+      gl.fenceSync=(...args)=>{const sync=create(...args);if(sync){const value=read(),record={id:records.length+1,created:value.t,warmAtCreate:Number(value.aircraft.aircraftWarmFrames||0),selectedVisible:value.selectedVisible,heldPolls:0};records.push(record);fences.set(sync,record);}return sync;};
+      gl.clientWaitSync=(sync,flags,timeout)=>{const record=fences.get(sync);if(data.hold&&record?.warmAtCreate===1){record.heldPolls++;return gl.TIMEOUT_EXPIRED;}return poll(sync,flags,timeout);};
+      gl.deleteSync=sync=>{const record=fences.get(sync);if(record){record.deleted=performance.now();record.deleteCalls=(record.deleteCalls||0)+1;}return remove(sync);};return gl;
+    };
+    new MutationObserver(changes=>{if(changes.some(change=>change.attributeName==='data-aircraft-warm-frames'))data.submissions.push(read());}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-aircraft-warm-frames']});
+    addEventListener('scroll',()=>data.visibility.push(read()),{passive:true});
+    for(const type of ['click','keydown'])addEventListener(type,event=>{
+      if(!event.isTrusted||type==='click'&&!event.target.closest?.('[data-v2-menu]')||type==='keydown'&&event.key!=='Escape')return;
+      const sample={type,key:event.key||null,trusted:event.isTrusted,received:read()};data.inputs.push(sample);
+      requestAnimationFrame(()=>{sample.nextFrame=read();requestAnimationFrame(()=>{sample.afterPaint=read();});});
+    },{capture:true,passive:true});
+  });
+  const read=()=>page.evaluate(()=>window.__aircraftPriorityProbe.state());
+  try{
+    await page.goto(base+'/v2/?v=selected-priority-aircraft-pending-warm',{waitUntil:'domcontentloaded'});await selectedWarmed(page);
+    await page.waitForFunction(()=>window.__aircraftPriorityProbe.state().fences.some(fence=>fence.warmAtCreate===1&&fence.heldPolls>0&&fence.deleted===undefined),null,{timeout});
+    const pending=await read();assert.equal(pending.selectedVisible,false);assert.equal(pending.aircraftVisible,false);assert.equal(pending.aircraft.aircraftWarmFrames,'1');
+    assert.notEqual(pending.aircraft.aircraftBackgroundReady,'true','The first pending draw cannot claim completed aircraft background readiness');
+    const held=pending.fences.find(fence=>fence.warmAtCreate===1&&fence.deleted===undefined),selectedWarmAt=Number(pending.selected.selectedBackgroundReadyMs);
+    await page.evaluate(()=>{window.__aircraftPriorityProbe.entryRequested=performance.now();});
+    await page.locator(selected).evaluate(root=>{const stage=root.querySelector('.v2-selected-stage'),track=root.querySelector('.v2-selected-track'),distance=parseFloat(track.style.height)-stage.clientHeight,pinned=parseFloat(getComputedStyle(stage).top)||0;scrollTo({top:scrollY+track.getBoundingClientRect().top-pinned+distance*.3,behavior:'instant'});});
+    await page.waitForFunction(()=>{const value=window.__aircraftPriorityProbe.state();return value.selectedVisible&&!value.aircraftVisible&&value.aircraft.aircraftBackgroundState==='paused-selected';},null,{timeout});
+    const paused=await read();assert.equal(paused.aircraft.aircraftWarmFrames,'1','Entering Selected does not submit a second aircraft background draw');
+    assert.ok(paused.fences.find(fence=>fence.id===held.id)?.deleted!==undefined,'Selected priority cancels and deletes the aircraft pending completion fence');
+    const clickStarted=Date.now();await page.locator('[data-v2-menu]').click();const menuClickPromiseMs=Date.now()-clickStarted;
+    assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'true');
+    const escapeStarted=Date.now();await page.keyboard.press('Escape');const menuEscapePromiseMs=Date.now()-escapeStarted;
+    assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'false');
+    await page.evaluate(()=>{window.__aircraftPriorityProbe.hold=false;});
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return Number(root.dataset.selectedFrames)>0&&root.dataset.selectedWarmMask==='false';},null,{timeout});
+    await page.waitForFunction(()=>window.__aircraftPriorityProbe.inputs.length>=2&&window.__aircraftPriorityProbe.inputs.every(input=>input.afterPaint),null,{timeout});
+    await page.waitForTimeout(500);const visible=await read();
+    assert.equal(visible.selectedVisible,true);assert.equal(visible.aircraftVisible,false);assert.equal(visible.aircraft.aircraftWarmFrames,'1','No second aircraft background draw is issued while Selected remains in the actual viewport');
+    assert.equal(visible.aircraft.aircraftBackgroundState,'paused-selected');
+    assert.ok(visible.inputs.length>=2&&visible.inputs.every(input=>input.trusted&&input.received.selectedVisible&&input.nextFrame&&input.afterPaint),'Native menu and Escape both respond through paint while Selected has priority');
+    const firstLive=await page.evaluate(()=>window.__v2BackgroundProbe.selectedFirstLive),entryRequested=await page.evaluate(()=>window.__aircraftPriorityProbe.entryRequested);
+    assert.ok(firstLive&&Number.isFinite(selectedWarmAt)&&firstLive.t>=entryRequested);
+    await page.evaluate(()=>{window.__aircraftPriorityProbe.exitRequested=performance.now();scrollTo({top:0,behavior:'instant'});});
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-aircraft-hero]');return root.dataset.aircraftBackgroundReady==='true'&&root.dataset.aircraftWarmPosesCompleted==='2';},null,{timeout});
+    const resumed=await read(),measurements=JSON.parse(resumed.aircraft.aircraftPreparationMeasurements||'[]'),exitRequested=await page.evaluate(()=>window.__aircraftPriorityProbe.exitRequested);
+    assert.equal(resumed.selectedVisible,false);assert.equal(resumed.aircraftVisible,false);assert.equal(resumed.aircraft.aircraftBackgroundState,'ready');
+    assert.ok(Number(resumed.aircraft.aircraftWarmFrames)>=2&&Number(resumed.aircraft.aircraftWarmFrames)<=3,'One canceled aircraft stage resumes with a finite two or three actual warm submissions');
+    assert.ok(measurements.every(item=>typeof item.completed==='boolean'),'Aircraft completion evidence uses real booleans for completed and canceled submissions');
+    assert.equal(measurements.filter(item=>item.completed).length,2,'Both distinct aircraft poses finish their own-context GPU waits');
+    assert.deepEqual(measurements.filter(item=>item.completed).map(item=>item.name).sort(),['landing-0','progress-1']);
+    assert.ok(measurements.filter(item=>item.completed).every(item=>item.gpu.state==='complete'&&item.gpuCompleted===true),'Each completed pose has actual WebGL2 completion evidence');
+    assert.equal(resumed.aircraft.aircraftGPUCompletionEvidence,'own-context-fence','Completed aircraft readiness distinguishes real GPU fences from unsupported staged yields');
+    assert.ok(measurements.every(item=>item.selectedVisible===false),'Every actual background warm submission records Selected outside the viewport');
+    assert.ok(measurements.every(item=>item.selectedInViewport===false),'Independent bounding-rectangle evidence also places Selected outside the viewport at every warm submission');
+    assert.ok(measurements.filter(item=>item.submittedMs>held.created).every(item=>item.submittedMs>=exitRequested),'All later aircraft warm submissions wait until Selected exits');
+    assert.ok(measurements.every(item=>Math.max(item.width,item.height)<=640),'Background aircraft draws use the documented capped backbuffer');
+    assert.ok(resumed.fences.every(fence=>fence.deleteCalls===1),'Every real aircraft fence is deleted exactly once after cancellation/resume');
+    const hidden=await stableHidden(page);assert.equal(hidden.live,0);assert.equal(hidden.landing,0);
+    const response={menuClickPromiseMs,menuEscapePromiseMs,selectedWarmToEntryRequestMs:entryRequested-selectedWarmAt,entryToFirstLiveMs:firstLive.t-entryRequested,selectedWarmToFirstLiveMs:firstLive.t-selectedWarmAt,maxInputToNextFrameMs:Math.max(...visible.inputs.map(input=>input.nextFrame.t-input.received.t)),maxInputToAfterPaintMs:Math.max(...visible.inputs.map(input=>input.afterPaint.t-input.received.t))};
+    await save(run,'selected-visible-priority-cancels-aircraft-warm-and-resumes-after-exit',{pending,paused,visible,resumed,measurements,firstLive,response,hidden,measurementNote:'One real aircraft fence is held at TIMEOUT_EXPIRED; real draw submissions, native scrolling, menu/keyboard input and completion fences are otherwise unchanged. Timings are evidence, not unmeasured pass thresholds.'});
+  }catch(error){await diagnostic(run,'selected-priority-aircraft-warm',error);throw error;}finally{await run.context.close();}
+}
+
 async function heldTransport(browser) {
   const run = await open(browser, { viewport: { width: 390, height: 844 } }), { page, context } = run;
   const pending = { lead: [], aircraft: [] }, enteredResolvers = {};
@@ -594,6 +679,7 @@ async function v3Deferred(browser) {
     assert.notEqual(await page.locator(aircraft).getAttribute('data-aircraft-background-ready'), 'true');
     assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-frames')), 0);
     assert.equal(Number(await page.locator(aircraft).getAttribute('data-aircraft-landing')), 0, 'v3 does not autoplay before visible entry');
+    assert.equal(run.requests.filter(request=>/\/assets\/v2-gpu-preparation\.js(?:\?|$)/.test(request.url)).length,0,'Accepted v3 does not load the v2-only background GPU coordinator');
     await save(run, 'v3-retains-proximity-deferred-loading', { distanceFromViewport: distance, preloadMargin: 420 });
   } catch (error) { await diagnostic(run, 'v3-isolation', error); throw error; } finally { await run.context.close(); }
 }
@@ -601,6 +687,7 @@ async function v3Deferred(browser) {
   fs.mkdirSync(output, { recursive: true }); sourceContract();
   if (process.argv.includes('--source-only')) return;
   assert.ok(expectSelectedCAD || process.argv.includes('--profile-only'), 'V2_BACKGROUND_EXPECT_SELECTED_CAD=0 is reserved for the explicit --profile-only baseline comparison');
+  assert.ok(preparationContract==='paced'||process.argv.includes('--profile-only'),'The legacy-batched preparation contract is reserved for the explicit --profile-only baseline comparison');
   const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   try {
@@ -609,7 +696,7 @@ async function v3Deferred(browser) {
     await guard(browser, 'save-data', { saveData: true });
     await guard(browser, 'short-viewport', { viewport: { width: 1440, height: 550 } });
     if (!process.argv.includes('--static-only')) {
-      await initialViewport(browser); await heldTransport(browser); await interruptedInitialization(browser); await liveWarmMask(browser); await selectedGate(browser, 'timeout'); await selectedGate(browser, 'direct-entry'); await selectedGate(browser, 'failure'); await throttledWarmTrace(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
+      await initialViewport(browser); await selectedPriorityDuringAircraftWarm(browser); await heldTransport(browser); await interruptedInitialization(browser); await liveWarmMask(browser); await selectedGate(browser, 'timeout'); await selectedGate(browser, 'direct-entry'); await selectedGate(browser, 'failure'); await throttledWarmTrace(browser); await deepLink(browser); await failedTransport(browser); await v3Deferred(browser);
     }
     console.log(`${evidence.length} v2 background preparation groups passed.`);
   } finally { await browser.close(); }

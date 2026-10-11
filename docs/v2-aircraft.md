@@ -69,8 +69,10 @@ synchronous render call. No production code calls `gl.finish`.
 Early entry promotes the same masked queue instead of bypassing it with a cold
 full-scene draw. Completed model stages survive interruption; canceled stages
 resume safely. Hide, pagehide, preference changes and context loss release owned
-syncs. A 12-second fence timeout restores static fallback rather than claiming
-completion. WebGL1 retains finite staged preparation but reports `unsupported`
+syncs. A 12-second submitted-work fence timeout restores static fallback rather than
+claiming completion; the initial, separately reported queue drain allows up to
+30 seconds for previously queued work. Both waits remain cancelable and
+nonblocking. WebGL1 retains finite staged preparation but reports `unsupported`
 GPU completion honestly. Only a completed full-size current-target live draw
 reveals the canvas. Live frames are similarly paced one at a time, sampling the
 latest native-scroll target when free, with no queued wheel replay. Pose/layout
@@ -84,6 +86,14 @@ Compatible opaque MetroBoard and TramTrace meshes are batched only in
 Selected Work's separate instances; transparent meshes and source hero packs
 remain unchanged. Batching yields between construction slices and cancels
 transactionally when the page or motion preference no longer permits work.
+Visible work has priority in both directions. Selected preparation pauses at
+CPU and GPU boundaries while the aircraft is actually visible; aircraft
+preparation does the same while Selected is visible. Downloads remain
+concurrent. Visibility/priority events resume incomplete work without a polling
+render loop. Aircraft proximity alone no longer bypasses this optional CPU
+order; genuine entry still promotes its accepted live animation immediately.
+Its two offscreen poses use a capped 640-pixel buffer and owned completion fences;
+every live aircraft draw restores its original DPR, geometry and choreography.
 Hidden/offscreen scenes have no continuing render loop. The page has
 three WebGL contexts total: hero, Selected Work, and aircraft. Preference changes
 restore the original static collections; renderer reuse avoids context growth.
@@ -117,8 +127,8 @@ the wheel-only historical comparison uses the original unfiltered controller.
 Chromium uses software WebGL, so timing evidence does not prove hardware-GPU FPS
 or physical-iOS performance. Readiness requires decoded images and real warm
 draws, not merely completed downloads. `verify-v2-background.cjs --profile-only`
-records a full cold 10Mbps/40ms trace through Selected completion and aircraft
-warm submissions. Old Selected readiness marked submission; the paced controller
+records a full cold 10Mbps/40ms trace through both paced preparation completions
+(on WebGL2). Old Selected readiness marked submission; the paced controller
 marks fence completion on WebGL2. Label this stricter milestone when comparing
 readiness times. Compare blocking tasks and native input response separately.
 Fast arrival can still precede preparation; posters and priority promotion cover

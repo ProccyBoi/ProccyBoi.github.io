@@ -32,6 +32,51 @@
   let landingEntered = !deferred;
   let shadowBox, boardBox, shadowCentre, corner, studioGround, airfieldGround, studioFog, airfieldFog;
   let sourcePreparation, telemetryTask, airframeTransport, transportGate, releaseTransport, backgroundBusy = false, backgroundDone = false, warmGeneration = 0;
+  let warmAbort, gpuAbort, aircraftPriority = false;
+  const completedWarmPoses = new Set(), preparationMeasurements = [], backgroundWaiters = new Set();
+  const selectedVisible = () => Boolean(background && window.V2SelectedWork?.isVisible?.());
+  const aircraftVisible = () => Boolean(background && track && visible && allowed() && activePage && !document.hidden && !failed);
+  function publishAircraftPriority() {
+    if (!background) return;
+    const active = aircraftVisible();
+    if (active === aircraftPriority) return;
+    aircraftPriority = active;
+    dispatchEvent(new CustomEvent('v2:aircraft-priority', { detail: { active } }));
+  }
+  const wakeBackground = () => { const pending = [...backgroundWaiters]; backgroundWaiters.clear(); pending.forEach(resolve => resolve()); };
+  function interruptBackground(state) {
+    if (!background) return;
+    warmGeneration++; warmAbort?.abort(); gpuAbort?.abort(); wakeBackground();
+    if (!backgroundDone && !failed) root.dataset.aircraftBackgroundState = state;
+  }
+  function backgroundPause() {
+    return !allowed() ? 'paused-preferences' : document.hidden || !activePage ? 'paused-hidden' : selectedVisible() && !visible ? 'paused-selected' : '';
+  }
+  // CPU reconstruction can outlive a visibility change. Recheck at each
+  // boundary, retaining its promise while a lifecycle/priority event wakes it.
+  // No timer or offscreen animation loop waits for Selected Work to leave.
+  async function backgroundCPU(phase, valid = () => true, signal) {
+    while (!failed && valid()) {
+      const pause = backgroundPause();
+      if (!pause) {
+        if (!visible) await idleTurn(signal);
+        if (failed || !valid()) return false;
+        if (!backgroundPause()) { root.dataset.aircraftCPUPhase = phase; return true; }
+      }
+      if (!backgroundDone) root.dataset.aircraftBackgroundState = backgroundPause();
+      await new Promise(resolve => backgroundWaiters.add(resolve));
+    }
+    return false;
+  }
+  function pixelRatio(warm = false) {
+    const live = Math.min(devicePixelRatio || 1, width < 761 ? 1.35 : 1.65);
+    const ratio = warm ? Math.min(live, 640 / Math.max(1, width, height)) : live;
+    if (renderer.getPixelRatio() !== ratio) renderer.setPixelRatio(ratio);
+    root.dataset.aircraftLivePixelRatio = String(live);
+    if (warm) root.dataset.aircraftWarmPixelRatio = String(ratio);
+    root.dataset.aircraftBufferWidth = String(canvas.width); root.dataset.aircraftBufferHeight = String(canvas.height);
+    return ratio;
+  }
   const request = () => { if (!frame && track && visible && activePage && !document.hidden && allowed()) frame = requestAnimationFrame(render); };
   const chapterAt = value => detailed ? value < .76 ? 0 : 1 : value < .25 ? 0 : value < .70 ? 1 : 2;
   function chapter(index) {
@@ -68,6 +113,7 @@
     const restore = track && scrollY > rootTop + 200 ? Math.max(currentChapter, 0) : -1;
     cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; landingDone = true;
     root.classList.remove('is-story', 'is-ready'); track?.remove(); track = null; skip.hidden = true;
+    if (background) publishAircraftPriority();
     chapters.forEach((item, index) => { item.id = ids[index]; item.classList.remove('is-current'); item.removeAttribute('aria-hidden'); item.inert = false; });
     links.forEach(link => link.removeAttribute('aria-current'));
     showPoster('stopped');
@@ -79,7 +125,14 @@
     if (deferred) {
       const bounds = root.getBoundingClientRect(), pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
       rootTop = scrollY + bounds.top;
+      const wasVisible = visible;
       visible = bounds.top < innerHeight && bounds.bottom > pinnedTop;
+      if (background) publishAircraftPriority();
+      if (background && visible !== wasVisible) {
+        if (visible) { interruptBackground('promoted'); initialize(); }
+        else prepareInBackground();
+        wakeBackground();
+      }
     }
     const stageTop = stage.getBoundingClientRect().top;
     const pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
@@ -173,6 +226,12 @@
         root.dataset.aircraftRenderedProgress = (capturePose?.type === 'progress' ? capturePose.value : renderedProgress).toFixed(6);
       }
       const effective = scrub ? renderedProgress : targetProgress;
+      if (background) {
+        if (backgroundBusy || gpuAbort) interruptBackground('promoted');
+        // A canceled warm pose may have left a small drawing buffer behind.
+        // Restore the accepted full live DPR before every real live draw.
+        pixelRatio(false);
+      }
       const pose = capturePose?.type === 'landing' ? flight.setLanding(capturePose.value) : capturePose?.type === 'progress' ? flight.setProgress(capturePose.value) : !landingDone ? flight.setLanding(landingElapsed / 5400) : flight.setProgress(effective);
       root.dataset.aircraftAtmosphere = drawPose(pose).toFixed(6);
       // Only a successful current live draw may expose this canvas. Resumed
@@ -188,7 +247,10 @@
     } catch (error) { fail(error); }
   }
   function fail(error) {
-    failed = true; loading = false; if (background) root.dataset.aircraftBackgroundState = 'unavailable'; fallback('unavailable'); atmosphere?.dispose(); renderer?.dispose();
+    failed = true; loading = false;
+    if (background) publishAircraftPriority();
+    if (background) { interruptBackground('unavailable'); root.dataset.aircraftBackgroundState = 'unavailable'; }
+    fallback('unavailable'); atmosphere?.dispose(); renderer?.dispose();
     console.warn('The Skylabs story is showing its photographs.', error);
   }
   async function ensureTelemetry() {
@@ -198,8 +260,12 @@
     return telemetryTask = (async () => {
     try {
       if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'transfer-20261011' : 'startup-20261007'));
+      if (background) {
+        await window.V2HeroAssets.prefetch('telemetry');
+        if (!await backgroundCPU('telemetry-load')) return;
+      }
       const telemetry = await window.V2HeroAssets.load('telemetry');
-      if (failed) return;
+      if (failed || (background && !await backgroundCPU('telemetry-attach'))) return;
       flight.attachTelemetry(telemetry); root.dataset.aircraftTelemetryReady = 'true';
       root.dataset.aircraftTelemetryComponents = String(flight.statistics.telemetryComponents); updateScroll(); request();
       if (new URLSearchParams(location.search).has('capture')) {
@@ -249,7 +315,8 @@
         })(),
         (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=product-20261007'); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
         script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
-        detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve()
+        detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve(),
+        background ? script('/assets/v2-gpu-preparation.js?v=paced-20261011') : Promise.resolve()
       ]);
   }
   async function initialize() {
@@ -262,6 +329,12 @@
       await prepareSources();
       prepareAirframe(true).catch(() => {});
       if (failed || !allowed()) { loading = false; return; }
+      if (background) {
+        // Download bytes concurrently. Wait before parsing/reconstruction, not
+        // before transport, so Selected's priority does not serialize network.
+        await Promise.all([prepareAirframe(true), window.V2HeroEnvironment.prefetch().catch(() => {})]);
+        if (!await backgroundCPU('renderer')) return;
+      }
       const T = window.THREE;
       renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
       renderer.autoClear = false;
@@ -271,8 +344,12 @@
       atmosphere = window.V3AircraftAtmosphere?.create(T, { detailed });
       key = window.V2ProductStudio.createLights(T, scene).key;
       key.userData.direction.set(-3, 8, 5).normalize();
-      const [aircraft, environment] = await Promise.all([window.V3AircraftScene.load(T), window.V2HeroEnvironment.load(T).catch(() => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);
-      if (failed) return;
+      if (background && !await backgroundCPU('airframe-load')) return;
+      const [aircraft, environment] = await Promise.all([window.V3AircraftScene.load(T), window.V2HeroEnvironment.load(T).catch(background ? async error => {
+        if (!await backgroundCPU('environment-fallback')) throw error;
+        return window.V2ProductStudio.createEnvironment(T, renderer).texture;
+      } : () => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);
+      if (failed || (background && !await backgroundCPU('scene-create'))) return;
       scene.environment = environment;
       flight = window.V3AircraftScene.create(T, aircraft, null, { detailed }); scene.add(flight.group);
       studioGround = new T.Color('#101210').convertSRGBToLinear();
@@ -321,86 +398,150 @@
       return image.decode?.().then(() => true).catch(() => false) || Promise.resolve(image.complete && image.naturalWidth > 0);
     })).then(results => { root.dataset.aircraftImagesReady = String(results.every(Boolean)); });
   }
-  const idleTurn = () => new Promise(resolve => {
-    // A paint/input opportunity separates each finite expensive phase. This
-    // cannot make a synchronous driver compile interruptible, but avoids
-    // chaining all initialization and warm draws in one microtask checkpoint.
-    requestAnimationFrame(() => setTimeout(() => {
-      if ('requestIdleCallback' in window) requestIdleCallback(resolve, { timeout: 900 });
-      else resolve();
-    }, 0));
+  const idleTurn = signal => new Promise(resolve => {
+    // A finite paint/input opportunity separates costly phases. It is never
+    // used as a readiness poll, and interruption releases pending callbacks.
+    let raf, timer, idle, finished = false;
+    const finish = () => {
+      if (finished) return; finished = true;
+      cancelAnimationFrame(raf); clearTimeout(timer);
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+      signal?.removeEventListener('abort', finish); resolve();
+    };
+    if (signal?.aborted) { finish(); return; }
+    signal?.addEventListener('abort', finish, { once: true });
+    raf = requestAnimationFrame(() => { timer = setTimeout(() => {
+      if ('requestIdleCallback' in window) idle = requestIdleCallback(finish, { timeout: 900 });
+      else finish();
+    }, 0); });
   });
-  const foregroundSettled = () => new Promise(resolve => {
+  const foregroundSettled = signal => new Promise(resolve => {
     const hero = document.querySelector('[data-assembly]');
-    if (!hero || hero.dataset.assemblyModelsSettled === '3' || hero.dataset.assemblyState === 'unavailable') { resolve(); return; }
-    let observer;
-    const finish = () => { clearTimeout(timer); observer?.disconnect(); resolve(); };
+    if (signal?.aborted || !hero || hero.dataset.assemblyModelsSettled === '3' || hero.dataset.assemblyState === 'unavailable') { resolve(); return; }
+    let observer, finished = false;
+    const finish = () => {
+      if (finished) return; finished = true;
+      clearTimeout(timer); observer?.disconnect(); signal?.removeEventListener('abort', finish); resolve();
+    };
     const timer = setTimeout(finish, 12000);
+    signal?.addEventListener('abort', finish, { once: true });
     observer = new MutationObserver(() => {
       if (hero.dataset.assemblyModelsSettled === '3' || hero.dataset.assemblyState === 'unavailable') finish();
     });
     observer.observe(hero, { attributes: true, attributeFilter: ['data-assembly-models-settled', 'data-assembly-state'] });
   });
-  const selectedSettled = () => new Promise(resolve => {
+  const selectedSettled = signal => new Promise(resolve => {
     const pending = window.V2SelectedWork?.backgroundSettled;
     if (!pending) { root.dataset.aircraftSelectedGate = 'absent'; resolve(); return; }
-    // Selected Work is encountered first. Its finite warm draws get their own
-    // turns before this background renderer starts; direct entry bypasses this
-    // optional ordering and a stalled scene cannot starve the aircraft.
+    if (signal?.aborted) { resolve(); return; }
+    // This optional one-time order never overrides actual visible priority.
     root.dataset.aircraftSelectedGate = 'waiting';
     let finished = false;
-    const finish = state => { if (finished) return; finished = true; clearTimeout(timer); root.dataset.aircraftSelectedGate = state; resolve(); };
+    const abort = () => finish('canceled');
+    const finish = state => {
+      if (finished) return; finished = true;
+      clearTimeout(timer); signal?.removeEventListener('abort', abort);
+      root.dataset.aircraftSelectedGate = state; resolve();
+    };
     const timer = setTimeout(() => finish('timeout'), 18000);
+    signal?.addEventListener('abort', abort, { once: true });
     Promise.resolve(pending).then(result => finish(result?.state || 'settled'), () => finish('unavailable'));
   });
+  async function gpuComplete(valid, abort, stageName) {
+    root.dataset.aircraftPreparationStage = stageName;
+    gpuAbort = abort; root.dataset.aircraftGPUPending = 'true';
+    let result;
+    try {
+      result = await window.V2GPUPreparation.wait(renderer, { signal: abort.signal, valid, timeoutMs: 12000 });
+    } finally {
+      if (gpuAbort === abort) gpuAbort = undefined;
+      root.dataset.aircraftGPUPending = 'false';
+    }
+    root.dataset.aircraftGPUCompletion = result.state;
+    root.dataset.aircraftGPUWaitMs = result.waitMs.toFixed(1);
+    if (stageName === 'drain') {
+      root.dataset.aircraftInitialDrainState = result.state;
+      root.dataset.aircraftInitialDrainMs = result.waitMs.toFixed(1);
+    }
+    // WebGL1 gets finite staged yields; they are explicitly not GPU completion
+    // evidence. A timeout/lost context must never certify background readiness.
+    if (result.state === 'unsupported' && valid()) await idleTurn(abort.signal);
+    return result;
+  }
+  function recordPreparation(measurement) {
+    if (preparationMeasurements.length > 31) preparationMeasurements.shift();
+    preparationMeasurements.push(measurement);
+    root.dataset.aircraftPreparationMeasurements = JSON.stringify(preparationMeasurements);
+  }
   async function prepareInBackground() {
     if (!background || backgroundBusy || backgroundDone || failed || !allowed() || visible || document.hidden || !activePage) return;
+    if (selectedVisible()) { root.dataset.aircraftBackgroundState = 'paused-selected'; return; }
     backgroundBusy = true;
-    // An early visit may already have revealed the canvas. Mask it immediately
-    // (not with an opacity fade) before any resumed offscreen warm draw.
+    // An early visit may already have revealed the canvas. Hide it immediately
+    // before any resumed temporary pose, keeping the poster until a live draw.
     root.classList.remove('is-ready'); canvas.style.visibility = 'hidden';
     root.dataset.aircraftWarmMask = 'true';
-    const generation = ++warmGeneration;
-    const current = () => generation === warmGeneration && !visible && !document.hidden && activePage && allowed() && !failed;
+    const generation = ++warmGeneration, abort = new AbortController(); warmAbort = abort;
+    const current = () => generation === warmGeneration && !abort.signal.aborted && !visible && !document.hidden && activePage && allowed() && !failed && !selectedVisible();
     root.dataset.aircraftBackgroundState = 'warming';
     root.dataset.aircraftBackgroundStartedMs ||= performance.now().toFixed(1);
     try {
-      // Scripts, decoder and images start immediately; airframe bytes follow
-      // the whole opening hero transfer (with a bounded fallback), not scroll.
-      // The next heavy CPU/GPU phases yield until the foreground settles.
       await prepareSources();
-      await foregroundSettled();
-      await selectedSettled();
-      await idleTurn();
       if (!current()) return;
+      await foregroundSettled(abort.signal);
+      if (!current()) return;
+      await selectedSettled(abort.signal);
+      if (!await backgroundCPU('initialize', current, abort.signal)) return;
       await initialize();
       if (!current() || !ready) return;
       await ensureTelemetry();
       if (!current() || !flight?.telemetryReady) return;
-      // Exercise both shader/material families before entry. Never expose
-      // these temporary poses: the poster stays in place until a live frame.
-      await idleTurn();
+      // Drain previous live/initialization/canceled-warm commands in this exact
+      // context before submitting anything else. Canceling a fence cannot
+      // cancel work that the driver already received.
+      if (!await backgroundCPU('drain', current, abort.signal)) return;
+      let result = await gpuComplete(current, abort, 'drain');
+      if (!current() || result.state === 'canceled') return;
+      if (result.state === 'timeout' || result.state === 'lost') throw new Error('Aircraft GPU preparation ' + result.state);
+      for (const name of ['progress-1', 'landing-0']) {
+        if (completedWarmPoses.has(name)) continue;
+        if (!await backgroundCPU(name, current, abort.signal)) return;
+        root.dataset.aircraftPreparationStage = name;
+        const started = performance.now(), ratio = pixelRatio(true);
+        const selectedBounds = document.querySelector('[data-selected-work]')?.getBoundingClientRect();
+        const selectedInViewport = Boolean(selectedBounds && selectedBounds.top < innerHeight && selectedBounds.bottom > 0);
+        drawPose(name === 'progress-1' ? flight.setProgress(1) : flight.setLanding(0));
+        root.dataset.aircraftWarmFrames = String(Number(root.dataset.aircraftWarmFrames || 0) + 1);
+        const measurement = { name, submittedMs: started, cpuMs: performance.now() - started, width: canvas.width, height: canvas.height,
+          pixelRatio: ratio, selectedVisible: selectedVisible(), selectedInViewport, completed: false, gpu: { state: 'pending', waitMs: 0, polls: 0 } };
+        // Submission telemetry is visible while its real fence is pending.
+        recordPreparation(measurement);
+        result = await gpuComplete(current, abort, name);
+        measurement.gpu = result;
+        measurement.completed = current() && (result.state === 'complete' || result.state === 'unsupported');
+        measurement.completedMs = performance.now(); measurement.gpuCompleted = result.state === 'complete';
+        root.dataset.aircraftPreparationMeasurements = JSON.stringify(preparationMeasurements);
+        if (!measurement.completed) {
+          if (result.state === 'timeout' || result.state === 'lost') throw new Error('Aircraft GPU preparation ' + result.state);
+          return;
+        }
+        completedWarmPoses.add(name); root.dataset.aircraftWarmPosesCompleted = String(completedWarmPoses.size);
+      }
       if (!current()) return;
-      drawPose(flight.setProgress(1));
-      root.dataset.aircraftWarmFrames = String(Number(root.dataset.aircraftWarmFrames || 0) + 1);
-      await idleTurn();
-      if (!current()) return;
-      drawPose(flight.setLanding(0));
-      root.dataset.aircraftWarmFrames = String(Number(root.dataset.aircraftWarmFrames || 0) + 1);
       backgroundDone = true;
+      root.dataset.aircraftGPUCompletionEvidence = result.state === 'complete' ? 'own-context-fence' : 'unsupported-staged-yield';
       root.dataset.aircraftBackgroundReady = 'true';
       root.dataset.aircraftBackgroundReadyMs = performance.now().toFixed(1);
-      root.dataset.aircraftBackgroundState = 'ready';
+      root.dataset.aircraftBackgroundState = 'ready'; root.dataset.aircraftPreparationStage = 'complete';
       root.dataset.aircraftState = 'prepared';
     } catch (error) {
-      root.dataset.aircraftBackgroundState = 'unavailable';
-      fail(error);
+      root.dataset.aircraftBackgroundState = 'unavailable'; fail(error);
     } finally {
+      abort.abort(); if (warmAbort === abort) warmAbort = undefined;
       backgroundBusy = false;
-      // A quick entry/exit can cancel this generation while its async work is
-      // still pending. Resume finite preparation once that work has released,
-      // rather than requiring another scroll or visibility event.
-      if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed()) setTimeout(prepareInBackground, 0);
+      // Only an invalidated generation gets a one-shot resume. Priority and
+      // lifecycle gates are event-driven, never an offscreen retry loop.
+      if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed() && !selectedVisible()) setTimeout(prepareInBackground, 0);
     }
   }
   skip.addEventListener('click', endLanding);
@@ -419,30 +560,49 @@
   if ('ResizeObserver' in window) new ResizeObserver(layout).observe(stage);
   if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
     visible = entries[0].isIntersecting;
-    if (background && visible) { warmGeneration++; if (!backgroundDone) root.dataset.aircraftBackgroundState = 'promoted'; }
+    if (background) publishAircraftPriority();
+    if (background && visible) { interruptBackground('promoted'); initialize(); }
     if (visible) { updateScroll(); request(); } else { if (landingEntered) endLanding(); cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; if (background) prepareInBackground(); }
   }).observe(root);
-  document.addEventListener('visibilitychange', () => { previousTime = 0; scrubTime = 0; renderedProgress = progress; if (document.hidden) { cancelAnimationFrame(frame); frame = 0; } else { request(); if (background) prepareInBackground(); } });
-  addEventListener('pagehide', () => { activePage = false; scrubTime = 0; renderedProgress = progress; cancelAnimationFrame(frame); frame = 0; });
-  addEventListener('pageshow', () => { activePage = true; previousTime = 0; scrubTime = 0; renderedProgress = progress; updateScroll(); request(); if (background) prepareInBackground(); });
+  document.addEventListener('visibilitychange', () => { if (background) publishAircraftPriority(); previousTime = 0; scrubTime = 0; renderedProgress = progress; if (document.hidden) { cancelAnimationFrame(frame); frame = 0; if (background) interruptBackground('paused-hidden'); } else { wakeBackground(); request(); if (background) prepareInBackground(); } });
+  addEventListener('pagehide', () => { activePage = false; if (background) publishAircraftPriority(); scrubTime = 0; renderedProgress = progress; cancelAnimationFrame(frame); frame = 0; if (background) interruptBackground('paused-hidden'); });
+  addEventListener('pageshow', () => { activePage = true; previousTime = 0; scrubTime = 0; renderedProgress = progress; wakeBackground(); updateScroll(); if (background) publishAircraftPriority(); request(); if (background) prepareInBackground(); });
   const storyLead = 420;
   const nearStory = () => { const bounds = root.getBoundingClientRect(); return bounds.top < innerHeight + storyLead && bounds.bottom > -storyLead; };
   const start = () => {
     if (failed) return;
-    if (!allowed()) { fallback(); return; }
+    if (!allowed()) { if (background) { publishAircraftPriority(); interruptBackground('paused-preferences'); } fallback(); return; }
+    if (background) wakeBackground();
     // Reserve the scroll track immediately. v2 prepares in the background;
     // routes without the opt-in retain viewport-deferred loading.
     enable();
-    if (!deferred || nearStory()) initialize();
-    else if (!ready && !loading) root.dataset.aircraftState = 'waiting';
-    if (background) prepareInBackground();
+    if (background) {
+      publishAircraftPriority();
+      // Proximity starts transport, never bypasses Selected's CPU/GPU turn.
+      prepareSources().catch(fail);
+      if (visible) initialize();
+      else { if (!ready && !loading) root.dataset.aircraftState = 'waiting'; prepareInBackground(); }
+    } else {
+      if (!deferred || nearStory()) initialize();
+      else if (!ready && !loading) root.dataset.aircraftState = 'waiting';
+    }
   };
   if (deferred) {
     if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && allowed()) initialize();
+      if (entries[0].isIntersecting && allowed()) { if (background) { updateScroll(); if (visible) initialize(); else prepareInBackground(); } else initialize(); }
     }, { rootMargin: `${storyLead}px 0px` }).observe(root);
-    else addEventListener('scroll', () => { if (nearStory() && allowed()) initialize(); }, { passive: true });
+    else addEventListener('scroll', () => { if (nearStory() && allowed()) { if (background && !visible) prepareInBackground(); else initialize(); } }, { passive: true });
     addEventListener('load', layout, { once: true });
+  }
+  if (background) {
+    window.V2AircraftPreparation = Object.freeze({ isVisible: aircraftVisible });
+    root.dataset.aircraftWarmFrames = '0'; root.dataset.aircraftWarmPosesCompleted = '0';
+    root.dataset.aircraftBackgroundReady = 'false'; root.dataset.aircraftGPUPending = 'false';
+    addEventListener('v2:selected-priority', () => {
+      const active = selectedVisible(); root.dataset.aircraftSelectedPriority = String(active);
+      if (active && !visible) interruptBackground('paused-selected');
+      else { wakeBackground(); if (!visible) prepareInBackground(); }
+    });
   }
   const preference = start;
   reduced.addEventListener('change', preference); short.addEventListener('change', preference); navigator.connection?.addEventListener?.('change', preference);

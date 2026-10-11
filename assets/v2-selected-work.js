@@ -21,7 +21,7 @@
 
   let settleBackground;
   const backgroundSettled = new Promise(resolve => { settleBackground = resolve; });
-  window.V2SelectedWork = Object.freeze({backgroundSettled});
+  window.V2SelectedWork = Object.freeze({backgroundSettled,isVisible:()=>Boolean(visible&&track&&!failed&&activePage&&!document.hidden&&allowed())});
   const reduced = matchMedia('(prefers-reduced-motion: reduce)'), short = matchMedia('(max-height:600px)');
   const allowed = () => !reduced.matches && !short.matches && !navigator.connection?.saveData && Boolean(window.DecompressionStream);
   const scripts = window.V2HeroScripts ||= new Map();
@@ -42,7 +42,13 @@
   let ready=false,failed=false,visible=false,activePage=true,generation=0,frame=0,frames=0,warmFrames=0;
   let liveBusy=false,gpuAbort,releaseForeground,needsDrain=true,preparationFrames=0,poseRevision=0,presentedRevision=-1,layoutDPR=0,submittedFrames=0,completedFrames=0;
   const preparedModels=new Set(),preparedPoses=new Set(),preparationMeasurements=[];
-  let lastGPUResult;
+  let lastGPUResult,lastPriority=false;
+  const aircraftHasPriority=()=>!visible&&Boolean(window.V2AircraftPreparation?.isVisible());
+  function publishPriority(){
+    const active=window.V2SelectedWork.isVisible();
+    if(active===lastPriority)return;lastPriority=active;
+    dispatchEvent(new CustomEvent('v2:selected-priority',{detail:{active}}));
+  }
   let width=1,height=1,top=0,distance=1,progress=0,current=0,previousTime=0,currentChapter=-1,direct=false,capturePose;
   const assemblies = {};
   const request = () => { if (!frame && !liveBusy && !backgroundBusy && backgroundDone && ready && track && visible && activePage && !document.hidden && allowed()) frame=requestAnimationFrame(render); };
@@ -103,7 +109,7 @@
     const restore=track&&visible&&currentChapter>=0?currentChapter:-1;
     root.classList.remove('is-scene','is-live');
     articles.forEach((article,i)=>{article.id=ids[i];article.inert=false;article.removeAttribute('aria-hidden');article.classList.remove('is-current');root.append(article);});
-    stage?.remove();track?.remove();track=null;
+    stage?.remove();track?.remove();track=null;publishPriority();
     root.dataset.selectedState=state;settleBackground({state,at:performance.now()});
     if(restore>=0)articles[restore].scrollIntoView({behavior:'instant',block:'start'});
   }
@@ -114,7 +120,7 @@
     if(!track)return;
     const b=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(stage).top)||0;
     const nextVisible=b.top<innerHeight&&b.bottom>pinned;
-    const entered=nextVisible&&!visible,left=!nextVisible&&visible;visible=nextVisible;
+    const entered=nextVisible&&!visible,left=!nextVisible&&visible;visible=nextVisible;publishPriority();
     // The negative-margin track is the stage's stable flow placeholder; its
     // document position does not change when the stage becomes sticky.
     top=scrollY+track.getBoundingClientRect().top;
@@ -169,19 +175,20 @@
     root.dataset.selectedLastDraw=JSON.stringify(measurement);
     return {...pose,measurement};
   }
-  async function gpuComplete(valid,live=false) {
+  async function gpuComplete(valid,live=false,initial=false) {
     if(!valid()){lastGPUResult={state:'canceled',waitMs:0,polls:0};return false;}
     const abort=new AbortController();gpuAbort=abort;root.dataset.selectedGPUPending='true';
-    const result=await window.V2GPUPreparation.wait(renderer,{signal:abort.signal,valid,pollMs:live?4:16});
+    const result=await window.V2GPUPreparation.wait(renderer,{signal:abort.signal,valid,pollMs:live?4:16,timeoutMs:initial?30000:12000});
     lastGPUResult=result;if(gpuAbort===abort)gpuAbort=undefined;
     root.dataset.selectedGPUPending='false';root.dataset.selectedGPUCompletion=result.state;
     root.dataset.selectedGPUWaitMs=result.waitMs.toFixed(1);
+    if(initial){root.dataset.selectedInitialDrainState=result.state;root.dataset.selectedInitialDrainMs=result.waitMs.toFixed(1);}
     if(result.state==='timeout'||result.state==='lost')throw new Error('Selected Work GPU preparation '+result.state);
     if(result.state==='canceled'||!valid())return false;
     // WebGL1 has no completion fence. Keep its bounded staged fallback honest:
     // a paint/input opportunity is useful, but is not proof of GPU completion.
     if(result.state==='unsupported')await idleTurn();
-    return valid();
+    return Boolean(valid());
   }
   async function finishPreparation(kind,name,measurement,valid) {
     let completed=false;
@@ -259,28 +266,28 @@
   });
   async function initialize(promote=false) {
     if(ready){prepareInBackground();request();return;}
-    if(!allowed()||failed||!track)return;
+    if(!allowed()||failed||!track||aircraftHasPriority())return;
     if(promote)prepareTransfers(true).catch(fail);
     if(initialization)return initialization;
     initialization=(async()=>{
       root.dataset.selectedState='loading';await prepareTransfers(promote);
-      if(!allowed()||failed||!track)return;
+      if(!allowed()||failed||!track||aircraftHasPriority())return;
       // Construct separate instances from cached transports, never reparent the
       // opening hero's live models. Yield between each reconstruction.
       for(const name of names){
-        await idleTurn();if(!allowed()||failed||!activePage||document.hidden)return;
+        await idleTurn();if(!allowed()||failed||!activePage||document.hidden||aircraftHasPriority())return;
         if(assemblies[name])continue;
         const assembly=await window.V2SelectedAssets.loadStatic(name,assembly=>{
           if(name==='pi'||name==='tramtrace')window.V2ProductStudio.applyMaterials(assembly,name);
-        },{shouldContinue:()=>allowed()&&!failed&&track&&activePage&&!document.hidden});
-        if(!assembly||!allowed()||failed||!track||!activePage||document.hidden)return;
+        },{shouldContinue:()=>allowed()&&!failed&&track&&activePage&&!document.hidden&&!aircraftHasPriority()});
+        if(!assembly||!allowed()||failed||!track||!activePage||document.hidden||aircraftHasPriority())return;
         assemblies[name]=assembly;
         root.dataset.selectedModelsReady=String(Object.keys(assemblies).length);
       }
-      await idleTurn();if(!allowed()||failed||!track||document.hidden||!activePage)return;
+      await idleTurn();if(!allowed()||failed||!track||document.hidden||!activePage||aircraftHasPriority())return;
       const T=window.THREE;
       environment ||= await window.V2HeroEnvironment.load(T);
-      if(!allowed()||failed||!track||document.hidden||!activePage)return;
+      if(!allowed()||failed||!track||document.hidden||!activePage||aircraftHasPriority())return;
       renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,width<=760?1.25:1.5));renderer.setSize(width,height,false);
       window.V2ProductStudio.configureRenderer(renderer,T);renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
@@ -297,22 +304,24 @@
         resume(){capturePose=undefined;previousTime=0;updateScroll();request();}};
     })().catch(fail).finally(()=>{
       initialization=null;
-      if(!ready&&!failed&&allowed()&&track&&!document.hidden&&activePage)setTimeout(()=>visible?initialize(true):prepareInBackground(),0);
+      if(!ready&&!failed&&allowed()&&track&&!document.hidden&&activePage&&!aircraftHasPriority())setTimeout(()=>visible?initialize(true):prepareInBackground(),0);
       if(ready)prepareInBackground();
     });
     return initialization;
   }
   async function prepareInBackground() {
-    if(backgroundBusy||backgroundDone||liveBusy||failed||!allowed()||document.hidden||!activePage||!track)return;
+    if(backgroundDone||failed||!allowed()||document.hidden||!activePage||!track)return;
+    if(aircraftHasPriority()){root.dataset.selectedBackgroundState='paused-aircraft';return;}
+    if(backgroundBusy||liveBusy)return;
     backgroundBusy=true;mask();const token=generation;
-    const valid=()=>token===generation&&!document.hidden&&activePage&&allowed()&&!failed&&track;
+    const valid=()=>token===generation&&!document.hidden&&activePage&&allowed()&&!failed&&track&&!aircraftHasPriority();
     root.dataset.selectedBackgroundState=visible?'promoted':'warming';root.dataset.selectedBackgroundStartedMs ||= performance.now().toFixed(1);
     try{
       await prepareSources();prepareTransfers(visible).catch(fail);
       if(!visible)await foregroundSettled();
       await idleTurn();if(!valid())return;
       await initialize(visible);if(!valid()||!ready)return;
-      if(needsDrain){if(!await gpuComplete(valid))return;needsDrain=false;}
+      if(needsDrain){if(!await gpuComplete(valid,false,true))return;needsDrain=false;}
       while(preparedModels.size<names.length){
         await idleTurn();if(!valid())return;
         const order=progress<.57?names:['metro','tramtrace','esp32','dual','pi','logic'];
@@ -340,7 +349,7 @@
     finally{
       if(renderer&&!failed)pixelRatio();backgroundBusy=false;
       if(backgroundDone)request();
-      else if(!failed&&!document.hidden&&activePage&&allowed()&&track)setTimeout(prepareInBackground,0);
+      else if(!failed&&!document.hidden&&activePage&&allowed()&&track&&!aircraftHasPriority())setTimeout(prepareInBackground,0);
     }
   }
   function start(){
@@ -348,11 +357,16 @@
     prepareSources().then(()=>prepareTransfers(near())).catch(fail);
     if(near())initialize(true);else{root.dataset.selectedState=ready?'prepared':'waiting';prepareInBackground();}
   }
+  addEventListener('v2:aircraft-priority',()=>{
+    if(backgroundDone)return;
+    if(aircraftHasPriority()){invalidate();mask();root.dataset.selectedBackgroundState='paused-aircraft';}
+    else prepareInBackground();
+  });
   root.addEventListener('wheel',()=>{direct=false;},{passive:true});root.addEventListener('touchmove',()=>{direct=true;},{passive:true});
   addEventListener('scroll',updateScroll,{passive:true});addEventListener('resize',()=>{if(allowed()){start();layout();}else fallback();},{passive:true});
   addEventListener('hashchange',()=>{previousTime=0;current=progress;updateScroll();});
-  document.addEventListener('visibilitychange',()=>{invalidate();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
-  addEventListener('pagehide',()=>{activePage=false;invalidate();cancelAnimationFrame(frame);frame=0;previousTime=0;});
+  document.addEventListener('visibilitychange',()=>{invalidate();publishPriority();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
+  addEventListener('pagehide',()=>{activePage=false;invalidate();publishPriority();cancelAnimationFrame(frame);frame=0;previousTime=0;});
   addEventListener('pageshow',()=>{activePage=true;previousTime=0;updateScroll();prepareInBackground();});
   reduced.addEventListener?.('change',start);short.addEventListener?.('change',start);navigator.connection?.addEventListener?.('change',start);
   root.dataset.selectedFrames='0';root.dataset.selectedSubmittedFrames='0';root.dataset.selectedCompletedFrames='0';root.dataset.selectedWarmFrames='0';root.dataset.selectedPreparationFrames='0';root.dataset.selectedWarmPosesCompleted='0';root.dataset.selectedModelsReady='0';

@@ -476,9 +476,9 @@ function bounded(trace,before,after) {
   for(const sample of trace.samples){assert.ok(Number.isFinite(sample.raw)&&Number.isFinite(sample.rendered));assert.ok(sample.rendered>=low&&sample.rendered<=high,'No overshoot');assert.ok((sample.rendered-previous)*direction>=-tolerance,'Monotonic one-direction detents');previous=sample.rendered;}
   near(after.raw,after.rendered,'Converges to native target',tolerance);
 }
-function directSubmissions(trace,before,after) {
+function actualSubmissions(trace,before,after,{directRequired=false}={}) {
   const records=trace.frameRecords,direct=records.filter(record=>record.direct),completed=records.filter(record=>record.gpu?.state==='complete');
-  assert.ok(direct.length>0,'Actual direct-touch GPU submissions were observed');
+  if(directRequired)assert.ok(direct.length>0,'Actual direct-touch GPU submissions were observed');
   assert.equal(records.length,after.submittedFrames-before.submittedFrames,'Every actual live submission has an honest terminal record, including canceled or superseded draws');
   assert.equal(completed.length,after.completedFrames-before.completedFrames,'Completed stale submissions remain counted as real GPU work');
   assert.equal(records.filter(record=>record.published).length,after.frame-before.frame,'Published-current frames are counted separately from all completed submissions');
@@ -493,7 +493,7 @@ function directSubmissions(trace,before,after) {
   }
   assert.equal(records.at(-1).published,true,'The terminal completed draw is published as current');
   near(records.at(-1).value,after.raw,'The latest target is eventually submitted and completed',tolerance);
-  near(after.raw,after.rendered,'Direct touch converges to the latest native target',tolerance);
+  near(after.raw,after.rendered,'Completed rendering converges to the latest native target',tolerance);
   return{completedDraws:completed.length,completedSupersededDraws:completed.filter(record=>!record.published).length,maxCompletionLatencyMs:Math.max(...records.map(record=>record.observedMs-record.submittedMs)),maxTargetChangeWhileInFlight:Math.max(...records.map(record=>Math.abs(record.rawAtComplete-record.rawAtSubmit))),measurementNote:'Directness is measured at submission. Later native input during a GPU wait is retained as measurable pipeline latency, not mislabeled as interpolation or erased from completion counts.'};
 }
 async function noLoop(page,label) {await settled(page);const before=await state(page);await page.waitForTimeout(800);assert.equal((await state(page)).frame,before.frame,label);}
@@ -524,6 +524,7 @@ function assertPreparation(sample,label,{interrupted=false,unsupported=false}={}
   assert.equal(sample.gpuPending,'false',label+': no outstanding own-context GPU fence remains');
   assert.equal(sample.gpuCompletion,unsupported?'unsupported':'complete',label+': the real completion mechanism is reported honestly');
   assert.equal(sample.warmPosesCompleted,2,label+': exactly two full-composition poses have completed');
+  assert.ok(sample.preparationMeasurements.every(measurement=>typeof measurement.completed==='boolean'),label+': completion telemetry uses actual booleans, never a truthy serialized DOM object');
   const completed=sample.preparationMeasurements.filter(measurement=>measurement.completed),models=completed.filter(measurement=>measurement.kind==='model'),compositions=completed.filter(measurement=>measurement.kind==='composition');
   assert.deepEqual(models.map(measurement=>measurement.name).sort(),[...names].sort(),label+': every real model completes once in bounded per-stage evidence');
   assert.deepEqual(compositions.map(measurement=>measurement.name).sort(),['0','1'],label+': both actual composition endpoints complete once');
@@ -571,10 +572,21 @@ async function initialAndInput(browser) {
     await page.waitForFunction(y=>Math.abs(scrollY-y)<2,before.y);await settled(page);const after=await state(page),trace=await end(page);trusted(trace);
     const reverseIndex=trace.samples.findIndex((sample,index)=>index>0&&sample.raw<trace.samples[index-1].raw-.005);
     assert.ok(reverseIndex>0,'Renderer receives a genuine wheel reversal');
-    assert.ok(trace.samples[reverseIndex].rendered<=trace.samples[reverseIndex-1].rendered+tolerance,'First reverse-target frame heads back immediately');
+    const reverseEvent=trace.events.find(event=>event.type==='wheel'&&event.deltaY<0),records=trace.frameRecords;
+    const reverseSubmission=records.findIndex((record,index)=>index>0&&record.rawAtSubmit<records[index-1].rawAtSubmit-.005);
+    assert.ok(reverseEvent&&reverseSubmission>0,'A real subsequent submission observes the reversed native target');
+    assert.ok(records[reverseSubmission].submittedMs>=reverseEvent.t,'Reverse-target submission follows the actual reverse wheel event');
+    for(let index=reverseSubmission;index<records.length;index++){
+      assert.ok(records[index].value<=records[index-1].value+tolerance,'Every submission that sees the reversed target heads back immediately, without momentum');
+      assert.ok(records[index].rawAtSubmit<=records[index-1].rawAtSubmit+tolerance,'No newer submission replays the old forward target');
+    }
+    for(const record of records)assert.ok(record.value>=before.raw-tolerance&&record.value<=reversal.raw+tolerance,'Every actual submitted reversal pose stays inside the native extrema, including unpublished draws');
+    const alreadyInFlight=records.filter(record=>record.submittedMs<reverseEvent.t&&record.observedMs>=reverseEvent.t);
+    assert.ok(alreadyInFlight.length<=1,'At most one honestly reported older submission may finish after native reversal');
+    const completionEvidence=actualSubmissions(trace,before,after);
     for(const sample of trace.samples)assert.ok(sample.rendered>=before.raw-tolerance&&sample.rendered<=reversal.raw+tolerance,'Reversal stays inside native extrema');
     near(after.raw,before.raw,'Forward and reverse return to the same native target',.001);
-    await save(run,'native-active-wheel-reversal',{before,reversal,after,trace,interruptedInterpolation:reversal.raw-reversal.rendered>.00008});
+    await save(run,'native-active-wheel-reversal',{before,reversal,after,trace,reverseSubmission,alreadyInFlight,completionEvidence,interruptedInterpolation:reversal.raw-reversal.rendered>.00008});
     for(const [from,to]of[[.15,.85],[.85,.1],[.1,1],[1,0]]) {
       await jump(page,from);await begin(page);const final=await jump(page,to),trace=await end(page),changed=trace.samples.filter(sample=>Math.abs(sample.raw-from)>.18);
       assert.ok(changed.length&&changed.every(sample=>Math.abs(sample.raw-sample.rendered)<.000012),'Large jump snaps rather than traversing intermediate chapters');
@@ -637,10 +649,23 @@ async function fastEntry(browser) {
     assert.equal(await page.locator(selected+' [data-selected-chapter="0"]').getAttribute('aria-hidden'),'true','Framework copy does not remain active during pending Transit entry');
     assert.equal(await page.locator(selected+' [data-selected-chapter="1"] [data-selected-image]').evaluateAll(images=>images.length===2&&images.every(image=>getComputedStyle(image).visibility==='visible')),true,'Both requested Transit fallback images are visible before geometry resolves');
     const fallback=await page.locator('[data-selected-image]').evaluateAll(images=>images.some(image=>{const css=getComputedStyle(image);return css.visibility!=='hidden'&&Number(css.opacity)>0;}));assert.equal(fallback,true,'Early entry retains a visible fallback while actual geometry is pending');
+    const overlapTarget=await page.evaluate(()=>{
+      const work=document.querySelector('[data-selected-work]'),aircraft=document.querySelector('[data-aircraft-hero]'),bounds=work.getBoundingClientRect(),air=aircraft.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(work.querySelector('.v2-selected-stage')).top)||0;
+      const min=scrollY+air.top-innerHeight+2,max=scrollY+bounds.bottom-pinned-2;return{min,max,target:(min+max)/2};
+    });
+    assert.ok(overlapTarget.min<overlapTarget.max,'The real adjacent section geometry has an overlapping viewport interval');
+    await page.evaluate(y=>scrollTo({top:y,behavior:'instant'}),overlapTarget.target);
+    await page.waitForFunction(()=>{
+      const work=document.querySelector('[data-selected-work]'),air=document.querySelector('[data-aircraft-hero]'),w=work.getBoundingClientRect(),a=air.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(work.querySelector('.v2-selected-stage')).top)||0;
+      return w.top<innerHeight&&w.bottom>pinned&&a.top<innerHeight&&a.bottom>0&&window.V2SelectedWork.isVisible()&&window.V2AircraftPreparation?.isVisible();
+    },null,{timeout});
+    const overlap=await snapshot(page);assert.ok(Number(overlap.selected.selectedModelsReady)<6,'Actual section overlap is exercised while Selected geometry is still genuinely cold');
     await release();await settled(page);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').dataset.selectedModelsReady==='6');
     const current=await state(page);assert.equal(current.chapter,'1');near(current.raw,current.rendered,'Fast entry draws its current native destination',tolerance);assert.equal(current.mask,'false');assertLiveDraw(current,'Fast entry retains full live resolution');
+    const overlapReady=await page.evaluate(()=>{const work=document.querySelector('[data-selected-work]').getBoundingClientRect(),air=document.querySelector('[data-aircraft-hero]').getBoundingClientRect();return{selectedAPI:window.V2SelectedWork.isVisible(),aircraftAPI:window.V2AircraftPreparation.isVisible(),selectedTop:work.top,selectedBottom:work.bottom,aircraftTop:air.top,aircraftBottom:air.bottom,height:innerHeight};});
+    assert.ok(overlapReady.selectedAPI&&overlapReady.aircraftAPI&&overlapReady.selectedBottom>0&&overlapReady.aircraftTop<overlapReady.height,'Cold requested Transit completes even while actual aircraft peeks into the same viewport');
     await page.waitForTimeout(700);assert.equal((await state(page)).chapter,'1','Late warming never resets the requested destination');
-    await save(run,'fast-transit-entry-promotes-held-transport-without-blank',{current});
+    await save(run,'fast-transit-entry-promotes-held-transport-without-blank',{current,overlapTarget,overlap,overlapReady});
   }catch(error){await diagnose(run,'fast-entry',error);throw error;}finally{await release().catch(()=>{});await run.context.close();}
 }
 
@@ -670,7 +695,7 @@ async function mobileTouch(browser) {
     const point=y=>[{x:195,y,id:1,radiusX:4,radiusY:4,force:1}];await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:point(650)});
     for(const y of [625,600,575,550,525,500,475,450]){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:point(y)});await page.waitForTimeout(65);}
     await page.waitForTimeout(120);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForFunction(y=>scrollY>y+80,before.y);await settled(page);
-    const after=await state(page),trace=await end(page);trusted(trace);assert.ok(trace.events.some(event=>event.type==='touchmove'));const completionEvidence=directSubmissions(trace,before,after);assertLiveDraw(after,'High-DPR mobile keeps its accepted 1.25 live cap');near(after.livePixelRatio,1.25,'High-DPR mobile cap');
+    const after=await state(page),trace=await end(page);trusted(trace);assert.ok(trace.events.some(event=>event.type==='touchmove'));const completionEvidence=actualSubmissions(trace,before,after,{directRequired:true});assertLiveDraw(after,'High-DPR mobile keeps its accepted 1.25 live cap');near(after.livePixelRatio,1.25,'High-DPR mobile cap');
     await noLoop(page,'Touch scene settles without residual rendering');await save(run,'native-mobile-touch-directness',{before,after,trace,completionEvidence});
   }catch(error){await diagnose(run,'mobile-touch',error);throw error;}finally{await run.context.close();}
 }
@@ -864,7 +889,7 @@ async function pendingGPUTouchResize(browser) {
     const changed=await heldFence(page);assert.equal(changed.frame,before.frame,'Touch and resize cannot publish the superseded pending draw');
     assert.ok(changed.fences.find(fence=>fence.id===pending.fences.find(fence=>fence.deleted===undefined).id)?.deleted!==undefined,'Resizing cancels the old drawing-buffer generation fence');
     const target=changed.raw;
-    await page.evaluate(()=>{window.__selectedFenceControl.hold=false;});await settled(page);const final=await fenceState(page),trace=await end(page);trusted(trace);const submissionEvidence=directSubmissions(trace,before,final);
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=false;});await settled(page);const final=await fenceState(page),trace=await end(page);trusted(trace);const submissionEvidence=actualSubmissions(trace,before,final,{directRequired:true});
     assert.ok(trace.events.some(event=>event.type==='touchmove'),'The superseding direct touch is actual trusted browser input');
     const firstCurrent=final.samples.find(sample=>sample.frame>before.frame);
     assert.ok(firstCurrent);near(firstCurrent.rendered,target,'First completed post-resize frame samples the latest direct-touch target',.001);assertLiveDraw(firstCurrent,'First post-resize completed frame has current buffer dimensions');
@@ -873,6 +898,38 @@ async function pendingGPUTouchResize(browser) {
     await noLoop(page,'Latest direct touch and resize converge without a residual GPU/render queue');
     await save(run,'pending-live-fence-native-touch-resize-current-frame',{before,pending,changed,target,final,trace,submissionEvidence});
   }catch(error){await diagnose(run,'pending-gpu-touch-resize',error);throw error;}finally{await run.context.close();}
+}
+
+async function aircraftPriorityDuringSelectedPreparation(browser) {
+  const run=await open(browser),{page,context}=run;await controlledFences(context,{hold:true,afterPreparation:2});
+  try{
+    await page.goto(base+'/v2/?v=aircraft-priority-pending-selected',{waitUntil:'domcontentloaded'});const pending=await heldFence(page);
+    assert.equal(pending.preparationFrames,2);assert.equal(pending.preparedModels.length,1);assert.equal(pending.frame,0);
+    const track=await page.locator(selected+' .v2-selected-track').elementHandle(),trackHeight=await track.evaluate(node=>node.style.height),completed=pending.preparedModels[0];
+    await page.locator('[data-aircraft-hero]').evaluate(root=>scrollTo({top:scrollY+root.getBoundingClientRect().top,behavior:'instant'}));
+    await page.waitForFunction(()=>{
+      const air=document.querySelector('[data-aircraft-hero]'),bounds=air.getBoundingClientRect(),work=document.querySelector('[data-selected-work]');
+      return window.V2AircraftPreparation?.isVisible()&&bounds.top<innerHeight&&bounds.bottom>0&&work.dataset.selectedBackgroundState==='paused-aircraft';
+    },null,{timeout});
+    const paused=await fenceState(page);releasedFences(paused,'Actual aircraft visibility cancels Selected preparation');
+    assert.equal(paused.preparationFrames,2);assert.deepEqual(paused.preparedModels,[completed]);assert.equal(paused.frame,0);
+    await page.evaluate(()=>{window.__selectedFenceControl.hold=false;});
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-aircraft-hero]');return Number(root.dataset.aircraftFrames)>0&&['landing','ready'].includes(root.dataset.aircraftState);},null,{timeout});
+    const beforeWheel=await page.evaluate(()=>scrollY);await page.mouse.move(720,450);await page.mouse.wheel(0,120);await page.waitForFunction(y=>scrollY>y+40,beforeWheel);
+    await page.waitForTimeout(600);const foreground=await snapshot(page),during=await fenceState(page);
+    assert.equal(await page.evaluate(()=>window.V2AircraftPreparation.isVisible()),true,'The observation interval uses actual visible aircraft');
+    assert.equal(during.preparationFrames,paused.preparationFrames,'Selected submits no additional background model work while aircraft is visible');
+    assert.equal(during.warm,paused.warm,'Selected submits no composition warm draw behind the visible aircraft');
+    assert.equal(during.background,'paused-aircraft');assert.ok(!['static','unavailable'].includes(during.state),'Paused Selected work never falls back or collapses its track');
+    assert.equal(await track.evaluate(node=>node.isConnected&&node===document.querySelector('[data-selected-work] .v2-selected-track')),true,'The original Selected track remains connected during aircraft input');
+    assert.equal(await track.evaluate(node=>node.style.height),trackHeight,'Pausing preserves exact Selected track height and native document geometry');
+    assert.ok(Number(foreground.aircraft.aircraftFrames)>0,'The actual aircraft renders while offscreen Selected construction/preparation is paused');
+    await jump(page,.3);const resumed=await fenceState(page);assertPreparation(resumed,'Selected resumes after aircraft leaves',{interrupted:true});releasedFences(resumed,'Reciprocal priority resume');
+    assert.equal(await page.evaluate(()=>window.V2AircraftPreparation.isVisible()),false);assert.equal(resumed.warm,2);
+    assert.equal(resumed.draws.filter(draw=>draw.preparationStage===completed).length,1,'Reciprocal priority preserves already completed Selected model stages');
+    assert.equal(await track.evaluate(node=>node.isConnected&&node===document.querySelector('[data-selected-work] .v2-selected-track')),true,'Returning resumes the same track without an unreported collapse/recreation');
+    await noLoop(page,'Reciprocal priority returns to finite settled Selected rendering');await save(run,'actual-aircraft-priority-pauses-selected-without-track-collapse',{pending,paused,foreground,during,resumed,trackHeight,beforeWheel});await track.dispose();
+  }catch(error){await diagnose(run,'aircraft-priority-selected',error);throw error;}finally{await run.context.close();}
 }
 
 async function pendingPreferenceChange(browser) {
@@ -1003,7 +1060,7 @@ async function studies(browser) {
       if(!group||group==='core'){await guards(browser);await initialAndInput(browser);}
       if(!group||group==='lifecycle'){
         const failures=[];
-        for(const test of [interruptedWarmMask,pendingGPUPreference,pendingGPUTouchResize,webgl1Preparation,pendingPreferenceChange,readyPreferenceChange]){
+        for(const test of [interruptedWarmMask,pendingGPUPreference,pendingGPUTouchResize,aircraftPriorityDuringSelectedPreparation,webgl1Preparation,pendingPreferenceChange,readyPreferenceChange]){
           try{await test(browser);}
           catch(error){failures.push(error);evidence.push({name:test.name+'-failure',error:error.stack});console.error('FAIL '+test.name+': '+error.message);}
         }
