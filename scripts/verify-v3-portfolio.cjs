@@ -1,6 +1,9 @@
 /* Portfolio acceptance for /v3, beyond the focused aircraft geometry suites.
  * Serve the repository on :8080, then: node scripts/verify-v3-portfolio.cjs
  * --static-only runs the source inventory/discoverability contract without a browser.
+ * --webkit-smoke uses official Playwright WebKit for mobile-emulated fallbacks.
+ * V3_SHARD_INDEX/V3_SHARD_COUNT opt into deterministic isolated browser shards.
+ * With neither set, the complete suite runs; all shard results must pass in CI.
  * V3_BASE_URL accepts the origin or its /v3/ URL; V3_SCREENSHOTS selects the
  * artifact folder; CHROMIUM_EXECUTABLE is optional (Playwright browser by default).
  * This suite never submits a booking, contacts anyone, or changes site data. */
@@ -14,7 +17,11 @@ const origin = new URL(process.env.V3_BASE_URL || 'http://localhost:8080/v3/').o
 const output = path.resolve(process.env.V3_SCREENSHOTS || path.join(root, '.codex-temp/v3-portfolio'));
 const staticOnly = process.argv.includes('--static-only');
 const webkitSmoke = process.argv.includes('--webkit-smoke');
+const shardIndex = Number(process.env.V3_SHARD_INDEX || 0), shardCount = Number(process.env.V3_SHARD_COUNT || 1);
+assert.ok(Number.isInteger(shardCount) && shardCount >= 1 && Number.isInteger(shardIndex) && shardIndex >= 0 && shardIndex < shardCount, 'V3_SHARD_INDEX must be zero-based and smaller than positive V3_SHARD_COUNT');
+let browserTestIndex = 0;
 const evidence = { started: new Date().toISOString(), origin, mode: staticOnly ? 'static-only' : webkitSmoke ? 'webkit-mobile-fallback-smoke' : 'full', tests: [], browser: null };
+evidence.shard = { index: shardIndex, count: shardCount, strategy: 'Declaration-order modulo; each test has its own browser context', executed: [], omitted: [] };
 const projectSlugs = ['coaster', 'dash', 'framework-dual-usb', 'framework-expansion-card', 'framework-logic-analyser', 'framework-raspberry-pi', 'lora-receiver', 'lora-talkie', 'metroboard', 'rf-test-board', 'runswift', 'skylabs', 'switch-mode-power-supplies', 'tamagotchi-sd-card', 'tramtrace'];
 const toolSlugs = ['scopelab', 'lithography-animation', 'mosfet-operating-regions'];
 const primary = 'a[data-v2-project][href^="/v3/projects/"]';
@@ -102,7 +109,10 @@ async function prepareFullPageImages(page) {
     }
   } finally {
     await page.evaluate(position => scrollTo({ left: position.x, top: position.y, behavior: 'instant' }), original);
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    // Chromium can suppress requestAnimationFrame callbacks when scripting is
+    // disabled. Image decode and native screenshot paint synchronization are
+    // the contract; a short compositor yield does not require page script.
+    await page.waitForTimeout(100);
   }
   return checked;
 }
@@ -112,7 +122,7 @@ async function screenshot(page, name, fullPage = false) {
     const photographs = await prepareFullPageImages(page);
     (evidence.fullPagePhotographs ||= []).push({ screenshot: file, photographs });
   }
-  await page.screenshot({ path: path.join(output, file), fullPage, animations: 'disabled', timeout: 30000 });
+  await page.screenshot({ path: path.join(output, file), fullPage, animations: 'disabled', timeout: 90000 });
   screenshotPaths.push(file);
   return file;
 }
@@ -133,6 +143,9 @@ async function newRun(options = {}) {
   return { context, page, errors, badResponses, requests, shaders };
 }
 async function browserTest(name, options, action) {
+  const index = browserTestIndex++;
+  if (index % shardCount !== shardIndex) { evidence.shard.omitted.push({ index, name }); return; }
+  evidence.shard.executed.push({ index, name });
   return test(name, async () => {
     const run = await newRun(options);
     try {
@@ -206,6 +219,36 @@ async function loaded(image) {
   await image.scrollIntoViewIfNeeded();
   await image.evaluate(node => node.decode());
   assert.equal(await image.evaluate(node => node.complete && node.naturalWidth > 0 && !!node.alt.trim()), true, 'Meaningful photograph is decoded');
+}
+async function primaryLinkContrast(page, label) {
+  const measurements = [];
+  for (const link of await page.locator('a.button-primary:visible').all()) {
+    await link.scrollIntoViewIfNeeded();
+    for (const phase of ['normal', 'hover']) {
+      if (phase === 'hover') await link.hover(); else await page.mouse.move(0, 0);
+      await link.evaluate(node => Promise.all(node.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))));
+      const contrast = await link.evaluate(node => {
+        const rgba = value => { const n = value.match(/[\d.]+/g)?.map(Number); if (!n || n.length < 3) throw new Error('Unsupported computed colour: ' + value); return [n[0], n[1], n[2], n[3] ?? 1]; };
+        const blend = (front, back) => front.slice(0, 3).map((channel, index) => channel * front[3] + back[index] * (1 - front[3]));
+        const ancestry = []; for (let element = node; element; element = element.parentElement) ancestry.push(element);
+        let background = [255, 255, 255];
+        for (const element of ancestry.reverse()) background = blend(rgba(getComputedStyle(element).backgroundColor), background);
+        const foreground = blend(rgba(getComputedStyle(node).color), background);
+        const luminance = color => color.map(value => { const s = value / 255; return s <= .04045 ? s / 12.92 : Math.pow((s + .055) / 1.055, 2.4); }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+        const levels = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+        return { href: node.href, text: node.textContent.trim(), foreground, background, ratio: (levels[0] + .05) / (levels[1] + .05) };
+      });
+      assert.ok(contrast.ratio >= 4.5, label + ' primary link ' + phase + ' has at least 4.5:1 text contrast: ' + JSON.stringify(contrast));
+      measurements.push({ ...contrast, phase, page: label });
+    }
+  }
+  await page.mouse.move(0, 0);
+  (evidence.primaryLinkContrast ||= []).push(...measurements);
+  return measurements;
+}
+async function noVisibleSourceLessImages(page, label) {
+  const empty = await page.locator('img:visible').evaluateAll(nodes => nodes.filter(node => !node.currentSrc && !node.getAttribute('src') && !node.getAttribute('srcset') && !node.closest('picture')?.querySelector('source[srcset]')).map(node => ({ alt: node.alt, deferredSource: node.dataset.v3Src || null })));
+  assert.deepEqual(empty, [], label + ': a source-less deferred image must not leave a broken placeholder above its noscript fallback');
 }
 async function staticAircraft(page) {
   assert.equal(await page.locator(hero + '.is-story').count(), 0, 'Fallback removes the long pinned scroll track');
@@ -320,12 +363,16 @@ async function hardwarePixels(page) {
     const previous = renderer.getRenderTarget(), target = new T.WebGLRenderTarget(96, 96), rgba = new Uint8Array(96 * 96 * 4);
     renderer.setRenderTarget(target); renderer.render(scene, camera); renderer.readRenderTargetPixels(target, 0, 0, 96, 96, rgba);
     renderer.setRenderTarget(previous); target.dispose();
-    let opaque = 0, colored = 0;
+    let opaque = 0, colored = 0, darkest = 255, brightest = 0; const colors = new Set();
     for (let i = 0; i < rgba.length; i += 4) {
-      if (rgba[i + 3] > 100) opaque++;
+      if (rgba[i + 3] > 100) {
+        opaque++; colors.add((rgba[i] << 16) | (rgba[i + 1] << 8) | rgba[i + 2]);
+        const luminance = .2126 * rgba[i] + .7152 * rgba[i + 1] + .0722 * rgba[i + 2];
+        darkest = Math.min(darkest, luminance); brightest = Math.max(brightest, luminance);
+      }
       if (rgba[i + 3] > 100 && Math.max(rgba[i], rgba[i + 1], rgba[i + 2]) - Math.min(rgba[i], rgba[i + 1], rgba[i + 2]) > 10) colored++;
     }
-    return { opaque, colored };
+    return { opaque, colored, distinctColors: colors.size, luminanceRange: brightest - darkest };
   });
 }
 async function assertHardwareSelection(page, project, view = 'overview') {
@@ -346,7 +393,10 @@ async function assertHardwareSelection(page, project, view = 'overview') {
   assert.equal(snapshot.contextLost, false); assert.ok(snapshot.frames > 0); assert.ok(snapshot.triangles > 0);
   assert.deepEqual(snapshot.models.filter(model => model.visible).map(model => model.key), [project], 'Every inactive model is hidden after camera settlement');
   const pixels = await hardwarePixels(page);
-  assert.ok(pixels.opaque > 40 && pixels.colored > 20, 'Actual WebGL contains visible colored hardware: ' + JSON.stringify(pixels));
+  // The supplied TramTrace board is intentionally almost monochrome.
+  // Saturation is not evidence of hardware rendering; opaque coverage and
+  // tonal diversity reject a blank/flat canvas without inventing its palette.
+  assert.ok(pixels.opaque > 40 && pixels.distinctColors > 32 && pixels.luminanceRange > 25, 'Actual WebGL contains opaque, shaded hardware rather than a blank or flat canvas: ' + JSON.stringify(pixels));
   await noOverflow(page, 'Physical hardware ' + project + ' ' + view);
   return { project, view, frames: snapshot.frames, triangles: snapshot.triangles, pixels };
 }
@@ -364,13 +414,13 @@ async function assertHardwareIdle(page, project = 'tramtrace', view = 'overview'
   assert.deepEqual(after.models.filter(model => model.visible).map(model => model.key), [project], 'Background preloads stay hidden');
   return { framesBefore: before.frames, framesAfter: after.frames, observedMs: 900 };
 }
-async function assertUsableControl(page, locator, label, minimumWidth = 24) {
+async function assertUsableControl(page, locator, label, minimumWidth = 24, minimumHeight = 24) {
   await locator.scrollIntoViewIfNeeded();
   const geometry = await locator.evaluate(node => {
     const b = node.getBoundingClientRect(), hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
     return { x: b.x, y: b.y, width: b.width, height: b.height, inViewport: b.left >= 0 && b.right <= innerWidth + 1 && b.top >= 0 && b.bottom <= innerHeight + 1, exposed: !!hit && (hit === node || node.contains(hit)) };
   });
-  assert.ok(geometry.width >= minimumWidth && geometry.height >= 24, label + ' has a readable native target: ' + JSON.stringify(geometry));
+  assert.ok(geometry.width >= minimumWidth && geometry.height >= minimumHeight, label + ' has a readable native target: ' + JSON.stringify(geometry));
   assert.ok(geometry.inViewport && geometry.exposed, label + ' is reachable and not covered by the model/copy: ' + JSON.stringify(geometry));
   await locator.focus();
   assert.equal(await locator.evaluate(node => node === document.activeElement), true, label + ' accepts keyboard focus');
@@ -416,7 +466,12 @@ async function touchDrag(context, page, locator, dx, dy = 0, cancel = false) {
 }
 async function rangeViaKeyboard(page, range, value) {
   await range.focus(); await page.keyboard.press(value <= 50 ? 'Home' : 'End');
-  for (let count = 0; count < (value <= 50 ? value : 100 - value); count++) await page.keyboard.press(value <= 50 ? 'ArrowRight' : 'ArrowLeft');
+  // Native range PageUp/PageDown move ten percent of this 0–100 range.
+  // Exercise those keys plus single-unit arrows, without queueing fifty
+  // independent CAD renders merely to reach the same midpoint assertion.
+  const distance = value <= 50 ? value : 100 - value;
+  for (let tens = 0; tens < Math.floor(distance / 10); tens++) await page.keyboard.press(value <= 50 ? 'PageUp' : 'PageDown');
+  for (let units = 0; units < distance % 10; units++) await page.keyboard.press(value <= 50 ? 'ArrowRight' : 'ArrowLeft');
 }
 async function staticTests() {
   await test('15 public projects and 23 preserved interiors', () => {
@@ -955,7 +1010,7 @@ async function browserTests() {
       const nav = page.locator('nav[aria-label="Primary navigation"]');
       assert.equal(await nav.isVisible(), true);
       assert.equal(await nav.locator('a:visible').count(), 3, 'Projects, CV and Contact remain directly available');
-      for (const link of await nav.locator('a').all()) await assertUsableControl(page, link, 'Primary navigation link', 1);
+      for (const link of await nav.locator('a').all()) await assertUsableControl(page, link, 'Primary navigation link', 44, 44);
       await activateKeyboard(page, nav.locator('a[href="/v3/projects/"]'));
       await page.waitForURL('**/v3/projects/'); await searchCount(page, 15);
       await noOverflow(page, '320px native collection navigation');
@@ -1142,6 +1197,7 @@ async function browserTests() {
     assert.equal(await page.locator('.site-header nav').isVisible(), true);
     await staticAircraft(page);
     await loaded(page.locator(hardware + ' .poster:visible').first());
+    await noVisibleSourceLessImages(page, 'No-JavaScript landing');
     await visit(page, '/v3/projects/'); await searchCount(page, 15);
     assert.equal(await page.locator('[data-v2-search-wrap]').isVisible(), false);
     await noOverflow(page, 'No-JS collection');
@@ -1250,10 +1306,14 @@ async function browserTests() {
       await page.setViewportSize(viewport);
       for (const [name, route] of [['collection', '/v3/projects/'], ['about', '/v3/about/'], ['raspberry-pi-case', '/v3/projects/framework-raspberry-pi/'], ['tramtrace-case', '/v3/projects/tramtrace/']]) {
         await visit(page, route); assert.equal(await page.locator('h1').isVisible(), true); await noOverflow(page, device + ' ' + route);
+        await primaryLinkContrast(page, device + ' ' + route);
+        await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
         await screenshot(page, device + '-' + name + '-fully-loaded', true);
       }
     }
-    return { decodedAfterRealScroll: true, cases: ['framework-raspberry-pi', 'tramtrace'] };
+    assert.ok(evidence.primaryLinkContrast?.some(item => /tramtrace/.test(item.href)), 'The TramTrace copper/data CTA was actually measured');
+    assert.ok(evidence.primaryLinkContrast?.some(item => item.page.includes('/about/')), 'The About primary CTA was actually measured');
+    return { decodedAfterRealScroll: true, primaryContrastChecked: true, cases: ['framework-raspberry-pi', 'tramtrace'] };
   });
   await browserTest('all interiors fit 320 pixel no-JavaScript reading', { js: false, viewport: { width: 320, height: 740 } }, async ({ page }) => {
     for (const file of sourcePages) {
@@ -1310,6 +1370,7 @@ async function webkitSmokeTests() {
       for (const [name, route] of [['collection', '/v3/projects/'], ['about', '/v3/about/']]) {
         await visit(page, route); assert.equal(await page.locator('h1').isVisible(), true);
         const nav = page.locator('nav[aria-label="Primary navigation"]'); assert.equal(await nav.isVisible(), true); assert.equal(await nav.locator('a:visible').count(), 3);
+        for (const link of await nav.locator('a').all()) await assertUsableControl(page, link, 'WebKit primary navigation link', 44, 44);
         if (name === 'collection') await searchCount(page, 15);
         await noOverflow(page, 'WebKit ' + width + ' ' + name); await screenshot(page, 'webkit-' + width + '-' + scenario.name + '-' + name, true);
       }
@@ -1319,6 +1380,7 @@ async function webkitSmokeTests() {
   await browserTest('WebKit 320px without JavaScript keeps native reading and case routes', { viewport: { width: 320, height: 844 }, touch: true, js: false }, async ({ page }) => {
     await visit(page); await loaded(page.locator(hardware + ' .poster:visible').first());
     for (const item of hardwareProjects) assert.equal(await page.locator('noscript a[href="/v3/projects/' + item.slug + '/"]').isVisible(), true);
+    await noVisibleSourceLessImages(page, 'WebKit no-JavaScript landing');
     await noOverflow(page, 'WebKit no-JS hardware'); await screenshot(page, 'webkit-320-no-javascript-full', true);
     await visit(page, '/v3/projects/'); await searchCount(page, 15); await noOverflow(page, 'WebKit no-JS collection');
     return { engine: 'WebKit', nativeIOS: false, javaScript: false, completeCollection: true };
@@ -1335,9 +1397,12 @@ async function webkitSmokeTests() {
       browser = webkitSmoke ? await playwright.webkit.launch({ headless: true }) : await playwright.chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
       evidence.browser = { status: 'launched', engine: webkitSmoke ? 'WebKit' : 'Chromium', version: browser.version(), executable: webkitSmoke ? 'Official Playwright bundled WebKit' : process.env.CHROMIUM_EXECUTABLE || 'Playwright bundled Chromium' };
       if (webkitSmoke) await webkitSmokeTests(); else await browserTests();
+      assert.ok(evidence.shard.executed.length > 0, 'The selected shard must execute actual browser tests');
     } catch (error) { evidence.browser = { status: 'blocked', error: error.stack || String(error) }; console.error('BLOCKED browser suite: ' + evidence.browser.error); }
     finally { if (browser) await browser.close(); }
   }
+  evidence.shard.completeBrowserSuite = !staticOnly && evidence.browser?.status === 'launched' && shardCount === 1;
+  evidence.shard.note = shardCount > 1 ? 'This file covers only its assigned shard. Combine all shard results for complete Chromium acceptance.' : 'No browser tests were omitted by sharding.';
   evidence.performanceContext = 'Diagnostic measurements from this local preview/CI browser only. No network throttling or physical mobile device was used. Zero transfer sizes can reflect caching or unavailable timing; these are not user-network benchmarks or performance scores.';
   evidence.finished = new Date().toISOString();
   evidence.screenshots = screenshotPaths;

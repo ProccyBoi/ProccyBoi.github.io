@@ -22,6 +22,10 @@ permissions:
 
 jobs:
   browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -45,6 +49,8 @@ jobs:
         env:
           V3_BASE_URL: http://127.0.0.1:8080/v3/
           V3_SCREENSHOTS: /tmp/v3-browser-evidence
+          V3_SHARD_INDEX: ${{ matrix.shard }}
+          V3_SHARD_COUNT: '3'
         run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v3-preview.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
@@ -53,7 +59,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v3-browser-evidence
+          name: v3-browser-evidence-${{ matrix.shard }}
           path: /tmp/v3-browser-evidence/
           if-no-files-found: warn
           retention-days: 14

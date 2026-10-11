@@ -15,3 +15,10 @@ button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;paddin
 @media(max-width:800px){.v3-more{padding:40px 20px}.v3-section-line{margin-bottom:25px}.v3-section-line h2{font-size:27px}.v3-section-line>a{font-size:11px}.v3-more-grid{gap:25px 16px;grid-template-columns:repeat(2,minmax(0,1fr))}.v3-more-grid h3{font-size:16px}.v3-more-grid span{font-size:9px}.v3-more-grid>a>div{display:block}.v3-more-grid span{display:block;margin-top:7px}.v3-more-grid>a:last-child{display:grid;grid-template-columns:120px 1fr;align-items:center;gap:20px;grid-column:1/-1}.site-footer{padding:25px 20px;gap:10px}.site-footer>div{gap:18px}.static-projects{left:20px;right:20px;gap:20px;font-size:11px}.inspection{gap:20px}.inspection .v3-gallery-expand{font-size:11px;min-height:34px}.inspection button{min-height:44px}.cover[data-view=controller] .inspection{top:146px}}
 @media(max-width:360px){.site-header{padding:18px 16px;gap:10px}.brand{font-size:19px}.site-header nav{gap:10px;font-size:11px}.role,.project,.inspection,.selection{left:16px}.project{right:16px}.project h1{font-size:40px}.inspection{gap:16px}.inspection button,.inspection .v3-gallery-expand{font-size:10px}.project p:not(.eyebrow){font-size:13px}.pixel-toggle{right:16px;font-size:10px}.project a{width:156px}.selection{right:16px}.selection button{font-size:11px}.v3-section-line{gap:10px}.v3-section-line>a{font-size:10px}}
 @media print{.cover{height:700px;min-height:0}.cover canvas,.inspection,.pixel-toggle{display:none}.cover[data-model=ready] .poster{display:block}.site-header{position:relative}.v3-aircraft-track{display:none}}
+
+.cover[data-model=fallback] .art canvas,.cover[data-model=fallback] .component-probe{display:none}
+
+.v3-aircraft-static-photo img[data-v3-src]:not([src]){display:none}
+
+.site-header nav a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+@media(max-width:360px){.site-header .brand{font-size:18px}.site-header nav{gap:8px}}

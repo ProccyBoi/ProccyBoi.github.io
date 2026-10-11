@@ -70,3 +70,9 @@ body.v3:not(.v2){font-size:17px;line-height:1.65}body.v3:not(.v2)>h1,body.v3:not
 @media(max-width:360px){body.v3 .v2-brand{font-size:19px}body.v3.v3-interior .v2-nav{gap:12px;font-size:11px}body.v3 .v2-nav-shell{gap:10px}.v3-identity{font-size:11px}.v3.v2-case .project-hero-copy h1{font-size:39px}.v3.v2-case .project-hero-media figcaption{font-size:8px}.v3 .v2-collection-categories{gap:15px}.v3.v2-collection .index-section-heading{gap:14px}.v3.v2-collection .index-section-heading>p{font-size:11px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.v3 *{scroll-behavior:auto!important}.v3 a,.v3 button{transition:none!important}}
 @media print{body.v3{background:white;color:#111;--v2-bg:white;--v2-ink:#111;--v2-muted:#444;--v2-line:#aaa}.v3 .v2-header,.v3 .v2-case-nav,.v3 .v2-collection-controls{position:static}.v3-identity{position:static;margin-inline:var(--v2-gutter)}.v3.v2-case .project-hero-grid{min-height:0;display:grid;grid-template-columns:1fr 1fr;padding-block:30px}.v3.v2-case .project-hero-copy{padding-top:0}.v3.v2-case .project-hero-media{position:static}.v3.v2-case .project-hero-media figcaption{position:static}.v3.v2-case .project-hero-media picture{mask-image:none;-webkit-mask-image:none}}
+/* Shared source buttons use a light fill; keep their label contrast explicit. */
+.v3 a.button.button-primary{background:var(--v2-ink);color:var(--v2-bg);border-color:var(--v2-ink)}
+.v3 a.button.button-primary:hover{background:var(--v2-accent);color:var(--v2-bg);border-color:var(--v2-accent)}
+
+body.v3.v3-interior .v2-nav a{justify-content:center;min-width:44px;min-height:44px}
+@media(max-width:360px){body.v3 .v2-brand{font-size:18px}body.v3.v3-interior .v2-nav{gap:8px}}
