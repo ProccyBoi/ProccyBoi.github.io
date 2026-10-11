@@ -82,12 +82,12 @@ function smallPack(textures) {
   const early = context(); early.run(startup); early.run(startup); await flush();
   assert.equal(early.scriptRequests.length, 4, 'Concurrent startup calls must share runtime and helper requests');
   assert.ok(early.scriptRequests[0].includes('three.min.js'), 'Request the renderer before geometry and images compete for the connection');
-  assert.equal(early.requests.length, 2, 'Opening load prioritizes only lead geometry and prepared lighting');
-  assert.deepEqual(early.images, packTextures.tramtrace, 'Only original lead textures compete for opening bandwidth');
+  assert.equal(early.requests.length, 4, 'All three visible boards and lighting begin without a serial model gate');
+  assert.deepEqual(early.images, Object.values(packTextures).flat(), 'All original board textures begin together');
   const leadUrl = early.requests.find(url => url.includes('/tramtrace.'));
   early.downloads.get(leadUrl).release(smallPack(packTextures.tramtrace));
   await flush(); await flush();
-  assert.equal(early.requests.length, 4, 'Support transport starts once lead bytes are ready, even before the renderer');
+  assert.equal(early.requests.length, 4, 'Support transport remains shared when lead bytes complete');
   assert.deepEqual(early.images, Object.values(packTextures).flat(), 'Staged transport retains all original texture quality');
   assert.equal(early.sandbox.THREE, undefined, 'Early preparation must not create or depend on a renderer instance');
   for (const mode of [{reduced:true}, {saveData:true}, {reduced:true, saveData:true}]) {
@@ -109,7 +109,7 @@ function smallPack(textures) {
   decoding.downloads.get(compressedLead).release(Uint8Array.from([31,139]).buffer);
   await flush();
   assert.equal(leadPrepared, false, 'The lead decode is deliberately still blocked');
-  assert.equal(decoding.requests.length, 4, 'Support starts at network completion before lead decompression');
+  assert.equal(decoding.requests.length, 4, 'Support has already started while lead decompression is blocked');
   assert.strictEqual(decoding.sandbox.V2HeroAssets.whenTransferSettled('tramtrace'), decoding.sandbox.V2HeroAssets.whenTransferSettled('tramtrace'), 'Transfer signal is deduplicated');
   decode.release(smallPack(packTextures.tramtrace)); await prepared;
   assert.equal(leadPrepared, true);

@@ -172,6 +172,11 @@ async function profile(browser,index){
         assert.ok(request && request.startMs >= leadRequest.endMs-25, name+' transport waits for lead bytes, then overlaps first render');
       }
     }
+    if(process.env.HERO_EXPECT_PARALLEL==='1') {
+      const boardRequests=modelRequests.filter(record=>/\/(?:tramtrace|telemetry|pi)\./.test(record.url));
+      assert.equal(boardRequests.length,3,'Three visible boards each have one transport');
+      assert.ok(Math.max(...boardRequests.map(record=>record.startMs))-Math.min(...boardRequests.map(record=>record.startMs))<150,'Board transports start together, without serial model gates');
+    }
     return result;
   }finally{await context.close();}
 }

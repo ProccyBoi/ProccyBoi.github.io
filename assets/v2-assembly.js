@@ -259,9 +259,7 @@
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
         if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=transfer-20261011');
-        window.V2HeroAssets.whenTransferSettled('tramtrace').then(() => {
-          if (motionAllowed()) projects.slice(1).forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
-        }).catch(()=>{});
+        if (motionAllowed()) projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
       })().catch(()=>{});
       const lighting=(async()=>{
         if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=product-20261007');
@@ -377,12 +375,10 @@
       loadRequestedModel = loadModel;
       const lead=loadModel(0);
       if (target > .32) promoteModel(target >= .65 ? 2 : 1);
-      await lead;
-      // Await the actual lead render, not just an early animation frame while
-      // its download is still pending. Posters already handle every chapter.
+      // Overlap all three model preparations after one paint opportunity.
       await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
       const supporting=projects.slice(1).map((_,index)=>loadModel(index+1));
-      await Promise.allSettled(supporting);
+      await Promise.allSettled([lead,...supporting]);
       if(!models.some(Boolean)) root.dataset.assemblyState='unavailable';
       root.dataset.assemblyModelsSettled=String(modelStates.filter(state=>state!=='pending'&&state!=='loading').length);
       if(!motionAllowed()) staticMode();

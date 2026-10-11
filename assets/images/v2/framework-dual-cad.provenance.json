@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "subject": "Framework Dual USB-C expansion card",
+  "method": "Unchanged production viewer model in isolated source-markup fixture; direct transparent WebGL canvas export",
+  "geometry": "Original KiCad-derived board and component layout, original source Molex GLB, original enclosure STL and original viewer mounting screws",
+  "sourceCommit": "f7ff370b9cf55ed4a9dbeb48fe97c0b555b86d1b",
+  "renderer": {
+    "browser": "143.0.7499.4",
+    "playwright": "1.57.0",
+    "backend": "Chromium SwiftShader",
+    "script": "scripts/render-framework-dual-poster.cjs",
+    "scriptSha256": "61c9b539a753d31df3aa9d711016b4d68bae4dba6b4ba587b3d593d91b8efdc4"
+  },
+  "sources": [
+    {
+      "path": "v2/projects/framework-dual-usb/index.html",
+      "bytes": 12773,
+      "sha256": "e47e735e22e8d5f46ec14bb7f6441ca66cace54ea685173f974cc70ab664ea9e"
+    },
+    {
+      "path": "assets/framework-dual-usb-3d.js",
+      "bytes": 59721,
+      "sha256": "eb57258c0b9f4c8a90a09e4bba82559e5a31c346af643de8c17b93077e160f72"
+    },
+    {
+      "path": "assets/explorer-runtime.js",
+      "bytes": 4767,
+      "sha256": "04418cca7f825f446169b06c1602f3f4f0fe4bac37a6a7cad72b825bf437bb79"
+    },
+    {
+      "path": "assets/vendor/three.min.js",
+      "bytes": 603445,
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
+    },
+    {
+      "path": "assets/vendor/GLTFLoader.js",
+      "bytes": 96550,
+      "sha256": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6"
+    },
+    {
+      "path": "assets/models/framework-dual-usb/framework-dual-usb-silk.svg",
+      "bytes": 19789,
+      "sha256": "c1bbdaad7fdd559cc9d366735f65b999e6c711a2ddc2b85219a45805f2a8df96"
+    },
+    {
+      "path": "assets/models/framework-esp32/framework-usbc.glb",
+      "bytes": 516408,
+      "sha256": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa"
+    },
+    {
+      "path": "assets/models/framework-esp32/framework-enclosure.stl",
+      "bytes": 224184,
+      "sha256": "92c401b4880ed1262ebc939911455b1c9da729dd594b2892c98ab40baf44e16a"
+    }
+  ],
+  "sourceFilesUnchanged": true,
+  "model": {
+    "meshes": 1071,
+    "triangles": 22209,
+    "parts": [
+      "BOARD",
+      "C1",
+      "C10",
+      "C11",
+      "C2",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "D1",
+      "D2",
+      "D3",
+      "Enclosure",
+      "J1",
+      "J2",
+      "M2-1",
+      "M2-2",
+      "P1",
+      "R1",
+      "R10",
+      "R2",
+      "R3",
+      "R4",
+      "R5",
+      "R6",
+      "R7",
+      "R8",
+      "R9",
+      "U1",
+      "U3",
+      "U4",
+      "U5",
+      "U6",
+      "U7",
+      "X1"
+    ],
+    "assembledProgress": "0.0000",
+    "worldBounds": {
+      "min": [
+        -15,
+        0,
+        -39.100000000015996
+      ],
+      "max": [
+        15,
+        7.209999971389771,
+        0.004999952316297129
+      ]
+    }
+  },
+  "camera": {
+    "projection": "orthographic",
+    "yawDegrees": -27,
+    "pitchDegrees": 58,
+    "rollDegrees": -8,
+    "fitPadding": 1.12,
+    "position": [
+      -36.08674673862684,
+      130.81221440915877,
+      51.276728234882924
+    ],
+    "target": [
+      0,
+      3.6049999856948856,
+      -19.54750002384985
+    ],
+    "frustum": [
+      -28.368081361067397,
+      32.33415518492599,
+      20.22544293373091,
+      -25.301234475764133
+    ]
+  },
+  "render": {
+    "threeRevision": "128",
+    "draws": 1073,
+    "triangles": 22209,
+    "alpha": true,
+    "preserveDrawingBuffer": true,
+    "outputEncoding": 3001,
+    "toneMapping": 4,
+    "exposure": 0.98
+  },
+  "pixels": {
+    "width": 1600,
+    "height": 1200,
+    "mode": "RGBA",
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "visibleBounds": [
+      235,
+      70,
+      1367,
+      1129
+    ],
+    "visiblePixels": 689662,
+    "visibleFraction": 0.3591989583333333,
+    "opaquePixels": 512971,
+    "translucentPixels": 176691,
+    "transparentBorder": true,
+    "files": [
+      {
+        "file": "framework-dual-usb-cad.png",
+        "bytes": 410969,
+        "sha256": "29e22f64dc5352edad5fea7ab4246a1c5aecef47208809da8b725ebf6ea7cce3",
+        "encoding": "original canvas RGBA PNG"
+      },
+      {
+        "file": "framework-dual-usb-cad.webp",
+        "bytes": 94606,
+        "sha256": "9130ec4c413a2166d130cd737e0cf8de016cad76ca6db745a6ba8954c31f1cb1",
+        "encoding": {
+          "quality": 90,
+          "method": 6
+        },
+        "alphaExact": true
+      },
+      {
+        "file": "framework-dual-usb-cad.lossless.webp",
+        "bytes": 133748,
+        "sha256": "883fdb6d512d60703882280507668126479297fbfe1251490887fcbf38e91682",
+        "encoding": {
+          "lossless": true,
+          "method": 6,
+          "exact": true
+        },
+        "alphaExact": true
+      }
+    ]
+  },
+  "browserErrors": [],
+  "failedRequests": []
+}
