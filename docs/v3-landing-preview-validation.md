@@ -142,3 +142,26 @@ tap/dismissal assertion, adds a fresh mobile open/close baseline before gestures
 and records pointer/touch/click events, the Close hit target and visual-viewport
 state. No click/Escape substitute is accepted as a mobile tap pass. That behavior
 remains unresolved until the browser rerun establishes the cause and outcome.
+
+
+## Second landing CI review and bounded touch regression
+
+The second review run passed 34 of 35 groups. Its event trace showed that a fresh
+Close tap generated the expected trusted click. After pinch/pan, Close remained
+the correct hit target at visual-viewport scale 1, and trusted pointer/touch down
+and up reached it without default prevention, but the compatibility click was
+absent. The existing real post-gesture `Close.tap()` assertion is unchanged.
+
+The next run also checks the Close-specific touch fallback's negative cases with
+trusted browser input: touch-down alone does not close; dragging off the button and back,
+`touchCancel`, or a second simultaneous contact cancel activation. A subsequent
+ordinary real Close tap must still dismiss and restore focus. These checks do
+not replace or weaken the post-pinch dismissal test. Browser acceptance remains
+pending for that fix until the next complete review run passes.
+
+
+The post-gesture mobile test additionally taps Reset, plus and minus and verifies
+exactly one action per tap (1× → 1.5× → 1×). It then performs another real pinch
+and pan before the unchanged final Close tap, so a reset state cannot conceal a
+post-gesture dismissal failure. Native mouse and keyboard paths retain their
+existing independent coverage.

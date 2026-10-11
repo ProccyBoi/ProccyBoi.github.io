@@ -599,13 +599,71 @@ async function browserTests() {
       await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       assert.notEqual(Number(await dialog.getAttribute('data-pan-x')), panBefore, 'One-finger drag pans');
     } finally { await client.detach(); }
+    await checkpoint('post-gesture-control-taps');
+    await dialog.locator('[data-inspect-reset]').tap(); assert.equal(Number(await dialog.getAttribute('data-zoom')), 1, 'Reset tap works after pinch/pan');
+    await dialog.locator('[data-inspect-in]').tap(); assert.equal(Number(await dialog.getAttribute('data-zoom')), 1.5, 'One plus tap advances exactly one zoom step');
+    await dialog.locator('[data-inspect-out]').tap(); assert.equal(Number(await dialog.getAttribute('data-zoom')), 1, 'One minus tap reverses exactly one zoom step');
+    await checkpoint('repeat-pinch-and-pan');
+    const repeated = await context.newCDPSession(page);
+    try {
+      await repeated.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 28, y, id: 1 }, { x: x + 28, y, id: 2 }] });
+      await repeated.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 90, y, id: 1 }, { x: x + 90, y, id: 2 }] });
+      await repeated.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await repeated.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+      await repeated.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 65, y: y - 20, id: 1 }] });
+      await repeated.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      assert.ok(Number(await dialog.getAttribute('data-zoom')) > 1, 'Repeat actual pinch before the unchanged Close tap');
+    } finally { await repeated.detach(); }
     await noOverflow(page, 'Expanded photo at 390px'); await screenshot(page, 'mobile-expanded-hardware-photo');
     await checkpoint('post-gesture-close');
     await dialog.locator('[data-inspect-close]').tap(); await checkpoint('post-gesture-tap-dispatched');
     await dialog.waitFor({ state: 'hidden' });
     assert.equal(await opener.evaluate(node => node === document.activeElement), true);
     await assertGallerySelection(page, 'tramtrace', 'detail');
-    return { viewport: { width: 390, height: 844 }, freshMobileClose: true, touchPinch: true, touchPan: true, inputDiagnostics: await page.evaluate(() => window.__v3InputDiagnostics) };
+    return { viewport: { width: 390, height: 844 }, freshMobileClose: true, touchPinch: true, touchPan: true, postGestureControlTaps: true, inputDiagnostics: await page.evaluate(() => window.__v3InputDiagnostics) };
+  });
+  await browserTest('expanded photo Close ignores touch-down drag cancellation and multitouch', { touch: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
+    await visit(page); await approachGallery(page); await gallerySettled(page);
+    const opener = page.locator('[data-gallery-expand]'), dialog = page.locator('[data-gallery-inspect]');
+    await opener.tap(); await page.locator('[data-gallery-inspect][data-state="ready"]').waitFor();
+    await page.evaluate(() => {
+      const log = window.__v3InputDiagnostics = { phase: 'negative-close-gestures', events: [] };
+      for (const type of ['pointerdown', 'pointerup', 'pointercancel', 'touchstart', 'touchend', 'touchcancel', 'click']) document.addEventListener(type, event => {
+        log.events.push({ phase: log.phase, type, target: event.target?.closest?.('[data-inspect-close]') ? 'close' : event.target?.tagName, pointerId: event.pointerId, pointerType: event.pointerType, trusted: event.isTrusted, touches: event.touches?.length });
+      }, { capture: true, passive: true });
+    });
+    const closeBox = await dialog.locator('[data-inspect-close]').boundingBox(), stageBox = await dialog.locator('[data-inspect-stage]').boundingBox();
+    const closePoint = { x: closeBox.x + closeBox.width / 2, y: closeBox.y + closeBox.height / 2, id: 1 };
+    const outsidePoint = { x: closePoint.x - 110, y: closePoint.y + 110, id: 1 };
+    const secondPoint = { x: stageBox.x + stageBox.width / 2, y: stageBox.y + stageBox.height / 2, id: 2 };
+    const client = await context.newCDPSession(page);
+    const remainsOpen = async label => {
+      await page.waitForTimeout(350);
+      assert.equal(await dialog.evaluate(node => node.open), true, label);
+    };
+    try {
+      await page.evaluate(() => { window.__v3InputDiagnostics.phase = 'close-drag-out'; });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [closePoint] });
+      assert.equal(await dialog.evaluate(node => node.open), true, 'Touch-down alone cannot activate Close');
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [outsidePoint] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [closePoint] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await remainsOpen('Dragging away and back to Close still cancels activation');
+      await page.evaluate(() => { window.__v3InputDiagnostics.phase = 'close-cancel'; });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [closePoint] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+      await remainsOpen('A cancelled touch never closes the photograph');
+      await page.evaluate(() => { window.__v3InputDiagnostics.phase = 'close-multitouch'; });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [closePoint] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [closePoint, secondPoint] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await remainsOpen('A second simultaneous contact cancels Close activation');
+    } finally { await client.detach(); }
+    const trace = await page.evaluate(() => window.__v3InputDiagnostics);
+    assert.ok(trace.events.some(event => event.phase === 'close-cancel' && event.type === 'pointercancel' && event.target === 'close' && event.trusted), 'Cancellation was real trusted browser input');
+    await dialog.locator('[data-inspect-close]').tap(); await dialog.waitFor({ state: 'hidden' });
+    assert.equal(await opener.evaluate(node => node === document.activeElement), true);
+    return { activatesOnlyAfterValidTap: true, dragCancelled: true, touchCancelled: true, multitouchCancelled: true, inputDiagnostics: trace };
   });
   await browserTest('expanded photo resource failure retry and selected-source recovery', { saveData: true, viewport: { width: 390, height: 844 } }, async ({ page, context }) => {
     let fail = true;

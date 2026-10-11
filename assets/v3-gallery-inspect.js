@@ -68,6 +68,7 @@
     let fitWidth = 0;
     let fitHeight = 0;
     let gesture = null;
+    let buttonTap = null;
     let announceTimer = 0;
 
     function currentPhoto() {
@@ -278,6 +279,7 @@
       }
       pointers.clear();
       gesture = null;
+      buttonTap = null;
       dialog.classList.remove('is-dragging');
       image?.removeAttribute('src');
       image?.remove();
@@ -300,13 +302,51 @@
       } : { first, scale, x, y };
     }
 
+    // A browser can omit its compatibility click immediately after a pinch or
+    // drag. Recognize only complete taps on these explicit controls. Preventing
+    // touchend's default also prevents a second/retargeted click after dismissal.
+    // Mouse, keyboard and assistive-technology clicks retain native activation.
+    function activateButton(button, action) {
+      button.addEventListener('click', action);
+      button.addEventListener('touchstart', event => {
+        if (button.disabled || event.touches.length !== 1 || event.changedTouches.length !== 1) return;
+        const touch = event.changedTouches[0];
+        buttonTap = { button, id: touch.identifier, x: touch.clientX, y: touch.clientY, valid: true };
+      }, { passive: true });
+      button.addEventListener('touchend', event => {
+        if (buttonTap?.button !== button) return;
+        const touch = [...event.changedTouches].find(item => item.identifier === buttonTap.id);
+        if (!touch) return;
+        const tap = buttonTap;
+        buttonTap = null;
+        // Also suppress a compatibility click for a cancelled button-origin
+        // gesture, such as dragging away and returning before lifting a finger.
+        if (!event.cancelable) return;
+        event.preventDefault();
+        if (!dialog.open || button.disabled || !tap.valid || event.touches.length ||
+            event.changedTouches.length !== 1 || Math.hypot(touch.clientX - tap.x, touch.clientY - tap.y) > 10) return;
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (target && button.contains(target)) action();
+      }, { passive: false });
+    }
+    dialog.addEventListener('touchstart', event => {
+      if (buttonTap && event.touches.length !== 1) buttonTap.valid = false;
+    }, { capture: true, passive: true });
+    dialog.addEventListener('touchmove', event => {
+      if (!buttonTap) return;
+      const touch = [...event.touches].find(item => item.identifier === buttonTap.id);
+      if (event.touches.length !== 1 || !touch || Math.hypot(touch.clientX - buttonTap.x, touch.clientY - buttonTap.y) > 10) buttonTap.valid = false;
+    }, { capture: true, passive: true });
+    dialog.addEventListener('touchcancel', () => { buttonTap = null; }, { passive: true });
+    dialog.addEventListener('contextmenu', () => { if (buttonTap) buttonTap.valid = false; });
+
     expand.addEventListener('click', open);
-    close.addEventListener('click', () => dialog.close());
+    activateButton(close, () => dialog.close());
     dialog.addEventListener('close', () => { if (!dialog.open) end(); });
-    retry.addEventListener('click', load);
-    zoomIn.addEventListener('click', () => zoom(scale + 0.5));
-    zoomOut.addEventListener('click', () => zoom(scale - 0.5));
-    reset.addEventListener('click', resetView);
+    activateButton(retry, load);
+    activateButton(zoomIn, () => zoom(scale + 0.5));
+    activateButton(zoomOut, () => zoom(scale - 0.5));
+    activateButton(reset, resetView);
 
     dialog.addEventListener('keydown', event => {
       if (event.key === 'Tab') {
