@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101210">
+  <meta name="robots" content="noindex">
+  <title>Andrew Chung — Selected engineering work</title>
+  <meta name="description" content="Electrical engineering student at UNSW. Aircraft telemetry, embedded systems and custom hardware by Andrew Chung.">
+  <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/images/projects/skylabs-telemetry-interface-1920.webp" as="image" fetchpriority="high">
+  <style>
+    @font-face{font-family:Archivo;src:url('/assets/fonts/archivo-latin-wght-normal.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    @font-face{font-family:Plex;src:url('/assets/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');font-weight:400;font-display:swap}
+    :root{--ink:#101210;--paper:#f0efe8;--muted:#a7aca5;--line:#3b3f39;--accent:#e2ba85;--gutter:clamp(28px,4.16vw,80px)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--ink);color:var(--paper);font-family:Archivo,Arial,sans-serif;-webkit-font-smoothing:antialiased}a{color:inherit;text-decoration:none}button{font:inherit;color:inherit}button,a{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:7px}button{cursor:pointer}.skip{position:fixed;left:20px;top:-100px;padding:12px 20px;background:var(--paper);color:var(--ink);z-index:99}.skip:focus{top:15px}.mono{font-family:Plex,monospace;font-size:11px;line-height:1.6;letter-spacing:.015em}
+    .cover{position:relative;min-height:680px;height:calc(100svh - 130px);max-height:960px;isolation:isolate;overflow:hidden}
+    .cover-photo{position:absolute;z-index:-2;inset:0 0 0 30%;margin:0;background:#19435d;overflow:hidden}
+    .cover-photo img{width:100%;height:100%;display:block;object-fit:cover;object-position:48% 45%}
+    .cover-photo::after{position:absolute;inset:0;content:'';pointer-events:none;background:linear-gradient(90deg,rgba(16,18,16,.28),transparent 12%),linear-gradient(0deg,rgba(0,0,0,.74),transparent 23%)}
+    .header{height:96px;margin:0 var(--gutter);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eeeeea44;gap:20px}
+    .signature{display:flex;align-items:baseline;gap:22px}.signature b{font-size:26px;letter-spacing:-.065em;font-weight:570}.signature span{font-size:11px;color:#c6cac2}.header nav{display:flex;gap:36px;align-items:center;font-size:13px}.header nav a{min-height:44px;display:flex;align-items:center;gap:18px}.header nav a:hover{color:var(--accent)}
+    .identity{position:relative;margin:52px 0 0 var(--gutter);width:565px}.identity .eyebrow{margin:0 0 26px;color:#d1d5ce;font-size:11px}.identity h1{font-weight:510;font-size:clamp(100px,9.16vw,132px);line-height:.91;letter-spacing:-.065em;margin:0;max-width:600px}.identity h1 span{display:block}.identity h1 .surname{padding-left:3px}
+    .contribution{margin:34px 0 0 var(--gutter);max-width:290px;font-size:16px;line-height:1.5;letter-spacing:-.008em}.contribution p{margin:0}.contribution .student{color:#c2c7bf;margin-bottom:18px;font-size:14px;line-height:1.45;max-width:250px}.contribution .summary{color:var(--muted);font-size:15px;line-height:1.6;max-width:277px}.case-link{display:inline-flex;align-items:center;justify-content:space-between;gap:26px;margin-top:28px;min-height:45px;border-bottom:1px solid #828d7d;font-size:14px;min-width:190px}.case-link span{font-size:23px;line-height:1;color:var(--accent)}.case-link:hover{border-color:var(--paper)}
+    .photo-caption{position:absolute;bottom:36px;left:calc(30% + 42px);right:var(--gutter);display:flex;justify-content:space-between;align-items:flex-end;gap:24px;text-shadow:0 1px 4px #0008}.photo-caption p{margin:0}.photo-caption .project-label{font-size:25px;letter-spacing:-.025em;line-height:1.15;font-weight:500}.photo-caption .detail-label{margin-top:8px;color:#e4e6df;font-size:12px}.photo-caption .spec{color:#e1e6df;text-align:right}
+    .project-index{height:130px;display:grid;grid-template-columns:1fr 1fr 1fr;margin:0 var(--gutter);gap:36px}.project-tab{position:relative;background:none;border:0;border-top:1px solid var(--line);text-align:left;padding:23px 0 24px;display:grid;grid-template-columns:32px 1fr 22px;column-gap:12px;align-content:start;align-items:baseline}.project-tab[aria-selected="true"]{border-top:2px solid var(--paper);padding-top:22px}.project-tab .index{color:#858d83;font-size:11px}.project-tab .name{font-size:24px;letter-spacing:-.035em;color:#a8afa4}.project-tab[aria-selected="true"] .name{color:var(--paper)}.project-tab .domain{grid-column:2;line-height:1.5;font-size:11px;color:#8b9588;margin-top:9px}.project-tab .arrow{font-size:23px;color:#8b9588}.project-tab[aria-selected="true"] .arrow{color:var(--accent)}.project-tab:hover .name{color:var(--paper)}
+    .more{padding:84px var(--gutter) 42px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:50px}.more .heading{font-weight:450;font-size:40px;line-height:1.1;letter-spacing:-.04em;margin:0 0 28px}.more .statement{max-width:460px;color:var(--muted);font-size:18px;line-height:1.55;margin:0 0 28px}.more a{display:inline-flex;min-height:44px;align-items:center;gap:24px;border-bottom:1px solid var(--line);font-size:14px}.more figure{margin:0}.more img{display:block;width:100%;height:300px;object-fit:cover;object-position:center 43%}.more figcaption{margin-top:12px;color:var(--muted);font-size:11px}.footer{display:flex;justify-content:space-between;gap:20px;padding:30px var(--gutter);font-size:11px;color:var(--muted)}
+    @media(min-width:1700px){.identity{margin-top:75px}.contribution{margin-top:44px}.cover-photo{left:29%}.photo-caption{left:calc(29% + 50px)}}
+    @media(max-height:810px) and (min-width:761px){.cover{min-height:660px}.identity{margin-top:35px}.identity .eyebrow{margin-bottom:20px}.identity h1{font-size:106px}.contribution{margin-top:27px}.contribution .student{margin-bottom:12px}.case-link{margin-top:20px}.photo-caption{bottom:31px}}
+    @media(max-width:1100px) and (min-width:761px){:root{--gutter:32px}.cover-photo{left:32%}.identity{width:500px}.identity h1{font-size:110px}.contribution{max-width:235px}.photo-caption{left:calc(32% + 30px)}.photo-caption .spec{display:none}.project-index{gap:24px}.project-tab .name{font-size:23px}}
+    @media(max-width:760px){
+      :root{--gutter:23px}.cover{height:auto;max-height:none;min-height:0;overflow:visible;padding-bottom:0;display:flex;flex-direction:column}.header{height:65px;order:0;margin-bottom:0;border-color:#454940;gap:8px}.signature{gap:0}.signature b{font-size:22px}.signature span{display:none}.header nav{gap:22px;font-size:12px}.header nav a{gap:5px}.header .contact{display:none}.identity{order:1;width:auto;margin:27px var(--gutter) 0}.identity .eyebrow{font-size:9px;letter-spacing:.03em;margin-bottom:13px}.identity h1{font-size:clamp(38px,11.65vw,68px);line-height:1.03;letter-spacing:-.052em;white-space:nowrap}.identity h1 span{display:inline}.identity h1 .surname{padding:0}.identity h1 span:first-child::after{content:' '}.contribution{display:contents}.contribution .student{order:2;max-width:none;font-size:13px;line-height:1.5;margin:13px var(--gutter) 26px;color:#b2b9ae}.contribution .student br{display:none}.cover-photo{order:3;position:relative;inset:auto;z-index:auto;width:100%;height:307px;background:#19435d}.cover-photo img{object-position:48% 46%}.cover-photo::after{background:linear-gradient(0deg,rgba(0,0,0,.35),transparent 24%)}.photo-caption{order:4;position:static;display:block;margin:24px var(--gutter) 0;text-shadow:none}.photo-caption .project-label{font-size:31px;letter-spacing:-.04em}.photo-caption .detail-label{font-size:11px;margin-top:6px;color:#9ba696}.photo-caption .spec{display:none}.contribution .summary{order:5;max-width:325px;font-size:14px;line-height:1.5;margin:14px var(--gutter) 0;color:#a2ac9e}.case-link{order:6;align-self:flex-start;margin:10px var(--gutter) 20px;min-width:174px;min-height:41px;font-size:13px}.project-index{height:auto;gap:0;margin:0 var(--gutter);grid-template-columns:1fr}.project-tab{grid-template-columns:26px 1fr 20px;padding:18px 0 18px;column-gap:8px;min-height:74px;align-items:center}.project-tab[aria-selected="true"]{padding-top:17px}.project-tab .name{font-size:21px}.project-tab .domain{grid-column:2;margin-top:4px;font-size:10px}.project-tab .index{grid-row:1/3;align-self:start;padding-top:5px}.project-tab .arrow{grid-column:3;grid-row:1/3;align-self:center;font-size:21px}.more{padding-top:45px;grid-template-columns:1fr;gap:30px;margin-top:32px}.more .heading{font-size:32px;margin-bottom:18px}.more .statement{font-size:16px}.more img{height:auto;aspect-ratio:1.5}.footer{font-size:10px;flex-direction:column;gap:9px;padding-top:0}.footer p{margin:0}
+    }
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to selected work</a>
+  <main id="main">
+    <section class="cover" aria-labelledby="name">
+      <figure class="cover-photo" role="tabpanel" id="project-photo" aria-labelledby="tab-skylabs">
+        <img id="featured-image" src="/assets/images/projects/skylabs-telemetry-interface-1920.webp" srcset="/assets/images/projects/skylabs-telemetry-interface-960.webp 960w, /assets/images/projects/skylabs-telemetry-interface-1920.webp 1920w" sizes="(max-width:760px) 100vw, 70vw" alt="USB connector, original Skylabs silkscreen and components on the blue aircraft telemetry board" width="1920" height="1280" fetchpriority="high">
+      </figure>
+      <header class="header">
+        <a href="/v3/" class="signature" aria-label="Andrew Chung home"><b>AC</b><span class="mono">ENGINEERING PORTFOLIO</span></a>
+        <nav aria-label="Primary"><a href="/v3/projects/">All projects <span aria-hidden="true">↗</span></a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV <span aria-hidden="true">↗</span></a><a class="contact" href="mailto:andrew.noah.chung@gmail.com">Contact <span aria-hidden="true">↗</span></a></nav>
+      </header>
+      <div class="identity">
+        <p class="eyebrow mono">ELECTRICAL ENGINEERING · UNSW, SYDNEY</p>
+        <h1 id="name"><span>Andrew</span><span class="surname">Chung</span></h1>
+      </div>
+      <div class="contribution">
+        <p class="student">Electrical engineering student.<br> Avionics &amp; Payload Lead at UNSW Skylabs.</p>
+        <p class="summary" id="project-summary">I developed the aircraft logger, ground station and tools to review a flight.</p>
+        <a class="case-link" id="project-link" href="/v3/projects/skylabs/">Explore Skylabs <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="photo-caption" aria-live="polite" aria-atomic="true">
+        <div><p class="project-label" id="project-label">Aircraft telemetry</p><p class="detail-label mono" id="photo-detail">UNSW Skylabs · The telemetry board, up close</p></div>
+        <p class="spec mono" id="photo-spec">STM32 · GNSS · LoRa</p>
+      </div>
+    </section>
+    <div class="project-index" role="tablist" aria-label="Selected projects">
+      <button class="project-tab" id="tab-skylabs" role="tab" aria-controls="project-photo" aria-selected="true" data-project="skylabs"><span class="index mono">01</span><span class="name">Skylabs</span><span class="arrow" aria-hidden="true">↗</span><span class="domain mono">Avionics &amp; payload</span></button>
+      <button class="project-tab" id="tab-tramtrace" role="tab" aria-controls="project-photo" aria-selected="false" tabindex="-1" data-project="tramtrace"><span class="index mono">02</span><span class="name">TramTrace</span><span class="arrow" aria-hidden="true">↗</span><span class="domain mono">PCB &amp; firmware</span></button>
+      <button class="project-tab" id="tab-framework" role="tab" aria-controls="project-photo" aria-selected="false" tabindex="-1" data-project="framework"><span class="index mono">03</span><span class="name">Dual USB-C</span><span class="arrow" aria-hidden="true">↗</span><span class="domain mono">PCB &amp; enclosure</span></button>
+    </div>
+    <section class="more" aria-labelledby="context-heading">
+      <div><p class="mono" style="color:var(--muted);margin:0 0 24px">ABOUT THE WORK</p><h2 class="heading" id="context-heading">Boards, firmware,<br>and the systems around them.</h2><p class="statement">I’m an electrical engineering student at UNSW, working in power electronics and leading Avionics &amp; Payload at UNSW Skylabs.</p><a href="/v3/about/">About &amp; experience <span aria-hidden="true">↗</span></a></div>
+      <figure><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" alt="The complete Skylabs telemetry board, with its connectors and component layout visible" loading="lazy"><figcaption class="mono">Skylabs telemetry · The complete board</figcaption></figure>
+    </section>
+    <footer class="footer"><a href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com</a><p>Andrew Chung · Sydney</p></footer>
+  </main>
+  <script>
+    (()=>{
+      const entries={
+        skylabs:{image:'skylabs-telemetry-interface',title:'Aircraft telemetry',detail:'UNSW Skylabs · The telemetry board, up close',spec:'STM32 · GNSS · LoRa',summary:'I developed the aircraft logger, ground station and tools to review a flight.',link:'/v3/projects/skylabs/',name:'Skylabs',alt:'USB connector, original Skylabs silkscreen and components on the blue aircraft telemetry board',position:'48% 45%'},
+        tramtrace:{image:'tramtrace-hero',title:'TramTrace',detail:'Sydney & Parramatta light rail · Live positions',spec:'ESP32 · Wi-Fi · 116 RGB pixels',summary:'I designed the PCB, display firmware and vehicle-position service behind this light-rail map.',link:'/v3/projects/tramtrace/',name:'TramTrace',alt:'TramTrace showing the Sydney and Parramatta light rail network, with illuminated live vehicle positions',position:'54% 50%'},
+        framework:{image:'framework-dual-installed',title:'Dual USB-C',detail:'Framework expansion card · Installed in a laptop',spec:'USB 2.0 · CH334F · Framework',summary:'A custom USB 2.0 hub PCB, fitted into a Framework expansion card for everyday peripherals.',link:'/v3/projects/framework-dual-usb/',name:'Dual USB-C',alt:'A custom two-port USB-C card in its clear enclosure, fitted into the side of a Framework laptop',position:'49% 45%'}
+      };
+      const tabs=[...document.querySelectorAll('[data-project]')], image=document.querySelector('#featured-image');
+      function select(tab){
+        const item=entries[tab.dataset.project];
+        tabs.forEach(t=>{const selected=t===tab;t.setAttribute('aria-selected',String(selected));t.tabIndex=selected?0:-1});
+        document.querySelector('#project-photo').setAttribute('aria-labelledby',tab.id);
+        image.srcset=`/assets/images/projects/${item.image}-960.webp 960w, /assets/images/projects/${item.image}-1920.webp 1920w`;
+        image.src=`/assets/images/projects/${item.image}-1920.webp`;image.alt=item.alt;image.style.objectPosition=item.position;
+        document.querySelector('#project-label').textContent=item.title;
+        document.querySelector('#photo-detail').textContent=item.detail;
+        document.querySelector('#photo-spec').textContent=item.spec;
+        document.querySelector('#project-summary').textContent=item.summary;
+        const link=document.querySelector('#project-link');link.href=item.link;link.replaceChildren(document.createTextNode(`Explore ${item.name} `));const arrow=document.createElement('span');arrow.setAttribute('aria-hidden','true');arrow.textContent='↗';link.append(arrow);
+      }
+      tabs.forEach((tab,i)=>{tab.addEventListener('click',()=>select(tab));tab.addEventListener('keydown',e=>{let n;if(e.key==='ArrowRight')n=(i+1)%tabs.length;else if(e.key==='ArrowLeft')n=(i+tabs.length-1)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;else return;e.preventDefault();select(tabs[n]);tabs[n].focus()})});
+    })();
+  </script>
+</body>
+</html>
