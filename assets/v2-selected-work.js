@@ -173,7 +173,7 @@
       window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=transfer-20261011'),
       window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=product-20261007'),
       script('/assets/v2-selected-assets.js?v=shared-batched-20261011'),
-      script('/assets/v2-selected-scene.js?v=shared-cad-20261011')
+      script('/assets/v2-selected-scene.js?v=part-assembly-20261011')
     ]).then(()=>{if(allowed()&&!failed){window.V2HeroEnvironment.prefetch().catch(()=>{});window.V2SelectedAssets.prefetchTextures().catch(()=>{});}});
   }
   async function prepareTransfers(promote=false) {

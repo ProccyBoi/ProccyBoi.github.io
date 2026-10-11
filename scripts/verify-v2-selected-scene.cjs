@@ -2,6 +2,8 @@
  * --source-only: real packed geometry + deterministic camera/easing, no browser.
  * --study: ONLY opted-in capture API and 1440/390/320 render studies.
  * --group=core|lifecycle|entry selects an independent browser group; default all.
+ * --responsiveness-only: identical native warm-input probe on old/new versions,
+ * without claiming an old version implements the newer part choreography.
  * Default browser groups never enable capture or call image.decode(). Serve the
  * repository root on V2_BASE_URL. SwiftShader timings are not device benchmarks.
  */
@@ -58,6 +60,83 @@ function graphSignature(assembly) {
     nodes.push({id:node.uuid,parent:node.parent?.uuid,children:node.children.map(child=>child.uuid),position:node.position.toArray(),quaternion:node.quaternion.toArray(),scale:node.scale.toArray(),visible:node.visible,flags:meshFlags(node),geometry:node.geometry?.uuid,geometrySignature:node.geometry?geometries.get(node.geometry):null,materials:[].concat(node.material||[]).map(material=>({id:material.uuid,type:material.type,name:material.name,properties:Object.fromEntries(Object.entries(material).filter(([,value])=>value===null||['string','number','boolean'].includes(typeof value))),color:material.color?.toArray()}))});
   });
   return JSON.stringify({nodes,parts:assembly.parts.map(part=>({ref:part.ref,object:part.object.uuid}))});
+}
+function drawnCount(geometry) {
+  const available=geometry.index?.count||geometry.attributes.position.count;
+  return Math.max(0,Math.min(available-geometry.drawRange.start,geometry.drawRange.count));
+}
+function materialSignature(material) {
+  return JSON.stringify({id:material.uuid,type:material.type,properties:Object.fromEntries(Object.entries(material).filter(([,value])=>value===null||['string','number','boolean'].includes(typeof value))),color:material.color?.toArray(),textures:Object.fromEntries(Object.entries(material).filter(([,value])=>value?.isTexture).map(([key,value])=>[key,value.uuid]))});
+}
+function captureAssembly(assembly,T) {
+  assembly.group.updateMatrixWorld(true);
+  const inverse=new T.Matrix4().copy(assembly.group.matrixWorld).invert(),nodes=new Map(),geometries=new Map(),materials=new Map();
+  assembly.group.traverse(node=>{
+    if(node.geometry&&!geometries.has(node.geometry))geometries.set(node.geometry,geometrySignature(node.geometry));
+    for(const material of [].concat(node.material||[]))if(!materials.has(material))materials.set(material,materialSignature(material));
+    let rendered=true;for(let parent=node;parent;parent=parent.parent)if(!parent.visible)rendered=false;
+    nodes.set(node,{parent:node.parent,geometry:node.geometry,material:node.material,rendered,transform:new T.Matrix4().multiplyMatrices(inverse,node.matrixWorld),flags:meshFlags(node)});
+  });
+  return{nodes,geometries,materials,parts:assembly.parts.map(part=>({part,object:part.object}))};
+}
+function assembledSourceProof(composition,captured,T) {
+  const report=[];
+  for(const name of names){
+    const entry=composition.objects.get(name),assembly=entry.assembly,before=captured[name],actualNodes=new Set(),segments=new Map();
+    assembly.group.updateMatrixWorld(true);assembly.group.traverse(node=>actualNodes.add(node));
+    const inverse=new T.Matrix4().copy(assembly.group.matrixWorld).invert();
+    for(const segment of entry.partition||[]){
+      const {source,object,start,count}=segment,fact=before.nodes.get(source);
+      assert.ok(fact?.geometry&&source.isMesh&&object.isMesh,name+': partition source is an independently captured original mesh');
+      assert.ok(actualNodes.has(object)&&(object===source||!actualNodes.has(source)),name+': source replacement renders once without duplicate faces');
+      assert.equal(object.material,fact.material,name+': partition keeps the exact original material object');
+      assert.equal(object.geometry.index,fact.geometry.index,name+': partition reuses the exact original index object');
+      assert.deepEqual(Object.keys(object.geometry.attributes),Object.keys(fact.geometry.attributes));
+      for(const key of Object.keys(fact.geometry.attributes))assert.equal(object.geometry.attributes[key],fact.geometry.attributes[key],name+': partition reuses exact '+key+' attribute objects');
+      assert.ok(Number.isInteger(start)&&Number.isInteger(count)&&start>=0&&count>0&&start%3===0&&count%3===0,name+': partition describes whole original triangles');
+      if(object!==source){
+        assert.deepEqual(object.geometry.drawRange,{start,count},name+': actual drawRange equals declared source range');
+        const exactBounds=new T.Box3(),vertex=new T.Vector3();
+        for(let index=start;index<start+count;index++)exactBounds.expandByPoint(vertex.fromBufferAttribute(fact.geometry.attributes.position,fact.geometry.index.getX(index)));
+        assert.deepEqual(object.geometry.boundingBox?.min.toArray(),exactBounds.min.toArray(),name+': partition bounds include only its rendered source triangles');
+        assert.deepEqual(object.geometry.boundingBox?.max.toArray(),exactBounds.max.toArray(),name+': partition bounds include only its rendered source triangles');
+      }else assert.equal(drawnCount(object.geometry),count,name+': whole original mesh retains its full source range');
+      assert.deepEqual(meshFlags(object),fact.flags,name+': partition preserves render, culling, layer and shadow flags');
+      const assembled=new T.Matrix4().multiplyMatrices(inverse,object.matrixWorld);
+      assembled.elements.forEach((value,index)=>near(value,fact.transform.elements[index],name+': assembled partition preserves exact source placement',1e-12));
+      if(!segments.has(source))segments.set(source,[]);segments.get(source).push(segment);
+    }
+    let sourceTriangles=0,actualTriangles=0,sourceRenderedTriangles=0,actualRenderedTriangles=0;
+    for(const [node,fact]of before.nodes){
+      if(node.isMesh){sourceTriangles+=drawnCount(fact.geometry)/3;if(fact.rendered)sourceRenderedTriangles+=drawnCount(fact.geometry)/3;}
+      if(segments.has(node)){
+        let cursor=fact.geometry.drawRange.start;
+        for(const segment of segments.get(node).sort((a,b)=>a.start-b.start)){
+          assert.equal(segment.start,cursor,name+': every original triangle appears exactly once, with no overlap or hole');cursor+=segment.count;
+        }
+        assert.equal(cursor,fact.geometry.drawRange.start+drawnCount(fact.geometry),name+': partition exhausts the original draw range');
+      }else{
+        assert.ok(actualNodes.has(node),name+': unpartitioned source objects remain in the assembly');
+        assert.equal(node.geometry,fact.geometry);assert.equal(node.material,fact.material);
+        if(node!==assembly.group){
+          const assembled=new T.Matrix4().multiplyMatrices(inverse,node.matrixWorld);
+          assembled.elements.forEach((value,index)=>near(value,fact.transform.elements[index],name+': assembled original node preserves source placement',1e-12));
+        }
+      }
+    }
+    for(const [geometry,signature]of before.geometries)assert.equal(geometrySignature(geometry),signature,name+': choreography construction never changes source geometry or index bytes');
+    for(const [material,signature]of before.materials)assert.equal(materialSignature(material),signature,name+': source material properties and textures stay exact');
+    assembly.group.traverse(node=>{if(node.isMesh)actualTriangles+=drawnCount(node.geometry)/3;});
+    assembly.group.traverseVisible(node=>{if(node.isMesh)actualRenderedTriangles+=drawnCount(node.geometry)/3;});
+    assert.equal(actualTriangles,sourceTriangles,name+': whole-assembly triangle count stays exact after part extraction');
+    assert.equal(actualRenderedTriangles,sourceRenderedTriangles,name+': originally visible triangle count stays exact after part extraction');
+    assert.equal(composition.stats().find(item=>item.name===name).triangles,actualRenderedTriangles,name+': production render statistics count only the actual visible draw ranges');
+    for(const {part,object}of before.parts){assert.ok(assembly.parts.includes(part));assert.equal(part.object,object);assert.ok(actualNodes.has(object),name+': original part references are retained');}
+    if(name==='dual')assert.ok(segments.size>0,'Dual USB actually exposes independently checked source partitions');
+    else assert.equal(segments.size,0,name+': already articulated source needs no geometry partition');
+    report.push({name,sourceTriangles,actualTriangles,sourceRenderedTriangles,actualRenderedTriangles,triangleCountNote:'Total graph counts include authored hidden meshes; rendered counts use original visibility and the real indexed draw ranges.',partitionedSources:segments.size,segments:[...segments.values()].reduce((sum,items)=>sum+items.length,0)});
+  }
+  return report;
 }
 async function staticAssemblyProof(api,studio,T,name,options={}) {
   let captured;
@@ -168,7 +247,11 @@ async function sourceGeometry() {
   for(const name of names){assert.equal(sourceAssemblies[name].staticBatches,undefined,'Unopted source load() stays exact and unbatched');assert.equal(graphSignature(sourceAssemblies[name]),originalSources[name],'Static batching leaves separately loaded source graphs and cached bytes unchanged');}
   passed('independent-static-batch-attribute-winding-material-transparency-and-cancellation-parity',{parity,cancellation});
   for(const [variant,assemblies]of [['source',sourceAssemblies],['production-static',staticAssemblies]]){
+  const captured=Object.fromEntries(names.map(name=>[name,captureAssembly(assemblies[name],T)]));
   const scene = new T.Scene(), composition = window.V2SelectedScene.create(T, assemblies); scene.add(composition.group);
+  const camera = new T.PerspectiveCamera(34, 1, .01, 200);
+  composition.frame(camera,.32,1440,900);
+  const sourceParity=assembledSourceProof(composition,captured,T);
   assert.deepEqual(Array.from(composition.names), names);
   assert.equal(composition.group.children.length, 6, 'All six assemblies share a single parent space');
   const stats = [];
@@ -179,8 +262,8 @@ async function sourceGeometry() {
       if (!node.isMesh) return;
       meshes++; const geometry = node.geometry, positions = geometry.attributes.position;
       assert.ok(positions?.count >= 3, name + ': genuine position attributes');
-      triangles += (geometry.index?.count || positions.count) / 3;
-      geometry.computeBoundingBox();
+      triangles += drawnCount(geometry) / 3;
+      if(!geometry.boundingBox)geometry.computeBoundingBox();
       if (geometry.boundingBox.getSize(new T.Vector3()).toArray().every(n => n > 1e-6)) volumes++;
     });
     assert.ok(size.toArray().every(n => Number.isFinite(n) && n > .001), name + ': assembly has physical thickness on all three axes');
@@ -195,15 +278,46 @@ async function sourceGeometry() {
   const localPose = () => names.flatMap(name => {
     const result = []; assemblies[name].group.traverse(node => result.push([node.uuid, ...node.position.toArray(), ...node.quaternion.toArray(), ...node.scale.toArray()])); return result;
   });
-  const original = localPose(), camera = new T.PerspectiveCamera(34, 1, .01, 200);
+  const original = localPose(),originalGraphs=Object.fromEntries(names.map(name=>[name,graphSignature(assemblies[name])])),motionReports=[];
+  const schedules={electronics:[.015,.155],connector:[.05,.20],pcb:[.09,.235],screw:[.17,.275],enclosure:[.09,.235]};
+  const moving=new Set();
+  for(const [index,name]of names.entries()){
+    const entry=composition.objects.get(name),roles=new Set();
+    if(index>=4){assert.equal(entry.motion.length,0,name+': transit assemblies remain static source CAD');continue;}
+    assert.ok(entry.motion.length>=4,name+': actual articulated parts are exposed');
+    for(const part of entry.motion){
+      assert.ok(!moving.has(part.object),name+': a physical root has one motion descriptor');moving.add(part.object);roles.add(part.role);
+      assert.ok(schedules[part.role],name+': role has a documented physical assembly schedule');
+      near(part.start,schedules[part.role][0]+index*.012,name+': role start');near(part.end,schedules[part.role][1]+index*.012,name+': role end');
+      near(part.boardStart,.09+index*.012,name+': PCB seating start');near(part.boardEnd,.235+index*.012,name+': PCB seating end');
+      assert.deepEqual(part.object.position.toArray(),part.base.toArray(),name+': authored local position at assembled endpoint');
+      assert.deepEqual(part.object.quaternion.toArray(),part.quaternion.toArray(),name+': authored local orientation at assembled endpoint');
+    }
+    for(const role of ['pcb','connector','screw','enclosure'])assert.ok(roles.has(role),name+': genuine '+role+' is independently choreographed');
+    if(name!=='dual')assert.ok(roles.has('electronics'),name+': real electronics seat before the PCB');
+    motionReports.push({name,parts:entry.motion.length,roles:[...roles],lastSeated:Math.max(...entry.motion.map(part=>Math.max(part.end,part.boardEnd)))});
+  }
+  const fixed=[];for(const name of names)assemblies[name].group.traverse(node=>{if(!moving.has(node))fixed.push({node,position:node.position.toArray(),quaternion:node.quaternion.toArray(),scale:node.scale.toArray()});});
+  const smooth=(progress,start,end)=>{const x=Math.max(0,Math.min(1,(progress-start)/(end-start)));return x*x*(3-2*x);};
+  const verifyParts=progress=>{
+    for(const name of names.slice(0,4))for(const part of composition.objects.get(name).motion){
+      const expected=part.base.clone().addScaledVector(part.boardOffset,1-smooth(progress,part.boardStart,part.boardEnd)).addScaledVector(part.offset,1-smooth(progress,part.start,part.end));
+      part.object.position.toArray().forEach((value,index)=>near(value,expected.getComponent(index),name+': native progress directly determines exact part position',1e-12));
+      assert.deepEqual(part.object.quaternion.toArray(),part.quaternion.toArray(),name+': seating never deforms or rotates authored CAD');
+      if(progress===0&&part.role!=='enclosure')assert.ok(part.object.position.distanceTo(part.base)>.001,name+': separated endpoint moves genuine internal parts');
+      if(progress>=.311)assert.deepEqual(part.object.position.toArray(),part.base.toArray(),name+': every part restores its exact assembled local position');
+    }
+    for(const {node,position,quaternion,scale}of fixed){assert.deepEqual(node.position.toArray(),position,'Unanimated source nodes keep local position');assert.deepEqual(node.quaternion.toArray(),quaternion,'Unanimated source nodes keep local orientation');assert.deepEqual(node.scale.toArray(),scale,'No source node is deformed');}
+  };
   const pose = () => [...camera.position.toArray(), ...camera.quaternion.toArray(), ...camera.projectionMatrix.elements,
-    ...names.flatMap(name => {const wrapper = composition.objects.get(name).wrapper; return [...wrapper.position.toArray(), ...wrapper.quaternion.toArray(), ...wrapper.scale.toArray()];})];
-  const fitReports = [], journeyReports = [];
+    ...names.flatMap(name => {const wrapper = composition.objects.get(name).wrapper; return [...wrapper.position.toArray(), ...wrapper.quaternion.toArray(), ...wrapper.scale.toArray()];}),...localPose().flatMap(([, ...values])=>values)];
+  const fitReports = [], journeyReports = [],faceReports=[];
   for (const [width, height] of [[1440,900],[390,844],[320,740]]) {
     const samples = [];
     for (let index = 0; index <= 100; index++) {
       const progress = index / 100; composition.frame(camera, progress, width, height);
-      const value = pose(); assert.ok(value.every(Number.isFinite), 'Finite continuous camera and assembly transforms'); samples.push(value);
+      verifyParts(progress);
+      const value = pose(); assert.ok(value.every(Number.isFinite), 'Finite continuous camera and actual part transforms'); samples.push(value);
       const visible=[];
       for(const name of names){
         const box=composition.bounds.get(name),points=[];
@@ -219,26 +333,40 @@ async function sourceGeometry() {
     for (let index = 100; index >= 0; index--) {
       composition.frame(camera, index / 100, width, height); assert.deepEqual(pose(), samples[index], `${width}px reverse reconstructs the same physical pose`);
     }
-    for (const boundary of [.24, .25, .57, .84]) {
+    const boundaries=new Set([.20,.311,.34,.36,.44,.52,.57,.68,.84,.86]);
+    for(const name of names.slice(0,4))for(const part of composition.objects.get(name).motion)for(const value of [part.start,part.end,part.boardStart,part.boardEnd])boundaries.add(value);
+    for (const boundary of boundaries) {
       composition.frame(camera, boundary - 1e-7, width, height); const before = pose();
       composition.frame(camera, boundary + 1e-7, width, height);
       assert.ok(pose().every((value, index) => Math.abs(value-before[index]) < .0001), 'No chapter or camera snap at ' + boundary);
     }
-    for (const endpoint of [0, 1, 0, 1]) {
-      composition.frame(camera, endpoint, width, height); assert.deepEqual(pose(), samples[endpoint * 100], 'Repeated exact endpoint');
+    const fittedPoses=new Map();
+    for (const endpoint of [0,.08,.155,.20,.235,.275,.311,.32,1,0,.32,1]) {
+      composition.frame(camera, endpoint, width, height);verifyParts(endpoint);
+      if(endpoint===0||endpoint===1)assert.deepEqual(pose(),samples[endpoint*100],'Repeated exact endpoint includes actual source parts');
+      if(fittedPoses.has(endpoint))assert.deepEqual(pose(),fittedPoses.get(endpoint),'Repeated separated/assembled dwell has no accumulated drift');else fittedPoses.set(endpoint,pose());
       const fitted = [];
-      for (const name of endpoint ? names.slice(4) : names.slice(0,4)) {
+      for (const name of endpoint===1 ? names.slice(4) : names.slice(0,4)) {
         const box = new T.Box3().setFromObject(composition.objects.get(name).wrapper), coordinates = [];
         for (let index=0;index<8;index++) coordinates.push(new T.Vector3(index&1?box.max.x:box.min.x,index&2?box.max.y:box.min.y,index&4?box.max.z:box.min.z).project(camera).toArray());
         assert.ok(coordinates.every(point => Math.abs(point[0]) < 1 && Math.abs(point[1]) < 1 && Math.abs(point[2]) < 1), `${width}px ${name}: complete model fits the camera`);
         fitted.push({name, minX:Math.min(...coordinates.map(p=>p[0])),maxX:Math.max(...coordinates.map(p=>p[0])),minY:Math.min(...coordinates.map(p=>p[1])),maxY:Math.max(...coordinates.map(p=>p[1]))});
       }
       fitReports.push({width,height,endpoint,models:fitted});
+      if(endpoint===1){
+        const cosine=camera.getWorldDirection(new T.Vector3()).negate().y,baseline=new T.Vector3(...(width<=760?[.06,1.35,1]:[.14,1.20,1.65])).normalize().y;
+        assert.ok(cosine>baseline+.08,'Transit face visibility materially improves over the accepted lower-angle baseline');
+        assert.ok(cosine>=Math.sin(Math.PI/3),'Transit top faces are presented from at least 60 degrees elevation');
+        faceReports.push({width,elevationDegrees:Math.asin(cosine)*180/Math.PI,topFaceCosine:cosine,baselineTopFaceCosine:baseline});
+      }
     }
   }
-  assert.deepEqual(localPose(), original, 'Scene choreography never deforms/reparents source parts');
+  composition.frame(camera,.32,1440,900);verifyParts(.32);
+  assert.deepEqual(localPose(),original,'True part choreography restores every authored local transform at the assembled dwell');
+  for(const name of names)assert.equal(graphSignature(assemblies[name]),originalGraphs[name],name+': reversible choreography changes no graph, geometry bytes, materials, flags, scales, or part identities');
+  assembledSourceProof(composition,captured,T);
   for (const name of ['pi', 'tramtrace']) assert.equal(hero[name].group.parent, heroParents);
-  passed('real-six-model-geometry-shared-space-independent-hero-and-reversible-camera-'+variant, {stats,fitReports,journeyReports,requests:Object.fromEntries(requests)});
+  passed('real-six-model-geometry-reversible-part-assembly-and-steeper-camera-'+variant, {stats,sourceParity,motionReports,fitReports,faceReports,journeyReports,requests:Object.fromEntries(requests)});
   }
 }
 
@@ -266,7 +394,8 @@ function easingMath() {
 function instrument() {
   const nativeRAF = requestAnimationFrame.bind(window), nativeContext = HTMLCanvasElement.prototype.getContext, nativeTimeout=setTimeout.bind(window), nativeFetch=fetch.bind(window);
   const contexts = new Map();
-  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],firstLive:null,recording:false};
+  const probe = window.__selectedProbe = {contexts:[],samples:[],events:[],prevention:[],scrolls:[],visibility:[],transportGates:[],cpuGates:[],fetches:[],longTasks:[],firstLive:null,recording:false};
+  try{new PerformanceObserver(list=>probe.longTasks.push(...list.getEntries().map(entry=>({start:entry.startTime,duration:entry.duration})))).observe({type:'longtask',buffered:true});}catch(_){/* Long Tasks is unavailable in some engines. */}
   window.setTimeout=(callback,delay,...args)=>{if(/v2-selected-work\.js/.test(new Error().stack)){if(delay===4500)probe.transportGates.push(performance.now());if(delay===12000)probe.cpuGates.push(performance.now());}return nativeTimeout(callback,delay,...args);};
   window.fetch=(...args)=>{const url=typeof args[0]==='string'?args[0]:args[0]?.url||String(args[0]);probe.fetches.push({url,t:performance.now()});return nativeFetch(...args);};
   const sample = () => {
@@ -376,7 +505,7 @@ async function initialAndInput(browser) {
     assert.equal(run.requests.filter(request=>packs.test(request.url)).length,4,'Four new model packs, each once');
     await page.waitForTimeout(900);const hidden=await snapshot(page);assert.equal(hidden.selected.selectedFrames,first.selected.selectedFrames);assert.equal(hidden.selected.selectedWarmFrames,'2');
     await save(run,'initial-no-scroll-six-models-two-hidden-warm-poses-three-contexts',{readyMs:Date.now()-started,timingEnvironment:'Chromium software WebGL; not a real-device benchmark'});
-    for(const [label,start,deltas]of[['forward',.15,[120,120,120]],['reverse',.7,[-120,-120,-120]]]) {
+    for(const [label,start,deltas]of[['forward',.15,[120,120,120]],['reverse',.7,[-120,-120,-120]],['assembly-reverse',.30,[-120,-120,-120]]]) {
       const before=await jump(page,start);assertLiveDraw(before,'Native entry after capped warming');
       if(label==='forward'){
         const firstLive=await page.evaluate(()=>window.__selectedProbe.firstLive);assertLiveDraw(firstLive,'First actual live draw following capped warm');
@@ -412,7 +541,13 @@ async function initialAndInput(browser) {
     await page.evaluate(()=>{location.hash='work-transit';});await hashDestination(page,'work-transit',1);
     await page.goBack();await hashDestination(page,'work-framework',0);
     await page.goForward();await hashDestination(page,'work-transit',1);
-    for(const viewport of [{width:390,height:844},{width:320,height:740},{width:1440,height:900}]){await page.setViewportSize(viewport);await jump(page,1);assert.equal((await snapshot(page)).overflow,false);await page.screenshot({path:path.join(output,`native-transit-${viewport.width}.png`)});}
+    for(const viewport of [{width:390,height:844},{width:320,height:740},{width:1440,height:900}]){
+      await page.setViewportSize(viewport);
+      for(const [label,progress]of[['framework-separated',0],['framework-seating',.155],['framework-assembled',.32],['transit',1]]){
+        await jump(page,progress);assert.equal((await snapshot(page)).overflow,false);
+        await page.screenshot({path:path.join(output,`native-${label}-${viewport.width}.png`)});
+      }
+    }
     assert.deepEqual((await snapshot(page)).contexts,first.contexts,'Resize, Back/Forward and chapter entry reuse the same three contexts');
     await save(run,'native-hashes-back-forward-resize-contexts-stable');
     // Real per-context graphics loss leaves the other renderers alive.
@@ -490,6 +625,79 @@ async function mobileTouch(browser) {
     const after=await state(page),trace=await end(page);trusted(trace);assert.ok(trace.events.some(event=>event.type==='touchmove'));assert.ok(trace.samples.length>1&&trace.samples.every(sample=>Math.abs(sample.raw-sample.rendered)<=tolerance),'Touch follows native scrolling directly');assertLiveDraw(after,'High-DPR mobile keeps its accepted 1.25 live cap');near(after.livePixelRatio,1.25,'High-DPR mobile cap');
     await noLoop(page,'Touch scene settles without residual rendering');await save(run,'native-mobile-touch-directness',{before,after,trace});
   }catch(error){await diagnose(run,'mobile-touch',error);throw error;}finally{await run.context.close();}
+}
+
+async function warmingInput(browser) {
+  const run=await open(browser,{viewport:{width:390,height:844}}),{page,context}=run;
+  await context.addInitScript(({budget})=>{
+    const nativeTimeout=setTimeout.bind(window),nativeRAF=requestAnimationFrame.bind(window);
+    const data=window.__selectedResponseProbe={started:performance.now(),active:true,beats:[],inputs:[],phases:[],posterSamples:[]};
+    let previous=data.started,timer,deadline;
+    const read=()=>{
+      const root=document.querySelector('[data-selected-work]'),canvas=root?.querySelector('[data-selected-canvas]');
+      const current=root?.querySelector('[data-selected-chapter].is-current')||root?.querySelector('[data-selected-chapter="0"]');
+      const posters=current?[...current.querySelectorAll('[data-selected-image]')]:[];
+      return{t:performance.now(),y:scrollY,background:root?.dataset.selectedBackgroundState,sceneReady:root?.dataset.selectedSceneReady,models:Number(root?.dataset.selectedModelsReady||0),warm:Number(root?.dataset.selectedWarmFrames||0),live:Number(root?.dataset.selectedFrames||0),mask:root?.dataset.selectedWarmMask,canvasVisibility:canvas?getComputedStyle(canvas).visibility:null,posterCount:posters.length,postersVisible:posters.every(image=>getComputedStyle(image).visibility==='visible'&&Number(getComputedStyle(image).opacity)>0),menu:document.querySelector('[data-v2-menu]')?.getAttribute('aria-expanded')};
+    };
+    data.read=read;
+    data.stop=()=>{data.active=false;clearTimeout(timer);clearTimeout(deadline);data.stopped=performance.now();};
+    const beat=()=>{
+      if(!data.active)return;const sample=read();data.beats.push({t:sample.t,gap:sample.t-previous,background:sample.background,sceneReady:sample.sceneReady});previous=sample.t;
+      if(sample.canvasVisibility!==null)data.posterSamples.push(sample);
+      timer=nativeTimeout(beat,25);
+    };
+    timer=nativeTimeout(beat,25);deadline=nativeTimeout(data.stop,budget);
+    for(const type of ['click','keydown'])addEventListener(type,event=>{
+      if(!data.active||!event.isTrusted)return;
+      if(type==='click'&&!event.target.closest?.('[data-v2-menu]'))return;
+      if(type==='keydown'&&event.key!=='Escape')return;
+      const input={type,key:event.key||null,trusted:event.isTrusted,received:read()};data.inputs.push(input);
+      nativeRAF(()=>{input.nextFrame=read();nativeRAF(()=>{input.afterPaint=read();});});
+    },{capture:true,passive:true});
+    new MutationObserver(records=>{
+      for(const record of records)data.phases.push({t:performance.now(),attribute:record.attributeName,value:record.target.getAttribute(record.attributeName)});
+      if(!data.preparationReady&&records.some(record=>record.attributeName==='data-selected-background-ready'&&record.target.getAttribute(record.attributeName)==='true')){
+        const sample=read();data.preparationReady=sample.t;
+        data.beats.push({t:sample.t,gap:sample.t-previous,background:sample.background,sceneReady:sample.sceneReady,boundary:'selected-ready'});
+        data.posterSamples.push(sample);clearTimeout(timer);
+      }
+    }).observe(document,{subtree:true,attributes:true,attributeFilter:['data-selected-models-ready','data-selected-scene-ready','data-selected-warm-frames','data-selected-background-ready','data-selected-background-state']});
+  },{budget:timeout});
+  try{
+    await page.goto(base+'/v2/?v=selected-warming-input',{waitUntil:'domcontentloaded'});
+    await page.locator('[data-v2-menu]').waitFor({state:'visible'});
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedBackgroundState==='warming'&&root.dataset.selectedBackgroundReady!=='true';},null,{timeout});
+    const actions=[];let prepared=false,preparationFailure;
+    // Deliberately version-neutral readiness for same-probe baseline timing.
+    // Exact warm-task contracts remain enforced by the normal acceptance groups.
+    const preparation=page.waitForFunction(()=>{const root=document.querySelector('[data-selected-work]');return root.dataset.selectedModelsReady==='6'&&root.dataset.selectedSceneReady==='true'&&root.dataset.selectedBackgroundReady==='true';},null,{timeout}).then(()=>{prepared=true;},error=>{prepared=true;preparationFailure=error;});
+    while(!prepared){
+      const before=await page.evaluate(()=>window.__selectedResponseProbe.read());
+      if(before.background==='ready')break;
+      const clickStarted=Date.now();await page.locator('[data-v2-menu]').click();const clickPromiseMs=Date.now()-clickStarted;
+      assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'true','A real native menu click responds while preparation is pending');
+      const escapeStarted=Date.now();await page.keyboard.press('Escape');const escapePromiseMs=Date.now()-escapeStarted;
+      assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'false','A real Escape key closes the menu during preparation');
+      const after=await page.evaluate(()=>window.__selectedResponseProbe.read());actions.push({before,after,clickPromiseMs,escapePromiseMs});
+      if(!prepared)await page.waitForTimeout(50);
+    }
+    await preparation;if(preparationFailure)throw preparationFailure;
+    await page.waitForFunction(()=>window.__selectedResponseProbe.inputs.every(input=>input.afterPaint));
+    const response=await page.evaluate(()=>{const probe=window.__selectedResponseProbe;probe.stop();const {read,stop,...result}=probe;return{...result,longTasks:window.__selectedProbe.longTasks};});
+    assert.ok(actions.length>0&&actions.some(action=>action.before.background==='warming'),'Native actions are genuinely requested before Selected preparation finishes');
+    assert.ok(response.inputs.some(input=>input.type==='click')&&response.inputs.some(input=>input.type==='keydown'),'Trusted native menu and keyboard events were observed in the page');
+    assert.ok(response.inputs.every(input=>input.trusted&&input.nextFrame&&input.afterPaint),'Every observed input has next-frame and after-paint response evidence');
+    assert.ok(response.beats.length>2,'A real event-loop heartbeat spans preparation');
+    assert.ok(response.posterSamples.length>0&&response.posterSamples.every(sample=>sample.live===0&&sample.canvasVisibility==='hidden'&&sample.posterCount===4&&sample.postersVisible),'All sampled background phases preserve the four active Framework posters and mask every warm canvas');
+    assert.equal(response.active,false,'The test heartbeat terminates after finite preparation');
+    const beforeIdle=await state(page);await page.waitForTimeout(800);const afterIdle=await state(page);
+    assert.equal(afterIdle.frame,beforeIdle.frame,'Input measurement does not leave a hidden production rendering loop');assert.equal(afterIdle.warm,beforeIdle.warm,'Preparation stops issuing hidden GPU work after readiness');
+    assert.ok(Number.isFinite(response.preparationReady),'Responsiveness horizon ends at the actual Selected readiness mutation');
+    const readyAt=response.preparationReady;
+    const preparationTasks=response.longTasks.filter(task=>task.start<readyAt&&task.start+task.duration>=response.started);
+    const metrics={maxHeartbeatGapMs:Math.max(...response.beats.map(beat=>beat.gap)),maxLongTaskMs:Math.max(0,...preparationTasks.map(task=>task.duration)),totalLongTaskMs:preparationTasks.reduce((sum,task)=>sum+task.duration,0),maxClickPromiseMs:Math.max(...actions.map(action=>action.clickPromiseMs)),maxEscapePromiseMs:Math.max(...actions.map(action=>action.escapePromiseMs)),maxInputToNextFrameMs:Math.max(...response.inputs.map(input=>input.nextFrame.t-input.received.t)),maxInputToAfterPaintMs:Math.max(...response.inputs.map(input=>input.afterPaint.t-input.received.t))};
+    await save(run,'native-menu-key-during-selected-preparation-stall-evidence',{actions,response,metrics,measurementNote:'Native Playwright click/key promises include input dispatch and driver overhead. Browser timestamps measure trusted event receipt to RAF/after-paint; the explicitly bounded 25ms test heartbeat measures event-loop stalls. Values are recorded for same-environment baseline comparison, with no unmeasured timing threshold.'});
+  }catch(error){await diagnose(run,'warming-input',error);throw error;}finally{await page.evaluate(()=>window.__selectedResponseProbe?.stop()).catch(()=>{});await run.context.close();}
 }
 
 async function interruptedWarmMask(browser) {
@@ -632,7 +840,7 @@ async function studies(browser) {
     assert.ok(api.scene&&api.renderer&&api.camera);for(const key of ['seekProgress','drawProgress','resume','composition'])assert.ok(api.keys.includes(key));
     for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:320,height:740}]) {
       await page.setViewportSize(viewport);await scrollProgress(page,.4);
-      for(const progress of [0,.25,.5,.75,1]){await page.evaluate(progress=>window.__v2Selected.seekProgress(progress),progress);await page.waitForTimeout(450);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').getAnimations({subtree:true}).every(animation=>!['running','pending'].includes(animation.playState)));await page.screenshot({path:path.join(output,`study-${viewport.width}-${String(progress).replace('.','_')}.png`)});}
+      for(const progress of [0,.155,.25,.311,.32,.5,.75,1]){await page.evaluate(progress=>window.__v2Selected.seekProgress(progress),progress);await page.waitForTimeout(450);await page.waitForFunction(()=>document.querySelector('[data-selected-work]').getAnimations({subtree:true}).every(animation=>!['running','pending'].includes(animation.playState)));await page.screenshot({path:path.join(output,`study-${viewport.width}-${String(progress).replace('.','_')}.png`)});}
     }
     // Temporary, explicitly capture-only A/B: distinguish real coating depth
     // issues from shadow-map artifacts without changing production materials.
@@ -675,13 +883,15 @@ async function studies(browser) {
 }
 
 (async()=>{
-  fs.mkdirSync(output,{recursive:true});sourceContract();easingMath();await sourceGeometry();
+  const responsivenessOnly=process.argv.includes('--responsiveness-only');
+  fs.mkdirSync(output,{recursive:true});sourceContract();easingMath();if(!responsivenessOnly)await sourceGeometry();
   if(process.argv.includes('--source-only'))return;
   const group=process.argv.find(argument=>argument.startsWith('--group='))?.slice('--group='.length);
   assert.ok(group===undefined||['core','lifecycle','entry'].includes(group),'Unknown browser group: '+group);
   const {chromium}=require('playwright');const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   try{
-    if(process.argv.includes('--study'))await studies(browser);
+    if(responsivenessOnly)await warmingInput(browser);
+    else if(process.argv.includes('--study'))await studies(browser);
     else{
       if(!group||group==='core'){await guards(browser);await initialAndInput(browser);}
       if(!group||group==='lifecycle'){
@@ -692,7 +902,7 @@ async function studies(browser) {
         }
         if(failures.length)throw new AggregateError(failures,failures.length+' independent Selected lifecycle case(s) failed');
       }
-      if(!group||group==='entry'){await heldHeroTextures(browser);await fastEntry(browser);await mobileTouch(browser);}
+      if(!group||group==='entry'){await heldHeroTextures(browser);await fastEntry(browser);await mobileTouch(browser);await warmingInput(browser);}
     }
   }
   finally{await browser.close();}
