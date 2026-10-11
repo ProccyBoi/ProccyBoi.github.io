@@ -87,7 +87,7 @@
       const notch=new T.MeshStandardMaterial({color:0x333536,roughness:.72});
       const box=(parent,dimensions,position,material)=>{const mesh=new T.Mesh(new T.BoxGeometry(...dimensions),material);mesh.position.set(...position);parent.add(mesh);};
       for(const part of leds){
-        const root=new T.Group(),[x,z,angle]=part.atMm;
+        const root=new T.Group(),[x,z,angle=0]=part.atMm;
         root.name=part.ref;
         root.position.set(x-(x1+x2)/2,metadata.thicknessMm,z-(z1+z2)/2);root.rotation.y=angle*Math.PI/180;
         box(root,[size,.72,size],[0,.38,0],body);

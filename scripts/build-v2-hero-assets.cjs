@@ -224,5 +224,5 @@ async function main() {
     console.log('All hero packs preserve source geometry and appearance exactly.');
   } finally { await browser.close(); }
 }
-module.exports = {indexTransport};
+module.exports = {indexTransport, captureAssembly, expandGeometry, canonical, compactGeometry, pack};
 if (require.main === module) main().catch(error => {console.error(error); process.exitCode = 1;});
