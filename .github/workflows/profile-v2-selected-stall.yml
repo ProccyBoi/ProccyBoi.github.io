@@ -1,0 +1,41 @@
+name: Attribute Selected Work first-render stall
+on:
+  push:
+    branches: [v2-selected-responsive]
+    paths:
+      - scripts/profile-v2-selected-stall.cjs
+      - .github/workflows/profile-v2-selected-stall.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  attribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Compare isolated renderer paths on unchanged production baseline
+        env:
+          V2_BASE_URL: http://127.0.0.1:8081
+          V2_STALL_OUT: /tmp/v2-stall-profile
+          V2_STALL_DPR: '1'
+        run: |
+          git worktree add --detach /tmp/v2-stall-baseline de2d03d7f98a1b435bd92e6682d081e6194a14b5
+          python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-stall-baseline >/tmp/baseline.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8081/v2/ >/dev/null && break; sleep 1; done
+          node scripts/profile-v2-selected-stall.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-selected-stall-attribution
+          path: /tmp/v2-stall-profile
+          if-no-files-found: error
+          retention-days: 14
