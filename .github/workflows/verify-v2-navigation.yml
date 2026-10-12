@@ -24,6 +24,8 @@ jobs:
           node scripts/verify-v2-decorative-hero.cjs
           node scripts/verify-v2-decorative-loader.cjs
           node scripts/verify-v2-selected-background.cjs
+          node scripts/verify-v2-selected-reflow.cjs
+          node scripts/verify-v2-selected-transfer-gate.cjs
           node scripts/profile-v2-navigation.cjs --source-only
           node scripts/verify-v2-scroll-smoothing.cjs
           node scripts/verify-v2-gpu-preparation.cjs

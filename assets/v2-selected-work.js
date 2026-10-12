@@ -39,12 +39,12 @@
   const idleTurn = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(() => {
     if (window.requestIdleCallback) requestIdleCallback(resolve, {timeout:700}); else resolve();
   },0)));
-  let stage,canvas,track,backgroundContent,nav,bar,links=[],renderer,scene,camera,composition,key,environment;
+  let stage,canvas,track,backgroundContent,contentObserver,nav,bar,links=[],renderer,scene,camera,composition,key,environment;
   let sourceTask,transferTask,releaseTransfer,initialization,backgroundBusy=false,backgroundDone=false;
   let ready=false,failed=false,visible=false,activePage=true,generation=0,frame=0,frames=0,warmFrames=0;
   let liveBusy=false,gpuAbort,needsDrain=true,preparationFrames=0,poseRevision=0,presentedRevision=-1,layoutDPR=0,submittedFrames=0,completedFrames=0;
   const preparedModels=new Set(),preparedPoses=new Set(),preparationMeasurements=[];
-  let lastGPUResult,lastPriority=false,preparationNear=false,preparationIntent=false;
+  let lastGPUResult,lastPriority=false,preparationNear=false,preparationIntent=backgroundScene&&ids.includes(location.hash.slice(1));
   // Byte transfer is eager, but an offscreen scene must not steal the opening
   // hero's CPU/GPU before its visible frame has actually completed. Installed
   // model counts and elapsed time are not a foreground completion signal.
@@ -64,7 +64,7 @@
     if(active===lastPriority)return;lastPriority=active;
     dispatchEvent(new CustomEvent('v2:selected-priority',{detail:{active}}));
   }
-  let width=1,height=1,top=0,distance=1,progress=0,current=0,previousTime=0,currentChapter=-1,direct=false,capturePose;
+  let width=1,height=1,contentExtent=0,top=0,distance=1,progress=0,current=0,previousTime=0,currentChapter=-1,direct=false,capturePose;
   const assemblies = {};
   const inspection={weights:new Float32Array(4)},inspectNames=['ESP32-S3','Dual USB-C','RP2354B','Logic analyser'];
   let inspectUI,inspectControls,inspectHint,overviewButton,inspectButtons=[],inspectTarget=-1,inspectMode='overview',inspectRevision=0,inspectTime=0,hitPoint,lastPointerX,lastPointerY;
@@ -202,7 +202,7 @@
         articles.forEach(article=>backgroundContent.append(article));root.append(backgroundContent);
       }
       track=backgroundContent;root.insertBefore(stage,track);root.classList.add('is-scene');
-      mask();currentChapter=-1;layout();return;
+      mask();currentChapter=-1;layout();observeContentLayout();return;
     }
     if(stage){
       articles.forEach((article,i)=>{article.id='copy-'+ids[i];stage.insertBefore(article,nav);});
@@ -247,7 +247,7 @@
     // Leave the ordinary content wrapper in place in background mode. Moving
     // a focused link's ancestor during a preference change would blur it.
     if(!backgroundScene)articles.forEach((article,i)=>{article.id=ids[i];article.inert=false;article.removeAttribute('aria-hidden');article.classList.remove('is-current');root.append(article);});
-    stage?.remove();if(!backgroundScene)track?.remove();track=null;publishPriority();
+    contentObserver?.disconnect();stage?.remove();if(!backgroundScene)track?.remove();track=null;publishPriority();
     root.dataset.selectedState=state;settleBackground({state,at:performance.now()});
     if(restore>=0)articles[restore].scrollIntoView({behavior:'instant',block:'start'});
   }
@@ -277,14 +277,31 @@
     if(visible){prepareTransfers(true).catch(fail);initialize(true).catch(fail);prepareInBackground();request();}
     else {cancelAnimationFrame(frame);frame=0;previousTime=0;current=progress;prepareInBackground();}
   }
+  function refreshContentLayout(){
+    if(!backgroundScene||!track||!activePage||document.hidden||!allowed())return false;
+    const nextWidth=stage.clientWidth,nextHeight=stage.clientHeight;
+    const nextDPR=Math.min(devicePixelRatio||1,nextWidth<=760?1.25:1.5);
+    const nextTop=scrollY+track.getBoundingClientRect().top;
+    // ResizeObserver batches reflow notifications. Ignore unchanged geometry
+    // (including the initial observation) rather than scheduling another frame.
+    if(width===nextWidth&&height===nextHeight&&layoutDPR===nextDPR&&contentExtent===track.offsetHeight&&Math.abs(top-nextTop)<.5)return false;
+    layout();return true;
+  }
+  function observeContentLayout(){
+    if(!window.ResizeObserver)return;
+    contentObserver ||= new window.ResizeObserver(refreshContentLayout);
+    contentObserver.observe(track);contentObserver.observe(stage);contentObserver.observe(root);
+  }
   function layout() {
     if(!track)return;
     const nextWidth=stage.clientWidth,nextHeight=stage.clientHeight;
     const nextDPR=Math.min(devicePixelRatio||1,nextWidth<=760?1.25:1.5);
+    const nextExtent=backgroundScene?track.offsetHeight:0;
+    const flowChanged=backgroundScene&&(contentExtent!==nextExtent||Math.abs(top-(scrollY+track.getBoundingClientRect().top))>=.5);
     const sizeChanged=width!==nextWidth||height!==nextHeight,dprChanged=layoutDPR!==nextDPR;
-    if(sizeChanged||dprChanged){invalidate();mask();poseRevision++;}
-    width=nextWidth;height=nextHeight;layoutDPR=nextDPR;
-    if(backgroundScene)distance=Math.max(1,track.offsetHeight-height);
+    if(sizeChanged||dprChanged||flowChanged){invalidate();mask();poseRevision++;}
+    width=nextWidth;height=nextHeight;layoutDPR=nextDPR;contentExtent=nextExtent;
+    if(backgroundScene)distance=Math.max(1,contentExtent-height);
     else{
       distance=height*(width<=760?1.9:1.7);
       track.style.height=`${distance+height}px`;track.style.marginTop=`${-height}px`;
@@ -406,6 +423,9 @@
     }});
   }
   async function prepareTransfers(promote=false) {
+    // Proximity may reconstruct a background scene after the foreground is
+    // settled; it is never an instruction to bypass the hero raw-byte gate.
+    if(backgroundScene)promote=Boolean(promote&&(visible||preparationIntent));
     if(promote&&(visible||preparationIntent))window.V2TransportPriority?.promote('selected');
     await prepareSources();if(!allowed()||failed)return;
     const waiting=window.V2TransportPriority?.wait('selected');
@@ -430,6 +450,7 @@
     return transferTask;
   }
   async function initialize(promote=false) {
+    if(backgroundScene)promote=Boolean(promote&&(visible||preparationIntent));
     if(ready){prepareInBackground();request();return;}
     if(!allowed()||failed||!track||aircraftHasPriority()||!preparationEligible())return;
     if(promote)prepareTransfers(true).catch(fail);
@@ -486,7 +507,7 @@
     const valid=()=>token===generation&&!document.hidden&&activePage&&allowed()&&!failed&&track&&!aircraftHasPriority()&&preparationEligible();
     root.dataset.selectedBackgroundState=visible?'promoted':'warming';root.dataset.selectedBackgroundStartedMs ||= performance.now().toFixed(1);
     try{
-      await prepareSources();prepareTransfers(visible).catch(fail);
+      await prepareSources();prepareTransfers(visible||(backgroundScene&&preparationIntent)).catch(fail);
       await idleTurn();if(!valid())return;
       await initialize(visible);if(!valid()||!ready)return;
       if(needsDrain){if(!await gpuComplete(valid,false,true))return;needsDrain=false;}
@@ -524,8 +545,8 @@
   }
   function start(){
     if(failed)return;if(!allowed()){fallback();return;}enable();
-    prepareSources().then(()=>prepareTransfers(near())).catch(fail);
-    if(near())initialize(true);else{root.dataset.selectedState=ready?'prepared':'waiting';prepareInBackground();}
+    prepareSources().then(()=>prepareTransfers(backgroundScene?visible||preparationIntent:near())).catch(fail);
+    if(near())initialize(!backgroundScene||visible||preparationIntent);else{root.dataset.selectedState=ready?'prepared':'waiting';prepareInBackground();}
   }
   addEventListener('v2:hero-foreground',()=>{
     if(backgroundDone||visible)return;
@@ -540,9 +561,9 @@
   root.addEventListener('wheel',()=>{direct=false;},{passive:true});root.addEventListener('touchmove',()=>{direct=true;},{passive:true});
   addEventListener('scroll',updateScroll,{passive:true});addEventListener('resize',()=>{if(allowed()){start();layout();}else fallback();},{passive:true});
   addEventListener('hashchange',()=>{if(ids.includes(location.hash.slice(1)))preparationIntent=true;previousTime=0;current=progress;updateScroll();prepareInBackground();});
-  document.addEventListener('visibilitychange',()=>{invalidate();publishPriority();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
+  document.addEventListener('visibilitychange',()=>{invalidate();publishPriority();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{if(!refreshContentLayout())updateScroll();prepareInBackground();}});
   addEventListener('pagehide',()=>{activePage=false;invalidate();publishPriority();cancelAnimationFrame(frame);frame=0;previousTime=0;});
-  addEventListener('pageshow',()=>{activePage=true;previousTime=0;updateScroll();prepareInBackground();});
+  addEventListener('pageshow',()=>{activePage=true;previousTime=0;if(!refreshContentLayout())updateScroll();prepareInBackground();});
   reduced.addEventListener?.('change',start);short.addEventListener?.('change',start);navigator.connection?.addEventListener?.('change',start);
   root.dataset.selectedFrames='0';root.dataset.selectedSubmittedFrames='0';root.dataset.selectedCompletedFrames='0';root.dataset.selectedWarmFrames='0';root.dataset.selectedPreparationFrames='0';root.dataset.selectedWarmPosesCompleted='0';root.dataset.selectedModelsReady='0';
   start();

@@ -168,6 +168,14 @@
   }
   function updateScroll() {
     if (!track) return;
+    if (ambient) {
+      // Content above this section can reflow without resizing our stage or
+      // copy. Read the real anchors at scroll time, never from a GPU poll.
+      const first = chapters[0].getBoundingClientRect(), last = chapters[chapters.length - 1].getBoundingClientRect();
+      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      rootTop = scrollY + first.top - padding;
+      distance = Math.max(1, last.top - first.top);
+    }
     if (deferred) {
       const bounds = root.getBoundingClientRect(), pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
       if (!ambient) rootTop = scrollY + bounds.top;
@@ -213,15 +221,7 @@
       if (changed) { desiredRatio = nextRatio; root.dataset.aircraftLayoutRevision = String(++layoutRevision); interruptLive(); }
     }
     width = nextWidth; height = nextHeight;
-    if (ambient) {
-      const first = chapters[0].getBoundingClientRect(), last = chapters[chapters.length - 1].getBoundingClientRect();
-      // Real content anchors define the two poses. Native hash navigation and
-      // assistive reading therefore refer to the same articles at every size.
-      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-      rootTop = scrollY + first.top - padding;
-      distance = Math.max(1, last.top - first.top);
-      updateScroll(); return;
-    }
+    if (ambient) { updateScroll(); return; }
     distance = height * (background ? (width < 761 ? 2.1 : 1.8) : (width < 761 ? 3.7 : 3.1));
     track.style.height = `${distance + height}px`; track.style.marginTop = `${-height}px`;
     const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;

@@ -277,6 +277,11 @@
 
 /* Homepage background mode: one decorative canvas, two ordinary document
    sections. Headings, project links and fragment targets never become slides. */
+/* Enlarged text may wrap within its own column rather than imposing an
+   unbreakable minimum on a neighbouring project or the viewport. */
+.v2-selected-work[data-selected-background-scene] :is(.v2-selected-heading,.v2-framework-copy,.v2-transport-copy,h2,h3,h4,p,a){min-width:0;overflow-wrap:anywhere}
+.v2-selected-work[data-selected-background-scene] .v2-selected-heading,
+.v2-selected-work[data-selected-background-scene] :is(.v2-framework-copy,.v2-transport-copy) h4{flex-wrap:wrap}
 @media screen and (prefers-reduced-motion:no-preference){
   .v2-selected-work[data-selected-background-scene].is-scene{
     --selected-top:76px;

@@ -13,20 +13,21 @@ function fixture(detailed=true,ambient=false){
  const document={activeElement:null,documentElement:{}};
  function element(id=''){
   const classes=new Set(),attrs={};
-  const node={id,style:{},children:[],dataset:{},attrs,classes,inert:false,hidden:false,
+  const node={id,style:{setProperty(name,value){this[name]=value}},children:[],dataset:{},attrs,classes,inert:false,hidden:false,
    classList:{add(...values){values.forEach(v=>classes.add(v))},remove(...values){values.forEach(v=>classes.delete(v))},toggle(value,on){on?classes.add(value):classes.delete(value)}},
    setAttribute(name,value){attrs[name]=value},removeAttribute(name){delete attrs[name]},contains(value){return value===node},
    focus(){document.activeElement=node},scrollIntoView(){node.scrolled=true},append(child){node.children.push(child)},remove(){node.removed=true},getBoundingClientRect(){return{top:0}}
   };return node;
  }
  const chapterIds=detailed?ids:['aircraft','inside','telemetry'],chapters=chapterIds.map(id=>element(id)),links=chapterIds.map(()=>element());
- const root=element(),context={document,root,chapters,links,ids:chapterIds,detailed,background:false,ambient,currentChapter:-1,track:null,frame:0,previousTime:0,scrubTime:0,renderedProgress:0,progress:0,landingDone:false,skip:element(),stage:{clientWidth:1440,clientHeight:900},renderer:null,scrollY:0,rootTop:0,width:1,height:1,distance:1,location:{hash:'#telemetry'},
-  cancelAnimationFrame(){},requestAnimationFrame(fn){fn()},getComputedStyle(){return{scrollPaddingTop:'76'}},showPoster(pose){context.poster=pose},updateScroll(){context.scrollUpdates=(context.scrollUpdates||0)+1},endLanding(){context.landingDone=true},request(){}
+ const root=element(),context={document,root,chapters,links,ids:chapterIds,detailed,background:false,ambient,currentChapter:-1,track:null,frame:0,previousTime:0,scrubTime:0,renderedProgress:0,progress:0,landingDone:false,skip:element(),stage:{clientWidth:1440,clientHeight:900,getBoundingClientRect(){return{top:0,bottom:900}}},renderer:null,scrollY:0,rootTop:0,width:1,height:1,distance:1,location:{hash:'#telemetry'},deferred:false,scrub:false,directScrub:false,visible:true,lastScroll:0,flight:null,bar:null,clamp:n=>Math.max(0,Math.min(1,n)),
+  cancelAnimationFrame(){},requestAnimationFrame(fn){fn()},getComputedStyle(){return{scrollPaddingTop:'76',top:'76',getPropertyValue(){return '34'}}},showPoster(pose){context.poster=pose},updateScroll(){context.scrollUpdates=(context.scrollUpdates||0)+1},endLanding(){context.landingDone=true},request(){}
  };
  document.createElement=()=>element();document.getElementById=id=>root.children.flatMap(track=>track.children).find(node=>node.id===id)||chapters.find(node=>node.id===id);
  vm.createContext(context);
  const chapterAt=source.match(/  const chapterAt =[^\n]+/)[0].replace('const chapterAt','globalThis.chapterAt');
  vm.runInContext(chapterAt+'\n'+extract('  function chapter(index)','  function endLanding()')+extract('  function enable()','  function updateScroll()')+extract('  function layout()','  function fitLight('),context);
+ if(ambient)vm.runInContext(extract('  function updateScroll()','  function layout()'),context);
  return context;
 }
 const current=fixture();
@@ -65,3 +66,29 @@ assert.equal(ambient.root.removed,undefined,'Fallback must not remove the real s
 assert.ok(ambient.chapters.every(article=>!article.scrolled),'Preference changes never relocate the reader');
 ambient.enable();assert.equal(ambient.root.children.length,0);
 console.log('PASS v2 ambient real anchors, ordinary copy, native scroll range, no autoplay, no focus mutation and static recovery.');
+
+// The normal-flow section moves when preceding copy reflows, even if the
+// aircraft stage and its own copy do not resize. Use the production scroll
+// function without another layout() call, including its pose revision path.
+const reflow=fixture(true,true);let sectionTop=1600,revisions=0;
+reflow.chapters.forEach((article,index)=>{article.getBoundingClientRect=()=>({top:sectionTop+index*720-reflow.scrollY});});
+reflow.enable();
+reflow.background=true;reflow.scrub={jump:.3};reflow.directScrub=true;
+reflow.revisePose=mask=>{revisions++;reflow.lastMask=mask;};
+reflow.scrollY=sectionTop-76+360;reflow.updateScroll();
+assert.equal(reflow.progress,.5);assert.equal(reflow.renderedProgress,.5);
+assert.equal(reflow.root.dataset.aircraftProgress,'0.500000');
+const stageSize=[reflow.stage.clientWidth,reflow.stage.clientHeight];
+sectionTop+=420;reflow.updateScroll();
+assert.equal(reflow.rootTop,sectionTop-76,'Scroll refreshes origin after unrelated preceding content reflows');
+assert.equal(reflow.distance,720);assert.deepEqual([reflow.stage.clientWidth,reflow.stage.clientHeight],stageSize,'Stage size is unchanged');
+assert.equal(reflow.progress,0,'Earlier cached origin cannot advance a now-distant scene');
+assert.equal(reflow.renderedProgress,0,'Direct-scroll render target uses refreshed content positions');
+assert.equal(reflow.lastMask,true,'A corrected large jump keeps the existing stale-frame masking contract');
+reflow.scrollY=sectionTop-76+720;reflow.updateScroll();
+assert.equal(reflow.progress,1);assert.equal(reflow.renderedProgress,1);
+assert.equal(reflow.root.dataset.aircraftProgress,'1.000000');
+reflow.scrollY=sectionTop-76+180;reflow.updateScroll();
+assert.equal(reflow.progress,.25);assert.equal(reflow.renderedProgress,.25,'Reverse scrolling still follows the moved real content');
+assert.equal(revisions,4,'Each changed native target preserves pose revision handling');
+console.log('PASS ambient scroll origin after preceding-content reflow, unchanged stage size, direct targets, reverse scroll and pose invalidation.');

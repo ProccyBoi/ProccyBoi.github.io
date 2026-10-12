@@ -169,7 +169,14 @@ function installProbe({ initialHold }) {
   const rect = node => { if (!node) return null; const b = node.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, width: b.width, height: b.height }; };
   probe.scene = name => {
     const def = defs[name], node = root(name), stage = node?.querySelector(def.stage), canvas = node?.querySelector(def.canvas), b = rect(stage), header = document.querySelector('.v2-header')?.getBoundingClientRect().bottom || 0;
-    return { dataset: { ...node?.dataset }, root: rect(node), stage: b, readable: Boolean(b && b.width > 0 && b.height > 0 && b.right > 0 && b.left < innerWidth && b.bottom > Math.max(0, header) && b.top < innerHeight), canvas: canvas ? { width: canvas.width, height: canvas.height, visibility: getComputedStyle(canvas).visibility, opacity: getComputedStyle(canvas).opacity, display: getComputedStyle(canvas).display } : null };
+    let geometry = null;
+    const clamp = value => Math.min(1, Math.max(0, value));
+    if (node && stage) {
+      if (name === 'hero') geometry = { expected: clamp(-node.getBoundingClientRect().top / Math.max(1, stage.clientHeight)) };
+      if (name === 'selected') { const content = node.querySelector('.v2-selected-content'); if (content) { const origin = rect(content), distance = Math.max(1, content.offsetHeight - stage.clientHeight), pinned = parseFloat(getComputedStyle(stage).top) || 0; geometry = { expected: clamp((-origin.top + pinned) / distance), origin, distance, pinned }; } }
+      if (name === 'aircraft') { const anchors = [...node.querySelectorAll('[data-aircraft-chapter]')].map(rect), padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0; if (anchors.length >= 2) geometry = { expected: clamp((-anchors[0].top + padding) / Math.max(1, anchors[anchors.length - 1].top - anchors[0].top)), anchors, padding }; }
+    }
+    return { dataset: { ...node?.dataset }, root: rect(node), stage: b, geometry, readable: Boolean(b && b.width > 0 && b.height > 0 && b.right > 0 && b.left < innerWidth && b.bottom > Math.max(0, header) && b.top < innerHeight), canvas: canvas ? { width: canvas.width, height: canvas.height, visibility: getComputedStyle(canvas).visibility, opacity: getComputedStyle(canvas).opacity, display: getComputedStyle(canvas).display } : null };
   };
   probe.snapshot = () => ({ y: scrollY, viewport: { width: innerWidth, height: innerHeight }, hash: location.hash, header: rect(document.querySelector('.v2-header')), scenes: Object.fromEntries(Object.keys(defs).map(name => [name, probe.scene(name)])), contexts: probe.contexts, fences: probe.fences, allocations: probe.allocations, violations: probe.violations, inputs: probe.inputs, changes: probe.changes, poses: probe.poses, scheduled: probe.scheduled, completedCallbacks: probe.completedCallbacks });
   new MutationObserver(records => {
@@ -220,11 +227,7 @@ async function settle(page, name, geometry = true) {
     const probe = window.__navigationLifecycle, scene = probe.scene(name), d = scene.dataset, prefix = def.prefix;
     if (d[prefix + 'State'] === 'unavailable') throw new Error(name + ' became unavailable: ' + (d[prefix + 'Error'] || 'check console'));
     if (!scene.readable || d[prefix + 'GPUPending'] === 'true') return false;
-    const clamp = value => Math.min(1, Math.max(0, value));
-    let expected;
-    if (name === 'hero') { const root = document.querySelector(def.root), stage = root.querySelector(def.stage); expected = clamp(-root.getBoundingClientRect().top / Math.max(1, stage.clientHeight)); }
-    if (name === 'selected') { const root = document.querySelector(def.root), stage = root.querySelector(def.stage), content = root.querySelector('.v2-selected-content'); expected = clamp((-content.getBoundingClientRect().top + (parseFloat(getComputedStyle(stage).top) || 0)) / Math.max(1, content.offsetHeight - stage.clientHeight)); }
-    if (name === 'aircraft') { const articles = document.querySelectorAll('[data-aircraft-chapter]'), first = articles[0].getBoundingClientRect(), last = articles[articles.length - 1].getBoundingClientRect(); expected = clamp((-first.top + (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0)) / Math.max(1, last.top - first.top)); }
+    const expected = scene.geometry?.expected;
     if (name === 'hero') { const last = JSON.parse(d.assemblyLastSubmission || 'null'); return d.assemblyModelsReady === '3' && d.assemblyForegroundSettled === 'true' && (!geometry || (last && Math.abs(last.raw - expected) < .000003)); }
     if (geometry && Math.abs(Number(d[prefix + 'Progress']) - expected) >= .000003) return false;
     const last = JSON.parse(d[prefix + 'LastFrame'] || 'null');
@@ -237,7 +240,7 @@ async function scrollPose(page, name, progress) {
     let top, distance;
     if (name === 'hero') { const root = document.querySelector('[data-assembly]'); top = scrollY + root.getBoundingClientRect().top; distance = root.querySelector('.v2-assembly-sticky').clientHeight; }
     if (name === 'selected') { const root = document.querySelector('[data-selected-work]'), stage = root.querySelector('.v2-selected-stage'), content = root.querySelector('.v2-selected-content'); top = scrollY + content.getBoundingClientRect().top - (parseFloat(getComputedStyle(stage).top) || 0); distance = Math.max(1, content.offsetHeight - stage.clientHeight); }
-    if (name === 'aircraft') { const articles = document.querySelectorAll('[data-aircraft-chapter]'), first = articles[0].getBoundingClientRect(), last = articles[articles.length - 1].getBoundingClientRect(); top = scrollY + first.top - (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0); distance = Math.max(1, last.top - first.top); }
+    if (name === 'aircraft') { const articles = document.querySelector('[data-aircraft-hero]').querySelectorAll('[data-aircraft-chapter]'), first = articles[0].getBoundingClientRect(), last = articles[articles.length - 1].getBoundingClientRect(); top = scrollY + first.top - (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0); distance = Math.max(1, last.top - first.top); }
     scrollTo({ top: top + clamp(progress) * distance, behavior: 'instant' });
     return { top, distance };
   }, { name, progress });
@@ -290,7 +293,11 @@ async function idle(page, name, reason, duration = 700) {
 }
 async function checkFirstMask(page, name) {
   const first = await held(page, name); assertMasked(first.s, name, 'Cold first frame stays masked'); assert.equal(count(first.s, name, 'Frames'), 0);
-  await wheel(page, 45); const changed = await snap(page); assertMasked(changed, name, 'Input during the first held frame keeps poster');
+  // Native hash offsets include scroll-margin + scroll-padding. Cross that
+  // real leading gap before expecting the first composition target to change.
+  const lead = Math.max(0, first.s.scenes[name].stage.top - first.s.header.bottom);
+  await wheel(page, lead + 45); const changed = await snap(page); assertMasked(changed, name, 'Input during the first held frame keeps poster');
+  assert.ok(Number(dataset(changed, name)[definitions[name].prefix + 'Progress']) > Number(dataset(first.s, name)[definitions[name].prefix + 'Progress']) + .000003, 'Native input actually changed the held first-frame target');
   assert.equal(contextFor(changed, name).draws, contextFor(first.s, name).draws, 'A held first frame does not queue obsolete input draws');
   const after = await releaseExisting(page, name), next = await held(page, name, after);
   const old = frameRecord(next.s, name); assert.equal(old?.published, false, 'Obsolete FIRST masked pose cannot be revealed');
@@ -396,6 +403,41 @@ async function coldHashes() {
     } catch (error) { await failure(error); throw error; } finally { await context.close(); }
   }
 }
+async function aircraftAfterUpstreamReflow() {
+  const { context, page } = await newPage(null, { viewport: { width: 390, height: 900 }, isMobile: true });
+  try {
+    await open(page, '#skylabs-aircraft'); await page.evaluate(() => document.fonts.ready); await settle(page, 'aircraft');
+    await page.waitForFunction(() => document.querySelector('[data-aircraft-hero]').dataset.aircraftTelemetryReady === 'true');
+    await scrollPose(page, 'aircraft', .4); await settle(page, 'aircraft'); const initialized = await snap(page);
+    await scrollPose(page, 'selected', 0); await settle(page, 'selected');
+    await page.evaluate(() => { window.__upstreamResizeEvents = 0; addEventListener('resize', () => window.__upstreamResizeEvents++); });
+    const before = await snap(page);
+    await page.addStyleTag({ content: '[data-selected-background-scene] :is(h3,h4,p) { font-size:30px!important; line-height:1.7!important; }' });
+    await page.waitForTimeout(250); const enlarged = await snap(page);
+    const beforeOrigin = before.y + before.scenes.aircraft.geometry.anchors[0].top;
+    const enlargedOrigin = enlarged.y + enlarged.scenes.aircraft.geometry.anchors[0].top;
+    assert.ok(enlargedOrigin > beforeOrigin + 80, 'Upstream text reflow actually moves the initialized aircraft origin');
+    await page.locator('#skylabs-aircraft').evaluate(node => {
+      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      // Floor avoids rounding just past the zero-pose anchor in CSS pixels.
+      scrollTo({ top: Math.floor(scrollY + node.getBoundingClientRect().top - padding), behavior: 'instant' });
+    });
+    await settle(page, 'aircraft', false); await page.waitForTimeout(300);
+    const returned = await evidence('aircraft-entry-after-upstream-text-reflow', page, { initialized, before, enlarged, beforeOrigin, enlargedOrigin, resizeEvents: await page.evaluate(() => window.__upstreamResizeEvents) });
+    await page.screenshot({ path: path.join(out, 'aircraft-after-upstream-reflow.png') });
+    assert.equal(await page.evaluate(() => window.__upstreamResizeEvents), 0, 'Upstream content moves without any window resize');
+    near(returned.scenes.aircraft.geometry.expected, 0, 'Native real first-article entry is the start pose');
+    near(Number(dataset(returned, 'aircraft').aircraftProgress), 0, 'Aircraft refreshes origin after upstream reflow');
+    near(frameRecord(returned, 'aircraft').value, 0, 'The actual revealed aircraft frame is the start pose');
+    assert.equal(contextFor(returned, 'aircraft').id, contextFor(initialized, 'aircraft').id, 'Upstream reflow reuses the initialized aircraft context');
+    assertLatest(returned, 'aircraft'); assertHealthy(page, returned);
+    await scrollPose(page, 'aircraft', .75); await settle(page, 'aircraft');
+    await scrollPose(page, 'aircraft', .10); await settle(page, 'aircraft');
+    const reversed = await evidence('aircraft-reverse-after-upstream-text-reflow', page);
+    near(Number(dataset(reversed, 'aircraft').aircraftProgress), reversed.scenes.aircraft.geometry.expected, 'Reverse native scroll follows the moved article bounds');
+    assertLatest(reversed, 'aircraft'); assertHealthy(page, reversed); console.log('PASS aircraft origin after upstream text reflow');
+  } catch (error) { await failure(error); throw error; } finally { await context.close(); }
+}
 async function textReflow() {
   for (const width of [320, 390]) {
     const { context, page } = await newPage(null, { viewport: { width, height: 900 }, isMobile: true });
@@ -405,21 +447,52 @@ async function textReflow() {
       const measure = () => page.evaluate(() => {
         const root = document.querySelector('[data-selected-work]'), content = root.querySelector('.v2-selected-content'), stage = root.querySelector('.v2-selected-stage'), b = content.getBoundingClientRect(), pinned = parseFloat(getComputedStyle(stage).top) || 0;
         const distance = Math.max(1, content.offsetHeight - stage.clientHeight), expected = Math.min(1, Math.max(0, (scrollY - (scrollY + b.top) + pinned) / distance));
-        return { viewport: { width: innerWidth, height: innerHeight }, scrollY, contentTop: scrollY + b.top, contentHeight: content.offsetHeight, stageHeight: stage.clientHeight, distance, expected, actual: Number(root.dataset.selectedProgress), rendered: Number(root.dataset.selectedRenderedProgress), sections: [...root.querySelectorAll('[data-selected-chapter]')].map(node => ({ id: node.id, top: node.getBoundingClientRect().top, height: node.getBoundingClientRect().height })), resizeEvents: window.__lifecycleResizeEvents };
+        const rect = box => ({ left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height });
+        const describe = node => node.tagName.toLowerCase() + (node.id ? '#' + node.id : '') + [...node.classList].map(value => '.' + value).join('');
+        const overflow = [], documentWidth = document.documentElement.clientWidth;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let node;
+        while ((node = walker.nextNode())) {
+          if (!node.textContent.trim() || !node.parentElement.closest('h2,h3,h4,p')) continue;
+          const parent = node.parentElement, css = getComputedStyle(parent);
+          if (css.visibility === 'hidden' || css.display === 'none') continue;
+          const range = document.createRange(); range.selectNodeContents(node);
+          const card = parent.closest('.v2-framework-card,.v2-transport-card'), owner = card || root, bounds = owner.getBoundingClientRect();
+          for (const box of range.getClientRects()) {
+            if (!box.width || !box.height) continue;
+            if (box.left < bounds.left - 1 || box.right > bounds.right + 1 || box.left < -1 || box.right > documentWidth + 1) overflow.push({ text: node.textContent.trim(), element: describe(parent), owner: describe(owner), textBounds: rect(box), ownerBounds: rect(bounds), documentWidth });
+          }
+        }
+        return { viewport: { width: innerWidth, height: innerHeight }, layoutViewport: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight }, visualViewport: window.visualViewport ? { width: visualViewport.width, height: visualViewport.height, scale: visualViewport.scale } : null, documentScrollWidth: document.documentElement.scrollWidth, overflow, scrollY, contentTop: scrollY + b.top, contentHeight: content.offsetHeight, stageHeight: stage.clientHeight, distance, expected, actual: Number(root.dataset.selectedProgress), rendered: Number(root.dataset.selectedRenderedProgress), sections: [...root.querySelectorAll('[data-selected-chapter]')].map(node => ({ id: node.id, top: node.getBoundingClientRect().top, height: node.getBoundingClientRect().height })), resizeEvents: window.__lifecycleResizeEvents };
       });
       const before = await measure();
-      // An accessibility-style text zoom changes normal-flow content, without
-      // changing viewport size or dispatching a synthetic window resize.
-      await page.addStyleTag({ content: '[data-selected-background-scene] :is(h3,h4,p) { font-size:30px!important; line-height:1.7!important; }' });
+      // Keep the broad accessibility case. It must wrap inside each project
+      // card, not merely avoid growing the document after text clips/overlaps.
+      const broadStyle = await page.addStyleTag({ content: '[data-selected-background-scene] :is(h3,h4,p) { font-size:30px!important; line-height:1.7!important; }' });
       await page.waitForTimeout(250); const enlarged = await measure();
-      assert.ok(enlarged.contentHeight > before.contentHeight + 80, 'Text zoom really changes the normal-flow content height');
-      await scrollPose(page, 'selected', .42); await settle(page, 'selected', false); const after = await measure();
-      await evidence('selected-text-reflow-' + width, page, { before, enlarged, after });
-      await page.screenshot({ path: path.join(out, 'selected-text-reflow-' + width + '.png') });
-      assert.equal(after.resizeEvents, 0, 'Mapping refresh is tested without a window resize');
-      assert.deepEqual(after.viewport, before.viewport);
-      near(after.actual, after.expected, 'Text-only reflow maps scroll to the CURRENT two-section bounds', .002);
-      near(after.rendered, after.expected, 'Revealed scene follows the current content extent after text reflow', .002);
+      await scrollPose(page, 'selected', .42); await settle(page, 'selected', false); const broad = await measure();
+      await evidence('selected-text-reflow-' + width, page, { before, enlarged, after: broad });
+      await page.waitForTimeout(300); await page.screenshot({ path: path.join(out, 'selected-text-reflow-' + width + '.png') });
+      // Independently isolate content-height observation using full-width copy.
+      // No overflow workaround is inserted: the broad no-overlap case above
+      // still fails acceptance if the production layout cannot wrap its text.
+      await broadStyle.evaluate(node => node.remove()); await scrollPose(page, 'selected', 0); await settle(page, 'selected');
+      const reset = await measure();
+      await page.addStyleTag({ content: '[data-selected-background-scene] .v2-selected-heading > p { font-size:30px!important; line-height:1.7!important; }' });
+      await page.waitForTimeout(250); const constrainedEnlarged = await measure();
+      await scrollPose(page, 'selected', .42); await settle(page, 'selected', false); const constrained = await measure();
+      await evidence('selected-constrained-text-reflow-' + width, page, { before: reset, enlarged: constrainedEnlarged, after: constrained });
+      await page.waitForTimeout(300); await page.screenshot({ path: path.join(out, 'selected-constrained-reflow-' + width + '.png') });
+      // Collect both diagnostic stages before gating, so an overflow failure
+      // never conceals a second, independent stale scroll-mapping regression.
+      for (const [label, baseline, changed] of [['broad text zoom', before, broad], ['full-width copy reflow', reset, constrained]]) {
+        assert.ok(changed.contentHeight > baseline.contentHeight + 80, label + ': normal-flow content really grew');
+        assert.equal(changed.resizeEvents, 0, label + ': no window resize event');
+        assert.equal(changed.documentScrollWidth <= changed.layoutViewport.width, true, label + ': no horizontal document overflow');
+        assert.deepEqual(changed.overflow, [], label + ': text remains inside its own project card');
+        assert.deepEqual(changed.viewport, baseline.viewport, label + ': mobile visual viewport is not expanded by overflow');
+        near(changed.actual, changed.expected, label + ': scroll maps to CURRENT two-section bounds', .002);
+        near(changed.rendered, changed.expected, label + ': revealed scene follows current content extent', .002);
+      }
       assertHealthy(page, await snap(page)); console.log('PASS selected text reflow ' + width);
     } catch (error) { await failure(error); throw error; } finally { await context.close(); }
   }
@@ -430,8 +503,8 @@ async function textReflow() {
   browser = await require('playwright').chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   watchdog = setTimeout(async () => { const error = new Error('Lifecycle group exceeded 350 seconds; run independent --group subsets'); await failure(error); await browser.close().catch(() => {}); console.error(error); process.exitCode = 1; }, 350000);
   try {
-    if (group === 'all') { for (const name of ['hero', 'selected', 'aircraft']) await sceneJourney(name); await coldHashes(); await textReflow(); }
-    else if (group === 'hashes') await coldHashes(); else if (group === 'reflow') await textReflow(); else await sceneJourney(group);
+    if (group === 'all') { for (const name of ['hero', 'selected', 'aircraft']) await sceneJourney(name); await coldHashes(); await textReflow(); await aircraftAfterUpstreamReflow(); }
+    else if (group === 'hashes') await coldHashes(); else if (group === 'reflow') { await textReflow(); await aircraftAfterUpstreamReflow(); } else await sceneJourney(group);
     report.passed = true; writeReport(); console.log('PASS lifecycle group ' + group + '; evidence: ' + out);
   } finally { clearTimeout(watchdog); await browser.close(); }
 })().catch(async error => { await failure(error); console.error(error); process.exitCode = 1; });

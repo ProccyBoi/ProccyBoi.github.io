@@ -5,4 +5,4 @@
 
 .v2-home [data-selected-background-scene] :is(.v2-framework-art,.v2-transport-photo){pointer-events:none}
 
-.v2-home [data-selected-background-scene].is-scene .v2-transport-grid{align-items:start}
+.v2-home .v2-selected-work[data-selected-background-scene].is-scene .v2-transport-grid{align-items:start}
