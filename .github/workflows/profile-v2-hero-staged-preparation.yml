@@ -1,0 +1,41 @@
+name: Compare v2 hero staged real draws
+on:
+  workflow_dispatch:
+  push:
+    branches: [v2-hero-staged-preparation]
+permissions:
+  contents: read
+concurrency:
+  group: v2-hero-staged-preparation-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  staged-preparation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install fixed browser and immutable live fixture
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+          git worktree add --detach /tmp/v2-hero-staged-live 649bc32ccbabf1c67cbf19628da42b6dbd836be1
+      - name: Check exact fixture deltas and restoration self-tests
+        env:
+          V2_HERO_STAGED_ROOT: /tmp/v2-hero-staged-live
+        run: node scripts/profile-v2-hero-staged-preparation.cjs --source-only
+      - name: Measure twelve matched visits and separate untimed held-presentation smoke
+        env:
+          V2_HERO_STAGED_ROOT: /tmp/v2-hero-staged-live
+          V2_HERO_STAGED_OUT: /tmp/v2-hero-staged-preparation/profile.json
+        run: node scripts/profile-v2-hero-staged-preparation.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-hero-staged-preparation
+          path: /tmp/v2-hero-staged-preparation/
+          retention-days: 14
