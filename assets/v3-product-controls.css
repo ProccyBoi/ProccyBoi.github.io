@@ -23,7 +23,7 @@ body.v3-product .v3-product-preview-control select {
   border-radius: 8px;
   background-color: var(--v2-bg);
   color: var(--v2-ink);
-  color-scheme: dark;
+  color-scheme: light;
   font: inherit;
   font-size: 16px;
   line-height: 1.3;

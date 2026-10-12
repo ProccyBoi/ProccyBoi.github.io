@@ -1,0 +1,48 @@
+name: Prepare light v3 native aircraft posters
+
+on:
+  push:
+    branches: [v3-light-posters]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-product-light-posters-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  aircraft-posters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned official Playwright Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Capture original current-fenced native aircraft in its light setting
+        env:
+          V3_PRODUCT_BASE_URL: http://127.0.0.1:8080
+          V3_PRODUCT_OUT: /tmp/v3-product-poster-evidence
+          V3_PRODUCT_TIMEOUT: '180000'
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v3-product-poster-server.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/v3/ >/dev/null
+          node scripts/render-v3-product-posters.cjs
+      - name: Save four light posters and capture evidence for review and import
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-product-light-aircraft-posters
+          path: |
+            assets/images/v3-product/
+            /tmp/v3-product-poster-evidence/
+            /tmp/v3-product-poster-server.log
+          if-no-files-found: error
+          retention-days: 14

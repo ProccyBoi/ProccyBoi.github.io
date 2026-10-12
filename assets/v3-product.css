@@ -1,18 +1,18 @@
 /* V3 product presentation. The v2 routes, source CAD and renderer stay intact. */
 body.v2.v3-product{
-  --v2-bg:#101012;--v2-panel:#19191c;--v2-raised:#242429;
-  --v2-ink:#f5f5f7;--v2-muted:#a8a8b0;--v2-line:#303036;--v2-accent:#93baff;
-  --v2-on-accent:#101012;--v2-gutter:clamp(22px,4.2vw,68px);
+  --v2-bg:#fff;--v2-panel:#f5f5f7;--v2-raised:#e8e8ed;
+  --v2-ink:#1d1d1f;--v2-muted:#6e6e73;--v2-line:#d2d2d7;--v2-accent:#0066cc;
+  --v2-on-accent:#fff;--v2-font:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;--v2-gutter:clamp(22px,4.2vw,68px);
   --bg:var(--v2-bg);--surface:var(--v2-panel);--text:var(--v2-ink);--muted:var(--v2-muted);
-  --rule:var(--v2-line);--rule-strong:#515158;--header-height:64px;
+  --rule:var(--v2-line);--rule-strong:#86868b;--header-height:64px;
   --gutter:var(--v2-gutter);--content:82.5rem;
   background:var(--v2-bg);color:var(--v2-ink);
 }
-html:has(>body.v3-product){background:#101012}
+html:has(>body.v3-product){background:#fff;color-scheme:light}
 html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
-.v3-product .v2-header{height:64px;border-bottom:1px solid #ffffff12;background:#101012}
+.v3-product .v2-header{height:64px;border-bottom:1px solid #d2d2d780;background:#fff}
 .v3-product .v2-nav-shell{max-width:1320px;gap:28px}
-.v3-product .v2-brand,.v3-product .v2-footer-name{font-size:18px;font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-brand,.v3-product .v2-footer-name{font-size:18px;font-weight:600;letter-spacing:-.025em}
 .v3-product .v2-nav{gap:30px;font-size:13px;line-height:1.4}
 .v3-product .v2-nav a{min-height:44px;display:inline-flex;align-items:center;padding:10px 0}
 .v3-product .v2-nav-contact{gap:6px}
@@ -24,13 +24,13 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
 .v3-product .v2-assembly{margin-top:-64px}
 .v3-product .v2-assembly-intro{top:108px;left:var(--v2-gutter);right:var(--v2-gutter);display:block;text-align:center}
 .v3-product .v3-product-eyebrow{font:500 14px/1.4 var(--v2-font);letter-spacing:.015em;color:var(--v2-muted);margin:0 0 12px}
-.v3-product .v2-assembly-intro h1{display:block;font-size:68px;line-height:1.02;font-weight:600;letter-spacing:-.035em;white-space:normal;text-wrap:balance}
+.v3-product .v2-assembly-intro h1{display:block;font-size:68px;line-height:1.02;font-weight:600;letter-spacing:-.025em;white-space:normal;text-wrap:balance}
 .v3-product .v2-assembly-summary{padding:0;margin:18px auto 0;max-width:51ch}
 .v3-product .v2-assembly-summary>p{font:400 18px/1.5 var(--v2-font);letter-spacing:-.015em;color:var(--v2-muted);text-wrap:balance}
 .v3-product .v2-assembly-actions{margin-top:18px;justify-content:center;gap:12px 24px}
 .v3-product .v2-assembly-actions a{border:0;font-size:15px;min-height:44px;padding:10px 20px;color:var(--v2-accent);gap:9px}
-.v3-product .v2-assembly-actions a:first-child{background:var(--v2-ink);color:var(--v2-bg);border-radius:30px}
-.v3-product .v2-assembly-actions a:first-child:hover{background:#d9e6ff}
+.v3-product .v2-assembly-actions a:first-child{background:#0071e3;color:#fff;border-radius:30px}
+.v3-product .v2-assembly-actions a:first-child:hover{background:#0055aa}
 .v3-product .v2-assembly-caption{max-width:32%;padding:0;top:37%}
 .v3-product .v2-assembly-caption>p:first-child{font:400 14px/1.4 var(--v2-font);margin-bottom:14px}
 .v3-product .v2-assembly-caption h2{font-size:clamp(42px,4.7vw,68px);font-weight:600;letter-spacing:-.04em}
@@ -38,15 +38,15 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
 .v3-product .v2-assembly-bottom{bottom:24px;align-items:center;gap:28px}
 .v3-product .v2-assembly-navigation{gap:24px}
 .v3-product .v2-assembly-explore{color:var(--v2-accent);border:0}
-.v3-product .v2-assembly-choices{position:relative;width:min(540px,48%);gap:8px;padding:5px;border:1px solid var(--v2-line);border-radius:32px;background:#19191cd9}
+.v3-product .v2-assembly-choices{position:relative;width:min(540px,48%);gap:8px;padding:5px;border:1px solid var(--v2-line);border-radius:32px;background:#f5f5f7}
 .v3-product .v3-product-preview-label{position:absolute;bottom:calc(100% + 8px);left:18px;font-size:12px;line-height:1.3;color:var(--v2-muted)}
 .v3-product .v2-assembly-choices button{min-height:44px;padding:10px 14px;border-radius:24px;justify-content:center;font-size:13px;line-height:1.3;text-align:center}
 .v3-product .v2-assembly-choices button::before,.v3-product .v2-assembly-choices button::after{display:none}
-.v3-product .v2-assembly-choices button[aria-pressed=true]{background:#36363d;color:var(--v2-ink)}
+.v3-product .v2-assembly-choices button[aria-pressed=true]{background:#fff;color:var(--v2-ink);box-shadow:0 2px 6px #00000012}
 .v3-product .v2-assembly-progress{opacity:.45}
 .v3-product .v2-work{padding-top:105px;padding-bottom:110px}
 .v3-product .v2-selected-work .v2-gallery-heading{border:0;padding-top:0;margin-bottom:58px;align-items:center}
-.v3-product .v2-selected-work .v2-gallery-heading h2{font-size:56px;line-height:1.08;font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-selected-work .v2-gallery-heading h2{font-size:56px;line-height:1.08;font-weight:600;letter-spacing:-.025em}
 .v3-product .v2-selected-heading h3{font-weight:600;letter-spacing:-.03em}
 .v3-product .v2-selected-heading p{font:400 17px/1.5 var(--v2-font);color:var(--v2-muted)}
 .v3-product .v2-selected-work.is-scene{--selected-top:64px}
@@ -64,11 +64,11 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
 .v3-product .v3-aircraft-foot a{min-height:44px;display:inline-flex;align-items:center}
 .v3-product .v2-engineering-range{padding-block:100px}
 .v3-product .v2-engineering-range>header{border:0}
-.v3-product .v2-engineering-range h2{font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-engineering-range h2{font-weight:600;letter-spacing:-.025em}
 .v3-product .v2-range-grid{gap:40px}
 .v3-product .v2-range-grid a{border:0;padding-top:12px}
 .v3-product .v2-about-preview{border:0;padding-block:90px 130px;gap:8%}
-.v3-product .v2-about-preview h2{font-size:clamp(42px,4.2vw,60px);font-weight:600;letter-spacing:-.035em;max-width:15ch}
+.v3-product .v2-about-preview h2{font-size:clamp(42px,4.2vw,60px);font-weight:600;letter-spacing:-.025em;max-width:15ch}
 .v3-product .v2-about-copy p{font-size:23px;line-height:1.5}
 .v3-product .v2-contact{padding-block:80px;background:var(--v2-panel);border:0}
 .v3-product .v2-contact h2{font-size:clamp(45px,5vw,72px);font-weight:600}
@@ -79,12 +79,12 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
 .v3-product .v2-footer a{min-height:44px;display:inline-flex;align-items:center}
 .v3-product .v2-footer .v2-shell>p{font:400 12px/1.5 var(--v2-font)}
 /* The complete inherited cases get a quiet, product-led opening. */
-.v3-product .v2-case-nav{background:#101012}
+.v3-product .v2-case-nav{background:#fff}
 .v3-product .v2-case-nav-title{max-width:32ch}
 .v3-product .v2-case-nav-links a{min-height:48px;font-size:13px}
 .v3-product.v2-case .project-hero-grid{display:flex;flex-direction:column;align-items:center;gap:22px;padding-block:64px 42px}
 .v3-product.v2-case .project-hero-copy,.v3-product.v2-case .project-hero-copy>div:not(.project-hero-actions){display:contents}
-.v3-product.v2-case .project-hero-copy h1{max-width:22ch;font-size:clamp(40px,5vw,68px);font-weight:600;line-height:1.06;letter-spacing:-.035em;text-align:center;margin:0}
+.v3-product.v2-case .project-hero-copy h1{max-width:22ch;font-size:clamp(40px,5vw,68px);font-weight:600;line-height:1.06;letter-spacing:-.025em;text-align:center;margin:0}
 .v3-product.v2-case .project-hero-copy>div>p:not(.eyebrow){max-width:56ch;border:0;padding:0;text-align:center;font:400 20px/1.5 var(--v2-font);color:var(--v2-muted)}
 .v3-product.v2-case .project-hero-actions{display:flex;flex-direction:row;justify-content:center;flex-wrap:wrap;gap:8px 28px;max-width:none;order:1}
 .v3-product.v2-case .project-hero-actions a{border:0;min-height:44px;padding:8px 0;gap:12px;font-size:15px}
@@ -102,13 +102,13 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
 .v3-product.v2-case .project-summary p,.v3-product.v2-case .v2-evidence-note p{line-height:1.75}
 .v3-product .v3-product-section-control{display:none}
 .v3-product .v2-collection-hero{padding-block:72px 48px;text-align:center;display:block}
-.v3-product .v2-collection-hero h1{font-size:clamp(48px,6vw,76px);font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-collection-hero h1{font-size:clamp(48px,6vw,76px);font-weight:600;letter-spacing:-.025em}
 .v3-product .v2-collection-hero p{margin:20px auto 0;font:400 20px/1.5 var(--v2-font);color:var(--v2-muted)}
 .v3-product .v2-collection-controls{background:var(--v2-bg)}
 .v3-product .v2-project-search input{border-radius:10px}
 .v3-product .catalog-card{border:0}
 .v3-product .catalog-card-media{background:var(--v2-panel)}
-.v3-product.v2-about .about-intro h1{font-weight:600;letter-spacing:-.035em}
+.v3-product.v2-about .about-intro h1{font-weight:600;letter-spacing:-.025em}
 .v3-product.v2-book .booking-hero h1{font-weight:600;letter-spacing:-.04em;font-size:clamp(42px,5.4vw,72px)}
 .v3-product.v2-book .booking-panel{border-radius:16px}
 @media(max-width:1100px){
@@ -126,7 +126,7 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
   .v3-product .v2-menu span{width:auto;height:auto;background:none;transform:none!important;transition:none}
   .v3-product .v3-menu-icon{font-size:22px;font-weight:300}
   .v3-product .v2-menu[aria-expanded=true] .v3-menu-icon{transform:rotate(45deg)!important}
-  .v3-product.v3-product-ready .v2-nav{position:absolute;top:59px;left:0;right:0;display:none;padding:18px var(--v2-gutter) 30px;background:#151518;align-items:stretch;gap:0;flex-direction:column;border-bottom:1px solid var(--v2-line);max-height:calc(100svh - 60px);overflow:auto}
+  .v3-product.v3-product-ready .v2-nav{position:absolute;top:59px;left:0;right:0;display:none;padding:18px var(--v2-gutter) 30px;background:#fff;align-items:stretch;gap:0;flex-direction:column;border-bottom:1px solid var(--v2-line);max-height:calc(100svh - 60px);overflow:auto}
   .v3-product.v3-product-ready .v2-nav[data-open=true]{display:flex}
   .v3-product.v3-product-ready .v2-nav a{font-size:22px;min-height:52px;padding:12px 0}
   .v3-product .v2-nav-contact{justify-content:flex-start;gap:10px}
@@ -135,7 +135,7 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
   .v3-product .v2-selected-work.is-scene{--selected-top:60px}
   .v3-product.v3-product-ready .v2-case-nav{display:none}
   .v3-product.v3-product-ready .v3-product-section-control{display:flex;align-items:center;justify-content:center;gap:16px;margin:0 auto 38px;width:calc(100% - 2*var(--v2-gutter));max-width:380px;color:var(--v2-muted);font-size:14px}
-  .v3-product .v3-product-section-control select{min-width:0;flex:1;min-height:44px;padding:10px 28px 10px 12px;border:1px solid var(--v2-line);border-radius:10px;background:var(--v2-panel);color:var(--v2-ink);font:400 16px/1.4 var(--v2-font);color-scheme:dark}
+  .v3-product .v3-product-section-control select{min-width:0;flex:1;min-height:44px;padding:10px 28px 10px 12px;border:1px solid var(--v2-line);border-radius:10px;background:var(--v2-panel);color:var(--v2-ink);font:400 16px/1.4 var(--v2-font);color-scheme:light}
   .v3-product.v3-product-ready :is(.project-hero,.project-interactive,.project-body,.project-gallery,.project-summary,.about-section,.project-index-section,#boards,#engineering){scroll-margin-top:76px}
   .v3-product:not(.v3-product-ready) .v2-header{height:auto;position:relative}
   .v3-product:not(.v3-product-ready) .v2-nav-shell{padding-block:10px;flex-wrap:wrap}
@@ -270,4 +270,23 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
 @media(min-width:901px) and (min-height:801px) and (max-height:850px){
   .v3-product .v2-assembly-intro{top:94px}
 }
-.v2.v3-product :is(a,button,select){-webkit-tap-highlight-color:#93baff22}
+.v2.v3-product :is(a,button,select){-webkit-tap-highlight-color:#0071e322}
+
+/* A continuous light studio, with native CAD colors and source photographs. */
+.v3-product .v2-aircraft-feature{--v2-bg:#f5f5f7;background:#f5f5f7}
+.v3-product .v2-aircraft-feature :is(.v3-aircraft-stage,.v3-aircraft-visual){background:#f5f5f7}
+.v3-product .v2-aircraft-feature .v3-aircraft-static-photo{background:#f5f5f7}
+.v3-product .v2-transport-photo{background:#f5f5f7}
+.v3-product .v2-assembly-choices{border-color:#e8e8ed}
+.v3-product .v2-assembly-choices button{color:#515154}
+.v3-product .v2-assembly-choices button:hover{color:#1d1d1f;background:#e8e8ed}
+.v3-product .v2-assembly-choices button[aria-pressed=true]{background:#fff;color:#1d1d1f}
+.v3-product .v2-engineering-range{background:#f5f5f7}
+.v3-product .v2-footer{background:#f5f5f7}
+.v3-product .v2-button{background:#0071e3;color:#fff!important;border-radius:24px}
+.v3-product .v2-button:hover{background:#0055aa}
+.v3-product .v2-skip{background:#0071e3;color:#fff!important;border-radius:8px}
+.v3-product ::selection{background:#b5d5ff;color:#1d1d1f}
+.v3-product .v2-aircraft-feature .v3-story-next,.v3-product .v3-intro-line{font-family:var(--v2-font)}
+.v3-product :is(.v2-gallery-heading h2,.v2-engineering-range h2,.project-summary h2,.v2-engineering-evidence h2){letter-spacing:-.01em}
+.v3-product :is(.v2-assembly-navigation,.v2-assembly-choices,.v2-selected-nav,.v3-story-nav,.v3-aircraft-foot){font-family:var(--v2-font)}
