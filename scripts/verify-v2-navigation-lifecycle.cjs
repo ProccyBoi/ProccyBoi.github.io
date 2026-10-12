@@ -352,7 +352,16 @@ async function checkPreferenceFocus(page, name) {
   assert.equal(await page.evaluate(() => document.activeElement === window.__focusedNavigationLink && document.activeElement.isConnected && !document.activeElement.closest('[inert],[aria-hidden="true"]')), true, 'Reducing motion preserves exact focused foreground link');
   const reduced = await idle(page, name, 'Reduced-motion idle');
   assert.equal(reduced.last.contexts.length, before.contexts.length, 'Reducing motion allocates no context');
-  await page.emulateMedia({ reducedMotion: 'no-preference' }); await scrollPose(page, name, .38); await settle(page, name);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  // CDP media emulation can acknowledge before the queued MQL change handler
+  // restores a detached decorative stage. Wait for the real restored DOM mode.
+  await page.waitForFunction(({ name, def }) => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    const root = document.querySelector(def.root), stage = root?.querySelector(def.stage), canvas = root?.querySelector(def.canvas);
+    const mode = name === 'hero' ? 'is-enhanced' : name === 'selected' ? 'is-scene' : 'is-ambient';
+    return root?.classList.contains(mode) && stage?.isConnected && canvas?.isConnected && getComputedStyle(stage).display !== 'none' && stage.clientWidth > 0 && stage.clientHeight > 0;
+  }, { name, def: definitions[name] });
+  await scrollPose(page, name, .38); await settle(page, name);
   const restored = await snap(page); assert.equal(await page.evaluate(() => document.activeElement === window.__focusedNavigationLink), true, 'Restoring decorative graphics preserves exact link focus');
   assert.equal(contextFor(restored, name).id, contextFor(before, name).id, 'Restoring motion reuses this scene’s existing context');
   for (const prior of before.contexts) assert.equal(restored.contexts.filter(c => c.name === prior.name).length, 1, 'No previously initialized scene allocates a replacement context');
@@ -477,7 +486,7 @@ async function textReflow() {
       // still fails acceptance if the production layout cannot wrap its text.
       await broadStyle.evaluate(node => node.remove()); await scrollPose(page, 'selected', 0); await settle(page, 'selected');
       const reset = await measure();
-      await page.addStyleTag({ content: '[data-selected-background-scene] .v2-selected-heading > p { font-size:30px!important; line-height:1.7!important; }' });
+      await page.addStyleTag({ content: '[data-selected-background-scene] .v2-selected-heading > p { font-size:36px!important; line-height:2!important; }' });
       await page.waitForTimeout(250); const constrainedEnlarged = await measure();
       await scrollPose(page, 'selected', .42); await settle(page, 'selected', false); const constrained = await measure();
       await evidence('selected-constrained-text-reflow-' + width, page, { before: reset, enlarged: constrainedEnlarged, after: constrained });
