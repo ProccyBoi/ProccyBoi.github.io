@@ -15,8 +15,9 @@ const expected = original.replaceAll('window.V3AircraftAtmosphere', 'window.V3Pr
   .replace('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010', '/assets/v3-product-atmosphere.js?v=white-20261012')
   .replaceAll("new T.Color('#101210')", "new T.Color('#f5f5f7')")
   .replaceAll("new T.Color('#18232b')", "new T.Color('#f5f5f7')")
-  .replaceAll("new T.Color('#25323e')", "new T.Color('#f5f5f7')");
-assert.equal(clone, expected, 'Aircraft clone changes only backdrop namespace/URL and surface palette; full controller, GPU queues, quality, timing, shadows, materials, geometry and lighting stay exact');
+  .replaceAll("new T.Color('#25323e')", "new T.Color('#f5f5f7')")
+  .replace('new T.ShadowMaterial({ color: 0x000000, opacity: .35, transparent: true, depthWrite: false })', 'new T.ShadowMaterial({ color: 0x000000, opacity: .13, transparent: true, depthWrite: false })');
+assert.equal(clone, expected, 'Aircraft clone changes only backdrop namespace/URL, surface palette and reviewed contact-shadow opacity; full controller, GPU queues, shadow map quality, timing, materials, geometry and lighting stay exact');
 for (const file of ['assets/v3-aircraft-hero.js', 'assets/v3-aircraft-atmosphere.js', 'assets/v3-aircraft-scene.js', 'assets/v3-aircraft-electronics.js', 'assets/v2-selected-scene.js', 'assets/v2-hero-environment.js']) {
   assert.equal(read(file), execFileSync('git', ['show', '45c386e:' + file], {cwd:root, encoding:'utf8'}), 'Frozen shared source: ' + file);
 }
@@ -175,4 +176,4 @@ const home = read('v3/index.html');
 assert.match(home, /src="\/assets\/v3-product-aircraft\.js\?/);
 assert.doesNotMatch(home, /src="\/assets\/v3-aircraft-hero\.js\?/);
 assert.match(read('v2/index.html'), /src="\/assets\/v3-aircraft-hero\.js\?/);
-console.log('PASS v3 light surfaces: exact controller/geometry/material/light/shadow/GPU/timing preservation; explicit neutral surface palette; 210 original update samples; v3-only imports.');
+console.log('PASS v3 light surfaces: exact controller/geometry/material/light/shadow-map/GPU/timing preservation; explicit neutral surface palette; 210 original update samples; v3-only imports.');

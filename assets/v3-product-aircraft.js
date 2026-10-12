@@ -506,7 +506,7 @@
       };
       const floorGeometry = new T.PlaneGeometry(100, 100);
       const floor = new T.Mesh(floorGeometry, floorMaterial); floor.rotation.x = -Math.PI / 2; floor.position.y = -.0007; scene.add(floor);
-      const contactShadow = new T.Mesh(floorGeometry, new T.ShadowMaterial({ color: 0x000000, opacity: .35, transparent: true, depthWrite: false }));
+      const contactShadow = new T.Mesh(floorGeometry, new T.ShadowMaterial({ color: 0x000000, opacity: .13, transparent: true, depthWrite: false }));
       contactShadow.rotation.x = -Math.PI / 2; contactShadow.position.y = -.0005; contactShadow.receiveShadow = true; scene.add(contactShadow);
       // Three r128 blends fog after output encoding; this color therefore
       // matches the CSS background directly rather than being linearized.
