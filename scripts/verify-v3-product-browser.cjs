@@ -532,7 +532,10 @@ async function heldPiDetails(run,prefix,{enlarged=false}={}) {
   await hiddenPiControl(run,prefix+' unavailable');
   assert.equal(await page.locator('[data-pi-start]').isVisible(),true,'Real unavailable handler exposes Retry');
   assert.ok(unavailable.retry.width>=44&&unavailable.retry.height>=44,'Retry retains a 44 px minimum touch target');
-  await shot(run,prefix+'-pi-unavailable',{target:'[data-pi-status]'});
+  await frameTarget(run,'[data-pi-inspector]',prefix+'-pi-unavailable');
+  const statusFramed=await page.locator('[data-pi-status]').evaluate(node=>{const b=node.getBoundingClientRect(),header=document.querySelector('.v2-header').getBoundingClientRect();return{top:b.top,bottom:b.bottom,headerBottom:header.bottom,viewportHeight:innerHeight};});
+  assert.ok(statusFramed.top>=statusFramed.headerBottom&&statusFramed.bottom<=statusFramed.viewportHeight,'Unavailable status is fully visible below the header before capture '+JSON.stringify(statusFramed));
+  await shot(run,prefix+'-pi-unavailable');
   // Retry is a genuine user click. It may scroll its own button into view, so
   // re-enter Details through the real section control before releasing load 2.
   run.network.holdPiModel();await page.locator('[data-pi-start]').click();await run.network.waitForHeldPiModel();
