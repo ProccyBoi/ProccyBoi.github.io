@@ -19,6 +19,17 @@
     if (quick) location.pathname.startsWith('/v3/projects/') ? quick.setAttribute('aria-current', 'page') : quick.removeAttribute('aria-current');
   };
   if (menu && nav) {
+    // CSS can hide Menu before the media-query change event is delivered.
+    // Retain its real focus ownership through that layout-only blur, but clear
+    // it as soon as the visitor focuses or points to a different control.
+    let menuOwnsFocus = document.activeElement === menu;
+    document.addEventListener('focusin', event => {
+      if (event.target !== body && event.target !== document.documentElement) menuOwnsFocus = event.target === menu;
+    });
+    document.addEventListener('pointerdown', event => {
+      if (!menu.contains(event.target)) menuOwnsFocus = false;
+    }, {passive:true});
+    addEventListener('blur', () => { menuOwnsFocus = false; });
     const setOpen = (open, recover = false) => {
       open = compact.matches && open;
       if (!open && recover && compact.matches && nav.contains(document.activeElement)) menu.focus({preventScroll:true});
@@ -33,9 +44,10 @@
     document.addEventListener('click', event => { if (!event.target.closest('.v2-header')) setOpen(false); });
     document.addEventListener('focusin', event => { if (!event.target.closest('.v2-header')) setOpen(false); });
     compact.addEventListener('change', () => {
-      const menuFocused = document.activeElement === menu;
+      const active = document.activeElement;
+      const menuFocused = active === menu || (menuOwnsFocus && (active === body || active === document.documentElement));
       setOpen(false, true);
-      if (!compact.matches && (menuFocused || document.activeElement === menu)) nav.querySelector('a')?.focus({preventScroll:true});
+      if (!compact.matches && document.hasFocus() && (menuFocused || document.activeElement === menu)) nav.querySelector('a')?.focus({preventScroll:true});
     });
     addEventListener('pageshow', () => setOpen(false, true));
     setOpen(false);

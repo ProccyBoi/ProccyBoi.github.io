@@ -60,8 +60,13 @@ function currentFrame(sample, afterSequence = 0) {
 }
 
 function installProbe() {
-  const probe = window.__v3ProductProbe = { contexts:[], input:[], scrolls:[], sceneFrames:{}, started:performance.now() };
+  const probe = window.__v3ProductProbe = { contexts:[], input:[], scrolls:[], focus:[], sceneFrames:{}, started:performance.now() };
   for(const type of ['scroll','scrollend'])addEventListener(type,event=>{probe.scrolls.push({type,at:performance.now(),y:scrollY,trusted:event.isTrusted});if(probe.scrolls.length>100)probe.scrolls.shift();},{passive:true});
+  const focusedNode=node=>node?{tag:node.tagName||'window',id:node.id||'',label:node.getAttribute?.('aria-label')||'',href:node.getAttribute?.('href')||''}:null;
+  const focusTrace=(type,event)=>{const sample={type,at:performance.now(),viewport:{width:innerWidth,height:innerHeight},compact:matchMedia('(max-width:1024px), (pointer:coarse)').matches,target:focusedNode(event?.target),related:focusedNode(event?.relatedTarget),active:focusedNode(document.activeElement),navInert:document.querySelector('[data-v3-nav]')?.inert};probe.focus.push(sample);if(probe.focus.length>100)probe.focus.shift();queueMicrotask(()=>{sample.after={active:focusedNode(document.activeElement),navInert:document.querySelector('[data-v3-nav]')?.inert};});};
+  for(const type of ['focusin','focusout','blur'])addEventListener(type,event=>focusTrace(type,event),{capture:true,passive:true});
+  addEventListener('resize',event=>focusTrace('resize',event),{passive:true});
+  matchMedia('(max-width:1024px), (pointer:coarse)').addEventListener('change',event=>focusTrace('compact-change',event));
   const contexts = new WeakMap();
   const nativeGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function(type, ...args) {
@@ -127,7 +132,7 @@ function installProbe() {
     header:rect(document.querySelector('.v2-header')), active:{tag:document.activeElement?.tagName,label:document.activeElement?.getAttribute('aria-label'),id:document.activeElement?.id},
     scenes:Object.fromEntries(['hero','selected','aircraft'].map(kind => [kind,probe.read(kind)])),
     images:[...document.images].filter(image => {const b=image.getBoundingClientRect();return b.bottom>0&&b.top<innerHeight&&b.right>0&&b.left<innerWidth;}).map(image=>({src:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth,decoded:image.dataset.imageDecoded,rect:rect(image)})),
-    controls:[...document.querySelectorAll('[data-v3-menu],.v3-quick-projects,[data-v3-nav] a,select,[data-framework-overview],[data-framework-inspect]')].map(node=>({tag:node.tagName,label:node.getAttribute('aria-label')||node.textContent.trim(),value:node.value,href:node.getAttribute('href'),hidden:node.hidden,inert:node.inert,disabled:node.disabled,display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,rect:rect(node)})), contexts:probe.contexts, input:probe.input, scrolls:probe.scrolls});
+    controls:[...document.querySelectorAll('[data-v3-menu],.v3-quick-projects,[data-v3-nav] a,select,[data-framework-overview],[data-framework-inspect]')].map(node=>({tag:node.tagName,label:node.getAttribute('aria-label')||node.textContent.trim(),value:node.value,href:node.getAttribute('href'),hidden:node.hidden,inert:node.inert,disabled:node.disabled,display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,rect:rect(node)})), contexts:probe.contexts, input:probe.input, scrolls:probe.scrolls, focus:probe.focus});
 }
 
 async function networkGuard(context) {
@@ -222,9 +227,19 @@ async function header(run, label) {
     const b=await menu.boundingBox();assert.ok(b.width>=44&&b.height>=44,'Touch menu target is at least 44×44');
   }else{assert.equal(await nav.isVisible(),true);assert.equal(await nav.evaluate(node=>node.inert),false);}
   if(label==='desktop1440-book'){
-    await page.setViewportSize({width:1024,height:768});await menu.waitFor({state:'visible'});await menu.focus();
+    await page.setViewportSize({width:1024,height:768});await menu.waitFor({state:'visible'});
+    await page.waitForFunction(()=>matchMedia('(max-width:1024px), (pointer:coarse)').matches&&document.querySelector('[data-v3-nav]').inert===true);
+    await menu.focus();assert.equal(await menu.evaluate(node=>node===document.activeElement),true,'Compact Menu is actually focused before desktop transition');
+    write('desktop-header-compact-prerequisite',await page.evaluate(()=>window.__v3ProductProbe.snapshot()));
     await page.setViewportSize({width:1440,height:900});await page.waitForFunction(()=>document.activeElement?.matches('[data-v3-nav] [data-v3-project-link]'));
     assert.equal(await menu.getAttribute('aria-expanded'),'false','Compact to desktop closes Menu and recovers visible Projects focus');
+    await page.setViewportSize({width:1024,height:768});await page.waitForFunction(()=>matchMedia('(max-width:1024px), (pointer:coarse)').matches&&document.querySelector('[data-v3-nav]').inert===true);
+    await menu.focus();assert.equal(await menu.evaluate(node=>node===document.activeElement),true);
+    const bookControl=page.locator('[data-week-next]');await bookControl.focus();assert.equal(await bookControl.evaluate(node=>node===document.activeElement),true,'Focus intentionally moved to a real Book control');
+    write('desktop-header-no-theft-prerequisite',await page.evaluate(()=>window.__v3ProductProbe.snapshot()));
+    await page.setViewportSize({width:1440,height:900});await page.waitForFunction(()=>!matchMedia('(max-width:1024px), (pointer:coarse)').matches&&document.querySelector('[data-v3-nav]').inert===false);
+    assert.equal(await bookControl.evaluate(node=>node===document.activeElement),true,'Responsive header never steals deliberately moved Book focus');
+    write('desktop-header-focus-transitions',await page.evaluate(()=>window.__v3ProductProbe.snapshot()));
   }
   await fit(page,label);passed(label+'-header-keyboard-and-projects');
 }

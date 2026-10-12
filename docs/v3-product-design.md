@@ -16,7 +16,7 @@ The hierarchy is inspired by the separation of introduction, highlights and deta
 
 ## Quality and performance boundaries
 
-Source geometry, models, images, materials, lighting, settled shadow quality, entrance timing and all three owned GPU queues are retained. The two v3 controller copies contain only scoped route/control changes and an automatic-proximity transfer-promotion guard. Immutable shared assets are unchanged. Models still prepare through the existing finite, cancelable queue and retain static posters on failure or preference fallback.
+Source geometry, models, images, materials, lighting, settled shadow quality, entrance timing and all three owned GPU queues are retained. The two v3 controller copies contain scoped route/control changes, an automatic-proximity transfer-promotion guard and a pinned-scene rotation continuity correction. The correction preserves the previous raw scene position during a width/orientation change without overriding new input, hash navigation or offscreen scrolling. Immutable shared assets are unchanged. Models still prepare through the existing finite, cancelable queue and retain static posters on failure or preference fallback.
 
 Automatic offscreen proximity must not preempt the opening hero's raw transfers. Visible scene entry and explicit navigation retain priority. Direct-aircraft transport coordination still releases unrelated downloads after its required raw bytes finish.
 

@@ -10,7 +10,7 @@ body.v2.v3-product{
 }
 html:has(>body.v3-product){background:#101012}
 html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
-.v3-product .v2-header{height:64px;border-bottom:1px solid #ffffff12;background:#101012f2;backdrop-filter:blur(18px)}
+.v3-product .v2-header{height:64px;border-bottom:1px solid #ffffff12;background:#101012}
 .v3-product .v2-nav-shell{max-width:1320px;gap:28px}
 .v3-product .v2-brand,.v3-product .v2-footer-name{font-size:18px;font-weight:600;letter-spacing:-.035em}
 .v3-product .v2-nav{gap:30px;font-size:13px;line-height:1.4}
@@ -79,7 +79,7 @@ html:has(>body.v3-product.v2-home){scroll-padding-top:80px}
 .v3-product .v2-footer a{min-height:44px;display:inline-flex;align-items:center}
 .v3-product .v2-footer .v2-shell>p{font:400 12px/1.5 var(--v2-font)}
 /* The complete inherited cases get a quiet, product-led opening. */
-.v3-product .v2-case-nav{background:#101012f2;backdrop-filter:blur(18px)}
+.v3-product .v2-case-nav{background:#101012}
 .v3-product .v2-case-nav-title{max-width:32ch}
 .v3-product .v2-case-nav-links a{min-height:48px;font-size:13px}
 .v3-product.v2-case .project-hero-grid{display:flex;flex-direction:column;align-items:center;gap:22px;padding-block:64px 42px}
