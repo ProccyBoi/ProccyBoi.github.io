@@ -4,6 +4,7 @@
   'use strict';
   const root = document.querySelector('[data-assembly]');
   if (!root) return;
+  const background = root.dataset.assemblyBackground !== undefined;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const compact = matchMedia('(max-height: 620px), (max-width: 900px) and (max-height: 700px)');
   const canvas = root.querySelector('[data-assembly-canvas]');
@@ -31,9 +32,25 @@
   const modelStates = Array(projects.length).fill('pending');
   let frame = 0, frames = 0, visible = true, ready = false, loading = false, failed = false;
   let target = 0, current = 0, active = -1, width = 0, height = 0, entry = 0;
-  let poses = [], loadRequestedModel;
+  let poses = [], loadRequestedModel, introBottom = 0;
   const paintedModels = Array(projects.length).fill(null);
   const submittedModels = Array(projects.length).fill(null);
+  let completedSnapshot = null;
+  // Shared foreground ownership is based on readable pixels and a completed
+  // installed snapshot, never on CPU installation counts or elapsed time.
+  const publishForeground = () => {
+    const terminal = failed || !motionAllowed() || modelStates.every(state=>state==='unavailable');
+    const installedSettled = modelStates.every(state=>state==='ready'||state==='unavailable');
+    const snapshot = completedSnapshot;
+    const settled = terminal || Boolean(installedSettled && snapshot && !gpuBusy && !gpuNeedsDrain &&
+      snapshot.revision===revision && snapshot.width===width && snapshot.height===height && snapshot.ratio===desiredRatio &&
+      snapshot.entrySettled && current===target && models.every((model,index)=>model===snapshot.models[index]));
+    const nextVisible=String(visible), nextSettled=String(settled);
+    if(root.dataset.assemblyReadableVisible===nextVisible && root.dataset.assemblyForegroundSettled===nextSettled) return;
+    root.dataset.assemblyReadableVisible=nextVisible;
+    root.dataset.assemblyForegroundSettled=nextSettled;
+    window.dispatchEvent(new CustomEvent('v2:hero-foreground',{detail:{visible,settled}}));
+  };
   // Equivalent to the original .19 step at 60 Hz, including slow GPU frames.
   const FOLLOW_MS = -(1000 / 60) / Math.log(.81);
   let renderTime = 0, revision = 0, paintedRevision = -1, activePage = true;
@@ -44,6 +61,7 @@
     if(frame) cancelAnimationFrame(frame); frame=0;
     renderTime=0; revision++;
     gpuAbort?.abort();
+    publishForeground();
   };
   const refreshVisibility = () => {
     // IntersectionObserver considers an edge-adjacent root intersecting even
@@ -52,11 +70,12 @@
     const bounds=stage.getBoundingClientRect();
     const top=Math.max(0,header?.getBoundingClientRect().bottom||0);
     const next=bounds.width>0 && bounds.height>0 && bounds.right>0 && bounds.left<innerWidth && bounds.bottom>top && bounds.top<innerHeight;
-    if(next===visible) return;
+    if(next===visible) {publishForeground();return;}
     visible=next;
     syncLoadingVisibility();
     if(visible) {current=target;renderTime=0;revision++;}
     else {interrupt();current=target;}
+    publishForeground();
   };
   const gpuWait = async (abort, phase) => {
     root.dataset.assemblyGPUPending='true'; root.dataset.assemblyGPUPhase=phase;
@@ -84,8 +103,8 @@
   };
   const motionAllowed = () => !reduced.matches && !compact.matches && !navigator.connection?.saveData;
   const setSceneControls = enabled => {
-    if (choices) choices.hidden = !enabled;
-    selectors.forEach(button => { button.disabled = !enabled; });
+    if (choices) choices.hidden = !enabled || background;
+    selectors.forEach(button => { button.disabled = !enabled || background; });
   };
   const setExploreProject = index => {
     if (!exploreLink) return;
@@ -154,6 +173,7 @@
     renderer.shadowMap.needsUpdate=true;
   };
   const captionAt = value => {
+    if(background || !caption || !projectLink) return;
     const windows = [[.09,.365],[.405,.685],[.725,1.2]];
     let next = -1, opacity = 0;
     windows.forEach(([start,end], index) => {
@@ -164,9 +184,10 @@
     });
     if (next >= 0 && next !== active) {
       const project = projects[next];
-      root.querySelector('[data-assembly-title]').textContent = project.title;
-      root.querySelector('[data-assembly-kind]').textContent = project.kind;
-      root.querySelector('[data-assembly-description]').textContent = project.description;
+      for(const [key,value] of [['title',project.title],['kind',project.kind],['description',project.description]]) {
+        const node=root.querySelector(`[data-assembly-${key}]`);
+        if(node) node.textContent=value;
+      }
       projectLink.href = project.href;
       setExploreProject(next);
     }
@@ -187,16 +208,22 @@
   const updateProgress = () => {
     if (!motionAllowed() || !root.classList.contains('is-enhanced')) {target = 0; return;}
     const bounds = root.getBoundingClientRect();
-    const next = clamp(-bounds.top / Math.max(1,root.offsetHeight-stage.clientHeight));
+    // A decorative composition follows ordinary page departure. It never
+    // creates a sticky chapter runway or ties access to a scroll destination.
+    const travel=background ? stage.clientHeight : root.offsetHeight-stage.clientHeight;
+    const next = clamp(-bounds.top / Math.max(1,travel));
     if(next!==target) revision++;
     target = next;
-    if (target > .32) promoteModel?.(target >= .65 ? 2 : 1);
+    if (!background && target > .32) promoteModel?.(target >= .65 ? 2 : 1);
+    publishForeground();
   };
   const pose = (t,x,y,s,rx,ry,rz,e=0) => ({t,x,y,s,rx,ry,rz,e});
   const layout = () => {
     const nextWidth=stage.clientWidth, nextHeight=stage.clientHeight;
     const nextRatio=Math.min(devicePixelRatio||1,innerWidth<700?1.5:1.75);
-    if(nextWidth!==width||nextHeight!==height||nextRatio!==desiredRatio) revision++;
+    const nextIntroBottom=background ? (intro?.offsetTop||0)+(intro?.offsetHeight||nextHeight*.26) : 0;
+    if(nextWidth!==width||nextHeight!==height||nextRatio!==desiredRatio||nextIntroBottom!==introBottom) revision++;
+    introBottom=nextIntroBottom;
     desiredRatio=nextRatio;
     width=nextWidth; height=nextHeight;
     if(!height || !width) return;
@@ -222,6 +249,24 @@
       [pose(0,left,small ? -.2 : -.8,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale*(small?.9:1),.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
       [pose(0,right,small ? -.25 : -.8,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
+    if(background) {
+      // Preserve the genuine assembled boards and studio lighting, with a
+      // clear visual area below the stable introduction on every screen.
+      const pixels=height/10;
+      const artTop=Math.max(height*.30,introBottom+height*.045);
+      const artBottom=height-Math.max(28,height*.045);
+      const room=Math.max(height*.30,artBottom-artTop);
+      const centreY=(height/2-(artTop+artBottom)/2)/pixels;
+      const roomScale=Math.min(1,room/(height*.58));
+      const lead=leadStart*roomScale;
+      const side=sideStart*roomScale;
+      const sideLift=small ? .6 : .12;
+      poses=[
+        [pose(0,0,centreY-(small?.38:0),lead,1.04,-.12,-.2),pose(1,-.12,centreY+.40,lead,1.09,-.06,-.16)],
+        [pose(0,left,centreY+sideLift,side,1.08,.28,-.24),pose(1,left+.13,centreY+sideLift+.24,side,1.02,.34,-.28)],
+        [pose(0,right,centreY+sideLift,side,1.05,.22,.24),pose(1,right-.10,centreY+sideLift+.52,side,1.10,.16,.28)]
+      ];
+    }
     updateProgress();
     refreshVisibility();
     request();
@@ -261,7 +306,7 @@
     entryUnsettled=settle<1;
     projects.forEach((project,index) => {
       const transform=interpolate(poses[index],current);
-      const inScene=index===0 ? current<.405 : index===1 ? current<.105 || (current>=.345 && current<.725) : current<.115 || current>=.65;
+      const inScene=background || (index===0 ? current<.405 : index===1 ? current<.105 || (current>=.345 && current<.725) : current<.115 || current>=.65);
       const inView=inScene && Math.abs(transform.x)<5*width/height+transform.s;
       const poster=posters[index];
       if(poster) {
@@ -318,7 +363,11 @@
       root.dataset.assemblyLastSubmission=JSON.stringify({sequence:submittedFrames,at:started,value:current,raw:target,revision:drawnRevision,cpuMs:performance.now()-started});
       if(!await gpuWait(abort,'frame')) return;
       gpuNeedsDrain=false;
-      if(root.dataset.assemblyGPUCompletion==='complete') root.dataset.assemblyCompletedFrames=String(++completedFrames);
+      if(root.dataset.assemblyGPUCompletion==='complete') {
+        root.dataset.assemblyCompletedFrames=String(++completedFrames);
+        completedSnapshot={models:drawnModels.slice(),revision:drawnRevision,width:drawnWidth,height:drawnHeight,ratio:drawnRatio,entrySettled:!entryUnsettled};
+        root.dataset.assemblyCompletedSnapshot=JSON.stringify({sequence:submittedFrames,revision:drawnRevision,models:drawnModels.map(model=>Boolean(model)),entrySettled:!entryUnsettled});
+      }
       root.dataset.assemblyLastCompletedMs=performance.now().toFixed(1);
       // Only hand off a poster after this exact installed model was drawn.
       drawnModels.forEach((model,index)=>{
@@ -336,13 +385,15 @@
       root.dataset.assemblyModelsReady=String(paintedModels.filter(Boolean).length);
       root.dataset.assemblyState='ready';
     }
-    const introFade=1-ramp(current,.015,.10);
-    intro.style.opacity=introFade.toFixed(4);
-    intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
-    intro.inert=introFade<.5;
-    intro.setAttribute('aria-hidden',String(introFade<.5));
+    if(intro && !background) {
+      const introFade=1-ramp(current,.015,.10);
+      intro.style.opacity=introFade.toFixed(4);
+      intro.style.transform=`translateY(${(-90*(1-introFade)).toFixed(2)}px)`;
+      intro.inert=introFade<.5;
+      intro.setAttribute('aria-hidden',String(introFade<.5));
+    }
     captionAt(current);
-    progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
+    if(progressBar) progressBar.style.transform=`scaleX(${current.toFixed(5)})`;
     paintedRevision=drawnRevision;
     root.dataset.assemblyFrames=String(++frames);
     root.dataset.assemblyProgress=current.toFixed(5);
@@ -352,6 +403,7 @@
     } finally {
       if(gpuAbort===abort) gpuAbort=null;
       gpuBusy=false;
+      publishForeground();
       if(drawable() && (paintedRevision!==revision || Math.abs(target-current)>.00008 || entryUnsettled)) request();
       else renderTime=0;
     }
@@ -366,6 +418,7 @@
     root.dataset.assemblyModelsSettled=String(projects.length);
     posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});
     projects.forEach((_,index)=>loadingExperience?.modelFailed(index));
+    publishForeground();
     console.warn('Hardware renderer unavailable; project images remain available.',error);
   }
   root.querySelector('.v2-assembly-jump')?.addEventListener('click', () => {
@@ -378,14 +431,18 @@
     loadingExperience?.suspend(true);
     root.classList.remove('is-enhanced'); root.classList.add('is-static');
     interrupt(); target=0; current=0;
-    intro.style.removeProperty('opacity'); intro.style.removeProperty('transform'); intro.style.removeProperty('--assembly-separation');
-    intro.inert=false; intro.removeAttribute('aria-hidden');
+    if(intro) {
+      intro.style.removeProperty('opacity'); intro.style.removeProperty('transform'); intro.style.removeProperty('--assembly-separation');
+      intro.inert=false; intro.removeAttribute('aria-hidden');
+    }
     posters.forEach(poster=>poster.removeAttribute('style'));
     selectors.forEach(button=>{button.setAttribute('aria-pressed','false');button.style.removeProperty('--chapter-progress');});
     setSceneControls(false); setExploreProject(0); active=-1;
-    caption.classList.remove('is-active');caption.style.opacity='0'; caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;
+    if(caption) {caption.classList.remove('is-active');caption.style.opacity='0';caption.setAttribute('aria-hidden','true');}
+    if(projectLink) projectLink.tabIndex=-1;
     if(ready) {entry=0; layout(); request();}
     else root.dataset.assemblyState='static';
+    refreshVisibility();publishForeground();
   };
   async function initialize(){
     if(loading || ready || failed || !motionAllowed()) return;
@@ -482,7 +539,7 @@
           modelStates[index]='ready';
           // Installation cannot bypass the single in-flight draw gate. The
           // matching poster stays until a completed draw includes this model.
-          revision++; request();
+          revision++; publishForeground(); request();
         } catch(error) {
           // Installation failures remain independent; the renderer's async
           // failure path restores every poster if the context cannot continue.
@@ -511,7 +568,7 @@
       // supporting models after the browser can paint its initial scene.
       loadRequestedModel = loadModel;
       const lead=loadModel(0);
-      if (target > .32) promoteModel(target >= .65 ? 2 : 1);
+      if (!background && target > .32) promoteModel(target >= .65 ? 2 : 1);
       // Overlap all three model preparations after one paint opportunity.
       await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
       const supporting=projects.slice(1).map((_,index)=>loadModel(index+1));
@@ -519,6 +576,7 @@
       if(!models.some(Boolean)) root.dataset.assemblyState='unavailable';
       root.dataset.assemblyModelsInstalled=String(models.filter(Boolean).length);
       root.dataset.assemblyModelsSettled=String(modelStates.filter(state=>state!=='pending'&&state!=='loading').length);
+      publishForeground();
       if(!motionAllowed()) staticMode();
     } catch(error) {
       failed=true;root.dataset.assemblyState='unavailable';
@@ -531,7 +589,7 @@
       renderer?.dispose();
       renderer=null;
       console.warn('Hardware gallery unavailable; project images remain available.',error);
-    } finally {loading=false;}
+    } finally {loading=false;publishForeground();}
   }
   selectors.forEach((button,index)=>button.addEventListener('click',()=>{
     window.V2TransportPriority?.promote('hero');
@@ -544,7 +602,9 @@
   }));
   addEventListener('scroll',()=>{updateProgress();refreshVisibility();request();},{passive:true});
   addEventListener('resize',layout,{passive:true});
-  new ResizeObserver(layout).observe(stage);
+  const layoutObserver=new ResizeObserver(layout);
+  layoutObserver.observe(stage);
+  if(background && intro) layoutObserver.observe(intro);
   const syncLoadingVisibility=()=>loadingExperience?.suspend(!visible||document.hidden||!motionAllowed());
   new IntersectionObserver(()=>{updateProgress();refreshVisibility();request();},{threshold:0}).observe(root);
   document.addEventListener('visibilitychange',()=>{syncLoadingVisibility();if(document.hidden){interrupt();}else{updateProgress();refreshVisibility();current=target;revision++;request();}});
@@ -560,5 +620,13 @@
   });
   addEventListener('pagehide',()=>{activePage=false;loadingExperience?.suspend(true);interrupt();});
   addEventListener('pageshow',()=>{activePage=true;syncLoadingVisibility();updateProgress();refreshVisibility();current=target;revision++;request();});
+  if(background) {
+    root.dataset.assemblyActive='overview';
+    const artwork=root.querySelector('.v2-assembly-stage');
+    artwork?.setAttribute('aria-hidden','true');
+    canvas.setAttribute('aria-hidden','true');
+    canvas.removeAttribute('role');canvas.removeAttribute('aria-label');
+    posters.forEach(poster=>{poster.alt='';poster.setAttribute('aria-hidden','true');});
+  }
   if(motionAllowed()) initialize(); else staticMode();
 })();

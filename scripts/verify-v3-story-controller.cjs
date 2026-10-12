@@ -9,7 +9,7 @@ const html=fs.readFileSync(rootPath+'/v3/index.html','utf8');
 const ids=[...html.matchAll(/<article id="([^"]+)" data-aircraft-chapter=/g)].map(match=>match[1]);
 assert.deepEqual(ids,['aircraft','telemetry']);
 function extract(start,end){return source.slice(source.indexOf(start),source.indexOf(end,source.indexOf(start)))}
-function fixture(detailed=true){
+function fixture(detailed=true,ambient=false){
  const document={activeElement:null,documentElement:{}};
  function element(id=''){
   const classes=new Set(),attrs={};
@@ -20,7 +20,7 @@ function fixture(detailed=true){
   };return node;
  }
  const chapterIds=detailed?ids:['aircraft','inside','telemetry'],chapters=chapterIds.map(id=>element(id)),links=chapterIds.map(()=>element());
- const root=element(),context={document,root,chapters,links,ids:chapterIds,detailed,background:false,currentChapter:-1,track:null,frame:0,previousTime:0,scrubTime:0,renderedProgress:0,progress:0,landingDone:false,skip:element(),stage:{clientWidth:1440,clientHeight:900},renderer:null,scrollY:0,rootTop:0,width:1,height:1,distance:1,location:{hash:'#telemetry'},
+ const root=element(),context={document,root,chapters,links,ids:chapterIds,detailed,background:false,ambient,currentChapter:-1,track:null,frame:0,previousTime:0,scrubTime:0,renderedProgress:0,progress:0,landingDone:false,skip:element(),stage:{clientWidth:1440,clientHeight:900},renderer:null,scrollY:0,rootTop:0,width:1,height:1,distance:1,location:{hash:'#telemetry'},
   cancelAnimationFrame(){},requestAnimationFrame(fn){fn()},getComputedStyle(){return{scrollPaddingTop:'76'}},showPoster(pose){context.poster=pose},updateScroll(){context.scrollUpdates=(context.scrollUpdates||0)+1},endLanding(){context.landingDone=true},request(){}
  };
  document.createElement=()=>element();document.getElementById=id=>root.children.flatMap(track=>track.children).find(node=>node.id===id)||chapters.find(node=>node.id===id);
@@ -45,3 +45,23 @@ assert.deepEqual(current.chapters.map(chapter=>chapter.id),['aircraft','telemetr
 current.enable();assert.equal(current.track.children.length,2,'Re-enabling reduced motion state recreates exactly two anchors');
 const legacy=fixture(false);legacy.enable();assert.equal(legacy.track.children.length,3);assert.equal(legacy.chapterAt(.38),1);assert.equal(legacy.chapterAt(.8),2);assert.deepEqual(legacy.track.children.map(step=>step.style.top),['76px','1136.2px','2866px']);
 console.log('PASS two-destination chapter selection, pending board hold, deep-link anchors, focus transfer, fallback restoration, preference re-enable and unchanged three-chapter v2 logic.');
+
+const ambient=fixture(true,true);
+ambient.chapters.forEach((article,index)=>{article.getBoundingClientRect=()=>({top:index*720});});
+ambient.enable();
+assert.equal(ambient.track,ambient.root,'Ambient scene uses its real section, never a generated runway');
+assert.equal(ambient.root.children.length,0,'Ambient scene creates no jump targets or navigation');
+assert.deepEqual(ambient.chapters.map(article=>article.id),ids,'Ambient anchors stay on actual content');
+assert.equal(ambient.root.style.height,undefined,'Ambient mode does not manufacture document height');
+assert.equal(ambient.distance,720,'Native content positions define the decorative progress range');
+assert.equal(ambient.rootTop,-76,'Real document scroll padding defines the start pose');
+assert.equal(ambient.landingDone,true,'Ambient mode has no autoplay gate');
+assert.equal(ambient.poster,'stopped');
+ambient.document.activeElement=ambient.chapters[0];ambient.chapter(1);
+assert.equal(ambient.document.activeElement,ambient.chapters[0],'Scroll must never steal content focus');
+assert.ok(ambient.chapters.every(article=>!article.inert&&!('aria-hidden' in article.attrs)),'Both ambient articles remain accessible');
+ambient.scrollY=1000;ambient.fallback('static');
+assert.equal(ambient.root.removed,undefined,'Fallback must not remove the real section');
+assert.ok(ambient.chapters.every(article=>!article.scrolled),'Preference changes never relocate the reader');
+ambient.enable();assert.equal(ambient.root.children.length,0);
+console.log('PASS v2 ambient real anchors, ordinary copy, native scroll range, no autoplay, no focus mutation and static recovery.');

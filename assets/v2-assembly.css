@@ -154,3 +154,25 @@
   .v2-assembly-posters img{transition:none}
   .v2-assembly-bottom{display:none}
 }
+
+/* The v2 introduction is one ordinary screen. CAD remains a fully lit,
+   assembled composition; only its restrained departure reacts to scrolling. */
+.v2-assembly[data-assembly-background],
+.v2-assembly[data-assembly-background].is-enhanced{height:auto}
+.v2-assembly[data-assembly-background] .v2-assembly-sticky{position:relative;top:auto;height:100svh;min-height:0}
+.v2-assembly[data-assembly-background] .v2-assembly-intro{opacity:1;transform:none;will-change:auto}
+.v2-assembly[data-assembly-background] .v2-assembly-stage,
+.v2-assembly[data-assembly-background] .v2-assembly-posters,
+.v2-assembly[data-assembly-background] .v2-assembly-posters img{pointer-events:none}
+.v2-assembly[data-assembly-background] .v2-assembly-caption,
+.v2-assembly[data-assembly-background] .v2-assembly-bottom,
+.v2-assembly[data-assembly-background] .v2-assembly-progress{display:none}
+@media(max-height:620px),(max-width:900px) and (max-height:700px){
+  .v2-assembly[data-assembly-background] .v2-assembly-sticky{height:auto;min-height:0}
+}
+@media(max-width:540px){
+  .v2:not(.v2-ready) .v2-assembly[data-assembly-background]:not(.is-enhanced) .v2-assembly-sticky{height:auto}
+}
+@media print{
+  .v2-assembly[data-assembly-background] .v2-assembly-sticky{height:650px}
+}

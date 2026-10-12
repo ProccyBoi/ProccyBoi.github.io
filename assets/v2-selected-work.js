@@ -6,6 +6,7 @@
   const root = document.querySelector('[data-selected-work]');
   if (!root) return;
   const articles = [...root.querySelectorAll('[data-selected-chapter]')];
+  const backgroundScene = root.hasAttribute('data-selected-background-scene');
   const names = ['esp32', 'dual', 'pi', 'logic', 'metro', 'tramtrace'];
   const ids = ['work-framework', 'work-transit'];
   const images = [...root.querySelectorAll('img')];
@@ -38,13 +39,25 @@
   const idleTurn = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(() => {
     if (window.requestIdleCallback) requestIdleCallback(resolve, {timeout:700}); else resolve();
   },0)));
-  let stage,canvas,track,nav,bar,links=[],renderer,scene,camera,composition,key,environment;
+  let stage,canvas,track,backgroundContent,nav,bar,links=[],renderer,scene,camera,composition,key,environment;
   let sourceTask,transferTask,releaseTransfer,initialization,backgroundBusy=false,backgroundDone=false;
   let ready=false,failed=false,visible=false,activePage=true,generation=0,frame=0,frames=0,warmFrames=0;
-  let liveBusy=false,gpuAbort,releaseForeground,needsDrain=true,preparationFrames=0,poseRevision=0,presentedRevision=-1,layoutDPR=0,submittedFrames=0,completedFrames=0;
+  let liveBusy=false,gpuAbort,needsDrain=true,preparationFrames=0,poseRevision=0,presentedRevision=-1,layoutDPR=0,submittedFrames=0,completedFrames=0;
   const preparedModels=new Set(),preparedPoses=new Set(),preparationMeasurements=[];
   let lastGPUResult,lastPriority=false,preparationNear=false,preparationIntent=false;
-  const preparationEligible=()=>Boolean(visible||preparationNear||preparationIntent);
+  // Byte transfer is eager, but an offscreen scene must not steal the opening
+  // hero's CPU/GPU before its visible frame has actually completed. Installed
+  // model counts and elapsed time are not a foreground completion signal.
+  function foregroundAvailable(){
+    const hero=document.querySelector('[data-assembly]');
+    if(!hero||['unavailable','static'].includes(hero.dataset.assemblyState))return true;
+    if(hero.dataset.assemblyForegroundSettled==='true')return true;
+    if(hero.dataset.assemblyReadableVisible!==undefined)return hero.dataset.assemblyReadableVisible==='false';
+    const bounds=(hero.querySelector('.v2-assembly-stage')||hero).getBoundingClientRect();
+    const header=document.querySelector('.v2-header')?.getBoundingClientRect().bottom||0;
+    return bounds.bottom<=header||bounds.top>=innerHeight;
+  }
+  const preparationEligible=()=>Boolean((visible||preparationNear||preparationIntent)&&(visible||foregroundAvailable()));
   const aircraftHasPriority=()=>!visible&&Boolean(window.V2AircraftPreparation?.isVisible());
   function publishPriority(){
     const active=window.V2SelectedWork.isVisible();
@@ -57,6 +70,7 @@
   let inspectUI,inspectControls,inspectHint,overviewButton,inspectButtons=[],inspectTarget=-1,inspectMode='overview',inspectRevision=0,inspectTime=0,hitPoint,lastPointerX,lastPointerY;
   const inspectionMoving=()=>inspection.weights.some((weight,index)=>Math.abs(weight-(index===inspectTarget?1:0))>.0005);
   function inspectionState(index=-1,mode='overview',immediate=false){
+    if(backgroundScene)return;
     if(index>=0&&(!ready||!backgroundDone||!visible||progress>=.34||!root.classList.contains('is-live')))return;
     if(index<0){index=-1;mode='overview';}
     const changed=index!==inspectTarget||mode!==inspectMode;
@@ -71,7 +85,7 @@
     request();
   }
   function inspectionControls(){
-    if(inspectUI)return;
+    if(backgroundScene||inspectUI)return;
     inspectUI=document.createElement('div');inspectUI.className='v2-framework-interaction';inspectUI.setAttribute('data-framework-inspection-ui','');inspectUI.hidden=true;
     inspectControls=document.createElement('div');inspectControls.className='v2-framework-inspection-controls';
     inspectHint=document.createElement('p');inspectHint.textContent='Select a card for a closer look';inspectHint.id='framework-inspection-hint';
@@ -108,12 +122,13 @@
     inspectUI.hidden=!enabled;
   }
   function stepInspection(time){
+    if(backgroundScene)return;
     const dt=inspectTime?Math.max(0,time-inspectTime):16.67,alpha=root.dataset.selectedWarmMask==='true'?1:1-Math.exp(-dt/95);inspectTime=time;
     for(let i=0;i<4;i++){const target=i===inspectTarget?1:0;inspection.weights[i]+= (target-inspection.weights[i])*alpha;if(Math.abs(inspection.weights[i]-target)<.0005)inspection.weights[i]=target;}
     root.dataset.selectedInspectionWeights=JSON.stringify([...inspection.weights]);
   }
   function inspectionBounds(){
-    if(progress>=.44)return [];
+    if(backgroundScene||progress>=.44)return [];
     if(!hitPoint)hitPoint=new window.THREE.Vector3();
     const stageBox=stage.getBoundingClientRect(),navBox=nav.getBoundingClientRect(),footer=articles[0].querySelector('.v2-framework-copy').getBoundingClientRect();
     const controlsTop=navBox.bottom-stageBox.top+6;inspectControls.style.top=controlsTop+'px';
@@ -146,6 +161,7 @@
     });
   }
   function publishInspection(report){
+    if(backgroundScene)return;
     root.dataset.selectedInspectionRenderedWeights=JSON.stringify(report.inspectionWeights);
     root.dataset.selectedInspectionPresentedRevision=String(report.inspectionRevision);
     root.dataset.selectedInspectionHitBounds=JSON.stringify(report.hitBounds);
@@ -157,6 +173,8 @@
   function chapter(index) {
     if (currentChapter===index || !track) return;
     currentChapter=index;
+    root.dataset.selectedChapter=String(index);
+    if(backgroundScene)return;
     articles.forEach((article,i) => {
       if (i!==index && article.contains(document.activeElement)) links[index]?.focus({preventScroll:true});
       article.classList.toggle('is-current',i===index); article.inert=i!==index; article.setAttribute('aria-hidden',String(i!==index));
@@ -167,16 +185,32 @@
   function mask() {
     root.classList.remove('is-live'); if(canvas) canvas.style.visibility='hidden'; root.dataset.selectedWarmMask='true';inspectionAvailability();
   }
+  function createStage(){
+    stage=document.createElement('div');stage.className='v2-selected-stage';
+    canvas=document.createElement('canvas');canvas.className='v2-selected-canvas';canvas.setAttribute('data-selected-canvas','');canvas.setAttribute('aria-hidden','true');stage.append(canvas);
+    canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fail(new Error('Selected Work graphics context lost'));});
+  }
   function enable() {
     if(track || articles.length!==2) return;
+    if(backgroundScene){
+      if(!stage)createStage();
+      // Only the visual stage is sticky. The original sections and links stay
+      // in document order, with their own IDs, focus and native anchor behavior.
+      stage.setAttribute('aria-hidden','true');
+      if(!backgroundContent){
+        backgroundContent=document.createElement('div');backgroundContent.className='v2-selected-content';
+        articles.forEach(article=>backgroundContent.append(article));root.append(backgroundContent);
+      }
+      track=backgroundContent;root.insertBefore(stage,track);root.classList.add('is-scene');
+      mask();currentChapter=-1;layout();return;
+    }
     if(stage){
       articles.forEach((article,i)=>{article.id='copy-'+ids[i];stage.insertBefore(article,nav);});
       track=document.createElement('div');track.className='v2-selected-track';track.setAttribute('aria-hidden','true');
       ids.forEach(id=>{const step=document.createElement('div');step.id=id;step.className='v2-selected-step';track.append(step);});
       root.append(stage,track);root.classList.add('is-scene');mask();currentChapter=-1;chapter(0);layout();return;
     }
-    stage=document.createElement('div');stage.className='v2-selected-stage';
-    canvas=document.createElement('canvas');canvas.className='v2-selected-canvas';canvas.setAttribute('data-selected-canvas','');canvas.setAttribute('aria-hidden','true');stage.append(canvas);
+    createStage();
     articles.forEach((article,i)=>{article.id='copy-'+ids[i];stage.append(article);});
     nav=document.createElement('nav');nav.className='v2-selected-nav';nav.setAttribute('aria-label','Selected Work chapters');
     ['Framework cards','Transit displays'].forEach((text,i)=>{
@@ -195,7 +229,6 @@
     track=document.createElement('div');track.className='v2-selected-track';track.setAttribute('aria-hidden','true');
     ids.forEach(id=>{const step=document.createElement('div');step.id=id;step.className='v2-selected-step';track.append(step);});
     root.append(stage,track);root.classList.add('is-scene');inspectionControls();mask();chapter(0);layout();
-    canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fail(new Error('Selected Work graphics context lost'));});
     if(ids.includes(location.hash.slice(1))) requestAnimationFrame(()=>document.getElementById(location.hash.slice(1))?.scrollIntoView({behavior:'instant'}));
   }
   function dispose() {
@@ -205,14 +238,16 @@
     geometries.forEach(item=>item.dispose());materials.forEach(item=>item.dispose());textures.forEach(item=>item.dispose());environment?.dispose();renderer?.dispose();
   }
   function invalidate() {
-    generation++;needsDrain=true;gpuAbort?.abort();gpuAbort=undefined;releaseForeground?.();
+    generation++;needsDrain=true;gpuAbort?.abort();gpuAbort=undefined;
   }
   function fallback(state='static') {
     inspectionState(-1,'overview',true);invalidate();cancelAnimationFrame(frame);frame=0;previousTime=0;mask();
-    const restore=track&&visible&&currentChapter>=0?currentChapter:-1;
+    const restore=!backgroundScene&&track&&visible&&currentChapter>=0?currentChapter:-1;
     root.classList.remove('is-scene','is-live');
-    articles.forEach((article,i)=>{article.id=ids[i];article.inert=false;article.removeAttribute('aria-hidden');article.classList.remove('is-current');root.append(article);});
-    stage?.remove();track?.remove();track=null;publishPriority();
+    // Leave the ordinary content wrapper in place in background mode. Moving
+    // a focused link's ancestor during a preference change would blur it.
+    if(!backgroundScene)articles.forEach((article,i)=>{article.id=ids[i];article.inert=false;article.removeAttribute('aria-hidden');article.classList.remove('is-current');root.append(article);});
+    stage?.remove();if(!backgroundScene)track?.remove();track=null;publishPriority();
     root.dataset.selectedState=state;settleBackground({state,at:performance.now()});
     if(restore>=0)articles[restore].scrollIntoView({behavior:'instant',block:'start'});
   }
@@ -222,13 +257,13 @@
   function updateScroll() {
     if(!track)return;
     const b=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(stage).top)||0;
-    const nextVisible=b.top<innerHeight&&b.bottom>pinned;
+    const readable=backgroundScene?stage.getBoundingClientRect():b;
+    const nextVisible=readable.top<innerHeight&&readable.bottom>pinned;
     const entered=nextVisible&&!visible,left=!nextVisible&&visible;visible=nextVisible;publishPriority();
     const wasNear=preparationNear;preparationNear=b.top<innerHeight*2&&b.bottom>-innerHeight;
     if(!preparationNear&&!visible){preparationIntent=false;if(wasNear&&(backgroundBusy||initialization))invalidate();}
     root.dataset.selectedPreparationEligible=String(preparationEligible());
-    // The negative-margin track is the stage's stable flow placeholder; its
-    // document position does not change when the stage becomes sticky.
+    // Both content modes keep a stable flow origin while the visual is sticky.
     top=scrollY+track.getBoundingClientRect().top;
     const next=clamp((scrollY-top+pinned)/distance);
     const smoother=window.V2ScrollSmoothing;
@@ -238,7 +273,7 @@
     progress=next;if(!visible)inspectionState(-1,'overview',true);else if(progress>=.34)inspectionState();
     root.dataset.selectedProgress=progress.toFixed(6);root.dataset.selectedPoseRevision=String(poseRevision);inspectionAvailability();
     if(entered||left||jumped){invalidate();mask();if(entered&&!backgroundDone)root.dataset.selectedBackgroundState='promoted';}
-    if(!root.classList.contains('is-live')){chapter(progress<.57?0:1);bar.style.transform=`scaleX(${progress})`;}
+    if(!root.classList.contains('is-live')){chapter(progress<.57?0:1);if(bar)bar.style.transform=`scaleX(${progress})`;}
     if(visible){prepareTransfers(true).catch(fail);initialize(true).catch(fail);prepareInBackground();request();}
     else {cancelAnimationFrame(frame);frame=0;previousTime=0;current=progress;prepareInBackground();}
   }
@@ -248,11 +283,15 @@
     const nextDPR=Math.min(devicePixelRatio||1,nextWidth<=760?1.25:1.5);
     const sizeChanged=width!==nextWidth||height!==nextHeight,dprChanged=layoutDPR!==nextDPR;
     if(sizeChanged||dprChanged){invalidate();mask();poseRevision++;}
-    width=nextWidth;height=nextHeight;layoutDPR=nextDPR;distance=height*(width<=760?1.9:1.7);
-    track.style.height=`${distance+height}px`;track.style.marginTop=`${-height}px`;
-    const padding=parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0;
-    const pinned=parseFloat(getComputedStyle(stage).top)||0;
-    [...track.children].forEach((step,i)=>step.style.top=`${i*distance+padding-pinned}px`);
+    width=nextWidth;height=nextHeight;layoutDPR=nextDPR;
+    if(backgroundScene)distance=Math.max(1,track.offsetHeight-height);
+    else{
+      distance=height*(width<=760?1.9:1.7);
+      track.style.height=`${distance+height}px`;track.style.marginTop=`${-height}px`;
+      const padding=parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0;
+      const pinned=parseFloat(getComputedStyle(stage).top)||0;
+      [...track.children].forEach((step,i)=>step.style.top=`${i*distance+padding-pinned}px`);
+    }
     if(renderer&&dprChanged)renderer.setPixelRatio(nextDPR);
     if(renderer&&sizeChanged)renderer.setSize(width,height,false);
     previousTime=0;updateScroll();
@@ -288,7 +327,7 @@
     // variants and uploads. Both complete composition stages and every live
     // frame retain the accepted full-resolution shadow map.
     prepareShadowSize(warm&&longSide===64?64:1536);
-    const pose=composition.frame(camera,value,width,height,warm?undefined:inspection);fitLight(pose);
+    const pose=composition.frame(camera,value,width,height,warm||backgroundScene?undefined:inspection);fitLight(pose);
     // r128 resets its counters after the shadow pass by default. Explicitly
     // bracket the full draw so diagnostics include both shadow and main work.
     const autoReset=renderer.info.autoReset;renderer.info.autoReset=false;renderer.info.reset();
@@ -342,7 +381,7 @@
       if((direct&&revision!==poseRevision)||(root.dataset.selectedWarmMask==='true'&&(Math.abs(value-progress)>.00008||report.inspectionRevision!==inspectRevision)))return;
       chapter(pose.chapter);canvas.style.visibility='';root.classList.add('is-live');root.dataset.selectedWarmMask='false';root.dataset.selectedState='ready';
       publishInspection(report);report.published=true;presentedRevision=revision;root.dataset.selectedPresentedRevision=String(revision);
-      root.dataset.selectedFrames=String(++frames);root.dataset.selectedRenderedProgress=value.toFixed(6);bar.style.transform=`scaleX(${value})`;
+      root.dataset.selectedFrames=String(++frames);root.dataset.selectedRenderedProgress=value.toFixed(6);if(bar)bar.style.transform=`scaleX(${value})`;
       root.dataset.selectedFirstLiveMs ||= performance.now().toFixed(1);
       if(capturePose!==undefined||current===progress)previousTime=0;if(!inspectionMoving())inspectTime=0;
     }catch(error){fail(error);}
@@ -390,13 +429,6 @@
     }
     return transferTask;
   }
-  const foregroundSettled=()=>new Promise(resolve=>{
-    const hero=document.querySelector('[data-assembly]');
-    if(!hero||hero.dataset.assemblyModelsSettled==='3'||['unavailable','static'].includes(hero.dataset.assemblyState)){resolve();return;}
-    let observer;const finish=()=>{clearTimeout(timer);observer?.disconnect();if(releaseForeground===finish)releaseForeground=undefined;resolve();};const timer=setTimeout(finish,12000);releaseForeground=finish;
-    observer=new MutationObserver(()=>{if(hero.dataset.assemblyModelsSettled==='3'||['unavailable','static'].includes(hero.dataset.assemblyState))finish();});
-    observer.observe(hero,{attributes:true,attributeFilter:['data-assembly-models-settled','data-assembly-state']});
-  });
   async function initialize(promote=false) {
     if(ready){prepareInBackground();request();return;}
     if(!allowed()||failed||!track||aircraftHasPriority()||!preparationEligible())return;
@@ -432,7 +464,7 @@
       root.dataset.selectedModelStatistics=JSON.stringify(composition.stats());root.dataset.selectedSceneReady='true';
       ready=true;root.dataset.selectedState='prepared';layout();request();
       if(new URLSearchParams(location.search).has('selectedCapture'))window.__v2Selected={renderer,scene,camera,assemblies,composition,
-        seekProgress(value){capturePose=clamp(value);current=capturePose;const pose=draw(capturePose);chapter(pose.chapter);canvas.style.visibility='';root.classList.add('is-live');root.dataset.selectedWarmMask='false';root.dataset.selectedRenderedProgress=capturePose.toFixed(6);bar.style.transform=`scaleX(${capturePose})`;},
+        seekProgress(value){capturePose=clamp(value);current=capturePose;const pose=draw(capturePose);chapter(pose.chapter);canvas.style.visibility='';root.classList.add('is-live');root.dataset.selectedWarmMask='false';root.dataset.selectedRenderedProgress=capturePose.toFixed(6);if(bar)bar.style.transform=`scaleX(${capturePose})`;},
         drawProgress(value,{warm=false,shadows=true}={}){const enabled=renderer.shadowMap.enabled;renderer.shadowMap.enabled=shadows;try{return draw(clamp(value),warm).measurement;}finally{renderer.shadowMap.enabled=enabled;renderer.shadowMap.needsUpdate=true;}},
         resume(){capturePose=undefined;previousTime=0;updateScroll();request();}};
     })().catch(fail).finally(()=>{
@@ -448,14 +480,13 @@
   async function prepareInBackground() {
     if(backgroundDone||failed||!allowed()||document.hidden||!activePage||!track)return;
     if(aircraftHasPriority()){root.dataset.selectedBackgroundState='paused-aircraft';return;}
-    if(!preparationEligible()){root.dataset.selectedBackgroundState='deferred-distance';return;}
+    if(!preparationEligible()){root.dataset.selectedBackgroundState=preparationNear&&!foregroundAvailable()?'deferred-foreground':'deferred-distance';return;}
     if(backgroundBusy||liveBusy)return;
     backgroundBusy=true;mask();const token=generation;
     const valid=()=>token===generation&&!document.hidden&&activePage&&allowed()&&!failed&&track&&!aircraftHasPriority()&&preparationEligible();
     root.dataset.selectedBackgroundState=visible?'promoted':'warming';root.dataset.selectedBackgroundStartedMs ||= performance.now().toFixed(1);
     try{
       await prepareSources();prepareTransfers(visible).catch(fail);
-      if(!visible)await foregroundSettled();
       await idleTurn();if(!valid())return;
       await initialize(visible);if(!valid()||!ready)return;
       if(needsDrain){if(!await gpuComplete(valid,false,true))return;needsDrain=false;}
@@ -496,6 +527,11 @@
     prepareSources().then(()=>prepareTransfers(near())).catch(fail);
     if(near())initialize(true);else{root.dataset.selectedState=ready?'prepared':'waiting';prepareInBackground();}
   }
+  addEventListener('v2:hero-foreground',()=>{
+    if(backgroundDone||visible)return;
+    if(!foregroundAvailable()){invalidate();mask();root.dataset.selectedBackgroundState='deferred-foreground';}
+    else prepareInBackground();
+  });
   addEventListener('v2:aircraft-priority',()=>{
     if(backgroundDone)return;
     if(aircraftHasPriority()){invalidate();mask();root.dataset.selectedBackgroundState='paused-aircraft';}
