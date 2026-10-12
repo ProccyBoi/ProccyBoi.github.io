@@ -1,0 +1,575 @@
+{
+  "format": 1,
+  "purpose": "Build-only gzip encoding of the existing exact V2HIDX1 transports; no decoded-byte, model, texture, runtime, URL, fallback, or airframe change.",
+  "baselineCommit": "5a50d2f336accccaf1577ad43f1465506bdbeb5c",
+  "encoder": {
+    "package": "zopfli",
+    "version": "0.4.3",
+    "format": "gzip",
+    "options": {
+      "numiterations": 5,
+      "blocksplitting": 1,
+      "blocksplittinglast": 0,
+      "blocksplittingmax": 15
+    }
+  },
+  "packageSource": "https://pypi.org/project/zopfli/0.4.3/",
+  "reproduce": "Install zopfli==0.4.3 in an isolated build environment, then run python scripts/recompress-v2-packs.py --write after the original pack builders.",
+  "verify": "python3 scripts/recompress-v2-packs.py --verify (Python standard library only).",
+  "baselineManifests": {
+    "hero": {
+      "path": "assets/models/hero/manifest.json",
+      "sha256": "4ce6351fc569a0a0fb84e54f506910a4013afd81922eda9d31122a9b663c5ed0",
+      "preservedSourceFields": {
+        "format": 1,
+        "sources": {
+          "assets/framework-mechanics.js": "fd83ec09670bd045cbb6dc76a863f535c64933aa774a99156cb64e2250a60add",
+          "assets/images/v2/tramtrace-silk.svg": "43c48b2f0df409be78eb5874185f840341606f8f8ba1e9b8212eb90404994059",
+          "assets/models/framework-esp32/framework-usbc.glb": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa",
+          "assets/models/framework-mechanics/framework-m2x3-screw.json": "aad9a77422868ddb3fea490cd2933f4e405c859804661f243f242ac1672b6a64",
+          "assets/models/framework-mechanics/framework-m2x3-screw.stl": "b3149ea236c240d7317abfd51d3ba4d716eba5f5bc8982db3def92a4a62c2881",
+          "assets/models/framework-pi/framework-pi-board.glb": "19168ad1a4d84bb61aaa2d78d6950af06bb8c0e0a85075569df362c02b0cbb1b",
+          "assets/models/framework-pi/framework-pi-enclosure.stl": "92c401b4880ed1262ebc939911455b1c9da729dd594b2892c98ab40baf44e16a",
+          "assets/models/framework-pi/framework-pi-silk-front.svg": "b479d7123698e827256712b18f0ef62d7a4effd283660b30a7fca8c2977180f6",
+          "assets/models/hardware/skylabs-telemetry/assembly.json": "9f908f81075a302fb189aa0e21ee7c98cce31cd5838f3f2f6d17ecaed2894120",
+          "assets/models/hardware/skylabs-telemetry/board.glb": "0cf263b9d68c46c314a70ca06d4a0761e84b02229a56ce52fe52ed9bcf37f2d0",
+          "assets/models/hardware/skylabs-telemetry/silk-back.svg": "4f98970be80066649b0a1f268bb30dc4e7988c56be06b6501706ff63e0cff210",
+          "assets/models/hardware/skylabs-telemetry/silk-front.svg": "4fb0fad9f79d351c5a5799d40e0212bd40c75c53d0972e9e44be455bc32e551a",
+          "assets/models/tramtrace/tramtrace-kicad-source.glb": "fb35ccad3efd7761b8e1b2253659aa33566f54f903945c1ecfd43612f31ec134",
+          "assets/v2-assembly-models.js": "c3fc34a8c760a258015255c4c4d977711e5314ab60e1a7a4a4b2876c9eb5c19e",
+          "assets/v2-hardware-models.js": "4491d95bd7ee8eb9378be39f0b6d032155e142fb219a983d67cb3ab8ff79e34f",
+          "assets/vendor/GLTFLoader.js": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6",
+          "assets/vendor/three.min.js": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
+        },
+        "sourceHashNormalization": "utf8-lf",
+        "preservation": "Exact expanded triangle attribute bytes, materials, textures, transforms, reference metadata and source motion"
+      }
+    },
+    "selected": {
+      "path": "assets/models/selected/manifest.json",
+      "sha256": "6e06d882c39d2faa50bea1c4387cab76145da0a614aedf763045969bb00e0fcd",
+      "preservedSourceFields": {
+        "format": 1,
+        "container": "V2HERO1",
+        "transport": "V2HIDX1/index-byte-planes-v1",
+        "sourceCommit": "99c15f63605a579ff91b6b631c8d6a867e9833e5",
+        "sources": {
+          "assets/explorer-runtime.js": {
+            "bytes": 4767,
+            "sha256": "04418cca7f825f446169b06c1602f3f4f0fe4bac37a6a7cad72b825bf437bb79"
+          },
+          "assets/framework-dual-usb-3d.js": {
+            "bytes": 59721,
+            "sha256": "eb57258c0b9f4c8a90a09e4bba82559e5a31c346af643de8c17b93077e160f72"
+          },
+          "assets/framework-mechanics.js": {
+            "bytes": 3584,
+            "sha256": "fd83ec09670bd045cbb6dc76a863f535c64933aa774a99156cb64e2250a60add"
+          },
+          "assets/metroboard-3d.js": {
+            "bytes": 43195,
+            "sha256": "cebefcf2b36edf65ea5ea45526f80eaa2510c770e17fdd8da7507ce55881a4e2"
+          },
+          "assets/models/framework-dual-usb/framework-dual-usb-silk.svg": {
+            "bytes": 19789,
+            "sha256": "c1bbdaad7fdd559cc9d366735f65b999e6c711a2ddc2b85219a45805f2a8df96"
+          },
+          "assets/models/framework-esp32/framework-board.glb": {
+            "bytes": 3923244,
+            "sha256": "f65b7c7b5b9e9fa548e84403b3a021b0b7b6cff203dfed1647cdcf6c7d74f232"
+          },
+          "assets/models/framework-esp32/framework-enclosure.stl": {
+            "bytes": 224184,
+            "sha256": "92c401b4880ed1262ebc939911455b1c9da729dd594b2892c98ab40baf44e16a"
+          },
+          "assets/models/framework-esp32/framework-markings-silk.svg": {
+            "bytes": 28268,
+            "sha256": "1e9ff8d03cdd24449e3c576828e4a18c73306f688ce813b58d4be336f206d0c6"
+          },
+          "assets/models/framework-esp32/framework-usbc.glb": {
+            "bytes": 516408,
+            "sha256": "501a1e305b6a081cb6cbcc156a40e9b754459acf0fb08799eeae70e16b886aaa"
+          },
+          "assets/models/framework-mechanics/framework-m2x3-screw.json": {
+            "bytes": 1237,
+            "sha256": "aad9a77422868ddb3fea490cd2933f4e405c859804661f243f242ac1672b6a64"
+          },
+          "assets/models/framework-mechanics/framework-m2x3-screw.stl": {
+            "bytes": 285884,
+            "sha256": "b3149ea236c240d7317abfd51d3ba4d716eba5f5bc8982db3def92a4a62c2881"
+          },
+          "assets/models/hardware/framework-logic-analyser/assembly.json": {
+            "bytes": 22816,
+            "sha256": "6b3c76514faf70952fd071cdd5a12d23cfc135d910cbd12f031eab6b0ecbc55f"
+          },
+          "assets/models/hardware/framework-logic-analyser/board.glb": {
+            "bytes": 7818648,
+            "sha256": "ed6787c6873b23e83d603a8ee631cf4b1f44bfb24fa0a59d7fcae7d38c7bcc35"
+          },
+          "assets/models/hardware/framework-logic-analyser/framework-logic-enclosure.stl": {
+            "bytes": 219884,
+            "sha256": "1c1f709830333e8fe5b1a889fc184a88fd4a51452d4caaccc8f4b450f7105d8d"
+          },
+          "assets/models/hardware/framework-logic-analyser/silk-back.svg": {
+            "bytes": 48019,
+            "sha256": "52b80a55cd878bb3baf8c9a5564888b070bc25c3731b8024f1b832f6dc5f5553"
+          },
+          "assets/models/hardware/framework-logic-analyser/silk-front.svg": {
+            "bytes": 25554,
+            "sha256": "b50015db466093635bbecc52e8329cc88127c96bc4de70def85aaef743feb5b6"
+          },
+          "assets/models/hardware/metroboard/assembly.json": {
+            "bytes": 157821,
+            "sha256": "1e8b0c9a98edb176d8aed289c441fa3bb744d4394e42a98146edcc993e832695"
+          },
+          "assets/models/hardware/metroboard/board.glb": {
+            "bytes": 11609852,
+            "sha256": "01ce0a49eae3571d143dceb76dd2a9e2137a48baf1c5de6ee9a1f2166a006913"
+          },
+          "assets/models/hardware/metroboard/silk-back.svg": {
+            "bytes": 35186,
+            "sha256": "d3ffbd54e22920c59e936ab3ccf8b637e248e52d422e3064dcbea84872a82c20"
+          },
+          "assets/models/hardware/metroboard/silk-front.svg": {
+            "bytes": 1710363,
+            "sha256": "a15c1fb3049a4f4c41a9b9306f5a8bbe2ddd8ed1ef4faac71d79d0028e69b484"
+          },
+          "assets/pcb-object-explorer.js": {
+            "bytes": 30735,
+            "sha256": "1fc44fda107ecafa18d7e0d2e364261568bbf512fa8f52766eeef05913de06db"
+          },
+          "assets/v2-assembly-models.js": {
+            "bytes": 22105,
+            "sha256": "c3fc34a8c760a258015255c4c4d977711e5314ab60e1a7a4a4b2876c9eb5c19e"
+          },
+          "assets/v2-hardware-models.js": {
+            "bytes": 10434,
+            "sha256": "4491d95bd7ee8eb9378be39f0b6d032155e142fb219a983d67cb3ab8ff79e34f"
+          },
+          "assets/v2-hero-assets.js": {
+            "bytes": 9308,
+            "sha256": "cd6d70a5db2a70cdedcc3bb82da8bee4946dc541487a66d60445d5aa591552fe"
+          },
+          "assets/v2-selected-assets.js": {
+            "bytes": 9896,
+            "sha256": "4ab1df2e6303662bd6a108204c00fba8859bda18af2e62dd0d07342b9bb4b60f"
+          },
+          "assets/vendor/GLTFLoader.js": {
+            "bytes": 96550,
+            "sha256": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6"
+          },
+          "assets/vendor/three.min.js": {
+            "bytes": 603445,
+            "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
+          },
+          "scripts/build-v2-hero-assets.cjs": {
+            "bytes": 17591,
+            "sha256": "c3ea978e7503ea1ba33651981caf3a5f810fcf25924c191443d4edeeef22f75f"
+          },
+          "scripts/build-v2-selected-assets.cjs": {
+            "bytes": 32299,
+            "sha256": "a5a8c4853b8ddce87db8b6a000839d12ff917e7bcfb918cf681bceb2401ad216"
+          },
+          "scripts/render-framework-dual-poster.cjs": {
+            "bytes": 15711,
+            "sha256": "61c9b539a753d31df3aa9d711016b4d68bae4dba6b4ba587b3d593d91b8efdc4"
+          },
+          "v2/projects/framework-dual-usb/index.html": {
+            "bytes": 12773,
+            "sha256": "e47e735e22e8d5f46ec14bb7f6441ca66cace54ea685173f974cc70ab664ea9e"
+          }
+        },
+        "sourceHashNormalization": "raw bytes",
+        "sourceFilesUnchanged": true
+      }
+    }
+  },
+  "assets": [
+    {
+      "path": "assets/models/hero/pi.idx.bin.gz",
+      "manifest": "assets/models/hero/manifest.json",
+      "model": "pi",
+      "baseline": {
+        "gzipBytes": 539096,
+        "sha256": "435a618c175e600e909a2de04e2f5066135fc508cc0c271ab19a48f782e56fc3"
+      },
+      "transport": {
+        "format": "index-byte-planes-v1",
+        "bytes": 2473884,
+        "sha256": "6f6886c89166dea6623483a682fa99e5a61879c13d424c2ed675a829c68f9052"
+      },
+      "container": {
+        "bytes": 2473868,
+        "sha256": "19949162fef21690983452c54342e020553486aeb08e230d1d01fe8c00f8bf09"
+      },
+      "encoded": {
+        "gzipBytes": 504241,
+        "sha256": "87b0e5187ba9ae10fd38ef1f2b319f1dd5413ef4add3b3b49bc9fd4a885d122c"
+      },
+      "preservedModel": {
+        "url": "/assets/models/hero/pi.bin",
+        "compressedUrl": "/assets/models/hero/pi.idx.bin.gz",
+        "bytes": 2473868,
+        "transport": "index-byte-planes-v1",
+        "transportBytes": 2473884,
+        "legacyCompressedUrl": "/assets/models/hero/pi.bin.gz",
+        "legacyGzipBytes": 689946,
+        "sha256": "19949162fef21690983452c54342e020553486aeb08e230d1d01fe8c00f8bf09",
+        "parts": 36,
+        "meshes": 90,
+        "triangles": 59762,
+        "textures": [
+          "/assets/models/framework-pi/framework-pi-silk-front.svg"
+        ],
+        "paritySha256": "dad2bdb1710dc566231ab89edfde90fc52ea1894c183a3d6303054d289b6b82e"
+      }
+    },
+    {
+      "path": "assets/models/hero/telemetry.idx.bin.gz",
+      "manifest": "assets/models/hero/manifest.json",
+      "model": "telemetry",
+      "baseline": {
+        "gzipBytes": 1435034,
+        "sha256": "2996dfbb1fcb3709d0755b8645a6bbcd7a0c86d86f447709eb04fc6701a1c6a2"
+      },
+      "transport": {
+        "format": "index-byte-planes-v1",
+        "bytes": 8018428,
+        "sha256": "b9bf22f8c3206390c058d6d4c05f037906d813ed493533ecee9ea4a384e57fe2"
+      },
+      "container": {
+        "bytes": 8018412,
+        "sha256": "b63e3029ff928d0273d3116bd7faf9f188de1cade33ffc19319c2fdd741bb472"
+      },
+      "encoded": {
+        "gzipBytes": 1339424,
+        "sha256": "7181209ca6eeb43cc9460fb3d0860064739fb5257f6f9e088337f5edb1f0cbd3"
+      },
+      "preservedModel": {
+        "url": "/assets/models/hero/telemetry.bin",
+        "compressedUrl": "/assets/models/hero/telemetry.idx.bin.gz",
+        "bytes": 8018412,
+        "transport": "index-byte-planes-v1",
+        "transportBytes": 8018428,
+        "legacyCompressedUrl": "/assets/models/hero/telemetry.bin.gz",
+        "legacyGzipBytes": 1937278,
+        "sha256": "b63e3029ff928d0273d3116bd7faf9f188de1cade33ffc19319c2fdd741bb472",
+        "parts": 54,
+        "meshes": 166,
+        "triangles": 224256,
+        "textures": [
+          "/assets/models/hardware/skylabs-telemetry/silk-front.svg",
+          "/assets/models/hardware/skylabs-telemetry/silk-back.svg"
+        ],
+        "paritySha256": "87a45ca465c06d101f4ca4e9ee2f46cdb1e63006778e9021091944c0fe3b832d"
+      }
+    },
+    {
+      "path": "assets/models/hero/tramtrace.idx.bin.gz",
+      "manifest": "assets/models/hero/manifest.json",
+      "model": "tramtrace",
+      "baseline": {
+        "gzipBytes": 566940,
+        "sha256": "3f3e5375c43e52ed6fa6dc638aa4c49e9d8722464fcc677736d1f5f39b79b483"
+      },
+      "transport": {
+        "format": "index-byte-planes-v1",
+        "bytes": 3564120,
+        "sha256": "e6054ef609c52052ecad1601c783e3cb0c0cab5d64b0cdd3563ff899b1fee2aa"
+      },
+      "container": {
+        "bytes": 3564104,
+        "sha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb"
+      },
+      "encoded": {
+        "gzipBytes": 528969,
+        "sha256": "8883ce569046dc5f9541d3201c13da4bd9dffe48b4dc193ca0f6cb24f110be99"
+      },
+      "preservedModel": {
+        "url": "/assets/models/hero/tramtrace.bin",
+        "compressedUrl": "/assets/models/hero/tramtrace.idx.bin.gz",
+        "bytes": 3564104,
+        "transport": "index-byte-planes-v1",
+        "transportBytes": 3564120,
+        "legacyCompressedUrl": "/assets/models/hero/tramtrace.bin.gz",
+        "legacyGzipBytes": 830013,
+        "sha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb",
+        "parts": 31,
+        "meshes": 104,
+        "triangles": 96514,
+        "textures": [
+          "/assets/images/v2/tramtrace-silk.svg"
+        ],
+        "paritySha256": "bac79baab53eecd452a0cd9b89b01551ce616b90fddb4d69f8c60f8d70b02cfa"
+      }
+    },
+    {
+      "path": "assets/models/selected/dual.idx.bin.gz",
+      "manifest": "assets/models/selected/manifest.json",
+      "model": "dual",
+      "baseline": {
+        "gzipBytes": 238100,
+        "sha256": "afc6e4487bd0618a52c49cb3b50f08b85178c1932cbccc895de6e0f7d1f90999"
+      },
+      "transport": {
+        "format": "index-byte-planes-v1",
+        "bytes": 1353780,
+        "sha256": "f015ab77ed913ec45641b7f3dc58e135edc32fba35e04b177e4f04c5f70aacf0"
+      },
+      "container": {
+        "bytes": 1353764,
+        "sha256": "7b4eb9359ab1b02935e87c5490292391f66792329b0750acf48c4d1b92b024c6"
+      },
+      "encoded": {
+        "gzipBytes": 218264,
+        "sha256": "1ffed3210dd1d85d358719fd40c240ab598dc2252145a50b2431106e6193c812"
+      },
+      "preservedModel": {
+        "url": "/assets/models/selected/dual.idx.bin.gz",
+        "compressedUrl": "/assets/models/selected/dual.idx.bin.gz",
+        "bytes": 1353764,
+        "sha256": "7b4eb9359ab1b02935e87c5490292391f66792329b0750acf48c4d1b92b024c6",
+        "unitsMm": 30,
+        "parts": 0,
+        "meshes": 19,
+        "triangles": 22209,
+        "lineSegments": 1026,
+        "materials": 21,
+        "textures": [
+          "/assets/models/framework-dual-usb/framework-dual-usb-silk.svg"
+        ],
+        "bounds": {
+          "min": [
+            -0.5,
+            -0.10333333333333333,
+            -0.8033332824707031
+          ],
+          "max": [
+            0.5,
+            0.13700000127156575,
+            0.500166665079693
+          ]
+        },
+        "drawCalls": {
+          "before": 1073,
+          "after": 21,
+          "reduction": 1052
+        },
+        "paritySha256": "23e78c4bda8bcf844171588df2582c9371c2b4b237ce74fef4cb3fbf96912190",
+        "provenance": "dual.provenance.json",
+        "verificationArtifact": "dual.bin"
+      }
+    },
+    {
+      "path": "assets/models/selected/esp32.idx.bin.gz",
+      "manifest": "assets/models/selected/manifest.json",
+      "model": "esp32",
+      "baseline": {
+        "gzipBytes": 612015,
+        "sha256": "db16a1117cca99b0bec798e73ad5f1f066377b3a938e4b4fe6071fbecf883389"
+      },
+      "transport": {
+        "format": "index-byte-planes-v1",
+        "bytes": 2919792,
+        "sha256": "8d45d0158745d983bb79f691a473630faea88a26e68e5440f7e4601fd24c97b7"
+      },
+      "container": {
+        "bytes": 2919776,
+        "sha256": "9da6bf19804721f3467afa251b54d19b11362753604122dd12ec4bd897790ae5"
+      },
+      "encoded": {
+        "gzipBytes": 568195,
+        "sha256": "b43da642bff2bd96805b0e078bf4fd3c811b6dcb836255665de0087013b4d1f7"
+      },
+      "preservedModel": {
+        "url": "/assets/models/selected/esp32.idx.bin.gz",
+        "compressedUrl": "/assets/models/selected/esp32.idx.bin.gz",
+        "bytes": 2919776,
+        "sha256": "9da6bf19804721f3467afa251b54d19b11362753604122dd12ec4bd897790ae5",
+        "unitsMm": 30,
+        "parts": 21,
+        "meshes": 52,
+        "triangles": 80231,
+        "lineSegments": 0,
+        "materials": 22,
+        "textures": [
+          "/assets/models/framework-esp32/framework-markings-silk.svg"
+        ],
+        "bounds": {
+          "min": [
+            -0.5,
+            -0.10333333333333333,
+            -0.8033333269755045
+          ],
+          "max": [
+            0.5,
+            0.12333334068457286,
+            0.5000001788139343
+          ]
+        },
+        "drawCalls": {
+          "before": 52,
+          "after": 52,
+          "reduction": 0
+        },
+        "paritySha256": "e9e9d17c91234fbe7afe785a1377ba4c3aea2aa3464fc2edb3e836bfcd0269bd",
+        "provenance": "esp32.provenance.json",
+        "verificationArtifact": "esp32.bin"
+      }
+    },
+    {
+      "path": "assets/models/selected/logic.idx.bin.gz",
+      "manifest": "assets/models/selected/manifest.json",
+      "model": "logic",
+      "baseline": {
+        "gzipBytes": 907131,
+        "sha256": "4498909f4f142bcfb72c70cb4c6259877b69897d3d4651520814954720212815"
+      },
+      "transport": {
+        "format": "index-byte-planes-v1",
+        "bytes": 4857164,
+        "sha256": "02decee31df5c96656f0fdb8b6343b495e4103361e61bebaedef912fbd9fdf7e"
+      },
+      "container": {
+        "bytes": 4857148,
+        "sha256": "19c92b3b7b66583d6e72baea6e22363950fad9df31b23b44ba2970f9bc31d023"
+      },
+      "encoded": {
+        "gzipBytes": 850742,
+        "sha256": "4ebdccdfe484a5d0d87b7e501b276d35e977667c4379e2c3f7883001cec2d8c4"
+      },
+      "preservedModel": {
+        "url": "/assets/models/selected/logic.idx.bin.gz",
+        "compressedUrl": "/assets/models/selected/logic.idx.bin.gz",
+        "bytes": 4857148,
+        "sha256": "19c92b3b7b66583d6e72baea6e22363950fad9df31b23b44ba2970f9bc31d023",
+        "unitsMm": 30.000010000000003,
+        "parts": 45,
+        "meshes": 220,
+        "triangles": 100575,
+        "lineSegments": 0,
+        "materials": 153,
+        "textures": [
+          "/assets/models/hardware/framework-logic-analyser/silk-front.svg",
+          "/assets/models/hardware/framework-logic-analyser/silk-back.svg"
+        ],
+        "bounds": {
+          "min": [
+            -0.4999998211860657,
+            -0.10333329888890036,
+            -0.8033332220129865
+          ],
+          "max": [
+            0.4999998211860657,
+            0.12333330062319986,
+            0.5
+          ]
+        },
+        "drawCalls": {
+          "before": 220,
+          "after": 220,
+          "reduction": 0
+        },
+        "paritySha256": "5d1cd768d7cb58601116348001ede219dc289235a483d891f0d64c4ff34af54d",
+        "provenance": "logic.provenance.json",
+        "verificationArtifact": "logic.bin"
+      }
+    },
+    {
+      "path": "assets/models/selected/metro.idx.bin.gz",
+      "manifest": "assets/models/selected/manifest.json",
+      "model": "metro",
+      "baseline": {
+        "gzipBytes": 615024,
+        "sha256": "a6f926ff1263e7c311ecd0934aabe57b5437af104f0c06c23846a633283e25e7"
+      },
+      "transport": {
+        "format": "index-byte-planes-v1",
+        "bytes": 5713564,
+        "sha256": "a7a03eebd7403088bc1c67ca9a6f410df545645f5af4a117ec0146bf594cfe7b"
+      },
+      "container": {
+        "bytes": 5713548,
+        "sha256": "86a43d6e67b6c0ec2615c4a2dc446ba2dccb46a44dc771141e47cdd81358a517"
+      },
+      "encoded": {
+        "gzipBytes": 570507,
+        "sha256": "940f8260bd9823791a1ce761625295716f896e1a1c122972490861d9563f99d4"
+      },
+      "preservedModel": {
+        "url": "/assets/models/selected/metro.idx.bin.gz",
+        "compressedUrl": "/assets/models/selected/metro.idx.bin.gz",
+        "bytes": 5713548,
+        "sha256": "86a43d6e67b6c0ec2615c4a2dc446ba2dccb46a44dc771141e47cdd81358a517",
+        "unitsMm": 305.69999,
+        "parts": 34,
+        "meshes": 94,
+        "triangles": 122070,
+        "lineSegments": 0,
+        "materials": 19,
+        "textures": [
+          "/assets/models/hardware/metroboard/silk-front.svg",
+          "/assets/models/hardware/metroboard/silk-back.svg"
+        ],
+        "bounds": {
+          "min": [
+            -0.490677148103714,
+            -0.00016355904517695308,
+            -0.5
+          ],
+          "max": [
+            0.490677148103714,
+            0.015358194850496209,
+            0.5
+          ]
+        },
+        "drawCalls": {
+          "before": 94,
+          "after": 94,
+          "reduction": 0
+        },
+        "paritySha256": "4a82a0da658bc513373b526b25ee16e27738047b35664c25523cf512cfc6879c",
+        "provenance": "metro.provenance.json",
+        "verificationArtifact": "metro.bin"
+      }
+    }
+  ],
+  "compatibilityArtifacts": [
+    {
+      "path": "assets/models/hero/pi.bin",
+      "bytes": 2473868,
+      "sha256": "19949162fef21690983452c54342e020553486aeb08e230d1d01fe8c00f8bf09"
+    },
+    {
+      "path": "assets/models/hero/pi.bin.gz",
+      "bytes": 689946,
+      "sha256": "09bd36605357484c3d82854682077ee6fdeb1b91a0e305a90e6746690fe9e9fa",
+      "decodedBytes": 2473868,
+      "decodedSha256": "19949162fef21690983452c54342e020553486aeb08e230d1d01fe8c00f8bf09"
+    },
+    {
+      "path": "assets/models/hero/telemetry.bin",
+      "bytes": 8018412,
+      "sha256": "b63e3029ff928d0273d3116bd7faf9f188de1cade33ffc19319c2fdd741bb472"
+    },
+    {
+      "path": "assets/models/hero/telemetry.bin.gz",
+      "bytes": 1937278,
+      "sha256": "d899934483f651321498d183df89dde084a002c46177e535409b53d193463e29",
+      "decodedBytes": 8018412,
+      "decodedSha256": "b63e3029ff928d0273d3116bd7faf9f188de1cade33ffc19319c2fdd741bb472"
+    },
+    {
+      "path": "assets/models/hero/tramtrace.bin",
+      "bytes": 3564104,
+      "sha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb"
+    },
+    {
+      "path": "assets/models/hero/tramtrace.bin.gz",
+      "bytes": 830013,
+      "sha256": "a6c00527361cd89a263e88cd75bbbe3be4c71cdcbc6d2b57aa032fc2034b53ab",
+      "decodedBytes": 3564104,
+      "decodedSha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb"
+    }
+  ]
+}

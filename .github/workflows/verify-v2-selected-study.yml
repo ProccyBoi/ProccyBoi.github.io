@@ -1,7 +1,7 @@
 name: Review shared v2 Selected Work scenes
 on:
   push:
-    branches: [v2-selected-live-scenes, v2-selected-responsive, v2-load-speed]
+    branches: [v2-selected-live-scenes, v2-selected-responsive, v2-load-speed, v2-hero-speed]
     paths-ignore:
       - scripts/build-v2-selected-assets.cjs
       - scripts/build-v2-hero-assets.cjs

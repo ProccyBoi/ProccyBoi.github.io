@@ -1,4 +1,4 @@
-/* Same-runner visual acceptance against the accepted b5965978 baseline.
+/* Same-runner visual acceptance against the accepted 5a50d2f baseline.
  * Serve two UNMODIFIED repository roots, then run:
  *   V2_BASE_URL=http://127.0.0.1:8080 V2_BASELINE_URL=http://127.0.0.1:8081 \
  *     V2_LOAD_VISUAL_OUT=/tmp/v2-load-visual node scripts/verify-v2-load-visual-parity.cjs
@@ -33,7 +33,7 @@ const crypto = require('node:crypto');
 const zlib = require('node:zlib');
 const {execFileSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
-const baselineCommit = 'b5965978db351e5c6d3ee2a7a2d25ed1ad2a976f';
+const baselineCommit = '5a50d2f336accccaf1577ad43f1465506bdbeb5c';
 const output = path.resolve(process.env.V2_LOAD_VISUAL_OUT || '.codex-temp/v2-load-visual');
 const timeout = Number(process.env.V2_LOAD_VISUAL_TIMEOUT || 180000);
 const devices = [

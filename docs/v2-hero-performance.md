@@ -152,3 +152,39 @@ its own context's commands, not another renderer or pixels reaching a display.
 Exact candidate browser results and matched whole-page blocking/input traces are
 required before release; shader/driver work and real-device smoothness cannot be
 inferred from the number of queued frames alone.
+
+
+## Lossless transport encoding (12 October 2026)
+
+The seven Hero and Selected Work indexed packs use the same gzip and
+`V2HIDX1` formats, now encoded offline with Zopfli 0.4.3 (five iterations).
+Their combined compressed size is 4,580,342 bytes, down from 4,913,340 bytes
+(332,998 bytes, 6.78%). Every inflated transport and restored `V2HERO1`
+container is byte-identical. No vertex, texture, material, part, animation,
+render setting or client decoder changes are involved. The airframe and
+legacy/plain compatibility assets retain their existing encodings.
+
+`docs/v2-transport-encoding.json` records the original and new compressed
+hashes, decoded hashes and retained source lineage. Run
+`python3 scripts/recompress-v2-packs.py --verify` without dependencies to
+verify all seven. To reproduce the compressed files after the source pack
+builders, use the pinned build-only environment and `--write` documented in
+that script. Changed CAD intentionally requires an explicit new parity
+review rather than silently replacing those recorded source hashes.
+
+The asset URLs and browser caching policy remain unchanged because the
+expanded payloads are identical. A browser that still has the previous
+600-second cache entry can continue using it safely until revalidation.
+Compressed byte savings alone do not establish a page-readiness or GPU
+performance gain; cold and new-page cached visits are measured separately.
+
+The hero additionally prepares its existing material programs immediately
+before the first draw of a newly installed, fully visible model set. This
+keeps synchronous shader reflection ahead of the shadow raster pass. Three
+r128's `compile()` traverses hidden objects, so the optimization is skipped
+whenever any installed board is outside the current composition. It runs
+inside the existing single-frame GPU ownership and error handling, retains
+shader diagnostics and the original progressive installation/entrance timing,
+and includes its CPU time in the submission trace. It does not precompile
+hidden scenes or add an animation loop. Final retention depends on the
+matched first-board/full-composition timings and actual rendered pixels.

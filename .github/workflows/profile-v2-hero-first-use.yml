@@ -1,7 +1,5 @@
 name: Compare v2 hero compile order
 on:
-  push:
-    branches: [v2-hero-speed]
   workflow_dispatch:
 permissions:
   contents: read

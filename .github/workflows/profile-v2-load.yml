@@ -1,7 +1,7 @@
 name: Measure v2 cold and repeat readiness
 on:
   push:
-    branches: [v2-load-speed]
+    branches: [v2-load-speed, v2-hero-speed]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,7 +20,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add --detach /tmp/v2-load-baseline b5965978db351e5c6d3ee2a7a2d25ed1ad2a976f
+          git worktree add --detach /tmp/v2-load-baseline 5a50d2f336accccaf1577ad43f1465506bdbeb5c
       - name: Compare exact baseline and candidate cold and cached readiness
         env:
           V2_LOAD_ROOT: ${{ github.workspace }}
@@ -51,6 +51,7 @@ jobs:
         run: |
           node scripts/verify-v2-selected-translation.cjs
           node scripts/verify-v2-load-quality.cjs
+          python3 scripts/recompress-v2-packs.py --verify
           node scripts/verify-v2-hero-pacing.cjs --source-only
           node scripts/verify-v2-direct-transport.cjs
           node scripts/verify-v2-hero-boundary.cjs
@@ -73,7 +74,7 @@ jobs:
       - run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-          git worktree add --detach /tmp/v2-load-baseline b5965978db351e5c6d3ee2a7a2d25ed1ad2a976f
+          git worktree add --detach /tmp/v2-load-baseline 5a50d2f336accccaf1577ad43f1465506bdbeb5c
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
           python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v2-load-baseline >/tmp/baseline.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
@@ -85,6 +86,7 @@ jobs:
         run: |
           node scripts/build-v2-hero-environment.cjs --verify
           node scripts/verify-v2-load-visual-parity.cjs
+          V2_HERO_VISUAL_OUT=/tmp/v2-load-visual/hero node scripts/verify-v2-hero-visual-parity.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
