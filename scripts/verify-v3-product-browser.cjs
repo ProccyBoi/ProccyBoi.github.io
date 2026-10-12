@@ -311,6 +311,7 @@ async function header(run, label) {
     await menu.focus();await page.keyboard.press('Enter');
     assert.equal(await menu.getAttribute('aria-expanded'),'true');assert.equal(await nav.evaluate(node=>node.inert),false);
     await lightPresentation(run,label+'-menu-open');
+    if(label==='phone390-home')await shot(run,label+'-menu-open');
     await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('href')),'/v3/projects/','Keyboard enters the open primary navigation');
     await page.keyboard.press('Escape');assert.equal(await menu.getAttribute('aria-expanded'),'false');assert.equal(await menu.evaluate(node=>node===document.activeElement),true);
     await menu.press('Space');assert.equal(await menu.getAttribute('aria-expanded'),'true');await menu.press('Space');assert.equal(await menu.getAttribute('aria-expanded'),'false');

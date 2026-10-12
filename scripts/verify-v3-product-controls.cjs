@@ -34,7 +34,8 @@ function sourceContract(){
     .replace("caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;","caption.setAttribute('aria-hidden','true');if(projectLink)projectLink.tabIndex=-1;");
   assert.equal(hero,expected,'Hero clone differs only in navigation and optional caption-link handling');
   for(const name of ['stepInspection','publishInspection','chapter','mask','dispose','invalidate','fallback','fail','fitLight','pixelRatio','prepareShadowSize','draw','gpuComplete','finishPreparation','render','prepareSources','initialize','prepareInBackground','start']){
-    assert.equal(functionSource(selected,name),functionSource(source,name),'Exact retained production function: '+name);
+    const original=functionSource(source,name),light=name==='initialize'?original.replace('new T.ShadowMaterial({color:0x000000,opacity:.35,transparent:true,depthWrite:false})','new T.ShadowMaterial({color:0x000000,opacity:.12,transparent:true,depthWrite:false})'):original;
+    assert.equal(functionSource(selected,name),light,'Exact retained production function with only the reviewed light-studio floor opacity exception: '+name);
   }
   const scrollPrelude='    // Some browsers dispatch reflow\'s scroll before resize. Never interpret\n    // the old scene distance/origin against the new viewport.\n    if(viewportChanged()){layout();return;}\n';
   assert.equal(functionSource(selected,'updateScroll').replace(scrollPrelude,'').replace('    rememberLayoutAnchor(pinned);\n',''),functionSource(source,'updateScroll'),'Scroll sampling differs only in the approved viewport guard and pinned-position snapshot');

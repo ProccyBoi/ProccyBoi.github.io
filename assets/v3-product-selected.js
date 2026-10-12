@@ -492,7 +492,7 @@
       scene.environment=environment;
       key=window.V2ProductStudio.createLights(T,scene).key;key.shadow.mapSize.set(1536,1536);
       composition=window.V2SelectedScene.create(T,assemblies);scene.add(composition.group);
-      const floor=new T.Mesh(new T.PlaneGeometry(160,160),new T.ShadowMaterial({color:0x000000,opacity:.35,transparent:true,depthWrite:false}));floor.rotation.x=-Math.PI/2;floor.position.y=-.001;floor.receiveShadow=true;scene.add(floor);
+      const floor=new T.Mesh(new T.PlaneGeometry(160,160),new T.ShadowMaterial({color:0x000000,opacity:.12,transparent:true,depthWrite:false}));floor.rotation.x=-Math.PI/2;floor.position.y=-.001;floor.receiveShadow=true;scene.add(floor);
       root.dataset.selectedModelStatistics=JSON.stringify(composition.stats());root.dataset.selectedSceneReady='true';
       ready=true;root.dataset.selectedState='prepared';layout();request();
       if(new URLSearchParams(location.search).has('selectedCapture'))window.__v2Selected={renderer,scene,camera,assemblies,composition,

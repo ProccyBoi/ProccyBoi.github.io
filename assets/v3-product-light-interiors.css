@@ -97,6 +97,7 @@ body.v3-product.v2-collection { background: var(--v2-panel); }
 }
 .v3-product.v2-collection .catalog-card-copy { border: 0; padding-inline: 4px; }
 .v3-product.v2-collection .catalog-card-copy h3 { font-weight: 600; }
+.v3-product.v2-collection .index-section-heading h2 { font-weight: 600; letter-spacing: -.01em; }
 .v3-product.v2-collection :is(.catalog-category, .catalog-card-copy small) { font-family: var(--v2-font); }
 .v3-product.v2-collection .catalog-card-copy > span { color: var(--v2-accent); }
 .v3-product.v2-collection .catalog-card:hover .catalog-card-media img,
@@ -109,6 +110,7 @@ body.v3-product.v2-collection { background: var(--v2-panel); }
 .v3-product.v2-case .v2-case-back { display: inline-flex; align-items: center; min-height: 44px; }
 .v3-product.v2-case .project-hero { background: #fff; }
 .v3-product.v2-case :is(.project-hero-media, .project-hero-media.v2-cad-media) {
+  margin-inline: auto;
   border-radius: 24px;
   background: var(--v2-panel);
 }
@@ -274,6 +276,7 @@ body.v3-product.v2-collection { background: var(--v2-panel); }
 
 /* Booking: real loading, error, selection, disabled and success states. */
 .v3-product.v2-book .booking-hero { background: #fff; border-color: var(--v2-line); }
+.v3-product.v2-book :is(.booking-notes h2, .booking-fallback h2, .booking-details h3) { font-weight: 600; letter-spacing: -.01em; }
 .v3-product.v2-book .booking-clock { border-color: var(--v2-line); }
 .v3-product.v2-book :is(.booking-card, .booking-calendar, .booking-status, .booking-success) { background: #fff; color: var(--v2-ink); }
 .v3-product.v2-book .booking-card { border: 1px solid var(--v2-line); border-radius: 22px; box-shadow: none; }
