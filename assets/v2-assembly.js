@@ -34,8 +34,6 @@
   let poses = [], loadRequestedModel;
   const paintedModels = Array(projects.length).fill(null);
   const submittedModels = Array(projects.length).fill(null);
-  const compiledOverviewModels = new WeakSet();
-  let programPreparations = 0;
   // Equivalent to the original .19 step at 60 Hz, including slow GPU frames.
   const FOLLOW_MS = -(1000 / 60) / Math.log(.81);
   let renderTime = 0, revision = 0, paintedRevision = -1, activePage = true;
@@ -303,19 +301,6 @@
       if(width!==bufferWidth||height!==bufferHeight) {renderer.setSize(width,height,false);bufferWidth=width;bufferHeight=height;}
       fitShadows();
       const started=performance.now();
-      // Prepare the unchanged material programs before the shadow raster pass
-      // can queue GPU work ahead of their synchronous uniform reflection.
-      // compile() in Three r128 traverses hidden objects too: use it only when
-      // every installed board is already part of this visible composition.
-      // Cold chapter visits retain the original strictly visible render path.
-      const installed=drawnModels.filter(Boolean);
-      let programPreparationMs=0;
-      if(installed.every(model=>model.group.visible) && installed.some(model=>!compiledOverviewModels.has(model))) {
-        renderer.compile(scene,camera);
-        installed.forEach(model=>compiledOverviewModels.add(model));
-        programPreparationMs=performance.now()-started;
-        root.dataset.assemblyProgramPreparations=String(++programPreparations);
-      }
       renderer.render(scene,camera);
       root.dataset.assemblyDraws=String(renderer.info.render.calls||0);
       gpuNeedsDrain=true;
@@ -330,7 +315,7 @@
         const index=drawnModels.findIndex(Boolean);
         if(index>=0) root.dataset.assemblyFirstSubmissionModel=projects[index].name;
       }
-      root.dataset.assemblyLastSubmission=JSON.stringify({sequence:submittedFrames,at:started,value:current,raw:target,revision:drawnRevision,cpuMs:performance.now()-started,programPreparationMs});
+      root.dataset.assemblyLastSubmission=JSON.stringify({sequence:submittedFrames,at:started,value:current,raw:target,revision:drawnRevision,cpuMs:performance.now()-started});
       if(!await gpuWait(abort,'frame')) return;
       gpuNeedsDrain=false;
       if(root.dataset.assemblyGPUCompletion==='complete') root.dataset.assemblyCompletedFrames=String(++completedFrames);

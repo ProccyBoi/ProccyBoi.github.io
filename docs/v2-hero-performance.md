@@ -177,14 +177,3 @@ expanded payloads are identical. A browser that still has the previous
 600-second cache entry can continue using it safely until revalidation.
 Compressed byte savings alone do not establish a page-readiness or GPU
 performance gain; cold and new-page cached visits are measured separately.
-
-The hero additionally prepares its existing material programs immediately
-before the first draw of a newly installed, fully visible model set. This
-keeps synchronous shader reflection ahead of the shadow raster pass. Three
-r128's `compile()` traverses hidden objects, so the optimization is skipped
-whenever any installed board is outside the current composition. It runs
-inside the existing single-frame GPU ownership and error handling, retains
-shader diagnostics and the original progressive installation/entrance timing,
-and includes its CPU time in the submission trace. It does not precompile
-hidden scenes or add an animation loop. Final retention depends on the
-matched first-board/full-composition timings and actual rendered pixels.

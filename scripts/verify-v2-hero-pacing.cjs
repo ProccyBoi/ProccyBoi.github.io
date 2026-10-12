@@ -23,7 +23,7 @@ const deferred = () => { let resolve; const promise = new Promise(done => { reso
 
 function harness({ unsupported = false } = {}) {
   let now = 100, sequence = 0, top = 0, held = false, lost = false;
-  const raf = new Map(), timers = new Map(), draws = [], compiles = [], resizes = [], fences = [], warnings = [];
+  const raf = new Map(), timers = new Map(), draws = [], resizes = [], fences = [], warnings = [];
   const events = () => {
     const listeners = new Map();
     return {
@@ -78,12 +78,6 @@ function harness({ unsupported = false } = {}) {
   class Renderer {
     constructor() { renderer = this; this.shadowMap = {}; this.capabilities = { isWebGL2: !unsupported }; this.info = { render: { calls: 3 } }; }
     getContext() { return gl; } setPixelRatio(value) { resizes.push({ ratio: value, at: now }); } setSize(width, height) { resizes.push({ width, height, at: now }); }
-    compile(scene) {
-      assert.equal(fences.filter(fence => !fence.deleted).length, 0, 'Compile cannot bypass an owned pending GPU batch');
-      const models = scene.children.filter(child => child.modelName);
-      assert.ok(models.every(model => model.visible), 'Overview compilation never traverses a hidden installed model');
-      compiles.push({ at: now, names: models.map(model => model.modelName) });
-    }
     render(scene) { draws.push({ at: now, names: scene.children.filter(child => child.modelName).map(child => child.modelName) }); }
     dispose() { this.disposed = true; }
   }
@@ -130,7 +124,7 @@ function harness({ unsupported = false } = {}) {
   const scroll = value => scrollPixels(value * (root.offsetHeight - stage.clientHeight));
   const boundary = (bottom, notify = true) => scrollPixels(root.offsetHeight - bottom, notify);
   const snapshot = () => ({ ...root.dataset, submission: root.dataset.assemblyLastSubmission ? JSON.parse(root.dataset.assemblyLastSubmission) : null });
-  return { root, stage, header, posters, raf, timers, draws, compiles, resizes, fences, loaderReady, loaderFailed, warnings, reduced, document, gl, context,
+  return { root, stage, header, posters, raf, timers, draws, resizes, fences, loaderReady, loaderFailed, warnings, reduced, document, gl, context,
     renderer: () => renderer, now: () => now, flush, advance, frame, settle, release, scroll, boundary, snapshot,
     hold(value = true) { held = value; }, lose() { lost = true; }, emit(type) { window.dispatchEvent({ type }); },
     intersect(visible) { intersection([{ isIntersecting: visible, boundingClientRect: root.getBoundingClientRect() }]); },
@@ -143,49 +137,6 @@ async function loaded(options) {
   for (const name of ['tramtrace', 'telemetry', 'pi']) await h.release(name);
   await h.settle(); return h;
 }
-
-test('overview prepares unchanged programs only once per newly installed model set', async () => {
-  const h = harness(); await h.flush(); await h.frame();
-  await h.release('tramtrace'); h.hold(); await h.frame();
-  assert.equal(h.compiles.length, 1); assert.deepEqual(h.compiles[0].names, ['tramtrace']);
-  await h.release('telemetry'); await h.release('pi'); await h.frame();
-  assert.equal(h.compiles.length, 1, 'Late installation cannot compile behind the pending lead frame');
-  h.hold(false); await h.advance(4); await h.settle();
-  assert.equal(h.compiles.length, 2); assert.deepEqual(h.compiles[1].names, ['tramtrace', 'telemetry', 'pi']);
-  assert.equal(h.snapshot().assemblyProgramPreparations, '2');
-  assert.ok(h.snapshot().submission.cpuMs >= h.snapshot().submission.programPreparationMs, 'Submission CPU accounting includes compilation');
-  for (const target of [.265, .565, .88, 0]) { h.scroll(target); await h.settle(); }
-  assert.equal(h.compiles.length, 2, 'Scroll/reverse/reassembly never recompiles the same installed objects');
-  return { preparations: h.compiles, pendingCompilation: 0, repeatedCompilation: 0 };
-});
-
-test('cold chapter entry skips hidden model compilation and overview return prepares once', async () => {
-  const h = harness(); await h.flush(); await h.frame(); h.scroll(.565);
-  for (const name of ['tramtrace', 'telemetry', 'pi']) await h.release(name);
-  await h.settle(); assert.equal(h.compiles.length, 0);
-  assert.equal(h.snapshot().submission.value, .565);
-  h.scroll(0); await h.settle(); assert.equal(h.compiles.length, 1);
-  assert.equal(h.snapshot().submission.value, 0);
-  return { coldChapterCompiles: 0, overviewCompiles: 1 };
-});
-
-test('offscreen installation stays uncompiled until a visible owned draw', async () => {
-  const h = harness(); await h.flush(); await h.frame(); h.boundary(-1); h.intersect(false);
-  for (const name of ['tramtrace', 'telemetry', 'pi']) await h.release(name);
-  await h.frame(); assert.equal(h.compiles.length, 0); assert.equal(h.draws.length, 0);
-  h.scroll(0); h.intersect(true); await h.settle(); assert.equal(h.compiles.length, 1);
-  return { offscreenCompiles: 0, returnCompiles: 1 };
-});
-
-test('program preparation failure uses the existing finite renderer fallback', async () => {
-  const h = harness(); await h.flush(); await h.frame();
-  h.renderer().compile = () => { throw new Error('test program preparation failure'); };
-  await h.release('tramtrace'); await h.frame(); await h.settle();
-  assert.equal(h.snapshot().assemblyState, 'unavailable'); assert.equal(h.snapshot().assemblyModelsReady, '0');
-  assert.equal(h.draws.length, 0); assert.equal(h.fences.length, 0); assert.equal(h.raf.size + h.timers.size, 0);
-  assert.ok(h.posters.every(poster => poster.dataset.assemblyModelState === 'unavailable'));
-  return { posterFallback: true, pendingWork: 0 };
-});
 
 test('one in-flight frame coalesces rapid input and protects late-model posters', async () => {
   const h = harness(); await h.flush(); await h.frame(); h.hold(); await h.release('tramtrace'); await h.frame();
