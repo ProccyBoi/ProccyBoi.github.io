@@ -17,7 +17,6 @@
   const inert = {setPose(){},modelReady(){},modelFailed(){},suspend(){},destroy(){}};
 
   function create(root, stage, posters) {
-    const background=root.dataset.assemblyBackground!==undefined;
     const reduced=matchMedia('(prefers-reduced-motion: reduce)');
     if(reduced.matches || navigator.connection?.saveData) {
       root.dataset.heroLoadingState='disabled';
@@ -58,9 +57,7 @@
     });
 
     const motionAllowed=()=>!reduced.matches&&!navigator.connection?.saveData;
-    // Decorative loading is a finite entrance, even on a stalled connection.
-    // The real posters remain visible for as long as genuine CAD needs.
-    const hasVisibleWork=()=>(!background||performance.now()-started<1500)&&boards.some(board=>board.pose?.visible && (board.state==='pending'||board.state==='ready'&&performance.now()-board.readyAt<560));
+    const hasVisibleWork=()=>boards.some(board=>board.pose?.visible && (board.state==='pending'||board.state==='ready'&&performance.now()-board.readyAt<560));
     const blocked=()=>destroyed||suspended||document.hidden||!motionAllowed();
     const updateState=()=>{
       const pending=boards.some(board=>board.state==='pending');
@@ -205,7 +202,7 @@
         if(!pose?.visible||board.state==='failed') continue;
         const completion=board.state==='ready'?ease((timestamp-board.readyAt)/520):0;
         if(completion>=1) continue;
-        const presence=(1-completion)*ease((timestamp-started)/280)*(background ? 1-ease((timestamp-started-950)/550) : 1);
+        const presence=(1-completion)*ease((timestamp-started)/280);
         const c=Math.cos(pose.rotation),s=Math.sin(pose.rotation);
         const dx=pointer.x-pose.x,dy=pointer.y-pose.y;
         const localPointerX=dx*c+dy*s,localPointerY=-dx*s+dy*c;
@@ -311,15 +308,10 @@
       if(!motionAllowed()) {if(frame)cancelAnimationFrame(frame);frame=0;context.clearRect(0,0,canvas.width,canvas.height);}
       request();
     }
-    if(!background) {
-      stage.addEventListener('pointermove',move,{passive:true});
-      stage.addEventListener('pointerdown',press,{passive:true});
-      stage.addEventListener('pointerleave',leave,{passive:true});
-      stage.addEventListener('pointercancel',cancel,{passive:true});
-    } else {
-      root.dataset.heroLoadingInteractive='false';
-      root.dataset.heroLoadingLensActive='false';
-    }
+    stage.addEventListener('pointermove',move,{passive:true});
+    stage.addEventListener('pointerdown',press,{passive:true});
+    stage.addEventListener('pointerleave',leave,{passive:true});
+    stage.addEventListener('pointercancel',cancel,{passive:true});
     document.addEventListener('visibilitychange',visibility);
     reduced.addEventListener('change',preference);
     const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(stage);

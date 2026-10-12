@@ -200,8 +200,7 @@ async function browserChecks() {
     await page.locator('[data-slot]').first().waitFor();
     assert.match(await page.locator('[data-sydney-time]').textContent(), /\d/);
     assert.match(await page.locator('[data-visitor-time-zone]').textContent(), /Sydney time/);
-    assert.deepEqual(await page.locator('.v2-nav a').evaluateAll(items=>items.map(item=>new URL(item.href).pathname+new URL(item.href).hash)), ['/v2/projects/','/v2/about/','/assets/documents/Andrew_Chung_Public_CV.pdf','/v2/about/#contact'], 'Booking shares the simplified primary routes');
-    assert.equal(await page.locator('.v2-nav a[aria-current="page"]').count(), 0, 'Book is a Contact action, not a competing primary destination');
+    assert.equal(await page.locator('.v2-nav a[aria-current="page"]').getAttribute('href'), '/v2/book/');
     assert.equal(await page.locator('[data-week-previous]').isDisabled(), true);
     assert.equal(await page.locator('body').evaluate(node => getComputedStyle(node).backgroundColor), 'rgb(20, 20, 18)');
 

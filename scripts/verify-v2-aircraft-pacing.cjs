@@ -45,7 +45,7 @@ function sourceHarness() {
     setSize(width, height) { rendererWidth = width; rendererHeight = height; canvas.width = Math.floor(width * ratio); canvas.height = Math.floor(height * ratio); allocations.push({ at: now, width, height }); } };
   const document = { ...events, hidden: false, activeElement: null, documentElement: {} };
   const context = vm.createContext({ window: {}, document, renderer, root, stage, canvas, track, ...events,
-    background:true,ambient:false,preparationNear:true,preparationIntent:false,preparationEligible:()=>context.visible||context.preparationNear||context.preparationIntent,deferred:true,detailed:true,visible:true, activePage: true, failed: false, ready: true, backgroundBusy: false, backgroundDone: true,
+    background:true,preparationNear:true,preparationIntent:false,preparationEligible:()=>context.visible||context.preparationNear||context.preparationIntent,deferred:true,detailed:true,visible:true, activePage: true, failed: false, ready: true, backgroundBusy: false, backgroundDone: true,
     frame: 0, frameCount: 0, liveBusy: false, liveAbort: undefined, liveGeneration: 0, gpuAbort: undefined, needsDrain: true,
     poseRevision: 0, presentedRevision: -1, layoutRevision: 0, submittedFrames: 0, completedFrames: 0,
     desiredRatio: 1, bufferWidth: 0, bufferHeight: 0, bufferRatio: 0,

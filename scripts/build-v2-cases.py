@@ -92,9 +92,9 @@ def header(active='work'):
     return f'''<header class="v2-header"><div class="v2-nav-shell">
       <a class="v2-brand" href="/v2/">Andrew Chung</a>
       <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
-        <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Work</a>
+        <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Projects</a>
         <a href="/v2/about/"{' aria-current="page"' if active == 'about' else ''}>About</a>
-        <a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV</a>
+        <a href="/v2/book/">Book</a>
         <a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>'''

@@ -5,7 +5,6 @@
   const deferred = root.hasAttribute('data-aircraft-deferred');
   const detailed = root.hasAttribute('data-aircraft-detailed');
   const background = root.hasAttribute('data-aircraft-background');
-  const ambient = root.hasAttribute('data-aircraft-ambient');
   // Opt-in v2 wheel interpolation leaves the accepted v3 controller unchanged.
   const scrub = root.hasAttribute('data-aircraft-smooth') && window.V2ScrollSmoothing;
   let renderedProgress = 0, scrubTime = 0, directScrub = false;
@@ -29,7 +28,7 @@
   let renderer, scene, camera, flight, key, atmosphere, floorMaterial, groundUniforms, track, frame = 0, frameCount = 0;
   let ready = false, loading = false, telemetryLoading = false, failed = false, visible = !deferred, activePage = true, currentChapter = -1;
   let width = 1, height = 1, rootTop = 0, distance = 1, progress = 0, lastScroll = scrollY;
-  let landingDone = ambient, landingElapsed = 0, previousTime = 0, capturePose;
+  let landingDone = false, landingElapsed = 0, previousTime = 0, capturePose;
   let landingEntered = !deferred;
   let shadowBox, boardBox, shadowCentre, corner, studioGround, airfieldGround, studioFog, airfieldFog;
   let sourcePreparation, telemetryTask, airframeTransport, transportGate, releaseTransport, backgroundBusy = false, backgroundDone = false, warmGeneration = 0;
@@ -41,14 +40,6 @@
   let preparationNear = false, preparationIntent = false;
   const preparationEligible = () => !background || visible || preparationNear || preparationIntent;
   const selectedVisible = () => Boolean(background && window.V2SelectedWork?.isVisible?.());
-  function heroForegroundBusy() {
-    if (!ambient) return false;
-    const hero = document.querySelector('[data-assembly]');
-    if (!hero || hero.dataset.assemblyForegroundSettled === 'true' || ['unavailable', 'static'].includes(hero.dataset.assemblyState)) return false;
-    if (hero.dataset.assemblyReadableVisible !== undefined) return hero.dataset.assemblyReadableVisible === 'true';
-    const bounds = hero.getBoundingClientRect(), header = document.querySelector('.v2-header')?.getBoundingClientRect();
-    return bounds.top < innerHeight && bounds.bottom > Math.max(0, header?.bottom || 0);
-  }
   const aircraftVisible = () => Boolean(background && track && visible && allowed() && activePage && !document.hidden && !failed);
   function publishAircraftPriority() {
     if (!background) return;
@@ -64,7 +55,7 @@
     if (!backgroundDone && !failed) root.dataset.aircraftBackgroundState = state;
   }
   function backgroundPause() {
-    return !allowed() ? 'paused-preferences' : document.hidden || !activePage ? 'paused-hidden' : !preparationEligible() ? 'deferred-distance' : heroForegroundBusy() && !visible ? 'paused-hero' : selectedVisible() && !visible ? 'paused-selected' : '';
+    return !allowed() ? 'paused-preferences' : document.hidden || !activePage ? 'paused-hidden' : !preparationEligible() ? 'deferred-distance' : selectedVisible() && !visible ? 'paused-selected' : '';
   }
   // CPU reconstruction can outlive a visibility change. Recheck at each
   // boundary, retaining its promise while a lifecycle/priority event wakes it.
@@ -115,9 +106,6 @@
   const request = () => { if (!frame && track && visible && activePage && !document.hidden && allowed() && (!background || (!liveBusy && !backgroundBusy))) frame = requestAnimationFrame(render); };
   const chapterAt = value => detailed ? value < .76 ? 0 : 1 : value < .25 ? 0 : value < .70 ? 1 : 2;
   function chapter(index) {
-    // Ambient copy is ordinary document content: never hide it, make it inert,
-    // rename its anchors, or move focus as the decorative scene changes.
-    if (ambient) { root.dataset.aircraftChapter = String(index); return; }
     if (currentChapter === index) return;
     currentChapter = index;
     chapters.forEach((item, itemIndex) => {
@@ -132,17 +120,11 @@
     if (landingDone) return;
     landingDone = true; landingElapsed = 5400; previousTime = 0;
     if (background) revisePose();
-    if (skip && document.activeElement === skip) links[0]?.focus({ preventScroll: true });
-    if (skip) skip.hidden = true; request();
+    if (document.activeElement === skip) links[0].focus({ preventScroll: true });
+    skip.hidden = true; request();
   }
   function enable() {
     if (track) return;
-    if (ambient) {
-      // Use the content's own layout as the scroll extent. No generated steps,
-      // invisible jump destinations, autoplay gate, or extra scroll runway.
-      track = root; landingDone = true; landingEntered = true;
-      root.classList.add('is-ambient'); showPoster('stopped'); layout(); return;
-    }
     track = document.createElement('div'); track.className = 'v3-aircraft-track'; track.setAttribute('aria-hidden', 'true');
     chapters.forEach((item, index) => {
       item.id = 'copy-' + ids[index];
@@ -155,10 +137,10 @@
     }
   }
   function fallback(state = 'static') {
-    const restore = !ambient && track && scrollY > rootTop + 200 ? Math.max(currentChapter, 0) : -1;
+    const restore = track && scrollY > rootTop + 200 ? Math.max(currentChapter, 0) : -1;
     if (background) { pauseLandingClock(); interruptLive(); }
     cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; landingDone = true;
-    root.classList.remove('is-story', 'is-ambient', 'is-ready'); if (!ambient) track?.remove(); track = null; if (skip) skip.hidden = true;
+    root.classList.remove('is-story', 'is-ready'); track?.remove(); track = null; skip.hidden = true;
     if (background) publishAircraftPriority();
     chapters.forEach((item, index) => { item.id = ids[index]; item.classList.remove('is-current'); item.removeAttribute('aria-hidden'); item.inert = false; });
     links.forEach(link => link.removeAttribute('aria-current'));
@@ -168,17 +150,9 @@
   }
   function updateScroll() {
     if (!track) return;
-    if (ambient) {
-      // Content above this section can reflow without resizing our stage or
-      // copy. Read the real anchors at scroll time, never from a GPU poll.
-      const first = chapters[0].getBoundingClientRect(), last = chapters[chapters.length - 1].getBoundingClientRect();
-      const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-      rootTop = scrollY + first.top - padding;
-      distance = Math.max(1, last.top - first.top);
-    }
     if (deferred) {
       const bounds = root.getBoundingClientRect(), pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
-      if (!ambient) rootTop = scrollY + bounds.top;
+      rootTop = scrollY + bounds.top;
       const wasVisible = visible;
       visible = bounds.top < innerHeight && bounds.bottom > pinnedTop;
       if (background) {
@@ -210,7 +184,7 @@
     lastScroll = scrollY; progress = next;
     const effective = flight && !flight.telemetryReady ? Math.min(progress, .61) : progress;
     if (!scrub && !background) chapter(chapterAt(effective));
-    if (!scrub && !background && bar) bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
+    if (!scrub && !background) bar.style.transform = `scaleX(${progress})`; root.dataset.aircraftProgress = progress.toFixed(6); request();
   }
   function layout() {
     if (!track) return;
@@ -221,7 +195,6 @@
       if (changed) { desiredRatio = nextRatio; root.dataset.aircraftLayoutRevision = String(++layoutRevision); interruptLive(); }
     }
     width = nextWidth; height = nextHeight;
-    if (ambient) { updateScroll(); return; }
     distance = height * (background ? (width < 761 ? 2.1 : 1.8) : (width < 761 ? 3.7 : 3.1));
     track.style.height = `${distance + height}px`; track.style.marginTop = `${-height}px`;
     const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
@@ -292,7 +265,7 @@
         renderedProgress = directScrub ? targetProgress : scrub.step(renderedProgress, targetProgress, scrubTime ? time - scrubTime : 1000 / 60);
         scrubTime = time;
         if (!capturePose) chapter(chapterAt(renderedProgress));
-        if (bar) bar.style.transform = `scaleX(${capturePose?.type === 'progress' ? capturePose.value : renderedProgress})`;
+        bar.style.transform = `scaleX(${capturePose?.type === 'progress' ? capturePose.value : renderedProgress})`;
         root.dataset.aircraftRenderedProgress = (capturePose?.type === 'progress' ? capturePose.value : renderedProgress).toFixed(6);
       }
       const effective = scrub ? renderedProgress : targetProgress;
@@ -311,7 +284,7 @@
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
       root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftFrames = String(++frameCount);
       root.dataset.aircraftAssemblyError = flight.assemblyError().toFixed(9);
-      if (!landingDone && landingEntered && !capturePose) { if (skip) skip.hidden = false; request(); }
+      if (!landingDone && landingEntered && !capturePose) { skip.hidden = false; request(); }
       else if (scrub && !capturePose && renderedProgress !== targetProgress) request();
       else scrubTime = 0;
     } catch (error) { fail(error); }
@@ -378,7 +351,7 @@
       const shownProgress = capture?.type === 'progress' ? capture.value : value;
       if (masked && kind === 'progress' && !capture && Math.abs(shownProgress - (flight.telemetryReady ? progress : Math.min(progress, .61))) > .000002) return;
       chapter(capture?.type === 'landing' ? 0 : chapterAt(shownProgress));
-      if (bar) bar.style.transform = `scaleX(${shownProgress})`; root.dataset.aircraftRenderedProgress = shownProgress.toFixed(6);
+      bar.style.transform = `scaleX(${shownProgress})`; root.dataset.aircraftRenderedProgress = shownProgress.toFixed(6);
       root.dataset.aircraftAtmosphere = sky.toFixed(6);
       root.dataset.aircraftState = capture || kind === 'progress' ? 'ready' : 'landing';
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
@@ -388,7 +361,7 @@
       report.published = true; root.dataset.aircraftFrames = String(++frameCount);
       root.dataset.aircraftFirstLiveMs ||= performance.now().toFixed(1);
       if (!landingClockStarted && !landingDone && landingEntered && !capture) { landingClockStarted = true; previousTime = performance.now(); }
-      if (skip) skip.hidden = !(!landingDone && landingEntered && !capture);
+      skip.hidden = !(!landingDone && landingEntered && !capture);
       if (capture || renderedProgress === (flight.telemetryReady ? progress : Math.min(progress, .61))) scrubTime = 0;
     } catch (error) { fail(error); }
     finally {
@@ -582,13 +555,6 @@
     }, 0); });
   });
   const foregroundSettled = signal => new Promise(resolve => {
-    if (ambient) {
-      if (signal?.aborted || visible || !heroForegroundBusy()) { resolve(); return; }
-      const finish = () => { removeEventListener('v2:hero-foreground', check); signal?.removeEventListener('abort', finish); resolve(); };
-      const check = () => { if (visible || !heroForegroundBusy()) finish(); };
-      addEventListener('v2:hero-foreground', check); signal?.addEventListener('abort', finish, { once: true });
-      check(); return;
-    }
     const hero = document.querySelector('[data-assembly]');
     if (signal?.aborted || !hero || hero.dataset.assemblyModelsSettled === '3' || ['unavailable', 'static'].includes(hero.dataset.assemblyState)) { resolve(); return; }
     let observer, finished = false;
@@ -654,14 +620,13 @@
   async function prepareInBackground() {
     if (!background || liveBusy || backgroundBusy || backgroundDone || failed || !allowed() || visible || document.hidden || !activePage) return;
     if (!preparationEligible()) { root.dataset.aircraftBackgroundState = 'deferred-distance'; return; }
-    if (heroForegroundBusy()) { root.dataset.aircraftBackgroundState = 'paused-hero'; return; }
     if (selectedVisible()) { root.dataset.aircraftBackgroundState = 'paused-selected'; return; }
     backgroundBusy = true;
     // An early visit may already have revealed the canvas. Hide it immediately
     // before any resumed temporary pose, keeping the poster until a live draw.
     maskCanvas();
     const generation = ++warmGeneration, abort = new AbortController(); warmAbort = abort;
-    const current = () => generation === warmGeneration && !abort.signal.aborted && !visible && !document.hidden && activePage && allowed() && !failed && !selectedVisible() && !heroForegroundBusy() && preparationEligible();
+    const current = () => generation === warmGeneration && !abort.signal.aborted && !visible && !document.hidden && activePage && allowed() && !failed && !selectedVisible() && preparationEligible();
     root.dataset.aircraftBackgroundState = 'warming';
     root.dataset.aircraftBackgroundStartedMs ||= performance.now().toFixed(1);
     try {
@@ -724,10 +689,10 @@
       // Only an invalidated generation gets a one-shot resume. Priority and
       // lifecycle gates are event-driven, never an offscreen retry loop.
       if (aircraftVisible()) request();
-      else if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed() && !selectedVisible() && !heroForegroundBusy() && preparationEligible()) setTimeout(prepareInBackground, 0);
+      else if (generation !== warmGeneration && !backgroundDone && !loading && !failed && !visible && !document.hidden && activePage && allowed() && !selectedVisible() && preparationEligible()) setTimeout(prepareInBackground, 0);
     }
   }
-  skip?.addEventListener('click', endLanding);
+  skip.addEventListener('click', endLanding);
   links.forEach((link, index) => {
     link.addEventListener('click', () => { if (background) { preparationIntent = true; wakeBackground(); initialize(); } endLanding(); });
     if (background) link.addEventListener('focus', () => { preparationIntent = true; wakeBackground(); prepareInBackground(); });
@@ -741,7 +706,7 @@
   root.addEventListener('touchmove', () => { directScrub = true; if (background) revisePose(); interruptLanding(); }, { passive: true });
   addEventListener('keydown', event => { if (['Escape', 'PageDown', 'ArrowDown', ' '].includes(event.key) && track && visible) interruptLanding(); });
   addEventListener('scroll', updateScroll, { passive: true }); addEventListener('resize', layout, { passive: true });
-  if ('ResizeObserver' in window) { const resize = new ResizeObserver(layout); resize.observe(stage); if (ambient) resize.observe(root.querySelector('[data-aircraft-copy]')); }
+  if ('ResizeObserver' in window) new ResizeObserver(layout).observe(stage);
   if ('IntersectionObserver' in window) new IntersectionObserver(entries => {
     if (background) {
       // Recompute actual bounds in one path. Repeated observer delivery must
@@ -806,11 +771,6 @@
     root.dataset.aircraftPoseRevision = '0'; root.dataset.aircraftLayoutRevision = '0';
     root.dataset.aircraftWarmFrames = '0'; root.dataset.aircraftWarmPosesCompleted = '0';
     root.dataset.aircraftBackgroundReady = 'false'; root.dataset.aircraftGPUPending = 'false';
-    if (ambient) addEventListener('v2:hero-foreground', () => {
-      const busy = heroForegroundBusy(); root.dataset.aircraftHeroPriority = String(busy);
-      if (busy && !visible) interruptBackground('paused-hero');
-      else { wakeBackground(); if (!visible) prepareInBackground(); }
-    });
     addEventListener('v2:selected-priority', () => {
       const active = selectedVisible(); root.dataset.aircraftSelectedPriority = String(active);
       if (active && !visible) interruptBackground('paused-selected');
