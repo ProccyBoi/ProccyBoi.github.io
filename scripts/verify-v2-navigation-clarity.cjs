@@ -25,6 +25,7 @@ function sourceChecks(){
 sourceChecks();if(process.argv.includes('--source-only'))process.exit(0);
 const {chromium}=require('playwright');
 const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080',out=process.env.V2_NAV_OUT||'/tmp/v2-navigation';fs.mkdirSync(out,{recursive:true});
+const captures=[];
 const group=(process.argv.find(x=>x.startsWith('--group='))||'--group=desktop').split('=')[1],results=[];
 let activePage;
 function probe(){
@@ -46,15 +47,29 @@ function probe(){
  for(const type of ['wheel','touchstart','touchmove','keydown','click'])addEventListener(type,e=>{if(e.isTrusted)p.events.push({type,at:performance.now(),y:scrollY,key:e.key||null});},{passive:true});
  addEventListener('DOMContentLoaded',()=>{const observed=['[data-assembly]','[data-selected-work]','[data-aircraft-hero]'];for(const selector of observed){const node=document.querySelector(selector);if(!node)continue;new MutationObserver(records=>{for(const r of records){if(/(frames|pending|ready|state|foreground|visible|models|progress)/i.test(r.attributeName)){const h=document.querySelector('[data-assembly]');p.mutations.push({at:performance.now(),selector,attr:r.attributeName,value:node.getAttribute(r.attributeName),y:scrollY,heroSettled:h?.dataset.assemblyForegroundSettled,heroVisible:h?.dataset.assemblyReadableVisible});}}}).observe(node,{attributes:true});}});
 }
-async function context(browser,options={}){const c=await browser.newContext({viewport:{width:1440,height:1000},...options});await c.addInitScript(probe);const p=await c.newPage();activePage=p;p._errors=[];p.on('pageerror',e=>p._errors.push(String(e)));return{c,p};}
+async function context(browser,options={}){const c=await browser.newContext({viewport:{width:1440,height:1000},...options});await c.addInitScript(probe);const p=await c.newPage();activePage=p;p._noScript=options.javaScriptEnabled===false;p._errors=[];p.on('pageerror',e=>p._errors.push(String(e)));return{c,p};}
 async function open(p,hash=''){await p.goto(base+'/v2/'+hash,{waitUntil:'domcontentloaded'});await p.evaluate(()=>document.fonts.ready);}
 async function decode(p){await p.locator('img').evaluateAll(images=>Promise.all(images.filter(x=>x.currentSrc||x.src).map(x=>x.decode().catch(()=>{}))));}
-async function shot(p,name){await decode(p);await p.waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'),null,{timeout:10000});await p.screenshot({path:path.join(out,name+'.png')});}
+async function shot(p,name){
+ await decode(p);const scene=/^(framework|transit)-/.test(name)?'selected':/^(aircraft|telemetry)-/.test(name)?'aircraft':null;
+ if(scene)await settled(p,scene);
+ await p.waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'),null,{timeout:10000});
+ const anchor=name.startsWith('framework-')?'work-framework':name.startsWith('transit-')?'work-transit':name.startsWith('aircraft-')?'skylabs-aircraft':name.startsWith('telemetry-')?'skylabs-telemetry':null;
+ if(anchor)await p.waitForFunction(id=>{const n=document.getElementById(id),top=Math.max(document.querySelector('.v2-header').getBoundingClientRect().bottom,parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0);return Math.abs(n.getBoundingClientRect().top-top)<2;},anchor,{timeout:10000});
+ if(scene)await settled(p,scene);
+ const capture=await p.evaluate(({name,anchor,scene})=>{const n=anchor&&document.getElementById(anchor),root=scene&&document.querySelector(scene==='selected'?'[data-selected-work]':'[data-aircraft-hero]'),canvas=root?.querySelector('canvas');return{name,anchor,y:scrollY,anchorTop:n?.getBoundingClientRect().top,headerBottom:document.querySelector('.v2-header').getBoundingClientRect().bottom,scene,dataset:root?{...root.dataset}:null,canvas:canvas?{opacity:getComputedStyle(canvas).opacity,visibility:getComputedStyle(canvas).visibility}:null};},{name,anchor,scene});
+ if(scene){assert.equal(capture.canvas.opacity,'1','Capture has fully revealed current CAD');assert.equal(capture.canvas.visibility,'visible');}captures.push(capture);
+ await p.screenshot({path:path.join(out,name+'.png')});
+}
 async function saveFailure(p){if(p&&!p.isClosed()){await p.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});fs.writeFileSync(path.join(out,'failure.json'),JSON.stringify(await state(p).catch(()=>({})),null,2));}}
 async function state(p){return p.evaluate(()=>({y:scrollY,height:innerHeight,docHeight:document.documentElement.scrollHeight,hero:{...document.querySelector('[data-assembly]').dataset},selected:{...document.querySelector('[data-selected-work]').dataset},aircraft:{...document.querySelector('[data-aircraft-hero]').dataset},probe:window.__navProbe}));}
 async function waitHero(p){await p.waitForFunction(()=>{const d=document.querySelector('[data-assembly]').dataset;return d.assemblyModelsReady==='3'&&d.assemblyGPUPending!=='true'&&d.assemblyForegroundSettled==='true';},{},{timeout:120000});}
 async function settled(p,scene){await p.waitForFunction(scene=>{const n=document.querySelector(scene==='selected'?'[data-selected-work]':'[data-aircraft-hero]'),d=n.dataset,k=scene==='selected'?'selected':'aircraft';return d[k+'State']==='ready'&&d[k+'GPUPending']!=='true'&&d[k+'WarmMask']!=='true'&&Number(d[k+'CompletedFrames'])>0&&Math.abs(Number(d[k+'Progress'])-Number(d[k+'RenderedProgress']))<.001;},scene,{timeout:150000});}
-async function scrollSection(p,id,offset=0){await p.evaluate(({id,offset})=>{const n=document.getElementById(id),header=document.querySelector('.v2-header').getBoundingClientRect().bottom;scrollTo({top:scrollY+n.getBoundingClientRect().top-header+offset,behavior:'instant'});},{id,offset});await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));}
+async function scrollSection(p,id,offset=0){
+ await p.evaluate(({id,offset})=>{const n=document.getElementById(id),header=Math.max(document.querySelector('.v2-header').getBoundingClientRect().bottom,parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0);scrollTo({top:scrollY+n.getBoundingClientRect().top-header+offset,behavior:'instant'});},{id,offset});
+ if(p._noScript)await p.waitForTimeout(50);else await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
+
 async function readable(p){const report=await p.evaluate(()=>{
  const links=[...document.querySelectorAll('[data-selected-chapter] a,[data-aircraft-copy] a')];return{overflow:document.documentElement.scrollWidth>innerWidth,links:links.map(n=>({href:new URL(n.href).pathname,inert:!!n.closest('[inert]'),hidden:!!n.closest('[aria-hidden="true"]'),display:getComputedStyle(n).display,visibility:getComputedStyle(n).visibility,tabIndex:n.tabIndex,height:n.getBoundingClientRect().height})),controls:document.querySelectorAll('.v2-selected-nav,.v2-selected-skip,.v2-framework-interaction,[data-assembly-select],[data-aircraft-go],[data-aircraft-skip]').length,anchors:['work-framework','work-transit','skylabs-aircraft','skylabs-telemetry'].map(id=>({id,tag:document.getElementById(id)?.tagName}))};});
  assert.equal(report.overflow,false,'No horizontal overflow');assert.equal(report.controls,0,'No decorative scene controls generated');assert.deepEqual(report.links.map(x=>x.href),routes);for(const l of report.links){assert.equal(l.inert||l.hidden,false,'Project never hidden/inert');assert.notEqual(l.display,'none');assert.equal(l.visibility,'visible');assert.equal(l.tabIndex,0);assert.ok(l.height>=44,'Project tap target');}assert.ok(report.anchors.every(x=>['SECTION','ARTICLE'].includes(x.tag)),'Hashes belong to real content');return report;
@@ -66,12 +81,13 @@ async function journey(browser,width){const {c,p}=await context(browser,{viewpor
  await scrollSection(p,'work-framework');await settled(p,'selected');await shot(p,'framework-'+width);await readable(p);
  await p.mouse.move(width/2,480);const before=await p.evaluate(()=>scrollY);await p.mouse.wheel(0,120);await p.waitForFunction(y=>scrollY>y,before);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await settled(p,'selected');await p.mouse.wheel(0,-120);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await settled(p,'selected');
  await scrollSection(p,'work-transit');await settled(p,'selected');await shot(p,'transit-'+width);await readable(p);
- // Ordinary Tab order is allowed to scroll to its focused link, but scene
- // updates must never redirect focus or hide a remaining project entry.
- const projectLinks=p.locator('[data-selected-chapter] a,[data-aircraft-copy] a');await projectLinks.first().focus();for(let i=0;i<routes.length;i++){assert.equal(await p.evaluate(()=>new URL(document.activeElement.href).pathname),routes[i]);await p.waitForTimeout(100);assert.equal(await p.evaluate(()=>new URL(document.activeElement.href).pathname),routes[i]);if(i<routes.length-1)await p.keyboard.press('Tab');}
  await scrollSection(p,'skylabs-aircraft');await settled(p,'aircraft');await shot(p,'aircraft-'+width);await readable(p);
  await scrollSection(p,'skylabs-telemetry');await settled(p,'aircraft');await shot(p,'telemetry-'+width);await readable(p);
  await scrollSection(p,'about');await shot(p,'about-'+width);const off1=await state(p);await p.waitForTimeout(1200);const off2=await state(p);assert.equal(off1.selected.selectedSubmittedFrames,off2.selected.selectedSubmittedFrames,'Selected stops offscreen');
+  // Ordinary Tab order is allowed to scroll to its focused link, but scene
+ // updates must never redirect focus or hide a remaining project entry.
+ const projectLinks=p.locator('[data-selected-chapter] a,[data-aircraft-copy] a');await projectLinks.first().focus();for(let i=0;i<routes.length;i++){assert.equal(await p.evaluate(()=>new URL(document.activeElement.href).pathname),routes[i]);await p.waitForTimeout(100);assert.equal(await p.evaluate(()=>new URL(document.activeElement.href).pathname),routes[i]);if(i<routes.length-1)await p.keyboard.press('Tab');}
+
  await p.evaluate(()=>{scrollTo({top:0,behavior:'instant'});return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});await waitHero(p);await shot(p,'hero-return-'+width);const final=await assertions(p);results.push({name:'journey-'+width,initial,final});
  }catch(error){await saveFailure(p);throw error;}finally{await c.close();}}
 async function fallback(browser,name,options,init){const {c,p}=await context(browser,options);try{if(init)await p.addInitScript(init);await open(p);await decode(p);await readable(p);await shot(p,'fallback-'+name);if(options.javaScriptEnabled!==false){await p.waitForTimeout(200);assert.equal((await state(p)).probe.contexts.length,0,name+' no WebGL context');}await scrollSection(p,'work-framework');await shot(p,'fallback-'+name+'-work');await scrollSection(p,'skylabs-aircraft');await shot(p,'fallback-'+name+'-skylabs');assert.deepEqual(p._errors,[]);results.push({name});}catch(error){await saveFailure(p);throw error;}finally{await c.close();}}
@@ -91,5 +107,5 @@ async function routeChecks(browser){const {c,p}=await context(browser,{viewport:
  }
  else if(group==='routes')await routeChecks(browser);
  else throw new Error('Unknown group '+group);
- fs.writeFileSync(path.join(out,group+'.json'),JSON.stringify({group,results},null,2));console.log('PASS '+group);
+ fs.writeFileSync(path.join(out,group+'.json'),JSON.stringify({group,results,captures},null,2));console.log('PASS '+group);
  }catch(e){if(activePage&&!activePage.isClosed()){await activePage.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});fs.writeFileSync(path.join(out,'failure.json'),JSON.stringify(await state(activePage).catch(()=>({})),null,2));}throw e;}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

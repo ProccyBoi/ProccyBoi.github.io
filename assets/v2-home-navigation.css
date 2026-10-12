@@ -4,3 +4,5 @@
 .v2-home .v2-contact-options .v2-text-link:hover{color:var(--v2-accent)}
 
 .v2-home [data-selected-background-scene] :is(.v2-framework-art,.v2-transport-photo){pointer-events:none}
+
+.v2-home [data-selected-background-scene].is-scene .v2-transport-grid{align-items:start}

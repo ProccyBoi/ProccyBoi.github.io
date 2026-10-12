@@ -24,6 +24,7 @@ jobs:
           node scripts/verify-v2-decorative-hero.cjs
           node scripts/verify-v2-decorative-loader.cjs
           node scripts/verify-v2-selected-background.cjs
+          node scripts/profile-v2-navigation.cjs --source-only
           node scripts/verify-v2-scroll-smoothing.cjs
           node scripts/verify-v2-gpu-preparation.cjs
           node scripts/verify-v2-hero-pacing.cjs --source-only
@@ -38,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [desktop, mobile390, mobile320, fallbacks, routes, booking]
+        suite: [desktop, mobile390, mobile320, fallbacks, routes, booking, lifecycle-hero, lifecycle-selected, lifecycle-aircraft, lifecycle-hashes, lifecycle-reflow, profile]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -59,7 +60,18 @@ jobs:
         run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/site.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/ >/dev/null && break; sleep 1; done
-          if [ '${{ matrix.suite }}' = booking ]; then node scripts/verify-v2-booking.cjs; else node scripts/verify-v2-navigation-clarity.cjs --group=${{ matrix.suite }}; fi
+          case '${{ matrix.suite }}' in
+            booking) node scripts/verify-v2-booking.cjs ;;
+            lifecycle-*)
+              suite='${{ matrix.suite }}'
+              node scripts/verify-v2-navigation-lifecycle.cjs --group=${suite#lifecycle-}
+              ;;
+            profile)
+              git worktree add --detach /tmp/v2-navigation-baseline 649bc32ccbabf1c67cbf19628da42b6dbd836be1
+              V2_NAV_BASELINE_ROOT=/tmp/v2-navigation-baseline V2_NAV_ROOT=$PWD V2_NAV_OUT=/tmp/v2-navigation/profile.json node scripts/profile-v2-navigation.cjs
+              ;;
+            *) node scripts/verify-v2-navigation-clarity.cjs --group=${{ matrix.suite }} ;;
+          esac
       - uses: actions/upload-artifact@v4
         if: always()
         with:
