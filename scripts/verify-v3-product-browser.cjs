@@ -62,7 +62,7 @@ function currentFrame(sample, afterSequence = 0) {
 }
 
 function installProbe() {
-  const probe = window.__v3ProductProbe = { contexts:[], input:[], scrolls:[], focus:[], sceneFrames:{}, started:performance.now() };
+  const probe = window.__v3ProductProbe = { contexts:[], input:[], scrolls:[], focus:[], caseLayouts:[], sceneFrames:{}, started:performance.now() };
   for(const type of ['scroll','scrollend'])addEventListener(type,event=>{probe.scrolls.push({type,at:performance.now(),y:scrollY,trusted:event.isTrusted});if(probe.scrolls.length>100)probe.scrolls.shift();},{passive:true});
   const focusedNode=node=>node?{tag:node.tagName||'window',id:node.id||'',label:node.getAttribute?.('aria-label')||'',href:node.getAttribute?.('href')||''}:null;
   const focusTrace=(type,event)=>{const sample={type,at:performance.now(),viewport:{width:innerWidth,height:innerHeight},compact:matchMedia('(max-width:1024px), (pointer:coarse)').matches,target:focusedNode(event?.target),related:focusedNode(event?.relatedTarget),active:focusedNode(document.activeElement),navInert:document.querySelector('[data-v3-nav]')?.inert};probe.focus.push(sample);if(probe.focus.length>100)probe.focus.shift();queueMicrotask(()=>{sample.after={active:focusedNode(document.activeElement),navInert:document.querySelector('[data-v3-nav]')?.inert};});};
@@ -100,6 +100,14 @@ function installProbe() {
     }, {capture:true, passive:true});
   }
   const rect = node => { if (!node) return null; const b = node.getBoundingClientRect(); return {x:b.x,y:b.y,width:b.width,height:b.height,top:b.top,right:b.right,bottom:b.bottom,left:b.left}; };
+  probe.readCaseLayout = () => {
+    const target=document.getElementById('details'),pi=document.querySelector('[data-pi-inspector]');if(!target||!pi)return null;
+    const control=pi.querySelector('.pi-controls'),b=rect(target),style=getComputedStyle(target),html=getComputedStyle(document.documentElement);
+    return{at:performance.now(),url:location.href,y:scrollY,details:{...b,documentTop:scrollY+b.top,scrollMarginTop:parseFloat(style.scrollMarginTop)||0},scrollPaddingTop:parseFloat(html.scrollPaddingTop)||0,documentHeight:document.scrollingElement.scrollHeight,piState:pi.dataset.piState,pi:rect(pi),controls:control?{...rect(control),display:getComputedStyle(control).display,visibility:getComputedStyle(control).visibility}:null,status:(()=>{const node=pi.querySelector('[data-pi-status]');return node?{...rect(node),text:node.textContent,fontSize:getComputedStyle(node).fontSize,lineHeight:getComputedStyle(node).lineHeight,clientHeight:node.clientHeight,scrollHeight:node.scrollHeight,clientWidth:node.clientWidth,scrollWidth:node.scrollWidth}:null;})(),retry:(()=>{const node=pi.querySelector('[data-pi-start]');return node?{...rect(node),hidden:node.hidden,visibility:getComputedStyle(node).visibility}:null;})(),selector:document.querySelector('[aria-label="On this page"]')?.value};
+  };
+  const caseLayout=type=>{const sample=probe.readCaseLayout();if(sample){probe.caseLayouts.push({type,...sample});if(probe.caseLayouts.length>40)probe.caseLayouts.shift();}};
+  addEventListener('hashchange',()=>caseLayout('hashchange'),{passive:true});
+  new MutationObserver(()=>caseLayout('pi-state-change')).observe(document,{subtree:true,attributes:true,attributeFilter:['data-pi-state']});
   const parse = text => { try { return JSON.parse(text); } catch { return null; } };
   const clamp = value => Math.min(1, Math.max(0, value));
   const shown = node => { if (!node) return false; const s = getComputedStyle(node), b = node.getBoundingClientRect(); return !node.hidden && s.display !== 'none' && s.visibility === 'visible' && Number(s.opacity) >= .99 && b.width > 0 && b.height > 0; };
@@ -134,11 +142,22 @@ function installProbe() {
     header:rect(document.querySelector('.v2-header')), active:{tag:document.activeElement?.tagName,label:document.activeElement?.getAttribute('aria-label'),id:document.activeElement?.id},
     scenes:Object.fromEntries(['hero','selected','aircraft'].map(kind => [kind,probe.read(kind)])),
     images:[...document.images].filter(image => {const b=image.getBoundingClientRect();return b.bottom>0&&b.top<innerHeight&&b.right>0&&b.left<innerWidth;}).map(image=>({src:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth,decoded:image.dataset.imageDecoded,rect:rect(image)})),
-    controls:[...document.querySelectorAll('[data-v3-menu],.v3-quick-projects,[data-v3-nav] a,select,[data-framework-overview],[data-framework-inspect]')].map(node=>({tag:node.tagName,label:node.getAttribute('aria-label')||node.textContent.trim(),value:node.value,href:node.getAttribute('href'),hidden:node.hidden,inert:node.inert,disabled:node.disabled,display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,rect:rect(node)})), contexts:probe.contexts, input:probe.input, scrolls:probe.scrolls, focus:probe.focus});
+    controls:[...document.querySelectorAll('[data-v3-menu],.v3-quick-projects,[data-v3-nav] a,select,[data-framework-overview],[data-framework-inspect]')].map(node=>({tag:node.tagName,label:node.getAttribute('aria-label')||node.textContent.trim(),value:node.value,href:node.getAttribute('href'),hidden:node.hidden,inert:node.inert,disabled:node.disabled,display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,rect:rect(node)})), contexts:probe.contexts, input:probe.input, scrolls:probe.scrolls, focus:probe.focus, caseLayout:probe.readCaseLayout(), caseLayouts:probe.caseLayouts});
 }
 
 async function networkGuard(context, allowedBase = base) {
-  const state = {availability:[],submissions:[],blocked:[],mode:'ready',response:{ok:true}};
+  const state = {availability:[],submissions:[],blocked:[],mode:'ready',response:{ok:true},piModelGate:{held:false,requests:0,released:false,outcomes:[]}};
+  let heldPiModel,observePiModel,piRelease,piReleased;
+  state.holdPiModel=()=>{
+    assert.equal(state.piModelGate.held,false);state.piModelGate.held=true;state.piModelGate.released=false;
+    heldPiModel=new Promise(resolve=>{observePiModel=resolve;});
+    piReleased=new Promise(resolve=>{piRelease=resolve;});
+  };
+  state.waitForHeldPiModel=async()=>{
+    assert.ok(heldPiModel,'Arm the real Pi model gate before navigating');let timer;
+    try{await Promise.race([heldPiModel,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Real Pi board GET never reached the armed test gate')),timeout);})]);}finally{clearTimeout(timer);}
+  };
+  state.releasePiModel=(outcome='continue')=>{if(state.piModelGate.held){state.piModelGate.held=false;state.piModelGate.released=true;state.piModelGate.outcomes.push(outcome);piRelease?.(outcome);}};
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.origin + url.pathname === endpoint) {
@@ -158,7 +177,14 @@ async function networkGuard(context, allowedBase = base) {
       });
       return route.fulfill({status:200,contentType:'text/javascript',body:`${callback}(${JSON.stringify({ok:true,token:'mock-v3-'+duration,days})});`});
     }
-    if (url.origin === new URL(allowedBase).origin && ['GET','HEAD'].includes(request.method())) return route.continue();
+    if (url.origin === new URL(allowedBase).origin && ['GET','HEAD'].includes(request.method())) {
+      // Delay only one genuine source asset, never replace a model or mutate
+      // the viewer. This deterministically exercises late native-anchor layout.
+      if(url.pathname==='/assets/models/framework-pi/framework-pi-board.glb'&&state.piModelGate.held){
+        state.piModelGate.requests++;observePiModel();const outcome=await piReleased;if(outcome==='abort')return route.abort('failed');
+      }
+      return route.continue();
+    }
     state.blocked.push({url:url.href,method:request.method()}); return route.abort('blockedbyclient');
   });
   return state;
@@ -469,6 +495,76 @@ async function sectionDestination(page,id) {
   write('last-section-destination-'+id,evidence);
 }
 
+function assertPiStatusReadable(sample,label) {
+  assert.ok(sample.status?.text.trim(),label+': actual viewer status text exists');
+  assert.ok(sample.status.scrollHeight<=sample.status.clientHeight+1,label+': status text is not vertically clipped '+JSON.stringify(sample.status));
+  assert.ok(sample.status.scrollWidth<=sample.status.clientWidth+1,label+': status text stays within its own width');
+}
+function assertPiAnchorUnchanged(before,after,label) {
+  assert.equal(after.url,before.url,label+': preserve the real Details hash');
+  assert.ok(near(after.details.documentTop,before.details.documentTop,1),label+': no upstream Details layout shift');
+  assert.ok(near(after.y,before.y,1),label+': no compensating native scroll correction');
+  assert.ok(near(after.controls.height,before.controls.height,1),label+': exact reserved control height');
+}
+async function hiddenPiControl(run,label) {
+  const result=await run.page.locator('[data-pi-explode]').evaluate(node=>{const before=document.activeElement;node.focus({preventScroll:true});return{visibility:getComputedStyle(node).visibility,focusUnchanged:document.activeElement===before,active:document.activeElement?.tagName};});
+  assert.equal(result.visibility,'hidden',label+': unready controls are hidden');
+  assert.equal(result.focusUnchanged,true,label+': hidden controls cannot take focus');
+}
+async function heldPiDetails(run,prefix,{enlarged=false}={}) {
+  const page=run.page,selector=page.getByRole('combobox',{name:'On this page'}),phases={};
+  const record=async name=>{
+    const sample=await page.evaluate(()=>window.__v3ProductProbe.readCaseLayout());phases[name]=sample;
+    assertPiStatusReadable(sample,prefix+' '+name);
+    write(prefix+'-held-pi-'+name,{phases,gate:run.network.piModelGate,textStress:enlarged,timeline:await page.evaluate(()=>window.__v3ProductProbe.caseLayouts)});
+    return sample;
+  };
+  const nativeDetails=async()=>{await selector.selectOption('#engineering');await sectionDestination(page,'engineering');await selector.selectOption('#details');await sectionDestination(page,'details');};
+  await run.network.waitForHeldPiModel();
+  assert.equal(await page.locator('[data-pi-inspector]').getAttribute('data-pi-state'),'loading','Choose Details while the real model is held in loading');
+  await hiddenPiControl(run,prefix+' loading');
+  await selector.selectOption('#details');await sectionDestination(page,'details');
+  const loading=await record('details-loading');assert.equal(loading.piState,'loading');assert.match(loading.status.text,/Preparing the assembly/);
+  run.network.releasePiModel('abort');
+  await page.waitForFunction(()=>document.querySelector('[data-pi-inspector]')?.dataset.piState==='unavailable',null,{timeout});await scrollStable(page);
+  const unavailable=await record('details-unavailable');assert.match(unavailable.status.text,/could not load/);
+  if(!enlarged){assertPiAnchorUnchanged(loading,unavailable,'Model failure');await sectionDestination(page,'details');}
+  await hiddenPiControl(run,prefix+' unavailable');
+  assert.equal(await page.locator('[data-pi-start]').isVisible(),true,'Real unavailable handler exposes Retry');
+  assert.ok(unavailable.retry.width>=44&&unavailable.retry.height>=44,'Retry retains a 44 px minimum touch target');
+  await shot(run,prefix+'-pi-unavailable',{target:'[data-pi-status]'});
+  // Retry is a genuine user click. It may scroll its own button into view, so
+  // re-enter Details through the real section control before releasing load 2.
+  run.network.holdPiModel();await page.locator('[data-pi-start]').click();await run.network.waitForHeldPiModel();
+  await hiddenPiControl(run,prefix+' retry loading');await nativeDetails();
+  const retryLoading=await record('details-retry-loading');assert.equal(retryLoading.piState,'loading');assert.match(retryLoading.status.text,/Preparing the assembly/);
+  run.network.releasePiModel();
+  await page.waitForFunction(()=>document.querySelector('[data-pi-inspector]')?.dataset.piState==='ready',null,{timeout});await scrollStable(page);
+  const ready=await record('details-ready');assert.match(ready.status.text,/Drag to rotate/);assert.equal(ready.controls.visibility,'visible','Ready controls become visible');
+  if(!enlarged)assertPiAnchorUnchanged(retryLoading,ready,'Late model readiness');
+  else{
+    // 200% text may legitimately need more than the minimum two status lines.
+    // Preserve natural reflow and prove the real section is still reachable.
+    await nativeDetails();await record('details-enlarged-ready-target');
+  }
+  await sectionDestination(page,'details');
+  assert.equal(run.network.piModelGate.requests,2,'Both loading attempts used the held original board GET');
+  assert.deepEqual(run.network.piModelGate.outcomes,['abort','continue'],'First real load failed, second real load completed');
+  await shot(run,prefix+'-held-pi-details-after-ready');
+  passed(prefix+'-held-original-pi-failure-retry-native-details-'+(enlarged?'unclipped-text-stress':'stable-anchor'));
+}
+async function narrowPiTextStress(browser) {
+  const run=await open(browser,viewports.phone320,{reduced:true}),prefix='webkit-phone320-pi-text200';
+  try{
+    run.network.holdPiModel();await goto(run,'/v3/projects/framework-raspberry-pi/');await run.page.locator('body.v3-product-ready').waitFor();
+    const original=await run.page.locator('[data-pi-status],[data-pi-start],[data-pi-explode]').evaluateAll(nodes=>nodes.map(node=>({selector:node.matches('[data-pi-status]')?'[data-pi-status]':node.matches('[data-pi-start]')?'[data-pi-start]':'[data-pi-explode]',fontSize:parseFloat(getComputedStyle(node).fontSize)})));
+    await run.page.addStyleTag({content:original.map(item=>`${item.selector}{font-size:${item.fontSize*2}px!important}`).join('\n')});
+    write(prefix+'-method',{viewport:run.viewport,original,note:'Test-only 200% enlargement of the computed actual Pi status and action-label font sizes. This is a narrow text-reflow stress probe, not physical Safari, OS text zoom, or altered model geometry.'});
+    const selector=run.page.getByRole('combobox',{name:'On this page'});await selector.selectOption('#engineering');await sectionDestination(run.page,'engineering');
+    await heldPiDetails(run,prefix,{enlarged:true});await fit(run.page,prefix);assert.deepEqual(run.errors,[]);assert.deepEqual(run.network.blocked,[]);assert.equal(run.network.submissions.length,0);
+  }catch(error){await diagnose(run,prefix,error);throw error;}finally{run.network.releasePiModel();await run.context.close();}
+}
+
 async function catalogAndCase(run,prefix) {
   const page=run.page;
   await navLink(run,'Projects');await page.waitForURL('**/v3/projects/');await page.locator('[data-v2-search]').waitFor();
@@ -482,6 +578,8 @@ async function catalogAndCase(run,prefix) {
   await shot(run,prefix+'-catalog-search');await search.press('Escape');assert.equal(await page.locator('[data-v2-project]:visible').count(),15);
   await page.locator('[data-v2-category="robotics"]').click();assert.equal(await page.locator('[data-v2-project]:visible').count(),1);assert.match(await page.locator('[data-v2-project]:visible').textContent(),/rUNSWift/);
   await page.locator('[data-v2-category="all"]').click();assert.equal(await page.locator('[data-v2-project]:visible').count(),15);
+  const heldPi=prefix==='webkit-ipad-emulation';
+  if(heldPi)run.network.holdPiModel();
   await page.locator('[data-v2-project][href="/v3/projects/framework-raspberry-pi/"]').click();await page.waitForURL('**/v3/projects/framework-raspberry-pi/');await page.locator('h1').waitFor();
   await header(run,prefix+'-case');await shot(run,prefix+'-case-overview');
   const selector=page.getByRole('combobox',{name:'On this page'}),compact=run.viewport.touch||run.viewport.width<=1024;
@@ -491,7 +589,8 @@ async function catalogAndCase(run,prefix) {
     assert.equal(await page.locator('.v2-case-nav').isVisible(),false,'Compact case links do not become a second sticky rail');
     const value=await selector.locator('option').evaluateAll(nodes=>nodes.map(node=>node.value));assert.ok(value.includes('#engineering')&&value.includes('#details'));
     await selector.selectOption('#engineering');await sectionDestination(page,'engineering');
-    await selector.selectOption('#details');await sectionDestination(page,'details');
+    if(heldPi)await heldPiDetails(run,prefix);
+    else{await selector.selectOption('#details');await sectionDestination(page,'details');}
     await page.goBack({waitUntil:'domcontentloaded'});await sectionDestination(page,'engineering');
   }else{await page.locator('[data-v2-section][href$="#engineering"]').click();await sectionDestination(page,'engineering');}
   const visibleHeading=await page.locator('#engineering').evaluate(node=>{const b=node.getBoundingClientRect(),header=document.querySelector('.v2-header').getBoundingClientRect();return b.top>=header.bottom-2&&b.top<innerHeight;});
@@ -561,7 +660,7 @@ async function viewportReview(browser,name) {
     await homeScenes(run,name);await catalogAndCase(run,name);await book(run,name);await about(run,name);
     assert.deepEqual(run.errors,[],'No uncaught JavaScript errors');assert.deepEqual(run.shaders,[],'No shader errors');assert.deepEqual(run.network.blocked,[],'No unexpected external traffic or non-GET operations');
     write(name+'-result',{viewport:viewports[name],reports,errors:run.errors,shaders:run.shaders,network:run.network});
-  }catch(error){await diagnose(run,name,error);throw error;}finally{await run.context.close();}
+  }catch(error){await diagnose(run,name,error);throw error;}finally{run.network.releasePiModel?.();await run.context.close();}
 }
 async function diagnose(run,name,error) {write(name+'-failure',{error:error.stack,errors:run.errors,shaders:run.shaders,network:run.network,snapshot:await run.page.evaluate(()=>window.__v3ProductProbe?.snapshot()||({url:location.href,y:scrollY})).catch(error=>({error:error.message}))});await run.page.screenshot({path:path.join(output,name+'-failure.png'),timeout:15000}).catch(()=>{});}
 
@@ -590,7 +689,7 @@ async function fallbacks(browser) {
       await goto(run,'/v3/book/');if(options.noJS)assert.equal(await run.page.getByText(/live calendar needs JavaScript/).isVisible(),true);else await run.page.locator('[data-slot]').first().waitFor();await shot(run,name+'-book');
       if(name==='short-landscape')await book(run,name);else assert.equal(run.network.submissions.length,0);
       assert.deepEqual(run.errors,[]);passed(name+'-readable-static-routes');
-    }catch(error){await diagnose(run,name,error);throw error;}finally{await run.context.close();}
+    }catch(error){await diagnose(run,name,error);throw error;}finally{run.network.releasePiModel?.();await run.context.close();}
   }
   // Every preserved route gets a narrow no-JS render, not just a source audit.
   const routes=[];function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())walk(file);else if(entry.name==='index.html')routes.push('/v3/'+path.relative(path.join(root,'v2'),path.dirname(file)).replaceAll(path.sep,'/')+'/');}}
@@ -614,7 +713,7 @@ async function fallbacks(browser) {
       }
     }
     write('all-routes-no-js-mobile320',documents);passed('all-'+documents.length+'-routes-no-js-narrow-render-and-utilities');
-  }finally{await run.context.close();}
+  }finally{run.network.releasePiModel?.();await run.context.close();}
 }
 
 async function webkitSmoke(browser) {
@@ -624,7 +723,8 @@ async function webkitSmoke(browser) {
     await catalogAndCase(run,'webkit-ipad-emulation');await book(run,'webkit-ipad-emulation');
     assert.deepEqual(run.errors,[]);assert.deepEqual(run.network.blocked,[]);
     write('webkit-ipad-emulation-result',{reports,network:run.network,note:'WebKit tablet viewport/touch emulation on Linux, reduced motion. This is not a test on a physical iPad or Safari/iPadOS.'});
-  }catch(error){await diagnose(run,'webkit-ipad-emulation',error);throw error;}finally{await run.context.close();}
+  }catch(error){await diagnose(run,'webkit-ipad-emulation',error);throw error;}finally{run.network.releasePiModel?.();await run.context.close();}
+  await narrowPiTextStress(browser);
 }
 
 function installProfile() {
@@ -712,6 +812,12 @@ function selfTest() {
   const fixed=responsivenessWindow(metric,100);assert.equal(fixed.longTaskTotalMs,60);assert.equal(fixed.keysDelivered,1);assert.deepEqual(fixed.keyToNextRAFMs,[50]);assert.equal(fixed.taskQueueMaxDelayMs,60);
   const full=responsivenessWindow(metric,220);assert.equal(full.longTaskTotalMs,170);assert.equal(full.keysDelivered,2);
   passed('light-color-contrast-math-and-full-startup-horizon-oracles');
+  const anchored={url:'http://example.invalid/v3/projects/framework-raspberry-pi/#details',y:2580,details:{documentTop:2656},controls:{height:81},status:{text:'Actual viewer status',clientHeight:48,scrollHeight:48,clientWidth:240,scrollWidth:240}};
+  assertPiAnchorUnchanged(anchored,{...anchored},'unit unchanged anchor');assertPiStatusReadable(anchored,'unit readable status');
+  assert.throws(()=>assertPiAnchorUnchanged(anchored,{...anchored,details:{documentTop:2737}},'unit 81 px late shift'));
+  assert.throws(()=>assertPiAnchorUnchanged(anchored,{...anchored,y:2661},'unit compensating scroll'));
+  assert.throws(()=>assertPiStatusReadable({...anchored,status:{...anchored.status,scrollHeight:72}},'unit clipped text'));
+  passed('held-pi-oracle-rejects-late-layout-shift-scroll-compensation-and-text-clipping');
 }
 
 (async()=>{

@@ -188,6 +188,14 @@ body.v3-product.v2-collection { background: var(--v2-panel); }
   color: var(--v2-ink);
 }
 .v3-product.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls) { padding-block: 18px; }
+/* Keep native section anchors stable while the Pi viewer prepares. The retry
+   action occupies the same intrinsic control row; no hidden action can focus. */
+.v3-product.v2-case [data-pi-inspector] { display: grid; grid-template-columns: minmax(0, 1fr); }
+.v3-product.v2-case [data-pi-inspector] .pi-stage { grid-area: 1 / 1; }
+.v3-product.v2-case [data-pi-inspector] :is(.pi-controls, .pi-start-wrap) { grid-area: 2 / 1; }
+.v3-product.v2-case [data-pi-inspector] .pi-start-wrap { margin: 0; padding: 18px 24px; }
+.v3-product.v2-case [data-pi-inspector]:not([data-pi-state=ready]) .pi-controls { display: flex; visibility: hidden; }
+.v3-product.v2-case [data-pi-inspector] .pi-status { grid-area: 3 / 1; min-height: calc(3.2em + 19px); }
 .v3-product.v2-case .project-interactive :is(.hardware-boards a, .object-board, .object-view, .object-tool, .pi-start-wrap button, .hardware-start button, .pi-controls button, .pi-parts button) {
   min-height: 44px;
   border: 1px solid var(--rule-strong);
