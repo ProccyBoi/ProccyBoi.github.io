@@ -36,7 +36,8 @@ def production(relative):
 
 def allowed_new_production(relative):
     path = Path(relative)
-    return (path.parts[0] == "v3" and path.suffix == ".html") or (path.parent == Path("assets") and path.name.startswith("v3-product") and path.suffix in {".js", ".css"})
+    light_posters = {f"assets/images/v3-product/skylabs-{pose}{size}.webp" for pose in ("approach", "stopped") for size in ("", "-mobile")}
+    return (path.parts[0] == "v3" and path.suffix == ".html") or (path.parent == Path("assets") and path.name.startswith("v3-product") and path.suffix in {".js", ".css"}) or relative in light_posters
 
 
 def blob_hash(data):
@@ -110,7 +111,7 @@ def main():
         print("\n".join(dict.fromkeys(errors)))
         return 1
     print(f'Frozen boundary passed against {resolved[:7]}: {stats["frozen files"]} files / {stats["frozen bytes"]:,} bytes, including {stats["v2 files"]} v2 files and {stats["shared asset files"]} shared assets.')
-    print("Only approved production changes: v3 HTML, new v3-product CSS/JS, and the one Book sitemap entry.")
+    print("Only approved production changes: v3 HTML, v3-product CSS/JS, four source-rendered light aircraft posters, and the one Book sitemap entry.")
     if args.baseline_only:
         print("Baseline-only mode: the unfinished v3 copy was not checked.")
     else:

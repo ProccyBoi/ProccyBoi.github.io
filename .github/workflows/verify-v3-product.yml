@@ -1,4 +1,4 @@
-name: Review v3 product navigation and scenes
+name: Review light v3 product navigation and scenes
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     paths:
       - 'v3/**'
       - 'assets/v3-product*'
+      - 'assets/images/v3-product/**'
       - 'scripts/verify-v3-product*'
       - 'scripts/audit-v3.py'
       - 'scripts/build-v3-pages.py'
@@ -37,6 +38,7 @@ jobs:
           python3 scripts/audit-v3.py
           python3 scripts/verify-v3-product-preservation.py
           node scripts/verify-v3-product-controls.cjs
+          node scripts/verify-v3-product-surfaces.cjs
           node scripts/verify-v3-product-browser.cjs --self-test
 
   chromium:
@@ -56,7 +58,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-      - name: Native navigation, current fenced scenes, catalog and mocked Book
+      - name: Light surfaces, native navigation, fenced scenes and mocked Book
         env:
           V3_PRODUCT_BASE_URL: http://127.0.0.1:8080
           V3_PRODUCT_OUT: /tmp/v3-product-evidence
@@ -66,7 +68,7 @@ jobs:
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
           curl -fsS http://127.0.0.1:8080/v3/ >/dev/null
           node scripts/verify-v3-product-browser.cjs --viewport=${{ matrix.viewport }}
-      - name: Save viewport screenshots and exact frame evidence
+      - name: Save screenshots, computed color contrast and exact frame evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -87,6 +89,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -94,9 +98,21 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.57.0
           npx playwright install --with-deps chromium
-      - name: Verify static fallbacks or matched cold first-use profile
+      - name: Prepare exact accepted dark-v3 comparison server
+        if: matrix.suite == 'profile'
+        run: |
+          baseline=45c386e61fec7ee54b42378a9c963e5d8f0dd0ae
+          test "$(git rev-parse "$baseline^{commit}")" = "$baseline"
+          mkdir -p /tmp/v3-product-dark-baseline
+          git archive "$baseline" | tar -x -C /tmp/v3-product-dark-baseline
+          printf '%s\n' "$baseline" >/tmp/v3-product-dark-baseline/.v3-profile-commit
+          python3 -m http.server 8081 --bind 127.0.0.1 --directory /tmp/v3-product-dark-baseline >/tmp/v3-product-baseline-server.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8081/v3/ >/dev/null && break; sleep 1; done
+          test "$(curl -fsS http://127.0.0.1:8081/.v3-profile-commit)" = "$baseline"
+      - name: Verify light static fallbacks or paired dark-v3/light-v3 cold profile
         env:
           V3_PRODUCT_BASE_URL: http://127.0.0.1:8080
+          V3_PRODUCT_BASELINE_URL: http://127.0.0.1:8081
           V3_PRODUCT_OUT: /tmp/v3-product-evidence
           V3_PRODUCT_TIMEOUT: '180000'
         run: |
@@ -104,7 +120,7 @@ jobs:
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
           curl -fsS http://127.0.0.1:8080/v3/ >/dev/null
           node scripts/verify-v3-product-browser.cjs --${{ matrix.suite }}
-      - name: Save fallback images or paired profile measurements
+      - name: Save light fallback images or full-startup paired profile evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -112,6 +128,7 @@ jobs:
           path: |
             /tmp/v3-product-evidence/
             /tmp/v3-product-server.log
+            /tmp/v3-product-baseline-server.log
           if-no-files-found: warn
           retention-days: 14
 

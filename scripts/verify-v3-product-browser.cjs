@@ -23,6 +23,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const base = (process.env.V3_PRODUCT_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '').replace(/\/v[23]$/, '');
+const profileBaselineCommit = '45c386e61fec7ee54b42378a9c963e5d8f0dd0ae';
+const profileBaselineBase = process.env.V3_PRODUCT_BASELINE_URL?.replace(/\/$/, '');
 const output = path.resolve(process.env.V3_PRODUCT_OUT || '.codex-temp/v3-product-review');
 const timeout = Number(process.env.V3_PRODUCT_TIMEOUT || 180000);
 const argv = process.argv.slice(2);
@@ -135,7 +137,7 @@ function installProbe() {
     controls:[...document.querySelectorAll('[data-v3-menu],.v3-quick-projects,[data-v3-nav] a,select,[data-framework-overview],[data-framework-inspect]')].map(node=>({tag:node.tagName,label:node.getAttribute('aria-label')||node.textContent.trim(),value:node.value,href:node.getAttribute('href'),hidden:node.hidden,inert:node.inert,disabled:node.disabled,display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,rect:rect(node)})), contexts:probe.contexts, input:probe.input, scrolls:probe.scrolls, focus:probe.focus});
 }
 
-async function networkGuard(context) {
+async function networkGuard(context, allowedBase = base) {
   const state = {availability:[],submissions:[],blocked:[],mode:'ready',response:{ok:true}};
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
@@ -156,13 +158,13 @@ async function networkGuard(context) {
       });
       return route.fulfill({status:200,contentType:'text/javascript',body:`${callback}(${JSON.stringify({ok:true,token:'mock-v3-'+duration,days})});`});
     }
-    if (url.origin === new URL(base).origin && ['GET','HEAD'].includes(request.method())) return route.continue();
+    if (url.origin === new URL(allowedBase).origin && ['GET','HEAD'].includes(request.method())) return route.continue();
     state.blocked.push({url:url.href,method:request.method()}); return route.abort('blockedbyclient');
   });
   return state;
 }
 async function open(browser, viewport, options = {}) {
-  const context = await browser.newContext({viewport:{width:viewport.width,height:viewport.height},hasTouch:viewport.touch,isMobile:viewport.touch,deviceScaleFactor:1,serviceWorkers:'block',timezoneId:'Australia/Sydney',reducedMotion:options.reduced ? 'reduce' : 'no-preference',javaScriptEnabled:!options.noJS});
+  const context = await browser.newContext({viewport:{width:viewport.width,height:viewport.height},hasTouch:viewport.touch,isMobile:viewport.touch,deviceScaleFactor:1,serviceWorkers:'block',timezoneId:'Australia/Sydney',colorScheme:'dark',reducedMotion:options.reduced ? 'reduce' : 'no-preference',javaScriptEnabled:!options.noJS});
   const network = await networkGuard(context);
   if (!options.noJS) {
     await context.addInitScript({content:`(${installProbe.toString()})(); window.__v3ProductProbe.matches = (${currentFrame.toString()});`});
@@ -195,9 +197,97 @@ async function sceneReady(page, kind, afterSequence = 0) {
   assert.ok(await page.evaluate(kind=>window.__v3ProductProbe.matches(window.__v3ProductProbe.read(kind),0),kind),'The completed pose must still match after fades and native scrolling settle');
   return page.evaluate(kind=>window.__v3ProductProbe.read(kind),kind);
 }
-async function shot(run, name, {scene, afterSequence=0, fullPage=false} = {}) {
+// Color math is deliberately shared by browser evidence and adversarial tests.
+function colorValues(value) {
+  if (value === 'transparent') return [0,0,0,0];
+  const match = /^rgba?\(([^)]+)\)$/.exec(value);
+  if (!match) return null;
+  const values = match[1].replace(/\s*\/\s*/, ',').split(/[\s,]+/).filter(Boolean).map(Number);
+  return values.length >= 3 && values.every(Number.isFinite) ? [...values.slice(0,3), values[3] ?? 1] : null;
+}
+function compositeColor(front, back) {
+  return front.slice(0,3).map((value,index)=>value*front[3]+back[index]*(1-front[3]));
+}
+function luminance(color) {
+  return color.slice(0,3).map(value=>{const c=value/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;}).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0);
+}
+function contrastRatio(a,b) {
+  const first=luminance(a),second=luminance(b);return (Math.max(first,second)+.05)/(Math.min(first,second)+.05);
+}
+async function lightPresentation(run, name, scene) {
+  const evidence=await run.page.evaluate(({parseSource,compositeSource,luminanceSource,scene})=>{
+    const colorValues=(0,eval)('('+parseSource+')'),compositeColor=(0,eval)('('+compositeSource+')');
+    const luminance=(0,eval)('('+luminanceSource+')');
+    const contrastRatio=(a,b)=>{const x=luminance(a),y=luminance(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+    const bounds=node=>{const b=node.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,top:b.top,right:b.right,bottom:b.bottom,left:b.left};};
+    const visible=node=>{
+      const b=node.getBoundingClientRect();if(!b.width||!b.height||b.bottom<=0||b.top>=innerHeight||b.right<=0||b.left>=innerWidth)return false;
+      for(let parent=node;parent;parent=parent.parentElement){const s=getComputedStyle(parent);if(parent.hidden||s.display==='none'||s.visibility!=='visible'||Number(s.opacity)<.99)return false;}
+      return true;
+    };
+    const background=node=>{
+      const chain=[];for(let parent=node;parent;parent=parent.parentElement)chain.unshift(parent);
+      let rgb=[255,255,255];const layers=[];
+      for(const element of chain){const style=getComputedStyle(element),rgba=colorValues(style.backgroundColor);if(!rgba)throw Error('Unparsed background: '+style.backgroundColor);rgb=compositeColor(rgba,rgb);if(rgba[3]||style.backgroundImage!=='none')layers.push({tag:element.tagName,classes:element.className,color:style.backgroundColor,image:style.backgroundImage});}
+      return {rgb,luminance:luminance(rgb),layers};
+    };
+    const describe=node=>{const style=getComputedStyle(node),bg=background(node);return{tag:node.tagName,id:node.id,classes:typeof node.className==='string'?node.className:'',text:(node.value||node.textContent||'').trim().slice(0,120),rect:bounds(node),background:bg,color:style.color,colorScheme:style.colorScheme,boxShadow:style.boxShadow,filter:style.filter,border:style.borderColor,backgroundImage:style.backgroundImage};};
+    const surfaces=['body','.v2-header','[data-v3-nav]','.v2-assembly-sticky','.v2-selected-stage','[data-aircraft-stage]','.v2-collection-controls','.catalog-card-media','.v2-case-nav','.project-hero','.engineering-brief','.project-interactive','.hardware-stage','.pi-stage','.object-stage','.framework-3d-stage','.framework-dual-3d-stage','.coaster-3d-stage','.pcb-object-stage','.hardware-controls','.object-toolbar','.pcb-object-toolbar','.pi-controls','.pi-view-group','.pi-parts','.v2-part-readout','.framework-dual-part','.coaster-part','.framework-3d-status','.framework-dual-3d-status','.coaster-3d-status','.object-readout','.pcb-object-readout','.component-directory','.object-rotation-bar','.explorer-unavailable','.explorer-source-status','.lightbox[open]','.v2-lab .panel','.v2-lab .readout','.v2-lab .plot','.v2-lab .device-wrap','.v2-lab .note','.about-intro','.about-section','.booking-card','.booking-card-head','.booking-calendar','.booking-details','.booking-selection','.booking-success','.booking-no-script','.booking-status','.booking-fallback','.v2-contact','.v2-footer'];
+    const native='select,input:not([type=hidden]):not([type=radio]):not([type=checkbox]):not([type=range]),textarea';
+    const textSelectors=['.v2-brand','.v3-quick-projects','[data-v3-menu]','[data-v3-nav] a','h1','.v3-product-eyebrow','.v2-assembly-summary>p','.v2-assembly-caption h2','.v2-assembly-caption p','.v2-assembly-navigation a','.v2-assembly-choices button','.v3-product-preview-label','.v2-selected-heading h3','.v2-selected-heading p','.v2-framework-copy h4','.v2-framework-copy p','.v2-transport-copy h4','.v2-transport-copy p','.v2-selected-nav a','.v3-product-preview-control>span','.v3-aircraft-copy h2','.v3-aircraft-copy p','.v3-aircraft-copy a','.v3-aircraft-foot a','.project-hero-copy>div>p','.project-meta dt','.project-meta dd','.catalog-card h3','.catalog-card p','.catalog-card-copy small','.catalog-category','.project-interactive button','.project-interactive .v2-part-readout','.project-interactive .object-drag-hint','.project-interactive .framework-3d-status','.project-interactive .framework-dual-3d-status','.project-interactive .coaster-3d-status','.project-interactive .object-angle-readout','.project-interactive .explorer-unavailable','.project-interactive .explorer-source-status','.lightbox-controls button','[data-lightbox-caption]','.about-intro p','.about-hero-copy p','.about-section h2','.about-section p','.booking-hero p','.booking-clock span','.booking-clock strong','.booking-clock small','.booking-card-head span','.booking-card-head strong','.booking-notes h2','.booking-notes p','.booking-choice-group legend','.duration-options strong','.duration-options small','.format-options strong','.format-options small','.booking-form label','.booking-form h3','.booking-selection span','.booking-selection strong','.booking-selection small','.booking-success h3','.booking-success p','.booking-form-error','.booking-day-empty','.booking-status p','.booking-status strong','.booking-day-head span','.booking-day-head strong','.booking-no-script','.booking-fallback h2','.booking-fallback p','[data-slot]','[data-week-label]','[data-booking-submit]','[data-book-another]',native];
+    const nodes=selector=>[...document.querySelectorAll(selector)].filter(visible);
+    const text=nodes(textSelectors.join(',')).filter(node=>!node.disabled&&(node.textContent.trim()||node.value||node.placeholder)).map(node=>{
+      const item=describe(node),style=getComputedStyle(node),rgba=colorValues(style.color);if(!rgba)throw Error('Unparsed text: '+style.color);
+      const foreground=compositeColor(rgba,item.background.rgb),size=parseFloat(style.fontSize),weight=parseInt(style.fontWeight)||400;
+      return{...item,foreground,contrast:contrastRatio(foreground,item.background.rgb),fontSize:size,fontWeight:weight,minimumContrast:size>=24||(size>=18.66&&weight>=700)?3:4.5};
+    });
+    const sceneRoot=scene?document.querySelector({hero:'[data-assembly]',selected:'[data-selected-work]',aircraft:'[data-aircraft-hero]'}[scene]):null;
+    return{url:location.href,preferredDark:matchMedia('(prefers-color-scheme:dark)').matches,rootScheme:getComputedStyle(document.documentElement).colorScheme,bodyScheme:getComputedStyle(document.body).colorScheme,surfaces:nodes(surfaces.join(',')).map(describe),native:nodes(native).map(node=>({...describe(node),options:[...node.querySelectorAll('option')].map(option=>({value:option.value,color:getComputedStyle(option).color,background:getComputedStyle(option).backgroundColor,colorScheme:getComputedStyle(option).colorScheme})),placeholder:node.hasAttribute('placeholder')?{text:node.getAttribute('placeholder'),color:getComputedStyle(node,'::placeholder').color,opacity:getComputedStyle(node,'::placeholder').opacity}:null})),controls:nodes('button,input,select,textarea').map(node=>({...describe(node),disabled:node.disabled,checked:node.checked,pressed:node.getAttribute('aria-pressed'),focusVisible:node.matches(':focus-visible'),outline:getComputedStyle(node).outline})),text,
+      scene:sceneRoot?{kind:scene,images:[...sceneRoot.querySelectorAll('img')].map(image=>({...describe(image),visible:visible(image),src:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth})),canvases:[...sceneRoot.querySelectorAll('canvas')].map(canvas=>({...describe(canvas),visible:visible(canvas)}))}:null,
+      note:'Computed ancestor-composited CSS colors are measured, not screenshot pixels or WebGL material contrast. Gradients, image layers, filters, and shadows are retained for visual review alongside exact completed-frame screenshots; this is not a full accessibility audit.'};
+  },{parseSource:colorValues.toString(),compositeSource:compositeColor.toString(),luminanceSource:luminance.toString(),scene});
+  write(name+'-light-presentation',evidence);
+  assert.match(evidence.rootScheme,/^(only )?light( only)?$/,name+': root native UI explicitly uses light colors even under a dark OS preference');
+  assert.match(evidence.bodyScheme,/^(only )?light( only)?$/,name+': body native color scheme');
+  assert.ok(evidence.surfaces.some(item=>item.tag==='BODY'),name+': page light-surface measurement exists');
+  for(const item of [...evidence.surfaces,...evidence.native])assert.ok(item.background.luminance>=.8,name+': light surface '+item.tag+'.'+item.classes+' '+JSON.stringify(item.background));
+  for(const item of evidence.native){
+    assert.match(item.colorScheme,/^(only )?light( only)?$/,name+': native field/picker inherits a light color scheme');
+    for(const option of item.options)assert.match(option.colorScheme,/^(only )?light( only)?$/,name+': every native option uses the light color scheme');
+    if(item.placeholder?.text){
+      const color=colorValues(item.placeholder.color);assert.ok(color,name+': placeholder color is measurable');color[3]*=Number(item.placeholder.opacity);
+      assert.ok(contrastRatio(compositeColor(color,item.background.rgb),item.background.rgb)+.015>=4.5,name+': placeholder remains readable');
+    }
+  }
+  for(const item of evidence.text)assert.ok(item.contrast+.015>=item.minimumContrast,name+': readable '+item.tag+'.'+item.classes+' '+JSON.stringify({text:item.text,color:item.color,background:item.background.rgb,contrast:item.contrast,minimum:item.minimumContrast}));
+  return evidence;
+}
+
+// Locator scrolling, rather than focus() or scrollTo(), frames the real state.
+// Keep the user's current focus and wait for its actual post-scroll geometry.
+async function frameTarget(run, selector, label) {
+  const page=run.page,target=page.locator(selector);
+  await target.waitFor({state:'visible'});
+  const active=await page.evaluateHandle(()=>document.activeElement);
+  await target.scrollIntoViewIfNeeded();await scrollStable(page);await imagesReady(page);
+  await page.waitForFunction(selector=>{
+    const node=document.querySelector(selector);if(!node)return false;
+    const b=node.getBoundingClientRect(),now=performance.now(),key=[b.top,b.bottom,b.left,b.right].map(value=>Math.round(value*10)/10).join(','),last=window.__v3FramedTarget;
+    if(!last||last.selector!==selector||last.key!==key){window.__v3FramedTarget={selector,key,at:now,frames:0};return false;}
+    last.frames++;return last.frames>=4&&now-last.at>=120;
+  },selector,{polling:'raf',timeout});
+  const geometry=await target.evaluate(node=>{const b=node.getBoundingClientRect(),header=document.querySelector('.v2-header')?.getBoundingClientRect();return{selector:node.id||node.className,top:b.top,bottom:b.bottom,height:b.height,width:b.width,left:b.left,right:b.right,headerBottom:header?.bottom||0,viewport:{width:innerWidth,height:innerHeight},visibleHeight:Math.max(0,Math.min(b.bottom,innerHeight)-Math.max(b.top,header?.bottom||0))};});
+  assert.ok(geometry.visibleHeight>=Math.min(geometry.height,geometry.viewport.height-geometry.headerBottom)*.65,label+': real target substantially occupies the viewport '+JSON.stringify(geometry));
+  assert.ok(geometry.left>=-1&&geometry.right<=geometry.viewport.width+1,label+': target stays inside the viewport');
+  assert.equal(await active.evaluate(node=>node===document.activeElement),true,label+': screenshot framing preserves the active element');
+  await active.dispose();write(label+'-framing',geometry);return geometry;
+}
+
+async function shot(run, name, {scene, afterSequence=0, fullPage=false, target, presentationScene=scene} = {}) {
   if (scene) await sceneReady(run.page,scene,afterSequence); else {await imagesReady(run.page);if(!run.noJS){await scrollStable(run.page);await imagesReady(run.page);await scrollStable(run.page);}}
+  if(target)await frameTarget(run,target,name);
   await fit(run.page,name);
+  await lightPresentation(run,name,presentationScene);
   const before=await run.page.evaluate(()=>window.__v3ProductProbe?.snapshot()||({url:location.href,y:scrollY,viewport:{width:innerWidth,height:innerHeight},noJS:true}));
   await run.page.screenshot({path:path.join(output,name+'.png'),fullPage,caret:'hide',timeout:60000});
   const after=await run.page.evaluate(()=>({url:location.href,y:scrollY,scene:window.__v3ProductProbe?.snapshot().scenes}));
@@ -220,6 +310,7 @@ async function header(run, label) {
     assert.equal(await nav.evaluate(node=>node.inert),true,'Closed links are inert');
     await menu.focus();await page.keyboard.press('Enter');
     assert.equal(await menu.getAttribute('aria-expanded'),'true');assert.equal(await nav.evaluate(node=>node.inert),false);
+    await lightPresentation(run,label+'-menu-open');
     await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('href')),'/v3/projects/','Keyboard enters the open primary navigation');
     await page.keyboard.press('Escape');assert.equal(await menu.getAttribute('aria-expanded'),'false');assert.equal(await menu.evaluate(node=>node===document.activeElement),true);
     await menu.press('Space');assert.equal(await menu.getAttribute('aria-expanded'),'true');await menu.press('Space');assert.equal(await menu.getAttribute('aria-expanded'),'false');
@@ -422,26 +513,51 @@ async function book(run,prefix) {
   const page=run.page;
   await navLink(run,'Book');await page.waitForURL('**/v3/book/');await page.locator('[data-slot]').first().waitFor();await header(run,prefix+'-book');
   assert.ok(run.network.availability.length>0,'Book availability comes from the mock');assert.equal(run.network.submissions.length,0);
-  await shot(run,prefix+'-book-calendar');
+  await shot(run,prefix+'-book-calendar',{target:'[data-booking-calendar]'});
   for(const duration of [15,30,45,60]){
     await page.locator(`[name="duration-choice"][value="${duration}"]`).check();
     await page.waitForFunction(duration=>document.querySelector('[data-booking-card-title]').textContent.includes(duration+'-minute')&&!document.querySelector('[data-booking-days]').hidden,duration);
     await page.locator('[data-slot]').first().click();assert.equal(await page.locator('[data-form-duration]').inputValue(),String(duration));assert.equal(await page.locator('[data-form-token]').inputValue(),'mock-v3-'+duration);
   }
   await page.locator('[name="format-choice"][value="in-person"]').check();assert.equal(await page.locator('[data-form-format]').inputValue(),'in-person');
+  await page.locator('[data-booking-submit]').click();
+  assert.equal(run.network.submissions.length,0,'Native required-field validation prevents any POST');
+  assert.equal(await page.locator('[name="name"]').evaluate(node=>node.validity.valueMissing),true);
   await page.locator('[name="name"]').fill('Browser Review');await page.locator('[name="email"]').fill('browser-review@example.invalid');await page.locator('[name="topic"]').fill('Local automated UI check. Mocked endpoint only.');
-  await shot(run,prefix+'-book-details');
+  await shot(run,prefix+'-book-details',{target:'[data-booking-form]'});
+  run.network.response={ok:false,message:'Mocked conflict: this time is no longer available.'};
+  await page.locator('[data-booking-submit]').click();await page.locator('[data-booking-form-error]').waitFor({state:'visible'});
+  assert.equal(run.network.submissions.length,1,'Exactly one rejected mock POST');
+  assert.equal(await page.locator('[name="email"]').inputValue(),'browser-review@example.invalid','Rejected confirmation preserves typed details');
+  assert.equal(await page.locator('[data-booking-submit]').isEnabled(),true,'Rejected confirmation releases the submit control');
+  await shot(run,prefix+'-book-mocked-error',{target:'[data-booking-form]'});
+  run.network.response={ok:true};
   await page.locator('[data-booking-submit]').click();await page.locator('[data-booking-success]').waitFor({state:'visible'});
-  assert.equal(run.network.submissions.length,1,'Exactly one mock POST');assert.equal(run.network.submissions[0].email,'browser-review@example.invalid');assert.equal(run.network.submissions[0].duration,'60');assert.equal(run.network.submissions[0].format,'in-person');
-  await shot(run,prefix+'-book-mocked-success');
+  assert.equal(run.network.submissions.length,2,'Exactly two mock POSTs: rejected attempt and successful retry');assert.equal(run.network.submissions[1].email,'browser-review@example.invalid');assert.equal(run.network.submissions[1].duration,'60');assert.equal(run.network.submissions[1].format,'in-person');
+  await shot(run,prefix+'-book-mocked-success',{target:'[data-booking-success]'});
   await page.locator('[data-book-another]').click();await page.locator('[data-slot]').first().waitFor();assert.equal(await page.locator('[data-booking-success]').isVisible(),false);
-  passed(prefix+'-book-mocked-get-post-success-repeat-flow',{mockedGETs:run.network.availability.length,mockedPOSTs:run.network.submissions.length});
+  run.network.mode='empty';await page.locator('[data-week-next]').click();await page.locator('.booking-day-empty').first().waitFor();
+  assert.equal(await page.locator('[data-slot]').count(),0,'Mocked empty availability shows no bookable slots');
+  await shot(run,prefix+'-book-empty',{target:'[data-booking-calendar]'});
+  run.network.mode='error';await page.locator('[data-week-next]').click();await page.locator('[data-booking-status]').getByText(/Try the next week/).waitFor();
+  await shot(run,prefix+'-book-unavailable',{target:'[data-booking-status]'});
+  run.network.mode='ready';await page.locator('[data-week-previous]').click();await page.locator('[data-slot]').first().waitFor();
+  assert.equal(await page.locator('[data-booking-submit]').isEnabled(),true,'Availability retry remains usable');
+  passed(prefix+'-book-mocked-validation-rejection-success-repeat-empty-error-recovery',{mockedGETs:run.network.availability.length,mockedPOSTs:run.network.submissions.length});
+}
+
+async function about(run,prefix) {
+  await navLink(run,'About');await run.page.waitForURL('**/v3/about/');await run.page.locator('h1').waitFor();await header(run,prefix+'-about');
+  await shot(run,prefix+'-about');
+  await shot(run,prefix+'-contact',{target:'#contact'});
+  assert.equal(await run.page.locator('#contact a[href="/v3/book/"]').count(),1,'About retains the real Book route');
+  passed(prefix+'-about-contact-light-surfaces-and-real-route');
 }
 
 async function viewportReview(browser,name) {
   assert.ok(viewports[name],'Unknown viewport '+name);const run=await open(browser,viewports[name]);
   try{
-    await homeScenes(run,name);await catalogAndCase(run,name);await book(run,name);
+    await homeScenes(run,name);await catalogAndCase(run,name);await book(run,name);await about(run,name);
     assert.deepEqual(run.errors,[],'No uncaught JavaScript errors');assert.deepEqual(run.shaders,[],'No shader errors');assert.deepEqual(run.network.blocked,[],'No unexpected external traffic or non-GET operations');
     write(name+'-result',{viewport:viewports[name],reports,errors:run.errors,shaders:run.shaders,network:run.network});
   }catch(error){await diagnose(run,name,error);throw error;}finally{await run.context.close();}
@@ -462,14 +578,14 @@ async function fallbacks(browser) {
         for(let i=0;i<controls.length;i++)for(let j=i+1;j<controls.length;j++){const a=controls[i],b=controls[j];assert.ok(Math.min(a.right,b.right)-Math.max(a.left,b.left)<=1||Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)<=1,'Short-landscape header controls do not collide');}
         write('short-landscape-header-controls',controls);
       }
-      await shot(run,name+'-home');
+      await shot(run,name+'-home',{presentationScene:'hero'});
       await run.page.locator('#work-framework').scrollIntoViewIfNeeded();
       if(!options.noJS){await run.page.waitForFunction(()=>['static','unavailable'].includes(document.querySelector('[data-selected-work]')?.dataset.selectedState),null,{timeout});await run.page.locator('#work-framework').scrollIntoViewIfNeeded();await scrollStable(run.page);}
-      await shot(run,name+'-framework');
-      await run.page.locator('#work-transit').scrollIntoViewIfNeeded();await shot(run,name+'-transit');
+      await shot(run,name+'-framework',{presentationScene:'selected'});
+      await run.page.locator('#work-transit').scrollIntoViewIfNeeded();await shot(run,name+'-transit',{presentationScene:'selected'});
       await run.page.locator('#skylabs-aircraft').scrollIntoViewIfNeeded();
       if(!options.noJS){await run.page.waitForFunction(()=>['static','unavailable'].includes(document.querySelector('[data-aircraft-hero]')?.dataset.aircraftState),null,{timeout});await run.page.locator('#skylabs-aircraft').scrollIntoViewIfNeeded();await scrollStable(run.page);}
-      await shot(run,name+'-skylabs');
+      await shot(run,name+'-skylabs',{presentationScene:'aircraft'});
       await goto(run,'/v3/book/');if(options.noJS)assert.equal(await run.page.getByText(/live calendar needs JavaScript/).isVisible(),true);else await run.page.locator('[data-slot]').first().waitFor();await shot(run,name+'-book');
       if(name==='short-landscape')await book(run,name);else assert.equal(run.network.submissions.length,0);
       assert.deepEqual(run.errors,[]);passed(name+'-readable-static-routes');
@@ -489,7 +605,12 @@ async function fallbacks(browser) {
         await run.page.goto(base+route,{waitUntil:'domcontentloaded'});await run.page.waitForURL('**/shared/flight-review/');
         documents.push({route,redirect:run.page.url(),note:'The preserved native meta-refresh opens the real shared Flight Review tool.'});continue;
       }
-      await goto(run,route);await imagesReady(run.page);await fit(run.page,route);const h1=await run.page.locator('h1').first().textContent();assert.ok(h1.trim());documents.push({route,h1});
+      await goto(run,route);await imagesReady(run.page);await fit(run.page,route);await lightPresentation(run,'no-js-'+route.replace(/[^a-z0-9]+/g,'-'));const h1=await run.page.locator('h1').first().textContent();assert.ok(h1.trim());documents.push({route,h1});
+      const viewer=run.page.locator('.project-interactive,.v2-lab .app,.v2-lab .wrap').first();
+      if(await viewer.count()){
+        await viewer.scrollIntoViewIfNeeded();
+        await shot(run,'no-js-'+route.replace(/[^a-z0-9]+/g,'-')+'-original-viewer');
+      }
     }
     write('all-routes-no-js-mobile320',documents);passed('all-'+documents.length+'-routes-no-js-narrow-render-and-utilities');
   }finally{await run.context.close();}
@@ -506,52 +627,68 @@ async function webkitSmoke(browser) {
 }
 
 function installProfile() {
-  const metric=window.__v3HeroProfile={firstVisibleResource:null,firstFenced:null,allFenced:null,longTasks:[],keys:[]};
+  const metric=window.__v3HeroProfile={firstVisibleResource:null,firstFenced:null,allFenced:null,longTasks:[],keys:[],taskQueue:[],heroTimeline:[]};
   new PerformanceObserver(list=>{for(const item of list.getEntries())metric.longTasks.push({start:item.startTime,duration:item.duration});}).observe({type:'longtask',buffered:true});
   addEventListener('keydown',event=>{if(event.key!=='F8')return;const input={received:performance.now(),trusted:event.isTrusted,key:event.key,nextRAF:null};metric.keys.push(input);requestAnimationFrame(()=>{input.nextRAF=performance.now();});},{capture:true});
+  const timer=()=>{const expected=performance.now()+100;setTimeout(()=>{metric.taskQueue.push({expected,received:performance.now(),delayMs:Math.max(0,performance.now()-expected)});timer();},100);};timer();
+  let previous='';
   const inspect=()=>{
     const hero=document.querySelector('[data-assembly]');if(!hero)return;const d=hero.dataset,now=performance.now();
+    const state=Object.fromEntries(Object.entries(d).filter(([key])=>/assembly(State|Models|GPU|Preparation|Resource|Completed|Warm)/.test(key))),serialized=JSON.stringify(state);
+    if(serialized!==previous){metric.heroTimeline.push({at:now,...state});previous=serialized;}
     if(d.assemblyGPUCompletionEvidence==='own-context-fence'&&d.assemblyGPUCompletion==='complete'){
       if(metric.firstFenced===null&&Number(d.assemblyModelsReady)>0)metric.firstFenced=now;
       if(metric.allFenced===null&&Number(d.assemblyModelsReady)===3)metric.allFenced=now;
     }
   };
-  new MutationObserver(inspect).observe(document,{subtree:true,attributes:true,attributeFilter:['data-assembly-models-ready','data-assembly-gpu-completion','data-assembly-gpu-completion-evidence']});
+  new MutationObserver(inspect).observe(document,{subtree:true,attributes:true,attributeFilter:['data-assembly-state','data-assembly-models-ready','data-assembly-models-settled','data-assembly-gpu-completion','data-assembly-gpu-completion-evidence','data-assembly-gpu-pending','data-assembly-preparation-ms','data-assembly-completed-frames']});
   const visible=()=>{const images=[...document.querySelectorAll('[data-assembly-posters] img')];if(images.some(image=>{const b=image.getBoundingClientRect(),s=getComputedStyle(image);return image.complete&&image.naturalWidth>0&&b.width>0&&b.height>0&&b.bottom>0&&b.top<innerHeight&&s.visibility==='visible'&&Number(s.opacity)>.5;})){metric.firstVisibleResource=performance.now();return;}if(metric.firstFenced!==null){metric.firstVisibleResource=metric.firstFenced;return;}requestAnimationFrame(visible);};requestAnimationFrame(visible);
 }
+function responsivenessWindow(metric,endMs) {
+  const longTasks=metric.longTasks.filter(task=>task.start<endMs).map(task=>({...task,withinHorizonMs:Math.min(task.duration,endMs-task.start)}));
+  const receivedKeys=metric.keys.filter(key=>key.received<endMs),paintedKeys=receivedKeys.filter(key=>key.nextRAF!==null);
+  const taskQueue=metric.taskQueue.filter(task=>task.expected<endMs);
+  return{endMs,receivedKeys,keysDelivered:receivedKeys.length,keysCompleted:paintedKeys.length,keyToNextRAFMs:paintedKeys.map(key=>key.nextRAF-key.received),longTaskTotalMs:longTasks.reduce((sum,task)=>sum+task.withinHorizonMs,0),longTaskMaxMs:Math.max(0,...longTasks.map(task=>task.withinHorizonMs)),longTasks,taskQueue,taskQueueMaxDelayMs:Math.max(0,...taskQueue.map(task=>task.delayMs))};
+}
 async function profile(browser) {
+  assert.ok(profileBaselineBase,'--profile requires V3_PRODUCT_BASELINE_URL serving the exact dark-v3 45c386e checkout, separate from the candidate server');
+  assert.notEqual(new URL(profileBaselineBase).origin,new URL(base).origin,'Baseline and candidate must use separate clean server roots');
+  const proof=await browser.newContext();
+  try{const response=await proof.request.get(profileBaselineBase+'/.v3-profile-commit');assert.equal(response.status(),200);assert.equal((await response.text()).trim(),profileBaselineCommit,'Baseline server identity must match the exact accepted dark-v3 commit');}finally{await proof.close();}
   const samples=[],network={offline:false,latency:40,downloadThroughput:10_000_000/8,uploadThroughput:10_000_000/8,connectionType:'wifi'};
-  // /v2/ is the frozen source in this same tree, established by the workflow's
-  // preservation gate. Each sample is a new context and cold CDP cache. Reverse
-  // the order on the second pair to expose runner drift rather than hiding it.
-  for(let pair=0;pair<3;pair++)for(const version of pair%2?['v3','v2']:['v2','v3']){
-    const context=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,serviceWorkers:'block',reducedMotion:'no-preference'});await networkGuard(context);await context.addInitScript(installProfile);
+  const variants={darkV3:{base:profileBaselineBase,commit:profileBaselineCommit},lightV3:{base,commit:process.env.GITHUB_SHA||process.env.V3_PRODUCT_CANDIDATE_COMMIT||'working-tree'}};
+  // Same /v3/ route from separate immutable/current trees. Each sample is a
+  // fresh context, cold cache, and identically observed software GPU. Reverse
+  // pair order to reveal runner drift. Never substitute the unrelated /v2/ UI.
+  for(let pair=0;pair<3;pair++)for(const version of pair%2?['lightV3','darkV3']:['darkV3','lightV3']){
+    const variant=variants[version],context=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,serviceWorkers:'block',reducedMotion:'no-preference',colorScheme:'light'});
+    const guarded=await networkGuard(context,variant.base);await context.addInitScript(installProbe);await context.addInitScript(installProfile);
     const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));const cdp=await context.newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});await cdp.send('Network.emulateNetworkConditions',network);
     try{
-      await page.goto(base+'/'+version+'/',{waitUntil:'domcontentloaded',timeout});
+      await page.goto(variant.base+'/v3/',{waitUntil:'commit',timeout});
       const inputCalls=[],probeInput=async()=>{
         for(;;){
-          const pageBefore=await page.evaluate(()=>performance.now());if(pageBefore>=15000)return pageBefore;
+          const status=await page.evaluate(()=>({now:performance.now(),allFenced:window.__v3HeroProfile?.allFenced??null}));
+          if(status.now>=15000&&status.allFenced!==null)return status.now;
+          if(status.now>timeout)throw Error('Full cold-profile input horizon exceeded completion timeout');
           const start=performance.now();await page.keyboard.press('F8');const elapsed=performance.now()-start;
-          const observed=await page.evaluate(()=>performance.now());inputCalls.push({pageBefore,pageObserved:observed,automationCallMs:elapsed});
-          if(observed>=15000)return observed;await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000-elapsed)));
+          const observed=await page.evaluate(()=>performance.now());inputCalls.push({pageBefore:status.now,pageObserved:observed,automationCallMs:elapsed});
+          await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000-elapsed)));
         }
       };
-      const [,observedHorizonMs]=await Promise.all([page.waitForFunction(()=>window.__v3HeroProfile.allFenced!==null,null,{timeout}),probeInput()]);
-      await page.waitForTimeout(100); // Deliver the final observer/RAF callbacks.
-
-      const sample=await page.evaluate(()=>({metric:window.__v3HeroProfile,hero:{...document.querySelector('[data-assembly]').dataset},scrollY,navigation:performance.getEntriesByType('navigation')[0].toJSON(),paints:performance.getEntriesByType('paint').map(entry=>({name:entry.name,start:entry.startTime})),resources:performance.getEntriesByType('resource').map(entry=>({path:new URL(entry.name).pathname,start:entry.startTime,end:entry.responseEnd,transfer:entry.transferSize,encoded:entry.encodedBodySize,decoded:entry.decodedBodySize}))}));
-      assert.deepEqual(errors,[]);assert.equal(sample.scrollY,0);assert.ok(sample.metric.firstFenced!==null&&sample.metric.allFenced>=sample.metric.firstFenced);assert.equal(sample.hero.assemblyModelsReady,'3');assert.equal(sample.hero.assemblyGPUCompletionEvidence,'own-context-fence');
-      const fixedLongTasks=sample.metric.longTasks.filter(task=>task.start<15000).map(task=>({...task,withinHorizonMs:Math.min(task.duration,15000-task.start)}));
-      const receivedKeys=sample.metric.keys.filter(key=>key.received<15000),paintedKeys=receivedKeys.filter(key=>key.nextRAF!==null);
-      const responsiveness={requestedHorizonMs:15000,observedHorizonMs,inputCalls,receivedKeys,keysDelivered:receivedKeys.length,keysCompleted:paintedKeys.length,keyToNextRAFMs:paintedKeys.map(key=>key.nextRAF-key.received),longTaskTotalMs:fixedLongTasks.reduce((sum,task)=>sum+task.withinHorizonMs,0),longTaskMaxMs:Math.max(0,...fixedLongTasks.map(task=>task.withinHorizonMs)),fixedLongTasks,note:'Fixed navigation-relative first 15 seconds. Real F8 delivery → next RAF and automation-call duration are synthetic responsiveness probes, not field INP. Long tasks crossing the horizon are clipped; actual collection horizon is reported.'};
-      assert.ok(receivedKeys.every(key=>key.trusted),'Every received F8 sample is trusted native keyboard input');
-      samples.push({pair:pair+1,version,...sample,responsiveness,errors});write('hero-profile-samples',samples);console.log('PROFILE '+version+' pair '+(pair+1)+' first fenced '+Math.round(sample.metric.firstFenced)+'ms; all fenced '+Math.round(sample.metric.allFenced)+'ms');
+      const [,observedHorizonMs]=await Promise.all([page.waitForFunction(()=>window.__v3HeroProfile?.allFenced!==null&&window.__v3HeroProfile?.allFenced!==undefined,null,{timeout}),probeInput()]);
+      await page.waitForTimeout(150); // Deliver final observer, timer and RAF callbacks.
+      const sample=await page.evaluate(()=>({metric:window.__v3HeroProfile,hero:{...document.querySelector('[data-assembly]').dataset},gpuContexts:window.__v3ProductProbe.contexts,scrollY,navigation:performance.getEntriesByType('navigation')[0].toJSON(),paints:performance.getEntriesByType('paint').map(entry=>({name:entry.name,start:entry.startTime})),resources:performance.getEntriesByType('resource').map(entry=>({path:new URL(entry.name).pathname,start:entry.startTime,end:entry.responseEnd,transfer:entry.transferSize,encoded:entry.encodedBodySize,decoded:entry.decodedBodySize}))}));
+      assert.deepEqual(errors,[]);assert.deepEqual(guarded.blocked,[]);assert.equal(guarded.submissions.length,0);assert.equal(sample.scrollY,0);assert.ok(sample.metric.firstFenced!==null&&sample.metric.allFenced>=sample.metric.firstFenced);assert.equal(sample.hero.assemblyModelsReady,'3');assert.equal(sample.hero.assemblyGPUCompletionEvidence,'own-context-fence');
+      const responsiveness={requestedMinimumHorizonMs:15000,observedHorizonMs,inputCalls,first15s:responsivenessWindow(sample.metric,15000),fullStartup:responsivenessWindow(sample.metric,sample.metric.allFenced),fullObservation:responsivenessWindow(sample.metric,observedHorizonMs),note:'Observation continues until all three real models have a completed own-context-fenced frame and at least 15 seconds have elapsed. Trusted F8 delivery → next RAF, automation-call duration, 100 ms timer queue delay, and real fence lifecycle are review probes, not field INP or device frame rate. Fixed windows clip long tasks; raw entries and late queue/input deliveries remain available.'};
+      assert.ok(sample.metric.keys.length>0&&sample.metric.keys.every(key=>key.trusted),'Trusted native keyboard input was actually received throughout the observed startup');
+      assert.ok(sample.metric.taskQueue.length>0,'Main-thread timer queue evidence was actually observed');
+      samples.push({pair:pair+1,version,commit:variant.commit,...sample,responsiveness,errors});write('hero-profile-samples',samples);console.log('PROFILE '+version+' '+variant.commit+' pair '+(pair+1)+' first fenced '+Math.round(sample.metric.firstFenced)+'ms; all fenced '+Math.round(sample.metric.allFenced)+'ms; observed '+Math.round(observedHorizonMs)+'ms');
     }finally{await context.close();}
   }
   const median=values=>{const finite=values.filter(Number.isFinite).sort((a,b)=>a-b);return finite.length?finite[Math.floor(finite.length/2)]:null;};
-  const summary=Object.fromEntries(['v2','v3'].map(version=>{const runs=samples.filter(sample=>sample.version===version);return[version,{firstVisibleResourceReadyMs:median(runs.map(sample=>sample.metric.firstVisibleResource)),firstFencedMs:median(runs.map(sample=>sample.metric.firstFenced)),allFencedMs:median(runs.map(sample=>sample.metric.allFenced)),first15sLongTaskTotalMs:median(runs.map(sample=>sample.responsiveness.longTaskTotalMs)),first15sLongTaskMaxMs:median(runs.map(sample=>sample.responsiveness.longTaskMaxMs)),first15sKeyToNextRAFMaxMs:median(runs.map(sample=>sample.responsiveness.keyToNextRAFMs.length?Math.max(...sample.responsiveness.keyToNextRAFMs):null)),first15sKeysDeliveredByRun:runs.map(sample=>sample.responsiveness.keysDelivered),first15sKeysCompletedByRun:runs.map(sample=>sample.responsiveness.keysCompleted),resourceTransferBytes:median(runs.map(sample=>sample.resources.reduce((sum,item)=>sum+item.transfer,0)))}];}));
-  write('hero-profile-summary',{method:'Three alternating cold pairs, same browser/runner, 1440×900 DPR 1, 10 Mbps / 40 ms; unchanged v2 verified separately; production own-context-fenced handoff timestamps. First visible resource means a complete image with natural size in a visible box (or first fenced CAD), not a browser paint or decode timestamp. Fixed first-15s long-task and trusted F8 → next-RAF probes supplement startup milestones; measured automation horizons are included and this is not field INP. No screenshot or pixel readback during profiling. SwiftShader is not a device benchmark. Timings are review evidence, not an arbitrary pass/fail performance claim.',network,summary,samples});passed('matched-initial-hero-profile-three-cold-pairs',summary);
+  const summary=Object.fromEntries(Object.keys(variants).map(version=>{const runs=samples.filter(sample=>sample.version===version);return[version,{commit:variants[version].commit,firstVisibleResourceReadyMs:median(runs.map(sample=>sample.metric.firstVisibleResource)),firstFencedMs:median(runs.map(sample=>sample.metric.firstFenced)),allFencedMs:median(runs.map(sample=>sample.metric.allFenced)),windows:Object.fromEntries(['first15s','fullStartup','fullObservation'].map(window=>[window,{longTaskTotalMs:median(runs.map(sample=>sample.responsiveness[window].longTaskTotalMs)),longTaskMaxMs:median(runs.map(sample=>sample.responsiveness[window].longTaskMaxMs)),keyToNextRAFMaxMs:median(runs.map(sample=>sample.responsiveness[window].keyToNextRAFMs.length?Math.max(...sample.responsiveness[window].keyToNextRAFMs):null)),taskQueueMaxDelayMs:median(runs.map(sample=>sample.responsiveness[window].taskQueueMaxDelayMs)),keysDeliveredByRun:runs.map(sample=>sample.responsiveness[window].keysDelivered),keysCompletedByRun:runs.map(sample=>sample.responsiveness[window].keysCompleted)}])),resourceTransferBytes:median(runs.map(sample=>sample.resources.reduce((sum,item)=>sum+item.transfer,0)))}];}));
+  write('hero-profile-summary',{method:'Three alternating cold dark-v3 45c386e versus candidate light-v3 pairs; same /v3/ route, browser/runner, 1440×900 DPR 1, 10 Mbps / 40 ms. Baseline served from a separately extracted exact Git commit. Production own-context-fenced handoff timestamps plus full-startup and fixed first-15s input/long-task/timer-queue records. First visible resource means a complete image with natural size in a visible box (or first fenced CAD), not a browser paint/decode timestamp. No screenshot, pixel readback, or scene mutation during profiling. SwiftShader is not a device benchmark; no FPS, field INP, or arbitrary pass/fail performance claim.',network,variants,summary,samples});passed('matched-dark-v3-versus-light-v3-three-cold-pairs',summary);
 }
 
 function selfTest() {
@@ -563,6 +700,17 @@ function selfTest() {
   assert.equal(Object.keys(viewports).length,6);assert.deepEqual(viewports.phone320,{width:320,height:780,touch:true});
   assert.equal(new URL(endpoint).hostname,'script.google.com');
   passed('current-frame-oracle-rejects-stale-unfenced-rotated-and-wrong-inspection');
+  assert.deepEqual(colorValues('rgba(255, 255, 255, 0.5)'),[255,255,255,.5]);
+  assert.deepEqual(colorValues('rgb(29 29 31 / 0.5)'),[29,29,31,.5]);
+  assert.equal(colorValues('not-a-color'),null);
+  assert.deepEqual(compositeColor([0,0,0,.5],[255,255,255]),[127.5,127.5,127.5]);
+  assert.ok(near(contrastRatio([0,0,0],[255,255,255]),21));
+  assert.ok(luminance([245,245,247])>=.8);assert.ok(luminance([25,25,28])<.8);
+  assert.ok(contrastRatio([110,110,115],[245,245,247])>=4.5);
+  const metric={longTasks:[{start:40,duration:80},{start:130,duration:90}],keys:[{received:70,nextRAF:120,trusted:true},{received:140,nextRAF:150,trusted:true}],taskQueue:[{expected:80,received:140,delayMs:60},{expected:130,received:140,delayMs:10}]};
+  const fixed=responsivenessWindow(metric,100);assert.equal(fixed.longTaskTotalMs,60);assert.equal(fixed.keysDelivered,1);assert.deepEqual(fixed.keyToNextRAFMs,[50]);assert.equal(fixed.taskQueueMaxDelayMs,60);
+  const full=responsivenessWindow(metric,220);assert.equal(full.longTaskTotalMs,170);assert.equal(full.keysDelivered,2);
+  passed('light-color-contrast-math-and-full-startup-horizon-oracles');
 }
 
 (async()=>{

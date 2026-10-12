@@ -1,0 +1,377 @@
+/* V3 interiors only. Load after v3-product.css and the unchanged source styles.
+   Real photographs, board materials, plot data and booking behavior stay intact. */
+body.v3-product.v3-interior {
+  color-scheme: light;
+  --v2-bg: #fff;
+  --v2-panel: #f5f5f7;
+  --v2-raised: #e8e8ed;
+  --v2-ink: #1d1d1f;
+  --v2-muted: #6e6e73;
+  --v2-line: #d2d2d7;
+  --v2-accent: #0066cc;
+  --v2-on-accent: #fff;
+  --v3-primary: #0071e3;
+  --bg: var(--v2-bg);
+  --surface: var(--v2-panel);
+  --surface-deep: var(--v2-raised);
+  --text: var(--v2-ink);
+  --ink: var(--v2-ink);
+  --muted: var(--v2-muted);
+  --faint: var(--v2-muted);
+  --rule: var(--v2-line);
+  --rule-strong: #86868b;
+  --black: var(--v2-ink);
+  --paper: #fff;
+  --blue: var(--v2-accent);
+  --red: #b42318;
+  --red-text: #b42318;
+  --green: #26733e;
+  --paper-shadow: transparent;
+  background: var(--v2-bg);
+  color: var(--v2-ink);
+}
+
+/* Native menus and form controls follow the page, including dark OS themes. */
+.v3-product.v3-interior :is(input, textarea, select, option) { color-scheme: light; }
+.v3-product.v3-interior :is(a, button, input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--v2-accent);
+  outline-offset: 4px;
+}
+.v3-product.v3-interior ::selection { background: #cce4ff; color: #1d1d1f; }
+.v3-product.v3-interior :is(.button, .icon-button) {
+  min-height: 44px;
+  border: 1px solid var(--v2-accent);
+  border-radius: 24px;
+  padding: 11px 22px;
+  background: transparent;
+  color: var(--v2-accent);
+  font-family: var(--v2-font, -apple-system, BlinkMacSystemFont, sans-serif);
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+.v3-product.v3-interior .button:hover { background: #edf5ff; color: #0055aa; }
+.v3-product.v3-interior .button-primary {
+  background: var(--v3-primary);
+  border-color: var(--v3-primary);
+  color: #fff;
+}
+.v3-product.v3-interior .button-primary:hover { background: #0055aa; border-color: #0055aa; color: #fff; }
+.v3-product.v3-interior :is(.skip-link, .lab-skip) { background: #fff; color: #1d1d1f; }
+.v3-product.v3-interior .v3-product-section-control select {
+  background: #fff;
+  color: var(--v2-ink);
+  border-color: var(--rule-strong);
+  color-scheme: light;
+}
+
+/* Collection: quiet surfaces, generous product imagery and a clear search field. */
+body.v3-product.v2-collection { background: var(--v2-panel); }
+.v3-product.v2-collection .v2-collection-hero > div { display: block; }
+.v3-product.v2-collection .v2-collection-hero p:not(.eyebrow) { max-width: 48ch; }
+.v3-product.v2-collection .v2-collection-controls {
+  background: #fff;
+  border-color: var(--v2-line);
+}
+.v3-product.v2-collection .v2-collection-categories a { min-height: 48px; }
+.v3-product.v2-collection .v2-collection-categories a:hover { color: var(--v2-accent); }
+.v3-product.v2-collection .v2-collection-categories a[aria-current] {
+  border-color: var(--v2-accent);
+  color: var(--v2-accent);
+}
+.v3-product.v2-collection .v2-project-search input {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--v2-ink);
+  font-family: var(--v2-font);
+  font-size: 16px;
+}
+.v3-product.v2-collection .catalog-card { border: 0; border-radius: 22px; }
+.v3-product.v2-collection :is(.catalog-card-media, .catalog-card.wide .catalog-card-media) {
+  border: 0;
+  border-radius: 22px;
+  background: #fff;
+}
+.v3-product.v2-collection .catalog-card-copy { border: 0; padding-inline: 4px; }
+.v3-product.v2-collection .catalog-card-copy h3 { font-weight: 600; }
+.v3-product.v2-collection :is(.catalog-category, .catalog-card-copy small) { font-family: var(--v2-font); }
+.v3-product.v2-collection .catalog-card-copy > span { color: var(--v2-accent); }
+.v3-product.v2-collection .catalog-card:hover .catalog-card-media img,
+.v3-product.v2-collection .catalog-card:focus-visible .catalog-card-media img { opacity: 1; }
+.v3-product.v2-collection .project-list-row { border-color: var(--v2-line); }
+.v3-product.v2-collection .project-list-row b { color: var(--v2-accent); }
+
+/* Case records keep their original evidence and spacing, on neutral surfaces. */
+.v3-product.v2-case .v2-case-nav { background: #fff; }
+.v3-product.v2-case .v2-case-back { display: inline-flex; align-items: center; min-height: 44px; }
+.v3-product.v2-case .project-hero { background: #fff; }
+.v3-product.v2-case :is(.project-hero-media, .project-hero-media.v2-cad-media) {
+  border-radius: 24px;
+  background: var(--v2-panel);
+}
+.v3-product.v2-case .project-hero-media .v2-media-label {
+  background: rgba(255, 255, 255, .96);
+  color: var(--v2-muted);
+  border-radius: 10px;
+}
+.v3-product.v2-case .project-hero-actions a { color: var(--v2-accent); }
+.v3-product.v2-case .project-hero-actions a:hover { color: #0055aa; text-decoration: underline; text-underline-offset: 4px; }
+.v3-product.v2-case :is(.engineering-brief, .v2-engineering-evidence, .project-body) { background: #fff; }
+.v3-product.v2-case :is(.project-meta dt, .engineering-brief dt, .project-interactive-facts dt) { color: var(--v2-muted); }
+.v3-product.v2-case :is(.project-meta dd, .project-interactive-facts dd) { color: var(--v2-ink); }
+.v3-product.v2-case .project-gallery :is(picture, img) { border-radius: 18px; }
+.v3-product.v2-case .project-gallery img { background: var(--v2-panel); }
+.v3-product.v2-case :is(.v2-evidence-links a, .project-prose a, .v2-all-work) { color: var(--v2-accent); }
+.v3-product.v3-interior .v2-continue > div { border-color: var(--v2-line); }
+.v3-product.v3-interior .v2-continue > div a { border-color: var(--v2-line); }
+.v3-product.v3-interior .v2-all-work { min-height: 44px; align-items: center; }
+
+/* About: the same white canvas and unaltered portrait / professional history. */
+.v3-product.v2-about :is(.about-hero, .about-section, .about-contact) { background: #fff; border-color: var(--v2-line); }
+.v3-product.v2-about :is(.about-hero-copy h1, .v2-about-section-label h2, .about-contact h2) {
+  font-weight: 600;
+  letter-spacing: -.035em;
+}
+.v3-product.v2-about .about-hero-aside :is(picture, img) { border-radius: 24px; }
+.v3-product.v2-about .home-links :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  color: var(--v2-accent);
+}
+.v3-product.v2-about .home-links :is(a, button):hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* All real viewer surfaces. These rules never filter a photo, canvas or model. */
+.v3-product.v2-case .project-interactive {
+  --object-bg: #fff;
+  --object-panel: #f5f5f7;
+  --object-text: #1d1d1f;
+  --object-ink: #1d1d1f;
+  --object-muted: #6e6e73;
+  --object-line: #d2d2d7;
+  --object-accent: #0066cc;
+  --pcb-bg: #fff;
+  --pcb-panel: #f5f5f7;
+  --pcb-text: #1d1d1f;
+  --pcb-muted: #6e6e73;
+  --pcb-line: #d2d2d7;
+  --pcb-accent: #0066cc;
+  background: var(--v2-panel);
+  color: var(--v2-ink);
+  border-color: var(--v2-line);
+}
+.v3-product.v2-case .project-interactive :is([data-hardware], [data-pi-inspector], .tramtrace-3d-explorer, .object-body) {
+  border: 1px solid var(--v2-line);
+  border-radius: 22px;
+  background: #fff;
+  color: var(--v2-ink);
+  box-shadow: none;
+  overflow: hidden;
+}
+.v3-product.v2-case .project-interactive :is(.hardware-stage, .pi-stage, .object-stage, .framework-3d-stage, .framework-dual-3d-stage, .coaster-3d-stage, .pcb-object-stage) {
+  background: #fff;
+  border-color: var(--v2-line);
+  box-shadow: none;
+}
+.v3-product.v2-case .project-interactive :is(.object-stage, .pcb-object-stage) { border-radius: 18px; }
+.v3-product.v2-case .project-interactive .tramtrace-3d-explorer .pcb-object-stage { border-radius: 0; }
+.v3-product.v2-case .project-interactive :is(.object-stage, .pcb-object-stage)::after { display: none; }
+.v3-product.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls, .hardware-start, .hardware-boards, .coaster-demo, .object-toolbar, .pcb-object-toolbar, .pi-controls, .pi-view-group, .pi-parts) {
+  background: #fff;
+  border-color: var(--v2-line);
+  color: var(--v2-ink);
+}
+.v3-product.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls) { padding-block: 18px; }
+.v3-product.v2-case .project-interactive :is(.hardware-boards a, .object-board, .object-view, .object-tool, .pi-start-wrap button, .hardware-start button, .pi-controls button, .pi-parts button) {
+  min-height: 44px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 24px;
+  background: #fff;
+  color: var(--v2-ink);
+  box-shadow: none;
+}
+.v3-product.v2-case .project-interactive :is(.hardware-boards a, .object-board, .object-view, .object-tool, .pi-start-wrap button, .hardware-start button, .pi-controls button, .pi-parts button):hover {
+  border-color: var(--v2-accent);
+  background: #edf5ff;
+  color: var(--v2-accent);
+  filter: none;
+}
+.v3-product.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls) button,
+.v3-product.v2-case .project-interactive :is(.pi-controls [data-pi-explode], .hardware-start button, .pi-start-wrap button, .hardware-boards a[aria-current], .object-board[aria-pressed=true], .object-view.is-active, .pi-controls button[aria-pressed=true], .pi-parts button[aria-pressed=true]) {
+  min-height: 44px;
+  border: 1px solid var(--v3-primary);
+  border-radius: 24px;
+  background: var(--v3-primary);
+  color: #fff;
+  box-shadow: none;
+}
+.v3-product.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls) button:hover,
+.v3-product.v2-case .project-interactive :is(.pi-controls [data-pi-explode], .hardware-start button, .pi-start-wrap button):hover {
+  background: #0055aa;
+  border-color: #0055aa;
+  color: #fff;
+  filter: none;
+}
+.v3-product.v2-case .project-interactive .coaster-vessel-list .object-tool {
+  min-height: 44px;
+  border-radius: 24px;
+  background: #fff;
+  border-color: var(--rule-strong);
+  color: var(--v2-ink);
+}
+.v3-product.v2-case .project-interactive .coaster-vessel-list .object-tool[aria-pressed=true] {
+  background: var(--v2-accent);
+  border-color: var(--v2-accent);
+  color: #fff;
+}
+.v3-product.v2-case .project-interactive button:disabled,
+.v3-product.v2-case .project-interactive .coaster-vessel-list .object-tool:disabled,
+.v3-product.v2-case .project-interactive :is(.v2-assembly-controls, .hardware-controls, .hardware-start, .pi-start-wrap, .pi-controls, .pi-parts, .coaster-vessel-list) button:disabled {
+  opacity: 1;
+  background: var(--v2-panel);
+  border-color: var(--v2-line);
+  color: var(--v2-muted);
+  cursor: default;
+  filter: none;
+}
+.v3-product.v2-case .project-interactive :is(.v2-part-readout, .v2-part-readout.has-component-photo, [data-pi-part]:not(button), [data-coaster-readout], .framework-dual-part, .coaster-part, .framework-3d-status, .framework-dual-3d-status, .coaster-3d-status) {
+  border: 1px solid var(--v2-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .97);
+  color: var(--v2-ink);
+  box-shadow: 0 4px 16px rgba(29, 29, 31, .06);
+  font-family: var(--v2-font);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.v3-product.v2-case .project-interactive :is(.framework-3d-status, .framework-dual-3d-status, .coaster-3d-status) { font-size: 13px; line-height: 1.5; }
+.v3-product.v2-case .project-interactive :is(.object-drag-hint, .framework-3d-hint, .framework-dual-3d-hint, .object-angle-readout, .pcb-object-stage-label, .tramtrace-3d-source) { color: var(--v2-muted); }
+.v3-product.v2-case .project-interactive :is(.object-readout, .pcb-object-readout, .component-directory, .object-rotation-bar) {
+  background: #fff;
+  border-color: var(--v2-line);
+  color: var(--v2-ink);
+}
+.v3-product.v2-case .project-interactive :is(.tramtrace-3d-intro, .tramtrace-3d-source) { border-color: var(--v2-line); }
+.v3-product.v2-case .project-interactive .tramtrace-3d-intro strong { color: var(--v2-ink); }
+.v3-product.v2-case .project-interactive .tramtrace-3d-intro p { color: var(--v2-muted); }
+.v3-product.v2-case .project-interactive :is(.explorer-unavailable, .explorer-source-status) {
+  background: #fff;
+  color: var(--v2-muted);
+  border: 1px solid var(--v2-line);
+  border-radius: 12px;
+}
+
+/* Photo inspection stays light too; image pixels are never altered. */
+.v3-product.v3-interior .lightbox,
+.v3-product.v3-interior .lightbox::backdrop { background: #f5f5f7; color: var(--v2-ink); }
+.v3-product.v3-interior .lightbox-controls { color: var(--v2-ink); }
+.v3-product.v3-interior .lightbox-controls .button { background: #fff; border-color: var(--rule-strong); color: var(--v2-ink); }
+.v3-product.v3-interior .lightbox-controls .button:hover { background: #edf5ff; border-color: var(--v2-accent); color: var(--v2-accent); }
+
+/* Booking: real loading, error, selection, disabled and success states. */
+.v3-product.v2-book .booking-hero { background: #fff; border-color: var(--v2-line); }
+.v3-product.v2-book .booking-clock { border-color: var(--v2-line); }
+.v3-product.v2-book :is(.booking-card, .booking-calendar, .booking-status, .booking-success) { background: #fff; color: var(--v2-ink); }
+.v3-product.v2-book .booking-card { border: 1px solid var(--v2-line); border-radius: 22px; box-shadow: none; }
+.v3-product.v2-book .booking-card-head { background: var(--v2-panel); border-color: var(--v2-line); color: var(--v2-ink); }
+.v3-product.v2-book .booking-live i { background: var(--green); }
+.v3-product.v2-book :is(.booking-clock span, .booking-clock small, .booking-card-head span, .booking-facts dt, .booking-choice-group legend, .booking-form-row label) {
+  font-family: var(--v2-font);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--v2-muted);
+  font-size: 13px;
+}
+.v3-product.v2-book :is(.duration-options, .format-options) { padding: 4px; gap: 4px; border: 1px solid var(--v2-line); border-radius: 16px; background: var(--v2-panel); }
+.v3-product.v2-book :is(.duration-options, .format-options) label > span { border-radius: 12px; background: #fff; color: var(--v2-ink); }
+.v3-product.v2-book :is(.duration-options, .format-options) input:checked + span { background: var(--v2-accent); color: #fff; }
+.v3-product.v2-book :is(.duration-options, .format-options) input:checked + span small { color: #fff; }
+.v3-product.v2-book :is(.duration-options, .format-options) input:disabled + span { background: var(--v2-panel); color: var(--v2-muted); cursor: not-allowed; }
+.v3-product.v2-book :is(.duration-options, .format-options) input:disabled + span small { color: var(--v2-muted); }
+.v3-product.v2-book :is(.duration-options, .format-options) input:focus-visible + span { outline: 3px solid var(--v2-accent); outline-offset: 2px; }
+.v3-product.v2-book .booking-week-button { width: 44px; height: 44px; border-radius: 50%; border-color: var(--rule-strong); background: #fff; color: var(--v2-ink); }
+.v3-product.v2-book .booking-week-button:hover:not(:disabled),
+.v3-product.v2-book .booking-week-button:focus-visible { background: #edf5ff; border-color: var(--v2-accent); color: var(--v2-accent); }
+.v3-product.v2-book .booking-week-button:disabled { opacity: 1; background: var(--v2-panel); border-color: var(--v2-line); color: var(--v2-muted); }
+.v3-product.v2-book .booking-days { border: 1px solid var(--v2-line); border-radius: 12px; background: var(--v2-line); scrollbar-color: var(--rule-strong) var(--v2-panel); }
+.v3-product.v2-book :is(.booking-day, .booking-day-head) { background: #fff; color: var(--v2-ink); }
+.v3-product.v2-book .booking-slot { min-height: 44px; border-color: var(--rule-strong); border-radius: 10px; background: #fff; color: var(--v2-ink); }
+.v3-product.v2-book .booking-slot:hover,
+.v3-product.v2-book .booking-slot:focus-visible,
+.v3-product.v2-book .booking-slot[aria-pressed=true] { background: var(--v2-accent); border-color: var(--v2-accent); color: #fff; }
+.v3-product.v2-book .booking-slot:disabled,
+.v3-product.v2-book .booking-slot:disabled:hover,
+.v3-product.v2-book .booking-slot:disabled[aria-pressed=true] { background: var(--v2-panel); border-color: var(--v2-line); color: var(--v2-muted); }
+.v3-product.v2-book .booking-loader { border-color: var(--v2-line); border-top-color: var(--v2-accent); }
+.v3-product.v2-book .booking-selection { background: var(--v2-panel); border: 1px solid var(--v2-line); border-left: 3px solid var(--v2-accent); border-radius: 12px; color: var(--v2-ink); }
+.v3-product.v2-book :is(.booking-form-row input, .booking-form-row textarea) {
+  min-height: 48px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--v2-ink);
+  font: 400 16px/1.5 var(--v2-font);
+}
+.v3-product.v2-book :is(.booking-form-row input, .booking-form-row textarea)::placeholder { color: var(--v2-muted); opacity: 1; }
+.v3-product.v2-book :is(.booking-form-row input, .booking-form-row textarea):focus { border-color: var(--v2-accent); outline: 3px solid #b3d8ff; outline-offset: 2px; }
+.v3-product.v2-book :is(.booking-form-row input, .booking-form-row textarea)[aria-invalid=true] { border-color: var(--red); }
+.v3-product.v2-book :is(.booking-form-row input, .booking-form-row textarea):user-invalid { border-color: var(--red); }
+.v3-product.v2-book .booking-form-error { background: #fff1f0; color: var(--red-text); border-color: var(--red); border-radius: 8px; }
+.v3-product.v2-book .booking-submit:disabled { opacity: 1; background: var(--v2-panel); border-color: var(--v2-line); color: var(--v2-muted); cursor: wait; }
+.v3-product.v2-book .booking-success > span { background: #e7f3eb; color: #26733e; }
+
+/* Teaching tools retain their scientific colors and real canvas plots. */
+body.v3-product.v2-lab {
+  --paper: #fff;
+  --card: #fff;
+  --panel: #fff;
+  --ink: #1d1d1f;
+  --line: #d2d2d7;
+  --hair: #e8e8ed;
+  --shadow: none;
+  --lab-paper: #fff;
+  --lab-ink: #1d1d1f;
+  --lab-rule: #d2d2d7;
+}
+.v3-product.v2-lab :is(.app, .wrap) { background: #fff; color: var(--v2-ink); }
+.v3-product.v2-lab :is(.app, .wrap) :is(button, select) {
+  min-height: 44px;
+  border-color: var(--rule-strong);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--v2-ink);
+  color-scheme: light;
+}
+.v3-product.v2-lab :is(.app, .wrap) :is(button, select):focus-visible { outline: 3px solid var(--v2-accent); outline-offset: 3px; }
+.v3-product.v2-lab :is(.app, .wrap) :is(button.active, button[aria-pressed=true]) { background: var(--v2-accent); border-color: var(--v2-accent); color: #fff; }
+.v3-product.v2-lab :is(.app, .wrap) button:disabled { opacity: 1; background: var(--v2-panel); border-color: var(--v2-line); color: var(--v2-muted); }
+.v3-product.v2-lab input[type=range] { min-height: 44px; }
+.v3-product.v2-lab .opt { min-height: 44px; align-items: center; margin-block: 0; }
+.v3-product.v2-lab :is(.panel, .readout, .plot, .device-wrap, .note) { border-color: var(--v2-line); border-radius: 14px; background: #fff; box-shadow: none; }
+.v3-product.v2-lab :is(.metric, .insight, .eq) { background: var(--v2-panel); border-color: var(--v2-line); }
+.v3-product.v2-lab :is(.stage-title span, .pill.saturation) { background: #e7f1ff; color: #0055aa; }
+.v3-product.v2-lab .pill.triode { background: #e7f3eb; color: #26733e; }
+.v3-product.v2-lab .pill.cutoff { background: #ededf0; color: #515156; }
+.v3-product.v2-lab .flag { background: #fff7e1; color: #654b0c; border-color: #8a6500; }
+.v3-product.v2-lab .flag b { color: #765500; }
+.v3-product.v2-lab :is(.masthead h1, .app h1) { font-family: var(--v2-font); font-weight: 600; letter-spacing: -.035em; }
+
+/* The isolated CAD capture page also has readable loading/failure text. */
+.v3-product.v3-interior [data-cad-capture] [data-cad-status] { color: #1d1d1f; background: rgba(255, 255, 255, .96); border-radius: 8px; padding: 8px 12px; }
+.v3-product.v3-interior [data-cad-capture] [data-cad-start] { min-height: 44px; border: 1px solid #0066cc; border-radius: 24px; padding: 10px 18px; background: #0066cc; color: #fff; }
+
+@media (max-width: 700px) {
+  .v3-product.v2-case :is(.project-hero-media, .project-hero-media.v2-cad-media) { border-radius: 18px; }
+  .v3-product.v2-case .project-hero-media .v2-media-label { padding: 10px 14px; }
+  .v3-product.v2-case .project-interactive :is([data-hardware], [data-pi-inspector], .tramtrace-3d-explorer) { border-radius: 18px; }
+  .v3-product.v2-book .booking-card { border-radius: 18px; }
+  .v3-product.v2-about .about-hero-aside :is(picture, img) { border-radius: 18px; }
+}
+@media (forced-colors: active) {
+  .v3-product.v3-interior :is(button, input, textarea, select) { border-color: ButtonText; }
+  .v3-product.v2-book :is(.duration-options, .format-options) input:checked + span { outline: 2px solid Highlight; outline-offset: -3px; }
+}

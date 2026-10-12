@@ -29,12 +29,14 @@ REDIRECTS = {"projects/skylabs/flight-review/index.html": "/shared/flight-review
 UTILITIES = {"render/index.html"}
 PRIVATE_PROJECTS = {"kiku", "usense", "comp6441", "pcbnotebook"}
 PRODUCT_CSS = "/assets/v3-product.css"
+LIGHT_INTERIORS_CSS = "/assets/v3-product-light-interiors.css"
 CONTROLS_CSS = "/assets/v3-product-controls.css"
 PRODUCT_JS = "/assets/v3-product.js"
 NAV_HOOKS = {"data-v2-nav", "data-v2-menu"}
 ASSEMBLY_CLONE = "/assets/v3-product-assembly.js"
 SELECTED_CLONE = "/assets/v3-product-selected.js"
-CLONE_SOURCES = {ASSEMBLY_CLONE: "/assets/v2-assembly.js", SELECTED_CLONE: "/assets/v2-selected-work.js"}
+CLONE_SOURCES = {ASSEMBLY_CLONE: "/assets/v2-assembly.js", SELECTED_CLONE: "/assets/v2-selected-work.js", "/assets/v3-product-aircraft.js": "/assets/v3-aircraft-hero.js"}
+LIGHT_POSTER_SOURCES = {f"/assets/images/v3-product/skylabs-{pose}{size}.webp?v=white-20261012": f"/assets/images/v3/skylabs-{pose}{size}.webp?v=sky-20261008" for pose in ("approach", "stopped") for size in ("", "-mobile")}
 
 
 @dataclass
@@ -173,7 +175,7 @@ def inline_scripts(document):
 
 
 def data_hooks(document, keys):
-    return Counter((item.tag, tuple(sorted((key, route(value)) for key, value in item.attrs.items() if key in keys))) for item in document.elements if any(key in keys for key in item.attrs))
+    return Counter((item.tag, tuple(sorted((key, route(LIGHT_POSTER_SOURCES.get(value, value))) for key, value in item.attrs.items() if key in keys))) for item in document.elements if any(key in keys for key in item.attrs))
 
 
 def payloads(document):
@@ -187,6 +189,9 @@ def payloads(document):
         if item.tag == "link" and set(item.attrs.get("rel", "").split()) & {"preload", "prefetch", "modulepreload"}:
             values = [(key, value) for key, value in item.attrs.items() if key in {"href", "imagesrcset", "imagesizes", "rel"} | hints]
         if values:
+            # Only the four original responsive aircraft plates may be replaced
+            # by new renders of the same source geometry on the light studio.
+            values = [(key, LIGHT_POSTER_SOURCES.get(value, value)) for key, value in values]
             result[(item.tag, tuple(sorted(values)))] += 1
     return result
 
@@ -221,7 +226,7 @@ def check_copy_preservation():
         if inline_scripts(original) - inline_scripts(copied):
             errors.append(f"{label}: original inline startup, simulation or JSON block changed")
         original_styles = [urljoin(original.base, item.attrs.get("href", "")) for item in original.tags("link") if "stylesheet" in item.attrs.get("rel", "").split()]
-        retained_styles = [urljoin(copied.base, item.attrs.get("href", "")) for item in copied.tags("link") if "stylesheet" in item.attrs.get("rel", "").split() and urlsplit(urljoin(copied.base, item.attrs.get("href", ""))).path not in {PRODUCT_CSS, CONTROLS_CSS}]
+        retained_styles = [urljoin(copied.base, item.attrs.get("href", "")) for item in copied.tags("link") if "stylesheet" in item.attrs.get("rel", "").split() and urlsplit(urljoin(copied.base, item.attrs.get("href", ""))).path not in {PRODUCT_CSS, CONTROLS_CSS, LIGHT_INTERIORS_CSS}]
         if original_styles != retained_styles:
             errors.append(f"{label}: original stylesheet stack/order changed")
         if payloads(original) != payloads(copied):
@@ -354,6 +359,9 @@ def main():
                 canonicals[expected] = page
         if not noindex:
             stats["indexable"] += 1
+            theme_colors = [item.attrs.get("content") for item in doc.tags("meta") if item.attrs.get("name") == "theme-color"]
+            if theme_colors != ["#fff"]:
+                error(page, "light v3 browser chrome must use one explicit white theme-color")
             if doc.url not in sitemap_urls:
                 error(page, "indexable v3 route is missing from sitemap.xml")
             for tag in ["title", "h1", "main"]:
@@ -367,8 +375,9 @@ def main():
             if len(og_urls) != 1 or og_urls[0].attrs.get("content", "").rstrip("/") != doc.url.rstrip("/"):
                 error(page, "og:url must identify this v3 route")
             styles = [item for item in doc.tags("link") if "stylesheet" in item.attrs.get("rel", "").split()]
-            if not styles or urlsplit(urljoin(doc.base, styles[-1].attrs.get("href", ""))).path != PRODUCT_CSS:
-                error(page, "v3-product.css must be the final stylesheet")
+            final_style = PRODUCT_CSS if relative == "index.html" else LIGHT_INTERIORS_CSS
+            if not styles or urlsplit(urljoin(doc.base, styles[-1].attrs.get("href", ""))).path != final_style:
+                error(page, "the scoped product/light-interior layer must be the final stylesheet")
             elif any(item.tag == "style" and "head" in item.ancestors for item in doc.elements[doc.elements.index(styles[-1]) + 1:]):
                 error(page, "later inline stylesheet overrides the final product layer")
             if relative == "index.html" and (len(styles) < 2 or urlsplit(urljoin(doc.base, styles[-2].attrs.get("href", ""))).path != CONTROLS_CSS):
@@ -467,9 +476,9 @@ def main():
     # delivered mesh and its compressed copy against the export manifest.
     aircraft = ROOT / "assets/models/aircraft/skylabs-trainer/manifest.json"
     try:
-        reference(SITE / "index.html", "/assets/v3-aircraft-hero.js", ORIGIN)
+        reference(SITE / "index.html", "/assets/v3-product-aircraft.js", ORIGIN)
         reference(SITE / "index.html", "/assets/v3-aircraft-scene.js", ORIGIN)
-        reference(SITE / "index.html", "/assets/v3-aircraft-atmosphere.js", ORIGIN)
+        reference(SITE / "index.html", "/assets/v3-product-atmosphere.js", ORIGIN)
         reference(SITE / "index.html", "/assets/models/aircraft/skylabs-trainer/manifest.json", ORIGIN)
         manifest = json.loads(aircraft.read_text(encoding="utf-8"))
         manifest_url = ORIGIN + "/" + aircraft.relative_to(ROOT).as_posix()

@@ -29,10 +29,12 @@ ROUTE_PREFIX = re.compile(
     r"(?<![\w./:-])(?P<origin>https?://proccyboi\.github\.io|//proccyboi\.github\.io)?/v2(?=[/?#\"'\s<>]|$)",
     re.I,
 )
-PRESENTATION_CSS = "/assets/v3-product.css?v=product-20261012"
-PRESENTATION_JS = "/assets/v3-product.js?v=product-20261012"
+PRESENTATION_CSS = "/assets/v3-product.css?v=white-20261012"
+INTERIORS_CSS = "/assets/v3-product-light-interiors.css?v=white-20261012"
+PRESENTATION_JS = "/assets/v3-product.js?v=white-20261012"
 PRESENTATION = (
     f'  <link rel="stylesheet" href="{PRESENTATION_CSS}">\n'
+    f'  <link rel="stylesheet" href="{INTERIORS_CSS}">\n'
     f'  <script src="{PRESENTATION_JS}" defer></script>\n'
 )
 MENU_BUTTON = (
@@ -106,6 +108,10 @@ def route(source):
     return ROUTE_PREFIX.sub(lambda match: (match["origin"] or "") + "/v3", source)
 
 
+def light_metadata(source):
+    return re.sub(r'(\<meta\s+name="theme-color"\s+content=")[^"]*(")', r'\g<1>#fff\2', source)
+
+
 def raw_node(source, node):
     return source[node.start:node.end]
 
@@ -164,7 +170,7 @@ def hook_inventory(document):
 
 
 def validate_inheritance(original, generated, relative):
-    expected = route(original)
+    expected = light_metadata(route(original))
     before, after = Document(expected), Document(generated)
 
     def same(label, predicate):
@@ -176,7 +182,7 @@ def validate_inheritance(original, generated, relative):
     same("main content / viewer markup", lambda node: node.tag == "main")
     same("inline and tool scripts", lambda node: node.tag == "script" and node.attrs.get("src") != PRESENTATION_JS and not shared_v2_navigation_script(node))
     same("inline styles", lambda node: node.tag == "style")
-    same("shared assets / canonical metadata", lambda node: node.tag in {"base", "meta", "link"} and node.attrs.get("href") != PRESENTATION_CSS)
+    same("shared assets / canonical metadata", lambda node: node.tag in {"base", "meta", "link"} and node.attrs.get("href") not in {PRESENTATION_CSS, INTERIORS_CSS})
     same("engineering evidence", lambda node: "data-v2-engineering-evidence" in node.attrs or node.has_class("engineering-brief"))
     if hook_inventory(before) != hook_inventory(after):
         raise ValueError(f"{relative}: an inherited ID, data hook or accessibility relationship changed")
@@ -190,6 +196,8 @@ def validate_inheritance(original, generated, relative):
         raise ValueError(f"{relative}: expected one v3 presentation script")
     if sum(node.tag == "link" and node.attrs.get("href") == PRESENTATION_CSS for node in after.elements) != 1:
         raise ValueError(f"{relative}: expected one v3 presentation stylesheet")
+    if sum(node.tag == "link" and node.attrs.get("href") == INTERIORS_CSS for node in after.elements) != 1:
+        raise ValueError(f"{relative}: expected one v3 interior light stylesheet")
     if any(shared_v2_navigation_script(node) for node in after.elements):
         raise ValueError(f"{relative}: legacy v2 navigation controller must not run alongside v3")
     if any(node.has_class("v2-nav") for node in before.elements):
@@ -211,7 +219,7 @@ def validate_inheritance(original, generated, relative):
 
 def build(relative):
     original = (SOURCE / relative).read_text(encoding="utf-8")
-    source = route(original)
+    source = light_metadata(route(original))
     document = Document(source)
     edits = []
     for element in document.elements:
