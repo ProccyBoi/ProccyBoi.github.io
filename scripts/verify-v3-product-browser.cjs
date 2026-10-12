@@ -60,7 +60,8 @@ function currentFrame(sample, afterSequence = 0) {
 }
 
 function installProbe() {
-  const probe = window.__v3ProductProbe = { contexts:[], input:[], sceneFrames:{}, started:performance.now() };
+  const probe = window.__v3ProductProbe = { contexts:[], input:[], scrolls:[], sceneFrames:{}, started:performance.now() };
+  for(const type of ['scroll','scrollend'])addEventListener(type,event=>{probe.scrolls.push({type,at:performance.now(),y:scrollY,trusted:event.isTrusted});if(probe.scrolls.length>100)probe.scrolls.shift();},{passive:true});
   const contexts = new WeakMap();
   const nativeGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function(type, ...args) {
@@ -126,7 +127,7 @@ function installProbe() {
     header:rect(document.querySelector('.v2-header')), active:{tag:document.activeElement?.tagName,label:document.activeElement?.getAttribute('aria-label'),id:document.activeElement?.id},
     scenes:Object.fromEntries(['hero','selected','aircraft'].map(kind => [kind,probe.read(kind)])),
     images:[...document.images].filter(image => {const b=image.getBoundingClientRect();return b.bottom>0&&b.top<innerHeight&&b.right>0&&b.left<innerWidth;}).map(image=>({src:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth,decoded:image.dataset.imageDecoded,rect:rect(image)})),
-    controls:[...document.querySelectorAll('[data-v3-menu],.v3-quick-projects,[data-v3-nav] a,select,[data-framework-overview],[data-framework-inspect]')].map(node=>({tag:node.tagName,label:node.getAttribute('aria-label')||node.textContent.trim(),value:node.value,href:node.getAttribute('href'),hidden:node.hidden,inert:node.inert,disabled:node.disabled,display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,rect:rect(node)})), contexts:probe.contexts, input:probe.input});
+    controls:[...document.querySelectorAll('[data-v3-menu],.v3-quick-projects,[data-v3-nav] a,select,[data-framework-overview],[data-framework-inspect]')].map(node=>({tag:node.tagName,label:node.getAttribute('aria-label')||node.textContent.trim(),value:node.value,href:node.getAttribute('href'),hidden:node.hidden,inert:node.inert,disabled:node.disabled,display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,rect:rect(node)})), contexts:probe.contexts, input:probe.input, scrolls:probe.scrolls});
 }
 
 async function networkGuard(context) {
@@ -179,7 +180,7 @@ async function imagesReady(page) {
 }
 async function scrollStable(page) {
   await page.evaluate(()=>{window.__v3ScrollStable=null;});
-  await page.waitForFunction(()=>{const now=performance.now(),last=window.__v3ScrollStable;if(!last||Math.abs(last.y-scrollY)>.1){window.__v3ScrollStable={y:scrollY,at:now};return false;}return now-last.at>=180;},null,{polling:30,timeout});
+  await page.waitForFunction(()=>{const now=performance.now(),last=window.__v3ScrollStable;if(!last||Math.abs(last.y-scrollY)>.1){window.__v3ScrollStable={y:scrollY,at:now,frames:0};return false;}last.frames++;return last.frames>=4&&now-last.at>=180;},null,{polling:'raf',timeout});
 }
 async function sceneReady(page, kind, afterSequence = 0) {
   await page.waitForFunction(({kind,afterSequence})=>window.__v3ProductProbe.matches(window.__v3ProductProbe.read(kind),afterSequence),{kind,afterSequence},{timeout,polling:40});
@@ -190,14 +191,14 @@ async function sceneReady(page, kind, afterSequence = 0) {
   return page.evaluate(kind=>window.__v3ProductProbe.read(kind),kind);
 }
 async function shot(run, name, {scene, afterSequence=0, fullPage=false} = {}) {
-  if (scene) await sceneReady(run.page,scene,afterSequence); else await imagesReady(run.page);
+  if (scene) await sceneReady(run.page,scene,afterSequence); else {await imagesReady(run.page);if(!run.noJS){await scrollStable(run.page);await imagesReady(run.page);await scrollStable(run.page);}}
   await fit(run.page,name);
   const before=await run.page.evaluate(()=>window.__v3ProductProbe?.snapshot()||({url:location.href,y:scrollY,viewport:{width:innerWidth,height:innerHeight},noJS:true}));
   await run.page.screenshot({path:path.join(output,name+'.png'),fullPage,caret:'hide',timeout:60000});
   const after=await run.page.evaluate(()=>({url:location.href,y:scrollY,scene:window.__v3ProductProbe?.snapshot().scenes}));
+  write(name,{before,after,errors:run.errors,shaders:run.shaders,network:run.network});
   assert.equal(after.url,before.url,'Screenshot belongs to the same native destination'); assert.ok(Math.abs(after.y-before.y)<2,'Screenshot cannot straddle scroll destinations');
   if(scene)assert.ok(currentFrame(after.scene[scene],afterSequence),'Screenshot finishes with the newly fenced current pose');
-  write(name,{before,after,errors:run.errors,shaders:run.shaders,network:run.network});
 }
 async function header(run, label) {
   const page=run.page, compact=run.viewport.touch||run.viewport.width<=1024;
@@ -258,6 +259,19 @@ async function homeScenes(run, prefix) {
   await shot(run,prefix+'-hero-first-content');
   await page.waitForFunction(()=>document.querySelector('[data-assembly]')?.dataset.assemblyModelsReady==='3',null,{timeout});
   await shot(run,prefix+'-hero-opening',{scene:'hero'});
+  if(['desktop1440','phone390'].includes(prefix)){
+    const original=page.url(),prior=await page.evaluate(()=>window.__v3ProductProbe.read('hero').frame.sequence);
+    const preview=page.locator('[data-assembly-select="1"]');if(run.viewport.touch)await preview.tap();else await preview.click();
+    await sceneReady(page,'hero',prior);assert.equal(page.url(),original,'Hero Preview stays in the home document');
+    assert.equal(await page.locator('[data-assembly]').getAttribute('data-assembly-active'),'telemetry');
+    const openProject=page.locator('[data-assembly-explore]');assert.equal(await openProject.getAttribute('href'),'/v3/projects/skylabs/boards/telemetry/');
+    await shot(run,prefix+'-hero-telemetry-preview',{scene:'hero',afterSequence:prior});
+    await openProject.click();await page.waitForURL('**/v3/projects/skylabs/boards/telemetry/');await page.locator('h1').waitFor();
+    await shot(run,prefix+'-hero-explicit-telemetry-route');
+    await page.goBack({waitUntil:'domcontentloaded'});await page.waitForURL(original);await sceneReady(page,'hero');
+    assert.equal(await page.locator('[data-v3-menu]').getAttribute('aria-expanded'),'false','Native history return closes the navigation');
+    passed(prefix+'-hero-native-preview-separate-open-route-and-back');
+  }
   assert.equal(await page.evaluate(()=>window.__v2Selected),undefined,'Normal browsing must not expose capture controls');
   const selectedNav=page.locator('.v2-selected-nav a[href="#work-framework"]');
   const first=await hashLink(run,selectedNav,'work-framework','selected');
@@ -331,6 +345,23 @@ async function homeScenes(run, prefix) {
   passed(prefix+'-home-current-fenced-scenes-native-hashes-preview-and-back');
 }
 
+async function sectionDestination(page,id) {
+  await page.waitForURL('**#'+id);
+  // A stalled main thread can leave scrollY apparently unchanged while native
+  // smooth scrolling is pending. Require the actual CSS fragment destination
+  // before another hash/Back action; do not recenter or cancel the browser.
+  await page.waitForFunction(id=>{
+    const target=document.getElementById(id);if(!target||location.hash!=='#'+id)return false;
+    const style=getComputedStyle(target),html=getComputedStyle(document.documentElement),box=target.getBoundingClientRect();
+    const desired=scrollY+box.top-(parseFloat(style.scrollMarginTop)||0)-(parseFloat(html.scrollPaddingTop)||0);
+    const max=Math.max(0,document.scrollingElement.scrollHeight-innerHeight),expected=Math.min(max,Math.max(0,desired));
+    return Math.abs(scrollY-expected)<=2;
+  },id,{polling:'raf',timeout});
+  await imagesReady(page);await scrollStable(page);
+  const evidence=await page.evaluate(id=>{const target=document.getElementById(id),b=target.getBoundingClientRect();return{id,url:location.href,y:scrollY,target:{top:b.top,bottom:b.bottom,height:b.height},headerBottom:document.querySelector('.v2-header').getBoundingClientRect().bottom};},id);
+  write('last-section-destination-'+id,evidence);
+}
+
 async function catalogAndCase(run,prefix) {
   const page=run.page;
   await navLink(run,'Projects');await page.waitForURL('**/v3/projects/');await page.locator('[data-v2-search]').waitFor();
@@ -352,10 +383,10 @@ async function catalogAndCase(run,prefix) {
     assert.equal(await page.locator('.v2-case-nav').evaluate(node=>node.inert),true);
     assert.equal(await page.locator('.v2-case-nav').isVisible(),false,'Compact case links do not become a second sticky rail');
     const value=await selector.locator('option').evaluateAll(nodes=>nodes.map(node=>node.value));assert.ok(value.includes('#engineering')&&value.includes('#details'));
-    await selector.selectOption('#engineering');await page.waitForURL('**#engineering');await scrollStable(page);
-    await selector.selectOption('#details');await page.waitForURL('**#details');await scrollStable(page);
-    await page.goBack({waitUntil:'domcontentloaded'});await page.waitForURL('**#engineering');await scrollStable(page);
-  }else{await page.locator('[data-v2-section][href$="#engineering"]').click();await page.waitForURL('**#engineering');await scrollStable(page);}
+    await selector.selectOption('#engineering');await sectionDestination(page,'engineering');
+    await selector.selectOption('#details');await sectionDestination(page,'details');
+    await page.goBack({waitUntil:'domcontentloaded'});await sectionDestination(page,'engineering');
+  }else{await page.locator('[data-v2-section][href$="#engineering"]').click();await sectionDestination(page,'engineering');}
   const visibleHeading=await page.locator('#engineering').evaluate(node=>{const b=node.getBoundingClientRect(),header=document.querySelector('.v2-header').getBoundingClientRect();return b.top>=header.bottom-2&&b.top<innerHeight;});
   assert.equal(visibleHeading,true,'Native section destination is visible below the header');
   await shot(run,prefix+'-case-engineering');
