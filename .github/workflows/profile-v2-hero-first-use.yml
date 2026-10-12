@@ -1,4 +1,4 @@
-name: Attribute v2 hero first-use stalls
+name: Compare v2 hero compile order
 on:
   push:
     branches: [v2-hero-speed]
@@ -28,7 +28,7 @@ jobs:
         env:
           V2_HERO_FIRST_USE_ROOT: /tmp/v2-hero-live
         run: node scripts/profile-v2-hero-first-use.cjs --source-only
-      - name: Measure three modes with three cold and cached pairs each
+      - name: Measure compile-first versus baseline across three cold and cached pairs
         env:
           V2_HERO_FIRST_USE_ROOT: /tmp/v2-hero-live
           V2_HERO_FIRST_USE_OUT: /tmp/v2-hero-first-use/profile.json

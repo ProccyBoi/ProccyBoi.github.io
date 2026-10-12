@@ -3,10 +3,11 @@
  * V2_HERO_FIRST_USE_ROOT=/tmp/live-5a50 V2_HERO_FIRST_USE_OUT=/tmp/hero/profile.json \
  *   node scripts/profile-v2-hero-first-use.cjs
  *
- * Three rotated matched groups, each baseline/debug-off/parallel-install with
- * cold then cached NEW pages: 18 visits on one browser/runner. No production
- * source changes, compile warmup, gl.finish, forced readiness, route interception,
- * or disabled HTTP cache. Existing production own-context fences are observed.
+ * Three alternating matched groups, each baseline/compile-first with cold then
+ * cached NEW pages: 12 visits on one browser/runner. Compile-first calls only
+ * renderer.compile(scene,camera), once immediately before each new installed
+ * model set's existing first draw. Debug checking and installation yield remain
+ * unchanged. No gl.finish, forced readiness, interception, or disabled cache.
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -21,7 +22,7 @@ const shared = require('./profile-v2-load.cjs');
 const repo = path.resolve(__dirname, '..');
 const revision = '5a50d2f336accccaf1577ad43f1465506bdbeb5c';
 const assemblyHash = '170880ccd680a7acfcc4b5f0c8f64a30c70c7df6482218492b56b989a1f4aeaa';
-const modes = ['baseline', 'debug-off', 'parallel-install'];
+const modes = ['baseline', 'compile-first'];
 const viewport = {width:1440, height:1000};
 const network = {offline:false, latency:40, downloadThroughput:10_000_000/8, uploadThroughput:10_000_000/8, connectionType:'wifi'};
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -38,14 +39,11 @@ function assemblySource(original, mode) {
   const constructor="renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});";
   source=replaceOnce(source, constructor, constructor+`\n      window.__heroFirstUse.attach(renderer);`);
   source=replaceOnce(source, '      fitShadows();', '      window.__heroFirstUse.fitStart();\n      fitShadows();\n      window.__heroFirstUse.fitEnd();');
+  source=replaceOnce(source, '      const started=performance.now();',
+    `      window.__heroFirstUse.beforeDraw(renderer,scene,camera,drawnModels,${mode==='compile-first'});\n      const started=performance.now();`);
   source=replaceOnce(source, "      root.dataset.assemblyState='ready';", `      root.dataset.assemblyState='ready';
       window.__heroFirstUse.completed({root,renderer,keyLight,drawnModels:drawnModels.filter(Boolean).length,
         installedModels:models.filter(Boolean).length,drawnWidth,drawnHeight,drawnRatio,drawnRevision,currentRevision:revision});`);
-  if(mode==='debug-off') source=replaceOnce(source, 'window.__heroFirstUse.attach(renderer);',
-    'window.__heroFirstUse.attach(renderer);\n      renderer.debug.checkShaderErrors=false;');
-  if(mode==='parallel-install') source=replaceOnce(source,
-    '      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));\n      const supporting=',
-    '      /* Fixture-only: start supporting installation without the intervening frame/timer. */\n      const supporting=');
   return source;
 }
 function prepare(root, mode) {
@@ -62,12 +60,12 @@ function prepare(root, mode) {
 // contain their nested GL calls and must never be added to those call totals.
 function heroProbe() {
   const now=()=>performance.now();
-  const metrics=window.__heroFirstUse={frames:[],calls:[],programs:[],shaders:[],stopped:false,fit:[],violations:[]};
+  const metrics=window.__heroFirstUse={frames:[],compiles:[],modelSets:[],calls:[],programs:[],shaders:[],stopped:false,fit:[],violations:[]};
   const programs=new WeakMap(),shaders=new WeakMap();
-  let renderer,activeFrame=null,shadowDepth=0,fitStarted=null;
+  let renderer,activeFrame=null,activeCompile=null,shadowDepth=0,fitStarted=null,previousModels=[];
   const programID=value=>value ? programs.get(value)?.id||null : null;
   const shaderID=value=>value ? shaders.get(value)?.id||null : null;
-  const phase=()=>shadowDepth?'shadow':activeFrame?'main':'outside-render';
+  const phase=()=>activeCompile?'compile':shadowDepth?'shadow':activeFrame?'main':'outside-render';
   const aggregate=(group,name,duration)=>{
     const entry=group[name] ||= {count:0,totalMs:0,maxMs:0};
     entry.count++;entry.totalMs+=duration;entry.maxMs=Math.max(entry.maxMs,duration);
@@ -94,7 +92,9 @@ function heroProbe() {
     }
     if(name==='shaderSource') {
       data.sourceCharacters=args[1]?.length;const entry=shaders.get(args[0]);
-      if(entry)entry.sourceCharacters=data.sourceCharacters;
+      // Retain the existing immutable string reference; serialize/hash only
+      // after readiness, never in the measured calling-thread interval.
+      if(entry){entry.sourceCharacters=data.sourceCharacters;entry.source=args[1];}
     }
     if(name==='getProgramParameter'||name==='getShaderParameter'||name==='getSyncParameter') {
       data.pname=args[1];data.parameter=enumNames[args[1]]||String(args[1]);
@@ -118,12 +118,30 @@ function heroProbe() {
   };
   metrics.fitStart=()=>{if(!metrics.stopped)fitStarted=now();};
   metrics.fitEnd=()=>{if(!metrics.stopped&&fitStarted!==null){metrics.fit.push({startMs:fitStarted,durationMs:now()-fitStarted});fitStarted=null;}};
+  metrics.beforeDraw=(target,scene,camera,models,compileFirst)=>{
+    if(metrics.stopped)return;
+    if(target!==renderer)throw Error('Compile attribution must use the hero renderer');
+    const installed=models.filter(Boolean),visible=installed.filter(model=>model.group.visible!==false);
+    if(visible.length!==installed.length)throw Error('Overview compile trial requires every installed model to be visible');
+    if(models.length===previousModels.length&&models.every((model,index)=>model===previousModels[index]))return;
+    previousModels=models.slice();
+    const entry={id:metrics.modelSets.length+1,atMs:now(),frame:metrics.frames.length+1,
+      installedModels:installed.length,visibleModels:visible.length,compileFirst};
+    metrics.modelSets.push(entry);
+    if(compileFirst)renderer.compile(scene,camera);
+  };
   metrics.attach=value=>{
     if(renderer)throw Error('Only one hero renderer expected');renderer=value;
     const gl=renderer.getContext();
     metrics.capabilities={isWebGL2:renderer.capabilities.isWebGL2,contextAttributes:gl.getContextAttributes(),initialCheckShaderErrors:renderer.debug.checkShaderErrors};
     metrics.wrapped=[];
-    const names=[...syncMethods,...uploadMethods,...drawMethods,'createShader','createProgram','shaderSource','attachShader','compileShader','linkProgram','useProgram','fenceSync','flush','deleteSync','finish'];
+    const methodNames=new Set([...syncMethods,...uploadMethods,...drawMethods,'createShader','createProgram','shaderSource','attachShader','compileShader','linkProgram','useProgram','fenceSync','flush','deleteSync','finish']);
+    for(let prototype=gl;prototype&&prototype!==Object.prototype;prototype=Object.getPrototypeOf(prototype)) {
+      for(const name of Object.getOwnPropertyNames(prototype)) {
+        if(name!=='constructor'&&typeof Object.getOwnPropertyDescriptor(prototype,name)?.value==='function')methodNames.add(name);
+      }
+    }
+    const names=[...methodNames];
     for(const name of names) {
       const original=gl[name];if(typeof original!=='function')continue;
       gl[name]=function(...args) {
@@ -135,7 +153,9 @@ function heroProbe() {
         finally {
           const endMs=now(),durationMs=endMs-startMs;
           if(frame)aggregate(frame.gl[callPhase],name,durationMs);
+          if(activeCompile)aggregate(activeCompile.gl,name,durationMs);
           if(drawMethods.has(name)) {
+            if(activeCompile)metrics.violations.push('renderer.compile unexpectedly issued a draw');
             if(frame) {
               const count=args[name.startsWith('drawArrays')?2:1],instances=name.endsWith('Instanced')?args.at(-1):1;
               const draws=frame.draws[callPhase];draws.calls++;draws.instances+=instances;
@@ -144,7 +164,7 @@ function heroProbe() {
               draws.cpuMs+=durationMs;draws.maxCallMs=Math.max(draws.maxCallMs,durationMs);
             }
           } else {
-            const record={name,startMs,endMs,durationMs,phase:callPhase,frame:frame?.id??null,
+            const record={name,startMs,endMs,durationMs,phase:callPhase,frame:frame?.id??activeCompile?.frame??null,compile:activeCompile?.id??null,
               category:syncMethods.has(name)?'sync-query':uploadMethods.has(name)?'upload':/compileShader|linkProgram/.test(name)?'compile-link':'other',...detail(name,args,result)};
             if(error)record.error=error;metrics.calls.push(record);
           }
@@ -154,7 +174,16 @@ function heroProbe() {
       };
       metrics.wrapped.push(name);
     }
-    const render=renderer.render,shadowRender=renderer.shadowMap.render;
+    const render=renderer.render,compile=renderer.compile,shadowRender=renderer.shadowMap.render;
+    renderer.compile=function(...args) {
+      if(metrics.stopped)return compile.apply(this,args);
+      const entry={id:metrics.compiles.length+1,frame:metrics.frames.length+1,modelSet:metrics.modelSets.at(-1)?.id,
+        startMs:now(),gl:{},checkShaderErrors:renderer.debug.checkShaderErrors};
+      metrics.compiles.push(entry);activeCompile=entry;
+      try{return compile.apply(this,args);}
+      catch(error){entry.error=String(error);throw error;}
+      finally{entry.endMs=now();entry.cpuMs=entry.endMs-entry.startMs;activeCompile=null;}
+    };
     renderer.shadowMap.render=function(...args) {
       if(metrics.stopped)return shadowRender.apply(this,args);
       const startMs=now();shadowDepth++;
@@ -171,6 +200,9 @@ function heroProbe() {
       catch(error){frame.error=String(error);throw error;}
       finally {
         frame.endMs=now();frame.cpuMs=frame.endMs-frame.startMs;
+        const preparation=metrics.compiles.find(item=>item.frame===frame.id);
+        frame.precompileID=preparation?.id??null;
+        frame.firstUseCombinedWallMs=frame.endMs-(preparation?.startMs??frame.startMs);
         frame.rendererInfo={...renderer.info.render};frame.programCount=renderer.info.programs?.length;
         activeFrame=null;
       }
@@ -208,16 +240,28 @@ function summarize(sample) {
   }
   const glByMethod={};
   for(const name of [...new Set(calls.map(item=>item.name))])glByMethod[name]=shared.summary(calls.filter(item=>item.name===name).map(item=>item.durationMs));
+  const glByPhase={};
+  for(const phase of ['compile','main','shadow','outside-render']) {
+    const scoped=calls.filter(item=>item.phase===phase);
+    glByPhase[phase]={totalCPUms:shared.summary(scoped.map(item=>item.durationMs)),
+      methods:Object.fromEntries([...new Set(scoped.map(item=>item.name))].map(name=>[name,shared.summary(scoped.filter(item=>item.name===name).map(item=>item.durationMs))]))};
+  }
+  const shaderSourceSignatures=Object.fromEntries([...new Set(h.shaders.map(item=>item.type))].sort().map(type=>{
+    const sources=h.shaders.filter(item=>item.type===type&&typeof item.source==='string');
+    return [type,{count:sources.length,uniqueSHA256:[...new Set(sources.map(item=>hash(item.source)))].sort()}];
+  }));
   const finished=sample.requests.filter(item=>item.finished&&item.endMs<=horizon),models=finished.filter(item=>modelURL(item.url));
   return {firstGPUCompletedMs:sample.metrics.milestones.heroFirstGPUCompletedMs,allModelsSubmittedMs:sample.metrics.milestones.heroAllSubmittedMs,
     allModelsGPUCompletedMs:h.ready.gpuCompletedMs,completeReadyMs:horizon,
-    rendererCPUms:shared.summary(frames.map(item=>item.cpuMs)),shadowCPUms:shared.summary(frames.flatMap(item=>item.shadowSpans.map(span=>span.durationMs))),
+    rendererCPUms:shared.summary(frames.map(item=>item.cpuMs)),precompileCPUms:shared.summary(h.compiles.map(item=>item.cpuMs)),
+    firstUseCombinedWallMs:shared.summary(frames.map(item=>item.firstUseCombinedWallMs)),
+    shadowCPUms:shared.summary(frames.flatMap(item=>item.shadowSpans.map(span=>span.durationMs))),
     shadowFitCPUms:shared.summary(h.fit.map(item=>item.durationMs)),
     nativeGPUFenceWaitMs:shared.summary(sample.metrics.gpu.filter(item=>item.owner==='hero'&&item.endMs<=horizon).map(item=>item.endMs-item.waitCalledMs)),
     glSyncQueryCPUms:shared.summary(calls.filter(item=>item.category==='sync-query').map(item=>item.durationMs)),
     compileLinkCPUms:shared.summary(calls.filter(item=>item.category==='compile-link').map(item=>item.durationMs)),
-    uploadCPUms:shared.summary(calls.filter(item=>item.category==='upload').map(item=>item.durationMs)),glByMethod,queryByProgram,
-    frames:frames.map(item=>({id:item.id,startMs:round(item.startMs),rendererCPUms:round(item.cpuMs),shadowCPUms:round(item.shadowSpans.reduce((sum,span)=>sum+span.durationMs,0)),draws:item.draws,width:item.width,height:item.height,pixelRatio:item.pixelRatio,shadow:item.completion?.shadow,fence:item.completion?.fence})),
+    uploadCPUms:shared.summary(calls.filter(item=>item.category==='upload').map(item=>item.durationMs)),glByMethod,glByPhase,queryByProgram,shaderSourceSignatures,
+    frames:frames.map(item=>({id:item.id,startMs:round(item.startMs),rendererCPUms:round(item.cpuMs),precompileID:item.precompileID,firstUseCombinedWallMs:round(item.firstUseCombinedWallMs),shadowCPUms:round(item.shadowSpans.reduce((sum,span)=>sum+span.durationMs,0)),draws:item.draws,width:item.width,height:item.height,pixelRatio:item.pixelRatio,shadow:item.completion?.shadow,fence:item.completion?.fence})),
     longTasks:{count:tasks.length,totalMs:round(tasks.reduce((sum,item)=>sum+item.durationMs,0)),maxMs:round(Math.max(0,...tasks.map(item=>item.durationMs))),totalBlockingMs:round(tasks.reduce((sum,item)=>sum+Math.max(0,item.durationMs-50),0))},
     trustedInputDelayMs:shared.summary(sample.metrics.inputs.filter(item=>item.trusted&&item.atMs<=horizon).map(item=>item.delayMs)),
     transport:{completedResourceWireBytes:finished.reduce((sum,item)=>sum+(item.wireBytes||0),0),completedModelWireBytes:models.reduce((sum,item)=>sum+(item.wireBytes||0),0),cacheEvidencedModels:models.filter(item=>item.cacheEvidence.length).length},
@@ -234,13 +278,21 @@ function assertSample(sample) {
   assert.equal(ready.dataset.assemblyEnvironment,'prepared');assert.equal(ready.dataset.assemblyGPUCompletionEvidence,'own-context-fence');
   assert.equal(frame.width,Math.floor(completion.drawnWidth*completion.drawnRatio));assert.equal(frame.height,Math.floor(completion.drawnHeight*completion.drawnRatio));
   for(const rendered of sample.hero.frames) {
-    assert.equal(rendered.checkShaderErrors,sample.mode!=='debug-off');
+    assert.equal(rendered.checkShaderErrors,true);
     if(!rendered.completion)continue;
     assert.equal(rendered.completion.shadow.enabled,true);
     assert.deepEqual(rendered.completion.shadow.configured,[2048,2048]);
     assert.deepEqual(rendered.completion.shadow.actual,{width:2048,height:2048});
   }
   assert.ok(frame.draws.main.calls>0&&frame.draws.shadow.calls>0,'Actual main and shadow draws recorded');
+  for(const set of sample.hero.modelSets)assert.equal(set.installedModels,set.visibleModels,'Overview scope: no hidden installed models');
+  assert.equal(sample.hero.compiles.length,sample.mode==='compile-first'?sample.hero.modelSets.length:0,'One compile per new model set only in compile-first');
+  assert.ok(sample.hero.modelSets.length<=3,'Only three model installation opportunities in the overview');
+  for(const preparation of sample.hero.compiles) {
+    assert.equal(preparation.checkShaderErrors,true);const draw=sample.hero.frames.find(item=>item.id===preparation.frame);
+    assert.ok(draw&&preparation.endMs<=draw.startMs,'Compile finishes before its existing first draw');
+  }
+  assert.ok(sample.hero.shaders.length);assert.ok(sample.hero.shaders.every(item=>typeof item.source==='string'),'Retain every shader source for post-measurement parity');
   assert.ok(sample.hero.wrapped.includes('getUniformLocation')&&sample.hero.wrapped.includes('getActiveUniform'));
   assert.ok(sample.metrics.inputs.some(item=>item.trusted),'Trusted input probe must run');
   assert.ok(sample.metrics.observerSupport.longtask,'Long-task API supported');
@@ -291,7 +343,7 @@ async function measure(context,base,specification,timeout) {
   await page.close();return sample;
 }
 function compare(samples) {
-  const result={},keys=['completeReadyMs','firstGPUCompletedMs','allModelsGPUCompletedMs','allModelsSubmittedMs','rendererCPUms.total','rendererCPUms.max','shadowCPUms.total','nativeGPUFenceWaitMs.total','glSyncQueryCPUms.total','compileLinkCPUms.total','uploadCPUms.total','longTasks.maxMs','longTasks.totalBlockingMs','trustedInputDelayMs.p95','trustedInputDelayMs.max'];
+  const result={},keys=['completeReadyMs','firstGPUCompletedMs','allModelsGPUCompletedMs','allModelsSubmittedMs','rendererCPUms.total','rendererCPUms.max','precompileCPUms.total','precompileCPUms.max','firstUseCombinedWallMs.total','firstUseCombinedWallMs.max','shadowCPUms.total','nativeGPUFenceWaitMs.total','glSyncQueryCPUms.total','compileLinkCPUms.total','uploadCPUms.total','longTasks.maxMs','longTasks.totalBlockingMs','trustedInputDelayMs.p95','trustedInputDelayMs.max'];
   const get=(object,key)=>key.split('.').reduce((value,part)=>value?.[part],object);
   for(const visit of ['cold','repeat'])for(const mode of modes.slice(1)) {
     const baseline=samples.filter(item=>item.valid&&item.visit===visit&&item.mode==='baseline'),candidate=samples.filter(item=>item.valid&&item.visit===visit&&item.mode===mode);
@@ -299,7 +351,22 @@ function compare(samples) {
   }
   return result;
 }
-function instrumentationTest() {
+function shaderParity(samples) {
+  const output=[];
+  for(const candidate of samples.filter(item=>item.valid&&item.mode==='compile-first')) {
+    const baseline=samples.find(item=>item.valid&&item.mode==='baseline'&&item.pair===candidate.pair&&item.visit===candidate.visit);
+    if(!baseline)continue;
+    const before=baseline.summary.shaderSourceSignatures,after=candidate.summary.shaderSourceSignatures;
+    const byType=Object.fromEntries([...new Set([...Object.keys(before),...Object.keys(after)])].sort().map(type=>{
+      const a=before[type]?.uniqueSHA256||[],b=after[type]?.uniqueSHA256||[];
+      return [type,{baselineCount:before[type]?.count||0,candidateCount:after[type]?.count||0,
+        baselineUniqueCount:a.length,candidateUniqueCount:b.length,missing:a.filter(value=>!b.includes(value)),extra:b.filter(value=>!a.includes(value))}];
+    }));
+    output.push({pair:candidate.pair,visit:candidate.visit,identicalUniqueSources:Object.values(byType).every(item=>!item.missing.length&&!item.extra.length),byType});
+  }
+  return output;
+}
+function instrumentationTest(compileFirst) {
   let time=0;
   const sandbox={window:{__v2LoadProbe:{gpu:[]}},performance:{now:()=>++time},innerWidth:1440,innerHeight:1000,
     document:{hidden:false,querySelector:()=>({getBoundingClientRect:()=>({bottom:76})})},
@@ -309,19 +376,29 @@ function instrumentationTest() {
   const gl={TRIANGLES:4,getContextAttributes:()=>({antialias:true}),createShader:()=>({}),createProgram:()=>({}),
     shaderSource(){},attachShader(){},compileShader(){},linkProgram(){},getProgramParameter:()=>true,
     getShaderParameter:()=>true,getUniformLocation:()=>({}),getActiveUniform:()=>({name:'colour',size:1,type:1}),
-    getActiveAttrib:()=>({name:'position',size:1,type:1}),getAttribLocation:()=>0,bufferData(){},texImage2D(){},drawElements(){},drawArrays(){}};
+    getActiveAttrib:()=>({name:'position',size:1,type:1}),getAttribLocation:()=>0,bindBuffer(){},bufferData(){},texImage2D(){},drawElements(){},drawArrays(){}};
   const renderer={getContext:()=>gl,capabilities:{isWebGL2:true},debug:{checkShaderErrors:true},
     domElement:{width:1440,height:1000,getBoundingClientRect:()=>({left:0,top:0,right:1440,bottom:1000})},
     getPixelRatio:()=>1,info:{render:{calls:1},programs:[{}]},
     shadowMap:{enabled:true,type:2,autoUpdate:false,render(){gl.drawElements(4,12,0,0);}},
+    compile(){const shader=gl.createShader(1),program=gl.createProgram();gl.shaderSource(shader,'shader');gl.attachShader(program,shader);gl.compileShader(shader);gl.linkProgram(program);gl.getProgramParameter(program,0x8B82);gl.bindBuffer(0,null);},
     render(){
       const shader=gl.createShader(1),program=gl.createProgram();gl.shaderSource(shader,'shader');gl.attachShader(program,shader);
       gl.compileShader(shader);gl.linkProgram(program);gl.getProgramParameter(program,0x8B82);gl.getShaderParameter(shader,0x8B81);
       gl.getActiveUniform(program,0);gl.getUniformLocation(program,'colour');gl.getActiveAttrib(program,0);gl.getAttribLocation(program,'position');
       renderer.shadowMap.render();gl.bufferData(0,new Uint8Array(24),0);gl.texImage2D(0,0,0,4,4,0,0,0,null);gl.drawArrays(4,0,6);
     }};
-  probe.attach(renderer);probe.fitStart();probe.fitEnd();renderer.render();
-  const frame=probe.frames[0],evidence={renderer,root:{dataset:{assemblyModelsReady:'3',assemblyLastSubmission:'{}'}},
+  probe.attach(renderer);probe.fitStart();probe.fitEnd();
+  const models=[{group:{visible:true}},null,null];
+  probe.beforeDraw(renderer,{}, {},models,compileFirst);renderer.render();
+  assert.equal(probe.compiles.length,compileFirst?1:0);
+  probe.beforeDraw(renderer,{}, {},models,compileFirst);
+  assert.equal(probe.compiles.length,compileFirst?1:0,'Same model set must not trigger another compile');
+  assert.throws(()=>probe.beforeDraw(renderer,{}, {},[{group:{visible:false}}],compileFirst),/every installed model/);
+  models[1]={group:{visible:true}};models[2]={group:{visible:true}};
+  probe.beforeDraw(renderer,{}, {},models,compileFirst);renderer.render();
+  assert.equal(probe.compiles.length,compileFirst?2:0,'New model set triggers exactly one new compile');
+  const frame=probe.frames.at(-1),evidence={renderer,root:{dataset:{assemblyModelsReady:'3',assemblyLastSubmission:'{}'}},
     keyLight:{shadow:{mapSize:{toArray:()=>[2048,2048]},map:{width:2048,height:2048}}},
     drawnModels:3,installedModels:3,drawnWidth:1440,drawnHeight:1000,drawnRatio:1,drawnRevision:1,currentRevision:1};
   probe.completed(evidence);assert.equal(probe.ready,undefined,'No fence must never satisfy terminal readiness');
@@ -331,10 +408,17 @@ function instrumentationTest() {
   probe.completed(evidence);assert.ok(probe.ready);assert.ok(probe.stopped);
   assert.equal(frame.draws.main.calls,1);assert.equal(frame.draws.shadow.calls,1);
   assert.equal(frame.draws.main.triangles,2);assert.equal(frame.draws.shadow.triangles,4);
-  assert.equal(probe.calls.find(item=>item.name==='getUniformLocation').program,1);
+  assert.ok(probe.calls.find(item=>item.name==='getUniformLocation').program);
   assert.equal(probe.calls.find(item=>item.name==='getProgramParameter').parameter,'LINK_STATUS');
   assert.equal(probe.calls.find(item=>item.name==='bufferData').bytes,24);
   assert.equal(probe.programs[0].shaders[0],1);assert.ok(frame.cpuMs>0&&frame.shadowSpans[0].durationMs>0);
+  assert.equal(probe.shaders[0].source,'shader');
+  if(compileFirst) {
+    assert.ok(probe.calls.some(item=>item.phase==='compile'&&item.name==='getProgramParameter'));
+    assert.equal(probe.compiles[0].gl.getProgramParameter.count,1);
+    assert.equal(probe.compiles[0].gl.bindBuffer.count,1,'Discover and attribute GL methods outside the explicit query list');
+    assert.ok(frame.firstUseCombinedWallMs>frame.cpuMs);
+  } else assert.equal(frame.firstUseCombinedWallMs,frame.cpuMs);
   const count=probe.calls.length;renderer.render();assert.equal(probe.calls.length,count,'Stop instrumentation at terminal readiness');
 }
 function sourceTests(root) {
@@ -342,8 +426,12 @@ function sourceTests(root) {
   const sources=Object.fromEntries(modes.map(mode=>[mode,assemblySource(original,mode)]));
   for(const [mode,source]of Object.entries(sources))new vm.Script(source,{filename:mode+'.js'});
   new vm.Script(`(${shared.browserProbe.toString()})();(${heroProbe.toString()})();`);
-  assert.equal(sources['debug-off'].replace('\n      renderer.debug.checkShaderErrors=false;',''),sources.baseline,'Only debug flag differs');
-  assert.equal(sources['parallel-install'].replace('      /* Fixture-only: start supporting installation without the intervening frame/timer. */','      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));'),sources.baseline,'Only the installation yield differs');
+  assert.equal(sources['compile-first'].replace('beforeDraw(renderer,scene,camera,drawnModels,true)','beforeDraw(renderer,scene,camera,drawnModels,false)'),sources.baseline,'Only the compile-first switch differs');
+  for(const source of Object.values(sources)) {
+    assert.ok(source.includes('      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));\n      const supporting='),'Preserve original installation yield');
+    assert.equal(source.includes('renderer.debug.checkShaderErrors=false'),false,'Keep shader error checks');
+    assert.ok(source.indexOf('window.__heroFirstUse.beforeDraw')>source.indexOf('window.__heroFirstUse.fitEnd'),'Compile only after pose/light/shadow-fit setup');
+  }
   assert.throws(()=>assemblySource(original+'\n','baseline'),/exact live/);
   const fixture=prepare(root,'baseline'),html=shared.responseFor(fixture,'/v2/',{'accept-encoding':'gzip'});
   assert.equal(html.status,200);assert.equal(html.headers['Cache-Control'],'max-age=600');assert.equal(html.headers.Vary,'Accept-Encoding');assert.equal(html.headers['Content-Encoding'],'gzip');
@@ -357,8 +445,11 @@ function sourceTests(root) {
   assert.ok(pack);const body=shared.responseFor(fixture,'/'+path.relative(root,pack).split(path.sep).join('/'),{'accept-encoding':'gzip'});
   assert.equal(body.headers['Content-Type'],'application/gzip');assert.equal(body.headers['Content-Encoding'],undefined);
   assert.throws(()=>assertSample({errors:[],hero:{}}),/own-context fence/);
-  instrumentationTest();
-  console.log('PASS source-only: exact live source, unique fixture anchors, independent single-change variants, script/probe syntax, normal gzip/cache/ETag/explicit-pack policy; mocked main/shadow attribution, per-program queries/uploads, and rejected missing/partial/stale fences. No browser or GPU result claimed.');
+  instrumentationTest(false);instrumentationTest(true);
+  const sample=(mode,sources)=>({valid:true,mode,pair:1,visit:'cold',summary:{shaderSourceSignatures:{35633:{count:sources.length,uniqueSHA256:[...new Set(sources.map(value=>hash(value)))]}}}});
+  assert.equal(shaderParity([sample('baseline',['a']),sample('compile-first',['a','a'])])[0].identicalUniqueSources,true);
+  assert.equal(shaderParity([sample('baseline',['a']),sample('compile-first',['b'])])[0].identicalUniqueSources,false,'Equal shader counts cannot hide different sources');
+  console.log('PASS source-only: exact live source, compile-only mode delta, preserved debug/yield, syntax/cache policy; mocked compile-on-new-set/visible-scope/phase accounting, shader source parity, main/shadow attribution, and rejected missing/partial/stale fences. No browser or GPU result claimed.');
 }
 async function main() {
   const root=path.resolve(process.env.V2_HERO_FIRST_USE_ROOT||repo);
@@ -368,18 +459,20 @@ async function main() {
   const pairs=3,timeout=120000,fixtures=Object.fromEntries(modes.map(mode=>[mode,prepare(root,mode)]));
   const out=path.resolve(process.env.V2_HERO_FIRST_USE_OUT||'/tmp/v2-hero-first-use/profile.json');
   const browserArgs=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];
-  const report={capturedAt:new Date().toISOString(),valid:false,revision,root,network,viewport,deviceScaleFactor:1,pairs,visits:18,modes,browserArgs,
+  const report={capturedAt:new Date().toISOString(),valid:false,revision,root,network,viewport,deviceScaleFactor:1,pairs,visits:12,modes,browserArgs,
     fixtureSources:Object.fromEntries(modes.map(mode=>[mode,fixtures[mode].traces])),
-    contract:{completion:'Existing own-context fence completed for one current-size visible hero frame containing all three installed models; no added GPU drain, gl.finish or renderer.compile.',
+    contract:{completion:'Existing own-context fence completed for one current-size visible hero frame containing all three installed models; no added GPU drain or gl.finish.',
       cache:'Fresh context per pair/mode. Cold page closes, then NEW page in same context establishes real HTTP cache evidence. No disabled cache or route interception.',
-      instrumentation:'Shared load probe plus identical hero renderer/GL wrappers. Debug-off toggles only hero debug.checkShaderErrors. Parallel-install removes only the single initial rAF/timer yield.',
-      caveats:['Same Chromium SwiftShader runner; GPU-driver/OS caches are not cleared. Three modes rotate order by matched group.',
-        'Entrypoint, render, and shadow CPU values are calling-thread wall times, potentially containing driver waits, not GPU duration. Nested timings overlap and must not be added.',
+      instrumentation:'Shared load probe and identical hero renderer/GL wrappers. Only compile-first calls renderer.compile once per newly installed model set, after existing pose/light setup and immediately before its existing first draw. Debug=true and installation yield are unchanged.',
+      shaderParity:'Exact shader strings retained by reference; after readiness Node SHA256 compares unique vertex/fragment source sets plus duplicate/unique counts in each matched pair.',
+      caveats:['Same Chromium SwiftShader runner; GPU-driver/OS caches are not cleared. Two modes alternate order by matched group.',
+        'Entrypoint, compile, render, and shadow CPU values are calling-thread wall times, potentially containing driver waits, not GPU duration. Nested timings overlap and must not be added. firstUseCombinedWallMs spans compile start through render return, when compile occurred.',
         'Native fence spans include polling/scheduling latency. Fenced canvas readiness does not assert compositor presentation.',
         'Trusted F8 queue delay is not INP; full long-task duration is retained for tasks beginning before readiness.',
         'Tracing adds overhead equally to all modes; wrappers record after renderer creation, not constructor context initialization.',
-        'Parallel-install explicitly changes only fixture scheduling. Neither alternate mode is a production recommendation without measured quality and latency review.']},samples:[]};
-  const save=()=>{report.comparison=compare(report.samples);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(report,null,2)+'\n');};
+        'The overview asserts all installed models are visible because compile traverses hidden objects too. This does not establish cold chapter-selection behavior or production viability.',
+        'Moving blocking work into compile is not a speedup. Judge first/final native fenced readiness and complete long-task/input metrics.']},samples:[]};
+  const save=()=>{report.comparison=compare(report.samples);report.shaderSourceParity=shaderParity(report.samples);fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(report,null,2)+'\n');};
   let active=fixtures.baseline,browser;
   const server=http.createServer((request,response)=>{const result=shared.responseFor(active,new URL(request.url,'http://localhost').pathname,request.headers);response.writeHead(result.status,result.headers);response.end(request.method==='HEAD'?undefined:result.body);});
   try {
@@ -387,7 +480,7 @@ async function main() {
     const base='http://127.0.0.1:'+server.address().port;report.baseURL=base;
     const {chromium}=require('playwright');browser=await chromium.launch({headless:true,args:browserArgs});report.browserVersion=browser.version();save();
     for(let pair=1;pair<=pairs;pair++) {
-      const order=modes.slice(pair-1).concat(modes.slice(0,pair-1));
+      const offset=(pair-1)%modes.length,order=modes.slice(offset).concat(modes.slice(0,offset));
       for(const mode of order) {
         active=fixtures[mode];const context=await browser.newContext({viewport,deviceScaleFactor:1,reducedMotion:'no-preference',serviceWorkers:'block'});
         try {for(const visit of ['cold','repeat']) {
@@ -397,7 +490,9 @@ async function main() {
         }}finally{await context.close();}
       }
     }
-    report.valid=true;save();console.log('Completed 18-visit hero first-use report: '+out);
+    save();assert.equal(report.shaderSourceParity.length,6,'Six matched cold/cached shader comparisons');
+    assert.ok(report.shaderSourceParity.every(item=>item.identicalUniqueSources),'Compile and baseline must produce identical unique shader sources');
+    report.valid=true;save();console.log('Completed 12-visit compile-order hero report: '+out);
   }catch(error){report.failure=String(error);save();throw error;}
   finally{if(browser)await browser.close();if(server.listening)await new Promise(resolve=>server.close(resolve));}
 }
