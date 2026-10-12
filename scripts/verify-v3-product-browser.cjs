@@ -45,6 +45,7 @@ const near = (a, b, epsilon = .00002) => Math.abs(a - b) <= epsilon;
 function currentFrame(sample, afterSequence = 0) {
   if (!sample || !Number.isFinite(sample.native) || !sample.visible || !sample.canvasVisible || sample.masked || sample.pending) return false;
   const frame = sample.frame;
+  if (sample.kind === 'aircraft' && (sample.dataset?.aircraftState !== 'ready' || frame?.kind !== 'progress')) return false;
   if (!frame || frame.sequence <= afterSequence || !frame.published || frame.gpu?.state !== 'complete') return false;
   if (!Number.isFinite(frame.completedMs) || frame.completedMs < frame.submittedMs || Math.abs(frame.value - sample.native) > .000025) return false;
   if (Math.abs(sample.rendered - sample.native) > .000025 || frame.revision !== sample.revision || sample.presentedRevision !== sample.revision) return false;
@@ -244,11 +245,11 @@ async function frameworkLayout(page,label) {
     const copies=[...grid.querySelectorAll('.v2-framework-copy')].map(node=>{const box=node.getBoundingClientRect();return{text:node.textContent.trim(),href:node.closest('a').getAttribute('href'),left:box.left,right:box.right,top:box.top,bottom:box.bottom,width:box.width,height:box.height};});
     return{stageWidth:stage.clientWidth,stage:{left:b.left,right:b.right,top:b.top,bottom:b.bottom},viewport:{width:innerWidth,height:innerHeight},columns:getComputedStyle(grid).gridTemplateColumns.split(/\s+/).length,copies};
   });
+  write(label+'-caption-layout',layout);
   assert.equal(layout.columns,layout.stageWidth<=760?2:4,'Caption columns follow actual CAD stage width, including portrait tablet gutters');
   assert.equal(layout.copies.length,4);
   for(const copy of layout.copies){assert.ok(copy.left>=layout.stage.left-1&&copy.right<=layout.stage.right+1&&copy.top>=0&&copy.bottom<=layout.viewport.height+1,label+': readable onscreen project caption '+copy.text);assert.match(copy.href,/^\/v3\/projects\//);}
   for(let i=0;i<layout.copies.length;i++)for(let j=i+1;j<layout.copies.length;j++){const a=layout.copies[i],b=layout.copies[j],overlapX=Math.min(a.right,b.right)-Math.max(a.left,b.left),overlapY=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top);assert.ok(overlapX<=1||overlapY<=1,label+': project captions do not overlap');}
-  write(label+'-caption-layout',layout);
 }
 
 async function homeScenes(run, prefix) {
@@ -282,7 +283,7 @@ async function homeScenes(run, prefix) {
     assert.equal(await select.inputValue(),'1','Native keyboard chooses the previous card');await sceneReady(page,'selected',prior);
     assert.ok(await page.evaluate(()=>window.__v3ProductProbe.input.some(event=>event.type==='keydown'&&event.key==='ArrowUp'&&event.trusted)),'Trusted browser keyboard input was observed');
     assert.equal(page.url(),before.url,'Native keyboard Preview does not navigate');
-    const restore=await page.evaluate(()=>window.__v3ProductProbe.read('selected').frame.sequence);await select.selectOption('2');await sceneReady(page,'selected',restore);
+    const restore=await page.evaluate(()=>window.__v3ProductProbe.read('selected').frame.sequence);await select.focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');assert.equal(await select.inputValue(),'2');await sceneReady(page,'selected',restore);
     if(run.viewport.touch){await select.tap();await page.keyboard.press('Escape');assert.equal(await select.inputValue(),'2','Native picker cancellation keeps the selected card');}
   }
   await shot(run,prefix+'-framework-rp2354b-selected',{scene:'selected',afterSequence:before.frame});
@@ -306,13 +307,23 @@ async function homeScenes(run, prefix) {
     previous=await page.evaluate(()=>window.__v3ProductProbe.read('selected').frame.sequence);await select.selectOption('1');await sceneReady(page,'selected',previous);
     previous=await page.evaluate(()=>window.__v3ProductProbe.read('selected').frame.sequence);await select.selectOption('-1');await sceneReady(page,'selected',previous);assert.equal(page.url(),before.url,'All cards also stays in the current document');
   }
+  if(prefix==='phone390'){
+    for(const [value,key]of [['0','ArrowDown'],['3','End']]){
+      const prior=await page.evaluate(()=>({frame:window.__v3ProductProbe.read('selected').frame.sequence,url:location.href,y:scrollY}));
+      await select.focus();await page.keyboard.press(key);await page.keyboard.press('Enter');
+      assert.equal(await select.inputValue(),value,'Trusted native keyboard reaches Preview card '+value);await sceneReady(page,'selected',prior.frame);
+      assert.equal(await page.locator('[data-selected-work]').getAttribute('data-selected-inspection-target'),value);assert.equal(page.url(),prior.url);assert.ok(near(await page.evaluate(()=>scrollY),prior.y,1),'Every native Preview card preserves document position');
+      await shot(run,prefix+'-framework-card-'+value,{scene:'selected',afterSequence:prior.frame});
+    }
+    const prior=await page.evaluate(()=>window.__v3ProductProbe.read('selected').frame.sequence);await select.selectOption('-1');await sceneReady(page,'selected',prior);
+  }
   const transit=await hashLink(run,page.locator('.v2-selected-nav a[href="#work-transit"]'),'work-transit','selected');
   assert.equal(await page.locator('[data-selected-work]').getAttribute('data-selected-chapter'),'1');
   await shot(run,prefix+'-transit',{scene:'selected',afterSequence:transit});
   const aircraft=await hashLink(run,page.locator('.v2-selected-skip'),'skylabs-aircraft','aircraft');
   await page.waitForFunction(()=>document.querySelector('[data-aircraft-hero]')?.dataset.aircraftState==='ready',null,{timeout});
   await shot(run,prefix+'-skylabs-aircraft',{scene:'aircraft',afterSequence:aircraft});
-  const telemetry=await hashLink(run,page.locator('[data-aircraft-chapter="0"] a[href="#skylabs-telemetry"]'),'skylabs-telemetry','aircraft');
+  const telemetry=await hashLink(run,page.locator('[data-aircraft-copy] article[data-aircraft-chapter="0"] a[href="#skylabs-telemetry"]'),'skylabs-telemetry','aircraft');
   await shot(run,prefix+'-skylabs-telemetry',{scene:'aircraft',afterSequence:telemetry});
   assert.equal(await page.locator('[data-aircraft-chapter="1"] a[href="/v3/projects/skylabs/boards/telemetry/"]').count(),1,'Telemetry retains an explicit project route');
   // Browser Back restores the actual fragment and the corresponding new frame.
@@ -392,13 +403,19 @@ async function viewportReview(browser,name) {
 async function diagnose(run,name,error) {write(name+'-failure',{error:error.stack,errors:run.errors,shaders:run.shaders,network:run.network,snapshot:await run.page.evaluate(()=>window.__v3ProductProbe?.snapshot()||({url:location.href,y:scrollY})).catch(error=>({error:error.message}))});await run.page.screenshot({path:path.join(output,name+'-failure.png'),timeout:15000}).catch(()=>{});}
 
 async function fallbacks(browser) {
-  for(const [name,options] of [['no-js',{noJS:true}],['reduced-motion',{reduced:true}],['webgl-unavailable',{noWebGL:true}]]){
-    const run=await open(browser,viewports.phone390,options);
+  for(const [name,options,viewport=viewports.phone390] of [['no-js',{noJS:true}],['reduced-motion',{reduced:true}],['webgl-unavailable',{noWebGL:true}],['short-landscape',{}, {width:844,height:390,touch:true} ]]){
+    const run=await open(browser,viewport,options);
     try{
       await goto(run,'/v3/');
       if(!options.noJS)await run.page.waitForFunction(()=>{const d=document.querySelector('[data-assembly]')?.dataset;return ['static','unavailable'].includes(d?.assemblyState);},null,{timeout});
       assert.ok(await run.page.locator('.v2-header a[href="/v3/projects/"]:visible').count()>0,'Fallback retains a visible real Projects link');
       const projectRoutes=await run.page.locator('[data-selected-work] a[href^="/v3/projects/"]').evaluateAll(nodes=>[...new Set(nodes.map(node=>node.getAttribute('href')))]);assert.ok(projectRoutes.length>=6,'All six direct project routes remain');
+      if(name==='short-landscape'){
+        await header(run,name+'-home');
+        const controls=await run.page.locator('.v2-brand,.v3-quick-projects,[data-v3-menu]').evaluateAll(nodes=>nodes.map(node=>{const b=node.getBoundingClientRect();return{label:node.textContent.trim(),left:b.left,right:b.right,top:b.top,bottom:b.bottom};}));
+        for(let i=0;i<controls.length;i++)for(let j=i+1;j<controls.length;j++){const a=controls[i],b=controls[j];assert.ok(Math.min(a.right,b.right)-Math.max(a.left,b.left)<=1||Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)<=1,'Short-landscape header controls do not collide');}
+        write('short-landscape-header-controls',controls);
+      }
       await shot(run,name+'-home');
       await run.page.locator('#work-framework').scrollIntoViewIfNeeded();
       if(!options.noJS){await run.page.waitForFunction(()=>['static','unavailable'].includes(document.querySelector('[data-selected-work]')?.dataset.selectedState),null,{timeout});await run.page.locator('#work-framework').scrollIntoViewIfNeeded();await scrollStable(run.page);}
@@ -408,7 +425,8 @@ async function fallbacks(browser) {
       if(!options.noJS){await run.page.waitForFunction(()=>['static','unavailable'].includes(document.querySelector('[data-aircraft-hero]')?.dataset.aircraftState),null,{timeout});await run.page.locator('#skylabs-aircraft').scrollIntoViewIfNeeded();await scrollStable(run.page);}
       await shot(run,name+'-skylabs');
       await goto(run,'/v3/book/');if(options.noJS)assert.equal(await run.page.getByText(/live calendar needs JavaScript/).isVisible(),true);else await run.page.locator('[data-slot]').first().waitFor();await shot(run,name+'-book');
-      assert.equal(run.network.submissions.length,0);assert.deepEqual(run.errors,[]);passed(name+'-readable-static-routes');
+      if(name==='short-landscape')await book(run,name);else assert.equal(run.network.submissions.length,0);
+      assert.deepEqual(run.errors,[]);passed(name+'-readable-static-routes');
     }catch(error){await diagnose(run,name,error);throw error;}finally{await run.context.close();}
   }
   // Every preserved route gets a narrow no-JS render, not just a source audit.
@@ -494,6 +512,7 @@ function selfTest() {
   const good={native:.25,rendered:.25,visible:true,canvasVisible:true,masked:false,pending:false,revision:8,presentedRevision:8,inspectionRevision:3,inspectionPresentedRevision:3,inspectionTarget:2,fence:{completed:50,deleted:51},frame:{sequence:9,published:true,gpu:{state:'complete'},submittedMs:40,completedMs:51,value:.25,revision:8,inspectionRevision:3,inspectionWeights:[0,0,1,0]}};
   assert.equal(currentFrame(good,8),true);
   for(const patch of [{native:.5},{pending:true},{masked:true},{canvasVisible:false},{presentedRevision:7},{inspectionPresentedRevision:2},{inspectionTarget:1},{fence:{completed:30,deleted:31}},{frame:{...good.frame,published:false}},{frame:{...good.frame,gpu:{state:'unsupported'}}},{frame:{...good.frame,sequence:8}},{frame:{...good.frame,revision:7}},{frame:{...good.frame,inspectionWeights:[0,0,.5,0]}}])assert.equal(currentFrame({...good,...patch},8),false,'Reject stale, pending, unfenced, invisible or incorrect inspected pose '+JSON.stringify(patch));
+  assert.equal(currentFrame({...good,kind:'aircraft',dataset:{aircraftState:'landing'},frame:{...good.frame,kind:'landing'}},8),false,'Landing remains moving despite a momentarily completed GPU frame');
   assert.equal(currentFrame({...good,layoutRevision:4,frame:{...good.frame,layoutRevision:3}},8),false,'Reject pre-rotation layout');
   assert.equal(Object.keys(viewports).length,6);assert.deepEqual(viewports.phone320,{width:320,height:780,touch:true});
   assert.equal(new URL(endpoint).hostname,'script.google.com');

@@ -33,9 +33,14 @@ function sourceContract(){
     .replace('    projectLink.tabIndex = opacity>.5 ? 0 : -1;','    if (projectLink) projectLink.tabIndex = opacity>.5 ? 0 : -1;')
     .replace("caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;","caption.setAttribute('aria-hidden','true');if(projectLink)projectLink.tabIndex=-1;");
   assert.equal(hero,expected,'Hero clone differs only in navigation and optional caption-link handling');
-  for(const name of ['stepInspection','publishInspection','chapter','mask','dispose','invalidate','fallback','fail','updateScroll','layout','fitLight','pixelRatio','prepareShadowSize','draw','gpuComplete','finishPreparation','render','prepareSources','initialize','prepareInBackground','start']){
+  for(const name of ['stepInspection','publishInspection','chapter','mask','dispose','invalidate','fallback','fail','fitLight','pixelRatio','prepareShadowSize','draw','gpuComplete','finishPreparation','render','prepareSources','initialize','prepareInBackground','start']){
     assert.equal(functionSource(selected,name),functionSource(source,name),'Exact retained production function: '+name);
   }
+  const scrollPrelude='    // Some browsers dispatch reflow\'s scroll before resize. Never interpret\n    // the old scene distance/origin against the new viewport.\n    if(viewportChanged()){layout();return;}\n';
+  assert.equal(functionSource(selected,'updateScroll').replace(scrollPrelude,'').replace('    rememberLayoutAnchor(pinned);\n',''),functionSource(source,'updateScroll'),'Scroll sampling differs only in the approved viewport guard and pinned-position snapshot');
+  const layoutPrelude="    const restoreProgress=viewportChanged()&&layoutAnchor&&layoutAnchor.hash===location.hash&&allowed()&&!failed&&activePage&&!document.hidden?layoutAnchor.progress:undefined;\n    viewportWidth=innerWidth;viewportAngle=viewportOrientation();layoutAnchor=undefined;\n    if(inspectUI?.contains(document.activeElement))inspectionFocusReturn=links[progress<.57?0:1];\n";
+  const layoutCorrection="    if(restoreProgress!==undefined){\n      top=scrollY+track.getBoundingClientRect().top;\n      scrollTo({top:top-pinned+restoreProgress*distance,behavior:'instant'});\n    }\n";
+  assert.equal(functionSource(selected,'layout').replace(layoutPrelude,'').replace(layoutCorrection,''),functionSource(source,'layout'),'Layout differs only in the approved one-shot native scroll continuity and focus capture; renderer/DPR/distance stay exact');
   for(const declaration of ['const request =','const idleTurn =','const inspectionMoving=','const foregroundSettled=']){
     const start=source.indexOf(declaration),end=source.indexOf('\n  };',start);
     const snippet=declaration==='const request ='||declaration==='const inspectionMoving='?source.slice(start,source.indexOf('\n',start)):source.slice(start,end+5);
@@ -87,15 +92,15 @@ function makeDOM(){
   return{document,root,Element};
 }
 function controlsContext({width=390,coarse=false}={}){
-  const dom=makeDOM(),events=new Map(),media=new Map(),frames=new Map();let nextFrame=0;
-  const sandbox={...dom,console,performance,queueMicrotask,Float32Array,Promise,URLSearchParams,AbortController,innerWidth:width,innerHeight:900,scrollY:0,devicePixelRatio:1,location:{hash:'',search:''},navigator:{connection:{saveData:false,addEventListener(){}}},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},DecompressionStream:class{},getComputedStyle:()=>({top:'0px',scrollPaddingTop:'0px'}),requestAnimationFrame:callback=>{frames.set(++nextFrame,callback);return nextFrame;},cancelAnimationFrame:id=>frames.delete(id),setTimeout:()=>0,clearTimeout(){},dispatchEvent(){},addEventListener:(name,callback)=>events.set(name,callback),matchMedia:query=>{const value={matches:query.includes('pointer:coarse')?(width<=1024||coarse):false,listeners:[],addEventListener(name,fn){this.listeners.push(fn);},change(matches){this.matches=matches;for(const fn of this.listeners)fn();}};media.set(query,value);return value;}};
-  sandbox.window=sandbox;
+  const dom=makeDOM(),events=new Map(),media=new Map(),frames=new Map(),scrollCalls=[];let nextFrame=0;
+  const sandbox={...dom,console,performance,queueMicrotask,Float32Array,Promise,URLSearchParams,AbortController,innerWidth:width,innerHeight:900,scrollY:0,devicePixelRatio:1,location:{hash:'',search:''},navigator:{connection:{saveData:false,addEventListener(){}}},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},DecompressionStream:class{},getComputedStyle:()=>({top:String(sandbox.testPinned||0)+'px',scrollPaddingTop:String(sandbox.testPinned||0)+'px'}),requestAnimationFrame:callback=>{frames.set(++nextFrame,callback);return nextFrame;},cancelAnimationFrame:id=>frames.delete(id),setTimeout:()=>0,clearTimeout(){},dispatchEvent(){},addEventListener:(name,callback)=>events.set(name,callback),matchMedia:query=>{const value={matches:query.includes('pointer:coarse')?(width<=1024||coarse):false,listeners:[],addEventListener(name,fn){this.listeners.push(fn);},change(matches){this.matches=matches;for(const fn of this.listeners)fn();}};media.set(query,value);return value;}};
+  sandbox.window=sandbox;sandbox.screen={orientation:{angle:0}};sandbox.scrollTo=options=>{scrollCalls.push(options);sandbox.scrollY=options.top;};
   const instrument=`
   window.testControls={
     setup(){stage=document.createElement('div');nav=document.createElement('nav');canvas=document.createElement('canvas');track=document.createElement('div');bar=document.createElement('span');links=[document.createElement('a'),document.createElement('a')];links.forEach(link=>nav.append(link));stage.append(nav,canvas);root.append(stage,track);ready=true;backgroundDone=true;visible=true;root.classList.add('is-live');inspectionControls();inspectionAvailability();cancelAnimationFrame(frame);frame=0;},
-    state:()=>({target:inspectTarget,mode:inspectMode,weights:[...inspection.weights],revision:inspectRevision,frame,liveBusy}),
+    state:()=>({target:inspectTarget,mode:inspectMode,weights:[...inspection.weights],revision:inspectRevision,frame,liveBusy,raw:progress,current,distance,anchored:Boolean(layoutAnchor)}),
     ui:()=>({stage,nav,track,links,select:inspectSelect,selectControl:inspectSelectControl,group:inspectGroup,buttons:inspectButtons,overview:overviewButton,container:inspectUI}),
-    setBusy(value){liveBusy=value;},request,stepInspection,inspectionAvailability,
+    setBusy(value){liveBusy=value;},setChapter(value){currentChapter=value;},request,stepInspection,inspectionAvailability,layout,
     resetFrame(){cancelAnimationFrame(frame);frame=0;},
     setLive(){root.classList.add('is-live');inspectionAvailability();},
     scroll(value,offscreen=false){root.bounds={...root.bounds,top:offscreen?-2000:0,bottom:offscreen?-500:1200};track.bounds={...track.bounds,top:-value*distance};updateScroll();},
@@ -105,7 +110,7 @@ function controlsContext({width=390,coarse=false}={}){
   assert.ok(selected.endsWith('  start();\n})();\n'));
   vm.runInNewContext(selected.replace(/  start\(\);\n\}\)\(\);\n$/,instrument+'\n})();\n'),sandbox,{filename:'v3-product-selected.js'});
   sandbox.testControls.setup();sandbox.testControls.disableAsync();
-  return{...dom,sandbox,api:sandbox.testControls,media,events,frames,compact:media.get('(max-width:1024px), (pointer:coarse)')};
+  return{...dom,sandbox,api:sandbox.testControls,media,events,frames,scrollCalls,compact:media.get('(max-width:1024px), (pointer:coarse)')};
 }
 async function controlTests(){
   for(const [width,coarse]of[[320,false],[390,false],[768,false],[1024,false],[1180,true],[1440,true]]){
@@ -133,6 +138,49 @@ async function controlTests(){
   }
   const desktop=controlsContext({width:1440}),ui=desktop.api.ui();assert.equal(ui.selectControl.hidden,true);assert.equal(ui.group.hidden,false);ui.buttons[1].focus();assert.equal(desktop.api.state().mode,'preview');ui.buttons[1].emit('click');assert.equal(desktop.api.state().mode,'pinned');ui.buttons[1].emit('click');assert.equal(desktop.api.state().target,-1);ui.buttons[2].focus();desktop.events.get('resize')();ui.stage.emit('pointermove',{pointerType:'mouse',clientX:10,clientY:10});ui.stage.emit('pointerleave');await flush();assert.equal(desktop.api.state().target,2,'Focused desktop preview survives masked resize focusout');desktop.api.setLive();assert.equal(desktop.document.activeElement,ui.buttons[2]);ui.stage.clientHeight+=10;desktop.events.get('resize')();await flush();const next=desktop.document.createElement('a');next.focus();desktop.api.setLive();assert.equal(desktop.document.activeElement,next);assert.equal(desktop.api.state().target,-1,'User focus elsewhere dismisses an unpinned preview after masked resize');ui.buttons[2].focus();desktop.compact.change(true);await flush();assert.equal(desktop.api.state().target,2,'A keyboard preview survives a responsive control switch');ui.select.focus();desktop.compact.change(false);await flush();assert.equal(desktop.api.state().target,2);
   console.log('PASS controls: native labels/options, 320–1440/coarse breakpoints, paced selection, all-cards, Escape, rotation/focus, chapter/offscreen/reduced-motion resets, desktop inspection');
+}
+function geometryContext({width=768,height=948,raw=.12,position='pinned'}={}){
+  const test=controlsContext({width,coarse:true}),{api,sandbox}=test,ui=api.ui(),geometry={origin:5200,pinned:76,width,height};
+  sandbox.testPinned=geometry.pinned;sandbox.innerHeight=height+geometry.pinned;
+  ui.stage.clientWidth=width;ui.stage.clientHeight=height;
+  sandbox.scrollY=position==='pinned'?geometry.origin-geometry.pinned+raw*height*(width<=760?1.9:1.7):position==='near'?geometry.origin-300:geometry.origin-1400;
+  ui.track.getBoundingClientRect=()=>({top:geometry.origin-sandbox.scrollY});
+  test.root.getBoundingClientRect=()=>({top:geometry.origin-110-sandbox.scrollY,bottom:geometry.origin+api.state().distance+ui.stage.clientHeight-sandbox.scrollY,width:ui.stage.clientWidth,height:api.state().distance+ui.stage.clientHeight+110});
+  ui.stage.getBoundingClientRect=()=>{const top=Math.min(Math.max(geometry.origin-sandbox.scrollY,geometry.pinned),geometry.origin+api.state().distance-sandbox.scrollY);return{top,bottom:top+ui.stage.clientHeight,width:ui.stage.clientWidth,height:ui.stage.clientHeight};};
+  api.layout();api.setLive();test.events.get('scroll')();test.scrollCalls.length=0;
+  test.reflow=({width:nextWidth=geometry.width,height:nextHeight=geometry.height,shift=700,angle=sandbox.screen.orientation.angle}={})=>{geometry.width=nextWidth;geometry.height=nextHeight;geometry.origin+=shift;ui.stage.clientWidth=nextWidth;ui.stage.clientHeight=nextHeight;sandbox.innerWidth=nextWidth;sandbox.innerHeight=nextHeight+geometry.pinned;sandbox.screen.orientation.angle=angle;};
+  return{...test,geometry};
+}
+async function rotationTests(){
+  for(const order of ['scroll-first','resize-first'])for(const [oldWidth,newWidth,oldHeight,newHeight,shift]of[[768,1024,948,692,-700],[1024,768,692,948,700],[1180,820,744,1104,850]]){
+    const test=geometryContext({width:oldWidth,height:oldHeight}),{api,sandbox,events,scrollCalls,geometry}=test,ui=api.ui();
+    assert.equal(api.state().anchored,true,'Only the actually pinned stage records a continuity anchor');ui.select.value='2';ui.select.emit('change');ui.select.focus();const raw=api.state().raw;
+    test.reflow({width:newWidth,height:newHeight,shift});events.get(order==='scroll-first'?'scroll':'resize')();events.get(order==='scroll-first'?'resize':'scroll')();
+    assert.equal(scrollCalls.length,1,'One viewport change performs exactly one correction in '+order);assert.equal(scrollCalls[0].behavior,'instant');
+    assert.ok(Math.abs(api.state().raw-raw)<1e-10,'Rotation preserves normalized raw progress');assert.equal(api.state().target,2,'Rotation cannot accidentally interpret reflow as a chapter transition');assert.equal(sandbox.scrollY,geometry.origin-geometry.pinned+raw*api.state().distance);
+    assert.equal(ui.stage.getBoundingClientRect().top,geometry.pinned,'Stage remains at its real sticky boundary');api.setLive();assert.equal(test.document.activeElement,ui.select,'Focused Preview returns after current live repaint');
+    events.get('resize')();events.get('scroll')();assert.equal(scrollCalls.length,1,'Repeated notifications cannot restore twice');
+  }
+  for(const position of ['near','offscreen']){
+    const test=geometryContext({position});assert.equal(test.api.state().anchored,false);const before=test.sandbox.scrollY;test.reflow({width:1024,height:692});test.events.get('resize')();assert.equal(test.scrollCalls.length,0,position+' must not be pulled into the scene');assert.equal(test.sandbox.scrollY,before);
+  }
+  {
+    const test=geometryContext(),old=test.api.state().raw;test.sandbox.scrollY+=100;test.events.get('scroll')();assert.ok(test.api.state().raw>old,'Ordinary scrolling remains native');assert.equal(test.scrollCalls.length,0);
+    test.reflow({height:860,shift:450});const before=test.sandbox.scrollY;test.events.get('resize')();assert.equal(test.scrollCalls.length,0,'Height-only chrome/keyboard changes never snap the page');assert.equal(test.sandbox.scrollY,before);
+  }
+  {
+    const test=geometryContext();test.api.setChapter(-1);test.events.get('scroll')();assert.equal(test.api.state().anchored,false);test.reflow({width:1024,height:692});test.events.get('resize')();assert.equal(test.scrollCalls.length,0,'No active chapter cannot supply a restore anchor');
+  }
+  for(const input of ['wheel','touchmove','keydown','hash']){
+    const test=geometryContext();test.reflow({width:1024,height:692});if(input==='hash')test.sandbox.location.hash='#work-transit';else test.events.get(input)({key:'PageDown',target:{tagName:'BODY'}});const before=test.sandbox.scrollY;test.events.get('scroll')();assert.equal(test.scrollCalls.length,0,'New '+input+' wins over a stale pre-reflow anchor');assert.equal(test.sandbox.scrollY,before);
+  }
+  for(const preference of ['(prefers-reduced-motion: reduce)','(max-height:600px)']){
+    const test=geometryContext();test.reflow({width:1024,height:692});test.media.get(preference).change(true);test.events.get('resize')();assert.equal(test.scrollCalls.length,0,'Preference/static fallback cannot restore a scene');assert.equal(test.api.state().target,-1);
+  }
+  {
+    const test=geometryContext();test.reflow({angle:90,shift:300});test.events.get('resize')();assert.equal(test.scrollCalls.length,1,'A genuine orientation change also retains a pinned scene');
+  }
+  console.log('PASS rotation: raw pinned progress, both event orders, one native correction, focus/inspection retained, near/offscreen/height-only/inactive/input/hash/preference exclusions');
 }
 function transferContext({visible=false,intent=false,waiting=false}={}){
   const heroes=new Map(['tramtrace','telemetry','pi'].map(name=>[name,deferred()])),prefetch=[],promotions=[],timers=new Map(),priority=waiting?deferred():null;
@@ -168,4 +216,4 @@ function heroTests(){
   }
   console.log('PASS hero: plain caption span, one explicit Open project link, three dynamic destinations and original caption windows');
 }
-(async()=>{sourceContract();heroTests();await controlTests();await transferTests();console.log('PASS v3 product controls source/unit suite (browser and visual QA not run)');})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{sourceContract();heroTests();await controlTests();await rotationTests();await transferTests();console.log('PASS v3 product controls source/unit suite (browser and visual QA not run)');})().catch(error=>{console.error(error);process.exitCode=1;});

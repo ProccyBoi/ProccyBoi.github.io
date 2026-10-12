@@ -53,6 +53,18 @@
     dispatchEvent(new CustomEvent('v2:selected-priority',{detail:{active}}));
   }
   let width=1,height=1,top=0,distance=1,progress=0,current=0,previousTime=0,currentChapter=-1,direct=false,capturePose;
+  // Keep the reading position only across a real width/orientation reflow.
+  // A nearby section is not a pinned scene, and height-only browser UI changes
+  // must keep native scrolling completely in charge.
+  const viewportOrientation=()=>window.screen?.orientation?.angle??window.orientation??null;
+  let viewportWidth=innerWidth,viewportAngle=viewportOrientation(),layoutAnchor;
+  const viewportChanged=()=>innerWidth!==viewportWidth||viewportOrientation()!==viewportAngle;
+  const forgetLayoutAnchor=()=>{layoutAnchor=undefined;};
+  function rememberLayoutAnchor(pinned){
+    const bounds=stage.getBoundingClientRect(),raw=(scrollY-top+pinned)/distance;
+    const pinnedStage=allowed()&&!failed&&activePage&&!document.hidden&&currentChapter>=0&&bounds.width>0&&bounds.height>0&&Math.abs(bounds.top-pinned)<=2&&raw>=-.001&&raw<=1.001;
+    layoutAnchor=pinnedStage?{progress,hash:location.hash}:undefined;
+  }
   const assemblies = {};
   const inspection={weights:new Float32Array(4)},inspectNames=['ESP32-S3','Dual USB-C','RP2354B','Logic analyser'];
   let inspectUI,inspectControls,inspectHint,overviewButton,inspectButtons=[],inspectTarget=-1,inspectMode='overview',inspectRevision=0,inspectTime=0,hitPoint,lastPointerX,lastPointerY;
@@ -261,6 +273,9 @@
   }
   function updateScroll() {
     if(!track)return;
+    // Some browsers dispatch reflow's scroll before resize. Never interpret
+    // the old scene distance/origin against the new viewport.
+    if(viewportChanged()){layout();return;}
     const b=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(stage).top)||0;
     const nextVisible=b.top<innerHeight&&b.bottom>pinned;
     const entered=nextVisible&&!visible,left=!nextVisible&&visible;visible=nextVisible;publishPriority();
@@ -281,9 +296,13 @@
     if(!root.classList.contains('is-live')){chapter(progress<.57?0:1);bar.style.transform=`scaleX(${progress})`;}
     if(visible){prepareTransfers(true).catch(fail);initialize(true).catch(fail);prepareInBackground();request();}
     else {cancelAnimationFrame(frame);frame=0;previousTime=0;current=progress;prepareInBackground();}
+    rememberLayoutAnchor(pinned);
   }
   function layout() {
     if(!track)return;
+    const restoreProgress=viewportChanged()&&layoutAnchor&&layoutAnchor.hash===location.hash&&allowed()&&!failed&&activePage&&!document.hidden?layoutAnchor.progress:undefined;
+    viewportWidth=innerWidth;viewportAngle=viewportOrientation();layoutAnchor=undefined;
+    if(inspectUI?.contains(document.activeElement))inspectionFocusReturn=links[progress<.57?0:1];
     const nextWidth=stage.clientWidth,nextHeight=stage.clientHeight;
     const nextDPR=Math.min(devicePixelRatio||1,nextWidth<=760?1.25:1.5);
     const sizeChanged=width!==nextWidth||height!==nextHeight,dprChanged=layoutDPR!==nextDPR;
@@ -295,6 +314,10 @@
     [...track.children].forEach((step,i)=>step.style.top=`${i*distance+padding-pinned}px`);
     if(renderer&&dprChanged)renderer.setPixelRatio(nextDPR);
     if(renderer&&sizeChanged)renderer.setSize(width,height,false);
+    if(restoreProgress!==undefined){
+      top=scrollY+track.getBoundingClientRect().top;
+      scrollTo({top:top-pinned+restoreProgress*distance,behavior:'instant'});
+    }
     previousTime=0;updateScroll();
   }
   function fitLight(pose) {
@@ -543,13 +566,16 @@
     else prepareInBackground();
   });
   root.addEventListener('wheel',()=>{direct=false;},{passive:true});root.addEventListener('touchmove',()=>{direct=true;},{passive:true});
-  addEventListener('scroll',updateScroll,{passive:true});addEventListener('resize',()=>{if(inspectUI?.contains(document.activeElement))inspectionFocusReturn=links[progress<.57?0:1];if(allowed()){start();layout();}else fallback();},{passive:true});
-  addEventListener('hashchange',()=>{if(ids.includes(location.hash.slice(1)))preparationIntent=true;previousTime=0;current=progress;updateScroll();prepareInBackground();});
-  document.addEventListener('visibilitychange',()=>{invalidate();publishPriority();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
-  addEventListener('pagehide',()=>{activePage=false;invalidate();publishPriority();cancelAnimationFrame(frame);frame=0;previousTime=0;});
+  addEventListener('scroll',updateScroll,{passive:true});addEventListener('resize',()=>{if(allowed()){layout();start();}else{forgetLayoutAnchor();fallback();}},{passive:true});
+  addEventListener('hashchange',()=>{forgetLayoutAnchor();if(ids.includes(location.hash.slice(1)))preparationIntent=true;previousTime=0;current=progress;updateScroll();prepareInBackground();});
+  document.addEventListener('visibilitychange',()=>{forgetLayoutAnchor();invalidate();publishPriority();previousTime=0;current=progress;if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{updateScroll();prepareInBackground();}});
+  addEventListener('pagehide',()=>{forgetLayoutAnchor();activePage=false;invalidate();publishPriority();cancelAnimationFrame(frame);frame=0;previousTime=0;});
   addEventListener('pageshow',()=>{activePage=true;previousTime=0;updateScroll();prepareInBackground();});
+  addEventListener('wheel',forgetLayoutAnchor,{passive:true});addEventListener('touchmove',forgetLayoutAnchor,{passive:true});
+  addEventListener('keydown',event=>{if(event.target?.tagName!=='SELECT'&&['Home','End','PageUp','PageDown','ArrowUp','ArrowDown',' '].includes(event.key))forgetLayoutAnchor();});
   compactInspection.addEventListener?.('change',inspectionAvailability);
-  reduced.addEventListener?.('change',start);short.addEventListener?.('change',start);navigator.connection?.addEventListener?.('change',start);
+  const restartForPreference=()=>{forgetLayoutAnchor();start();};
+  reduced.addEventListener?.('change',restartForPreference);short.addEventListener?.('change',restartForPreference);navigator.connection?.addEventListener?.('change',restartForPreference);
   root.dataset.selectedFrames='0';root.dataset.selectedSubmittedFrames='0';root.dataset.selectedCompletedFrames='0';root.dataset.selectedWarmFrames='0';root.dataset.selectedPreparationFrames='0';root.dataset.selectedWarmPosesCompleted='0';root.dataset.selectedModelsReady='0';
   start();
 })();

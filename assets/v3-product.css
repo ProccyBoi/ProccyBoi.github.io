@@ -236,3 +236,33 @@ html:has(>body.v3-product){scroll-padding-top:80px;background:#101012}
     .v3-product .v2-selected-work.is-scene .v2-transport-card:nth-child(2) .v2-transport-photo{top:53%}
   }
 }
+
+/* Keep actions clear of the real opening silhouette, including narrow phones. */
+@media(min-width:901px){.v3-product .v2-assembly-intro h1 br{display:none}}
+@media(max-width:600px){
+  .v3-product .v2-assembly-intro{top:84px}
+  .v3-product .v3-product-eyebrow{display:none}
+  .v3-product .v2-assembly-intro h1{font-size:40px}
+  .v3-product .v2-assembly-summary{margin-top:12px}
+  .v3-product .v2-assembly-summary>p{font-size:15px;line-height:1.5}
+  .v3-product .v2-assembly-summary>p>span{display:block}
+  .v3-product .v2-assembly-actions{margin-top:12px;gap:6px 10px}
+}
+@supports(container-type:inline-size){
+  @container product-stage (max-width:760px){
+    .v3-product .v2-selected-work.is-scene .v2-framework-grid{grid-template-rows:minmax(0,1fr) auto auto}
+    .v3-product .v2-selected-work.is-scene .v2-framework-card{height:auto;min-height:65px;align-self:start}
+  }
+  @container product-stage (max-width:320px){
+    .v3-product .v2-selected-work.is-scene .v2-framework-copy h4{font-size:17px}
+  }
+}
+/* Static compact layouts retain their ordinary document-flow introduction. */
+@media(max-height:620px),(max-width:900px) and (max-height:700px){.v3-product .v2-assembly-intro{inset:auto}}
+@media(max-width:540px){
+  .v3-product:not(.v3-product-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-stage{order:2;height:350px;margin-top:26px}
+  .v3-product:not(.v3-product-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-bottom{order:3;margin-top:12px}
+  .v3-product:not(.v3-product-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-telemetry{width:52%;height:55%;left:-2%;top:0;transform:rotate(-15deg)}
+  .v3-product:not(.v3-product-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-pi{width:52%;height:55%;right:-2%;top:0;transform:rotate(15deg)}
+  .v3-product:not(.v3-product-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-tram{width:100%;height:64%;left:0;top:36%;transform:rotate(-8deg) scale(1.12)}
+}
