@@ -1,0 +1,49 @@
+/* v3-only scene controls. CAD, stage geometry and scroll timing stay shared. */
+body.v3-product .v3-product-preview-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 27rem);
+  min-height: 44px;
+  margin: 0;
+  pointer-events: auto;
+}
+body.v3-product .v3-product-preview-control > span {
+  flex: none;
+  color: var(--v2-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+body.v3-product .v3-product-preview-control select {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid var(--v2-line);
+  border-radius: 8px;
+  background-color: var(--v2-bg);
+  color: var(--v2-ink);
+  color-scheme: dark;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+body.v3-product .v3-product-preview-control select:focus-visible {
+  outline: 2px solid var(--v2-accent);
+  outline-offset: 3px;
+}
+body.v3-product .v3-product-inspection-controls [hidden] {
+  display: none !important;
+}
+body.v3-product .v3-product-chapter-label {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 2px;
+  color: var(--v2-muted);
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+  pointer-events: none;
+}

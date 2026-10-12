@@ -1,0 +1,238 @@
+/* V3 product presentation. The v2 routes, source CAD and renderer stay intact. */
+body.v2.v3-product{
+  --v2-bg:#101012;--v2-panel:#19191c;--v2-raised:#242429;
+  --v2-ink:#f5f5f7;--v2-muted:#a8a8b0;--v2-line:#303036;--v2-accent:#93baff;
+  --v2-on-accent:#101012;--v2-gutter:clamp(22px,4.2vw,68px);
+  --bg:var(--v2-bg);--surface:var(--v2-panel);--text:var(--v2-ink);--muted:var(--v2-muted);
+  --rule:var(--v2-line);--rule-strong:#515158;--header-height:64px;
+  --gutter:var(--v2-gutter);--content:82.5rem;
+  background:var(--v2-bg);color:var(--v2-ink);
+}
+html:has(>body.v3-product){scroll-padding-top:80px;background:#101012}
+.v3-product .v2-header{height:64px;border-bottom:1px solid #ffffff12;background:#101012f2;backdrop-filter:blur(18px)}
+.v3-product .v2-nav-shell{max-width:1320px;gap:28px}
+.v3-product .v2-brand,.v3-product .v2-footer-name{font-size:18px;font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-nav{gap:30px;font-size:13px;line-height:1.4}
+.v3-product .v2-nav a{min-height:44px;display:inline-flex;align-items:center;padding:10px 0}
+.v3-product .v2-nav-contact{gap:6px}
+.v3-product .v2-nav-contact span{font-size:13px}
+.v3-product .v3-quick-projects,.v3-product .v2-menu{display:none}
+.v3-product .v2-shell{max-width:1320px}
+.v3-product .v2-text-link{font-size:15px;border:0;gap:10px;color:var(--v2-accent)!important;min-height:44px}
+.v3-product :is(a,button,select,input):focus-visible{outline:2px solid var(--v2-accent);outline-offset:5px}
+.v3-product .v2-assembly{margin-top:-64px}
+.v3-product .v2-assembly-intro{top:108px;left:var(--v2-gutter);right:var(--v2-gutter);display:block;text-align:center}
+.v3-product .v3-product-eyebrow{font:500 14px/1.4 var(--v2-font);letter-spacing:.015em;color:var(--v2-muted);margin:0 0 12px}
+.v3-product .v2-assembly-intro h1{display:block;font-size:68px;line-height:1.02;font-weight:600;letter-spacing:-.035em;white-space:normal;text-wrap:balance}
+.v3-product .v2-assembly-summary{padding:0;margin:18px auto 0;max-width:51ch}
+.v3-product .v2-assembly-summary>p{font:400 18px/1.5 var(--v2-font);letter-spacing:-.015em;color:var(--v2-muted);text-wrap:balance}
+.v3-product .v2-assembly-actions{margin-top:18px;justify-content:center;gap:12px 24px}
+.v3-product .v2-assembly-actions a{border:0;font-size:15px;min-height:44px;padding:10px 20px;color:var(--v2-accent);gap:9px}
+.v3-product .v2-assembly-actions a:first-child{background:var(--v2-ink);color:var(--v2-bg);border-radius:30px}
+.v3-product .v2-assembly-actions a:first-child:hover{background:#d9e6ff}
+.v3-product .v2-assembly-caption{max-width:32%;padding:0;top:37%}
+.v3-product .v2-assembly-caption>p:first-child{font:400 14px/1.4 var(--v2-font);margin-bottom:14px}
+.v3-product .v2-assembly-caption h2{font-size:clamp(42px,4.7vw,68px);font-weight:600;letter-spacing:-.04em}
+.v3-product .v2-assembly-caption>p:last-child{font-size:18px;line-height:1.5;margin-top:18px}
+.v3-product .v2-assembly-bottom{bottom:24px;align-items:center;gap:28px}
+.v3-product .v2-assembly-navigation{gap:24px}
+.v3-product .v2-assembly-explore{color:var(--v2-accent);border:0}
+.v3-product .v2-assembly-choices{position:relative;width:min(540px,48%);gap:8px;padding:5px;border:1px solid var(--v2-line);border-radius:32px;background:#19191cd9}
+.v3-product .v3-product-preview-label{position:absolute;bottom:calc(100% + 8px);left:18px;font-size:12px;line-height:1.3;color:var(--v2-muted)}
+.v3-product .v2-assembly-choices button{min-height:44px;padding:10px 14px;border-radius:24px;justify-content:center;font-size:13px;line-height:1.3;text-align:center}
+.v3-product .v2-assembly-choices button::before,.v3-product .v2-assembly-choices button::after{display:none}
+.v3-product .v2-assembly-choices button[aria-pressed=true]{background:#36363d;color:var(--v2-ink)}
+.v3-product .v2-assembly-progress{opacity:.45}
+.v3-product .v2-work{padding-top:105px;padding-bottom:110px}
+.v3-product .v2-selected-work .v2-gallery-heading{border:0;padding-top:0;margin-bottom:58px;align-items:center}
+.v3-product .v2-selected-work .v2-gallery-heading h2{font-size:56px;line-height:1.08;font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-selected-heading h3{font-weight:600;letter-spacing:-.03em}
+.v3-product .v2-selected-heading p{font:400 17px/1.5 var(--v2-font);color:var(--v2-muted)}
+.v3-product .v2-selected-work.is-scene{--selected-top:64px}
+.v3-product .v2-selected-work.is-scene .v2-gallery-heading{margin-bottom:24px}
+.v3-product .v2-selected-work.is-scene .v2-selected-heading h3{font-size:clamp(29px,3.2vw,44px)}
+.v3-product .v2-selected-work.is-scene .v2-selected-heading p{font-size:16px}
+.v3-product .v2-selected-work.is-scene .v2-selected-nav a{font-size:14px}
+.v3-product .v2-framework-copy h4,.v3-product .v2-transport-copy h4{font-weight:550;letter-spacing:-.025em}
+.v3-product .v2-framework-copy p,.v3-product .v2-transport-copy p{color:var(--v2-muted)}
+.v3-product .v2-framework-art,.v3-product .v2-transport-photo{border-radius:0}
+.v3-product .v2-selected-work.is-scene .v2-transport-copy{height:100%}
+.v3-product .v2-aircraft-feature{border:0}
+.v3-product .v3-aircraft-copy h2{font-weight:600;letter-spacing:-.04em}
+.v3-product .v3-intro-line{font-family:var(--v2-font);font-size:14px;letter-spacing:0}
+.v3-product .v3-aircraft-foot a{min-height:44px;display:inline-flex;align-items:center}
+.v3-product .v2-engineering-range{padding-block:100px}
+.v3-product .v2-engineering-range>header{border:0}
+.v3-product .v2-engineering-range h2{font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-range-grid{gap:40px}
+.v3-product .v2-range-grid a{border:0;padding-top:12px}
+.v3-product .v2-about-preview{border:0;padding-block:90px 130px;gap:8%}
+.v3-product .v2-about-preview h2{font-size:clamp(42px,4.2vw,60px);font-weight:600;letter-spacing:-.035em;max-width:15ch}
+.v3-product .v2-about-copy p{font-size:23px;line-height:1.5}
+.v3-product .v2-contact{padding-block:80px;background:var(--v2-panel);border:0}
+.v3-product .v2-contact h2{font-size:clamp(45px,5vw,72px);font-weight:600}
+.v3-product .v2-contact-email{border:0;color:var(--v2-accent)}
+.v3-product .v2-footer{padding-block:40px}
+.v3-product .v2-footer>.v2-shell{flex-wrap:wrap;max-width:1320px}
+.v3-product .v2-footer .v2-shell>div{gap:22px;flex-wrap:wrap}
+.v3-product .v2-footer a{min-height:44px;display:inline-flex;align-items:center}
+.v3-product .v2-footer .v2-shell>p{font:400 12px/1.5 var(--v2-font)}
+/* The complete inherited cases get a quiet, product-led opening. */
+.v3-product .v2-case-nav{background:#101012f2;backdrop-filter:blur(18px)}
+.v3-product .v2-case-nav-title{max-width:32ch}
+.v3-product .v2-case-nav-links a{min-height:48px;font-size:13px}
+.v3-product.v2-case .project-hero-grid{display:flex;flex-direction:column;align-items:center;gap:22px;padding-block:64px 42px}
+.v3-product.v2-case .project-hero-copy,.v3-product.v2-case .project-hero-copy>div:not(.project-hero-actions){display:contents}
+.v3-product.v2-case .project-hero-copy h1{max-width:22ch;font-size:clamp(40px,5vw,68px);font-weight:600;line-height:1.06;letter-spacing:-.035em;text-align:center;margin:0}
+.v3-product.v2-case .project-hero-copy>div>p:not(.eyebrow){max-width:56ch;border:0;padding:0;text-align:center;font:400 20px/1.5 var(--v2-font);color:var(--v2-muted)}
+.v3-product.v2-case .project-hero-actions{display:flex;flex-direction:row;justify-content:center;flex-wrap:wrap;gap:8px 28px;max-width:none;order:1}
+.v3-product.v2-case .project-hero-actions a{border:0;min-height:44px;padding:8px 0;gap:12px;font-size:15px}
+.v3-product.v2-case .project-hero-media{order:2;max-width:1100px;background:transparent}
+.v3-product.v2-case .project-hero-media.v2-cad-media{background:transparent}
+.v3-product.v2-case .v2-cad-media img{aspect-ratio:1.9;max-height:560px}
+.v3-product.v2-case .v2-case-specs{padding-block:10px 36px}
+.v3-product.v2-case .project-meta{border:0;gap:28px}
+.v3-product.v2-case .project-meta>div,.v3-product.v2-case .project-meta>div+div{border:0;padding:0}
+.v3-product.v2-case .project-meta dt{font-family:var(--v2-font);font-size:13px}
+.v3-product.v2-case .project-meta dd{font-family:var(--v2-font);font-size:16px;line-height:1.5}
+.v3-product.v2-case .engineering-brief{padding-block:50px 75px}
+.v3-product.v2-case .engineering-brief dt{font-family:var(--v2-font);font-size:14px}
+.v3-product.v2-case .project-summary h2,.v3-product.v2-case .v2-engineering-evidence h2,.v3-product.v2-case .project-interactive-header h2{font-weight:600;letter-spacing:-.03em}
+.v3-product.v2-case .project-summary p,.v3-product.v2-case .v2-evidence-note p{line-height:1.75}
+.v3-product .v3-product-section-control{display:none}
+.v3-product .v2-collection-hero{padding-block:72px 48px;text-align:center;display:block}
+.v3-product .v2-collection-hero h1{font-size:clamp(48px,6vw,76px);font-weight:600;letter-spacing:-.035em}
+.v3-product .v2-collection-hero p{margin:20px auto 0;font:400 20px/1.5 var(--v2-font);color:var(--v2-muted)}
+.v3-product .v2-collection-controls{background:var(--v2-bg)}
+.v3-product .v2-project-search input{border-radius:10px}
+.v3-product .catalog-card{border:0}
+.v3-product .catalog-card-media{background:var(--v2-panel)}
+.v3-product.v2-about .about-intro h1{font-weight:600;letter-spacing:-.035em}
+.v3-product.v2-book .booking-hero h1{font-weight:600;letter-spacing:-.04em;font-size:clamp(42px,5.4vw,72px)}
+.v3-product.v2-book .booking-panel{border-radius:16px}
+@media(max-width:1100px){
+  .v3-product .v2-assembly-intro h1{font-size:56px}
+  .v3-product .v2-assembly-summary{max-width:46ch}
+  .v3-product .v2-assembly-summary>p{font-size:17px}
+}
+@media(max-width:1024px),(pointer:coarse){
+  body.v2.v3-product{--header-height:60px}
+  .v3-product .v2-header{height:60px}
+  .v3-product .v2-nav-shell{gap:24px;justify-content:flex-start}
+  .v3-product .v2-brand{margin-right:auto}
+  .v3-product .v3-quick-projects{display:inline-flex;align-items:center;min-height:44px;font-size:14px}
+  .v3-product.v3-product-ready .v2-menu{display:flex;flex-direction:row;gap:9px;align-items:center;justify-content:center;min-width:66px;width:auto;height:44px;border:0;border-radius:0;background:transparent;padding:0;font-size:14px;cursor:pointer}
+  .v3-product .v2-menu span{width:auto;height:auto;background:none;transform:none!important;transition:none}
+  .v3-product .v3-menu-icon{font-size:22px;font-weight:300}
+  .v3-product .v2-menu[aria-expanded=true] .v3-menu-icon{transform:rotate(45deg)!important}
+  .v3-product.v3-product-ready .v2-nav{position:absolute;top:59px;left:0;right:0;display:none;padding:18px var(--v2-gutter) 30px;background:#151518;align-items:stretch;gap:0;flex-direction:column;border-bottom:1px solid var(--v2-line);max-height:calc(100svh - 60px);overflow:auto}
+  .v3-product.v3-product-ready .v2-nav[data-open=true]{display:flex}
+  .v3-product.v3-product-ready .v2-nav a{font-size:22px;min-height:52px;padding:12px 0}
+  .v3-product .v2-nav-contact{justify-content:flex-start;gap:10px}
+  .v3-product .v2-assembly{margin-top:-60px}
+  .v3-product .v2-assembly-intro{top:98px}
+  .v3-product .v2-selected-work.is-scene{--selected-top:60px}
+  .v3-product.v3-product-ready .v2-case-nav{display:none}
+  .v3-product.v3-product-ready .v3-product-section-control{display:flex;align-items:center;justify-content:center;gap:16px;margin:0 auto 38px;width:calc(100% - 2*var(--v2-gutter));max-width:380px;color:var(--v2-muted);font-size:14px}
+  .v3-product .v3-product-section-control select{min-width:0;flex:1;min-height:44px;padding:10px 28px 10px 12px;border:1px solid var(--v2-line);border-radius:10px;background:var(--v2-panel);color:var(--v2-ink);font:400 16px/1.4 var(--v2-font);color-scheme:dark}
+  .v3-product.v3-product-ready :is(.project-hero,.project-interactive,.project-body,.project-gallery,.project-summary,.about-section,.project-index-section,#boards,#engineering){scroll-margin-top:76px}
+  .v3-product:not(.v3-product-ready) .v2-header{height:auto;position:relative}
+  .v3-product:not(.v3-product-ready) .v2-nav-shell{padding-block:10px;flex-wrap:wrap}
+  .v3-product:not(.v3-product-ready) .v2-nav{display:flex;position:static;flex-direction:row;flex-wrap:wrap;width:100%;gap:6px 24px;font-size:14px}
+  .v3-product:not(.v3-product-ready) .v2-nav a{min-height:44px}
+  .v3-product:not(.v3-product-ready) .v3-quick-projects{display:none}
+}
+@media(max-width:900px){
+  .v3-product .v2-assembly-caption{top:auto;bottom:168px;max-width:75%}
+  .v3-product .v2-assembly-caption h2{font-size:48px}
+  .v3-product .v2-assembly-caption>p:last-child{font-size:16px}
+  .v3-product .v2-assembly-bottom{align-items:stretch;flex-direction:column;gap:16px}
+  .v3-product .v2-assembly-choices{width:100%}
+  .v3-product .v2-assembly-navigation{justify-content:space-between}
+  .v3-product .v2-selected-work .v2-gallery-heading h2{font-size:46px}
+  .v3-product .v2-about-preview{gap:40px}
+  .v3-product .v2-about-copy p{font-size:21px}
+}
+@media(max-width:600px){
+  .v3-product .v2-nav-shell{gap:18px}
+  .v3-product .v2-brand{font-size:16px}
+  .v3-product .v2-assembly-intro{top:92px}
+  .v3-product .v2-assembly-intro h1{font-size:42px;line-height:1.06}
+  .v3-product .v3-product-eyebrow{font-size:13px}
+  .v3-product .v2-assembly-summary{margin-top:18px;max-width:36ch}
+  .v3-product .v2-assembly-summary>p{font-size:16px;line-height:1.5}
+  .v3-product .v2-assembly-actions{gap:6px 12px;margin-top:16px}
+  .v3-product .v2-assembly-actions a{font-size:14px;padding:10px 15px}
+  .v3-product .v2-assembly-caption{bottom:166px;max-width:calc(100% - 44px)}
+  .v3-product .v2-assembly-caption h2{font-size:37px}
+  .v3-product .v2-assembly-caption>p:first-child{font-size:13px;margin-bottom:10px}
+  .v3-product .v2-assembly-caption>p:last-child{font-size:15px;margin-top:10px}
+  .v3-product .v2-assembly-choices{gap:0;padding:4px}
+  .v3-product .v2-assembly-choices button{font-size:12px;flex-direction:row;align-items:center;padding:8px;min-height:44px;letter-spacing:-.01em}
+  .v3-product .v2-assembly-bottom{bottom:18px;gap:12px}
+  .v3-product .v2-work{padding-block:65px}
+  .v3-product .v2-selected-work .v2-gallery-heading{gap:12px;align-items:center;margin-bottom:34px}
+  .v3-product .v2-selected-work .v2-gallery-heading h2{font-size:36px}
+  .v3-product .v2-selected-work .v2-gallery-heading a{font-size:13px;white-space:nowrap}
+  .v3-product .v2-selected-heading h3{font-size:28px}
+  .v3-product .v2-selected-work.is-scene .v2-selected-heading h3{font-size:27px}
+  .v3-product .v2-framework-copy h4{font-size:19px}
+  .v3-product .v2-engineering-range{padding-block:65px}
+  .v3-product .v2-range-grid{gap:28px}
+  .v3-product .v2-about-preview{padding-block:65px 80px;gap:32px}
+  .v3-product .v2-about-preview h2{font-size:42px}
+  .v3-product .v2-about-copy p{font-size:20px}
+  .v3-product .v2-contact{padding-block:55px}
+  .v3-product .v2-contact-email{font-size:14px;gap:10px;overflow-wrap:anywhere}
+  .v3-product.v2-case .project-hero-grid{padding-block:42px 28px;gap:20px}
+  .v3-product.v2-case .project-hero-copy h1{font-size:39px}
+  .v3-product.v2-case .project-hero-copy>div>p:not(.eyebrow){font-size:17px}
+  .v3-product.v2-case .project-hero-actions{gap:8px 22px}
+  .v3-product.v2-case .v2-cad-media img{aspect-ratio:1.2;max-height:420px}
+  .v3-product.v2-case .project-meta{grid-template-columns:1fr 1fr;gap:24px 20px}
+  .v3-product.v2-case .project-meta dd{font-size:15px}
+  .v3-product .v2-collection-hero{padding-block:48px 36px}
+  .v3-product .v2-collection-hero h1{font-size:52px}
+  .v3-product .v2-collection-hero p{font-size:17px}
+}
+@media(max-height:800px) and (min-width:901px){
+  .v3-product .v2-assembly-intro{top:90px}
+  .v3-product .v2-assembly-intro h1{font-size:48px}
+  .v3-product .v2-assembly-summary{margin-top:12px;max-width:58ch}
+  .v3-product .v2-assembly-summary>p{font-size:16px}
+  .v3-product .v2-assembly-actions{margin-top:10px}
+}
+@media(max-height:620px),(max-width:900px) and (max-height:700px){
+  .v3-product .v2-assembly-sticky,.v3-product .v2-assembly.is-enhanced .v2-assembly-sticky{padding-top:94px}
+  .v3-product .v2-assembly-intro{position:relative;inset:auto}
+  .v3-product .v2-assembly-intro h1{font-size:38px}
+  .v3-product .v2-assembly-stage{margin-top:24px}
+  .v3-product .v2-assembly-bottom{position:relative;inset:auto;margin-top:8px;display:block}
+}
+@media(prefers-reduced-motion:reduce){.v3-product *{scroll-behavior:auto!important}}
+@media print{
+  .v3-product .v2-header{position:static;height:auto;backdrop-filter:none}
+  .v3-product .v2-menu,.v3-product .v3-product-section-control{display:none!important}
+  .v3-product .v2-nav{display:flex!important;position:static!important;flex-direction:row!important;flex-wrap:wrap}
+  .v3-product .v2-case-nav{display:none}
+}
+/* The CAD factory uses the stage width, not the viewport width. Portrait
+   tablets have gutters too, so pair the captions with the same 2×2 quartet. */
+@supports(container-type:inline-size){
+  .v3-product .v2-selected-work.is-scene .v2-selected-stage{container-type:inline-size;container-name:product-stage}
+  @container product-stage (max-width:760px){
+    .v3-product .v2-selected-work.is-scene .v2-selected-heading{display:block;top:clamp(18px,3svh,28px)}
+    .v3-product .v2-selected-work.is-scene .v2-selected-heading h3{max-width:20ch;font-size:27px;line-height:1.16}
+    .v3-product .v2-selected-work.is-scene .v2-selected-heading p{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+    .v3-product .v2-selected-work.is-scene .v2-selected-nav{top:clamp(88px,13svh,114px);gap:14px}
+    .v3-product .v2-selected-work.is-scene .v2-framework-grid{--selected-columns:2;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr) 65px 65px;row-gap:8px}
+    .v3-product .v2-selected-work.is-scene .v2-framework-card{height:65px;padding:0}
+    .v3-product .v2-selected-work.is-scene .v2-framework-card:nth-child(3){--selected-column:0;--selected-row:1;grid-row:3}
+    .v3-product .v2-selected-work.is-scene .v2-framework-card:nth-child(4){--selected-column:1;--selected-row:1;grid-row:3}
+    .v3-product .v2-selected-work.is-scene .v2-framework-art{top:calc(27% + var(--selected-row)*25%);height:25%}
+    .v3-product .v2-selected-work.is-scene .v2-framework-copy{padding-top:11px;padding-bottom:8px}
+    .v3-product .v2-selected-work.is-scene .v2-framework-copy h4{font-size:19px;line-height:1.2}
+    .v3-product .v2-selected-work.is-scene .v2-transport-photo{top:27%;left:12%;width:76%;height:25%}
+    .v3-product .v2-selected-work.is-scene .v2-transport-card:nth-child(2) .v2-transport-photo{top:53%}
+  }
+}
