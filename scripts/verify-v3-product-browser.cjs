@@ -529,13 +529,14 @@ async function heldPiDetails(run,prefix,{enlarged=false}={}) {
   await page.waitForFunction(()=>document.querySelector('[data-pi-inspector]')?.dataset.piState==='unavailable',null,{timeout});await scrollStable(page);
   const unavailable=await record('details-unavailable');assert.match(unavailable.status.text,/could not load/);
   if(!enlarged){assertPiAnchorUnchanged(loading,unavailable,'Model failure');await sectionDestination(page,'details');}
+  else{await nativeDetails();await record('details-enlarged-unavailable-target');}
   await hiddenPiControl(run,prefix+' unavailable');
   assert.equal(await page.locator('[data-pi-start]').isVisible(),true,'Real unavailable handler exposes Retry');
   assert.ok(unavailable.retry.width>=44&&unavailable.retry.height>=44,'Retry retains a 44 px minimum touch target');
-  await frameTarget(run,'[data-pi-inspector]',prefix+'-pi-unavailable');
-  const statusFramed=await page.locator('[data-pi-status]').evaluate(node=>{const b=node.getBoundingClientRect(),header=document.querySelector('.v2-header').getBoundingClientRect();return{top:b.top,bottom:b.bottom,headerBottom:header.bottom,viewportHeight:innerHeight};});
-  assert.ok(statusFramed.top>=statusFramed.headerBottom&&statusFramed.bottom<=statusFramed.viewportHeight,'Unavailable status is fully visible below the header before capture '+JSON.stringify(statusFramed));
-  await shot(run,prefix+'-pi-unavailable');
+  // Preserve the native Details destination through this intermediate record.
+  // A full-document capture includes Retry/status without reframing away from
+  // the hash, which WebKit can restore while preparing a screenshot.
+  await shot(run,prefix+'-pi-unavailable',{fullPage:true});
   // Retry is a genuine user click. It may scroll its own button into view, so
   // re-enter Details through the real section control before releasing load 2.
   run.network.holdPiModel();await page.locator('[data-pi-start]').click();await run.network.waitForHeldPiModel();
