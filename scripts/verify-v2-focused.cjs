@@ -54,8 +54,12 @@ async function open(browser,viewport,options={}){
 async function go(run,route='/v2/'){const response=await run.page.goto(base+route,{waitUntil:'domcontentloaded',timeout});assert.equal(response.status(),200);}
 async function settled(page){await page.evaluate(()=>{window.__focusedStable=null;});await page.waitForFunction(()=>{const p=window.__focusedStable,now=performance.now();if(!p||Math.abs(p.y-scrollY)>.1){window.__focusedStable={y:scrollY,at:now};return false;}return now-p.at>180;},null,{timeout});}
 async function frame(page,kind){
+  // A click can return before its native smooth scroll begins. Establish the
+  // final scroll position before accepting that position's completed frame.
+  await settled(page);
   await page.waitForFunction(kind=>window.__v3ProductProbe.matches(window.__v3ProductProbe.read(kind)),kind,{timeout,polling:50});
-  await settled(page);await page.waitForTimeout(300);
+  await page.waitForTimeout(300);
+  await page.waitForFunction(kind=>window.__v3ProductProbe.matches(window.__v3ProductProbe.read(kind)),kind,{timeout,polling:50});
   assert.ok(await page.evaluate(kind=>window.__v3ProductProbe.matches(window.__v3ProductProbe.read(kind)),kind),'Fresh completed current '+kind+' frame');
 }
 async function hit(locator){
@@ -122,7 +126,7 @@ async function fallbacks(browser,webkit=false){
     const run=await open(browser,viewport,options);
     try{await go(run);if(!options.noJS)await run.page.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyState==='static'||document.querySelector('[data-assembly]').dataset.assemblyState==='unavailable',null,{timeout});await shot(run,(webkit?'webkit-':'')+name);
       assert.equal(await run.page.locator('[data-assembly-select]:visible').count(),0);await run.page.locator('.v2-assembly-jump').click();await run.page.waitForURL('**#work');
-      const cards=run.page.locator('.v2-framework-card,.v2-transport-card');assert.equal(await cards.count(),6);await cards.first().click();await run.page.waitForURL('**/v2/projects/framework-expansion-card/');assert.equal(await run.page.locator('h1').count(),1);assert.deepEqual(run.errors,[]);
+      const cards=run.page.locator('.v2-framework-card,.v2-transport-card');assert.equal(await cards.count(),6);await settled(run.page);await cards.first().focus();await settled(run.page);await run.page.keyboard.press('Enter');await run.page.waitForURL('**/v2/projects/framework-expansion-card/');assert.equal(await run.page.locator('h1').count(),1);assert.deepEqual(run.errors,[]);
     }catch(error){await shot(run,name+'-failure').catch(()=>{});throw error;}finally{await run.context.close();}
   }
 }
