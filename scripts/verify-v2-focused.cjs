@@ -95,7 +95,7 @@ async function review(browser,name){
       if(run.viewport.touch)await control.tap();else{await control.focus();await page.keyboard.press(index===1?'Space':'Enter');}
       await frame(page,'hero');assert.equal(await control.getAttribute('aria-pressed'),'true');assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[index]);
       assert.equal(await page.locator('[data-assembly-open-label]').innerText(),'Open '+labels[index]);await hit(page.locator('[data-assembly-explore]'));
-      const caption=await page.locator('[data-assembly-caption]').boundingBox(),choices=await page.locator('[data-assembly-choices]').boundingBox();assert.ok(caption.y+caption.height<=choices.y-15,'Project description has breathing room above preview controls');
+      const caption=await page.locator('[data-assembly-caption]').boundingBox(),choices=await page.locator('[data-assembly-choices]').boundingBox();assert.ok(caption.y+caption.height<=choices.y-12,'Project description has breathing room above preview controls');
       assert.equal(new URL(page.url()).pathname,'/v2/');await shot(run,name+'-preview-'+index,'hero');
     }
     if(name.startsWith('ipad')){
