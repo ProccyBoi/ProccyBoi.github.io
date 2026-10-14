@@ -131,6 +131,9 @@ async function review(browser,name){
       }
     }
     await press(run,'[data-assembly-explore]');await page.waitForURL('**'+routes[2]);assert.equal(await page.locator('h1').count(),1);await page.goBack({waitUntil:'domcontentloaded'});await page.waitForURL('**/v2/');
+    // Back may rebuild the document. Observe its restored native position and
+    // completed scene before measuring the sticky controls; never force scroll.
+    await frame(page,'hero');assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[2],'Back restores the opened project preview');
     await press(run,'.v2-assembly-jump');await page.waitForURL('**#work');
     await page.locator('.v2-selected-nav a[href="#work-framework"]').click();await page.waitForURL('**#work-framework');await frame(page,'selected');
     assert.deepEqual(await page.locator('.v2-framework-card,.v2-transport-card').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),cases.map(slug=>'/v2/projects/'+slug+'/'));
