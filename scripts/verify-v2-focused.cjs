@@ -95,12 +95,13 @@ async function review(browser,name){
       if(run.viewport.touch)await control.tap();else{await control.focus();await page.keyboard.press(index===1?'Space':'Enter');}
       await frame(page,'hero');assert.equal(await control.getAttribute('aria-pressed'),'true');assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[index]);
       assert.equal(await page.locator('[data-assembly-open-label]').innerText(),'Open '+labels[index]);await hit(page.locator('[data-assembly-explore]'));
+      const caption=await page.locator('[data-assembly-caption]').boundingBox(),choices=await page.locator('[data-assembly-choices]').boundingBox();assert.ok(caption.y+caption.height<=choices.y-15,'Project description has breathing room above preview controls');
       assert.equal(new URL(page.url()).pathname,'/v2/');await shot(run,name+'-preview-'+index,'hero');
     }
     if(name.startsWith('ipad')){
       await page.setViewportSize({width:run.viewport.height,height:run.viewport.width});await frame(page,'hero');
       const selected=await page.locator('[data-assembly-select][aria-pressed="true"]').getAttribute('data-assembly-select');
-      assert.ok(selected!==null,'Rotated hero identifies its active preview');
+      assert.equal(selected,'2','An explicitly focused preview survives rotation');
       assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[Number(selected)]);
       for(const node of await page.locator('[data-assembly-select]').all())await hit(node);await hit(page.locator('[data-assembly-explore]'));await shot(run,name+'-rotated-preview','hero');
       await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});await page.locator('[data-assembly-select="2"]').tap();await frame(page,'hero');
@@ -126,7 +127,7 @@ async function fallbacks(browser,webkit=false){
     const run=await open(browser,viewport,options);
     try{await go(run);if(!options.noJS)await run.page.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyState==='static'||document.querySelector('[data-assembly]').dataset.assemblyState==='unavailable',null,{timeout});await shot(run,(webkit?'webkit-':'')+name);
       assert.equal(await run.page.locator('[data-assembly-select]:visible').count(),0);await run.page.locator('.v2-assembly-jump').click();await run.page.waitForURL('**#work');
-      const cards=run.page.locator('.v2-framework-card,.v2-transport-card');assert.equal(await cards.count(),6);await settled(run.page);await cards.first().focus();await settled(run.page);await run.page.keyboard.press('Enter');await run.page.waitForURL('**/v2/projects/framework-expansion-card/');assert.equal(await run.page.locator('h1').count(),1);assert.deepEqual(run.errors,[]);
+      const cards=run.page.locator('.v2-framework-card,.v2-transport-card');assert.equal(await cards.count(),6);if(options.noWebGL)await run.page.waitForFunction(()=>document.querySelector('[data-selected-work]').dataset.selectedState==='unavailable',null,{timeout});await settled(run.page);await cards.first().focus();await settled(run.page);await run.page.keyboard.press('Enter');await run.page.waitForURL('**/v2/projects/framework-expansion-card/');assert.equal(await run.page.locator('h1').count(),1);assert.deepEqual(run.errors,[]);
     }catch(error){await shot(run,name+'-failure').catch(()=>{});throw error;}finally{await run.context.close();}
   }
 }

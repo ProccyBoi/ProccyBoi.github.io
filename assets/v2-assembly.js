@@ -32,6 +32,7 @@
   let frame = 0, frames = 0, visible = true, ready = false, loading = false, failed = false;
   let target = 0, current = 0, active = -1, width = 0, height = 0, entry = 0;
   let poses = [], loadRequestedModel;
+  let previewSelection = -1, previewViewportWidth = innerWidth;
   const paintedModels = Array(projects.length).fill(null);
   const submittedModels = Array(projects.length).fill(null);
   // Equivalent to the original .19 step at 60 Hz, including slow GPU frames.
@@ -534,6 +535,7 @@
   selectors.forEach((button,index)=>button.addEventListener('click',()=>{
     window.V2TransportPriority?.promote('hero');
     if(!ready || failed || !motionAllowed()) return;
+    previewSelection = index;
     setExploreProject(index);
     promoteModel?.(index);
     const positions=[.265,.565,.88];
@@ -541,7 +543,24 @@
     scrollTo({top:top+positions[index]*(root.offsetHeight-stage.clientHeight),behavior:'smooth'});
   }));
   addEventListener('scroll',()=>{updateProgress();refreshVisibility();request();},{passive:true});
-  addEventListener('resize',layout,{passive:true});
+  // An explicit focused preview survives a width/orientation change. Native
+  // scrolling clears that intent; browser-chrome height changes never seek.
+  const clearPreviewSelection = () => { previewSelection = -1; };
+  addEventListener('wheel',clearPreviewSelection,{passive:true});
+  addEventListener('touchmove',clearPreviewSelection,{passive:true});
+  addEventListener('hashchange',clearPreviewSelection);
+  addEventListener('keydown',event=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key)||(event.key===' '&&!event.target.closest?.('[data-assembly-select]')))clearPreviewSelection();});
+  addEventListener('resize',()=>{
+    const changed=innerWidth!==previewViewportWidth;previewViewportWidth=innerWidth;
+    const index=previewSelection,bounds=stage.getBoundingClientRect();
+    const preserve=changed&&index>=0&&document.activeElement===selectors[index]&&activePage&&!document.hidden&&!failed&&motionAllowed()&&bounds.bottom>0&&bounds.top<innerHeight;
+    layout();
+    if(preserve){
+      const top=scrollY+root.getBoundingClientRect().top;
+      scrollTo({top:top+[.265,.565,.88][index]*(root.offsetHeight-stage.clientHeight),behavior:'instant'});
+      updateProgress();request();
+    }
+  },{passive:true});
   new ResizeObserver(layout).observe(stage);
   const syncLoadingVisibility=()=>loadingExperience?.suspend(!visible||document.hidden||!motionAllowed());
   new IntersectionObserver(()=>{updateProgress();refreshVisibility();request();},{threshold:0}).observe(root);
