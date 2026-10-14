@@ -53,7 +53,13 @@ async function open(browser,viewport,options={}){
   return {context,page,viewport,options,errors,blocked};
 }
 async function go(run,route='/v2/'){const response=await run.page.goto(base+route,{waitUntil:'domcontentloaded',timeout});assert.equal(response.status(),200);}
-async function settled(page){await page.evaluate(()=>{window.__focusedStable=null;});await page.waitForFunction(()=>{const p=window.__focusedStable,now=performance.now();if(!p||Math.abs(p.y-scrollY)>.1){window.__focusedStable={y:scrollY,at:now};return false;}return now-p.at>180;},null,{timeout});}
+async function settled(page){
+  // Driver-side observation also works when the page has JavaScript disabled;
+  // Chromium correctly suppresses that page's requestAnimationFrame callbacks.
+  let previous=NaN,since=Date.now();const deadline=Date.now()+timeout;
+  while(Date.now()<deadline){const y=await page.evaluate(()=>scrollY);if(!Number.isFinite(previous)||Math.abs(previous-y)>.1){previous=y;since=Date.now();}else if(Date.now()-since>180)return;await page.waitForTimeout(50);}
+  throw new Error('Native scroll did not settle');
+}
 async function frame(page,kind){
   // A click can return before its native smooth scroll begins. Establish the
   // final scroll position before accepting that position's completed frame.
@@ -134,7 +140,7 @@ async function review(browser,name){
     await page.locator('.v2-selected-nav a[href="#work-transit"]').click();await page.waitForURL('**#work-transit');await frame(page,'selected');for(const node of await page.locator('.v2-transport-card').all())await hit(node);await shot(run,name+'-transit','selected');
     await press(run,'.v2-selected-skip');await page.waitForURL('**#skylabs-aircraft');await frame(page,'aircraft');await shot(run,name+'-aircraft','aircraft');
     await press(run,'[data-aircraft-go="1"]');await page.waitForURL('**#skylabs-telemetry');await frame(page,'aircraft');await hit(page.locator('.v2-aircraft-actions a'));await hit(page.locator('.v3-story-skip'));
-    if(run.viewport.width>760&&run.viewport.width<=900){const copy=await page.locator('[data-aircraft-chapter="1"]').boundingBox(),stage=await page.locator('[data-aircraft-stage]').boundingBox();assert.ok(copy.y+copy.height<stage.y+stage.height*.35,'Portrait tablet copy stays above the model region; actual pixels are also reviewed');}
+    if(run.viewport.width>760&&run.viewport.width<=900){const copy=await page.locator('article[data-aircraft-chapter="1"]').boundingBox(),stage=await page.locator('[data-aircraft-stage]').boundingBox();assert.ok(copy.y+copy.height<stage.y+stage.height*.35,'Portrait tablet copy stays above the model region; actual pixels are also reviewed');}
     await shot(run,name+'-telemetry','aircraft');
     await press(run,'.v3-story-skip');await page.waitForURL('**#about');await settled(page);await shot(run,name+'-about');
     await page.goBack();await page.waitForURL('**#skylabs-telemetry');await page.goForward();await page.waitForURL('**#about');
