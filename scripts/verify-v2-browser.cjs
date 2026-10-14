@@ -122,7 +122,7 @@ async function posters(page) {
     assert.equal(await failedPage.locator('[data-assembly-canvas]').evaluate(node=>Number(getComputedStyle(node).opacity)),0);
     await failedPage.locator('[data-assembly-select="2"]').click();
     await failedPage.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyActive==='pi');
-    await failedPage.locator('[data-assembly-link]').click();
+    await failedPage.locator('[data-assembly-explore]').click();
     await failedPage.waitForURL('**/v2/projects/framework-raspberry-pi/');
     await failedPage.waitForLoadState('networkidle');
     await failedPage.waitForFunction(()=>document.getAnimations().every(animation=>animation.playState!=='running'));

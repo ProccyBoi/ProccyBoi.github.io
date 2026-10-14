@@ -11,7 +11,7 @@
   const header = document.querySelector('.v2-header');
   const intro = root.querySelector('[data-assembly-intro]');
   const caption = root.querySelector('[data-assembly-caption]');
-  const projectLink = root.querySelector('[data-assembly-link]');
+  const openLabel = root.querySelector('[data-assembly-open-label]');
   const exploreLink = root.querySelector('[data-assembly-explore]');
   const choices = root.querySelector('[data-assembly-choices]');
   const selectors = [...root.querySelectorAll('[data-assembly-select]')];
@@ -91,7 +91,8 @@
     if (!exploreLink) return;
     const project = projects[index];
     exploreLink.href = project.href;
-    exploreLink.setAttribute('aria-label', `Explore ${project.title} project`);
+    exploreLink.setAttribute('aria-label', `Open ${project.title} project`);
+    if (openLabel) openLabel.textContent = `Open ${project.title}`;
   };
   const pendingScripts = window.V2HeroScripts ||= new Map();
   const loadScript = source => {
@@ -165,9 +166,7 @@
     if (next >= 0 && next !== active) {
       const project = projects[next];
       root.querySelector('[data-assembly-title]').textContent = project.title;
-      root.querySelector('[data-assembly-kind]').textContent = project.kind;
       root.querySelector('[data-assembly-description]').textContent = project.description;
-      projectLink.href = project.href;
       setExploreProject(next);
     }
     if (value < windows[0][0]) setExploreProject(0);
@@ -176,7 +175,6 @@
     caption.style.transform = `translateY(${((1-opacity)*22).toFixed(2)}px)`;
     caption.classList.toggle('is-active',opacity>.5);
     caption.setAttribute('aria-hidden',String(opacity<.5));
-    projectLink.tabIndex = opacity>.5 ? 0 : -1;
     selectors.forEach((button,index) => {
       button.setAttribute('aria-pressed',String(index===next));
       const [start,end]=windows[index];
@@ -383,7 +381,7 @@
     posters.forEach(poster=>poster.removeAttribute('style'));
     selectors.forEach(button=>{button.setAttribute('aria-pressed','false');button.style.removeProperty('--chapter-progress');});
     setSceneControls(false); setExploreProject(0); active=-1;
-    caption.classList.remove('is-active');caption.style.opacity='0'; caption.setAttribute('aria-hidden','true');projectLink.tabIndex=-1;
+    caption.classList.remove('is-active');caption.style.opacity='0'; caption.setAttribute('aria-hidden','true');
     if(ready) {entry=0; layout(); request();}
     else root.dataset.assemblyState='static';
   };

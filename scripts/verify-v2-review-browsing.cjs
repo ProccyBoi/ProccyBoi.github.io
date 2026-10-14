@@ -26,20 +26,21 @@ function sourceContract(){
   assert.ok(hero);assert.match(hero,/embedded systems, power electronics and avionics/);assert.match(hero,/Designing hardware from PCB to firmware/);
   assert.match(hero,/<a[^>]*href="\/v2\/projects\/"[^>]*>View projects/);
   assert.match(hero,/<a[^>]*href="\/assets\/documents\/Andrew_Chung_Public_CV\.pdf"[^>]*\bdownload\b[^>]*>Download CV/);
-  assert.match(hero,/<a[^>]*data-assembly-explore[^>]*href="\/v2\/projects\/tramtrace\/"[^>]*>Explore project/);
+  assert.match(hero,/<a[^>]*data-assembly-explore[^>]*href="\/v2\/projects\/tramtrace\/"[^>]*><span data-assembly-open-label>Open TramTrace/);
   assert.match(hero,/<a[^>]*href="#work"[^>]*>Skip intro/);
   const selectors=[...hero.matchAll(/<(\w+)\b([^>]*data-assembly-select="([0-2])"[^>]*)>/g)];
   assert.equal(selectors.length,3);
   for(const [_,tag,attributes]of selectors){assert.equal(tag,'button');assert.match(attributes,/type="button"/);assert.match(attributes,/aria-pressed="false"/);assert.doesNotMatch(attributes,/\bhref=/);}
-  const browse=html.match(/<nav class="v2-work-browse"[\s\S]*?<\/nav>/)?.[0];assert.ok(browse,'Case-study bypass exists in initial HTML');
-  for(const name of cases)assert.ok(browse.includes('href="/v2/projects/'+name+'/"'),name+' is directly browsable');
-  assert.match(browse,/href="#about"[^>]*>Skip animations/);
+  assert.ok(!html.includes('v2-work-browse'),'The duplicate shortcut row is removed');
+  for(const name of cases)assert.ok(html.includes('href="/v2/projects/'+name+'/"'),name+' has a native project card');
+  assert.match(html,/href="\/v2\/projects\/">All projects/);
+  assert.match(read('assets/v2-selected-work.js'),/skipScene.href='#skylabs-aircraft'/);
   assert.match(html,/<a class="v3-story-skip" href="#about">Skip animation/);
   assert.match(html,/class="v2-nav-contact" href="\/v2\/about\/#contact"/);
   assert.doesNotMatch(read('v2/about/index.html'),/href="\/book\/"/);
   assert.match(read('v2/about/index.html'),/href="\/v2\/book\/"/);
   for(const file of ['assets/v2-hero-motion.js','v3/index.html']){
-    const before=execFileSync('git',['show',baseline+':'+file],{cwd:root,encoding:'utf8'});
+    const before=execFileSync('git',['show',(file==='v3/index.html'?'733416b21ecb8725e75d2eea1699d52dd1e8498e':baseline)+':'+file],{cwd:root,encoding:'utf8'});
     assert.equal(read(file),before,file+' is unchanged from the accepted baseline');
   }
   const cv=fs.readFileSync(path.join(root,'assets/documents/Andrew_Chung_Public_CV.pdf'));
@@ -184,12 +185,13 @@ async function bypasses(browser){
     const {page}=run;await page.goto(base+'/v2/?review=bypasses',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.body.classList.contains('v2-ready'));
     await page.locator('.v2-assembly-jump').click();await page.waitForURL('**#work');
     await page.waitForFunction(()=>{const r=document.getElementById('work').getBoundingClientRect();return r.top>=0&&r.top<innerHeight/2;});
-    const browse=page.locator('.v2-work-browse');assert.equal(await browse.isVisible(),true);
-    assert.deepEqual(await browse.locator('a[href^="/v2/projects/"]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),cases.map(name=>'/v2/projects/'+name+'/'));
-    await browse.locator('a[href="#about"]').click();await page.waitForURL('**#about');
+    assert.equal(await page.locator('.v2-work-browse').count(),0);
+    assert.deepEqual(await page.locator('.v2-framework-card,.v2-transport-card').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),cases.map(name=>'/v2/projects/'+name+'/'));
+    await page.locator('.v2-selected-skip').click();await page.waitForURL('**#skylabs-aircraft');
+    await page.locator('.v3-story-skip').click();await page.waitForURL('**#about');
     const aboutReady=()=>page.waitForFunction(()=>{const about=document.getElementById('about').getBoundingClientRect(),selected=document.querySelector('[data-selected-work]').getBoundingClientRect(),air=document.querySelector('[data-aircraft-hero]').getBoundingClientRect();return about.top>=-1&&about.top<innerHeight/2&&selected.bottom<innerHeight&&air.bottom<innerHeight/2;});
     await aboutReady();
-    await page.goBack();await page.waitForURL('**#work');await page.waitForFunction(()=>document.getElementById('work').getBoundingClientRect().top<innerHeight);
+    await page.goBack();await page.waitForURL('**#skylabs-aircraft');
     await page.goForward();await page.waitForURL('**#about');await aboutReady();
     await save(run,'skip-intro-and-all-secondary-tracks-with-native-back-forward');
     for(const [hash,rootSelector,attribute,chapter]of [['work-transit','[data-selected-work]','selectedChapter','1'],['skylabs-telemetry','[data-aircraft-hero]','aircraftChapter','1']]){
@@ -289,7 +291,8 @@ async function fallbacks(browser){
         for(const selector of ['.v2-framework-copy p','.v2-transport-copy p'])assert.equal(await page.locator(selector).evaluateAll(nodes=>nodes.every(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return r.width>20&&r.height>12&&s.visibility==='visible'&&s.clipPath==='none';})),true,'Fallback descriptions are readable');
       }
       await page.locator('.v2-assembly-jump').click();await page.waitForURL('**#work');
-      await page.locator('.v2-work-browse a[href="#about"]').click();await page.waitForURL('**#about');
+      if(await page.locator('.v2-selected-skip:visible').count()) await page.locator('.v2-selected-skip').click();
+      await page.locator('.v3-story-skip').click();await page.waitForURL('**#about');
       assert.equal(await page.locator('#about').isVisible(),true);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
       await save(run,label+'-readable-native-bypass');
     });

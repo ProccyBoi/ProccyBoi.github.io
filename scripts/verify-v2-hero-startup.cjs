@@ -194,7 +194,7 @@ async function canvasHasInk(page) {
       await page.screenshot({ path: path.join(output, 'desktop-pi-loading-pose.png') });
       // Navigation remains meaningful throughout loading: this is the real
       // project anchor, not a synthetic click handled by the canvas.
-      const link = page.locator('[data-assembly-link]');
+      const link = page.locator('[data-assembly-explore]');
       const href = await link.getAttribute('href');
       assert.equal(href, '/v2/projects/framework-raspberry-pi/');
       const intercepted = gate();

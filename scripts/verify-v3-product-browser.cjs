@@ -824,8 +824,10 @@ function selfTest() {
   passed('held-pi-oracle-rejects-late-layout-shift-scroll-compensation-and-text-clipping');
 }
 
-(async()=>{
+if (require.main === module) (async()=>{
   fs.mkdirSync(output,{recursive:true});selfTest();if(argv.includes('--self-test'))return;
   const {chromium,webkit}=require('playwright'),engine=argv.includes('--webkit-smoke')?webkit:chromium,browser=await engine.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,...(argv.includes('--webkit-smoke')?{}:{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']})});
   try{if(argv.includes('--webkit-smoke'))await webkitSmoke(browser);else if(argv.includes('--profile'))await profile(browser);else if(argv.includes('--fallbacks'))await fallbacks(browser);else await viewportReview(browser,argv.find(arg=>arg.startsWith('--viewport='))?.split('=')[1]||'desktop1440');}finally{await browser.close();write('summary',{reports});}
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+module.exports = {installProbe, currentFrame};

@@ -78,9 +78,10 @@
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
   <link rel="stylesheet" href="/assets/v2-selected-work.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/aircraft-story.css?v=v2-aircraft-20261011">
-  <script src="/assets/v2.js?v=physical-20261007" defer></script>
+  <link rel="stylesheet" href="/assets/v2-home-controls.css?v=20261014">
+  <script src="/assets/v2.js?v=controls-20261014" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
-  <script src="/assets/v2-assembly.js?v=load-20261012" defer></script>
+  <script src="/assets/v2-assembly.js?v=controls-20261014" defer></script>
   <script src="/assets/v2-selected-work.js?v=load-20261012" defer></script>
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
   <script src="/assets/v3-aircraft-hero.js?v=load-20261012" defer></script>
@@ -112,13 +113,13 @@
           </div>
         </div>
         <div class="v2-assembly-caption" data-assembly-caption aria-hidden="true">
-          <p data-assembly-kind>Live light-rail display</p>
-          <h2><a data-assembly-link href="/v2/projects/tramtrace/" tabindex="-1"><span data-assembly-title>TramTrace</span><span class="assembly-caption-arrow" aria-hidden="true">↗</span></a></h2>
+          <h2 data-assembly-title>TramTrace</h2>
           <p data-assembly-description>116 pixels following Sydney’s light-rail network.</p>
         </div>
         <div class="v2-assembly-bottom">
-          <div class="v2-assembly-navigation"><a class="v2-assembly-explore" data-assembly-explore href="/v2/projects/tramtrace/" aria-label="Explore TramTrace project">Explore project <span aria-hidden="true">↗</span></a><a class="v2-assembly-jump" href="#work">Skip intro <span aria-hidden="true">↓</span></a></div>
+          <div class="v2-assembly-navigation"><a class="v2-assembly-explore" data-assembly-explore href="/v2/projects/tramtrace/" aria-label="Open TramTrace project"><span data-assembly-open-label>Open TramTrace</span> <span aria-hidden="true">↗</span></a><a class="v2-assembly-jump" href="#work">Skip intro <span aria-hidden="true">↓</span></a></div>
           <div class="v2-assembly-choices" data-assembly-choices role="group" aria-label="Preview featured project scenes" hidden>
+            <span class="v2-assembly-preview-label" aria-hidden="true">Preview</span>
             <button type="button" data-assembly-select="0" aria-pressed="false" aria-label="Preview TramTrace scene">TramTrace</button>
             <button type="button" data-assembly-select="1" aria-pressed="false" aria-label="Preview Telemetry scene">Telemetry</button>
             <button type="button" data-assembly-select="2" aria-pressed="false" aria-label="Preview Raspberry Pi scene">Raspberry Pi</button>
@@ -129,7 +130,6 @@
     </section>
     <section class="v2-work v2-shell v2-selected-work" data-selected-work aria-labelledby="work-title">
       <div class="v2-gallery-heading" id="work"><h2 id="work-title">Selected work</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
-      <nav class="v2-work-browse" aria-label="Browse case studies"><p>Go straight to a project</p><div><a href="/v2/projects/framework-expansion-card/">ESP32-S3</a><a href="/v2/projects/framework-dual-usb/">Dual USB-C</a><a href="/v2/projects/framework-raspberry-pi/">RP2354B</a><a href="/v2/projects/framework-logic-analyser/">Logic analyser</a><a href="/v2/projects/metroboard/">MetroBoard</a><a href="/v2/projects/tramtrace/">TramTrace</a></div><a class="v2-text-link" href="#about">Skip animations <span aria-hidden="true">↓</span></a></nav>
       <section class="v2-framework-collection" id="work-framework" data-selected-chapter="0" aria-labelledby="framework-title">
         <header class="v2-selected-heading">
           <h3 id="framework-title">Framework expansion cards</h3>
@@ -178,8 +178,8 @@
           <canvas data-aircraft-canvas aria-hidden="true"></canvas>
         </div>
         <div class="v3-aircraft-copy" data-aircraft-copy>
-          <article id="skylabs-aircraft" data-aircraft-chapter="0"><p class="v3-intro-line">UNSW Skylabs · Avionics</p><h2 id="skylabs-title">Skylabs.</h2><p>Avionics and payload systems for UNSW’s student-built aircraft.</p><a class="v3-story-next" href="#skylabs-telemetry">Explore the transition <span aria-hidden="true">↓</span></a></article>
-          <article id="skylabs-telemetry" data-aircraft-chapter="1"><h2>Telemetry.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><div class="v2-aircraft-actions"><a class="v3-link" href="/v2/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a><a class="v3-story-next" href="#about">Continue to About <span aria-hidden="true">↓</span></a></div><figure class="v3-aircraft-static-photo"><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="eager" decoding="async" fetchpriority="low" alt="The populated Skylabs telemetry board"></figure></article>
+          <article id="skylabs-aircraft" data-aircraft-chapter="0"><h2 id="skylabs-title">Skylabs.</h2><p>Avionics and payload systems for UNSW’s student-built aircraft.</p></article>
+          <article id="skylabs-telemetry" data-aircraft-chapter="1"><h2>Telemetry.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><div class="v2-aircraft-actions"><a class="v3-link" href="/v2/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a></div><figure class="v3-aircraft-static-photo"><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="eager" decoding="async" fetchpriority="low" alt="The populated Skylabs telemetry board"></figure></article>
         </div>
         <button class="v3-aircraft-skip" data-aircraft-skip type="button" hidden>Skip landing <span aria-hidden="true">↘</span></button>
         <div class="v3-aircraft-foot">
@@ -190,7 +190,7 @@
         <div class="v3-aircraft-progress" aria-hidden="true"><span data-aircraft-progress></span></div>
       </div>
     </section>
-    <section class="v2-engineering-range v2-shell" aria-labelledby="engineering-range-title"><header><p>Beyond the display</p><h2 id="engineering-range-title">Power, measurement and flight.</h2></header><div class="v2-range-grid"><a href="/v2/projects/switch-mode-power-supplies/"><h3>Power electronics <span aria-hidden="true">↗</span></h3><p>Power-supply testing and repair in my trainee engineering role, with documented isolated test hardware.</p></a><a href="/v2/projects/rf-test-board/"><h3>RF measurement <span aria-hidden="true">↗</span></h3><p>Feedlines and filter footprints designed for comparison on a vector network analyser.</p></a><a href="/v2/projects/skylabs/boards/telemetry/"><h3>Flight telemetry <span aria-hidden="true">↗</span></h3><p>Board design, sensor logging and a radio link, with published flight-log diagnostics.</p></a></div></section>
+    <section class="v2-engineering-range v2-shell" aria-labelledby="engineering-range-title"><header><h2 id="engineering-range-title">Power, measurement and flight.</h2></header><div class="v2-range-grid"><a href="/v2/projects/switch-mode-power-supplies/"><h3>Power electronics <span aria-hidden="true">↗</span></h3><p>Power-supply testing and repair in my trainee engineering role, with documented isolated test hardware.</p></a><a href="/v2/projects/rf-test-board/"><h3>RF measurement <span aria-hidden="true">↗</span></h3><p>Feedlines and filter footprints designed for comparison on a vector network analyser.</p></a><a href="/v2/projects/skylabs/boards/telemetry/"><h3>Flight telemetry <span aria-hidden="true">↗</span></h3><p>Board design, sensor logging and a radio link, with published flight-log diagnostics.</p></a></div></section>
     <section class="v2-about-preview v2-shell" id="about" aria-labelledby="about-title"><h2 id="about-title">About me.</h2><div class="v2-about-copy"><p>I’m an electrical engineering student at UNSW, working in power electronics and leading avionics and payload work at UNSW Skylabs.</p><p>I like building the whole thing: the board, the code, and the tools that make it useful.</p><a class="v2-text-link" href="/v2/about/">More about me <span aria-hidden="true">↗</span></a></div></section>
     <section class="v2-contact" aria-labelledby="contact-title"><div class="v2-shell"><h2 id="contact-title">Get in touch.</h2><a class="v2-contact-email" href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com <span aria-hidden="true">↗</span></a></div></section>
   </main>

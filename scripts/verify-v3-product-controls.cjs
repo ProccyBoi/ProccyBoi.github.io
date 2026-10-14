@@ -10,7 +10,8 @@ const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const source=read('assets/v2-selected-work.js');
 const selected=read('assets/v3-product-selected.js');
-const heroSource=read('assets/v2-assembly.js');
+// The v3 clone remains tied to its approved source snapshot while v2 evolves.
+const heroSource=execFileSync('git',['show','0730dbf:assets/v2-assembly.js'],{cwd:root,encoding:'utf8'});
 const hero=read('assets/v3-product-assembly.js');
 const baseline='0730dbf';
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -23,7 +24,7 @@ function functionSource(code,name){
   return code.slice(match.index,end+4);
 }
 function sourceContract(){
-  for(const file of ['assets/v2-assembly.js','assets/v2-selected-work.js','assets/v2-selected-scene.js','assets/v2-hero-motion.js','assets/v2-hero-environment.js','assets/v2-hero-assets.js','assets/v2-selected-assets.js','assets/v2-gpu-preparation.js']){
+  for(const file of ['assets/v2-selected-work.js','assets/v2-selected-scene.js','assets/v2-hero-motion.js','assets/v2-hero-environment.js','assets/v2-hero-assets.js','assets/v2-selected-assets.js','assets/v2-gpu-preparation.js']){
     assert.equal(read(file),execFileSync('git',['show',baseline+':'+file],{cwd:root,encoding:'utf8'}),'Restored v2 source untouched: '+file);
   }
   const expected=heroSource

@@ -73,14 +73,15 @@ async function inViewport(locator,width,height,label){
         await scrollPhase(page,phase.progress);
         assert.equal(await hero.getAttribute('data-assembly-active'),phase.name);
         assert.equal(await page.locator('[data-assembly-title]').textContent(),phase.title);
-        assert.equal(await page.locator('[data-assembly-link]').getAttribute('href'),phase.href);
+        assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),phase.href);
         assert.equal(await page.locator('[data-assembly-caption]').getAttribute('aria-hidden'),'false');
-        assert.equal(await page.locator('[data-assembly-link]').getAttribute('tabindex'),'0');
+        assert.notEqual(await page.locator('[data-assembly-explore]').getAttribute('tabindex'),'-1');
+        assert.equal(await page.locator('[data-assembly-caption] a').count(),0,'Caption does not duplicate the Open action');
         await inViewport(page.locator('[data-assembly-caption]'),viewport.width,viewport.height,'Caption fits '+phase.name+' '+JSON.stringify(viewport));
         const caption=await page.locator('[data-assembly-caption]').boundingBox();
         const choices=await page.locator('.v2-assembly-choices').boundingBox();
         assert.ok(caption.y+caption.height<=choices.y,'Caption must not overlap project choices: '+phase.name+' '+JSON.stringify(viewport));
-        assert.equal(await page.locator('[data-assembly-link]').evaluate(link=>{
+        assert.equal(await page.locator('[data-assembly-explore]').evaluate(link=>{
           const r=link.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
           return hit===link||link.contains(hit);
         }),true,'Project caption link must be clickable');
@@ -98,7 +99,7 @@ async function inViewport(locator,width,height,label){
       await page.keyboard.press('Enter');
       await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-assembly]').dataset.assemblyProgress)-value)<.001,phases[index].progress);
       assert.equal(await page.locator('[data-assembly-select="'+index+'"]').getAttribute('aria-pressed'),'true');
-      assert.equal(await page.locator('[data-assembly-link]').getAttribute('href'),phases[index].href);
+      assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),phases[index].href);
     }
     await framesStop(page,'Scroll selection must stop rendering when settled');
     await page.evaluate(()=>scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));

@@ -30,7 +30,23 @@
     placeIndicator(currentLink);
   }
   if (menu && nav) {
-    const setOpen = open => {
+    const wide = matchMedia('(min-width:541px)');
+    // Layout can hide a focused control before the media-query callback.
+    // Keep actual ownership through that blur, clearing it on new input.
+    let menuOwnsFocus = document.activeElement === menu;
+    let navOwnsFocus = nav.contains(document.activeElement);
+    document.addEventListener('focusin', event => {
+      if (event.target === document.body || event.target === document.documentElement) return;
+      menuOwnsFocus = event.target === menu;
+      navOwnsFocus = nav.contains(event.target);
+    });
+    document.addEventListener('pointerdown', event => {
+      if (!menu.contains(event.target)) menuOwnsFocus = false;
+      if (!nav.contains(event.target)) navOwnsFocus = false;
+    }, {passive:true});
+    addEventListener('blur', () => { menuOwnsFocus = navOwnsFocus = false; });
+    const setOpen = (open, recover = false) => {
+      if (!open && recover && !wide.matches && nav.contains(document.activeElement)) menu.focus({preventScroll:true});
       menu.setAttribute('aria-expanded', String(open));
       menu.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
       nav.dataset.open = String(open);
@@ -42,7 +58,16 @@
     });
     document.addEventListener('click', event => { if (!event.target.closest('.v2-header')) setOpen(false); });
     document.addEventListener('focusin', event => { if (!event.target.closest('.v2-header')) setOpen(false); });
-    addEventListener('pageshow', () => setOpen(false));
-    matchMedia('(min-width:541px)').addEventListener('change', event => { if (event.matches) setOpen(false); });
+    addEventListener('pageshow', () => setOpen(false, true));
+    wide.addEventListener('change', event => {
+      const focused = document.activeElement;
+      if (event.matches) {
+        setOpen(false);
+        if (document.hasFocus() && (focused === menu || (menuOwnsFocus && focused === document.body))) (nav.querySelector('[aria-current=page]') || nav.querySelector('a'))?.focus({preventScroll:true});
+      } else if (nav.contains(focused) || (navOwnsFocus && focused === document.body)) {
+        setOpen(true);
+        if (!nav.contains(document.activeElement)) (nav.querySelector('[aria-current=page]') || nav.querySelector('a'))?.focus({preventScroll:true});
+      }
+    });
   }
 })();

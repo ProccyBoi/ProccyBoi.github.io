@@ -214,6 +214,14 @@ def check_copy_preservation():
             # The duplicate caption link is intentionally removed; the single
             # visible Open control, title, canvas and scene hooks remain.
             keys.discard("data-assembly-link")
+            # V2's independent control cleanup moves its title hook onto h2
+            # and names its Open label. V3 retains the same title and action
+            # with its own presentation hooks; enforce exactly one of each.
+            keys.difference_update({"data-assembly-title", "data-assembly-open-label"})
+            for document, title_hook, open_hook in ((original, "data-assembly-title", "data-assembly-open-label"), (copied, "data-assembly-title", "data-product-open-label")):
+                for hook in (title_hook, open_hook):
+                    if sum(hook in item.attrs for item in document.elements) != 1:
+                        errors.append(f"{label}: expected one retained {hook}")
         missing = data_hooks(original, keys) - data_hooks(copied, keys)
         if missing:
             errors.append(f"{label}: {sum(missing.values())} original viewer, tool or evidence data-hook elements changed or disappeared")
@@ -225,7 +233,7 @@ def check_copy_preservation():
             errors.append(f"{label}: shared script URLs, execution attributes or source order differ from v2")
         if inline_scripts(original) - inline_scripts(copied):
             errors.append(f"{label}: original inline startup, simulation or JSON block changed")
-        original_styles = [urljoin(original.base, item.attrs.get("href", "")) for item in original.tags("link") if "stylesheet" in item.attrs.get("rel", "").split()]
+        original_styles = [urljoin(original.base, item.attrs.get("href", "")) for item in original.tags("link") if "stylesheet" in item.attrs.get("rel", "").split() and urlsplit(urljoin(original.base, item.attrs.get("href", ""))).path != "/assets/v2-home-controls.css"]
         retained_styles = [urljoin(copied.base, item.attrs.get("href", "")) for item in copied.tags("link") if "stylesheet" in item.attrs.get("rel", "").split() and urlsplit(urljoin(copied.base, item.attrs.get("href", ""))).path not in {PRODUCT_CSS, CONTROLS_CSS, LIGHT_INTERIORS_CSS}]
         if original_styles != retained_styles:
             errors.append(f"{label}: original stylesheet stack/order changed")

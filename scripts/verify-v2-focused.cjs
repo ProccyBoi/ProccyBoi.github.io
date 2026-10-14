@@ -1,0 +1,133 @@
+#!/usr/bin/env node
+/* Focused v2 cleanup acceptance. Native inputs and real completed CAD frames.
+ * Chromium/SwiftShader and WebKit viewport emulation are not physical devices.
+ * No production seek/capture APIs, substituted geometry or real form submits. */
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..'),baseline='733416b21ecb8725e75d2eea1699d52dd1e8498e';
+const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
+const output=path.resolve(process.env.V2_FOCUSED_OUT||'.codex-temp/v2-focused');
+const args=process.argv.slice(2),timeout=180000;
+const {installProbe,currentFrame}=require('./verify-v3-product-browser.cjs');
+const viewports={desktop1440:{width:1440,height:900},phone320:{width:320,height:780,touch:true},phone390:{width:390,height:844,touch:true},ipad768:{width:768,height:1024,touch:true},ipad820:{width:820,height:1180,touch:true},ipad1024:{width:1024,height:768,touch:true},ipad1180:{width:1180,height:820,touch:true}};
+const routes=['tramtrace','skylabs/boards/telemetry','framework-raspberry-pi'].map(slug=>'/v2/projects/'+slug+'/');
+const labels=['TramTrace','Telemetry','Raspberry Pi'];
+const cases=['framework-expansion-card','framework-dual-usb','framework-raspberry-pi','framework-logic-analyser','metroboard','tramtrace'];
+const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+function source(){
+  const changed=execFileSync('git',['diff',baseline,'--name-only'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean);
+  const allowed=new Set(['v2/index.html','assets/v2-assembly.js','assets/v2.js','assets/v2-home-controls.css']);
+  for(const file of changed)assert.ok(allowed.has(file)||file.startsWith('scripts/')||file.startsWith('.github/'),'Production boundary: '+file);
+  for(const file of execFileSync('git',['ls-tree','-r','--name-only',baseline],{cwd:root,encoding:'utf8'}).trim().split('\n')){
+    if(file.startsWith('scripts/')||file.startsWith('.github/')||allowed.has(file))continue;
+    const before=execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:100*1024*1024});
+    assert.deepEqual(fs.readFileSync(path.join(root,file)),before,'Byte-preserved '+file);
+  }
+  const html=read('v2/index.html');
+  for(const text of ['Go straight to a project','Beyond the display','Explore the transition','Continue to About','data-assembly-kind','data-assembly-link'])assert.ok(!html.includes(text),'Redundant content removed: '+text);
+  assert.equal((html.match(/data-assembly-open-label/g)||[]).length,1);
+  assert.match(html,/aria-label="Preview featured project scenes"/);
+  assert.match(html,/<h2 data-assembly-title>TramTrace<\/h2>/);
+  assert.match(html,/data-assembly-open-label>Open TramTrace/);
+  for(const slug of cases)assert.ok(html.includes('href="/v2/projects/'+slug+'/"'),'Native case remains: '+slug);
+  assert.match(html,/href="\/v2\/projects\/">All projects/);
+  assert.match(html,/class="v3-story-skip" href="#about"/);
+  assert.match(read('assets/v2-selected-work.js'),/skipScene.href='#skylabs-aircraft'/);
+  assert.match(read('assets/v2-selected-work.js'),/Select a card for a closer look/);
+  for(const file of ['v3/index.html','v3/book/index.html','assets/v2-selected-work.js','assets/v3-aircraft-hero.js','assets/v2-hero-motion.js','assets/v2-assembly.css','assets/v2-selected-work.css','assets/v2.css'])assert.deepEqual(fs.readFileSync(path.join(root,file)),execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:100*1024*1024}));
+  const before=execFileSync('git',['show',baseline+':assets/v2-assembly.js'],{cwd:root,encoding:'utf8'}),after=read('assets/v2-assembly.js');
+  for(const [start,end]of [['  const layout = () => {','  const staticMode = () => {'],['  async function initialize(){','\n  selectors.forEach']]){
+    const body=text=>text.slice(text.indexOf(start),end==='\n  selectors.forEach'?text.lastIndexOf(end):text.indexOf(end));
+    assert.equal(body(after),body(before),'Preserved rendering/loading body '+start);
+  }
+  console.log('PASS exact non-target production files, models, shared CSS, v3, case evidence, rendering and loading bodies');
+}
+async function open(browser,viewport,options={}){
+  const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height},hasTouch:!!viewport.touch,isMobile:!!viewport.touch,deviceScaleFactor:1,javaScriptEnabled:!options.noJS,reducedMotion:options.reduced?'reduce':'no-preference',serviceWorkers:'block',acceptDownloads:true});
+  const blocked=[];await context.route('**/*',route=>{const request=route.request(),url=new URL(request.url());if(url.origin===new URL(base).origin&&request.method()==='GET')return route.continue();blocked.push({url:url.href,method:request.method()});return route.abort();});
+  if(!options.noJS)await context.addInitScript({content:`(${installProbe.toString()})(); window.__v3ProductProbe.matches=(${currentFrame.toString()});`});
+  if(options.noWebGL)await context.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...params){return /webgl/.test(type)?null:original.call(this,type,...params);};});
+  const page=await context.newPage(),errors=[];page.setDefaultTimeout(30000);page.on('pageerror',error=>errors.push(error.message));
+  return {context,page,viewport,options,errors,blocked};
+}
+async function go(run,route='/v2/'){const response=await run.page.goto(base+route,{waitUntil:'domcontentloaded',timeout});assert.equal(response.status(),200);}
+async function settled(page){await page.evaluate(()=>{window.__focusedStable=null;});await page.waitForFunction(()=>{const p=window.__focusedStable,now=performance.now();if(!p||Math.abs(p.y-scrollY)>.1){window.__focusedStable={y:scrollY,at:now};return false;}return now-p.at>180;},null,{timeout});}
+async function frame(page,kind){
+  await page.waitForFunction(kind=>window.__v3ProductProbe.matches(window.__v3ProductProbe.read(kind)),kind,{timeout,polling:50});
+  await settled(page);await page.waitForTimeout(300);
+  assert.ok(await page.evaluate(kind=>window.__v3ProductProbe.matches(window.__v3ProductProbe.read(kind)),kind),'Fresh completed current '+kind+' frame');
+}
+async function hit(locator){
+  const value=await locator.evaluate(node=>{const b=node.getBoundingClientRect(),s=getComputedStyle(node),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);let opacity=1;for(let n=node;n;n=n.parentElement)opacity*=Number(getComputedStyle(n).opacity);return{text:node.textContent.trim(),label:node.getAttribute('aria-label'),x:b.x,y:b.y,width:b.width,height:b.height,right:b.right,bottom:b.bottom,viewport:{width:innerWidth,height:innerHeight},hit:hit===node||node.contains(hit),opacity,font:parseFloat(s.fontSize),visibility:s.visibility};});
+  assert.ok(value.height>=43.5&&value.width>=24&&value.font>=12,'Usable target '+JSON.stringify(value));
+  assert.ok(value.x>=-1&&value.right<=value.viewport.width+1&&value.y>=0&&value.bottom<=value.viewport.height+1&&value.hit&&value.opacity>.95,'Visible unobscured target '+JSON.stringify(value));return value;
+}
+async function shot(run,name,kind){
+  if(kind)await frame(run.page,kind);
+  await run.page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].filter(image=>{const b=image.getBoundingClientRect();return b.bottom>0&&b.top<innerHeight&&b.width>0;}).map(image=>image.decode().catch(()=>{})));});
+  const state=await run.page.evaluate(()=>({url:location.href,overflow:document.documentElement.scrollWidth>innerWidth+1,state:window.__v3ProductProbe?.snapshot(),text:document.querySelector('main')?.innerText}));
+  assert.equal(state.overflow,false,'No horizontal overflow');assert.deepEqual(run.errors,[],'No page errors');
+  await run.page.screenshot({path:path.join(output,name+'.png'),animations:'disabled'});
+  fs.writeFileSync(path.join(output,name+'.json'),JSON.stringify({...state,errors:run.errors,blocked:run.blocked},null,2));console.log('PASS '+name);
+}
+async function press(run,selector){const node=run.page.locator(selector);await hit(node);if(run.viewport.touch)await node.tap();else await node.click();}
+async function menu(run,prefix){
+  const page=run.page,menu=page.locator('[data-v2-menu]'),nav=page.locator('[data-v2-nav]');
+  if(run.viewport.width<=540){await hit(menu);await menu.tap();assert.equal(await menu.getAttribute('aria-expanded'),'true');for(const node of await nav.locator('a').all())await hit(node);await shot(run,prefix+'-menu');await page.keyboard.press('Escape');assert.equal(await menu.getAttribute('aria-expanded'),'false');assert.equal(await menu.evaluate(n=>n===document.activeElement),true);}
+  await page.setViewportSize({width:390,height:844});await menu.focus();await page.setViewportSize({width:844,height:390});
+  await page.waitForFunction(()=>document.activeElement?.matches('[data-v2-nav] a'));await hit(nav.locator('a').first());
+  await page.setViewportSize({width:390,height:844});await page.waitForFunction(()=>document.querySelector('[data-v2-menu]').getAttribute('aria-expanded')==='true');await hit(nav.locator('a').first());
+  await page.keyboard.press('Escape');await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});
+}
+async function review(browser,name){
+  const run=await open(browser,viewports[name]),page=run.page;
+  try{
+    await go(run);await page.locator('[data-assembly-models-ready="3"]').waitFor({timeout});await shot(run,name+'-hero','hero');
+    for(const selector of ['[data-assembly-intro] a[download]','[data-assembly-intro] a[href="/v2/projects/"]','[data-assembly-explore]','.v2-assembly-jump'])await hit(page.locator(selector));
+    await menu(run,name);await go(run);await page.locator('[data-assembly-models-ready="3"]').waitFor({timeout});
+    for(const index of [0,1,2]){
+      const control=page.locator(`[data-assembly-select="${index}"]`);await hit(control);
+      if(run.viewport.touch)await control.tap();else{await control.focus();await page.keyboard.press(index===1?'Space':'Enter');}
+      await frame(page,'hero');assert.equal(await control.getAttribute('aria-pressed'),'true');assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[index]);
+      assert.equal(await page.locator('[data-assembly-open-label]').innerText(),'Open '+labels[index]);await hit(page.locator('[data-assembly-explore]'));
+      assert.equal(new URL(page.url()).pathname,'/v2/');await shot(run,name+'-preview-'+index,'hero');
+    }
+    if(name.startsWith('ipad')){
+      await page.setViewportSize({width:run.viewport.height,height:run.viewport.width});await frame(page,'hero');
+      const selected=await page.locator('[data-assembly-select][aria-pressed="true"]').getAttribute('data-assembly-select');
+      assert.ok(selected!==null,'Rotated hero identifies its active preview');
+      assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[Number(selected)]);
+      for(const node of await page.locator('[data-assembly-select]').all())await hit(node);await hit(page.locator('[data-assembly-explore]'));await shot(run,name+'-rotated-preview','hero');
+      await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});await page.locator('[data-assembly-select="2"]').tap();await frame(page,'hero');
+    }
+    await press(run,'[data-assembly-explore]');await page.waitForURL('**'+routes[2]);assert.equal(await page.locator('h1').count(),1);await page.goBack({waitUntil:'domcontentloaded'});await page.waitForURL('**/v2/');
+    await press(run,'.v2-assembly-jump');await page.waitForURL('**#work');
+    await page.locator('.v2-selected-nav a[href="#work-framework"]').click();await page.waitForURL('**#work-framework');await frame(page,'selected');
+    assert.deepEqual(await page.locator('.v2-framework-card,.v2-transport-card').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),cases.map(slug=>'/v2/projects/'+slug+'/'));
+    await hit(page.locator('.v2-selected-skip'));await shot(run,name+'-framework','selected');
+    const inspect=page.locator('[data-framework-inspect="1"]');await hit(inspect);if(run.viewport.touch)await inspect.tap();else await inspect.click();await frame(page,'selected');assert.equal(await inspect.getAttribute('aria-pressed'),'true');await shot(run,name+'-framework-preview','selected');
+    await page.locator('[data-framework-overview]').click();await frame(page,'selected');
+    await page.locator('.v2-selected-nav a[href="#work-transit"]').click();await page.waitForURL('**#work-transit');await frame(page,'selected');for(const node of await page.locator('.v2-transport-card').all())await hit(node);await shot(run,name+'-transit','selected');
+    await press(run,'.v2-selected-skip');await page.waitForURL('**#skylabs-aircraft');await frame(page,'aircraft');await shot(run,name+'-aircraft','aircraft');
+    await press(run,'[data-aircraft-go="1"]');await page.waitForURL('**#skylabs-telemetry');await frame(page,'aircraft');await hit(page.locator('.v2-aircraft-actions a'));await hit(page.locator('.v3-story-skip'));await shot(run,name+'-telemetry','aircraft');
+    await press(run,'.v3-story-skip');await page.waitForURL('**#about');await settled(page);await shot(run,name+'-about');
+    await page.goBack();await page.waitForURL('**#skylabs-telemetry');await page.goForward();await page.waitForURL('**#about');
+    assert.ok(await page.locator('a[href="/v2/book/"]').count());assert.ok(await page.locator('a[href="mailto:andrew.noah.chung@gmail.com"]').count());
+    assert.deepEqual(run.errors,[]);assert.equal(run.blocked.filter(x=>x.method!=='GET').length,0);console.log('PASS '+name+' native preview, case open, chapters, bypasses, history and responsive focus');
+  }catch(error){await shot(run,name+'-failure').catch(()=>{});fs.writeFileSync(path.join(output,name+'-error.txt'),error.stack);throw error;}finally{await run.context.close();}
+}
+async function fallbacks(browser,webkit=false){
+  for(const [name,options,viewport]of [['no-js',{noJS:true},viewports.phone320],['reduced-motion',{reduced:true},viewports.phone390],['no-webgl',{noWebGL:true},viewports.ipad1024],['short-landscape',{}, {width:844,height:390,touch:true}]]){
+    const run=await open(browser,viewport,options);
+    try{await go(run);if(!options.noJS)await run.page.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyState==='static'||document.querySelector('[data-assembly]').dataset.assemblyState==='unavailable',null,{timeout});await shot(run,(webkit?'webkit-':'')+name);
+      assert.equal(await run.page.locator('[data-assembly-select]:visible').count(),0);await run.page.locator('.v2-assembly-jump').click();await run.page.waitForURL('**#work');
+      const cards=run.page.locator('.v2-framework-card,.v2-transport-card');assert.equal(await cards.count(),6);await cards.first().click();await run.page.waitForURL('**/v2/projects/framework-expansion-card/');assert.equal(await run.page.locator('h1').count(),1);assert.deepEqual(run.errors,[]);
+    }catch(error){await shot(run,name+'-failure').catch(()=>{});throw error;}finally{await run.context.close();}
+  }
+}
+(async()=>{
+  source();if(args.includes('--source-only'))return;fs.mkdirSync(output,{recursive:true});
+  const webkit=args.includes('--webkit'),{chromium,webkit:webkitEngine}=require('playwright');const browser=await(webkit?webkitEngine:chromium).launch({headless:true,...(webkit?{}:{args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']})});
+  try{if(args.includes('--fallbacks')||webkit)await fallbacks(browser,webkit);else await review(browser,args.find(a=>a.startsWith('--viewport='))?.split('=')[1]||'desktop1440');}finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

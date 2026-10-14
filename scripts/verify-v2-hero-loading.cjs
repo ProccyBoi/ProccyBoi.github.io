@@ -45,7 +45,7 @@ async function posterVisible(page,index){
     assert.equal(await page.evaluate(()=>Boolean(window.THREE)),false,'Scroll posters must render before Three.js downloads');
     await phase(page,.565);await posterVisible(page,1);
     assert.equal(await page.locator('[data-assembly-title]').textContent(),'Telemetry');
-    assert.equal(await page.locator('[data-assembly-link]').getAttribute('href'),'/v2/projects/skylabs/boards/telemetry/');
+    assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),'/v2/projects/skylabs/boards/telemetry/');
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.waitForFunction(()=>matchMedia('(prefers-reduced-motion: reduce)').matches&&getComputedStyle(document.querySelector('.v2-assembly-sticky')).position!=='sticky');
     assert.equal(await page.locator('[data-assembly-posters] img').evaluateAll(images=>images.every(image=>getComputedStyle(image).visibility==='visible'&&getComputedStyle(image).opacity==='1')),true,'Changing motion preference mid-load must restore all compact posters even before the media-query callback');
