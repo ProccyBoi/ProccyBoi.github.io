@@ -543,17 +543,21 @@
     scrollTo({top:top+positions[index]*(root.offsetHeight-stage.clientHeight),behavior:'smooth'});
   }));
   addEventListener('scroll',()=>{updateProgress();refreshVisibility();request();},{passive:true});
-  // An explicit focused preview survives a width/orientation change. Native
+  // An explicit preview survives a width/orientation change, including on
+  // browsers where tapping a button does not move focus. Native
   // scrolling clears that intent; browser-chrome height changes never seek.
   const clearPreviewSelection = () => { previewSelection = -1; };
   addEventListener('wheel',clearPreviewSelection,{passive:true});
   addEventListener('touchmove',clearPreviewSelection,{passive:true});
   addEventListener('hashchange',clearPreviewSelection);
-  addEventListener('keydown',event=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key)||(event.key===' '&&!event.target.closest?.('[data-assembly-select]')))clearPreviewSelection();});
+  addEventListener('pagehide',clearPreviewSelection);
+  addEventListener('pointerdown',event=>{if(!event.target.closest?.('[data-assembly-select]'))clearPreviewSelection();},{passive:true});
+  document.addEventListener('focusin',event=>{if(event.target!==document.body&&event.target!==document.documentElement&&!event.target.closest?.('[data-assembly-select]'))clearPreviewSelection();});
+  addEventListener('keydown',event=>{if(['Tab','ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key)||(event.key===' '&&!event.target.closest?.('[data-assembly-select]')))clearPreviewSelection();});
   addEventListener('resize',()=>{
     const changed=innerWidth!==previewViewportWidth;previewViewportWidth=innerWidth;
     const index=previewSelection,bounds=stage.getBoundingClientRect();
-    const preserve=changed&&index>=0&&document.activeElement===selectors[index]&&activePage&&!document.hidden&&!failed&&motionAllowed()&&bounds.bottom>0&&bounds.top<innerHeight;
+    const preserve=changed&&index>=0&&activePage&&!document.hidden&&!failed&&motionAllowed()&&bounds.bottom>Math.max(0,header?.getBoundingClientRect().bottom||0)&&bounds.top<innerHeight;
     layout();
     if(preserve){
       const top=scrollY+root.getBoundingClientRect().top;

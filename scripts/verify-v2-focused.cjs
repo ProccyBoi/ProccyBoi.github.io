@@ -99,9 +99,12 @@ async function review(browser,name){
       assert.equal(new URL(page.url()).pathname,'/v2/');await shot(run,name+'-preview-'+index,'hero');
     }
     if(name.startsWith('ipad')){
+      // Safari taps may not focus a button. Explicit intent must not depend
+      // on Chromium's focus behavior; no scene state is modified here.
+      await page.locator('[data-assembly-select="2"]').evaluate(node=>node.blur());
       await page.setViewportSize({width:run.viewport.height,height:run.viewport.width});await frame(page,'hero');
       const selected=await page.locator('[data-assembly-select][aria-pressed="true"]').getAttribute('data-assembly-select');
-      assert.equal(selected,'2','An explicitly focused preview survives rotation');
+      assert.equal(selected,'2','An explicit preview survives rotation even without button focus');
       assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[Number(selected)]);
       for(const node of await page.locator('[data-assembly-select]').all())await hit(node);await hit(page.locator('[data-assembly-explore]'));await shot(run,name+'-rotated-preview','hero');
       await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});await page.locator('[data-assembly-select="2"]').tap();await frame(page,'hero');
