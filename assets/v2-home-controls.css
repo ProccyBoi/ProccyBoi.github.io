@@ -21,7 +21,7 @@
 
 @media(max-width:360px){.v2-assembly-caption{bottom:184px}}
 /* Portrait tablets keep the board copy above the existing 3D composition. */
-@media(min-width:761px) and (max-width:900px){
+@media(min-width:761px) and (max-aspect-ratio:9/10){
   .v2-aircraft-feature.is-story .v3-aircraft-copy article:not(:first-child),
   .v2-aircraft-feature.is-story .v3-aircraft-copy article:not(:first-child).is-current{
     top:calc(var(--v3-aircraft-copy-top,34px) + 20px);

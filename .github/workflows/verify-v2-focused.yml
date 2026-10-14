@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        viewport: [desktop1440, phone320, phone390, ipad768, ipad820, ipad1024, ipad1180]
+        viewport: [desktop1440, phone320, phone390, ipad768, ipad820, ipad1024, ipad1180, ipadpro1024]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:

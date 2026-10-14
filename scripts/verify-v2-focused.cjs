@@ -10,7 +10,7 @@ const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
 const output=path.resolve(process.env.V2_FOCUSED_OUT||'.codex-temp/v2-focused');
 const args=process.argv.slice(2),timeout=180000;
 const {installProbe,currentFrame}=require('./verify-v3-product-browser.cjs');
-const viewports={desktop1440:{width:1440,height:900},phone320:{width:320,height:780,touch:true},phone390:{width:390,height:844,touch:true},ipad768:{width:768,height:1024,touch:true},ipad820:{width:820,height:1180,touch:true},ipad1024:{width:1024,height:768,touch:true},ipad1180:{width:1180,height:820,touch:true}};
+const viewports={desktop1440:{width:1440,height:900},phone320:{width:320,height:780,touch:true},phone390:{width:390,height:844,touch:true},ipad768:{width:768,height:1024,touch:true},ipad820:{width:820,height:1180,touch:true},ipad1024:{width:1024,height:768,touch:true},ipad1180:{width:1180,height:820,touch:true},ipadpro1024:{width:1024,height:1366,touch:true}};
 const routes=['tramtrace','skylabs/boards/telemetry','framework-raspberry-pi'].map(slug=>'/v2/projects/'+slug+'/');
 const labels=['TramTrace','Telemetry','Raspberry Pi'];
 const cases=['framework-expansion-card','framework-dual-usb','framework-raspberry-pi','framework-logic-analyser','metroboard','tramtrace'];
@@ -143,7 +143,7 @@ async function review(browser,name){
     await page.locator('.v2-selected-nav a[href="#work-transit"]').click();await page.waitForURL('**#work-transit');await frame(page,'selected');for(const node of await page.locator('.v2-transport-card').all())await hit(node);await shot(run,name+'-transit','selected');
     await press(run,'.v2-selected-skip');await page.waitForURL('**#skylabs-aircraft');await frame(page,'aircraft');await shot(run,name+'-aircraft','aircraft');
     await press(run,'[data-aircraft-go="1"]');await page.waitForURL('**#skylabs-telemetry');await frame(page,'aircraft');await hit(page.locator('.v2-aircraft-actions a'));await hit(page.locator('.v3-story-skip'));
-    if(run.viewport.width>760&&run.viewport.width<=900){const copy=await page.locator('article[data-aircraft-chapter="1"]').boundingBox(),stage=await page.locator('[data-aircraft-stage]').boundingBox();assert.ok(copy.y+copy.height<stage.y+stage.height*.35,'Portrait tablet copy stays above the model region; actual pixels are also reviewed');}
+    if(run.viewport.width>760&&run.viewport.width/run.viewport.height<=.9){const copy=await page.locator('article[data-aircraft-chapter="1"]').boundingBox(),stage=await page.locator('[data-aircraft-stage]').boundingBox();assert.ok(copy.y+copy.height<stage.y+stage.height*.35,'Portrait tablet copy stays above the model region; actual pixels are also reviewed');}
     await shot(run,name+'-telemetry','aircraft');
     await press(run,'.v3-story-skip');await page.waitForURL('**#about');await settled(page);await shot(run,name+'-about');
     await page.goBack();await page.waitForURL('**#skylabs-telemetry');await page.goForward();await page.waitForURL('**#about');
