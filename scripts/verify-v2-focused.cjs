@@ -47,6 +47,7 @@ async function open(browser,viewport,options={}){
   const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height},hasTouch:!!viewport.touch,isMobile:!!viewport.touch,deviceScaleFactor:1,javaScriptEnabled:!options.noJS,reducedMotion:options.reduced?'reduce':'no-preference',serviceWorkers:'block',acceptDownloads:true});
   const blocked=[];await context.route('**/*',route=>{const request=route.request(),url=new URL(request.url());if(url.origin===new URL(base).origin&&request.method()==='GET')return route.continue();blocked.push({url:url.href,method:request.method()});return route.abort();});
   if(!options.noJS)await context.addInitScript({content:`(${installProbe.toString()})(); window.__v3ProductProbe.matches=(${currentFrame.toString()});`});
+  if(!options.noJS)await context.addInitScript(()=>{const original=window.scrollTo;window.__v2ScrollCommands=[];window.scrollTo=function(...args){window.__v2ScrollCommands.push({at:performance.now(),args});return original.apply(this,args);};});
   if(options.noWebGL)await context.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...params){return /webgl/.test(type)?null:original.call(this,type,...params);};});
   const page=await context.newPage(),errors=[];page.setDefaultTimeout(30000);page.on('pageerror',error=>errors.push(error.message));
   return {context,page,viewport,options,errors,blocked};
@@ -108,6 +109,20 @@ async function review(browser,name){
       assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[Number(selected)]);
       for(const node of await page.locator('[data-assembly-select]').all())await hit(node);await hit(page.locator('[data-assembly-explore]'));await shot(run,name+'-rotated-preview','hero');
       await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});await page.locator('[data-assembly-select="2"]').tap();await frame(page,'hero');
+      if(name==='ipad1024'){
+        const count=()=>page.evaluate(()=>window.__v2ScrollCommands.length);
+        let before=await count();await page.setViewportSize({width:run.viewport.width,height:run.viewport.height-24});await frame(page,'hero');assert.equal(await count(),before,'Height-only resize does not seek');
+        await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});await frame(page,'hero');assert.equal(await count(),before,'Restoring height does not seek');
+        for(const input of ['wheel','touch']){
+          await page.locator('[data-assembly-select="2"]').tap();await frame(page,'hero');
+          if(input==='wheel')await page.mouse.wheel(0,-120);
+          else{const cdp=await run.context.newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:150,y:360}]});for(let step=1;step<=6;step++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:150,y:360+step*20}]});await page.waitForTimeout(25);}await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();}
+          await frame(page,'hero');before=await count();await page.setViewportSize({width:run.viewport.height,height:run.viewport.width});await frame(page,'hero');assert.equal(await count(),before,'Real '+input+' clears old preview before rotation');
+          await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});await frame(page,'hero');assert.equal(await count(),before,'Cleared '+input+' intent stays cleared');
+        }
+        const events=await page.evaluate(()=>window.__v3ProductProbe.input);for(const type of ['wheel','touchmove'])assert.ok(events.some(event=>event.type===type&&event.trusted&&!event.prevented),'Native '+type+' remains uncaptured');
+        await page.locator('[data-assembly-select="2"]').tap();await frame(page,'hero');
+      }
     }
     await press(run,'[data-assembly-explore]');await page.waitForURL('**'+routes[2]);assert.equal(await page.locator('h1').count(),1);await page.goBack({waitUntil:'domcontentloaded'});await page.waitForURL('**/v2/');
     await press(run,'.v2-assembly-jump');await page.waitForURL('**#work');
