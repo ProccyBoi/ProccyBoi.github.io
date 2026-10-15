@@ -248,7 +248,7 @@ def case_navigation(source, slug, title):
         links.append(('boards', 'Boards'))
     if slug == 'kiku':
         links = [('overview', 'Overview'), ('simulator', 'Try it'),
-                 ('explore', 'Assembly'), ('details', 'Engineering'),
+                 ('details', 'Engineering'), ('explore', 'Assembly'),
                  ('build', 'Development'), ('verification', 'Evidence')]
     path = '/v2/projects/' + slug + '/'
     markup = f'<nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">{escape(title)}</span><div class="v2-case-nav-links">'

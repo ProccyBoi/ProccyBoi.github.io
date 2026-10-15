@@ -25,7 +25,7 @@ if(story){
   let model=null,loading=false,visible=true,pinned=false,manual=null,progress=0,target=0,raf=0,last=0,frames=0;
   let layoutLock=false,lastY=scrollY,px=0,py=0,tx=0,ty=0;
   let requestVersion=0;
-  const captions=['Mame P2 / nine printed enclosure parts','Source CAD / separated for inspection','Rear shell / folded stand'];
+  const captions=['Mame P2 / enclosure CAD','Source CAD / separated for inspection','Rear shell / folded stand'];
   function semantic(){
     story.dataset.target=target.toFixed(5);
     const nearest=target<.25?0:target<.75?1:2;
@@ -72,6 +72,7 @@ if(story){
   async function start(explicit=false){
     if(loading||model)return;
     if(!explicit&&(reduced.matches||connection?.saveData)){load.hidden=false;return;}
+    const restoreFocus=explicit&&document.activeElement===load;
     loading=true;load.disabled=true;load.textContent='Loading enclosure…';const version=++requestVersion;
     let renderer;
     try{
@@ -115,6 +116,7 @@ if(story){
       canvas.hidden=false;controls.hidden=false;load.hidden=true;loading=false;
       setPin();target=manual===null?nativeProgress():manual;progress=target;semantic();model.render(progress,0,0);
       story.dataset.ready='true';story.dataset.parts=String(meshes.length);queue();
+      if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))poses.find(button=>button.getAttribute('aria-pressed')==='true')?.focus({preventScroll:true});
     }catch(error){renderer?.dispose();fallback('Source CAD image shown. The interactive enclosure could not start.');}
   }
   load.addEventListener('click',()=>start(true));

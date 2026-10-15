@@ -28,12 +28,12 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
 .kiku-story-navigation { display:flex; gap:4px; width:fit-content; border:1px solid var(--k-line); padding:3px; }
 .kiku-page .kiku-story-navigation button { border:0; border-radius:0; background:transparent; color:#afb4b9; font-size:12px; min-width:72px; min-height:44px; padding:10px 17px; }
 .kiku-page .kiku-story-navigation button[aria-pressed=true] { background:#25364a; color:#cce5ff; }
-.kiku-page .kiku-story-caption { font:11px/1.7 "IBM Plex Mono",monospace; color:var(--k-muted); margin-top:14px; max-width:37ch; min-height:3.4em; }
+.kiku-page .kiku-story-caption { font:11px/1.7 "IBM Plex Mono",monospace; color:var(--k-muted); margin-top:14px; max-width:44ch; min-height:1.7em; }
 .kiku-page .kiku-story-scroll { position:absolute; bottom:20px; left:clamp(22px,4.4vw,80px); color:#b0b0a8; font:10px/1.6 "IBM Plex Mono",monospace; }
 .kiku-story-scroll span { display:inline-block; margin-left:14px; color:var(--k-accent); }
 .kiku-page .kiku-story-load { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#141412; background:#7bbcff; border:0; padding:14px 20px; font-size:12px; box-shadow:0 6px 24px #0003; white-space:nowrap; }
 .kiku-story.is-pinned { height:calc(100svh + 1250px); }
-.kiku-story.is-pinned .kiku-story-stage { position:sticky; top:var(--kiku-top); height:calc(100svh - var(--kiku-top)); min-height:0; }
+.kiku-story.is-pinned .kiku-story-stage { position:sticky; top:var(--kiku-top); height:calc(100svh - var(--kiku-top)); min-height:0; grid-template-rows:minmax(0,1fr); }
 .kiku-story.is-pinned .kiku-story-object { min-height:0; }
 .kiku-story.is-pinned .kiku-story-copy { padding-block:24px 68px; }
 .kiku-page .kiku-sim-press { position:relative; touch-action:pan-y; user-select:none; -webkit-user-select:none; }
@@ -50,7 +50,7 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
 .kiku-signal-path.is-tracing>div:nth-of-type(3) { animation-delay:.16s; }
 .kiku-signal-path.is-tracing>div:nth-of-type(4) { animation-delay:.24s; }
 @keyframes kiku-trace { from { opacity:.45; transform:translateX(-7px); } to { opacity:1; transform:translateX(0); } }
-@media(max-width:1100px) { .kiku-story-stage { grid-template-columns:minmax(280px,.85fr) minmax(0,1.15fr); } .kiku-story .kiku-actions { flex-direction:column; align-items:start; gap:8px; } .kiku-story-copy { padding-right:15px; } .kiku-story h1 { font-size:120px!important; } }
+@media(max-width:1100px) { .kiku-story-stage { grid-template-columns:minmax(280px,.85fr) minmax(0,1.15fr); } .kiku-story-copy { padding-right:15px; } .kiku-story h1 { font-size:120px!important; } }
 @media(max-width:800px) { .kiku-story-stage { grid-template-columns:1fr 1.05fr; } .kiku-story h1 { font-size:104px!important; } .kiku-page .kiku-story-description { font-size:14px; } .kiku-page .kiku-story-deck { font-size:31px; } .kiku-story-navigation button { padding-inline:10px!important; min-width:64px!important; } }
 @media(max-width:600px) {
  .kiku-story-stage { display:flex; flex-direction:column; min-height:0; }
@@ -78,3 +78,13 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
 }
 @media(prefers-reduced-motion:reduce) { .kiku-story-object>canvas { transition:none; } .kiku-signal-path.is-tracing>div { animation:none!important; } }
 @media print { .kiku-story { height:auto!important; } .kiku-story-stage { position:static!important; height:auto!important; display:block; } .kiku-story-object { height:400px; } .kiku-story-object>img { visibility:visible!important; } .kiku-story canvas,.kiku-story-navigation,.kiku-story-scroll,.kiku-story-load,.kiku-look-strip { display:none!important; } }
+
+@media(min-width:601px) and (max-height:880px) {
+ .kiku-story.is-pinned .kiku-story-copy { padding-block:18px 32px; }
+ .kiku-page .kiku-story.is-pinned h1 { font-size:100px!important; margin:18px 0 22px -4px!important; }
+ .kiku-page .kiku-story.is-pinned .kiku-story-deck { font-size:30px; }
+ .kiku-page .kiku-story.is-pinned .kiku-story-description { font-size:14px; line-height:1.6; margin-top:18px; }
+ .kiku-story.is-pinned .kiku-actions { margin:22px 0; gap:18px; }
+ .kiku-story.is-pinned .kiku-story-scroll { display:none; }
+ .kiku-story.is-pinned .kiku-story-qualification { bottom:18px; }
+}
