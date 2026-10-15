@@ -1,5 +1,5 @@
 /* V2-specific populated inspector; root/v3 keep their accepted enclosure viewer. */
-import {loadThree,loadKikuModel,makeKikuMesh} from './v2-kiku-model.js';
+import {loadThree,loadKikuModel,makeKikuMesh} from './v2-kiku-model.js?v=hardware-audio-20261015';
 import {mountKikuSimulator} from './v2-kiku-simulator.js';
 
 const simulator = document.querySelector('[data-kiku-simulator]');

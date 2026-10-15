@@ -1,4 +1,4 @@
-import {loadThree,loadKikuModel,makeKikuMesh} from './v2-kiku-model.js';
+import {loadThree,loadKikuModel,makeKikuMesh} from './v2-kiku-model.js?v=hardware-audio-20261015';
 /* V2-only choreography. All nine meshes retain their source CAD attributes.
  * Native page scroll is the clock; no wheel/touch scroll cancellation or loop. */
 const story=document.querySelector('[data-kiku-story]');
