@@ -76,7 +76,7 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
  .kiku-page .kiku-story-qualification { bottom:12px; font-size:9px; }
  .kiku-page .kiku-sim-press::before { transform-origin:1.5px 22px; height:8px; top:5px; }
 }
-@media(prefers-reduced-motion:reduce) { .kiku-story-object>canvas { transition:none; } .kiku-signal-path.is-tracing>div { animation:none!important; } }
+@media(prefers-reduced-motion:reduce) { .kiku-story.is-pinned { height:auto; } .kiku-story.is-pinned .kiku-story-stage { position:relative; top:auto; height:auto; min-height:620px; } .kiku-story-scroll { display:none!important; } .kiku-story-object>canvas { transition:none; } .kiku-signal-path.is-tracing>div { animation:none!important; } }
 @media print { .kiku-story { height:auto!important; } .kiku-story-stage { position:static!important; height:auto!important; display:block; } .kiku-story-object { height:400px; } .kiku-story-object>img { visibility:visible!important; } .kiku-story canvas,.kiku-story-navigation,.kiku-story-scroll,.kiku-story-load,.kiku-look-strip { display:none!important; } }
 
 @media(min-width:601px) and (max-height:880px) {

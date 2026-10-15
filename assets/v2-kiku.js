@@ -5,6 +5,7 @@ const story=document.querySelector('[data-kiku-story]');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const small=matchMedia('(max-width: 600px)');
 const connection=navigator.connection;
+let motionReduced=reduced.matches;
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
 if(story){
@@ -29,13 +30,20 @@ if(story){
     return pinned?clamp((-story.getBoundingClientRect().top+parseFloat(getComputedStyle(stage).top))/Math.max(1,distance)):0;
   }
   function queue(){if(!raf&&visible&&!document.hidden&&model)raf=requestAnimationFrame(tick);}
-  function update(){target=manual===null?nativeProgress():manual;semantic();queue();}
+  // Reconcile only during existing input/render work, never a polling loop.
+  // Refresh browser preference after graphics and visibility transitions.
+  function syncMotion(){
+    const next=matchMedia(reduced.media).matches;
+    if(next===motionReduced)return false;
+    motionReduced=next;tx=ty=0;setPin();return true;
+  }
+  function update(){syncMotion();target=manual===null?nativeProgress():manual;semantic();queue();}
   function setPin(){
     const header=document.querySelector('.v2-header'),nav=document.querySelector('.v2-case-nav');
     const top=(header?.offsetHeight||0)+(nav?.offsetHeight||0);
     story.style.setProperty('--kiku-top',top+'px');
-    pinned=!!model&&!reduced.matches&&!connection?.saveData&&innerHeight-top>=(small.matches?590:580);
-    story.classList.toggle('is-pinned',pinned);cue.hidden=!pinned;
+    pinned=!!model&&!motionReduced&&!connection?.saveData&&innerHeight-top>=(small.matches?590:580);
+    story.classList.toggle('is-pinned',pinned);cue.hidden=!pinned;story.dataset.motionReduced=String(motionReduced);
   }
   function layout(){
     layoutLock=true;setPin();update();
@@ -43,8 +51,9 @@ if(story){
   }
   function tick(now){
     raf=0;if(!model||!visible||document.hidden)return;
+    if(syncMotion()){target=manual===null?nativeProgress():manual;semantic();}
     const dt=last?Math.min(50,now-last):16;last=now;
-    const factor=reduced.matches?1:1-Math.exp(-dt/88);
+    const factor=motionReduced?1:1-Math.exp(-dt/88);
     progress+=(target-progress)*factor;px+=(tx-px)*factor;py+=(ty-py)*factor;
     if(Math.abs(progress-target)<.00005)progress=target;
     if(Math.abs(px-tx)<.00005)px=tx;if(Math.abs(py-ty)<.00005)py=ty;
@@ -108,9 +117,9 @@ if(story){
   addEventListener('scroll',()=>{if(!layoutLock&&Math.abs(scrollY-lastY)>2)manual=null;lastY=scrollY;update();},{passive:true});
   addEventListener('resize',layout,{passive:true});
   addEventListener('visibilitychange',()=>{last=0;if(document.hidden){cancelAnimationFrame(raf);raf=0;}else update();});
-  reduced.addEventListener('change',()=>{tx=ty=0;layout();});
+  reduced.addEventListener('change',event=>{motionReduced=event.matches;story.dataset.motionEvents=String(Number(story.dataset.motionEvents||0)+1);story.dataset.motionEventValue=String(event.matches);story.dataset.motionHeldValue=String(reduced.matches);tx=ty=0;layout();});
   connection?.addEventListener('change',()=>{layout();if(connection.saveData&&!model){requestVersion++;loading=false;load.hidden=false;load.disabled=false;}});
-  object.addEventListener('pointermove',event=>{if(event.pointerType!=='mouse'||reduced.matches)return;const r=object.getBoundingClientRect();tx=((event.clientX-r.left)/r.width-.5)*.1;ty=((event.clientY-r.top)/r.height-.5)*.06;queue();},{passive:true});
+  object.addEventListener('pointermove',event=>{if(event.pointerType!=='mouse'||motionReduced)return;const r=object.getBoundingClientRect();tx=((event.clientX-r.left)/r.width-.5)*.1;ty=((event.clientY-r.top)/r.height-.5)*.06;queue();},{passive:true});
   object.addEventListener('pointerleave',()=>{tx=ty=0;queue();},{passive:true});
   function bindContextLoss(){canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fallback('Graphics paused. The source CAD image is still available.');});}
   bindContextLoss();
