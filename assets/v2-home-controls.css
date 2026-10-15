@@ -23,6 +23,17 @@
 .v2-home [data-framework-background].is-scene .v2-selected-skip{top:auto;bottom:clamp(110px,15svh,150px);font-size:13px;text-decoration:none!important}
 .v2-home [data-framework-background].is-scene .v2-framework-copy{background:var(--v2-bg)}
 @media(max-width:760px){.v2-home [data-framework-background].is-scene .v2-selected-skip{bottom:180px}}
+/* The CAD uses its real stage width, so tablet labels use that same boundary. */
+.v2-home [data-framework-background].is-scene .v2-selected-stage{container-type:inline-size;container-name:v2-framework}
+@container v2-framework (max-width:760px){
+  .v2-home [data-framework-background].is-scene .v2-framework-grid{--selected-columns:2;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr) 65px 65px;row-gap:8px}
+  .v2-home [data-framework-background].is-scene .v2-framework-card{height:65px;padding:0}
+  .v2-home [data-framework-background].is-scene .v2-framework-card:nth-child(3){--selected-column:0;--selected-row:1;grid-row:3}
+  .v2-home [data-framework-background].is-scene .v2-framework-card:nth-child(4){--selected-column:1;--selected-row:1;grid-row:3}
+  .v2-home [data-framework-background].is-scene .v2-framework-art{top:calc(27% + var(--selected-row)*25%);height:25%}
+  .v2-home [data-framework-background].is-scene .v2-framework-copy{padding-top:11px;padding-bottom:8px}
+  .v2-home [data-framework-background].is-scene .v2-selected-skip{bottom:180px}
+}
 @media(prefers-reduced-motion:reduce){.v2-assembly-choices button{transition:none}}
 
 /* Portrait tablets keep the board copy above the existing 3D composition. */

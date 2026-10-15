@@ -51,7 +51,7 @@
     if(active===lastPriority)return;lastPriority=active;
     dispatchEvent(new CustomEvent('v2:selected-priority',{detail:{active}}));
   }
-  let width=1,height=1,top=0,distance=1,progress=0,current=0,previousTime=0,currentChapter=-1,direct=false,capturePose;
+  let width=1,height=1,top=0,distance=1,progress=0,current=0,previousTime=0,currentChapter=-1,direct=false,capturePose,pinnedReading=false;
   const assemblies = {};
   const request = () => { if (!frame && !liveBusy && !backgroundBusy && backgroundDone && ready && track && visible && activePage && !document.hidden && allowed()) frame=requestAnimationFrame(render); };
   const near = () => { const b=root.getBoundingClientRect(); return b.top<innerHeight+500 && b.bottom>-500; };
@@ -99,7 +99,7 @@
   function fallback(state='static') {
     invalidate();cancelAnimationFrame(frame);frame=0;previousTime=0;mask();
     const restore=track&&visible&&currentChapter>=0?currentChapter:-1;
-    root.classList.remove('is-scene','is-live');
+    pinnedReading=false;root.classList.remove('is-scene','is-live');
     articles.forEach((article,i)=>{article.id=ids[i];article.inert=false;article.removeAttribute('aria-hidden');article.classList.remove('is-current');root.append(article);});
     stage?.remove();track?.remove();track=null;publishPriority();
     root.dataset.selectedState=state;settleBackground({state,at:performance.now()});
@@ -110,8 +110,12 @@
   }
   function updateScroll() {
     if(!track)return;
+    // Resize can deliver a scroll event before its resize notification. Keep
+    // the last stable reading position until layout has measured the new size.
+    if(stage.clientWidth!==width || stage.clientHeight!==height)return;
     const b=root.getBoundingClientRect(),pinned=parseFloat(getComputedStyle(stage).top)||0;
     const nextVisible=b.top<innerHeight&&b.bottom>pinned;
+    pinnedReading=nextVisible&&stage.getBoundingClientRect().top<=pinned+1&&b.bottom>=pinned+height-1;
     const entered=nextVisible&&!visible,left=!nextVisible&&visible;visible=nextVisible;publishPriority();
     const wasNear=preparationNear;preparationNear=b.top<innerHeight*2&&b.bottom>-innerHeight;
     if(!preparationNear&&!visible){preparationIntent=false;if(wasNear&&(backgroundBusy||initialization))invalidate();}
@@ -136,6 +140,8 @@
     const nextWidth=stage.clientWidth,nextHeight=stage.clientHeight;
     const nextDPR=Math.min(devicePixelRatio||1,nextWidth<=760?1.25:1.5);
     const sizeChanged=width!==nextWidth||height!==nextHeight,dprChanged=layoutDPR!==nextDPR;
+    const preservePosition=width>1&&width!==nextWidth&&pinnedReading&&activePage&&!document.hidden&&allowed();
+    const previousProgress=progress;
     if(sizeChanged||dprChanged){invalidate();mask();poseRevision++;}
     width=nextWidth;height=nextHeight;layoutDPR=nextDPR;distance=height*1.15;
     track.style.height=`${distance+height}px`;track.style.marginTop=`${-height}px`;
@@ -144,6 +150,10 @@
     [...track.children].forEach((step,i)=>step.style.top=`${i*distance+padding-pinned}px`);
     if(renderer&&dprChanged)renderer.setPixelRatio(nextDPR);
     if(renderer&&sizeChanged)renderer.setSize(width,height,false);
+    if(preservePosition){
+      const newTop=scrollY+track.getBoundingClientRect().top;
+      scrollTo({top:newTop-pinned+previousProgress*distance,behavior:'instant'});
+    }
     previousTime=0;updateScroll();
   }
   function fitLight(pose) {
