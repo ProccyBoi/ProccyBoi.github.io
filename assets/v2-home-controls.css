@@ -1,4 +1,7 @@
 /* Compact V2 preview controls, with one quiet surface and a clear active item. */
+/* This versioned homepage sheet also updates visitors with a cached base sheet. */
+body.v2.v2-home:not(.v3-product){--v2-accent:#7bbcff;--v2-copper:#7bbcff;--v2-on-accent:#101820}
+body.v2.v2-home:not(.v3-product) :is(a,button){-webkit-tap-highlight-color:#7bbcff22}
 .v2-assembly-choices{position:relative;gap:4px;width:min(500px,52%);padding:4px;border:1px solid var(--v2-line);border-radius:12px;background:var(--v2-bg);counter-reset:none}
 .v2-assembly-preview-label{position:absolute;left:4px;bottom:calc(100% + 8px);color:var(--v2-muted);font-size:12px;line-height:1.4}
 .v2-assembly-choices button{justify-content:center;align-items:center;min-height:44px;padding:10px 8px;border:0;border-radius:8px;background:transparent;font-size:14px;text-align:center;counter-increment:none;transition:background .18s,color .18s}
