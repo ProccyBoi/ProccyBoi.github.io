@@ -29,6 +29,7 @@ document.querySelectorAll('[data-source]').forEach(button => button.addEventList
 
 const assembly = document.querySelector('[data-kiku-assembly]');
 if (assembly) {
+  assembly.dataset.interactive='true';
   const stage = assembly.querySelector('[data-model-stage]');
   const load = assembly.querySelector('[data-model-load]');
   const status = assembly.querySelector('[data-model-status]');

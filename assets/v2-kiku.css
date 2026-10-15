@@ -88,3 +88,7 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
  .kiku-story.is-pinned .kiku-story-scroll { display:none; }
  .kiku-story.is-pinned .kiku-story-qualification { bottom:18px; }
 }
+
+/* The fallback is already rendered on this background; preserve its colors. */
+.kiku-page .kiku-model-poster { mix-blend-mode:normal; }
+.kiku-assembly:not([data-interactive]) .kiku-model-load { display:none; }
