@@ -8,16 +8,16 @@
     {
       "path": "/assets/images/kiku/v2-populated-assembly.png",
       "sha256": "1836c077c2f3826d3ffa8d6d8c40a68432d881c49e75559f73823f1b5454c8fc",
-      "width": 1200,
-      "height": 1000,
+      "width": 1201,
+      "height": 1001,
       "selection": "All nine printed parts and populated PCB, 75 percent presentation separation, isometric",
       "fidelity": "Same official component meshes and recorded package envelopes as pcb-provenance.json"
     },
     {
       "path": "/assets/images/kiku/v2-populated-pcb.png",
       "sha256": "3b2ae78d7c1c3f13e1e047e7c495e90ec816d6b7f898b088501d45bd83657421",
-      "width": 1200,
-      "height": 1000,
+      "width": 1201,
+      "height": 1001,
       "selection": "Populated PCB, front view",
       "fidelity": "Same official component meshes and recorded package envelopes as pcb-provenance.json"
     }
