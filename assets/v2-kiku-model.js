@@ -19,5 +19,8 @@ export function makeKikuMesh(T,part){
  for(const name of ['position','normal','uv']){const field=part[name];if(field)geometry.setAttribute(name,new T.BufferAttribute(new Float32Array(part.binary,field.byteOffset,field.count*field.itemSize),field.itemSize));}
  geometry.setIndex(new T.BufferAttribute(new Uint32Array(part.binary,part.index.byteOffset,part.index.count),1));geometry.computeBoundingBox();geometry.computeBoundingSphere();
  const material=new T.MeshStandardMaterial({color:part.colorLinear?new T.Color(...part.colorLinear):new T.Color(part.color).convertSRGBToLinear(),roughness:part.roughness??.65,metalness:part.metalness??0,opacity:part.opacity??1,transparent:(part.opacity??1)<1,depthWrite:(part.opacity??1)>=1,side:T.DoubleSide});
- const mesh=new T.Mesh(geometry,material);mesh.userData.part=part;return mesh;
+ const mesh=new T.Mesh(geometry,material);mesh.userData.part=part;
+ // Both board coatings are translucent batches: draw the mask before its silk.
+ if(part.id==='pcb_soldermask')mesh.renderOrder=1;if(part.id==='pcb_silkscreen')mesh.renderOrder=2;
+ return mesh;
 }
