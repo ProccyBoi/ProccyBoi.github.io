@@ -74,9 +74,9 @@ if(story){
       if(version!==requestVersion)return;
       renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));renderer.setClearColor(0x141412,1);
-      renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
-      const scene=new T.Scene();scene.add(new T.HemisphereLight(0xeef4ff,0x444c42,.9));
-      for(const [color,intensity,position] of [[0xfff3df,1.25,[-140,220,250]],[0xa9cfff,.75,[180,120,-180]],[0xffffff,.35,[100,-100,180]]]){const light=new T.DirectionalLight(color,intensity);light.position.set(...position);scene.add(light);}
+      renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
+      const scene=new T.Scene();scene.add(new T.HemisphereLight(0xeef4ff,0x444c42,.55));
+      for(const [color,intensity,position] of [[0xfff3df,.85,[-140,220,250]],[0xa9cfff,.5,[180,120,-180]],[0xffffff,.15,[100,-100,180]]]){const light=new T.DirectionalLight(color,intensity);light.position.set(...position);scene.add(light);}
       const group=new T.Group();group.position.set(...manifest.center.map(v=>-v));scene.add(group);
       const meshes=manifest.parts.map(part=>{
         const geometry=new T.BufferGeometry();

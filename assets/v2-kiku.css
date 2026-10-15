@@ -39,7 +39,7 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
 .kiku-page .kiku-sim-press { position:relative; touch-action:pan-y; user-select:none; -webkit-user-select:none; }
 .kiku-sim-press::before { content:""; position:absolute; width:3px; height:11px; border-radius:2px; background:#b7d1bd; left:calc(50% - 1.5px); top:7px; transform-origin:1.5px 31px; transform:rotate(var(--dial-turn,0deg)); }
 .kiku-sim-press.is-turning { cursor:grabbing; }
-.kiku-page .kiku-dial-hint { color:#b8bec5; font:11px/1.6 "IBM Plex Mono",monospace; margin-top:10px; }
+.kiku-page .kiku-dial-hint { color:#25382d; font:11px/1.6 "IBM Plex Mono",monospace; margin-top:10px; }
 .kiku-look-strip { display:flex; gap:8px; overflow-x:auto; padding:6px 3px 12px; scrollbar-width:thin; grid-column:1/-1; width:100%; }
 .kiku-page .kiku-look-choice { display:flex; align-items:center; gap:8px; flex:0 0 auto; min-height:44px; padding:10px 12px; border:1px solid #414952; color:#b8bec5; background:transparent; font:11px/1.5 "IBM Plex Mono",monospace; border-radius:0; }
 .kiku-look-choice::before { content:""; width:13px; height:13px; flex-shrink:0; border-radius:50%; background:var(--look-color); border:1px solid #ffffff50; }

@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: '22'
       - run: |
-          npm install --no-save --package-lock=false playwright@1.57.0
+          npm install --no-save --package-lock=false playwright@1.57.0 pngjs@7.0.0
           npx playwright install --with-deps chromium
       - run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/kiku-server.log 2>&1 &
@@ -68,7 +68,7 @@ jobs:
         with:
           node-version: '22'
       - run: |
-          npm install --no-save --package-lock=false playwright@1.57.0
+          npm install --no-save --package-lock=false playwright@1.57.0 pngjs@7.0.0
           npx playwright install --with-deps ${{ matrix.engine }}
       - run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/kiku-server.log 2>&1 &
