@@ -155,7 +155,7 @@
       "explode": [
         0,
         0,
-        36
+        26
       ],
       "roughness": 0.45,
       "metalness": 0.25,
@@ -287,7 +287,7 @@
       "explode": [
         0,
         0,
-        36
+        26
       ],
       "texture": "/assets/models/kiku-hardware/screen.png",
       "unlit": true,
@@ -474,7 +474,7 @@
       "id": "screen",
       "name": "Screen + lens",
       "color": "#485d65",
-      "description": "HS20HS072RX 51.8 \u00d7 36.2 \u00d7 2.05 mm body, 40.8 \u00d7 30.6 mm active area and 54 \u00d7 37.8 \u00d7 1 mm lens. P2 optical centre follows the retained cradle and documented 0.615 mm shift. Image is a static capture of the real firmware renderer; flex and mating fit remain unverified",
+      "description": "HS20HS072RX 51.8 \u00d7 36.2 \u00d7 2.05 mm body, 40.8 \u00d7 30.6 mm active area and 54 \u00d7 37.8 \u00d7 1 mm lens. P2 optical centre follows the retained cradle, 0.615 mm above the older source datum. Image is a static capture of the real firmware renderer; flex and mating fit remain unverified",
       "fidelity": "Documented dimensions \u00b7 reconstructed packaging",
       "bounds": [
         [

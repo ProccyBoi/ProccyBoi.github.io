@@ -33,6 +33,9 @@ c=np.linalg.lstsq(np.c_[2*q[:,0],2*q[:,2],np.ones(len(q))],q[:,0]**2+q[:,2]**2,r
 assert np.allclose(c[:2],[65,-12.1],atol=.002) and abs(radius-5.1)<.002
 cradle=(np.array(ep['display_carrier']['bounds'])[0,1]+np.array(ep['display_carrier']['bounds'])[1,1])/2
 assert abs(cradle-83.495)<1e-4
+# Full-open display stays with its cradle, behind the detached front shell.
+assert p['screen_body']['explode']==p['screen_pixels']['explode']==ep['display_carrier']['explode']
+assert p['screen_pixels']['bounds'][1][2]+p['screen_pixels']['explode'][2] < ep['front_shell']['bounds'][0][2]+ep['front_shell']['explode'][2]
 # Hardware sits between the original PCB and documented support depths.
 assert p['battery_pouch']['bounds'][1][2]<ep['battery_guard']['bounds'][0][2]
 assert p['speaker_rim']['bounds'][1][2]<ep['speaker_retainer']['bounds'][0][2]

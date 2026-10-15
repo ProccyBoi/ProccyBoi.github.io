@@ -37,8 +37,8 @@ mesh('speaker_rim','speaker',cyl(18,23,-14.8,10,5.1).cut(cyl(18,23,-14.81,8.65,5
 # Recessed faces are material-only disks, inside the published body dimensions.
 mesh('speaker_face','speaker',cyl(18,23,-14.8,8.65,5.1),'#222b2e',[0,-8,-34],roughness=.85)
 item('speaker','Speaker','#869292','C50387209 nominal Ø20 × 5.1 mm envelope, facing the rear grille at the retained P2 retainer centre. Surface colors are illustrative; diaphragm and magnet details are not manufacturer CAD')
-# P2 cradle centre: source 82.88 + the documented 0.615 mm optical shift.
-mesh('screen_body','screen',box(4.11,65.395,10.45,51.8,36.2,2.05),'#485d65',[0,0,36],metalness=.25,roughness=.45)
+# P2 cradle centre: source 82.88 + 0.615 mm derived from the retained P2 cradle.
+mesh('screen_body','screen',box(4.11,65.395,10.45,51.8,36.2,2.05),'#485d65',[0,0,26],metalness=.25,roughness=.45)
 # Lens has a reverse mask. An aperture and lightly transparent pane reveal the
 # real renderer snapshot beneath; no simulated glass thickness is claimed.
 lens=rounded(30.01,83.495,14,54,37.8,1,3.2)
@@ -47,9 +47,9 @@ mesh('screen_lens_mask','screen',lens.cut(window),'#14262a',[0,0,58],roughness=.
 mesh('screen_lens_clear','screen',window.intersect(lens),'#c8e3e8',[0,0,58],opacity=.09,roughness=.12)
 # Active area 40.8 × 30.6, 2.66 mm left of body centre, from project report.
 v=np.array([[6.95,68.195,12.51],[47.75,68.195,12.51],[47.75,98.795,12.51],[6.95,98.795,12.51]])
-p=dict(id='screen_pixels',group='screen',color='#ffffff',explode=[0,0,36],texture='/assets/models/kiku-hardware/screen.png',unlit=True,opacity=1,roughness=1,metalness=0,bounds=[v.min(0).tolist(),v.max(0).tolist()],triangles=2)
+p=dict(id='screen_pixels',group='screen',color='#ffffff',explode=[0,0,26],texture='/assets/models/kiku-hardware/screen.png',unlit=True,opacity=1,roughness=1,metalness=0,bounds=[v.min(0).tolist(),v.max(0).tolist()],triangles=2)
 p.update(position=pack(v,'<f4',3),normal=pack([[0,0,1]]*4,'<f4',3),uv=pack([[0,0],[1,0],[1,1],[0,1]],'<f4',2),index=pack([[0,1,2],[0,2,3]],'<u4',1));parts.append(p)
-item('screen','Screen + lens','#485d65','HS20HS072RX 51.8 × 36.2 × 2.05 mm body, 40.8 × 30.6 mm active area and 54 × 37.8 × 1 mm lens. P2 optical centre follows the retained cradle and documented 0.615 mm shift. Image is a static capture of the real firmware renderer; flex and mating fit remain unverified')
+item('screen','Screen + lens','#485d65','HS20HS072RX 51.8 × 36.2 × 2.05 mm body, 40.8 × 30.6 mm active area and 54 × 37.8 × 1 mm lens. P2 optical centre follows the retained cradle, 0.615 mm above the older source datum. Image is a static capture of the real firmware renderer; flex and mating fit remain unverified')
 # P2 channel is a measured radius 5.1 mm about X65/Z-12.1. Its hinge relief
 # spans Y25.4..37.6; original P2 overall envelope places the upper tip at Y119.
 # The missing hinge/rod split is reconstructed, NOT the supplier 105 mm length.

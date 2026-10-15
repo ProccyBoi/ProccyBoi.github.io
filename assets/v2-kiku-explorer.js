@@ -59,7 +59,7 @@ if (assembly) {
       const camera = new T.PerspectiveCamera(32,1,.5,3000);
       const target = new T.Vector3();
       const box = new T.Box3();
-      let azimuth=.52, elevation=.28, distance=300, fitDistance=300, selected=null, exploded=0, queued=false, renderFrames=0, frameID=0, disposed=false;
+      let azimuth=.9, elevation=.28, distance=300, fitDistance=300, selected=null, exploded=0, queued=false, renderFrames=0, frameID=0, disposed=false;
       const explode = assembly.querySelector('[data-explode]');
       const all = assembly.querySelector('[data-model-all]');
       const partName = assembly.querySelector('[data-part-name]');
@@ -112,7 +112,7 @@ if (assembly) {
       all.addEventListener('click',()=>select(null),events);
       const views=assembly.querySelectorAll('[data-view]');
       function cameraView(view) {
-        azimuth=view==='front'?0:view==='rear'?Math.PI:.52; elevation=view==='iso'?.28:0;
+        azimuth=view==='front'?0:view==='rear'?Math.PI:.9; elevation=view==='iso'?.28:0;
         views.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view))); frame();
       }
       views.forEach(button=>button.addEventListener('click',()=>cameraView(button.dataset.view),events));

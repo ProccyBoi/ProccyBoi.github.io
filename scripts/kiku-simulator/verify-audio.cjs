@@ -8,6 +8,22 @@ const useWebKit = process.argv.includes('--webkit');
 const base = process.env.KIKU_BASE_URL || 'http://127.0.0.1:8766';
 const root = path.join(__dirname, '../..');
 const results = [];
+const engine = useWebKit ? 'webkit' : 'chromium';
+const out = process.env.KIKU_OUT || '/tmp/kiku-evidence';
+let liveBrowser;
+function saveResults(extra = {}) {
+  fs.mkdirSync(out, {recursive:true});
+  fs.writeFileSync(path.join(out, `audio-${engine}-partial.json`), JSON.stringify({engine,results,...extra}, null, 2));
+}
+function record(result) {
+  results.push(result); saveResults();
+  console.error(`[audio:${engine}] ${result.test || 'request: ' + result.request}`);
+}
+function bounded(promise, milliseconds, label) {
+  let timer;
+  return Promise.race([promise, new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${label} exceeded ${milliseconds} ms`)),milliseconds);})]).finally(()=>clearTimeout(timer));
+}
+
 async function main() {
   const {instance} = await WebAssembly.instantiate(fs.readFileSync(path.join(root,'assets/kiku/firmware-ui.wasm')));
   const api = instance.exports;
@@ -15,8 +31,11 @@ async function main() {
     api.sim_init(); api.sim_event(0, menu); api.sim_event(1,0);
     assert.equal(api.sim_value(5),source,`Exact firmware source enum for menu ${menu}`);
   }
-  const browser = await (useWebKit ? webkit : chromium).launch({headless:true, ...(!useWebKit && process.env.CHROMIUM_EXECUTABLE ? {executablePath:process.env.CHROMIUM_EXECUTABLE} : {}), ...(!useWebKit ? {args:['--no-sandbox']} : {})});
+  const browser = liveBrowser = await (useWebKit ? webkit : chromium).launch({headless:true, ...(!useWebKit && process.env.CHROMIUM_EXECUTABLE ? {executablePath:process.env.CHROMIUM_EXECUTABLE} : {}), ...(!useWebKit ? {args:['--no-sandbox']} : {})});
+  let page; const errors=[];
+  try {
   const context = await browser.newContext({viewport:{width:1280,height:950}});
+  context.setDefaultTimeout(15000); context.setDefaultNavigationTimeout(30000);
   await context.addInitScript(() => {
     const Original = window.AudioContext || window.webkitAudioContext;
     window.__probe = {contexts:[], sources:[], masters:[], requests:[]};
@@ -42,27 +61,28 @@ async function main() {
       }
     };
   });
-  const page = await context.newPage();
-  const errors=[]; page.on('pageerror',error=>errors.push(String(error)));
-  page.on('request',request=>{if(request.url().endsWith('.mp3'))results.push({request:request.url().split('/').at(-1)});});
+  page = await context.newPage();
+  page.on('pageerror',error=>errors.push(String(error)));
+  page.on('request',request=>{if(request.url().endsWith('.mp3'))record({request:request.url().split('/').at(-1)});});
   await page.route('**/__kiku_audio_test__', route => route.fulfill({contentType:'text/html',body:`<!doctype html><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="/assets/kiku.css"><link rel="stylesheet" href="/assets/v2-kiku.css"><body class="kiku-page v2" style="background:#191c20;margin:30px"><div data-kiku-simulator></div><div style="height:1500px"></div><script type="module">import {mountKikuSimulator} from '/assets/v2-kiku-simulator.js'; window.demo = await mountKikuSimulator(document.querySelector('[data-kiku-simulator]'));</script>`}));
+  console.error(`[audio:${engine}] Opening isolated real-audio fixture`);
   await page.goto(base+'/__kiku_audio_test__');
   await page.waitForSelector('[data-kiku-mounted="ready"]');
   const play=page.locator('.kiku-sim-audio-play'),press=page.locator('.kiku-sim-press');
   const plus=page.getByLabel('Rotate encoder clockwise',{exact:true});
   const minus=page.getByLabel('Rotate encoder anticlockwise',{exact:true});
   const status=page.locator('.kiku-sim-audio-status');
-  async function state(value) { await page.waitForFunction(value=>document.querySelector('.kiku-sim').dataset.audioState===value,value); }
+  async function state(value) { console.error(`[audio:${engine}] Waiting for ${value}`); await page.waitForFunction(value=>document.querySelector('.kiku-sim').dataset.audioState===value,value); }
   async function probe() { return page.evaluate(()=>{
     const p=window.__probe,m=p.masters.at(-1),data=new Float32Array(2048);m?.analyser.getFloatTimeDomainData(data);
     return {contexts:p.contexts.length,contextState:p.contexts.at(-1)?.state || 'none',active:p.sources.filter(s=>s.active).length,starts:p.sources.length,offset:p.sources.at(-1)?.offset || 0,gain:m?.node.gain.value || 0,rms:Math.sqrt(data.reduce((sum,x)=>sum+x*x,0)/data.length),peak:Math.max(...data.map(Math.abs))};
   }); }
-  async function silence(label) { await page.waitForTimeout(180);const p=await probe();assert.ok(p.rms<.00001,label+': silence '+JSON.stringify(p));results.push({test:label,probe:p}); }
+  async function silence(label) { await page.waitForTimeout(180);const p=await probe();assert.ok(p.rms<.00001,label+': silence '+JSON.stringify(p));record({test:label,probe:p}); }
   async function audible(label) {
     await state('playing');await page.waitForTimeout(220);
-    const p=await probe();assert.ok(p.rms>.001,label+': nonzero PCM '+JSON.stringify(p));assert.equal(p.active,1,label+': one live source');results.push({test:label,probe:p});
+    const p=await probe();assert.ok(p.rms>.001,label+': nonzero PCM '+JSON.stringify(p));assert.equal(p.active,1,label+': one live source');record({test:label,probe:p});
   }
-  assert.equal((await probe()).contexts,0);assert.equal(results.length,0);results.push({test:'No context or audio download before gesture'});
+  assert.equal((await probe()).contexts,0);assert.equal(results.length,0);record({test:'No context or audio download before gesture'});
   await play.click();await audible('Explicit Play produces original music');
   assert.match(await status.textContent(),/Demo library: Afterglow/);
   await play.click();await state('paused');await silence('Pause stops signal');
@@ -89,14 +109,14 @@ async function main() {
   await page.getByRole('button',{name:'Hold encoder · power',exact:true}).click();await state('paused');await silence('Power off stops playback');
   await play.click();await audible('Play wakes and opens Music');
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
-  await state('paused');await silence('Hidden tab stops audio');
+  await state('paused');await silence('Synthetic visibilitychange handler stops audio');
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'));});
-  await page.waitForTimeout(120);assert.equal(await page.locator('.kiku-sim').getAttribute('data-audio-state'),'paused');await silence('Visibility return does not autoplay');
+  await page.waitForTimeout(120);assert.equal(await page.locator('.kiku-sim').getAttribute('data-audio-state'),'paused');await silence('Synthetic visibility return does not autoplay');
   await play.click();await audible('Explicit resume after hide');
   await page.evaluate(()=>scrollTo(0,document.body.scrollHeight));await state('paused');await silence('Offscreen demo pauses');
   await play.scrollIntoViewIfNeeded();await page.waitForTimeout(150);assert.equal(await page.locator('.kiku-sim').getAttribute('data-audio-state'),'paused');
   await play.click();await audible('Explicit resume after scrolling back');
-  await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await state('paused');await silence('Pagehide pauses');
+  await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await state('paused');await silence('Synthetic pagehide handler pauses');
   await play.click();await audible('Resume before reset');await page.locator('.kiku-sim-reset').click();await state('idle');await silence('Reset releases playback');
   assert.equal(await page.locator('.kiku-sim-audio-volume').inputValue(),'80');
   // Deferred downloads prove pending work cannot win a newer pause/reset.
@@ -111,7 +131,7 @@ async function main() {
   await audible('Rapid repeated clicks never layer sources');
   await page.locator('.kiku-sim-reset').click();await silence('Repeated-click reset stops all sources');
   await page.evaluate(()=>window.demo.destroy());await page.waitForTimeout(100);assert.equal((await probe()).active,0);
-  assert.deepEqual(errors,[]);results.push({test:'Destroy cleans context and listeners; no page errors'});
+  assert.deepEqual(errors,[]);record({test:'Destroy cleans context and listeners; no page errors'});
   // A failed download provides a real retry rather than retaining a rejected cache.
   await page.unroute('**/*.mp3');let fail=true;
   await page.route('**/*.mp3',route=>fail?route.abort('failed'):route.continue());
@@ -119,11 +139,52 @@ async function main() {
   await play.click();await state('error');assert.match(await status.textContent(),/retry/);fail=false;
   await play.click();await audible('Failed download can retry successfully');
   // A browser audio interruption never resumes without another gesture.
-  await page.evaluate(()=>window.__probe.contexts.at(-1).suspend());await state('paused');assert.equal((await probe()).contextState,'suspended');results.push({test:'Interrupted context is suspended; no destination output (analyser may retain its prior frame)',probe:await probe()});
+  await page.evaluate(()=>window.__probe.contexts.at(-1).suspend());await state('paused');assert.equal((await probe()).contextState,'suspended');record({test:'Interrupted context is suspended; no destination output (analyser may retain its prior frame)',probe:await probe()});
   await play.click();await audible('Gesture resumes suspended context');
-  await page.evaluate(()=>window.demo.destroy());
-  await browser.close();
-  console.log(JSON.stringify({pass:true,engine:useWebKit?'webkit':'chromium',results},null,2));
+  // Observe a real browser navigation after the app's own pagehide listener.
+  await page.evaluate(()=>window.addEventListener('pagehide',()=>{
+    sessionStorage.setItem('__kiku_audio_pagehide',JSON.stringify({state:document.querySelector('.kiku-sim')?.dataset.audioState,contextState:window.__probe.contexts.at(-1)?.state}));
+  },{once:true}));
+  await page.route('**/__kiku_audio_away__',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><title>Navigation check</title><p>Audio navigation check.</p>'}));
+  await page.goto(base+'/__kiku_audio_away__');
+  const navigation=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('__kiku_audio_pagehide')));
+  assert.equal(navigation?.state,'paused','Real pagehide listener pauses before navigating away');
+  record({test:'Real same-tab navigation pauses before the old document leaves',navigation});
+  await page.goBack({waitUntil:'domcontentloaded'});await page.waitForSelector('[data-kiku-mounted="ready"]');
+  await page.waitForTimeout(200);
+  assert.ok(['idle','paused'].includes(await page.locator('.kiku-sim').getAttribute('data-audio-state')),'Back/restore does not auto-play');
+  const afterBack=await probe();
+  if(afterBack.contextState==='running')assert.ok(afterBack.rms<.00001,'Restored running context is silent');
+  else assert.ok(['none','suspended','interrupted','closed'].includes(afterBack.contextState),'Restored context is not running');
+  record({test:'Back navigation/new mount remains silent',probe:afterBack});
+  await page.evaluate(()=>{sessionStorage.removeItem('__kiku_audio_pagehide');window.demo.destroy();});
+  // The isolated harness verifies the state machine. Also verify the real page's
+  // import, styling and controls, and save its actual rendered audio UI.
+  page=await context.newPage();page.on('pageerror',error=>errors.push(String(error)));
+  console.error(`[audio:${engine}] Opening integrated Kiku page`);
+  await page.goto(base+'/v2/projects/kiku/#simulator',{waitUntil:'domcontentloaded'});
+  await page.waitForSelector('[data-kiku-mounted="ready"]');
+  await page.locator('.kiku-sim-audio-play').scrollIntoViewIfNeeded();
+  assert.equal((await probe()).contexts,0,'Integrated page does not autoplay');
+  await page.locator('.kiku-sim-audio-play').click();await audible('Integrated page produces actual original audio');
+  await page.locator('.kiku-sim').screenshot({path:path.join(out,`audio-${engine}-integrated.png`),timeout:10000});
+  record({test:'Integrated simulator audio controls screenshot',file:`audio-${engine}-integrated.png`});
+  await page.locator('.kiku-sim-audio-play').click();await silence('Integrated page Pause stops signal');
+  assert.deepEqual(errors,[]);
+  saveResults({pass:true});
+  console.log(JSON.stringify({pass:true,engine,results},null,2));
+  } catch(error) {
+    console.error(`[audio:${engine}] FAILED: ${error.stack || error}`);
+    let diagnostics={error:String(error),errors};
+    if(page&&!page.isClosed()) {
+      try {diagnostics.page=await bounded(page.evaluate(()=>({url:location.href,state:document.querySelector('.kiku-sim')?.dataset,status:document.querySelector('.kiku-sim-audio-status')?.textContent,firmware:document.querySelector('.kiku-sim-state')?.textContent,contexts:window.__probe?.contexts.map(c=>({state:c.state,time:c.currentTime})),sources:window.__probe?.sources.map(s=>({active:s.active,offset:s.offset}))})),2500,'Failure diagnostic');}catch(e){diagnostics.inspectError=String(e);}
+      try {await page.screenshot({path:path.join(out,`audio-${engine}-failure.png`),timeout:5000});}catch(e){diagnostics.screenshotError=String(e);}
+    }
+    saveResults({pass:false,...diagnostics});throw error;
+  } finally {
+    await bounded(browser.close(),5000,'Browser cleanup').catch(error=>console.error(String(error)));
+    liveBrowser=null;
+  }
 }
 async function unit() {
   const {pathToFileURL} = require('node:url');
@@ -164,4 +225,10 @@ async function unit() {
     console.log('PASS: lazy initialization, deduplicated loading, pending-pause/reset/destroy cancellation, latest-track wins, offset resume, mute/level, failed-cache retry and interruption recovery (Node unit mocks; not browser audio evidence).');
   } finally {global.window=previousWindow;global.fetch=previousFetch;}
 }
-(process.argv.includes('--unit-only') ? unit() : main()).catch(error=>{console.error(error);process.exitCode=1;});
+const isUnit=process.argv.includes('--unit-only');
+const watchdog=isUnit?null:setTimeout(()=>{
+  console.error(`[audio:${engine}] Overall 150-second deadline exceeded`);saveResults({pass:false,error:'Overall 150-second deadline exceeded'});
+  liveBrowser?.close().catch(()=>{});
+  setTimeout(()=>process.exit(1),6000).unref();
+},150000);
+(isUnit ? unit() : main()).then(()=>clearTimeout(watchdog)).catch(error=>{clearTimeout(watchdog);console.error(error);process.exit(1);});
