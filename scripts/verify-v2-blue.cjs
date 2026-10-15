@@ -146,6 +146,12 @@ async function review(browser,name){
     await page.goBack({waitUntil:'domcontentloaded'});await frame(page,'selected');
     if(name==='desktop1440'){
       await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>!document.querySelector('[data-selected-work]').classList.contains('is-scene'));assert.equal(await page.locator('.v2-framework-card').count(),4);await shot(run,name+'-motion-disabled');
+      await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await settled(page);
+      await page.setViewportSize({width:1280,height:900});await settled(page);
+      const beforeRestore=await page.evaluate(()=>window.__v2ScrollCommands.length);
+      await page.emulateMedia({reducedMotion:'no-preference'});await page.waitForFunction(()=>document.querySelector('[data-selected-work]').classList.contains('is-scene'));await page.waitForTimeout(250);
+      assert.equal(await page.evaluate(()=>window.__v2ScrollCommands.length),beforeRestore,'Restoring motion after offscreen fallback resize never seeks');assert.ok(await page.evaluate(()=>scrollY)<1,'Motion restoration stays at the user’s new position');
+      await page.setViewportSize({width:run.viewport.width,height:run.viewport.height});
       await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#work-framework').evaluate(node=>node.scrollIntoView({behavior:'instant',block:'start'}));await frame(page,'selected');await shot(run,name+'-motion-restored','selected');
     }
     await press(run,'.v2-selected-skip');await page.waitForURL('**#skylabs-aircraft');await frame(page,'aircraft');await shot(run,name+'-aircraft','aircraft');
