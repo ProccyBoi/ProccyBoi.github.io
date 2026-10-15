@@ -100,7 +100,7 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
 .kiku-page .kiku-sim-audio-play { background:#7bbcff; border-color:#7bbcff; color:#102131; min-width:90px; }
 .kiku-page .kiku-sim-audio-mute[aria-pressed=true] { border-color:#7bbcff; color:#cce5ff; }
 .kiku-sim-audio-level { display:flex; align-items:center; flex-wrap:wrap; gap:9px; font:11px/1.5 "IBM Plex Mono",monospace; color:#c1c8ce; min-height:44px; }
-.kiku-sim-audio-volume { width:110px; max-width:100%; accent-color:#7bbcff; min-height:28px; }
+.kiku-sim-audio-volume { width:110px; max-width:100%; accent-color:#7bbcff; min-height:44px; }
 .kiku-sim-audio-value { min-width:3ch; }
 .kiku-page .kiku-sim-audio-status { margin:10px 0 0; }
 @media(max-width:600px) { .kiku-sim-audio-level { flex:1 0 100%; } .kiku-sim-audio-volume { width:min(180px,50vw); } }

@@ -1,17 +1,17 @@
 {
-  "schema": "kiku-browser-poster-provenance-v1",
-  "capturedCommit": "dc99da1203eb8bff0ba192a6a2ebfc67c6dded0c",
-  "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/38712599833",
+  "schema": "kiku-browser-poster-provenance-v2",
   "renderer": "Chromium / ANGLE SwiftShader; native WebGL canvas, no added geometry or labels",
-  "sourceModelManifest": "pcb.json",
   "captures": [
     {
       "path": "/assets/images/kiku/v2-populated-assembly.png",
-      "sha256": "1836c077c2f3826d3ffa8d6d8c40a68432d881c49e75559f73823f1b5454c8fc",
+      "sha256": "ae800fc90ae64321d668d59ebc1d9af5e52c96f2d4958bffb3c59f284a29ba00",
       "width": 1201,
       "height": 1001,
-      "selection": "All nine printed parts and populated PCB, 75 percent presentation separation, isometric",
-      "fidelity": "Same official component meshes and recorded package envelopes as pcb-provenance.json"
+      "selection": "All nine printed parts, populated PCB and four hardware groups, 100 percent presentation separation, isometric",
+      "fidelity": "Original printed meshes, official KiCad component meshes and recorded package envelopes; source-dimension hardware reconstructions qualified in hardware-provenance.json",
+      "capturedCommit": "4c8564d68f06c89cc9c33b8ba3b09436d84db158",
+      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/38722332362",
+      "captureStep": "Native desktop canvas capture passed; later integrated-audio navigation check failed and was corrected separately."
     },
     {
       "path": "/assets/images/kiku/v2-populated-pcb.png",
@@ -19,7 +19,14 @@
       "width": 1201,
       "height": 1001,
       "selection": "Populated PCB, front view",
-      "fidelity": "Same official component meshes and recorded package envelopes as pcb-provenance.json"
+      "fidelity": "Same official component meshes and recorded package envelopes as pcb-provenance.json",
+      "capturedCommit": "dc99da1203eb8bff0ba192a6a2ebfc67c6dded0c",
+      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/38712599833"
     }
+  ],
+  "sourceModelManifests": [
+    "/assets/models/kiku/assembly.json",
+    "/assets/models/kiku-pcb/pcb.json",
+    "/assets/models/kiku-hardware/hardware.json"
   ]
 }

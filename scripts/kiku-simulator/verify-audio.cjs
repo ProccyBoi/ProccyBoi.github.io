@@ -164,7 +164,11 @@ async function main() {
   page=await context.newPage();page.on('pageerror',error=>errors.push(String(error)));
   console.error(`[audio:${engine}] Opening integrated Kiku page`);
   await page.goto(base+'/v2/projects/kiku/#simulator',{waitUntil:'domcontentloaded'});
-  await page.waitForSelector('[data-kiku-mounted="ready"]');
+  await page.waitForFunction(()=>['true','false'].includes(document.querySelector('[data-kiku-story]')?.dataset.ready),null,{timeout:60000});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.waitForSelector('[data-kiku-mounted="ready"]',{timeout:60000});
+  const linked=await page.locator('[data-kiku-simulator]').boundingBox();
+  assert.ok(linked.y<950&&linked.y+linked.height>0,'Direct simulator fragment stays visible after asynchronous hero pinning');
   await page.locator('.kiku-sim-audio-play').scrollIntoViewIfNeeded();
   assert.equal((await probe()).contexts,0,'Integrated page does not autoplay');
   await page.locator('.kiku-sim-audio-play').click();await audible('Integrated page produces actual original audio');

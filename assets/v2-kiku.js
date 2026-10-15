@@ -18,6 +18,17 @@ if(story){
   let model=null,loading=false,visible=true,pinned=false,manual=null,progress=0,target=0,raf=0,last=0,frames=0;
   let layoutLock=false,lastY=scrollY,px=0,py=0,tx=0,ty=0;
   let requestVersion=0;
+  // Pinning adds scroll height after CAD loads. Preserve an initial deep link
+  // once, without stealing the scroll back after any real user interaction.
+  const initialHash=location.hash,anchorEvents=new AbortController();
+  let initialAnchor=null,anchorPending=false;
+  try{initialAnchor=initialHash?document.getElementById(decodeURIComponent(initialHash.slice(1))):null;}catch(error){}
+  anchorPending=!!initialAnchor&&!story.contains(initialAnchor);
+  if(anchorPending)for(const type of ['wheel','touchstart','pointerdown','keydown'])addEventListener(type,()=>{anchorPending=false;anchorEvents.abort();},{passive:true,once:true,signal:anchorEvents.signal});
+  function restoreInitialAnchor(){requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    if(anchorPending&&location.hash===initialHash&&initialAnchor.isConnected)initialAnchor.scrollIntoView({block:'start',behavior:'instant'});
+    anchorPending=false;anchorEvents.abort();
+  }));}
   const captions=['Mame P2 / populated assembly','Inside / electronics, power and sound','Rear shell / folded stand'];
   function semantic(){
     story.dataset.target=target.toFixed(5);
@@ -109,6 +120,7 @@ if(story){
       canvas.hidden=false;controls.hidden=false;load.hidden=true;loading=false;
       layout();progress=target;semantic();model.render(progress,0,0);
       story.dataset.ready='true';story.dataset.parts=String(manifest.enclosure.parts.length);story.dataset.pcbParts=String(manifest.pcb.parts.length);story.dataset.hardwareItems=String(manifest.hardware.items.length);queue();
+      if(!explicit)restoreInitialAnchor();
       if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))poses.find(button=>button.getAttribute('aria-pressed')==='true')?.focus({preventScroll:true});
     }catch(error){renderer?.dispose();fallback('Source CAD image shown. The interactive enclosure could not start.');if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))load.focus({preventScroll:true});}
   }
@@ -127,7 +139,7 @@ if(story){
   layout();start();
 }
 
-// Progressive enhancement of the existing unmodified firmware adapter. Native
+// Progressive enhancement of the v2 firmware adapter. Native
 // buttons remain every action's accessible alternative; no hardware is invoked.
 const host=document.querySelector('[data-kiku-simulator]');
 function enhanceSimulator(){
