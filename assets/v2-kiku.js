@@ -60,12 +60,14 @@ if(story){
     if(progress!==target||px!==tx||py!==ty)queue();
   }
   function fallback(message){
+    const restoreFocus=controls.contains(document.activeElement);
     requestVersion++;loading=false;model?.dispose();model=null;cancelAnimationFrame(raf);raf=0;
     story.dataset.ready='false';canvas.hidden=true;
     // A lost WebGL context cannot be recovered by reusing that same canvas.
     const replacement=canvas.cloneNode(false);canvas.replaceWith(replacement);canvas=replacement;bindContextLoss();
     controls.hidden=true;cue.hidden=true;story.classList.remove('is-pinned');pinned=false;
     load.hidden=false;load.disabled=false;load.textContent='Retry interactive enclosure';caption.textContent=message;
+    if(restoreFocus)load.focus({preventScroll:true});
   }
   async function start(explicit=false){
     if(loading||model)return;
