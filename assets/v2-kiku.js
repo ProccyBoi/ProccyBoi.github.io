@@ -17,7 +17,8 @@ function three(){
 }
 if(story){
   const stage=story.querySelector('.kiku-story-stage'), object=story.querySelector('.kiku-story-object');
-  const canvas=story.querySelector('canvas'),load=story.querySelector('[data-kiku-story-load]');
+  let canvas=story.querySelector('canvas');
+  const load=story.querySelector('[data-kiku-story-load]');
   const controls=story.querySelector('[data-kiku-story-controls]'),caption=story.querySelector('[data-kiku-story-caption]');
   const cue=story.querySelector('[data-kiku-story-scroll]');
   const poses=[...story.querySelectorAll('[data-kiku-pose]')];
@@ -26,6 +27,7 @@ if(story){
   let requestVersion=0;
   const captions=['Mame P2 / nine printed enclosure parts','Source CAD / separated for inspection','Rear shell / folded stand'];
   function semantic(){
+    story.dataset.target=target.toFixed(5);
     const nearest=target<.25?0:target<.75?1:2;
     poses.forEach((button,index)=>button.setAttribute('aria-pressed',String(index===nearest)));
     caption.textContent=captions[nearest];
@@ -59,7 +61,10 @@ if(story){
   }
   function fallback(message){
     requestVersion++;loading=false;model?.dispose();model=null;cancelAnimationFrame(raf);raf=0;
-    story.dataset.ready='false';canvas.hidden=true;controls.hidden=true;cue.hidden=true;story.classList.remove('is-pinned');pinned=false;
+    story.dataset.ready='false';canvas.hidden=true;
+    // A lost WebGL context cannot be recovered by reusing that same canvas.
+    const replacement=canvas.cloneNode(false);canvas.replaceWith(replacement);canvas=replacement;bindContextLoss();
+    controls.hidden=true;cue.hidden=true;story.classList.remove('is-pinned');pinned=false;
     load.hidden=false;load.disabled=false;load.textContent='Retry interactive enclosure';caption.textContent=message;
   }
   async function start(explicit=false){
@@ -72,6 +77,7 @@ if(story){
       if(!mr.ok||!br.ok)throw new Error('CAD download unavailable');
       const [manifest,binary]=await Promise.all([mr.json(),br.arrayBuffer()]);
       if(version!==requestVersion)return;
+      if(!explicit&&(reduced.matches||connection?.saveData)){loading=false;load.hidden=false;load.disabled=false;load.textContent='Load interactive enclosure';return;}
       renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));renderer.setClearColor(0x141412,1);
       renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
@@ -118,7 +124,8 @@ if(story){
   connection?.addEventListener('change',()=>{layout();if(connection.saveData&&!model){requestVersion++;loading=false;load.hidden=false;load.disabled=false;}});
   object.addEventListener('pointermove',event=>{if(event.pointerType!=='mouse'||reduced.matches)return;const r=object.getBoundingClientRect();tx=((event.clientX-r.left)/r.width-.5)*.1;ty=((event.clientY-r.top)/r.height-.5)*.06;queue();},{passive:true});
   object.addEventListener('pointerleave',()=>{tx=ty=0;queue();},{passive:true});
-  canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fallback('Graphics paused. The source CAD image is still available.');});
+  function bindContextLoss(){canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fallback('Graphics paused. The source CAD image is still available.');});}
+  bindContextLoss();
   if('IntersectionObserver'in window)new IntersectionObserver(entries=>{visible=entries.some(e=>e.isIntersecting);if(visible){last=0;update();}else{cancelAnimationFrame(raf);raf=0;}},{rootMargin:'40px'}).observe(stage);
   layout();start();
 }
