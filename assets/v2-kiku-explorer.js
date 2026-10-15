@@ -1,6 +1,6 @@
 /* V2-specific populated inspector; root/v3 keep their accepted enclosure viewer. */
 import {loadThree,loadKikuModel,makeKikuMesh} from './v2-kiku-model.js';
-import {mountKikuSimulator} from './kiku-simulator.js';
+import {mountKikuSimulator} from './v2-kiku-simulator.js';
 
 const simulator = document.querySelector('[data-kiku-simulator]');
 async function startSimulator() {
@@ -54,8 +54,8 @@ if (assembly) {
       const rim = new T.DirectionalLight(0xe8f1ff,.4); rim.position.set(200,100,-160); scene.add(rim);
       const fill = new T.DirectionalLight(0xffffff,.15); fill.position.set(160,-70,180); scene.add(fill);
       const group = new T.Group(); group.position.set(...manifest.center.map(value => -value)); scene.add(group);
-      const meshes=manifest.parts.map(part=>{const mesh=makeKikuMesh(T,part);group.add(mesh);return mesh;});
-      const items=[...manifest.enclosure.parts,{id:'pcb',name:'Populated PCB',color:'#28734b',description:'Actual KiCad board, pads, copper and silkscreen. Official library models and documented source-sized package envelopes',size:manifest.pcb.size||manifest.pcb.bounds[1].map((value,index)=>value-manifest.pcb.bounds[0][index])}];
+      const meshes=manifest.parts.map(part=>{const mesh=makeKikuMesh(T,part,()=>requestRender());group.add(mesh);return mesh;});
+      const items=[...manifest.enclosure.parts,{id:'pcb',name:'Populated PCB',color:'#28734b',description:'Actual KiCad board, pads, copper and silkscreen. Official library models and documented source-sized package envelopes',size:manifest.pcb.size||manifest.pcb.bounds[1].map((value,index)=>value-manifest.pcb.bounds[0][index])},...manifest.hardware.items];
       const camera = new T.PerspectiveCamera(32,1,.5,3000);
       const target = new T.Vector3();
       const box = new T.Box3();
@@ -93,8 +93,8 @@ if (assembly) {
         partsButtons.forEach((button,key) => button.setAttribute('aria-pressed',String(key===id)));
         const part=items.find(item=>item.id===id);
         partName.textContent=part ? part.name : 'Mame P2';
-        partDescription.textContent=part ? `${part.description}. Nominal part bounds: ${part.size.map(value=>value.toFixed(1)).join(' × ')} mm.` : 'Nine project-designed printed parts and the populated PCB, in their original assembly coordinates. Move the slider to separate the layers, or choose a part to isolate it.';
-        status.textContent=part ? `${part.name} · ${id==='pcb'?'KiCad + documented package models':'source STL geometry'}` : 'P2 enclosure + populated PCB';
+        partDescription.textContent=part ? `${part.description}. Nominal part bounds: ${part.size.map(value=>value.toFixed(1)).join(' × ')} mm.` : 'Nine printed parts, the populated PCB and four source-dimension hardware groups. Hardware envelopes are packaging reconstructions in the P2 assembly frame. Move the slider to separate the layers, or choose a part to isolate it.';
+        status.textContent=part ? `${part.name} · ${id==='pcb'?'KiCad + documented package models':part.fidelity||'source STL geometry'}` : 'P2 enclosure + electronics + hardware';
         all.hidden=!id; frame();
       }
       items.forEach(part => {
@@ -161,7 +161,7 @@ if (assembly) {
         event.preventDefault(); requestRender();
       },events);
       const resize=new ResizeObserver(()=>frame()); resize.observe(stage);
-      teardown=()=>{disposed=true;session.abort();resize.disconnect();cancelAnimationFrame(frameID);meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.dispose();});renderer.dispose();};
+      teardown=()=>{disposed=true;session.abort();resize.disconnect();cancelAnimationFrame(frameID);meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.map?.dispose();mesh.material.dispose();});renderer.dispose();};
       canvas.addEventListener('webglcontextlost',event=>{
         event.preventDefault();const focused=assembly.contains(document.activeElement);teardown();
         assembly.querySelector('[data-model-poster]').hidden=false;
@@ -173,7 +173,7 @@ if (assembly) {
       canvas.hidden=false;
       assembly.querySelector('[data-model-poster]').hidden=true; load.hidden=true;
       assembly.querySelector('[data-model-controls]').hidden=false;
-      stage.dataset.ready='true';stage.dataset.pcbParts=String(manifest.pcb.parts.length); select(null);if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))stage.focus({preventScroll:true});
+      stage.dataset.ready='true';stage.dataset.pcbParts=String(manifest.pcb.parts.length);stage.dataset.hardwareItems=String(manifest.hardware.items.length); select(null);if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))stage.focus({preventScroll:true});
     } catch(error) {
       teardown();renderer?.dispose();
       status.textContent='The 3D view could not start. The original CAD image and engineering details are still available.';

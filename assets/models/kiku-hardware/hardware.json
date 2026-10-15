@@ -1,0 +1,522 @@
+{
+  "schema": "kiku-hardware-envelope-v1",
+  "revision": "Mame P2 browser packaging reconstruction",
+  "units": "millimetres",
+  "coordinateSystem": {
+    "x": "right",
+    "y": "up",
+    "z": "front"
+  },
+  "binary": "hardware.bin",
+  "binaryBytes": 142520,
+  "binarySha256": "4e1a68407d472afc939b42e036cb425363e51703061a19f5ddcf2416428b7947",
+  "binaryGzip": "hardware.bin.gz",
+  "binaryGzipSha256": "003decc5453b1a0a7deffc19c2f037618a103263f7fab2ea4162d11ab759831c",
+  "partCount": 9,
+  "itemCount": 4,
+  "triangles": 3886,
+  "parts": [
+    {
+      "id": "battery_pouch",
+      "group": "battery",
+      "color": "#b7c6d2",
+      "explode": [
+        0,
+        0,
+        -31
+      ],
+      "roughness": 0.37,
+      "metalness": 0.58,
+      "opacity": 1,
+      "bounds": [
+        [
+          13.0,
+          45.0,
+          -15.2
+        ],
+        [
+          47.0,
+          95.0,
+          -5.199999999999999
+        ]
+      ],
+      "triangles": 444,
+      "position": {
+        "byteOffset": 0,
+        "byteLength": 5568,
+        "count": 464,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 5568,
+        "byteLength": 5568,
+        "count": 464,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 11136,
+        "byteLength": 5328,
+        "count": 1332,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "speaker_rim",
+      "group": "speaker",
+      "color": "#869292",
+      "explode": [
+        0,
+        -8,
+        -34
+      ],
+      "roughness": 0.35,
+      "metalness": 0.65,
+      "opacity": 1,
+      "bounds": [
+        [
+          8.004475677164965,
+          13.001118981897266,
+          -14.8
+        ],
+        [
+          28.0,
+          32.998881018102736,
+          -9.700000000000001
+        ]
+      ],
+      "triangles": 840,
+      "position": {
+        "byteOffset": 16464,
+        "byteLength": 10128,
+        "count": 844,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 26592,
+        "byteLength": 10128,
+        "count": 844,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 36720,
+        "byteLength": 10080,
+        "count": 2520,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "speaker_face",
+      "group": "speaker",
+      "color": "#222b2e",
+      "explode": [
+        0,
+        -8,
+        -34
+      ],
+      "roughness": 0.85,
+      "metalness": 0,
+      "opacity": 1,
+      "bounds": [
+        [
+          9.353871460747696,
+          14.350967919341134,
+          -14.8
+        ],
+        [
+          26.65,
+          31.649032080658866,
+          -9.700000000000001
+        ]
+      ],
+      "triangles": 416,
+      "position": {
+        "byteOffset": 46800,
+        "byteLength": 5064,
+        "count": 422,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 51864,
+        "byteLength": 5064,
+        "count": 422,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 56928,
+        "byteLength": 4992,
+        "count": 1248,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "screen_body",
+      "group": "screen",
+      "color": "#485d65",
+      "explode": [
+        0,
+        0,
+        36
+      ],
+      "roughness": 0.45,
+      "metalness": 0.25,
+      "opacity": 1,
+      "bounds": [
+        [
+          4.11,
+          65.395,
+          10.45
+        ],
+        [
+          55.91,
+          101.595,
+          12.5
+        ]
+      ],
+      "triangles": 12,
+      "position": {
+        "byteOffset": 61920,
+        "byteLength": 288,
+        "count": 24,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 62208,
+        "byteLength": 288,
+        "count": 24,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 62496,
+        "byteLength": 144,
+        "count": 36,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "screen_lens_mask",
+      "group": "screen",
+      "color": "#14262a",
+      "explode": [
+        0,
+        0,
+        58
+      ],
+      "roughness": 0.2,
+      "metalness": 0,
+      "opacity": 1,
+      "bounds": [
+        [
+          3.0100000000000016,
+          64.595,
+          14.0
+        ],
+        [
+          57.010000000000005,
+          102.39500000000001,
+          15.0
+        ]
+      ],
+      "triangles": 896,
+      "position": {
+        "byteOffset": 62640,
+        "byteLength": 11136,
+        "count": 928,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 73776,
+        "byteLength": 11136,
+        "count": 928,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 84912,
+        "byteLength": 10752,
+        "count": 2688,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "screen_lens_clear",
+      "group": "screen",
+      "color": "#c8e3e8",
+      "explode": [
+        0,
+        0,
+        58
+      ],
+      "roughness": 0.12,
+      "metalness": 0,
+      "opacity": 0.09,
+      "bounds": [
+        [
+          6.550000000000001,
+          67.795,
+          14.0
+        ],
+        [
+          48.150000000000006,
+          99.19500000000001,
+          15.0
+        ]
+      ],
+      "triangles": 444,
+      "position": {
+        "byteOffset": 95664,
+        "byteLength": 5568,
+        "count": 464,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 101232,
+        "byteLength": 5568,
+        "count": 464,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 106800,
+        "byteLength": 5328,
+        "count": 1332,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "screen_pixels",
+      "group": "screen",
+      "color": "#ffffff",
+      "explode": [
+        0,
+        0,
+        36
+      ],
+      "texture": "/assets/models/kiku-hardware/screen.png",
+      "unlit": true,
+      "opacity": 1,
+      "roughness": 1,
+      "metalness": 0,
+      "bounds": [
+        [
+          6.95,
+          68.195,
+          12.51
+        ],
+        [
+          47.75,
+          98.795,
+          12.51
+        ]
+      ],
+      "triangles": 2,
+      "position": {
+        "byteOffset": 112128,
+        "byteLength": 48,
+        "count": 4,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 112176,
+        "byteLength": 48,
+        "count": 4,
+        "itemSize": 3
+      },
+      "uv": {
+        "byteOffset": 112224,
+        "byteLength": 32,
+        "count": 4,
+        "itemSize": 2
+      },
+      "index": {
+        "byteOffset": 112256,
+        "byteLength": 24,
+        "count": 6,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "antenna_base",
+      "group": "antenna",
+      "color": "#707e83",
+      "explode": [
+        0,
+        0,
+        -47
+      ],
+      "roughness": 0.3,
+      "metalness": 0.8,
+      "opacity": 1,
+      "bounds": [
+        [
+          60.50050354185377,
+          25.4,
+          -16.597985945275767
+        ],
+        [
+          69.49949645814623,
+          37.599999999999994,
+          -7.6
+        ]
+      ],
+      "triangles": 416,
+      "position": {
+        "byteOffset": 112280,
+        "byteLength": 5064,
+        "count": 422,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 117344,
+        "byteLength": 5064,
+        "count": 422,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 122408,
+        "byteLength": 4992,
+        "count": 1248,
+        "itemSize": 1
+      }
+    },
+    {
+      "id": "antenna_rod",
+      "group": "antenna",
+      "color": "#bdc6c8",
+      "explode": [
+        0,
+        0,
+        -47
+      ],
+      "roughness": 0.26,
+      "metalness": 0.86,
+      "opacity": 1,
+      "bounds": [
+        [
+          60.50050354185377,
+          37.6,
+          -16.597985945275767
+        ],
+        [
+          69.49949645814623,
+          119.0,
+          -7.6
+        ]
+      ],
+      "triangles": 416,
+      "position": {
+        "byteOffset": 127400,
+        "byteLength": 5064,
+        "count": 422,
+        "itemSize": 3
+      },
+      "normal": {
+        "byteOffset": 132464,
+        "byteLength": 5064,
+        "count": 422,
+        "itemSize": 3
+      },
+      "index": {
+        "byteOffset": 137528,
+        "byteLength": 4992,
+        "count": 1248,
+        "itemSize": 1
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "battery",
+      "name": "Battery",
+      "color": "#b7c6d2",
+      "description": "Nominal 34 \u00d7 50 \u00d7 10 mm cell in the original reference position, inside the enlarged P2 pocket. Rounded display envelope; leads, protection board and swelling allowance remain unverified",
+      "fidelity": "Documented dimensions \u00b7 reconstructed packaging",
+      "bounds": [
+        [
+          13.0,
+          45.0,
+          -15.2
+        ],
+        [
+          47.0,
+          95.0,
+          -5.199999999999999
+        ]
+      ],
+      "size": [
+        34.0,
+        50.0,
+        10.0
+      ]
+    },
+    {
+      "id": "speaker",
+      "name": "Speaker",
+      "color": "#869292",
+      "description": "C50387209 nominal \u00d820 \u00d7 5.1 mm envelope, facing the rear grille at the retained P2 retainer centre. Surface colors are illustrative; diaphragm and magnet details are not manufacturer CAD",
+      "fidelity": "Documented dimensions \u00b7 reconstructed packaging",
+      "bounds": [
+        [
+          8.004475677164965,
+          13.001118981897266,
+          -14.8
+        ],
+        [
+          28.0,
+          32.998881018102736,
+          -9.700000000000001
+        ]
+      ],
+      "size": [
+        19.995524322835035,
+        19.997762036205472,
+        5.1
+      ]
+    },
+    {
+      "id": "screen",
+      "name": "Screen + lens",
+      "color": "#485d65",
+      "description": "HS20HS072RX 51.8 \u00d7 36.2 \u00d7 2.05 mm body, 40.8 \u00d7 30.6 mm active area and 54 \u00d7 37.8 \u00d7 1 mm lens. P2 optical centre follows the retained cradle and documented 0.615 mm shift. Image is a static capture of the real firmware renderer; flex and mating fit remain unverified",
+      "fidelity": "Documented dimensions \u00b7 reconstructed packaging",
+      "bounds": [
+        [
+          3.0100000000000016,
+          64.595,
+          10.45
+        ],
+        [
+          57.010000000000005,
+          102.39500000000001,
+          15.0
+        ]
+      ],
+      "size": [
+        54.0,
+        37.80000000000001,
+        4.550000000000001
+      ]
+    },
+    {
+      "id": "antenna",
+      "name": "Antenna",
+      "color": "#bdc6c8",
+      "description": "\u00d89 mm collapsed antenna packaging reconstruction, aligned to the P2 right-side channel. Visible hinge/rod split is inferred from retained shell clearances and the P2 envelope; it is not manufacturer-exact geometry or a measured 105 mm collapsed assembly",
+      "fidelity": "Documented dimensions \u00b7 reconstructed packaging",
+      "bounds": [
+        [
+          60.50050354185377,
+          25.4,
+          -16.597985945275767
+        ],
+        [
+          69.49949645814623,
+          119.0,
+          -7.6
+        ]
+      ],
+      "size": [
+        8.998992916292458,
+        93.6,
+        8.997985945275767
+      ]
+    }
+  ]
+}

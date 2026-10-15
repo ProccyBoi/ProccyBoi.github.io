@@ -18,7 +18,7 @@ if(story){
   let model=null,loading=false,visible=true,pinned=false,manual=null,progress=0,target=0,raf=0,last=0,frames=0;
   let layoutLock=false,lastY=scrollY,px=0,py=0,tx=0,ty=0;
   let requestVersion=0;
-  const captions=['Mame P2 / populated assembly','Inside / the populated PCB','Rear shell / folded stand'];
+  const captions=['Mame P2 / populated assembly','Inside / electronics, power and sound','Rear shell / folded stand'];
   function semantic(){
     story.dataset.target=target.toFixed(5);
     const nearest=target<.25?0:target<.75?1:2;
@@ -86,7 +86,7 @@ if(story){
       const scene=new T.Scene();scene.add(new T.HemisphereLight(0xeef4ff,0x444c42,.55));
       for(const [color,intensity,position] of [[0xfff3df,.85,[-140,220,250]],[0xa9cfff,.5,[180,120,-180]],[0xffffff,.15,[100,-100,180]]]){const light=new T.DirectionalLight(color,intensity);light.position.set(...position);scene.add(light);}
       const group=new T.Group();group.position.set(...manifest.center.map(v=>-v));scene.add(group);
-      const meshes=manifest.parts.map(part=>{const mesh=makeKikuMesh(T,part);group.add(mesh);return mesh;});
+      const meshes=manifest.parts.map(part=>{const mesh=makeKikuMesh(T,part,()=>queue());group.add(mesh);return mesh;});
       const camera=new T.PerspectiveCamera(32,1,.5,3000),box=new T.Box3(),center=new T.Vector3();
       let width=0,height=0;
       model={render(p,x,y){
@@ -105,10 +105,10 @@ if(story){
         let distance=0;const tan=Math.tan(16*Math.PI/180);
         for(const a of [box.min.x,box.max.x])for(const b of [box.min.y,box.max.y])for(const c of [box.min.z,box.max.z]){const v=new T.Vector3(a,b,c).sub(center);distance=Math.max(distance,v.dot(outward)+Math.max(Math.abs(v.dot(up))/tan,Math.abs(v.dot(right))/(tan*camera.aspect)));}
         camera.position.copy(center).addScaledVector(outward,distance*1.12);camera.lookAt(center);renderer.render(scene,camera);
-      },dispose(){meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.dispose();});renderer.dispose();}};
+      },dispose(){meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.map?.dispose();mesh.material.dispose();});renderer.dispose();}};
       canvas.hidden=false;controls.hidden=false;load.hidden=true;loading=false;
       layout();progress=target;semantic();model.render(progress,0,0);
-      story.dataset.ready='true';story.dataset.parts=String(manifest.enclosure.parts.length);story.dataset.pcbParts=String(manifest.pcb.parts.length);queue();
+      story.dataset.ready='true';story.dataset.parts=String(manifest.enclosure.parts.length);story.dataset.pcbParts=String(manifest.pcb.parts.length);story.dataset.hardwareItems=String(manifest.hardware.items.length);queue();
       if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))poses.find(button=>button.getAttribute('aria-pressed')==='true')?.focus({preventScroll:true});
     }catch(error){renderer?.dispose();fallback('Source CAD image shown. The interactive enclosure could not start.');if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))load.focus({preventScroll:true});}
   }

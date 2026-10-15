@@ -1,0 +1,100 @@
+{
+  "schema": "kiku-hardware-provenance-v1",
+  "sourceRepository": "https://github.com/ProccyBoi/kiku",
+  "sourceRevision": "d0c4d9ea34297d8671f464dedc6018189c33ea76",
+  "scope": "Four source-dimension hardware packaging reconstructions, added only to v2. No supplier images, vendor meshes, wiring or fasteners copied. Surface colors and rounding are illustrative. Original nine P2 print meshes and populated PCB bytes remain unchanged.",
+  "sourceFiles": {
+    "Mechanical/parameters.json": "485614fa513eeeb9ad2304911b7ce2f31735b237f4cf7a0f68a326afc05ea40a",
+    "Mechanical/P0_DESIGN_REPORT.md": "755bf3aea57de7fb0b79fb59e7ca07bc6272f5fd97e33cfe7375a3916ce93f4c",
+    "Mechanical/scripts/housing.py": "f152406147a41b1641d110d83e831f560e533d85d92dfd1f155dc9f7138ecf3e",
+    "Mechanical/antenna-P1.json": "22f69d5a61aec4a3462b2b9a1b54c14049cc6ff5becfdacf94e36ce64b639906",
+    "LICENSE": "75831be7dcf266f1b36f30e196fc0789526aa700e7ee3f222ac62859dbd4daa5"
+  },
+  "retainedP2Evidence": {
+    "manifest": "/assets/models/kiku/assembly.json",
+    "binarySha256": "2d84ade42f7dba51397fd61a937bd79031605cd42291d6fdcdb9c0fbedd4f849",
+    "reviewImages": [
+      "/assets/images/kiku/display-section.webp",
+      "/assets/images/kiku/battery-cable.webp",
+      "/assets/images/kiku/hero.webp"
+    ],
+    "priorAssetLedger": "/docs/kiku-asset-ledger.json",
+    "availability": "Original P2 authoring script and hardware BREP inputs are not in the current public source snapshot. Geometry is reconstructed from documented numeric dimensions and retained P2 mount geometry; it is not a recovered original hardware assembly."
+  },
+  "items": [
+    {
+      "id": "battery",
+      "source": "Mechanical/parameters.json battery_origin and battery_envelope; Mechanical/P0_DESIGN_REPORT.md Battery",
+      "nominalBoundsMm": [
+        [
+          13,
+          45,
+          -15.2
+        ],
+        [
+          47,
+          95,
+          -5.2
+        ]
+      ],
+      "placement": "Original documented location retained inside larger P2 guard, whose centre remains X30/Y70. No larger cell or capacity is inferred.",
+      "qualification": "Rounded display envelope. Lead exit, protection board, tolerances and swelling reserve unverified."
+    },
+    {
+      "id": "speaker",
+      "source": "Mechanical/parameters.json speaker_center/diameter/height; Mechanical/scripts/housing.py SPEAKER_C50387209",
+      "nominalBoundsMm": [
+        [
+          8,
+          13,
+          -14.8
+        ],
+        [
+          28,
+          33,
+          -9.7
+        ]
+      ],
+      "placement": "Retained P2 speaker retainer shares the source centre X18/Y23 and Z-7.8; driver faces the existing rear grille.",
+      "qualification": "C50387209 20 mm nominal diameter and 5.1 mm total depth. Black/silver faces illustrate the envelope; no exact diaphragm, basket or magnet geometry."
+    },
+    {
+      "id": "screen",
+      "source": "Mechanical/P0_DESIGN_REPORT.md Display and lens; retained P2 display_carrier",
+      "bodyMm": [
+        51.8,
+        36.2,
+        2.05
+      ],
+      "activeAreaMm": [
+        40.8,
+        30.6
+      ],
+      "lensMm": [
+        54,
+        37.8,
+        1
+      ],
+      "placement": "X centre30.01, optical active-area X centre27.35; Y centre83.495 derived from retained P2 cradle, 0.615 mm above P0 centre82.88. Body Z10.45..12.5; lens Z14..15.",
+      "qualification": "Dimensions and nominal cradle alignment, not an exact vendor model. FPC/contact mating and compliant stack not represented.",
+      "screenImage": "Static 320\u00d7240 RGB565 frame from unchanged firmware-ui.wasm via scripts/kiku-hardware/capture-screen.cjs. No downloaded image."
+    },
+    {
+      "id": "antenna",
+      "source": "Mechanical/antenna-P1.json diameter; retained P2 rear_shell channel and published P2 full-envelope dimensions",
+      "placement": "Inner channel circle fitted independently at Y112 yields centre X65/Z-12.1 and radius5.1 mm. \u00d89 mm rod follows that centre. Visible base spans Y25.4..37.6 from the retained hinge relief; tip at Y119 reproduces the prior P2 overall height126.7 mm.",
+      "qualification": "The 93.6 mm displayed base+rod span and their split are a packaging reconstruction, not a measured antenna. The supplier listing says105 mm collapsed overall and310 mm extended, but missing P2 hinge geometry prevents assigning those numbers to this visible rod. Do not treat this as manufacturer-exact or RF-validated. Older P1 left-side/downward placement is not used."
+    }
+  ],
+  "licensing": {
+    "hardwareDimensions": "Project hardware references: CERN-OHL-P-2.0; source and license retained here. No third-party component CAD is redistributed.",
+    "newScripts": "MIT",
+    "firmwareScreenshot": "Project renderer/source license preserved in scripts/kiku-simulator; generated capture of existing WebAssembly."
+  },
+  "generated": {
+    "manifest": "hardware.json",
+    "binary": "hardware.bin",
+    "screenImageSha256": "ab795cb12926d896b5581f5184661a1c198b257af2e85b505516f0211396dafe"
+  },
+  "validation": "verify.py checks packed meshes, documented bounds, unchanged source enclosure, optical centre and antenna channel. Visual review must still inspect assembled/exploded and isolated parts. No physical fit, tolerance, safety, acoustics or RF qualification is implied."
+}

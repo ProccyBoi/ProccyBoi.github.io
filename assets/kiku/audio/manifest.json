@@ -1,0 +1,34 @@
+[
+  {
+    "slug": "afterglow",
+    "title": "Afterglow",
+    "bpm": 94,
+    "duration": 20.425532879818594,
+    "bars": 8,
+    "license": "CC0-1.0"
+  },
+  {
+    "slug": "paper-satellites",
+    "title": "Paper Satellites",
+    "bpm": 108,
+    "duration": 17.77777777777778,
+    "bars": 8,
+    "license": "CC0-1.0"
+  },
+  {
+    "slug": "coastal-lines",
+    "title": "Coastal Lines",
+    "bpm": 100,
+    "duration": 19.2,
+    "bars": 8,
+    "license": "CC0-1.0"
+  },
+  {
+    "slug": "night-bus-home",
+    "title": "Night Bus Home",
+    "bpm": 82,
+    "duration": 23.414625850340137,
+    "bars": 8,
+    "license": "CC0-1.0"
+  }
+]
