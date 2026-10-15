@@ -415,7 +415,10 @@ def make_case(path, slug=None, source=None):
                   node.attrs.get('href', '').split('?', 1)[0].lstrip('/') == 'assets/kiku.css']
         markup = '\n'.join(node.outer(source) for node in styles)
         source = replace_nodes(source, [(node, '') for node in styles])
-        return source.replace('</head>', markup + '\n</head>', 1)
+        source = source.replace('</head>', markup + '\n  <link rel="stylesheet" href="/assets/v2-kiku.css?v=interactive-20261015">\n  <script type="module" src="/assets/v2-kiku.js?v=interactive-20261015"></script>\n</head>', 1)
+        hero = Tree(source).find('section', 'kiku-hero')
+        scene = (ROOT / 'scripts/content/v2-kiku-hero.html').read_text(encoding='utf-8')
+        return replace_nodes(source, [(hero, scene.rstrip())])
     source = integrate_hardware(source, slug)
     source = simplify_viewers(source, slug)
     if slug == 'skylabs/flight-review':

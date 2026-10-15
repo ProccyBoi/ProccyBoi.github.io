@@ -1,0 +1,79 @@
+/* V2-only Kiku interaction layer. Source models and the root/v3 case stay intact. */
+body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:#b0b0a8; --k-line:#3c3e3a; --k-accent:#7bbcff; --v2-accent:#7bbcff; }
+.kiku-page .kiku-actions .kiku-primary:hover { background:#a7d2ff; }
+.kiku-page .kiku-section { padding-block:clamp(58px,6vw,90px); }
+.kiku-page .kiku-simulator-section,.kiku-page .kiku-firmware { background:#191c20; }
+.kiku-page .kiku-sim-eyebrow,.kiku-page .kiku-sim-keyboard,.kiku-page .kiku-sim-note,.kiku-page .kiku-sim-explainer p { color:#b8bec5; }
+.kiku-page .kiku-sim-state { color:#c5ddf4; border-color:#424951; }
+.kiku-page .kiku-sim-notice { color:#ffd0b8; }
+.kiku-page .kiku-timing strong,.kiku-page .kiku-output-branches { color:#b9d9f6; }
+.kiku-page .kiku-output-branches span { border-color:#7bbcff; }
+.kiku-page .kiku-status-note { background:#1c2025; }
+.kiku-story { --kiku-top:130px; position:relative; border-bottom:1px solid var(--k-line); }
+.kiku-story-stage { display:grid; grid-template-columns:minmax(300px,.83fr) minmax(0,1.17fr); position:relative; min-height:620px; max-width:1800px; margin:auto; }
+.kiku-story-copy { padding:clamp(32px,5vw,75px) 0 40px clamp(22px,4.4vw,80px); z-index:2; align-self:center; }
+.kiku-page .kiku-story h1 { font-size:clamp(100px,12vw,190px); line-height:.9; letter-spacing:-.075em; margin:22px 0 28px -5px; }
+.kiku-story h1 span { color:var(--k-accent); }
+.kiku-page .kiku-story-deck { font-size:clamp(28px,3vw,46px); line-height:1.08; letter-spacing:-.045em; }
+.kiku-page .kiku-story-description { font-size:16px; line-height:1.7; color:var(--k-muted); max-width:36ch; margin-top:22px; }
+.kiku-story .kiku-actions { margin:28px 0; gap:22px; }
+.kiku-story .kiku-actions a { font-size:13px; gap:16px; }
+.kiku-story-object { position:relative; min-width:0; align-self:stretch; min-height:500px; }
+.kiku-story-object>img { position:absolute; width:100%; height:100%; object-fit:contain; padding:25px; background:var(--k-paper); }
+.kiku-story-object>canvas { position:absolute; width:100%; height:100%; inset:0; pointer-events:none; opacity:0; transition:opacity .25s ease; }
+.kiku-story[data-ready=true] .kiku-story-object>canvas { opacity:1; }
+.kiku-story[data-ready=true] .kiku-story-object>img { visibility:hidden; }
+.kiku-page .kiku-story-qualification { position:absolute; bottom:26px; left:24px; right:24px; text-align:center; font:10px/1.6 "IBM Plex Mono",monospace; color:#4b584d; pointer-events:none; }
+.kiku-story[data-ready=true] .kiku-story-qualification { color:#a4aaa9; }
+.kiku-story-navigation { display:flex; gap:4px; width:fit-content; border:1px solid var(--k-line); padding:3px; }
+.kiku-page .kiku-story-navigation button { border:0; border-radius:0; background:transparent; color:#afb4b9; font-size:12px; min-width:72px; min-height:44px; padding:10px 17px; }
+.kiku-page .kiku-story-navigation button[aria-pressed=true] { background:#25364a; color:#cce5ff; }
+.kiku-page .kiku-story-caption { font:11px/1.7 "IBM Plex Mono",monospace; color:var(--k-muted); margin-top:14px; max-width:37ch; min-height:3.4em; }
+.kiku-page .kiku-story-scroll { position:absolute; bottom:20px; left:clamp(22px,4.4vw,80px); color:#b0b0a8; font:10px/1.6 "IBM Plex Mono",monospace; }
+.kiku-story-scroll span { display:inline-block; margin-left:14px; color:var(--k-accent); }
+.kiku-page .kiku-story-load { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#141412; background:#7bbcff; border:0; padding:14px 20px; font-size:12px; box-shadow:0 6px 24px #0003; white-space:nowrap; }
+.kiku-story.is-pinned { height:calc(100svh + 1250px); }
+.kiku-story.is-pinned .kiku-story-stage { position:sticky; top:var(--kiku-top); height:calc(100svh - var(--kiku-top)); min-height:0; }
+.kiku-story.is-pinned .kiku-story-object { min-height:0; }
+.kiku-story.is-pinned .kiku-story-copy { padding-block:24px 68px; }
+.kiku-page .kiku-sim-press { position:relative; touch-action:pan-y; user-select:none; -webkit-user-select:none; }
+.kiku-sim-press::before { content:""; position:absolute; width:3px; height:11px; border-radius:2px; background:#b7d1bd; left:calc(50% - 1.5px); top:7px; transform-origin:1.5px 31px; transform:rotate(var(--dial-turn,0deg)); }
+.kiku-sim-press.is-turning { cursor:grabbing; }
+.kiku-page .kiku-dial-hint { color:#b8bec5; font:11px/1.6 "IBM Plex Mono",monospace; margin-top:10px; }
+.kiku-look-strip { display:flex; gap:8px; overflow-x:auto; padding:6px 3px 12px; scrollbar-width:thin; grid-column:1/-1; width:100%; }
+.kiku-page .kiku-look-choice { display:flex; align-items:center; gap:8px; flex:0 0 auto; min-height:44px; padding:10px 12px; border:1px solid #414952; color:#b8bec5; background:transparent; font:11px/1.5 "IBM Plex Mono",monospace; border-radius:0; }
+.kiku-look-choice::before { content:""; width:13px; height:13px; flex-shrink:0; border-radius:50%; background:var(--look-color); border:1px solid #ffffff50; }
+.kiku-page .kiku-look-choice[aria-pressed=true] { border-color:#7bbcff; color:#d2e8ff; background:#233345; }
+.kiku-page .kiku-signal-path.is-tracing>div { animation:kiku-trace .65s both; }
+.kiku-signal-path.is-tracing>div:nth-of-type(2) { animation-delay:.08s; }
+.kiku-signal-path.is-tracing>div:nth-of-type(3) { animation-delay:.16s; }
+.kiku-signal-path.is-tracing>div:nth-of-type(4) { animation-delay:.24s; }
+@keyframes kiku-trace { from { opacity:.45; transform:translateX(-7px); } to { opacity:1; transform:translateX(0); } }
+@media(max-width:1100px) { .kiku-story-stage { grid-template-columns:minmax(280px,.85fr) minmax(0,1.15fr); } .kiku-story .kiku-actions { flex-direction:column; align-items:start; gap:8px; } .kiku-story-copy { padding-right:15px; } .kiku-story h1 { font-size:120px!important; } }
+@media(max-width:800px) { .kiku-story-stage { grid-template-columns:1fr 1.05fr; } .kiku-story h1 { font-size:104px!important; } .kiku-page .kiku-story-description { font-size:14px; } .kiku-page .kiku-story-deck { font-size:31px; } .kiku-story-navigation button { padding-inline:10px!important; min-width:64px!important; } }
+@media(max-width:600px) {
+ .kiku-story-stage { display:flex; flex-direction:column; min-height:0; }
+ .kiku-story-copy { padding:28px 22px 24px; }
+ .kiku-story h1 { font-size:94px!important; margin:17px 0 20px!important; }
+ .kiku-page .kiku-story-deck { font-size:30px; }
+ .kiku-page .kiku-story-description { max-width:38ch; margin-top:15px; }
+ .kiku-story .kiku-actions { flex-direction:row; align-items:center; gap:18px; margin:22px 0; }
+ .kiku-story .kiku-actions a { font-size:12px; gap:10px; }
+ .kiku-story-object { height:430px; min-height:0; }
+ .kiku-story-object>img { padding:10px; }
+ .kiku-story-caption { min-height:0!important; }
+ .kiku-story.is-pinned { height:calc(100svh + 950px); }
+ .kiku-story.is-pinned .kiku-story-stage { display:grid; grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr); }
+ .kiku-story.is-pinned .kiku-story-copy { display:grid; grid-template-columns:1fr auto; gap:0 10px; padding:15px 22px 0; align-self:start; }
+ .kiku-story.is-pinned .kiku-label,.kiku-story.is-pinned .kiku-story-description,.kiku-story.is-pinned .kiku-story-scroll { display:none; }
+ .kiku-story.is-pinned h1 { font-size:66px!important; grid-row:1/3; margin:5px 0 0!important; }
+ .kiku-story.is-pinned .kiku-story-deck { font-size:20px; padding-top:5px; }
+ .kiku-story.is-pinned .kiku-actions { margin:12px 0; grid-column:1/-1; }
+ .kiku-story.is-pinned .kiku-story-navigation { grid-column:1/-1; }
+ .kiku-story.is-pinned .kiku-story-caption { grid-column:1/-1; font-size:10px; margin-top:8px; }
+ .kiku-story.is-pinned .kiku-story-object { height:auto; }
+ .kiku-page .kiku-story-qualification { bottom:12px; font-size:9px; }
+ .kiku-page .kiku-sim-press::before { transform-origin:1.5px 22px; height:8px; top:5px; }
+}
+@media(prefers-reduced-motion:reduce) { .kiku-story-object>canvas { transition:none; } .kiku-signal-path.is-tracing>div { animation:none!important; } }
+@media print { .kiku-story { height:auto!important; } .kiku-story-stage { position:static!important; height:auto!important; display:block; } .kiku-story-object { height:400px; } .kiku-story-object>img { visibility:visible!important; } .kiku-story canvas,.kiku-story-navigation,.kiku-story-scroll,.kiku-story-load,.kiku-look-strip { display:none!important; } }

@@ -1,0 +1,82 @@
+name: Review interactive Kiku case
+on:
+  push:
+    branches: [kiku-interactive]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kiku-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node scripts/verify-v2-kiku.cjs --source-only
+          node scripts/kiku-simulator/verify.cjs
+          python3 scripts/audit-v2.py
+          python3 scripts/build-v3-pages.py --check
+          python3 scripts/audit-v3.py
+  chromium:
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop1440, phone320, phone390, ipad768, ipad1024, ipad1180]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/kiku-server.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/projects/kiku/ >/dev/null && break; sleep 1; done
+          node scripts/verify-v2-kiku.cjs --viewport=${{ matrix.viewport }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kiku-${{ matrix.viewport }}
+          path: /tmp/kiku-evidence/
+          retention-days: 14
+  fallbacks:
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps ${{ matrix.engine }}
+      - run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/kiku-server.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/projects/kiku/ >/dev/null && break; sleep 1; done
+          if [ '${{ matrix.engine }}' = webkit ]; then node scripts/verify-v2-kiku.cjs --webkit; else node scripts/verify-v2-kiku.cjs --fallbacks; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kiku-${{ matrix.engine }}-fallbacks
+          path: /tmp/kiku-evidence/
+          retention-days: 14

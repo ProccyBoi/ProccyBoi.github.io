@@ -14,6 +14,7 @@ from collections import Counter
 from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
+from v3_interior_source import source as interior_source
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -218,7 +219,7 @@ def validate_inheritance(original, generated, relative):
 
 
 def build(relative):
-    original = (SOURCE / relative).read_text(encoding="utf-8")
+    original = interior_source(relative)
     source = light_metadata(route(original))
     document = Document(source)
     edits = []

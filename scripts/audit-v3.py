@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from hashlib import sha256
 from html.parser import HTMLParser
 from pathlib import Path
+from v3_interior_source import source as interior_source
 import gzip
 import json
 import re
@@ -207,7 +208,7 @@ def check_copy_preservation():
     for relative in sorted(destinations.keys() - sources.keys()):
         errors.append(f"v3/{relative}: route has no current-v2 source; review before adding")
     for relative in sorted(sources.keys() & destinations.keys()):
-        original, copied = Document(sources[relative]), Document(destinations[relative])
+        original, copied = Document(sources[relative], interior_source(relative)), Document(destinations[relative])
         label = f"v3/{relative}"
         keys = {key for item in original.elements for key in item.attrs if key.startswith("data-")} - NAV_HOOKS
         if relative == "index.html":
