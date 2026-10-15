@@ -1,25 +1,30 @@
-/* V2-only control cleanup. Shared scene geometry, cadence and v3 stay intact. */
-.v2-assembly-choices{gap:8px 10px;counter-reset:none}
-.v2-assembly-preview-label{grid-column:1/-1;color:var(--v2-muted);font-size:13px;line-height:1.4}
-.v2-assembly-choices button{justify-content:center;align-items:center;min-height:44px;padding:10px 8px;border:1px solid var(--v2-line);background:var(--v2-bg);font-size:14px;text-align:center;counter-increment:none}
+/* Compact V2 preview controls, with one quiet surface and a clear active item. */
+.v2-assembly-choices{position:relative;gap:4px;width:min(500px,52%);padding:4px;border:1px solid var(--v2-line);border-radius:12px;background:var(--v2-bg);counter-reset:none}
+.v2-assembly-preview-label{position:absolute;left:4px;bottom:calc(100% + 8px);color:var(--v2-muted);font-size:12px;line-height:1.4}
+.v2-assembly-choices button{justify-content:center;align-items:center;min-height:44px;padding:10px 8px;border:0;border-radius:8px;background:transparent;font-size:14px;text-align:center;counter-increment:none;transition:background .18s,color .18s}
 .v2-assembly-choices button::before,.v2-assembly-choices button::after{display:none}
-.v2-assembly-choices button[aria-pressed=true]{border-color:var(--v2-accent);background:var(--v2-panel);color:var(--v2-ink)}
-.v2-assembly-choices button:focus-visible{outline-offset:3px}
+.v2-assembly-choices button[aria-pressed=true]{background:#7bbcff18;color:var(--v2-accent);box-shadow:inset 0 0 0 1px #7bbcff32}
+.v2-assembly-choices button:focus-visible{outline-offset:2px}
 .v2-assembly-explore{border-bottom-color:var(--v2-accent)}
 .v2-assembly-caption>p:last-child{margin-top:18px}
-@media(hover:hover){.v2-assembly-choices button:hover{border-color:var(--v2-muted)}}
-@media(max-width:900px){
-  .v2-assembly-choices{gap:8px 12px}
-  .v2-assembly-caption{bottom:166px}
-}
+@media(hover:hover){.v2-assembly-choices button:hover{background:var(--v2-panel);color:var(--v2-ink)}}
+@media(max-width:900px){.v2-assembly-choices{width:100%}.v2-assembly-caption{bottom:166px}}
 @media(max-width:600px){
-  .v2-assembly-choices button{flex-direction:row;font-size:13px;letter-spacing:0;padding-inline:6px;min-height:44px}
-  .v2-assembly-choices{gap:8px}
+  .v2-assembly-choices button{flex-direction:row;font-size:13px;letter-spacing:0;padding-inline:4px;min-height:44px}
   .v2-assembly-caption{bottom:160px}
   .v2-assembly-caption>p:last-child{margin-top:12px}
 }
-
 @media(max-width:360px){.v2-assembly-caption{bottom:184px}}
+/* The Framework quartet is a non-interactive background. Project names stay
+   above it as ordinary links; the scene never takes pointer or touch input. */
+.v2-home [data-framework-background].is-scene .v2-selected-stage{background:transparent}
+.v2-home [data-framework-background].is-scene .v2-selected-canvas{pointer-events:none}
+.v2-home [data-framework-background].is-scene .v2-selected-heading{pointer-events:none}
+.v2-home [data-framework-background].is-scene .v2-selected-skip{top:auto;bottom:clamp(110px,15svh,150px);font-size:13px;text-decoration:none!important}
+.v2-home [data-framework-background].is-scene .v2-framework-copy{background:var(--v2-bg)}
+@media(max-width:760px){.v2-home [data-framework-background].is-scene .v2-selected-skip{bottom:180px}}
+@media(prefers-reduced-motion:reduce){.v2-assembly-choices button{transition:none}}
+
 /* Portrait tablets keep the board copy above the existing 3D composition. */
 @media(min-width:761px) and (max-aspect-ratio:9/10){
   .v2-aircraft-feature.is-story .v3-aircraft-copy article:not(:first-child),

@@ -78,11 +78,11 @@
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
   <link rel="stylesheet" href="/assets/v2-selected-work.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/aircraft-story.css?v=v2-aircraft-20261011">
-  <link rel="stylesheet" href="/assets/v2-home-controls.css?v=20261014">
+  <link rel="stylesheet" href="/assets/v2-home-controls.css?v=blue-20261015">
   <script src="/assets/v2.js?v=controls-20261014" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
   <script src="/assets/v2-assembly.js?v=controls-20261014" defer></script>
-  <script src="/assets/v2-selected-work.js?v=load-20261012" defer></script>
+  <script src="/assets/v2-selected-work.js?v=framework-20261015" defer></script>
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
   <script src="/assets/v3-aircraft-hero.js?v=load-20261012" defer></script>
 </head>
@@ -128,7 +128,7 @@
         <div class="v2-assembly-progress" aria-hidden="true"><span data-assembly-progress></span></div>
       </div>
     </section>
-    <section class="v2-work v2-shell v2-selected-work" data-selected-work aria-labelledby="work-title">
+    <section class="v2-work v2-shell v2-selected-work" data-selected-work data-framework-background aria-labelledby="work-title">
       <div class="v2-gallery-heading" id="work"><h2 id="work-title">Selected work</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
       <section class="v2-framework-collection" id="work-framework" data-selected-chapter="0" aria-labelledby="framework-title">
         <header class="v2-selected-heading">
@@ -151,22 +151,6 @@
           <a class="v2-framework-card v2-framework-card--logic" href="/v2/projects/framework-logic-analyser/">
             <span class="v2-framework-art"><span class="v2-framework-object" data-framework-object><img data-selected-image src="/assets/images/v2/hardware/framework-logic-analyser.webp" width="1600" height="1200" alt="STM32 logic analyser expansion card with a seven-pin signal connector" loading="eager" decoding="async" fetchpriority="low"></span></span>
             <div class="v2-framework-copy"><h4>Logic analyser <span aria-hidden="true">↗</span></h4><p>STM32 signal capture</p></div>
-          </a>
-        </div>
-      </section>
-      <section class="v2-transport-collection" id="work-transit" data-selected-chapter="1" aria-labelledby="transport-title">
-        <header class="v2-selected-heading">
-          <h3 id="transport-title">Live transport displays</h3>
-          <p>Two custom PCBs turn real-time transport data into light.</p>
-        </header>
-        <div class="v2-transport-grid">
-          <a class="v2-transport-card v2-transport-card--metro" href="/v2/projects/metroboard/">
-            <span class="v2-transport-photo"><img data-selected-image src="/assets/images/projects/metroboard1-web.jpg" width="1600" height="900" alt="MetroBoard's Sydney rail map with its network LEDs illuminated" loading="eager" decoding="async" fetchpriority="low"></span>
-            <div class="v2-transport-copy"><h4>MetroBoard <span aria-hidden="true">↗</span></h4><p>291 LEDs mapping Sydney’s rail network.</p></div>
-          </a>
-          <a class="v2-transport-card v2-transport-card--tram" href="/v2/projects/tramtrace/">
-            <span class="v2-transport-photo"><img data-selected-image src="/assets/images/projects/tramtrace-hero-960.webp" srcset="/assets/images/projects/tramtrace-hero-960.webp 960w, /assets/images/projects/tramtrace-hero-1920.webp 1920w" sizes="(max-width: 600px) 90vw, (min-width: 1660px) 744px, 44vw" width="960" height="640" alt="TramTrace's Sydney and Parramatta light-rail PCB displaying live tram positions" loading="eager" decoding="async" fetchpriority="low"></span>
-            <div class="v2-transport-copy"><h4>TramTrace <span aria-hidden="true">↗</span></h4><p>116 RGB pixels following Sydney and Parramatta light rail.</p></div>
           </a>
         </div>
       </section>

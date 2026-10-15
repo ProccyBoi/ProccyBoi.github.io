@@ -51,10 +51,10 @@ class Element:
 
 
 class Document(HTMLParser):
-    def __init__(self, path):
+    def __init__(self, path, source=None):
         super().__init__(convert_charrefs=True)
         self.path = path
-        self.source = path.read_text(encoding="utf-8-sig")
+        self.source = path.read_text(encoding="utf-8-sig") if source is None else source
         self.lines = [0] + [match.end() for match in re.finditer("\n", self.source)]
         self.elements, self.stack = [], []
         self.feed(self.source)
@@ -214,6 +214,7 @@ def check_copy_preservation():
             # The duplicate caption link is intentionally removed; the single
             # visible Open control, title, canvas and scene hooks remain.
             keys.discard("data-assembly-link")
+            keys.discard("data-framework-background")
             # V2's independent control cleanup moves its title hook onto h2
             # and names its Open label. V3 retains the same title and action
             # with its own presentation hooks; enforce exactly one of each.
@@ -237,7 +238,16 @@ def check_copy_preservation():
         retained_styles = [urljoin(copied.base, item.attrs.get("href", "")) for item in copied.tags("link") if "stylesheet" in item.attrs.get("rel", "").split() and urlsplit(urljoin(copied.base, item.attrs.get("href", ""))).path not in {PRODUCT_CSS, CONTROLS_CSS, LIGHT_INTERIORS_CSS}]
         if original_styles != retained_styles:
             errors.append(f"{label}: original stylesheet stack/order changed")
-        if payloads(original) != payloads(copied):
+        expected_payloads = payloads(original)
+        if relative == "index.html" and "data-framework-background" in original.source:
+            # V2 now presents only Framework cards. V3 deliberately retains its
+            # previously approved transit chapter, exactly including its images.
+            retained = [node for node in copied.tags("section") if node.attrs.get("id") == "work-transit"]
+            if len(retained) != 1 or sha256(copied.raw(retained[0]).strip().encode()).hexdigest() != "6bf3b4f65993f85dfa85c14e725bb7cd866de25575a53590db096ff1fd66a3da":
+                errors.append(f"{label}: independently retained transit chapter changed")
+            else:
+                expected_payloads += payloads(Document(destinations[relative], copied.raw(retained[0])))
+        if expected_payloads != payloads(copied):
             errors.append(f"{label}: image/model/iframe payload URLs or loading priorities changed")
         for node in original.elements:
             if "data-v2-engineering-evidence" in node.attrs:
