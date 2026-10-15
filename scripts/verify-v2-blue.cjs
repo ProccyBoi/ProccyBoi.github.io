@@ -39,6 +39,7 @@ async function open(browser,viewport,options={}){
   const requests=[],blocked=[];await context.route('**/*',route=>{const request=route.request(),url=new URL(request.url());requests.push(url.pathname);if(url.origin===new URL(base).origin&&request.method()==='GET')return route.continue();blocked.push({url:url.href,method:request.method()});return route.abort();});
   if(!options.noJS)await context.addInitScript({content:`(${installProbe.toString()})(); window.__v3ProductProbe.matches=(${currentFrame.toString()}); const read=window.__v3ProductProbe.read; window.__v3ProductProbe.read=kind=>{const sample=read(kind); if(kind==='selected' && sample?.dataset?.selectedInspectionRevision===undefined){delete sample.inspectionRevision;delete sample.inspectionPresentedRevision;delete sample.inspectionTarget;} return sample;};`});
   if(!options.noJS)await context.addInitScript(()=>{const original=window.scrollTo;window.__v2ScrollCommands=[];window.scrollTo=function(...args){window.__v2ScrollCommands.push({at:performance.now(),args});return original.apply(this,args);};});
+  if(options.saveData)await context.addInitScript(()=>{Object.defineProperty(navigator,'connection',{value:{saveData:true,addEventListener(){}}});});
   if(options.noWebGL)await context.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...params){return /webgl/.test(type)?null:original.call(this,type,...params);};});
   const page=await context.newPage(),errors=[];page.setDefaultTimeout(30000);page.on('pageerror',error=>errors.push(error.message));
   return {context,page,viewport,options,errors,blocked,requests};
@@ -126,7 +127,7 @@ async function review(browser,name){
     // completed scene before measuring the sticky controls; never force scroll.
     await frame(page,'hero');assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[2],'Back restores the opened project preview');
     await press(run,'.v2-assembly-jump');await page.waitForURL('**#work');
-    await page.locator('#work-framework').scrollIntoViewIfNeeded();await frame(page,'selected');
+    await page.locator('#work-framework').evaluate(node=>node.scrollIntoView({behavior:'instant',block:'start'}));await frame(page,'selected');
     assert.equal(await page.locator('.v2-selected-nav,.v2-transport-card,[data-framework-inspection-ui]').count(),0,'No transit selector or inspection menu');
     assert.deepEqual(await page.locator('.v2-framework-card').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),cases.map(slug=>'/v2/projects/'+slug+'/'));
     assert.equal(await page.locator('[data-selected-work]').getAttribute('data-selected-models-ready'),'4');
@@ -145,7 +146,7 @@ async function review(browser,name){
     await page.goBack({waitUntil:'domcontentloaded'});await frame(page,'selected');
     if(name==='desktop1440'){
       await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>!document.querySelector('[data-selected-work]').classList.contains('is-scene'));assert.equal(await page.locator('.v2-framework-card').count(),4);await shot(run,name+'-motion-disabled');
-      await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#work-framework').scrollIntoViewIfNeeded();await frame(page,'selected');await shot(run,name+'-motion-restored','selected');
+      await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#work-framework').evaluate(node=>node.scrollIntoView({behavior:'instant',block:'start'}));await frame(page,'selected');await shot(run,name+'-motion-restored','selected');
     }
     await press(run,'.v2-selected-skip');await page.waitForURL('**#skylabs-aircraft');await frame(page,'aircraft');await shot(run,name+'-aircraft','aircraft');
     await press(run,'[data-aircraft-go="1"]');await page.waitForURL('**#skylabs-telemetry');await frame(page,'aircraft');await hit(page.locator('.v2-aircraft-actions a'));await hit(page.locator('.v3-story-skip'));
@@ -158,7 +159,7 @@ async function review(browser,name){
   }catch(error){await shot(run,name+'-failure').catch(()=>{});fs.writeFileSync(path.join(output,name+'-error.txt'),error.stack);throw error;}finally{await run.context.close();}
 }
 async function fallbacks(browser,webkit=false){
-  for(const [name,options,viewport]of [['no-js',{noJS:true},viewports.phone320],['reduced-motion',{reduced:true},viewports.phone390],['no-webgl',{noWebGL:true},viewports.ipad1024],['short-landscape',{}, {width:844,height:390,touch:true}]]){
+  for(const [name,options,viewport]of [['no-js',{noJS:true},viewports.phone320],['reduced-motion',{reduced:true},viewports.phone390],['save-data',{saveData:true},viewports.phone390],['no-webgl',{noWebGL:true},viewports.ipad1024],['short-landscape',{}, {width:844,height:390,touch:true}]]){
     const run=await open(browser,viewport,options);
     try{await go(run);if(!options.noJS)await run.page.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyState==='static'||document.querySelector('[data-assembly]').dataset.assemblyState==='unavailable',null,{timeout});await shot(run,(webkit?'webkit-':'')+name);
       assert.equal(await run.page.locator('[data-assembly-select]:visible').count(),0);await run.page.locator('.v2-assembly-jump').click();await run.page.waitForURL('**#work');
