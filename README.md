@@ -11,6 +11,7 @@ Personal portfolio and public project archive published at:
 - `/book/` — live free/busy booking page for 15–60 minute online or in-person meetings
 - `/projects/` — complete project index, including browser-based engineering tools
 - `/projects/tramtrace/` — light-rail display case study with an integrated PCB and data explorer
+- `/projects/kiku/` — pocket audio player with a real firmware simulator and nine-part CAD explorer
 - `/projects/skylabs/` — Skylabs system case study with integrated aircraft and ground-station board explorers
 - `/projects/framework-expansion-card/` — ESP32-S3 Framework card case study with its integrated WebGL model
 - `/projects/framework-dual-usb/` — dual USB-C Framework card case study with its integrated WebGL model
@@ -68,7 +69,7 @@ The site is plain HTML, CSS and JavaScript. Pushes to `main` publish automatical
 
 ## Active portfolio at `/v2/`
 
-The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It contains 15 projects, including the expanded electronics collection and Coaster. Browser tools remain accessible at their existing URLs but are excluded from the project collection and case-study navigation.
+The independently styled version lives at `/v2/`, with its project collection at `/v2/projects/` and profile at `/v2/about/`. It contains 16 projects, including Kiku, the expanded electronics collection and Coaster. Browser tools remain accessible at their existing URLs but are excluded from the project collection and case-study navigation.
 
 The fullscreen opening presents TramTrace, the Skylabs telemetry board and Raspberry Pi card, with their physical components assembling and separating as the reader scrolls. Prepared hero assets move the CAD parsing and merging into a repeatable build step while retaining the exact triangle attributes, materials and original SVG silkscreens. `assets/v2-hero-assets.js` loads them; `assets/v2-assembly-models.js` remains the source factory and recovery path. `assets/v2-assembly.js` provides the scene and fitted soft component shadows, with staged, curved component motion in `assets/v2-hero-motion.js`. The surrounding charcoal gallery uses `assets/v2.css` and `assets/v2.js`; case-study styles/controllers are `assets/v2-case.css` and `assets/v2-cases.js`.
 
@@ -89,7 +90,7 @@ Assembly viewers load near the viewport and use one Disassemble/Assemble action,
 
 The v3 portfolio presents the accepted Skylabs aircraft-to-telemetry sequence within an engineering field notebook. It leads with Andrew's role, follows the data from the aircraft logger through the ground station and flight-review tools, then presents assembled TramTrace and Framework hardware with concise engineering evidence. Teaching tools, shared files, booking and the public CV remain directly discoverable.
 
-`v3/index.html` is authored separately. `scripts/build-v3-pages.py` preserves all 23 v2 interiors and their working controllers, adding v3-only case records from `scripts/content/v3-case-evidence.json`. The collection still contains 15 projects; teaching tools remain separate. Existing root and v2 routes are unchanged.
+`v3/index.html` is authored separately. `scripts/build-v3-pages.py` preserves all 26 v2 interiors and their working controllers, adding v3-only case records from `scripts/content/v3-case-evidence.json`. The collection contains 16 projects; teaching tools remain separate. Existing root and v2 routes are unchanged.
 
 The aircraft controller and source geometry retain the approved two-destination transition: Aircraft and Telemetry. Skin clearance completes before the rigid explosion. Reduced motion, Save Data, short viewports and graphics failure retain static content and project links. The paper theme and self-hosted IBM Plex Sans / JetBrains Mono fonts live in `assets/v3.css`; dark CAD contexts retain their original colours and geometry.
 

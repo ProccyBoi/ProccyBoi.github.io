@@ -94,8 +94,7 @@ def header(active='work'):
       <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
         <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Projects</a>
         <a href="/v2/about/"{' aria-current="page"' if active == 'about' else ''}>About</a>
-        <a href="/v2/book/">Book</a>
-        <a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+        <a href="/v2/book/">Book</a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>'''
 
@@ -107,6 +106,8 @@ LABELS = {'tramtrace': 'TramTrace', 'skylabs': 'Skylabs', 'framework-dual-usb': 
 LABELS['framework-raspberry-pi'] = 'Raspberry Pi Expansion Card'
 ORDER.insert(1, 'coaster')
 LABELS['coaster'] = 'RGB Drink Coaster'
+ORDER.insert(0, 'kiku')
+LABELS['kiku'] = 'Kiku'
 for record in HARDWARE_PROJECTS:
     ORDER.insert(ORDER.index('switch-mode-power-supplies'), record['slug'])
     LABELS[record['slug']] = record['title']
@@ -245,6 +246,10 @@ def case_navigation(source, slug, title):
         links.append(('build', 'Build'))
     if slug == 'skylabs':
         links.append(('boards', 'Boards'))
+    if slug == 'kiku':
+        links = [('overview', 'Overview'), ('simulator', 'Try it'),
+                 ('explore', 'Assembly'), ('details', 'Engineering'),
+                 ('build', 'Development'), ('verification', 'Evidence')]
     path = '/v2/projects/' + slug + '/'
     markup = f'<nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">{escape(title)}</span><div class="v2-case-nav-links">'
     markup += ''.join(f'<a href="{path}#{anchor}" data-v2-section>{label}</a>' for anchor, label in links)
@@ -258,7 +263,6 @@ def case_navigation(source, slug, title):
 def continuation(slug):
     if slug in TOOL_ROUTES:
         return '<nav class="v2-continue shell" aria-label="Portfolio"><a class="v2-all-work" href="/v2/projects/">View projects <span aria-hidden="true">↗</span></a></nav>'
-    source = source.replace('<figcaption class="v2-media-label">', '<figcaption class="v2-media-label" data-v2-only>')
     if slug == 'skylabs/boards/telemetry':
         prev, nxt = 'skylabs', 'skylabs/boards/ground-station'
     elif slug == 'skylabs/boards/ground-station':
@@ -402,6 +406,16 @@ def simplify_viewers(source, slug):
 def make_case(path, slug=None, source=None):
     slug = slug or path.parent.relative_to(ROOT / 'projects').as_posix()
     source = source if source is not None else path.read_text(encoding='utf-8')
+    if slug == 'kiku':
+        # Kiku's maintained page owns its product hero, simulator and CAD layout.
+        # Reuse portfolio chrome without rebuilding that content as a generic hero.
+        source = source.replace('</main>', continuation(slug) + '\n</main>', 1)
+        source = case_navigation(common(source, 'v2-case'), slug, 'Kiku')
+        styles = [node for node in Tree(source).nodes if node.tag == 'link' and
+                  node.attrs.get('href', '').split('?', 1)[0].lstrip('/') == 'assets/kiku.css']
+        markup = '\n'.join(node.outer(source) for node in styles)
+        source = replace_nodes(source, [(node, '') for node in styles])
+        return source.replace('</head>', markup + '\n</head>', 1)
     source = integrate_hardware(source, slug)
     source = simplify_viewers(source, slug)
     if slug == 'skylabs/flight-review':
@@ -550,7 +564,7 @@ def make_index():
     hero = tree.find('section', 'page-hero')
     new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems and robotics.</p></div></section>'''
     jump = tree.find('nav', 'project-jumpbar')
-    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>15</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>12</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
+    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>16</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>13</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
     source = replace_nodes(source, [(hero, new_hero), (jump, controls)])
     hardware_catalog = Tree(source).find('div', 'project-catalog')
     pi_card = '''<a class="catalog-card v2-pi-card" href="projects/framework-raspberry-pi/">

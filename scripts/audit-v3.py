@@ -27,7 +27,7 @@ LOCAL_HOSTS = {"proccyboi.github.io", "localhost", "127.0.0.1"}
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 REDIRECTS = {"projects/skylabs/flight-review/index.html": "/shared/flight-review/"}
 UTILITIES = {"render/index.html"}
-PRIVATE_PROJECTS = {"kiku", "usense", "comp6441", "pcbnotebook"}
+PRIVATE_PROJECTS = {"usense", "comp6441", "pcbnotebook"}
 PRODUCT_CSS = "/assets/v3-product.css"
 LIGHT_INTERIORS_CSS = "/assets/v3-product-light-interiors.css"
 CONTROLS_CSS = "/assets/v3-product-controls.css"
@@ -200,8 +200,8 @@ def check_copy_preservation():
     errors, stats = [], Counter()
     sources = {path.relative_to(ROOT / "v2").as_posix(): path for path in (ROOT / "v2").rglob("*.html")}
     destinations = {path.relative_to(SITE).as_posix(): path for path in SITE.rglob("*.html")}
-    if len(sources) != 26:
-        errors.append(f"v2/: expected the approved 26-route source inventory, found {len(sources)}")
+    if len(sources) != 27:
+        errors.append(f"v2/: expected the approved 27-route source inventory, found {len(sources)}")
     for relative in sorted(sources.keys() - destinations.keys()):
         errors.append(f"v3/{relative}: current v2 route has no v3 counterpart")
     for relative in sorted(destinations.keys() - sources.keys()):
@@ -261,8 +261,8 @@ def check_copy_preservation():
         if relative == "projects/index.html":
             expected = Counter(route(item.attrs.get("href", "")) for item in original.elements if "data-v2-project" in item.attrs)
             actual = Counter(item.attrs.get("href", "") for item in copied.elements if "data-v2-project" in item.attrs)
-            if expected != actual or sum(actual.values()) != 15:
-                errors.append(f"{label}: collection must retain all 15 current-v2 projects exactly once")
+            if expected != actual or sum(actual.values()) != 16:
+                errors.append(f"{label}: collection must retain all 16 current-v2 projects exactly once")
             stats["catalog projects"] = sum(actual.values())
         stats["routes"] += 1
     clone = ROOT / ASSEMBLY_CLONE.lstrip("/")

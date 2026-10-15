@@ -1,0 +1,86 @@
+{
+  "description": "Unmodified Kiku firmware renderer and its owned header dependencies.",
+  "snapshot_date": "2026-10-15",
+  "sources": [
+    {
+      "file": "audio_io.h",
+      "firmware_path": "Drivers/Inc/audio_io.h",
+      "sha256": "b1f3c4b414770419a6cbf3786bceea6f90c5808aed17ebe3901e47d2e8165ed6"
+    },
+    {
+      "file": "audio_router.h",
+      "firmware_path": "App/Inc/audio_router.h",
+      "sha256": "ee619b3820e061e8049855dc2e58d3e943ff51fa5c4cb26b6f23e8529e67871a"
+    },
+    {
+      "file": "bq25895.h",
+      "firmware_path": "Drivers/Inc/bq25895.h",
+      "sha256": "66833c253c5adb5b5b979511c76be443edb9948907554f31481f7686e53cd222"
+    },
+    {
+      "file": "device_bus.h",
+      "firmware_path": "Drivers/Inc/device_bus.h",
+      "sha256": "1b2a0d1d797a66dbce4d3c406740d4a9b57a6d51bcff80ecc676c3db9c373d81"
+    },
+    {
+      "file": "fm_state.c",
+      "firmware_path": "App/Src/fm_state.c",
+      "sha256": "227de834d6f27d1a2f9bc7063c5896eb5002bf8342bf89cf8ee5dd44a1095fe5"
+    },
+    {
+      "file": "fm_state.h",
+      "firmware_path": "App/Inc/fm_state.h",
+      "sha256": "7142d4f0148e36983f5eb6644baba39fda8b003013b4f5ae85543e47c11a5540"
+    },
+    {
+      "file": "max17048.h",
+      "firmware_path": "Drivers/Inc/max17048.h",
+      "sha256": "2991398954aa68f488c2aa8c6390b2a7ef208ad859eb20c63ddc054a191e33e5"
+    },
+    {
+      "file": "power_manager.h",
+      "firmware_path": "App/Inc/power_manager.h",
+      "sha256": "f202eefbb530bb44b89bcb46e1f7bc187240e4ce86ab3859e7abba747580af44"
+    },
+    {
+      "file": "settings.h",
+      "firmware_path": "App/Inc/settings.h",
+      "sha256": "0beb574375e648bc3f872552873606a05dd5ea28fe161a72540ba84ac02c9fac"
+    },
+    {
+      "file": "si4705.h",
+      "firmware_path": "Drivers/Inc/si4705.h",
+      "sha256": "6a50eace0521e7e8eb1c7597e8026ab45c9e9a22f47e5174db2b4ef1cba877f7"
+    },
+    {
+      "file": "st7789.h",
+      "firmware_path": "Drivers/Inc/st7789.h",
+      "sha256": "47d7302930680c6a563c82e1d278dd6e2781fb858d35cafca5581a0b7796af8a"
+    },
+    {
+      "file": "tlv320aic3104.h",
+      "firmware_path": "Drivers/Inc/tlv320aic3104.h",
+      "sha256": "0ea00402a4f9640e7ac4eb3c3068a534a2854a66e24a6c5eadf69f3e32aebb15"
+    },
+    {
+      "file": "ui_renderer.c",
+      "firmware_path": "UI/Src/ui_renderer.c",
+      "sha256": "d5f541b120f7e1e9a2b3e9440c0d2e5c8e9553651de90343baef685afbbf91f7"
+    },
+    {
+      "file": "ui_renderer.h",
+      "firmware_path": "UI/Inc/ui_renderer.h",
+      "sha256": "526ae6bc5b5f831abb65bfab0735adb976f59aecda4c74793b18674ca3302456"
+    },
+    {
+      "file": "ui_state.h",
+      "firmware_path": "App/Inc/ui_state.h",
+      "sha256": "cd449aad059a3f138adc2b29853067f6f28deed2a834ff44670e4acee1b8cbfd"
+    },
+    {
+      "file": "ui_theme.h",
+      "firmware_path": "App/Inc/ui_theme.h",
+      "sha256": "a645c1950940df5162c36d3348bc1a313c052df13183685eaec2f415abdeff1c"
+    }
+  ]
+}

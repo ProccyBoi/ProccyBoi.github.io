@@ -53,7 +53,7 @@ async function posters(page) {
     await page.locator('[data-v2-menu]').click();
     await page.locator('[data-v2-nav] a[href="/v2/projects/"]').click();
     await page.waitForURL('**/v2/projects/');
-    assert.equal(await page.locator(primary).count(),15,'15 primary projects');
+    assert.equal(await page.locator(primary).count(),16,'16 primary projects');
     assert.equal(await page.locator('[data-v2-category="interactive"], #interactive, .v2-related-tool').count(),0,'Tools are not listed as projects');
     for(const tool of ['scopelab','lithography-animation','mosfet-operating-regions']){
       assert.equal(await page.locator(primary+'[href="/v2/projects/'+tool+'/"]').count(),0);
@@ -69,13 +69,13 @@ async function posters(page) {
     assert.equal(await page.locator('[data-v2-project]:visible').count(),0);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/No projects match/);
     await search.press('Escape');
-    assert.equal(await page.locator(primary+':visible').count(),15);
+    assert.equal(await page.locator(primary+':visible').count(),16);
     await page.locator('[data-v2-category="hardware"]').click();
-    assert.equal(await page.locator(primary+':visible').count(),12);
-    assert.match(await page.locator('[data-v2-search-status]').textContent(),/12 projects/);
+    assert.equal(await page.locator(primary+':visible').count(),13);
+    assert.match(await page.locator('[data-v2-search-status]').textContent(),/13 projects/);
     await page.setViewportSize({width:320,height:900});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
-    console.log('PASS automatic hero CAD packs without source GLBs, keyboard/menu navigation, 15 projects without tools, four Framework cards, search and categories');
+    console.log('PASS automatic hero CAD packs without source GLBs, keyboard/menu navigation, 16 projects without tools, four Framework cards, search and categories');
     await page.setViewportSize({width:1280,height:900});
     for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
@@ -136,7 +136,7 @@ async function posters(page) {
     await posters(staticPage);
     assert.equal(await staticPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await staticPage.goto(base+'/v2/projects/',{waitUntil:'networkidle'});
-    assert.equal(await staticPage.locator(primary+':visible').count(),15);
+    assert.equal(await staticPage.locator(primary+':visible').count(),16);
     await noJS.close();
     const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
     const reducedPage=await reduced.newPage();observe(reducedPage);

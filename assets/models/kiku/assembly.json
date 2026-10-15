@@ -1,0 +1,621 @@
+{
+  "schema": "kiku-assembly-v1",
+  "revision": "Mame P2",
+  "units": "millimetres",
+  "coordinateSystem": {
+    "x": "right",
+    "y": "up",
+    "z": "front"
+  },
+  "geometry": "Exact nine project-designed rigid print STL tessellations in original assembly coordinates. No component, PCB, battery, antenna, lens, or fastener models included.",
+  "status": "CAD prototype. Printed P1 informed this P2 revision; P2 physical fit is not established by these assets.",
+  "binary": "assembly.bin",
+  "binaryBytes": 3261720,
+  "binarySha256": "2d84ade42f7dba51397fd61a937bd79031605cd42291d6fdcdb9c0fbedd4f849",
+  "glb": "assembly.glb",
+  "glbBytes": 3833312,
+  "glbSha256": "3351d0f88895d58e8831608f705f970bf66601766ff76d74b99674add029236b",
+  "bounds": [
+    [
+      -9.558252334594727,
+      -7.701986312866211,
+      -27.29900360107422
+    ],
+    [
+      67.5788803100586,
+      113.18878936767578,
+      28.799999237060547
+    ]
+  ],
+  "center": [
+    29.010313987731934,
+    52.743401527404785,
+    0.7504978179931641
+  ],
+  "size": [
+    77.13713264465332,
+    120.89077568054199,
+    56.099002838134766
+  ],
+  "partCount": 9,
+  "triangles": 103370,
+  "explosionNote": "Presentation translations only; interpolate 0..1 times each explode vector. Assembled vertices are never recentered individually.",
+  "parts": [
+    {
+      "id": "front_shell",
+      "name": "Front shell",
+      "description": "Ivory front housing and bezel",
+      "color": "#d9debf",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/front_shell.stl",
+      "source_sha256": "11cf536729164e7e463718c2e933e97f0c1601df228ef581f6d1d2891e64cd33",
+      "triangles": 37012,
+      "vertices": 28933,
+      "bounds": [
+        [
+          -9.558170318603516,
+          -7.701986312866211,
+          -4.5
+        ],
+        [
+          67.5788803100586,
+          113.18878936767578,
+          17.600000381469727
+        ]
+      ],
+      "size": [
+        77.13705062866211,
+        120.89077568054199,
+        22.100000381469727
+      ],
+      "center": [
+        29.01035499572754,
+        52.743401527404785,
+        6.550000190734863
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        0,
+        0,
+        47
+      ],
+      "position": {
+        "byteOffset": 0,
+        "byteLength": 347196,
+        "count": 28933,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 347196,
+        "byteLength": 347196,
+        "count": 28933,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 694392,
+        "byteLength": 444144,
+        "count": 111036,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "rear_shell",
+      "name": "Rear shell",
+      "description": "Rear housing, antenna recess and speaker grille",
+      "color": "#4a6357",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/rear_shell.stl",
+      "source_sha256": "3cb17d301171066baf5187ed4119518b8b2259db515ef03fad4ff2d17283e029",
+      "triangles": 33040,
+      "vertices": 28692,
+      "bounds": [
+        [
+          -9.558252334594727,
+          -7.701986312866211,
+          -27.29900360107422
+        ],
+        [
+          67.5788803100586,
+          113.1883316040039,
+          -1.0
+        ]
+      ],
+      "size": [
+        77.13713264465332,
+        120.89031791687012,
+        26.29900360107422
+      ],
+      "center": [
+        29.010313987731934,
+        52.74317264556885,
+        -14.14950180053711
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        0,
+        0,
+        -47
+      ],
+      "position": {
+        "byteOffset": 1138536,
+        "byteLength": 344304,
+        "count": 28692,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 1482840,
+        "byteLength": 344304,
+        "count": 28692,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 1827144,
+        "byteLength": 396480,
+        "count": 99120,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "button_left",
+      "name": "Primary key",
+      "description": "Orange left key",
+      "color": "#f07d33",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/button_left.stl",
+      "source_sha256": "bede15e8c6e915235aab24f61f16d2d5bdc839032dfd65445a66ee8e9459779d",
+      "triangles": 1556,
+      "vertices": 1560,
+      "bounds": [
+        [
+          8.5,
+          49.5,
+          13.800000190734863
+        ],
+        [
+          23.5,
+          60.5,
+          18.799999237060547
+        ]
+      ],
+      "size": [
+        15.0,
+        11.0,
+        4.999999046325684
+      ],
+      "center": [
+        16.0,
+        55.0,
+        16.299999713897705
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        -12,
+        0,
+        62
+      ],
+      "position": {
+        "byteOffset": 2223624,
+        "byteLength": 18720,
+        "count": 1560,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 2242344,
+        "byteLength": 18720,
+        "count": 1560,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 2261064,
+        "byteLength": 18672,
+        "count": 4668,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "button_right",
+      "name": "Secondary key",
+      "description": "Tonal right key",
+      "color": "#ccd1a6",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/button_right.stl",
+      "source_sha256": "ef97efad456a76c6309f778f1070d5b120a9d5535eef3b8e95718333eac53256",
+      "triangles": 1556,
+      "vertices": 1560,
+      "bounds": [
+        [
+          36.5,
+          49.5,
+          13.800000190734863
+        ],
+        [
+          51.5,
+          60.5,
+          18.799999237060547
+        ]
+      ],
+      "size": [
+        15.0,
+        11.0,
+        4.999999046325684
+      ],
+      "center": [
+        44.0,
+        55.0,
+        16.299999713897705
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        12,
+        0,
+        62
+      ],
+      "position": {
+        "byteOffset": 2279736,
+        "byteLength": 18720,
+        "count": 1560,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 2298456,
+        "byteLength": 18720,
+        "count": 1560,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 2317176,
+        "byteLength": 18672,
+        "count": 4668,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "encoder_knob",
+      "name": "Encoder knob",
+      "description": "Rotary control with D socket and grub-screw retention",
+      "color": "#335240",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/encoder_knob.stl",
+      "source_sha256": "57daace6be7f23b9cedbf8ac9ff94edc58f4cf0aec6fffe42345476736817128",
+      "triangles": 11052,
+      "vertices": 6898,
+      "bounds": [
+        [
+          19.5,
+          29.503263473510742,
+          12.800000190734863
+        ],
+        [
+          40.5,
+          50.496734619140625,
+          28.799999237060547
+        ]
+      ],
+      "size": [
+        21.0,
+        20.993471145629883,
+        15.999999046325684
+      ],
+      "center": [
+        30.0,
+        39.999999046325684,
+        20.799999713897705
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        0,
+        -8,
+        76
+      ],
+      "position": {
+        "byteOffset": 2335848,
+        "byteLength": 82776,
+        "count": 6898,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 2418624,
+        "byteLength": 82776,
+        "count": 6898,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 2501400,
+        "byteLength": 132624,
+        "count": 33156,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "display_carrier",
+      "name": "Display cradle",
+      "description": "Removable three-sided display support",
+      "color": "#bdc9ab",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/display_carrier.stl",
+      "source_sha256": "c10b393c39318535d89a869adf34e430575b57fd3565f5ac9528e642eb23653e",
+      "triangles": 4384,
+      "vertices": 4524,
+      "bounds": [
+        [
+          -2.0999999046325684,
+          63.79499816894531,
+          9.100000381469727
+        ],
+        [
+          62.099998474121094,
+          103.19499969482422,
+          12.5
+        ]
+      ],
+      "size": [
+        64.19999837875366,
+        39.400001525878906,
+        3.3999996185302734
+      ],
+      "center": [
+        29.999999284744263,
+        83.49499893188477,
+        10.800000190734863
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        0,
+        0,
+        26
+      ],
+      "position": {
+        "byteOffset": 2634024,
+        "byteLength": 54288,
+        "count": 4524,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 2688312,
+        "byteLength": 54288,
+        "count": 4524,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 2742600,
+        "byteLength": 52608,
+        "count": 13152,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "battery_guard",
+      "name": "Battery guard",
+      "description": "Removable guard with open coax guides",
+      "color": "#a1b394",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/battery_guard.stl",
+      "source_sha256": "18691fd379fd144b3b69d4e1eb1f5d1d654bfaf65f5a1e0fd1f785dd17df8b8c",
+      "triangles": 10714,
+      "vertices": 7971,
+      "bounds": [
+        [
+          1.899999976158142,
+          38.29999923706055,
+          -3.799999952316284
+        ],
+        [
+          58.099998474121094,
+          101.69999694824219,
+          -1.649999976158142
+        ]
+      ],
+      "size": [
+        56.19999849796295,
+        63.39999771118164,
+        2.149999976158142
+      ],
+      "center": [
+        29.999999225139618,
+        69.99999809265137,
+        -2.724999964237213
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        0,
+        0,
+        -12
+      ],
+      "position": {
+        "byteOffset": 2795208,
+        "byteLength": 95652,
+        "count": 7971,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 2890860,
+        "byteLength": 95652,
+        "count": 7971,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 2986512,
+        "byteLength": 128568,
+        "count": 32142,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "speaker_retainer",
+      "name": "Speaker retainer",
+      "description": "Removable ring retaining the speaker rim",
+      "color": "#969e94",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/speaker_retainer.stl",
+      "source_sha256": "409728fdd928d947961cdc9df4fa4f2373b834e0d76b77c92f633d7558d6c6c2",
+      "triangles": 1052,
+      "vertices": 1058,
+      "bounds": [
+        [
+          3.0,
+          11.041739463806152,
+          -7.800000190734863
+        ],
+        [
+          33.0,
+          34.99636459350586,
+          -7.0
+        ]
+      ],
+      "size": [
+        30.0,
+        23.954625129699707,
+        0.8000001907348633
+      ],
+      "center": [
+        18.0,
+        23.019052028656006,
+        -7.400000095367432
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        0,
+        -8,
+        -25
+      ],
+      "position": {
+        "byteOffset": 3115080,
+        "byteLength": 12696,
+        "count": 1058,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 3127776,
+        "byteLength": 12696,
+        "count": 1058,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 3140472,
+        "byteLength": 12624,
+        "count": 3156,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "stand_frame",
+      "name": "Folding stand",
+      "description": "U-frame in its actual folded assembly position",
+      "color": "#385747",
+      "roughness": 0.68,
+      "source": "Mechanical/exports/P2/stand_frame.stl",
+      "source_sha256": "fa0507c3b2ed315b61ac8d220999d56f4850d43e3f2af3837fdc97794b5d1962",
+      "triangles": 3004,
+      "vertices": 3024,
+      "bounds": [
+        [
+          3.9009616374969482,
+          5.0,
+          -25.599987030029297
+        ],
+        [
+          53.099037170410156,
+          91.5993881225586,
+          -18.400196075439453
+        ]
+      ],
+      "size": [
+        49.19807553291321,
+        86.5993881225586,
+        7.199790954589844
+      ],
+      "center": [
+        28.499999403953552,
+        48.2996940612793,
+        -22.000091552734375
+      ],
+      "assembledPosition": [
+        0,
+        0,
+        0
+      ],
+      "explode": [
+        0,
+        0,
+        -72
+      ],
+      "position": {
+        "byteOffset": 3153096,
+        "byteLength": 36288,
+        "count": 3024,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 3189384,
+        "byteLength": 36288,
+        "count": 3024,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 3225672,
+        "byteLength": 36048,
+        "count": 9012,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    }
+  ]
+}

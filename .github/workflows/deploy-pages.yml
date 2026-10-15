@@ -28,6 +28,9 @@ jobs:
       - name: Verify v2 documents and local assets
         run: python3 scripts/audit-v2.py
 
+      - name: Verify Kiku firmware renderer and simulated controls
+        run: node scripts/kiku-simulator/verify.cjs
+
       - name: Verify v3 documents and preserved interactive content
         run: |
           python3 scripts/build-v3-pages.py --check

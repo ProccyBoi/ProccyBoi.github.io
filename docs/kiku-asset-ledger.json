@@ -1,0 +1,351 @@
+{
+  "schema": "kiku-asset-ledger-v1",
+  "revision": "Mame P2",
+  "scope": "Allowlisted project-authored mechanical renders and the nine original print-part meshes; no supplier images or downloaded component CAD are copied.",
+  "sourceRepository": "Walkman - Blobject / Mechanical",
+  "sourceReports": [
+    "Mechanical/P2_DESIGN_REPORT.md",
+    "Mechanical/review/clearance_review_P2.json",
+    "Mechanical/review/P1_INDEPENDENT_REVIEW.md"
+  ],
+  "images": [
+    {
+      "id": "hero",
+      "path": "/assets/images/kiku/hero.webp",
+      "source": "Mechanical/review/P2_assembled_iso.png",
+      "source_sha256": "281e3ad65646103c897a6726c055f2f4e055e79fb6c8c2761ce0ef33b0f395c4",
+      "output_sha256": "0ba25b487f494c04febb7a0c2ae87ce8ce6bc5bba6bc20798890b5eccc98d404",
+      "source_size": [
+        1400,
+        1500
+      ],
+      "crop_xyxy": [
+        0,
+        110,
+        1400,
+        1500
+      ],
+      "width": 1400,
+      "height": 1390,
+      "bytes": 23976,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "CAD rendering of the Mame P2 enclosure with ivory front, green rear, orange key and upward antenna envelope.",
+      "variants": [
+        {
+          "path": "/assets/images/kiku/hero-800.webp",
+          "width": 800,
+          "height": 794,
+          "bytes": 11300
+        }
+      ]
+    },
+    {
+      "id": "desk",
+      "path": "/assets/images/kiku/desk.webp",
+      "source": "Mechanical/review/P2_on_desk.png",
+      "source_sha256": "9dfdc1bce5b9529aa57cf4b0af093a78436bd729840bb97c7cbd043517933004",
+      "output_sha256": "04c3e2586baa00ccfbea87e57e14a5bf399a339f0c0c854ae97d4beb0b3f7d2f",
+      "source_size": [
+        1400,
+        1500
+      ],
+      "crop_xyxy": [
+        0,
+        110,
+        1400,
+        1500
+      ],
+      "width": 1400,
+      "height": 1390,
+      "bytes": 25900,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "Mame P2 CAD assembly supported by the deployed stand; desk angle is a geometric calculation, not a measured stability result.",
+      "variants": [
+        {
+          "path": "/assets/images/kiku/desk-800.webp",
+          "width": 800,
+          "height": 794,
+          "bytes": 12226
+        }
+      ]
+    },
+    {
+      "id": "exploded",
+      "path": "/assets/images/kiku/exploded.webp",
+      "source": "Mechanical/review/P2_exploded.png",
+      "source_sha256": "bc461e01e92a26dc580ecb250c7e4528a1f625ffa0c2eef6dfb5dae43a641b0e",
+      "output_sha256": "a65892d77d411fece09b345998e7810cfc5b85b1a1df6bf9a07de608f18fc350",
+      "source_size": [
+        1700,
+        1800
+      ],
+      "crop_xyxy": [
+        0,
+        110,
+        1700,
+        1800
+      ],
+      "width": 1700,
+      "height": 1690,
+      "bytes": 32312,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "P2 CAD exploded assembly, showing the project-designed enclosure and simplified hardware reference envelopes.",
+      "variants": [
+        {
+          "path": "/assets/images/kiku/exploded-800.webp",
+          "width": 800,
+          "height": 795,
+          "bytes": 12362
+        }
+      ]
+    },
+    {
+      "id": "stand",
+      "path": "/assets/images/kiku/stand.webp",
+      "source": "Mechanical/review/P2_stand_open.png",
+      "source_sha256": "7452071505725fd816de3061afabd36b10a7ba022633a86978557a2bc89ef380",
+      "output_sha256": "b98ed472082f967ece4b0449bf04658fef3691099619f236b545214476608a5c",
+      "source_size": [
+        1400,
+        1500
+      ],
+      "crop_xyxy": [
+        0,
+        110,
+        1400,
+        1500
+      ],
+      "width": 1400,
+      "height": 1390,
+      "bytes": 20316,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "Rear view of P2 with its open U-frame stand and unobstructed speaker grille.",
+      "variants": [
+        {
+          "path": "/assets/images/kiku/stand-800.webp",
+          "width": 800,
+          "height": 794,
+          "bytes": 9302
+        }
+      ]
+    },
+    {
+      "id": "stand-side",
+      "path": "/assets/images/kiku/stand-side.webp",
+      "source": "Mechanical/review/P2_stand_side.png",
+      "source_sha256": "0662e540223c9fcb96994e5cd3f097b007e583690ab7cbd870a7ce4084e44cfe",
+      "output_sha256": "e34778e6630b09fd04d6f92529dd4fe1fa0d977446fec70940a930e39e7107e5",
+      "source_size": [
+        1400,
+        1500
+      ],
+      "crop_xyxy": [
+        0,
+        110,
+        1400,
+        1500
+      ],
+      "width": 1400,
+      "height": 1390,
+      "bytes": 11744,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "P2 side elevation showing the deployed 45-degree stand and external hinge mounts.",
+      "variants": []
+    },
+    {
+      "id": "display-section",
+      "path": "/assets/images/kiku/display-section.webp",
+      "source": "Mechanical/review/P2_section_display.png",
+      "source_sha256": "a38108a3323c63cdb44470dc790a3f9e1a19a583d6fd371c9de94eb67e8718a5",
+      "output_sha256": "c5a6b8242638ff76e15b2fcb0a326582ec92fdd3906704d9a0bfcfe89cc1cbd8",
+      "source_size": [
+        1900,
+        1190
+      ],
+      "crop_xyxy": [
+        0,
+        0,
+        1900,
+        1190
+      ],
+      "width": 1900,
+      "height": 1190,
+      "bytes": 80782,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "Section of the P2 display cradle and flex-route study; actual contact engagement remains unverified.",
+      "variants": []
+    },
+    {
+      "id": "battery-section",
+      "path": "/assets/images/kiku/battery-section.webp",
+      "source": "Mechanical/review/P2_section_battery.png",
+      "source_sha256": "6eae284c64e9d68f6755d48e962bdd527fb84053d7ea2eceb296610c0c788892",
+      "output_sha256": "1fc1c3b88724470192c2d60a065cf86812fb6807852c4f2288caf9db37f9f387",
+      "source_size": [
+        1900,
+        1190
+      ],
+      "crop_xyxy": [
+        0,
+        0,
+        1900,
+        1190
+      ],
+      "width": 1900,
+      "height": 1190,
+      "bytes": 77136,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "P2 battery section showing the 45mm clear pocket, removable guard and nominal reference cell.",
+      "variants": []
+    },
+    {
+      "id": "display-assembly",
+      "path": "/assets/images/kiku/display-assembly.webp",
+      "source": "Mechanical/review/P2_screen_assembly_guide.png",
+      "source_sha256": "e08dfd1b42a8f39279782bfa67e27e1608cea3c48fc9487b75a5aedaca3bd122",
+      "output_sha256": "468b55c8a5136557ce60c5693941a2e27254dba8fa4334d8286664d3d67810df",
+      "source_size": [
+        1600,
+        1100
+      ],
+      "crop_xyxy": [
+        0,
+        0,
+        1600,
+        1100
+      ],
+      "width": 1600,
+      "height": 1100,
+      "bytes": 81622,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "Project-authored P2 display assembly guide with the broad flex-tail U-fold and outstanding fit checks.",
+      "variants": []
+    },
+    {
+      "id": "display-connection",
+      "path": "/assets/images/kiku/display-connection.webp",
+      "source": "Mechanical/review/P2_display_connection.png",
+      "source_sha256": "bcad4f7e27d98554d7405781dafb5e860d8ccf1f4e6a44fe35273be56d300a4d",
+      "output_sha256": "da3a601b5c958114ce269fd1dbef572bd6db7169d5c43454a7e6580ec5d3e39d",
+      "source_size": [
+        1400,
+        1500
+      ],
+      "crop_xyxy": [
+        0,
+        110,
+        1400,
+        1500
+      ],
+      "width": 1400,
+      "height": 1390,
+      "bytes": 25460,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "Transparent P2 housing view showing display support and the unverified orange flex route.",
+      "variants": []
+    },
+    {
+      "id": "battery-cable",
+      "path": "/assets/images/kiku/battery-cable.webp",
+      "source": "Mechanical/review/P2_battery_and_cable.png",
+      "source_sha256": "1d7ca1b41ca03fbdbd25805faaace77283bdc427616b4483c5da6040e96f3337",
+      "output_sha256": "dceef99c140e753d72b26e60d4c42f47ad51906a9a93c4f4fed550492bd18af0",
+      "source_size": [
+        1400,
+        1500
+      ],
+      "crop_xyxy": [
+        0,
+        110,
+        1400,
+        1500
+      ],
+      "width": 1400,
+      "height": 1390,
+      "bytes": 24838,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "P2 rear-shell CAD view with the enlarged battery pocket, removable guard and routed antenna coax envelope.",
+      "variants": []
+    },
+    {
+      "id": "concepts",
+      "path": "/assets/images/kiku/concepts.webp",
+      "source": "Mechanical/concepts/three_concepts.png",
+      "source_sha256": "3aa59cfc524a6ff081552e0ce5005a2883cfceb59bc7015964369ef114354515",
+      "output_sha256": "5959512672f2436e58e0d5bc711e458dfa6b488732e1aebce1f7b4cb1b5e3f59",
+      "source_size": [
+        2400,
+        2220
+      ],
+      "crop_xyxy": [
+        0,
+        0,
+        2400,
+        2220
+      ],
+      "width": 1900,
+      "height": 1758,
+      "bytes": 76332,
+      "kind": "project-authored CAD rendering or diagram; not a photograph",
+      "transformation": "rectangular title-band crop where recorded; resize; WebP compression only",
+      "alt": "Mame, Nagare and Mini exterior studies using the same PCB and control datums; these are form studies rather than three completed mechanisms.",
+      "variants": []
+    }
+  ],
+  "assembly": {
+    "manifest": "/assets/models/kiku/assembly.json",
+    "binary": "/assets/models/kiku/assembly.bin",
+    "glb": "/assets/models/kiku/assembly.glb",
+    "partCount": 9,
+    "triangles": 103370,
+    "bytes": 3261720
+  },
+  "publicFacts": {
+    "mainBodyPlanMm": [
+      77.1,
+      120.9
+    ],
+    "mainSkinDepthMm": 33.2,
+    "fullFoldedEnvelopeMm": [
+      79.1,
+      126.7,
+      56.1
+    ],
+    "clearBatteryPocketMm": [
+      45,
+      61
+    ],
+    "nominalWallMm": 1.8,
+    "printedRigidPartCount": 9,
+    "separateLens": true,
+    "standOpeningStopDeg": 45,
+    "calculatedScreenDeskAngleDeg": 60.9,
+    "physicalEvidence": "P2 report explicitly builds on printed P1 fit feedback. P2 files are a prototype CAD revision, not evidence of a printed or assembled P2 product."
+  },
+  "qualificationNotes": [
+    "All enclosure images are CAD renders or CAD-derived diagrams, never photographs.",
+    "Mechanical/README.md describes a separate older V8: its dimensions and no-speaker architecture must not be merged with Mame P2.",
+    "Geometry verification is nominal CAD checking, not manufacture, strength, stability, acoustics or RF validation.",
+    "LCD tail pad and stiffener dimensions differ from connector recommendations; the flex U-fold is an unverified fit study.",
+    "The enlarged battery bay does not establish a replacement cell size, capacity, charging performance or runtime.",
+    "The antenna rod and hinge are simplified engineering envelopes with some listing-photo estimated dimensions.",
+    "The interactive mesh contains only nine owned printed parts. Renders also show simplified component reference envelopes for assembly context.",
+    "P2 is narrower than the conservative P1 antenna envelope, but the folded stand adds depth; do not describe the whole device as thinner."
+  ],
+  "excludedSources": [
+    "Mechanical/reference/ali_antenna supplier photos and cached listing HTML",
+    "Manufacturer component drawing PDFs and their raster crops, including P2_display_drawing_upright.png and P2_display_connector_drawing.png",
+    "Downloaded 3dmodels component libraries and third-party BM83 bundles",
+    "Root .3d_verify_*.jpg KiCad screenshots: component model provenance not established for this publication"
+  ]
+}

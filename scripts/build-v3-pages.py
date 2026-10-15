@@ -6,7 +6,7 @@ is inherited without editorial changes. Only route prefixes and page chrome are
 changed. Shared assets and tool controllers remain read-only and keep their
 URLs; the v3 presentation script replaces only v2's shared navigation script.
 
-Run with --check to verify all 25 generated pages and their inherited content,
+Run with --check to verify all 26 generated pages and their inherited content,
 viewer hooks, scripts, styles and engineering evidence. Standard library only.
 """
 from argparse import ArgumentParser
@@ -19,8 +19,8 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "v2"
 DESTINATION = ROOT / "v3"
-EXPECTED_INTERIORS = 25
-EXPECTED_PROJECTS = 15
+EXPECTED_INTERIORS = 26
+EXPECTED_PROJECTS = 16
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 # Require a URL boundary: /assets/images/v2/ and third-party /v2/ paths are
 # immutable asset/external references, not portfolio routes. This also covers
