@@ -101,7 +101,7 @@ if(story){
       setPin();target=manual===null?nativeProgress():manual;progress=target;semantic();model.render(progress,0,0);
       story.dataset.ready='true';story.dataset.parts=String(manifest.enclosure.parts.length);story.dataset.pcbParts=String(manifest.pcb.parts.length);queue();
       if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))poses.find(button=>button.getAttribute('aria-pressed')==='true')?.focus({preventScroll:true});
-    }catch(error){renderer?.dispose();fallback('Source CAD image shown. The interactive enclosure could not start.');}
+    }catch(error){renderer?.dispose();fallback('Source CAD image shown. The interactive enclosure could not start.');if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))load.focus({preventScroll:true});}
   }
   load.addEventListener('click',()=>start(true));
   poses.forEach(button=>button.addEventListener('click',()=>{manual=Number(button.dataset.kikuPose);update();}));

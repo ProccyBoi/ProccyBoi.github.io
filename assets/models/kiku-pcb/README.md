@@ -1,9 +1,9 @@
 # Populated Kiku PCB browser assets
 
-Deliver `deliverables/pcb.json`, `pcb.bin` (or `pcb.bin.gz` with gzip decoding),
-`pcb-provenance.json`, the license notices. Capture fallback artwork from the browser WebGL renderer. Do not
-copy this working folder's fetched model library, raw GLBs or font files into the
-portfolio. All production meshes are one group `pcb` with original shared
+The v2 Kiku page uses `pcb.json`, `pcb.bin` (or `pcb.bin.gz` with gzip decoding),
+`pcb-provenance.json` and the included license notices. Fallback artwork is
+captured from the browser WebGL renderer. The downloaded source model library,
+raw intermediate GLBs and font files are not included in the portfolio. All production meshes are one group `pcb` with original shared
 mechanical XYZ millimetre coordinates. Never recenter parts individually.
 
 - `componentCount: 133`; counts: 111 official model instances, 21 numeric vendor

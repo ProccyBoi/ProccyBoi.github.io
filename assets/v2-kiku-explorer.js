@@ -176,7 +176,7 @@ if (assembly) {
     } catch(error) {
       teardown();renderer?.dispose();
       status.textContent='The 3D view could not start. The original CAD image and engineering details are still available.';
-      load.textContent='Retry 3D explorer'; load.disabled=false;
+      load.textContent='Retry 3D explorer'; load.disabled=false;if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))load.focus({preventScroll:true});
     }
   });
 }
