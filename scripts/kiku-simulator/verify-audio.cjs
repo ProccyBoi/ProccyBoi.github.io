@@ -25,6 +25,7 @@ function bounded(promise, milliseconds, label) {
 }
 
 async function main() {
+  saveResults({phase:'starting'});
   const {instance} = await WebAssembly.instantiate(fs.readFileSync(path.join(root,'assets/kiku/firmware-ui.wasm')));
   const api = instance.exports;
   for (const [menu, source] of [[0,1],[1,2],[2,3]]) {
@@ -103,9 +104,9 @@ async function main() {
   await plus.click();await state('paused');await silence('Between FM stations is silent');assert.match(await status.textContent(),/Between demo stations/);
   await page.getByRole('button',{name:'Right',exact:true}).click();await audible('FM seek selects next station loop');assert.match(await status.textContent(),/Night Bus Home/);
   await page.getByRole('button',{name:'Hold left',exact:true}).click();await plus.click();await press.click();await state('paused');await silence('Disconnected Bluetooth is silent');
-  await page.getByLabel('Demo phone connected').check();await audible('Simulated Bluetooth uses current track');assert.match(await status.textContent(),/Simulated phone: Paper Satellites/);
-  await page.getByLabel('Demo phone connected').uncheck();await state('paused');await silence('Phone disconnect stops playback');
-  await page.getByLabel('Demo phone connected').check();await audible('Explicit reconnect plays');
+  await page.getByRole('checkbox',{name:'Demo phone connected',exact:true}).check();await audible('Simulated Bluetooth uses current track');assert.match(await status.textContent(),/Simulated phone: Paper Satellites/);
+  await page.getByRole('checkbox',{name:'Demo phone connected',exact:true}).uncheck();await state('paused');await silence('Phone disconnect stops playback');
+  await page.getByRole('checkbox',{name:'Demo phone connected',exact:true}).check();await audible('Explicit reconnect plays');
   await page.getByRole('button',{name:'Hold encoder · power',exact:true}).click();await state('paused');await silence('Power off stops playback');
   await play.click();await audible('Play wakes and opens Music');
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
