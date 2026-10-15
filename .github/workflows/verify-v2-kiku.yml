@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: '22'
       - run: |
+          python3 -m pip install numpy
+          git clone --quiet https://github.com/ProccyBoi/kiku.git /tmp/kiku-source
+          git -C /tmp/kiku-source checkout --quiet d0c4d9ea34297d8671f464dedc6018189c33ea76
+          python3 scripts/kiku-pcb/verify_assets.py assets/models/kiku-pcb /tmp/kiku-source
           node scripts/verify-v2-kiku.cjs --source-only
           node scripts/kiku-simulator/verify.cjs
           python3 scripts/audit-v2.py

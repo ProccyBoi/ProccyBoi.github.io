@@ -1,0 +1,2068 @@
+{
+  "schema": "kiku-pcb-v1",
+  "revision": "Public board d0c4d9ea34297d8671f464dedc6018189c33ea76",
+  "units": "millimetres",
+  "coordinateSystem": {
+    "x": "right",
+    "y": "up",
+    "z": "front"
+  },
+  "geometry": "Native KiCad board surfaces, 111 official-library component instances, 21 source-envelope proxies, and the documented D3 allowance. No excluded vendor CAD.",
+  "binary": "pcb.bin",
+  "binaryBytes": 9783660,
+  "binarySha256": "dd1cb1801d29b8bd0b09ad4e23298b23e011c5464db15ecae625900a4621179b",
+  "binaryGzip": "pcb.bin.gz",
+  "binaryGzipBytes": 2159582,
+  "binaryGzipSha256": "5158a4a0c96778bd47397e89e989e99064fe76ca3af4d542d3f5bd40135edf47",
+  "bounds": [
+    [
+      0.0,
+      -2.2900002002716064,
+      -1.9001200199127197
+    ],
+    [
+      60.0,
+      105.0,
+      21.10009002685547
+    ]
+  ],
+  "center": [
+    30.0,
+    51.3549998998642,
+    9.599985003471375
+  ],
+  "size": [
+    60.0,
+    107.2900002002716,
+    23.00021004676819
+  ],
+  "partCount": 27,
+  "triangles": 273533,
+  "counts": {
+    "footprints": 142,
+    "modelReferences": 133,
+    "officialLibraryMeshes": 111,
+    "vendorEnvelopeProxies": 21,
+    "unverifiedAllowances": 1,
+    "footprintsWithoutModel": 9
+  },
+  "componentCount": 133,
+  "group": "pcb",
+  "provenance": "pcb-provenance.json",
+  "parts": [
+    {
+      "id": "pcb_copper",
+      "color": "#dacd00",
+      "colorLinear": [
+        0.699999988079071,
+        0.6100000143051147,
+        0.0
+      ],
+      "opacity": 1.0,
+      "roughness": 0.4000000059604645,
+      "metalness": 1.0,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Copper traces and pours",
+      "description": "Native KiCad board geometry in original mechanical coordinates",
+      "fidelity": "source-board-tessellation",
+      "source": "Walkman - Blobject.kicad_pcb",
+      "omittedCoatingSidewallTriangles": 101536,
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          0.5005000233650208,
+          0.5005000233650208,
+          -0.03500000014901161
+        ],
+        [
+          59.4995002746582,
+          104.49949645996094,
+          1.5449999570846558
+        ]
+      ],
+      "size": [
+        58.999000549316406,
+        103.99899291992188,
+        1.5799999237060547
+      ],
+      "vertices": 101488,
+      "triangles": 104952,
+      "position": {
+        "byteOffset": 0,
+        "byteLength": 1217856,
+        "count": 101488,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 1217856,
+        "byteLength": 1217856,
+        "count": 101488,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 2435712,
+        "byteLength": 1259424,
+        "count": 314856,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_pad",
+      "color": "#bcbcbc",
+      "colorLinear": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "opacity": 1.0,
+      "roughness": 0.4000000059604645,
+      "metalness": 1.0,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Solder pads",
+      "description": "Native KiCad board geometry in original mechanical coordinates",
+      "fidelity": "source-board-tessellation",
+      "source": "Walkman - Blobject.kicad_pcb",
+      "omittedCoatingSidewallTriangles": 51380,
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          0.5399999618530273,
+          0.6500004529953003,
+          -0.03999999910593033
+        ],
+        [
+          59.24500274658203,
+          104.67500305175781,
+          1.5500000715255737
+        ]
+      ],
+      "size": [
+        58.70500183105469,
+        104.0250015258789,
+        1.590000033378601
+      ],
+      "vertices": 44474,
+      "triangles": 49268,
+      "position": {
+        "byteOffset": 3695136,
+        "byteLength": 533688,
+        "count": 44474,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 4228824,
+        "byteLength": 533688,
+        "count": 44474,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 4762512,
+        "byteLength": 591216,
+        "count": 147804,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_via",
+      "color": "#dacd00",
+      "colorLinear": [
+        0.699999988079071,
+        0.6100000143051147,
+        0.0
+      ],
+      "opacity": 1.0,
+      "roughness": 0.4000000059604645,
+      "metalness": 1.0,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Vias",
+      "description": "Native KiCad board geometry in original mechanical coordinates",
+      "fidelity": "source-board-tessellation",
+      "source": "Walkman - Blobject.kicad_pcb",
+      "omittedCoatingSidewallTriangles": 43296,
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          0.7099999785423279,
+          1.225000023841858,
+          -0.03500000014901161
+        ],
+        [
+          59.3650016784668,
+          102.125,
+          1.5449999570846558
+        ]
+      ],
+      "size": [
+        58.65500259399414,
+        100.9000015258789,
+        1.5799999237060547
+      ],
+      "vertices": 43296,
+      "triangles": 43296,
+      "position": {
+        "byteOffset": 5353728,
+        "byteLength": 519552,
+        "count": 43296,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 5873280,
+        "byteLength": 519552,
+        "count": 43296,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 6392832,
+        "byteLength": 519552,
+        "count": 129888,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_silkscreen",
+      "color": "#ffffff",
+      "colorLinear": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "opacity": 0.8999999761581421,
+      "roughness": 0.8999999761581421,
+      "metalness": 0.0,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Silkscreen",
+      "description": "Native KiCad board geometry in original mechanical coordinates",
+      "fidelity": "source-board-tessellation",
+      "source": "Walkman - Blobject.kicad_pcb",
+      "omittedCoatingSidewallTriangles": 0,
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          0.9699999690055847,
+          0.0,
+          -0.07500000298023224
+        ],
+        [
+          59.62999725341797,
+          104.79499816894531,
+          1.584999918937683
+        ]
+      ],
+      "size": [
+        58.659996032714844,
+        104.79499816894531,
+        1.659999966621399
+      ],
+      "vertices": 14205,
+      "triangles": 13477,
+      "position": {
+        "byteOffset": 6912384,
+        "byteLength": 170460,
+        "count": 14205,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 7082844,
+        "byteLength": 170460,
+        "count": 14205,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 7253304,
+        "byteLength": 161724,
+        "count": 40431,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_soldermask",
+      "color": "#507c69",
+      "colorLinear": [
+        0.07999999821186066,
+        0.20000000298023224,
+        0.14000000059604645
+      ],
+      "opacity": 0.8299999833106995,
+      "roughness": 0.6000000238418579,
+      "metalness": 0.0,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Soldermask",
+      "description": "Native KiCad board geometry in original mechanical coordinates",
+      "fidelity": "source-board-tessellation",
+      "source": "Walkman - Blobject.kicad_pcb",
+      "omittedCoatingSidewallTriangles": 0,
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          0.0,
+          0.0,
+          -0.04999999701976776
+        ],
+        [
+          60.0,
+          105.0,
+          1.5600000619888306
+        ]
+      ],
+      "size": [
+        60.0,
+        105.0,
+        1.6100000143051147
+      ],
+      "vertices": 13630,
+      "triangles": 14924,
+      "position": {
+        "byteOffset": 7415028,
+        "byteLength": 163560,
+        "count": 13630,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 7578588,
+        "byteLength": 163560,
+        "count": 13630,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 7742148,
+        "byteLength": 179088,
+        "count": 44772,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_pcb",
+      "color": "#274a35",
+      "colorLinear": null,
+      "opacity": 1.0,
+      "roughness": 0.75,
+      "metalness": 0,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Board substrate",
+      "description": "Native KiCad board geometry in original mechanical coordinates",
+      "fidelity": "source-board-tessellation",
+      "source": "Walkman - Blobject.kicad_pcb",
+      "omittedCoatingSidewallTriangles": 0,
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          0.0,
+          -2.220446049250313e-16,
+          0.0
+        ],
+        [
+          60.0,
+          105.0,
+          1.5099999904632568
+        ]
+      ],
+      "size": [
+        60.0,
+        105.0,
+        1.5099999904632568
+      ],
+      "vertices": 7774,
+      "triangles": 7856,
+      "position": {
+        "byteOffset": 7921236,
+        "byteLength": 93288,
+        "count": 7774,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 8014524,
+        "byteLength": 93288,
+        "count": 7774,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 8107812,
+        "byteLength": 94272,
+        "count": 23568,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_0",
+      "color": "#d2d1c7",
+      "colorLinear": [
+        0.6453084945678711,
+        0.6382831931114197,
+        0.5721226930618286
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "R3",
+        "F1",
+        "C29",
+        "C12",
+        "R5",
+        "C7",
+        "C13",
+        "C33",
+        "C1",
+        "R13",
+        "L3",
+        "R6",
+        "R27",
+        "C17",
+        "C37",
+        "R20",
+        "C68",
+        "R11",
+        "C60",
+        "C6",
+        "R10",
+        "R14",
+        "R28",
+        "C2",
+        "C42",
+        "R22",
+        "C48",
+        "C64",
+        "C25",
+        "C49",
+        "C31",
+        "C59",
+        "C61",
+        "R23",
+        "R16",
+        "C38",
+        "C16",
+        "C20",
+        "C46",
+        "C54",
+        "C45",
+        "C3",
+        "C55",
+        "C36",
+        "C32",
+        "R7",
+        "C10",
+        "R24",
+        "R31",
+        "C56",
+        "C28",
+        "R35",
+        "C11",
+        "C21",
+        "C14",
+        "R4",
+        "C40",
+        "C50",
+        "C35",
+        "R30",
+        "R26",
+        "R32",
+        "C5",
+        "R29",
+        "R18",
+        "C41",
+        "C4",
+        "R19",
+        "R36",
+        "R1",
+        "C30",
+        "C57",
+        "R34",
+        "R12",
+        "C47",
+        "C8",
+        "C22",
+        "C52",
+        "R2",
+        "R8",
+        "C24",
+        "C27",
+        "C15",
+        "R15",
+        "R21",
+        "C51",
+        "C34",
+        "C63",
+        "C18",
+        "C43",
+        "C9",
+        "R17",
+        "C39",
+        "C67",
+        "C66",
+        "R25",
+        "C53",
+        "C62",
+        "C44",
+        "C19",
+        "R9",
+        "C58",
+        "C65"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          0.9650000333786011,
+          1.3600000143051147,
+          1.600000023841858
+        ],
+        [
+          51.64500045776367,
+          93.18000030517578,
+          7.0
+        ]
+      ],
+      "size": [
+        50.68000030517578,
+        91.81999969482422,
+        5.400000095367432
+      ],
+      "vertices": 25658,
+      "triangles": 23718,
+      "position": {
+        "byteOffset": 8202084,
+        "byteLength": 307896,
+        "count": 25658,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 8509980,
+        "byteLength": 307896,
+        "count": 25658,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 8817876,
+        "byteLength": 284616,
+        "count": 71154,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_1",
+      "color": "#e4e3cf",
+      "colorLinear": [
+        0.7775542736053467,
+        0.7697200179100037,
+        0.626096785068512
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "R3",
+        "F1",
+        "R5",
+        "R13",
+        "R6",
+        "R27",
+        "R20",
+        "R11",
+        "R10",
+        "R14",
+        "R28",
+        "R22",
+        "R23",
+        "R16",
+        "R7",
+        "R24",
+        "R31",
+        "D1",
+        "R35",
+        "R4",
+        "R30",
+        "R26",
+        "R32",
+        "R29",
+        "R18",
+        "R19",
+        "R36",
+        "R1",
+        "R34",
+        "R12",
+        "R2",
+        "R8",
+        "R15",
+        "R21",
+        "R17",
+        "R25",
+        "R9"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          4.545000076293945,
+          1.3600000143051147,
+          1.6299999952316284
+        ],
+        [
+          51.02000045776367,
+          90.91000366210938,
+          2.700000047683716
+        ]
+      ],
+      "size": [
+        46.474998474121094,
+        89.55000305175781,
+        1.0700000524520874
+      ],
+      "vertices": 791,
+      "triangles": 557,
+      "position": {
+        "byteOffset": 9102492,
+        "byteLength": 9492,
+        "count": 791,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9111984,
+        "byteLength": 9492,
+        "count": 791,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9121476,
+        "byteLength": 6684,
+        "count": 1671,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_2",
+      "color": "#151618",
+      "colorLinear": [
+        0.007452868856489658,
+        0.007985828444361687,
+        0.009116772562265396
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "R3",
+        "F1",
+        "R5",
+        "R13",
+        "R6",
+        "R27",
+        "R20",
+        "R11",
+        "R10",
+        "R14",
+        "R28",
+        "R22",
+        "R23",
+        "R16",
+        "R7",
+        "R24",
+        "R31",
+        "R35",
+        "R4",
+        "R30",
+        "R26",
+        "R32",
+        "R29",
+        "R18",
+        "R19",
+        "R36",
+        "R1",
+        "R34",
+        "R12",
+        "R2",
+        "R8",
+        "R15",
+        "R21",
+        "R17",
+        "R25",
+        "R9"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          4.800000190734863,
+          1.3600000143051147,
+          2.005000114440918
+        ],
+        [
+          51.02000045776367,
+          90.91000366210938,
+          2.1500000953674316
+        ]
+      ],
+      "size": [
+        46.220001220703125,
+        89.55000305175781,
+        0.14499998092651367
+      ],
+      "vertices": 720,
+      "triangles": 360,
+      "position": {
+        "byteOffset": 9128160,
+        "byteLength": 8640,
+        "count": 720,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9136800,
+        "byteLength": 8640,
+        "count": 720,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9145440,
+        "byteLength": 4320,
+        "count": 1080,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_3",
+      "color": "#838383",
+      "colorLinear": [
+        0.22745098173618317,
+        0.22745098173618317,
+        0.22745098173618317
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "J6"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          1.5699999332427979,
+          -0.9899999499320984,
+          0.5999999642372131
+        ],
+        [
+          13.569999694824219,
+          12.010000228881836,
+          7.099999904632568
+        ]
+      ],
+      "size": [
+        12.0,
+        13.0,
+        6.5
+      ],
+      "vertices": 652,
+      "triangles": 624,
+      "position": {
+        "byteOffset": 9149760,
+        "byteLength": 7824,
+        "count": 652,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9157584,
+        "byteLength": 7824,
+        "count": 652,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9165408,
+        "byteLength": 7488,
+        "count": 1872,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_4",
+      "color": "#d5d5bb",
+      "colorLinear": [
+        0.6666666865348816,
+        0.6666666865348816,
+        0.49803921580314636
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "J6"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          2.4699997901916504,
+          4.409999847412109,
+          -1.6999999284744263
+        ],
+        [
+          12.670000076293945,
+          10.010000228881836,
+          1.600000023841858
+        ]
+      ],
+      "size": [
+        10.200000762939453,
+        5.600000381469727,
+        3.299999952316284
+      ],
+      "vertices": 100,
+      "triangles": 50,
+      "position": {
+        "byteOffset": 9172896,
+        "byteLength": 1200,
+        "count": 100,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9174096,
+        "byteLength": 1200,
+        "count": 100,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9175296,
+        "byteLength": 600,
+        "count": 150,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_5",
+      "color": "#e7e7e7",
+      "colorLinear": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "J6"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          4.570000171661377,
+          -2.2900002002716064,
+          1.100000023841858
+        ],
+        [
+          10.569999694824219,
+          7.009999752044678,
+          7.099999904632568
+        ]
+      ],
+      "size": [
+        5.999999523162842,
+        9.300000190734863,
+        6.0
+      ],
+      "vertices": 248,
+      "triangles": 262,
+      "position": {
+        "byteOffset": 9175896,
+        "byteLength": 2976,
+        "count": 248,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9178872,
+        "byteLength": 2976,
+        "count": 248,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9181848,
+        "byteLength": 3144,
+        "count": 786,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_6",
+      "color": "#e4e3cf",
+      "colorLinear": [
+        0.7758222222328186,
+        0.7681511640548706,
+        0.6239604353904724
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "LS1",
+        "BT1"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          22.229999542236328,
+          24.31999969482422,
+          1.600000023841858
+        ],
+        [
+          37.119998931884766,
+          29.010000228881836,
+          7.599999904632568
+        ]
+      ],
+      "size": [
+        14.889999389648438,
+        4.690000534057617,
+        6.0
+      ],
+      "vertices": 818,
+      "triangles": 610,
+      "position": {
+        "byteOffset": 9184992,
+        "byteLength": 9816,
+        "count": 818,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9194808,
+        "byteLength": 9816,
+        "count": 818,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9204624,
+        "byteLength": 7320,
+        "count": 1830,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_7",
+      "color": "#d2d1c7",
+      "colorLinear": [
+        0.6444796919822693,
+        0.6375969052314758,
+        0.5711248517036438
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "LS1",
+        "BT1",
+        "U4",
+        "U6"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          5.867499828338623,
+          8.550000190734863,
+          -1.8000000715255737
+        ],
+        [
+          37.31999969482422,
+          31.1299991607666,
+          6.599999904632568
+        ]
+      ],
+      "size": [
+        31.452499389648438,
+        22.579998016357422,
+        8.399999618530273
+      ],
+      "vertices": 2304,
+      "triangles": 1838,
+      "position": {
+        "byteOffset": 9211944,
+        "byteLength": 27648,
+        "count": 2304,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9239592,
+        "byteLength": 27648,
+        "count": 2304,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9267240,
+        "byteLength": 22056,
+        "count": 5514,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_8",
+      "color": "#614537",
+      "colorLinear": [
+        0.11862315237522125,
+        0.059253524988889694,
+        0.03797231987118721
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "C29",
+        "C12",
+        "C7",
+        "C13",
+        "C33",
+        "C1",
+        "C17",
+        "C37",
+        "C68",
+        "C60",
+        "C2",
+        "C42",
+        "C48",
+        "C64",
+        "C25",
+        "C49",
+        "C31",
+        "C59",
+        "C61",
+        "C38",
+        "C16",
+        "C20",
+        "C46",
+        "C54",
+        "C45",
+        "C3",
+        "C55",
+        "C36",
+        "C32",
+        "C10",
+        "C56",
+        "C28",
+        "C11",
+        "C21",
+        "C14",
+        "C40",
+        "C50",
+        "C35",
+        "C41",
+        "C4",
+        "C30",
+        "C57",
+        "C47",
+        "C8",
+        "C22",
+        "C52",
+        "C24",
+        "C27",
+        "C15",
+        "C51",
+        "C34",
+        "C63",
+        "C18",
+        "C43",
+        "C9",
+        "C39",
+        "C67",
+        "C66",
+        "C53",
+        "C62",
+        "C44",
+        "C19",
+        "C58",
+        "C65"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          1.2649999856948853,
+          12.800000190734863,
+          1.6150000095367432
+        ],
+        [
+          51.494998931884766,
+          92.87999725341797,
+          2.369999885559082
+        ]
+      ],
+      "size": [
+        50.22999954223633,
+        80.07999420166016,
+        0.7549998760223389
+      ],
+      "vertices": 3320,
+      "triangles": 2552,
+      "position": {
+        "byteOffset": 9289296,
+        "byteLength": 39840,
+        "count": 3320,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9329136,
+        "byteLength": 39840,
+        "count": 3320,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9368976,
+        "byteLength": 30624,
+        "count": 7656,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_9",
+      "color": "#464646",
+      "colorLinear": [
+        0.06057470664381981,
+        0.06057470664381981,
+        0.06057470664381981
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "L3"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          16.295000076293945,
+          30.834999084472656,
+          1.6399999856948853
+        ],
+        [
+          17.46500015258789,
+          32.03499984741211,
+          2.809999942779541
+        ]
+      ],
+      "size": [
+        1.1700000762939453,
+        1.2000007629394531,
+        1.1699999570846558
+      ],
+      "vertices": 60,
+      "triangles": 48,
+      "position": {
+        "byteOffset": 9399600,
+        "byteLength": 720,
+        "count": 60,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9400320,
+        "byteLength": 720,
+        "count": 60,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9401040,
+        "byteLength": 576,
+        "count": 144,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_10",
+      "color": "#262525",
+      "colorLinear": [
+        0.01915069669485092,
+        0.018478471785783768,
+        0.018478471785783768
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "C6",
+        "J4",
+        "C5"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          1.1400001049041748,
+          14.119999885559082,
+          1.600000023841858
+        ],
+        [
+          14.119999885559082,
+          89.30000305175781,
+          7.0
+        ]
+      ],
+      "size": [
+        12.979999542236328,
+        75.18000030517578,
+        5.400000095367432
+      ],
+      "vertices": 998,
+      "triangles": 1014,
+      "position": {
+        "byteOffset": 9401616,
+        "byteLength": 11976,
+        "count": 998,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9413592,
+        "byteLength": 11976,
+        "count": 998,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9425568,
+        "byteLength": 12168,
+        "count": 3042,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_11",
+      "color": "#818181",
+      "colorLinear": [
+        0.2210865169763565,
+        0.2210865169763565,
+        0.2210865169763565
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "J2"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          30.040000915527344,
+          88.5250015258789,
+          1.600000023841858
+        ],
+        [
+          43.88999938964844,
+          104.4749984741211,
+          3.2799999713897705
+        ]
+      ],
+      "size": [
+        13.849998474121094,
+        15.949996948242188,
+        1.6799999475479126
+      ],
+      "vertices": 5715,
+      "triangles": 4950,
+      "position": {
+        "byteOffset": 9437736,
+        "byteLength": 68580,
+        "count": 5715,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9506316,
+        "byteLength": 68580,
+        "count": 5715,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9574896,
+        "byteLength": 59400,
+        "count": 14850,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_12",
+      "color": "#262525",
+      "colorLinear": [
+        0.01915069669485092,
+        0.018478471785783768,
+        0.018478471785783768
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "J2"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          30.040000915527344,
+          88.5250015258789,
+          1.600000023841858
+        ],
+        [
+          43.88999938964844,
+          104.67500305175781,
+          3.130000114440918
+        ]
+      ],
+      "size": [
+        13.849998474121094,
+        16.150001525878906,
+        1.53000009059906
+      ],
+      "vertices": 1946,
+      "triangles": 1532,
+      "position": {
+        "byteOffset": 9634296,
+        "byteLength": 23352,
+        "count": 1946,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9657648,
+        "byteLength": 23352,
+        "count": 1946,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9681000,
+        "byteLength": 18384,
+        "count": 4596,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_13",
+      "color": "#dbbc7e",
+      "colorLinear": [
+        0.7087041735649109,
+        0.5040222406387329,
+        0.2103574573993683
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "J2"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          42.315589904785156,
+          88.5250015258789,
+          1.600000023841858
+        ],
+        [
+          43.88999938964844,
+          100.7249984741211,
+          3.177999973297119
+        ]
+      ],
+      "size": [
+        1.5744094848632812,
+        12.199996948242188,
+        1.5779999494552612
+      ],
+      "vertices": 770,
+      "triangles": 570,
+      "position": {
+        "byteOffset": 9699384,
+        "byteLength": 9240,
+        "count": 770,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9708624,
+        "byteLength": 9240,
+        "count": 770,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9717864,
+        "byteLength": 6840,
+        "count": 1710,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_14",
+      "color": "#dbbc7e",
+      "colorLinear": [
+        0.7087041735649109,
+        0.5040222406387329,
+        0.2103574573993683
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "J4",
+        "D1"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          4.244999885559082,
+          9.300000190734863,
+          -0.7000000476837158
+        ],
+        [
+          23.940000534057617,
+          88.86499786376953,
+          5.600000381469727
+        ]
+      ],
+      "size": [
+        19.69499969482422,
+        79.56499481201172,
+        6.300000190734863
+      ],
+      "vertices": 988,
+      "triangles": 564,
+      "position": {
+        "byteOffset": 9724704,
+        "byteLength": 11856,
+        "count": 988,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9736560,
+        "byteLength": 11856,
+        "count": 988,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9748416,
+        "byteLength": 6768,
+        "count": 1692,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_15",
+      "color": "#252424",
+      "colorLinear": [
+        0.018500221893191338,
+        0.017641955986618996,
+        0.017641955986618996
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "U4",
+        "U6"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          5.617499828338623,
+          9.149999618530273,
+          1.7000000476837158
+        ],
+        [
+          22.3174991607666,
+          30.530000686645508,
+          3.1500000953674316
+        ]
+      ],
+      "size": [
+        16.69999885559082,
+        21.380001068115234,
+        1.4500000476837158
+      ],
+      "vertices": 388,
+      "triangles": 240,
+      "position": {
+        "byteOffset": 9755184,
+        "byteLength": 4656,
+        "count": 388,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9759840,
+        "byteLength": 4656,
+        "count": 388,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9764496,
+        "byteLength": 2880,
+        "count": 720,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_official_material_16",
+      "color": "#57ad71",
+      "colorLinear": [
+        0.09462963044643402,
+        0.4200333058834076,
+        0.16661806404590607
+      ],
+      "opacity": 1.0,
+      "roughness": 0.68,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "materialSource": "KiCad 9.0.2 export material; roughness/metalness defaults where absent",
+      "group": "pcb",
+      "name": "Official component models",
+      "description": "Official KiCad 9.0.2 component geometry; original placement and color",
+      "fidelity": "official-library-model",
+      "componentRefs": [
+        "D1"
+      ],
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          23.219999313354492,
+          9.822872161865234,
+          1.6150000095367432
+        ],
+        [
+          23.860000610351562,
+          10.377128601074219,
+          1.6299999952316284
+        ]
+      ],
+      "size": [
+        0.6400012969970703,
+        0.5542564392089844,
+        0.014999985694885254
+      ],
+      "vertices": 15,
+      "triangles": 7,
+      "position": {
+        "byteOffset": 9767376,
+        "byteLength": 180,
+        "count": 15,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9767556,
+        "byteLength": 180,
+        "count": 15,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9767736,
+        "byteLength": 84,
+        "count": 21,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_envelope_494f4c",
+      "color": "#494f4c",
+      "opacity": 1,
+      "roughness": 0.72,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Source-documented component envelopes",
+      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
+      "fidelity": "source-envelope-proxy",
+      "componentRefs": [
+        "SW3",
+        "SW4",
+        "SW2",
+        "SW1"
+      ],
+      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          8.350000381469727,
+          18.510000228881836,
+          -1.9001200199127197
+        ],
+        [
+          51.650001525878906,
+          61.0,
+          21.10009002685547
+        ]
+      ],
+      "size": [
+        43.30000305175781,
+        42.48999786376953,
+        23.00020980834961
+      ],
+      "vertices": 96,
+      "triangles": 48,
+      "position": {
+        "byteOffset": 9767820,
+        "byteLength": 1152,
+        "count": 96,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9768972,
+        "byteLength": 1152,
+        "count": 96,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9770124,
+        "byteLength": 576,
+        "count": 144,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_envelope_9da59d",
+      "color": "#9da59d",
+      "opacity": 1,
+      "roughness": 0.72,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Source-documented component envelopes",
+      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
+      "fidelity": "source-envelope-proxy",
+      "componentRefs": [
+        "X2",
+        "J1",
+        "X1",
+        "J3"
+      ],
+      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          14.369999885559082,
+          -0.10000000149011612,
+          0.75
+        ],
+        [
+          59.70499038696289,
+          72.2699966430664,
+          4.85099983215332
+        ]
+      ],
+      "size": [
+        45.334991455078125,
+        72.3699951171875,
+        4.10099983215332
+      ],
+      "vertices": 96,
+      "triangles": 48,
+      "position": {
+        "byteOffset": 9770700,
+        "byteLength": 1152,
+        "count": 96,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9771852,
+        "byteLength": 1152,
+        "count": 96,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9773004,
+        "byteLength": 576,
+        "count": 144,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_envelope_4a4c4c",
+      "color": "#4a4c4c",
+      "opacity": 1,
+      "roughness": 0.72,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Source-documented component envelopes",
+      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
+      "fidelity": "source-envelope-proxy",
+      "componentRefs": [
+        "L2",
+        "U1",
+        "U2",
+        "L1",
+        "U7",
+        "U3",
+        "D3",
+        "U10",
+        "U9",
+        "Q1",
+        "D2",
+        "U5",
+        "IC1"
+      ],
+      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          3.5299699306488037,
+          3.2799999713897705,
+          1.600000023841858
+        ],
+        [
+          59.540000915527344,
+          90.0799789428711,
+          5.609899997711182
+        ]
+      ],
+      "size": [
+        56.010032653808594,
+        86.79998016357422,
+        4.009900093078613
+      ],
+      "vertices": 312,
+      "triangles": 156,
+      "position": {
+        "byteOffset": 9773580,
+        "byteLength": 3744,
+        "count": 312,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9777324,
+        "byteLength": 3744,
+        "count": 312,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9781068,
+        "byteLength": 1872,
+        "count": 468,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_envelope_cbc7a7",
+      "color": "#cbc7a7",
+      "opacity": 1,
+      "roughness": 0.72,
+      "metalness": 0.05,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Source-documented component envelopes",
+      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
+      "fidelity": "source-envelope-proxy",
+      "componentRefs": [
+        "FPC1"
+      ],
+      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          49.5489616394043,
+          78.5648422241211,
+          1.600000023841858
+        ],
+        [
+          55.49890899658203,
+          89.284912109375,
+          3.5999999046325684
+        ]
+      ],
+      "size": [
+        5.949947357177734,
+        10.720069885253906,
+        1.9999998807907104
+      ],
+      "vertices": 24,
+      "triangles": 12,
+      "position": {
+        "byteOffset": 9782940,
+        "byteLength": 288,
+        "count": 24,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9783228,
+        "byteLength": 288,
+        "count": 24,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9783516,
+        "byteLength": 144,
+        "count": 36,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    }
+  ]
+}

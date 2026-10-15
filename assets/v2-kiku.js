@@ -1,3 +1,4 @@
+import {loadThree,loadKikuModel,makeKikuMesh} from './v2-kiku-model.js';
 /* V2-only choreography. All nine meshes retain their source CAD attributes.
  * Native page scroll is the clock; no wheel/touch scroll cancellation or loop. */
 const story=document.querySelector('[data-kiku-story]');
@@ -6,15 +7,6 @@ const small=matchMedia('(max-width: 600px)');
 const connection=navigator.connection;
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
-let threePromise;
-function three(){
-  if(window.THREE)return Promise.resolve(window.THREE);
-  return threePromise ||= new Promise((resolve,reject)=>{
-    const script=document.createElement('script');script.src='/assets/vendor/three.min.js';
-    script.onload=()=>window.THREE?resolve(window.THREE):reject(new Error('3D unavailable'));
-    script.onerror=()=>{script.remove();threePromise=null;reject(new Error('3D unavailable'));};document.head.append(script);
-  });
-}
 if(story){
   const stage=story.querySelector('.kiku-story-stage'), object=story.querySelector('.kiku-story-object');
   let canvas=story.querySelector('canvas');
@@ -25,7 +17,7 @@ if(story){
   let model=null,loading=false,visible=true,pinned=false,manual=null,progress=0,target=0,raf=0,last=0,frames=0;
   let layoutLock=false,lastY=scrollY,px=0,py=0,tx=0,ty=0;
   let requestVersion=0;
-  const captions=['Mame P2 / enclosure CAD','Source CAD / separated for inspection','Rear shell / folded stand'];
+  const captions=['Mame P2 / populated assembly','Inside / the populated PCB','Rear shell / folded stand'];
   function semantic(){
     story.dataset.target=target.toFixed(5);
     const nearest=target<.25?0:target<.75?1:2;
@@ -76,9 +68,7 @@ if(story){
     loading=true;load.disabled=true;load.textContent='Loading enclosure…';const version=++requestVersion;
     let renderer;
     try{
-      const [T,mr,br]=await Promise.all([three(),fetch('/assets/models/kiku/assembly.json'),fetch('/assets/models/kiku/assembly.bin')]);
-      if(!mr.ok||!br.ok)throw new Error('CAD download unavailable');
-      const [manifest,binary]=await Promise.all([mr.json(),br.arrayBuffer()]);
+      const [T,manifest]=await Promise.all([loadThree(),loadKikuModel()]);
       if(version!==requestVersion)return;
       if(!explicit&&(reduced.matches||connection?.saveData)){loading=false;load.hidden=false;load.disabled=false;load.textContent='Load interactive enclosure';return;}
       renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});
@@ -87,13 +77,7 @@ if(story){
       const scene=new T.Scene();scene.add(new T.HemisphereLight(0xeef4ff,0x444c42,.55));
       for(const [color,intensity,position] of [[0xfff3df,.85,[-140,220,250]],[0xa9cfff,.5,[180,120,-180]],[0xffffff,.15,[100,-100,180]]]){const light=new T.DirectionalLight(color,intensity);light.position.set(...position);scene.add(light);}
       const group=new T.Group();group.position.set(...manifest.center.map(v=>-v));scene.add(group);
-      const meshes=manifest.parts.map(part=>{
-        const geometry=new T.BufferGeometry();
-        for(const name of ['position','normal']){const f=part[name];geometry.setAttribute(name,new T.BufferAttribute(new Float32Array(binary,f.byteOffset,f.count*f.itemSize),f.itemSize));}
-        geometry.setIndex(new T.BufferAttribute(new Uint32Array(binary,part.index.byteOffset,part.index.count),1));geometry.computeBoundingBox();geometry.computeBoundingSphere();
-        const material=new T.MeshStandardMaterial({color:new T.Color(part.color).convertSRGBToLinear(),roughness:part.roughness,metalness:0,side:T.DoubleSide});
-        const mesh=new T.Mesh(geometry,material);mesh.userData.part=part;group.add(mesh);return mesh;
-      });
+      const meshes=manifest.parts.map(part=>{const mesh=makeKikuMesh(T,part);group.add(mesh);return mesh;});
       const camera=new T.PerspectiveCamera(32,1,.5,3000),box=new T.Box3(),center=new T.Vector3();
       let width=0,height=0;
       model={render(p,x,y){
@@ -115,7 +99,7 @@ if(story){
       },dispose(){meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.dispose();});renderer.dispose();}};
       canvas.hidden=false;controls.hidden=false;load.hidden=true;loading=false;
       setPin();target=manual===null?nativeProgress():manual;progress=target;semantic();model.render(progress,0,0);
-      story.dataset.ready='true';story.dataset.parts=String(meshes.length);queue();
+      story.dataset.ready='true';story.dataset.parts=String(manifest.enclosure.parts.length);story.dataset.pcbParts=String(manifest.pcb.parts.length);queue();
       if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))poses.find(button=>button.getAttribute('aria-pressed')==='true')?.focus({preventScroll:true});
     }catch(error){renderer?.dispose();fallback('Source CAD image shown. The interactive enclosure could not start.');}
   }
