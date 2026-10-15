@@ -65,7 +65,7 @@ async function matrix(browser,name){
   await page.locator('[data-kiku-pose="1"]').click();await page.locator('[data-kiku-pose="0"]').click();await page.locator('[data-kiku-pose="1"]').click();await stable(page);await shot(run,name+'-rear');
   await page.locator('[data-kiku-pose="0"]').focus();await page.keyboard.press('Enter');await stable(page);assert.equal(await page.locator('[data-kiku-pose="0"]').getAttribute('aria-pressed'),'true');assert.ok(await page.locator('[data-kiku-pose="0"]').evaluate(e=>e.matches(':focus-visible')&&parseFloat(getComputedStyle(e).outlineWidth)>=2),'Visible keyboard focus');for(const b of await page.locator('[data-kiku-pose]').all())assert.ok((await b.boundingBox()).height>=44,'44px view control');
   if(await page.locator('[data-kiku-story]').evaluate(e=>e.classList.contains('is-pinned'))){for(const p of [.5,.9,.2]){await scrollPose(page,p);await shot(run,name+'-scroll-'+p);assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-p)<.002,'Native requested '+p+' got '+await page.locator('[data-kiku-story]').getAttribute('data-progress')); }const y=await page.evaluate(()=>scrollY);await page.mouse.wheel(0,130);await page.waitForTimeout(250);assert.ok(await page.evaluate(()=>scrollY)>y,'Native wheel scroll');}
-  if(name.startsWith('ipad')){await scrollPose(page,.4);const native=Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'));await page.setViewportSize({width:run.v.width,height:run.v.height-24});await stable(page);assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-native)<.002,'Native pose survives browser chrome height');await page.setViewportSize({width:run.v.height,height:run.v.width});await stable(page);assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-native)<.002,'Native pose survives rotation');await shot(run,name+'-native-rotated');await page.setViewportSize({width:run.v.width,height:run.v.height});await stable(page);await page.locator('[data-kiku-pose="0.5"]').click();await stable(page);await page.setViewportSize({width:run.v.height,height:run.v.width});await stable(page);assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-progress'),'0.50000','Explicit pose survives orientation');await shot(run,name+'-rotated');await page.setViewportSize({width:run.v.width,height:run.v.height});await stable(page);}
+  if(name.startsWith('ipad')){await scrollPose(page,.4);const native=Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'));await page.setViewportSize({width:run.v.width,height:run.v.height-24});await stable(page);assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-native)<.002,'Native pose survives browser chrome height');await page.setViewportSize({width:run.v.height,height:run.v.width});await stable(page);assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-native)<.002,'Native pose survives rotation');await shot(run,name+'-native-rotated');await page.setViewportSize({width:run.v.width,height:run.v.height});await stable(page);await page.locator('[data-kiku-pose="0.5"]').click();await stable(page);await page.setViewportSize({width:run.v.height,height:run.v.width});await stable(page);assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-target'),'0.50000','Explicit pose target survives orientation');assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-.5)<.00006,'Explicit rendered pose remains within stable interpolation tolerance after orientation');await shot(run,name+'-rotated');await page.setViewportSize({width:run.v.width,height:run.v.height});await stable(page);}
   await page.locator('.kiku-story .kiku-primary').click();await page.waitForURL('**#simulator');await page.waitForSelector('.kiku-sim[data-enhanced="true"]');
   await page.locator('.kiku-sim-device').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await shot(run,name+'-simulator');
   await page.locator('.kiku-sim-audio').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await shot(run,name+'-audio-controls');
@@ -118,6 +118,10 @@ async function initialFragments(browser){
   {name:'key-cancel',hash:'#simulator',input:'keydown'},
  ];
  async function bound(promise,ms,label){let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out after '+ms+' ms')),ms);})]);}finally{clearTimeout(timer);}}
+ async function settleScroll(page){
+  await page.evaluate(()=>{window.__fragmentScroll={y:scrollY,at:performance.now()};});
+  await page.waitForFunction(()=>{const s=window.__fragmentScroll;if(Math.abs(scrollY-s.y)>.5){s.y=scrollY;s.at=performance.now();}return performance.now()-s.at>300;},null,{polling:50,timeout:15000});
+ }
  for(const scenario of scenarios){
   console.error('Checking delayed-CAD initial fragment: '+scenario.name);
   const context=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,reducedMotion:'no-preference',serviceWorkers:'block'});
@@ -141,18 +145,19 @@ async function initialFragments(browser){
    await page.goto(base+route+scenario.hash,{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>document.querySelector('[data-kiku-story]')?.dataset.target!==undefined,{}, {timeout:15000});
    await bound(requested,15000,'Initial assembly request');
+   await page.evaluate(async()=>{await document.fonts.ready;});await settleScroll(page);
    assert.notEqual(await page.locator('[data-kiku-story]').getAttribute('data-ready'),'true','CAD remains gated before test input');
    assert.equal(await page.evaluate(()=>window.__kikuFragmentProbe.calls.length),0,'No initial restoration before CAD finishes');
-   if(scenario.change)await page.evaluate(hash=>{location.hash=hash;},scenario.change);
+   if(scenario.change){await page.evaluate(hash=>{location.hash=hash;},scenario.change);await settleScroll(page);}
    if(scenario.input==='wheel'){await page.mouse.move(720,450);await page.mouse.wheel(0,250);}
    else if(scenario.input==='pointerdown')await page.mouse.click(1420,450);
    else if(scenario.input==='keydown')await page.keyboard.press('Escape');
-   if(scenario.input)await page.waitForFunction(type=>window.__kikuFragmentProbe.input.some(event=>event.type===type&&event.trusted),scenario.input,{timeout:15000});
+   if(scenario.input){await page.waitForFunction(type=>window.__kikuFragmentProbe.input.some(event=>event.type===type&&event.trusted),scenario.input,{timeout:15000});await settleScroll(page);}
    if(!scenario.restore){
     // Deliberately leave the original anchor before the async layout completes.
     // Any stale scrollIntoView is both observable and an unwanted pullback.
     await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
-    await page.waitForFunction(()=>scrollY<2,{}, {timeout:15000});
+    await page.waitForFunction(()=>scrollY<2,{}, {timeout:15000});await settleScroll(page);
    }
    release();clearTimeout(guard);
    await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:60000});
@@ -161,7 +166,7 @@ async function initialFragments(browser){
    // layout. Observe later than those frames without depending on image loading.
    await bound(page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))),5000,'Post-layout frames');
    await page.waitForTimeout(150);
-   const snapshot=await page.evaluate(hash=>{const target=hash?document.getElementById(hash.slice(1)):null;return{hash:location.hash,y:scrollY,height:innerHeight,ready:document.querySelector('[data-kiku-story]').dataset.ready,target:target?.getBoundingClientRect().toJSON(),probe:window.__kikuFragmentProbe};},scenario.hash);
+   const snapshot=await page.evaluate(hash=>{const target=hash?document.getElementById(hash.slice(1)):null;return{hash:location.hash,y:scrollY,height:innerHeight,topChrome:(document.querySelector('.v2-header')?.offsetHeight||0)+(document.querySelector('.v2-case-nav')?.offsetHeight||0),ready:document.querySelector('[data-kiku-story]').dataset.ready,target:target?.getBoundingClientRect().toJSON(),probe:window.__kikuFragmentProbe};},scenario.hash);
    if(scenario.restore){
     assert.equal(snapshot.hash,scenario.hash);assert.equal(snapshot.probe.calls.length,1,'Restore exactly once: '+scenario.name);
     assert.equal(snapshot.probe.calls[0].id,scenario.hash.slice(1));assert.equal(snapshot.probe.calls[0].ready,'true','Restore follows successful CAD layout');
@@ -169,7 +174,11 @@ async function initialFragments(browser){
    }else{
     assert.equal(snapshot.hash,scenario.change||scenario.hash,'Preserve latest hash');
     assert.equal(snapshot.probe.calls.length,0,'No stale fragment restore after '+scenario.name);
-    assert.ok(snapshot.y<2,'No delayed scroll pullback after '+scenario.name+': '+snapshot.y);
+    if(!scenario.hash)assert.ok(snapshot.y<2,'No-hash load stays at top');else{
+     // Browser-native anchoring can retain a header-sized offset during pinning.
+     // A stale application restore would instead jump to the old distant target.
+     assert.ok(snapshot.y<=snapshot.topChrome+2&&snapshot.target.top>=snapshot.height,'No delayed pullback to old target after '+scenario.name+': '+JSON.stringify({y:snapshot.y,topChrome:snapshot.topChrome,target:snapshot.target.top}));
+    }
    }
    // Resize performs another layout. Scroll back without an input event first,
    // so this proves the restoration itself is one-shot, not merely cancelled.
