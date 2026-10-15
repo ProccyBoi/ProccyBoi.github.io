@@ -77,11 +77,14 @@ if (assembly) {
       function frame() {
         scene.updateMatrixWorld(true); box.makeEmpty();
         meshes.filter(mesh => mesh.visible).forEach(mesh => box.expandByObject(mesh));
-        box.getCenter(target); const size=box.getSize(new T.Vector3());
-        const radius=Math.max(10,size.length()/2);
-        const aspect=Math.max(.4,stage.clientWidth/stage.clientHeight);
-        fitDistance=radius/Math.sin(Math.atan(Math.tan(16*Math.PI/180)*Math.min(1,aspect)))*1.12;
-        distance=fitDistance; requestRender();
+        box.getCenter(target);
+        const aspect=Math.max(.4,stage.clientWidth/stage.clientHeight),tan=Math.tan(16*Math.PI/180);
+        const right=new T.Vector3(Math.cos(azimuth),0,-Math.sin(azimuth));
+        const up=new T.Vector3(-Math.sin(azimuth)*Math.sin(elevation),Math.cos(elevation),-Math.cos(azimuth)*Math.sin(elevation));
+        const outward=new T.Vector3(Math.sin(azimuth)*Math.cos(elevation),Math.sin(elevation),Math.cos(azimuth)*Math.cos(elevation));
+        fitDistance=10;
+        for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){const v=new T.Vector3(x,y,z).sub(target);fitDistance=Math.max(fitDistance,v.dot(outward)+Math.max(Math.abs(v.dot(up))/tan,Math.abs(v.dot(right))/(tan*aspect)));}
+        fitDistance*=1.25;distance=fitDistance;requestRender();
       }
       function select(id) {
         selected=id;
