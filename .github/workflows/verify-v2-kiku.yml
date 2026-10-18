@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: '22'
       - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
           python3 -m pip install numpy
           git clone --quiet https://github.com/ProccyBoi/kiku.git /tmp/kiku-source
           git -C /tmp/kiku-source checkout --quiet d0c4d9ea34297d8671f464dedc6018189c33ea76

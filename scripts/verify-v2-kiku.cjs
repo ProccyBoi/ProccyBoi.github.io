@@ -64,7 +64,7 @@ async function canvasShot(page,name){
  await page.waitForTimeout(350);
  const pixels=await page.locator('[data-model-canvas]').screenshot({path:path.join(out,name+'.png')});
  const {PNG}=require('pngjs'),im=PNG.sync.read(pixels),bg=Array.from(im.data.slice(0,3)),colors=new Set();let foreground=0;
- for(let i=0;i<im.data.length;i+=4){if(Math.max(...bg.map((v,j)=>Math.abs(im.data[i+j]-v)))>25)foreground++;colors.add((im.data[i]>>4)*256+(im.data[i+1]>>4)*16+(im.data[i+2]>>4));}
+ for(let i=0;i<im.data.length;i+=4){if(Math.max(...bg.map((v,j)=>Math.abs(im.data[i+j]-v)))>25)foreground++;colors.add(im.data[i]*65536+im.data[i+1]*256+im.data[i+2]);}
  assert.ok(foreground/(im.width*im.height)>.025,'Nonblank real model canvas '+name);assert.ok(colors.size>12,'Actual model shading/material variation '+name);
  const stage=await page.locator('[data-model-stage]').evaluate(e=>({...e.dataset}));assert.ok(Number(stage.visibleMeshes)>0,'Visible render meshes '+name);
  fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({width:im.width,height:im.height,foreground,colors:colors.size,stage},null,2));
