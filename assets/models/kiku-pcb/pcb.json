@@ -1,19 +1,19 @@
 {
   "schema": "kiku-pcb-v1",
-  "revision": "Public board d0c4d9ea34297d8671f464dedc6018189c33ea76",
+  "revision": "Public board d0c4d9ea34297d8671f464dedc6018189c33ea76; finished-package revision 2",
   "units": "millimetres",
   "coordinateSystem": {
     "x": "right",
     "y": "up",
     "z": "front"
   },
-  "geometry": "Native KiCad board surfaces, 111 official-library component instances, 21 source-envelope proxies, and the documented D3 allowance. No excluded vendor CAD.",
+  "geometry": "Native KiCad board surfaces and 111 original official component instances, plus one official compatible LQFP package, 20 independently reconstructed packages and one explicitly unverified diode reconstruction. No rectangular component envelope proxies or excluded vendor CAD.",
   "binary": "pcb.bin",
-  "binaryBytes": 9783660,
-  "binarySha256": "dd1cb1801d29b8bd0b09ad4e23298b23e011c5464db15ecae625900a4621179b",
+  "binaryBytes": 11270556,
+  "binarySha256": "3e16caf3640f5d377844d1b2ca69b5a84d3e109da698a272f81ba8f6b85354e3",
   "binaryGzip": "pcb.bin.gz",
-  "binaryGzipBytes": 2159582,
-  "binaryGzipSha256": "5158a4a0c96778bd47397e89e989e99064fe76ca3af4d542d3f5bd40135edf47",
+  "binaryGzipBytes": 2385325,
+  "binaryGzipSha256": "da71b2037db606b2724eee2f12578986a65d3fd0d0db9ae111afe1b6584578d0",
   "bounds": [
     [
       0.0,
@@ -36,15 +36,17 @@
     107.2900002002716,
     23.00021004676819
   ],
-  "partCount": 27,
-  "triangles": 273533,
+  "partCount": 34,
+  "triangles": 302985,
   "counts": {
     "footprints": 142,
     "modelReferences": 133,
     "officialLibraryMeshes": 111,
-    "vendorEnvelopeProxies": 21,
+    "vendorEnvelopeProxies": 0,
     "unverifiedAllowances": 1,
-    "footprintsWithoutModel": 9
+    "footprintsWithoutModel": 9,
+    "officialCompatiblePackageMeshes": 1,
+    "reconstructedPackageMeshes": 20
   },
   "componentCount": 133,
   "group": "pcb",
@@ -1803,23 +1805,21 @@
       }
     },
     {
-      "id": "pcb_envelope_494f4c",
-      "color": "#494f4c",
+      "id": "pcb_package_cavity",
+      "color": "#0d1217",
       "opacity": 1,
-      "roughness": 0.72,
-      "metalness": 0.05,
+      "roughness": 0.86,
+      "metalness": 0,
       "doubleSided": true,
       "group": "pcb",
-      "name": "Source-documented component envelopes",
-      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
-      "fidelity": "source-envelope-proxy",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
       "componentRefs": [
-        "SW3",
-        "SW4",
-        "SW2",
-        "SW1"
+        "FPC1",
+        "J1"
       ],
-      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
       "explode": [
         0,
         0,
@@ -1827,63 +1827,61 @@
       ],
       "bounds": [
         [
-          8.350000381469727,
-          18.510000228881836,
-          -1.9001200199127197
+          16.540000915527344,
+          5.599999904632568,
+          1.9600000381469727
         ],
         [
-          51.650001525878906,
-          61.0,
-          21.10009002685547
+          55.09891128540039,
+          87.2248764038086,
+          4.500999927520752
         ]
       ],
       "size": [
-        43.30000305175781,
-        42.48999786376953,
-        23.00020980834961
+        38.55891036987305,
+        81.6248779296875,
+        2.5409998893737793
       ],
-      "vertices": 96,
-      "triangles": 48,
+      "vertices": 48,
+      "triangles": 24,
       "position": {
         "byteOffset": 9767820,
-        "byteLength": 1152,
-        "count": 96,
+        "byteLength": 576,
+        "count": 48,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "normal": {
-        "byteOffset": 9768972,
-        "byteLength": 1152,
-        "count": 96,
+        "byteOffset": 9768396,
+        "byteLength": 576,
+        "count": 48,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "index": {
-        "byteOffset": 9770124,
-        "byteLength": 576,
-        "count": 144,
+        "byteOffset": 9768972,
+        "byteLength": 288,
+        "count": 72,
         "itemSize": 1,
         "componentType": "UNSIGNED_INT"
       }
     },
     {
-      "id": "pcb_envelope_9da59d",
-      "color": "#9da59d",
+      "id": "pcb_package_ceramic",
+      "color": "#bcb7a4",
       "opacity": 1,
-      "roughness": 0.72,
-      "metalness": 0.05,
+      "roughness": 0.62,
+      "metalness": 0.03,
       "doubleSided": true,
       "group": "pcb",
-      "name": "Source-documented component envelopes",
-      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
-      "fidelity": "source-envelope-proxy",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
       "componentRefs": [
-        "X2",
-        "J1",
         "X1",
-        "J3"
+        "X2"
       ],
-      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
       "explode": [
         0,
         0,
@@ -1892,71 +1890,60 @@
       "bounds": [
         [
           14.369999885559082,
-          -0.10000000149011612,
-          0.75
+          65.91004943847656,
+          1.590000033378601
         ],
         [
-          59.70499038696289,
+          43.18006134033203,
           72.2699966430664,
-          4.85099983215332
+          1.7799999713897705
         ]
       ],
       "size": [
-        45.334991455078125,
-        72.3699951171875,
-        4.10099983215332
+        28.810062408447266,
+        6.359947204589844,
+        0.18999993801116943
       ],
-      "vertices": 96,
-      "triangles": 48,
+      "vertices": 288,
+      "triangles": 184,
       "position": {
-        "byteOffset": 9770700,
-        "byteLength": 1152,
-        "count": 96,
+        "byteOffset": 9769260,
+        "byteLength": 3456,
+        "count": 288,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "normal": {
-        "byteOffset": 9771852,
-        "byteLength": 1152,
-        "count": 96,
+        "byteOffset": 9772716,
+        "byteLength": 3456,
+        "count": 288,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "index": {
-        "byteOffset": 9773004,
-        "byteLength": 576,
-        "count": 144,
+        "byteOffset": 9776172,
+        "byteLength": 2208,
+        "count": 552,
         "itemSize": 1,
         "componentType": "UNSIGNED_INT"
       }
     },
     {
-      "id": "pcb_envelope_4a4c4c",
-      "color": "#4a4c4c",
+      "id": "pcb_package_ferrite",
+      "color": "#41464b",
       "opacity": 1,
-      "roughness": 0.72,
-      "metalness": 0.05,
+      "roughness": 0.8,
+      "metalness": 0.04,
       "doubleSided": true,
       "group": "pcb",
-      "name": "Source-documented component envelopes",
-      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
-      "fidelity": "source-envelope-proxy",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
       "componentRefs": [
-        "L2",
-        "U1",
-        "U2",
         "L1",
-        "U7",
-        "U3",
-        "D3",
-        "U10",
-        "U9",
-        "Q1",
-        "D2",
-        "U5",
-        "IC1"
+        "L2"
       ],
-      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
       "explode": [
         0,
         0,
@@ -1964,60 +1951,186 @@
       ],
       "bounds": [
         [
-          3.5299699306488037,
-          3.2799999713897705,
-          1.600000023841858
+          12.09000015258789,
+          18.97987937927246,
+          1.7200000286102295
         ],
         [
-          59.540000915527344,
-          90.0799789428711,
-          5.609899997711182
+          21.550119400024414,
+          25.059999465942383,
+          5.509900093078613
         ]
       ],
       "size": [
-        56.010032653808594,
-        86.79998016357422,
-        4.009900093078613
+        9.460119247436523,
+        6.080120086669922,
+        3.789900064468384
       ],
-      "vertices": 312,
-      "triangles": 156,
+      "vertices": 288,
+      "triangles": 184,
       "position": {
-        "byteOffset": 9773580,
-        "byteLength": 3744,
-        "count": 312,
+        "byteOffset": 9778380,
+        "byteLength": 3456,
+        "count": 288,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "normal": {
-        "byteOffset": 9777324,
-        "byteLength": 3744,
-        "count": 312,
+        "byteOffset": 9781836,
+        "byteLength": 3456,
+        "count": 288,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "index": {
-        "byteOffset": 9781068,
-        "byteLength": 1872,
-        "count": 468,
+        "byteOffset": 9785292,
+        "byteLength": 2208,
+        "count": 552,
         "itemSize": 1,
         "componentType": "UNSIGNED_INT"
       }
     },
     {
-      "id": "pcb_envelope_cbc7a7",
-      "color": "#cbc7a7",
+      "id": "pcb_package_gold",
+      "color": "#d8b45b",
       "opacity": 1,
-      "roughness": 0.72,
-      "metalness": 0.05,
+      "roughness": 0.3,
+      "metalness": 0.78,
       "doubleSided": true,
       "group": "pcb",
-      "name": "Source-documented component envelopes",
-      "description": "Bounding-envelope proxies from the public reviewed metadata; missing local/vendor CAD is not redistributed",
-      "fidelity": "source-envelope-proxy",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
       "componentRefs": [
-        "FPC1"
+        "FPC1",
+        "J1",
+        "J3",
+        "U1"
       ],
-      "materialSource": "Editorial neutral package colors; not a manufacturer finish specification",
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          16.729999542236328,
+          0.6000000238418579,
+          1.600000023841858
+        ],
+        [
+          59.304988861083984,
+          86.79487609863281,
+          3.63100004196167
+        ]
+      ],
+      "size": [
+        42.574989318847656,
+        86.19487762451172,
+        2.0310001373291016
+      ],
+      "vertices": 2820,
+      "triangles": 1552,
+      "position": {
+        "byteOffset": 9787500,
+        "byteLength": 33840,
+        "count": 2820,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9821340,
+        "byteLength": 33840,
+        "count": 2820,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9855180,
+        "byteLength": 18624,
+        "count": 4656,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_package_green",
+      "color": "#234b38",
+      "opacity": 1,
+      "roughness": 0.67,
+      "metalness": 0.02,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
+      "componentRefs": [
+        "U1"
+      ],
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          27.540000915527344,
+          3.2799999713897705,
+          1.600000023841858
+        ],
+        [
+          59.540000915527344,
+          18.280000686645508,
+          2.200000047683716
+        ]
+      ],
+      "size": [
+        32.0,
+        15.000000953674316,
+        0.6000000238418579
+      ],
+      "vertices": 144,
+      "triangles": 92,
+      "position": {
+        "byteOffset": 9873804,
+        "byteLength": 1728,
+        "count": 144,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9875532,
+        "byteLength": 1728,
+        "count": 144,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9877260,
+        "byteLength": 1104,
+        "count": 276,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_package_ivory",
+      "color": "#e4dfc8",
+      "opacity": 1,
+      "roughness": 0.55,
+      "metalness": 0.02,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
+      "componentRefs": [
+        "FPC1",
+        "J3"
+      ],
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
       "explode": [
         0,
         0,
@@ -2026,40 +2139,398 @@
       "bounds": [
         [
           49.5489616394043,
-          78.5648422241211,
-          1.600000023841858
+          65.05000305175781,
+          1.590000033378601
         ],
         [
-          55.49890899658203,
-          89.284912109375,
-          3.5999999046325684
+          59.70499038696289,
+          89.0599136352539,
+          3.450000047683716
         ]
       ],
       "size": [
-        5.949947357177734,
-        10.720069885253906,
-        1.9999998807907104
+        10.156028747558594,
+        24.009910583496094,
+        1.8600000143051147
       ],
-      "vertices": 24,
-      "triangles": 12,
+      "vertices": 648,
+      "triangles": 408,
       "position": {
-        "byteOffset": 9782940,
-        "byteLength": 288,
-        "count": 24,
+        "byteOffset": 9878364,
+        "byteLength": 7776,
+        "count": 648,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "normal": {
-        "byteOffset": 9783228,
-        "byteLength": 288,
-        "count": 24,
+        "byteOffset": 9886140,
+        "byteLength": 7776,
+        "count": 648,
         "itemSize": 3,
         "componentType": "FLOAT"
       },
       "index": {
-        "byteOffset": 9783516,
-        "byteLength": 144,
-        "count": 36,
+        "byteOffset": 9893916,
+        "byteLength": 4896,
+        "count": 1224,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_package_mark",
+      "color": "#a9adb0",
+      "opacity": 1,
+      "roughness": 0.72,
+      "metalness": 0.02,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
+      "componentRefs": [
+        "U10",
+        "D2",
+        "D3",
+        "IC1",
+        "U2",
+        "U3",
+        "U5",
+        "U7",
+        "U9"
+      ],
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          8.010029792785645,
+          10.835000038146973,
+          2.0820000171661377
+        ],
+        [
+          55.375,
+          76.24308013916016,
+          3.101140022277832
+        ]
+      ],
+      "size": [
+        47.36497116088867,
+        65.4080810546875,
+        1.0191400051116943
+      ],
+      "vertices": 1224,
+      "triangles": 784,
+      "position": {
+        "byteOffset": 9898812,
+        "byteLength": 14688,
+        "count": 1224,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9913500,
+        "byteLength": 14688,
+        "count": 1224,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 9928188,
+        "byteLength": 9408,
+        "count": 2352,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_package_mold",
+      "color": "#25282b",
+      "opacity": 1,
+      "roughness": 0.68,
+      "metalness": 0.02,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
+      "componentRefs": [
+        "U10",
+        "D2",
+        "D3",
+        "FPC1",
+        "IC1",
+        "J1",
+        "Q1",
+        "SW1",
+        "SW2",
+        "SW3",
+        "SW4",
+        "U2",
+        "U3",
+        "U5",
+        "U7",
+        "U9"
+      ],
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          3.5299699306488037,
+          -0.10000000149011612,
+          1.600000023841858
+        ],
+        [
+          55.46500015258789,
+          89.08023834228516,
+          13.600000381469727
+        ]
+      ],
+      "size": [
+        51.93503189086914,
+        89.18023681640625,
+        12.0
+      ],
+      "vertices": 4546,
+      "triangles": 2980,
+      "position": {
+        "byteOffset": 9937596,
+        "byteLength": 54552,
+        "count": 4546,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 9992148,
+        "byteLength": 54552,
+        "count": 4546,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 10046700,
+        "byteLength": 35760,
+        "count": 8940,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_package_mold_edge",
+      "color": "#35383b",
+      "opacity": 1,
+      "roughness": 0.66,
+      "metalness": 0.02,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
+      "componentRefs": [
+        "L1",
+        "L2"
+      ],
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          12.289999961853027,
+          19.179880142211914,
+          3.600069999694824
+        ],
+        [
+          21.350120544433594,
+          24.860000610351562,
+          5.609899997711182
+        ]
+      ],
+      "size": [
+        9.060120582580566,
+        5.680120468139648,
+        2.0098299980163574
+      ],
+      "vertices": 288,
+      "triangles": 184,
+      "position": {
+        "byteOffset": 10082460,
+        "byteLength": 3456,
+        "count": 288,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 10085916,
+        "byteLength": 3456,
+        "count": 288,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 10089372,
+        "byteLength": 2208,
+        "count": 552,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_package_silver",
+      "color": "#c3c8ce",
+      "opacity": 1,
+      "roughness": 0.31,
+      "metalness": 0.82,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
+      "componentRefs": [
+        "U10",
+        "D2",
+        "D3",
+        "FPC1",
+        "IC1",
+        "J1",
+        "J3",
+        "L1",
+        "L2",
+        "Q1",
+        "SW1",
+        "SW2",
+        "SW3",
+        "SW4",
+        "U1",
+        "U2",
+        "U3",
+        "U5",
+        "U7",
+        "U9",
+        "X1",
+        "X2"
+      ],
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          3.5299699306488037,
+          -0.10000000149011612,
+          -1.9001200199127197
+        ],
+        [
+          58.970001220703125,
+          90.08100128173828,
+          21.10009002685547
+        ]
+      ],
+      "size": [
+        55.440032958984375,
+        90.18099975585938,
+        23.00020980834961
+      ],
+      "vertices": 28558,
+      "triangles": 17476,
+      "position": {
+        "byteOffset": 10091580,
+        "byteLength": 342696,
+        "count": 28558,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 10434276,
+        "byteLength": 342696,
+        "count": 28558,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 10776972,
+        "byteLength": 209712,
+        "count": 52428,
+        "itemSize": 1,
+        "componentType": "UNSIGNED_INT"
+      }
+    },
+    {
+      "id": "pcb_package_steel",
+      "color": "#929aa3",
+      "opacity": 1,
+      "roughness": 0.4,
+      "metalness": 0.78,
+      "doubleSided": true,
+      "group": "pcb",
+      "name": "Finished package details",
+      "description": "Licensed compatible MCU package and independently reconstructed component packages; see per-reference provenance",
+      "fidelity": "mixed-package-detail",
+      "componentRefs": [
+        "FPC1",
+        "J1",
+        "J3",
+        "SW2",
+        "SW3",
+        "SW4",
+        "U1",
+        "X1",
+        "X2"
+      ],
+      "materialSource": "Editorial display finishes; not vendor color or surface specifications",
+      "explode": [
+        0,
+        0,
+        0
+      ],
+      "bounds": [
+        [
+          10.800000190734863,
+          1.0,
+          -1.9001200199127197
+        ],
+        [
+          59.38499069213867,
+          88.8849105834961,
+          16.100000381469727
+        ]
+      ],
+      "size": [
+        48.584991455078125,
+        87.8849105834961,
+        18.000120162963867
+      ],
+      "vertices": 8904,
+      "triangles": 5848,
+      "position": {
+        "byteOffset": 10986684,
+        "byteLength": 106848,
+        "count": 8904,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "normal": {
+        "byteOffset": 11093532,
+        "byteLength": 106848,
+        "count": 8904,
+        "itemSize": 3,
+        "componentType": "FLOAT"
+      },
+      "index": {
+        "byteOffset": 11200380,
+        "byteLength": 70176,
+        "count": 17544,
         "itemSize": 1,
         "componentType": "UNSIGNED_INT"
       }

@@ -7,12 +7,12 @@ export function loadThree(){
 }
 async function binary(url){
  if((url.includes('kiku-pcb/')||url.includes('kiku-hardware/'))&&typeof DecompressionStream==='function'){
-  try{const response=await fetch(url+'.gz');if(response.ok&&response.body)return await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();}catch(error){/* Raw data remains the compatibility/retry path. */}
+  try{const response=await fetch(url.replace(/(\?[^#]*)?$/,'.gz$1'));if(response.ok&&response.body)return await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();}catch(error){/* Raw data remains the compatibility/retry path. */}
  }
  const response=await fetch(url);if(!response.ok)throw new Error('CAD download unavailable');return response.arrayBuffer();
 }
 export function loadKikuModel(){
- const urls=['/assets/models/kiku/assembly.json','/assets/models/kiku/assembly.bin','/assets/models/kiku-pcb/pcb.json','/assets/models/kiku-pcb/pcb.bin','/assets/models/kiku-hardware/hardware.json','/assets/models/kiku-hardware/hardware.bin'];
+ const urls=['/assets/models/kiku/assembly.json','/assets/models/kiku/assembly.bin','/assets/models/kiku-pcb/pcb.json?v=finish-20261018','/assets/models/kiku-pcb/pcb.bin?v=finish-20261018','/assets/models/kiku-hardware/hardware.json','/assets/models/kiku-hardware/hardware.bin'];
  return modelPromise ||= Promise.all(urls.map(async(url,index)=>{if(index%2)return binary(url);const response=await fetch(url);if(!response.ok)throw new Error('CAD download unavailable');return response.json();})).then(([enclosure,enclosureBinary,pcb,pcbBinary,hardware,hardwareBinary])=>({enclosure,pcb,hardware,center:enclosure.center,parts:[...enclosure.parts.map(part=>({...part,binary:enclosureBinary})),...pcb.parts.map(part=>({...part,group:'pcb',explode:[0,0,0],binary:pcbBinary})),...hardware.parts.map(part=>({...part,binary:hardwareBinary}))]})).catch(error=>{modelPromise=null;throw error;});
 }
 export function makeKikuMesh(T,part,onTextureLoad=()=>{}){

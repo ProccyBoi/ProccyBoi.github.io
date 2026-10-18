@@ -407,30 +407,8 @@ def make_case(path, slug=None, source=None):
     slug = slug or path.parent.relative_to(ROOT / 'projects').as_posix()
     source = source if source is not None else path.read_text(encoding='utf-8')
     if slug == 'kiku':
-        # Kiku's maintained page owns its product hero, simulator and CAD layout.
-        # Reuse portfolio chrome without rebuilding that content as a generic hero.
-        source = source.replace('</main>', continuation(slug) + '\n</main>', 1)
-        source = case_navigation(common(source, 'v2-case'), slug, 'Kiku')
-        styles = [node for node in Tree(source).nodes if node.tag == 'link' and
-                  node.attrs.get('href', '').split('?', 1)[0].lstrip('/') == 'assets/kiku.css']
-        markup = '\n'.join(node.outer(source) for node in styles)
-        source = replace_nodes(source, [(node, '') for node in styles])
-        source = source.replace('</head>', markup + '\n  <link rel="stylesheet" href="/assets/v2-kiku.css?v=hardware-audio-20261015">\n  <script type="module" src="/assets/v2-kiku.js?v=hardware-audio-20261015"></script>\n</head>', 1)
-        source = source.replace('src="/assets/kiku.js"', 'src="/assets/v2-kiku-explorer.js?v=hardware-audio-20261015"')
-        source = source.replace('Nine pieces.<br>A place for everything.', 'Under the shell.<br>Built around the board.')
-        source = source.replace('Explore the nine printed parts below:', 'Explore the populated board, nine printed parts and battery, antenna, speaker and screen:')
-        source = source.replace('These meshes come from the project’s own CAD.', 'Enclosure geometry comes from the project’s CAD; board placement, copper and silkscreen come from KiCad.')
-        source = source.replace('P2 source CAD · printed parts only', 'P2 enclosure + electronics + hardware')
-        source = source.replace('Kiku enclosure explorer.', 'Kiku populated assembly explorer.')
-        source = source.replace('src="/assets/images/kiku/exploded.webp" width="1700" height="1690"', 'src="/assets/images/kiku/v2-populated-assembly.png?v=hardware-audio-20261015" width="1201" height="1001"')
-        source = source.replace('alt="Exploded source CAD view of the Kiku P2 assembly"', 'alt="Kiku P2 printed enclosure and populated PCB separated with reconstructed battery, antenna, speaker and screen hardware"')
-        source = source.replace('The explorer shows the printed enclosure; electronics, the clear lens and fasteners remain visible in the CAD review images further below.', 'Isolate the populated PCB, each printed part, or the battery, antenna, speaker and screen.')
-        source = source.replace('<dl class="kiku-dimensions">', '<p class="kiku-small kiku-pcb-provenance">PCB placement, copper and silkscreen follow the source KiCad board. Components use official KiCad models where available; 21 excluded vendor-model references and the missing D3 model use recorded package envelopes. Battery, speaker and screen use documented dimensions; the antenna is a packaging reconstruction aligned to the retained P2 shell. Hardware placement and surface details are qualified in the provenance record. Fasteners and wiring are omitted. This is visual CAD, not a physical-fit validation. <a href="/assets/models/kiku-pcb/pcb-provenance.json">PCB sources ↗</a> · <a href="/assets/models/kiku-hardware/hardware-provenance.json">Hardware sources and fidelity ↗</a> · <a href="/assets/images/kiku/v2-populated-pcb.png">Populated PCB image ↗</a></p>\n        <dl class="kiku-dimensions">', 1)
-        source = source.replace('Hardware events and media data are simulated;', 'The original listening loops play after you press Play. Hardware events and media data are simulated;')
-        source = source.replace('this is an interface simulator, not a full STM32 emulator.', 'browser audio uses original demonstration loops alongside the interface simulator, not the STM32 audio pipeline.')
-        hero = Tree(source).find('section', 'kiku-hero')
-        scene = (ROOT / 'scripts/content/v2-kiku-hero.html').read_text(encoding='utf-8')
-        return replace_nodes(source, [(hero, scene.rstrip())])
+        # A maintained v2 product story. Root and v3 keep their frozen sources.
+        return (ROOT / 'scripts/content/v2-kiku-page.html').read_text(encoding='utf-8')
     source = integrate_hardware(source, slug)
     source = simplify_viewers(source, slug)
     if slug == 'skylabs/flight-review':

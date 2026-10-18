@@ -26,6 +26,7 @@ jobs:
           python3 scripts/kiku-hardware/verify.py
           node scripts/verify-v2-kiku.cjs --source-only
           node scripts/kiku-simulator/verify.cjs
+          node scripts/kiku-simulator/verify-audio.cjs --unit-only
           python3 scripts/audit-v2.py
           python3 scripts/build-v3-pages.py --check
           python3 scripts/audit-v3.py
@@ -50,6 +51,7 @@ jobs:
       - run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/kiku-server.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/projects/kiku/ >/dev/null && break; sleep 1; done
+          if [ '${{ matrix.viewport }}' = desktop1440 ]; then node scripts/verify-v2-kiku.cjs --capture-poster; fi
           node scripts/verify-v2-kiku.cjs --viewport=${{ matrix.viewport }}
           if [ '${{ matrix.viewport }}' = desktop1440 ]; then KIKU_BASE_URL=http://127.0.0.1:8080 node scripts/kiku-simulator/verify-audio.cjs > /tmp/kiku-evidence/audio-chromium.json; fi
       - uses: actions/upload-artifact@v4

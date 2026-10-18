@@ -5,7 +5,7 @@ Input GLBs are KiCad 9.0.2 exports of the unmodified public board at origin
 source-repository code and never copies excluded local third-party CAD.
 """
 from pathlib import Path
-import json, struct, hashlib, collections, math, gzip, argparse
+import json, struct, hashlib, collections, math, gzip, argparse, subprocess, sys
 import numpy as np
 from scipy.spatial.transform import Rotation
 parser=argparse.ArgumentParser()
@@ -119,8 +119,8 @@ for node in j['nodes']:
  'sourcePlacement':{'pcbXY':f['xy'],'footprintAngleDegrees':f['angle'],'layer':f['layer'],'modelOffset':model['offset'],'modelRotationDegrees':model['rotation'],'modelScale':model['scale']},'assemblyPlacement':[f['xy'][0]-72.11,157.9-f['xy'][1],1.6]}
  componentmeta[ref]=rec;checks.append((ref,err))
 
-# Exact recorded bounding envelopes only. No invented vendor topology, holes,
-# pins, surface labels or claimed fit geometry is introduced.
+# Intermediate recorded envelopes. The mandatory finish stage below replaces
+# every box with licensed compatible or independently reconstructed topology.
 def box(bounds):
  x0,y0,z0,x1,y1,z1=bounds
  corners=np.array([[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],float)
@@ -169,3 +169,7 @@ prov={'schema':'kiku-pcb-provenance-v1','sourceRepository':'https://github.com/P
 print(json.dumps({'bytes':len(blob),'triangles':manifest['triangles'],'parts':len(parts),'counts':counts,'validation':prov['validation']},indent=2))
 # Store reproducible geometry for an independent offscreen review renderer.
 np.savez_compressed(ROOT/'review-meshes.npz',**{key+'_'+name:arr for key,mesh in meshcache.items() for name,arr in zip(['position','normal','index'],mesh)})
+
+# The delivered assets always contain finished packages, never these intermediate
+# envelope boxes. The finisher preserves all native board/official mesh buffers.
+subprocess.run([sys.executable,str(Path(__file__).with_name("finish_component_packages.py")),"--source-root",str(SOURCE),"--work-root",str(ROOT),"--output-root",str(OUTPUT)],check=True)

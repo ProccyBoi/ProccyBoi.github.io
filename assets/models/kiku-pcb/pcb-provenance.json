@@ -13,9 +13,11 @@
     "footprints": 142,
     "modelReferences": 133,
     "officialLibraryMeshes": 111,
-    "vendorEnvelopeProxies": 21,
+    "vendorEnvelopeProxies": 0,
     "unverifiedAllowances": 1,
-    "footprintsWithoutModel": 9
+    "footprintsWithoutModel": 9,
+    "officialCompatiblePackageMeshes": 1,
+    "reconstructedPackageMeshes": 20
   },
   "coordinateSystem": {
     "units": "millimetres",
@@ -40,19 +42,21 @@
     "explanation": "Native KiCad 9.0.2 separates the 1.51 mm substrate from copper/mask coatings. The checked-in bare STEP also has 1.51 mm body thickness. Components use the independently reviewed 1.60 mm mounting datum via an explicit +0.005 mm correction to native GLB instance placement. No XY recentering or scaling is applied."
   },
   "fidelityNotes": [
-    "111 placed component instances use the exact paths from the official KiCad 9.0.2 library, tessellated by KiCad 9.0.2. Historical upstream model hashes were not recorded; same filename is not a guarantee of identical historical geometry. Bounds comparison below makes revision changes visible.",
-    "21 excluded local/vendor references use axis-aligned boxes with the exact published reviewed bounds; these are documented package envelopes, not recovered or exact vendor models.",
-    "D3 uses its existing documented UNVERIFIED source allowance because the referenced official release path returns 404.",
-    "142 footprint placement records and 133 model transforms match current KiCad source, despite a different historical board hash in board_datums.json.",
-    "Native copper, pads, vias, silkscreen, soldermask and substrate are retained. Sub-millimetre vertical coating sidewalls are omitted while the source top/bottom surface shapes, source holes and laminate thickness remain unchanged.",
-    "All component materials retain native official model colors where available; neutral envelope and laminate finishes and PBR roughness defaults are display choices, not manufacturing specifications.",
-    "Ubuntu Mono 0.83 from the official Ubuntu asset archive was used locally to avoid font substitution; only generated board artwork is delivered."
+    "111 original official KiCad 9.0.2 component instances and the original native board mesh attributes are unchanged.",
+    "U10 uses an unscaled, licensed official KiCad LQFP-100 compatible package, explicitly rotated to match the source custom pad numbering. It is not the excluded vendor mesh.",
+    "20 formerly boxed local/vendor references now have independent package-shape reconstructions, with source-recorded placement/bounds and individual footprint pad locations. Manufacturer drawings inform the BM83, FPC and encoder forms. No excluded CAD was downloaded or copied.",
+    "D3 has a generic two-terminal shape but retains its source UNVERIFIED status; the referenced library model is missing.",
+    "SW2 BOM/footprint mismatch remains explicit: actual PEC11L shaft length/tab spacing must be checked. The source-recorded PEC11R model envelope is retained for this visualization.",
+    "Reconstructed connector internals, actuator details, RF antenna trace motif, metal finishes and curves are simplified illustrations, not mechanical or electrical validation.",
+    "142 footprint placements and 133 source model transforms remain attributable to the original board; nine mounting-hole/test-pad footprints have no assigned component model.",
+    "Native board coating surfaces, holes and laminate are retained; original micrometre coating-sidewall omission and +0.005 mm component-datum calibration are unchanged."
   ],
   "unsupportedFeatures": [
-    "Exact local/vendor component solids, connector internals, actuator topologies and pin surfaces for 21 excluded references",
-    "Internal copper layers and electrical connectivity animation",
-    "Nine footprints with no assigned 3D model, such as mounting holes and fiducials; their board/pad features remain",
-    "Physical assembly validation, component-vendor model revision equivalence, and fit/performance certification"
+    "Exact excluded vendor CAD, verified connector internals and RF antenna artwork",
+    "Verified PEC11L-versus-PEC11R shaft length, mounting-tab spacing or enclosure fit",
+    "D3 part identification",
+    "Internal copper layers/electrical connectivity",
+    "Physical assembly, RF, electrical, manufacturing or performance certification"
   ],
   "licenses": {
     "hardware": "CERN-OHL-P-2.0; source project LICENSE and LICENSES/CERN-OHL-P-2.0.txt",
@@ -60,7 +64,8 @@
     "officialModelLicenseUrl": "https://www.kicad.org/libraries/license/",
     "libraryReleaseUrl": "https://gitlab.com/kicad/libraries/kicad-packages3D/-/tree/9.0.2",
     "font": "Ubuntu Font Licence 1.0; used only for source board label rendering",
-    "fontSourceUrl": "https://assets.ubuntu.com/v1/0cef8205-ubuntu-font-family-0.83.zip"
+    "fontSourceUrl": "https://assets.ubuntu.com/v1/0cef8205-ubuntu-font-family-0.83.zip",
+    "reconstructedPackages": "Independent source-dimensioned display geometry: CERN-OHL-P-2.0; generator script MIT."
   },
   "components": [
     {
@@ -4147,17 +4152,16 @@
       "ref": "D2",
       "value": "SMF5.0CA",
       "footprint": "D_SOD-123FL",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/D_SOD-123FL.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        14.55,
-        8.42,
-        1.6,
-        16.15,
-        11.92,
-        2.7
+        14.550000190734863,
+        8.420000076293945,
+        1.600000023841858,
+        16.149999618530273,
+        11.920000076293945,
+        2.700000047683716
       ],
       "reviewedBounds": [
         14.55,
@@ -4167,8 +4171,7 @@
         11.92,
         2.7
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 3.8146972514141453e-07,
       "sourcePlacement": {
         "pcbXY": [
           87.46,
@@ -4196,23 +4199,40 @@
         15.349999999999994,
         10.170000000000016,
         1.6
-      ]
+      ],
+      "triangleCount": 128,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "two formed metal terminals and moulded diode body",
+        "polarity band is a generic display convention; D3 part identity and body remain unverified"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "D3",
       "value": "D_TVS",
       "footprint": "D_0201_0603Metric",
-      "fidelity": "unverified-source-allowance",
+      "fidelity": "unverified-reconstructed-allowance",
       "sourceExpression": "${KICAD9_3DMODEL_DIR}/Diode_SMD.3dshapes/D_0201_0603Metric.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "UNVERIFIED missing-model allowance",
       "bounds": [
-        54.965,
-        65.78,
-        1.6,
-        55.465,
-        66.68,
-        2.1
+        54.96500015258789,
+        65.77999877929688,
+        1.600000023841858,
+        55.46500015258789,
+        66.68000030517578,
+        2.0999999046325684
       ],
       "reviewedBounds": [
         54.965,
@@ -4222,8 +4242,7 @@
         66.68,
         2.1
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.2207031261368684e-06,
       "sourcePlacement": {
         "pcbXY": [
           127.325,
@@ -4251,7 +4270,25 @@
         55.215,
         66.23,
         1.6
-      ]
+      ],
+      "triangleCount": 128,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "two formed metal terminals and moulded diode body",
+        "polarity band is a generic display convention; D3 part identity and body remain unverified"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Original official path is unavailable, and source marked the package UNVERIFIED. Generic two-terminal topology within that allowance does not identify the real diode."
     },
     {
       "ref": "F1",
@@ -4317,17 +4354,16 @@
       "ref": "FPC1",
       "value": "FPC05012-09200",
       "footprint": "FPC-SMD_FPC05012-09200",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/FPC-SMD_FPC05012-09200.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        49.54896,
-        78.56484,
-        1.6,
-        55.49891,
-        89.28491,
-        3.6
+        49.5489616394043,
+        78.5648422241211,
+        1.600000023841858,
+        55.49890899658203,
+        89.284912109375,
+        3.5999999046325684
       ],
       "reviewedBounds": [
         49.54896,
@@ -4337,8 +4373,7 @@
         89.28491,
         3.6
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 2.224121089966502e-06,
       "sourcePlacement": {
         "pcbXY": [
           122.995,
@@ -4366,23 +4401,47 @@
         50.885000000000005,
         83.92500000000001,
         1.6
-      ]
+      ],
+      "triangleCount": 640,
+      "materialMeshCount": 6,
+      "geometryDetails": [
+        "ivory socket with open cable channel facing +X",
+        "black hinged locking bar",
+        "12 gold contacts at source 0.5 mm pitch",
+        "two metal hold-down ears; recorded 10.72007 mm envelope retained"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        },
+        {
+          "url": "https://datasheet.lcsc.com/datasheet/pdf/1c6129ba5fa7da3b6a4c8e044c2574b1.pdf?productCode=C479750",
+          "location": "ATOM drawing ATOM-A01135 revision C, F050**-09***",
+          "facts": "12 contacts at 0.5 mm pitch; 5.5 mm contact span; 6.6 mm cable mouth; 5.95 mm depth; 2 mm height. Source 10.72007 mm width retained rather than 10.90 mm max drawing ears."
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "IC1",
       "value": "SI4705-D60-GM",
       "footprint": "SI4705D60GM",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/IC1_SI4705-D60-GM.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        45.83,
-        65.64,
-        1.6,
-        49.15,
-        68.96,
-        2.235
+        45.83000183105469,
+        65.63999938964844,
+        1.600000023841858,
+        49.150001525878906,
+        68.95999908447266,
+        2.234999895095825
       ],
       "reviewedBounds": [
         45.83,
@@ -4392,8 +4451,7 @@
         68.96,
         2.235
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.8310546892053026e-06,
       "sourcePlacement": {
         "pcbXY": [
           119.6,
@@ -4421,23 +4479,41 @@
         47.489999999999995,
         67.30000000000001,
         1.6
-      ]
+      ],
+      "triangleCount": 676,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded QFN/DFN moulded body",
+        "individual metal lands aligned with source pads",
+        "pin-1 corner indicator derived from source pad 1"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "J1",
       "value": "USB_C_Receptacle_USB2.0_16P",
       "footprint": "USB_C_Receptacle_HRO_TYPE-C-31-M-12",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/J1_HRO_TYPE-C-31-M-12.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        15.62,
-        -0.1,
+        15.619999885559082,
+        -0.10000000149011612,
         0.75,
-        24.56,
-        7.8,
-        4.851
+        24.559999465942383,
+        7.800000190734863,
+        4.85099983215332
       ],
       "reviewedBounds": [
         15.62,
@@ -4447,8 +4523,7 @@
         7.8,
         4.851
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 5.340576159085231e-07,
       "sourcePlacement": {
         "pcbXY": [
           92.2,
@@ -4476,7 +4551,32 @@
         20.090000000000003,
         2.5,
         1.6
-      ]
+      ],
+      "triangleCount": 836,
+      "materialMeshCount": 5,
+      "geometryDetails": [
+        "hollow rounded USB-C metal shell with open front mouth",
+        "separate insulated tongue and two rows of gold contacts",
+        "rear insulator and four source-aligned shell legs",
+        "contact shape is illustrative; source shell envelope and footprint placement retained"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        },
+        {
+          "url": "https://datasheet.lcsc.com/datasheet/pdf/9e56b777c022540fcce7c7f67825f55e.pdf?productCode=C165948",
+          "location": "HRO TYPE-C-31-M-12 manufacturer drawing, 2020-12-08",
+          "facts": "8.94 x 7.35 x 3.26 mm shell; 8.34 x 2.56 mm mouth; shell-leg centers 8.64 mm across / 4.18 mm longitudinal. Current HRO page calls height 3.16 mm, so source-envelope revision uncertainty remains."
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "J2",
@@ -4542,17 +4642,16 @@
       "ref": "J3",
       "value": "U.FL",
       "footprint": "IPEX-SMD_BWIPX-1-001E",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/IPEX-SMD_BWIPX-1-001E.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        56.60499,
-        65.05,
-        1.59,
-        59.70499,
-        68.05,
-        2.85
+        56.60498809814453,
+        65.05000305175781,
+        1.590000033378601,
+        59.70499038696289,
+        68.05000305175781,
+        2.8499999046325684
       ],
       "reviewedBounds": [
         56.60499,
@@ -4562,8 +4661,7 @@
         68.05,
         2.85
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 3.051757815342171e-06,
       "sourcePlacement": {
         "pcbXY": [
           129.505,
@@ -4591,7 +4689,26 @@
         57.394999999999996,
         66.55000000000001,
         1.6
-      ]
+      ],
+      "triangleCount": 1208,
+      "materialMeshCount": 4,
+      "geometryDetails": [
+        "coaxial annular U.FL outer contact",
+        "dielectric insert and center pin",
+        "source-oriented three-pad base"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "J4",
@@ -4717,17 +4834,16 @@
       "ref": "L1",
       "value": "2.2uH",
       "footprint": "IND-SMD_L5.0-W5.0_SWPA5040S",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/IND-SMD_L5.0-W5.0-H4.0.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        16.54988,
-        18.97988,
-        1.6,
-        21.55012,
-        23.98012,
-        5.6099
+        16.54987907409668,
+        18.97987937927246,
+        1.600000023841858,
+        21.550119400024414,
+        23.980119705200195,
+        5.609899997711182
       ],
       "reviewedBounds": [
         16.54988,
@@ -4737,8 +4853,7 @@
         23.98012,
         5.6099
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 9.259033220132551e-07,
       "sourcePlacement": {
         "pcbXY": [
           91.16,
@@ -4766,23 +4881,40 @@
         19.049999999999997,
         21.480000000000018,
         1.6
-      ]
+      ],
+      "triangleCount": 208,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded moulded power-inductor body",
+        "two wraparound metal terminations aligned to source pads"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "L2",
       "value": "XFL4020-152MEC",
       "footprint": "IND-SMD_L4.0-W4.0-A",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/IND-SMD_L4.0-W4.0-A.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        12.09,
-        21.06,
-        1.6,
-        16.09,
-        25.06,
-        3.70007
+        12.09000015258789,
+        21.059999465942383,
+        1.600000023841858,
+        16.09000015258789,
+        25.059999465942383,
+        3.7000699043273926
       ],
       "reviewedBounds": [
         12.09,
@@ -4792,8 +4924,7 @@
         25.06,
         3.70007
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 5.340576159085231e-07,
       "sourcePlacement": {
         "pcbXY": [
           86.2,
@@ -4821,7 +4952,25 @@
         14.090000000000003,
         23.060000000000002,
         1.6
-      ]
+      ],
+      "triangleCount": 208,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded moulded power-inductor body",
+        "two wraparound metal terminations aligned to source pads"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "L3",
@@ -4947,17 +5096,16 @@
       "ref": "Q1",
       "value": "AO3400A",
       "footprint": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/SOT-23-3P_L2.9-W1.3-H1.0-LS2.4-P0.95.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        45.66491,
-        86.74727,
-        1.6,
-        48.56509,
-        89.25273,
-        2.64927
+        45.66490936279297,
+        86.74726867675781,
+        1.600000023841858,
+        48.56509017944336,
+        89.25273132324219,
+        2.6492700576782227
       ],
       "reviewedBounds": [
         45.66491,
@@ -4967,8 +5115,7 @@
         89.25273,
         2.64927
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.3232421878228706e-06,
       "sourcePlacement": {
         "pcbXY": [
           119.225,
@@ -4996,7 +5143,25 @@
         47.114999999999995,
         88.0,
         1.6
-      ]
+      ],
+      "triangleCount": 164,
+      "materialMeshCount": 2,
+      "geometryDetails": [
+        "SOT-23 moulded body",
+        "three individual bent terminals placed from actual source pads"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "R1",
@@ -7102,17 +7267,16 @@
       "ref": "SW1",
       "value": "SW_Push",
       "footprint": "SW-SMD_L3.9-W3.0-P4.45",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/SW1_Tactile_3.9x3.0x2.0.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        23.49999,
-        18.51,
-        1.6,
-        26.40001,
-        23.31,
-        3.55
+        23.5,
+        18.510000228881836,
+        1.600000023841858,
+        26.399999618530273,
+        23.309999465942383,
+        3.549999952316284
       ],
       "reviewedBounds": [
         23.49999,
@@ -7122,8 +7286,7 @@
         23.31,
         3.55
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.0381469728315551e-05,
       "sourcePlacement": {
         "pcbXY": [
           97.06,
@@ -7151,23 +7314,40 @@
         24.950000000000003,
         20.909999999999997,
         1.6
-      ]
+      ],
+      "triangleCount": 332,
+      "materialMeshCount": 2,
+      "geometryDetails": [
+        "source-oriented 3.9 x 3.0 mm switch package",
+        "metal cover, circular actuator and two solder terminals"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "SW2",
       "value": "PEC11L-4120F-S0020",
       "footprint": "SW-TH_PEC11R-4XXXF-SXXXX",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/SW-TH_PEC11R-4XXXF-SXXXX.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        23.71121,
-        32.65,
-        -1.90012,
-        36.28879,
-        47.35,
-        21.10009
+        23.711210250854492,
+        32.650001525878906,
+        -1.9001200199127197,
+        36.28879165649414,
+        47.349998474121094,
+        21.10009002685547
       ],
       "reviewedBounds": [
         23.71121,
@@ -7177,8 +7357,7 @@
         47.35,
         21.10009
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.6564941418550916e-06,
       "sourcePlacement": {
         "pcbXY": [
           102.11,
@@ -7206,23 +7385,48 @@
         30.0,
         40.0,
         1.6
-      ]
+      ],
+      "triangleCount": 4104,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "moulded switch/encoder body and formed metal cover",
+        "M7-size bushing with visible thread relief",
+        "6 mm D-profile shaft",
+        "five source-positioned through-hole terminals and two mounting tabs",
+        "historical source Z21.10009 extent retained; PEC11L/PEC11R footprint and shaft-length conflict remains unverified"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        },
+        {
+          "url": "https://www.bourns.com/docs/product-datasheets/pec11l.pdf",
+          "location": "Product dimensions, page 2",
+          "facts": "11.8 x 12.0 x 4.5 mm body; 6 mm D shaft, 4.5 mm flat; M7 bushing. BOM PEC11L and source PEC11R footprint/model disagree; historical envelope retained."
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "BOM names PEC11L-4120F-S0020; assigned footprint/model names PEC11R. Bourns PEC11L has different mounting-tab spacing and a 20 mm shaft from the body front. The recorded source footprint/extent (top Z21.10009) is retained, with D-shaped shaft topology; actual shaft length and mounting compatibility remain unverified. Do not use for fit."
     },
     {
       "ref": "SW3",
       "value": "SW_PUSH_12x12x12mm_4Pin_SMD",
       "footprint": "SW_PUSH_12x12x12mm_4Pin_SMD",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/SW_PUSH_12x12x12mm_4Pin_SMD.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        8.35,
+        8.350000381469727,
         49.0,
-        1.6,
-        23.65,
+        1.600000023841858,
+        23.649999618530273,
         61.0,
-        13.6
+        13.600000381469727
       ],
       "reviewedBounds": [
         8.35,
@@ -7232,8 +7436,7 @@
         61.0,
         13.6
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 3.8146972691777137e-07,
       "sourcePlacement": {
         "pcbXY": [
           88.11,
@@ -7261,23 +7464,42 @@
         16.0,
         55.0,
         1.6
-      ]
+      ],
+      "triangleCount": 1220,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "12 x 12 mm moulded base",
+        "formed top plate and four retention rivets",
+        "round actuator reaching recorded 12 mm package height",
+        "four bent solder lugs aligned with source pad rows"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "SW4",
       "value": "SW_PUSH_12x12x12mm_4Pin_SMD",
       "footprint": "SW_PUSH_12x12x12mm_4Pin_SMD",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/SW_PUSH_12x12x12mm_4Pin_SMD.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        36.35,
+        36.349998474121094,
         49.0,
-        1.6,
-        51.65,
+        1.600000023841858,
+        51.650001525878906,
         61.0,
-        13.6
+        13.600000381469727
       ],
       "reviewedBounds": [
         36.35,
@@ -7287,8 +7509,7 @@
         61.0,
         13.6
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.5258789076710855e-06,
       "sourcePlacement": {
         "pcbXY": [
           116.11,
@@ -7316,23 +7537,42 @@
         44.0,
         55.0,
         1.6
-      ]
+      ],
+      "triangleCount": 1220,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "12 x 12 mm moulded base",
+        "formed top plate and four retention rivets",
+        "round actuator reaching recorded 12 mm package height",
+        "four bent solder lugs aligned with source pad rows"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "U1",
       "value": "Microchip_BM83",
       "footprint": "Microchip_BM83",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/U1_Microchip_BM83.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        27.54,
-        3.28,
-        1.6,
-        59.54,
-        18.28,
-        4.1
+        27.540000915527344,
+        3.2799999713897705,
+        1.600000023841858,
+        59.540000915527344,
+        18.280000686645508,
+        4.099999904632568
       ],
       "reviewedBounds": [
         27.54,
@@ -7342,8 +7582,7 @@
         18.28,
         4.1
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 9.155273446026513e-07,
       "sourcePlacement": {
         "pcbXY": [
           115.65,
@@ -7371,23 +7610,47 @@
         43.540000000000006,
         10.780000000000001,
         1.6
-      ]
+      ],
+      "triangleCount": 984,
+      "materialMeshCount": 4,
+      "geometryDetails": [
+        "32 x 15 x 0.6 mm module PCB",
+        "rounded 21.5 x 14 mm RF shield with folded rim",
+        "source-positioned gold castellations",
+        "10 mm exposed antenna zone; trace is illustrative, not RF design geometry"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        },
+        {
+          "url": "https://ww1.microchip.com/downloads/aemDocuments/documents/WSG/ProductDocuments/DataSheets/BM83-Bluetooth-Stereo-Audio-Module-Data-Sheet-DS70005402.pdf",
+          "location": "Figure 8-1, page 56",
+          "facts": "15 x 32 x 2.5 mm module; PCB 0.6 mm; shield ends 22 mm along length; antenna zone at mechanical +X."
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "U10",
       "value": "STM32H523VET6",
       "footprint": "LQFP-100_L14.0-W14.0-P0.50-LS16.0-BL",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "official-compatible-package-model",
       "sourceExpression": "${KIPRJMOD}/3dmodels/LQFP-100_L14.0-W14.0-H1.4-LS16.0-P0.50.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        8.48002,
-        74.08002,
-        1.6,
-        24.47998,
-        90.07998,
-        3.10089
+        8.479000091552734,
+        74.0790023803711,
+        1.600000023841858,
+        24.481000900268555,
+        90.08100128173828,
+        3.101140022277832
       ],
       "reviewedBounds": [
         8.48002,
@@ -7397,8 +7660,7 @@
         90.07998,
         3.10089
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 0.0010212817382750927,
       "sourcePlacement": {
         "pcbXY": [
           88.59,
@@ -7426,23 +7688,68 @@
         16.480000000000004,
         82.08000000000001,
         1.6
-      ]
+      ],
+      "triangleCount": 13788,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "official KiCad 9.0.2 LQFP-100 14 x 14 mm, 0.5 mm-pitch package",
+        "100 individually formed gull-wing leads, bevelled body and pin-1 mark",
+        "unscaled package rotated +90 degrees to match custom source pad numbering",
+        "compatible package replacement, not the excluded custom vendor model"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "shapeLimitations": "Official generic package matching 14 x 14 mm LQFP-100 / 0.5 mm pitch. It is not the excluded custom source model; no silicon-vendor fit certification.",
+      "librarySource": {
+        "path": "Package_QFP.3dshapes/LQFP-100_14x14mm_P0.5mm.wrl",
+        "url": "https://gitlab.com/kicad/libraries/kicad-packages3D/-/raw/9.0.2/Package_QFP.3dshapes/LQFP-100_14x14mm_P0.5mm.wrl",
+        "release": "9.0.2",
+        "sha256": "bcabc57a9c8710423a9e135eac98b4ea306d7fa097e089383c2a26c0f42a38dd",
+        "bytes": 686567,
+        "available": true,
+        "license": "CC-BY-SA-4.0 with KiCad design/generated-file exception"
+      },
+      "compatiblePackageTransform": {
+        "rotationDegrees": [
+          0,
+          0,
+          90
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "translationMm": [
+          16.480000000000004,
+          82.08000000000001,
+          1.6
+        ],
+        "reason": "Align canonical pin 1 with custom footprint south-edge pad 1"
+      }
     },
     {
       "ref": "U2",
       "value": "BQ25895RTWR",
       "footprint": "QFN-24_L4.0-W4.0-P0.50-TL-EP2.7",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/QFN-24_L4.0-W4.0-P0.50-TL-EP2.7.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        19.1701,
-        14.09435,
-        1.6,
-        23.1899,
-        18.11415,
-        2.51999
+        19.17009925842285,
+        14.09434986114502,
+        1.600000023841858,
+        23.189899444580078,
+        18.11414909362793,
+        2.5199899673461914
       ],
       "reviewedBounds": [
         19.1701,
@@ -7452,8 +7759,7 @@
         18.11415,
         2.51999
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 9.063720689539423e-07,
       "sourcePlacement": {
         "pcbXY": [
           93.29,
@@ -7481,23 +7787,41 @@
         21.180000000000007,
         16.104250000000008,
         1.6
-      ]
+      ],
+      "triangleCount": 772,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded QFN/DFN moulded body",
+        "individual metal lands aligned with source pads",
+        "pin-1 corner indicator derived from source pad 1"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "U3",
       "value": "TLV320AIC3104IRHBR",
       "footprint": "HVQFN-32_L5.0-W5.0-P0.50-TL-EP",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/HVQFN-32_L5.0-W5.0-H1.0-P0.50.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        3.52997,
-        21.75997,
-        1.6,
-        8.55003,
-        26.78003,
-        2.62006
+        3.5299699306488037,
+        21.75996971130371,
+        1.600000023841858,
+        8.550029754638672,
+        26.780029296875,
+        2.6200599670410156
       ],
       "reviewedBounds": [
         3.52997,
@@ -7507,8 +7831,7 @@
         26.78003,
         2.62006
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 7.031250000011369e-07,
       "sourcePlacement": {
         "pcbXY": [
           78.15,
@@ -7536,7 +7859,26 @@
         6.040000000000006,
         24.27000000000001,
         1.6
-      ]
+      ],
+      "triangleCount": 964,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded QFN/DFN moulded body",
+        "individual metal lands aligned with source pads",
+        "pin-1 corner indicator derived from source pad 1"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "U4",
@@ -7602,17 +7944,16 @@
       "ref": "U5",
       "value": "MAX17048G+T10",
       "footprint": "TDFN-8_L2.0-W2.0-P0.50-BL-EP1.2",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/TDFN-8_L2.0-W2.0-P0.50-BL-EP1.2.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        18.9501,
-        27.66,
-        1.6,
-        20.9699,
-        29.66,
-        2.38003
+        18.95009994506836,
+        27.65999984741211,
+        1.600000023841858,
+        20.969900131225586,
+        29.65999984741211,
+        2.3800299167633057
       ],
       "reviewedBounds": [
         18.9501,
@@ -7622,8 +7963,7 @@
         29.66,
         2.38003
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.5258789076710855e-07,
       "sourcePlacement": {
         "pcbXY": [
           92.07,
@@ -7651,7 +7991,26 @@
         19.959999999999994,
         28.659999999999997,
         1.6
-      ]
+      ],
+      "triangleCount": 388,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded QFN/DFN moulded body",
+        "individual metal lands aligned with source pads",
+        "pin-1 corner indicator derived from source pad 1"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "U6",
@@ -7717,17 +8076,16 @@
       "ref": "U7",
       "value": "TPS63070RNMR",
       "footprint": "VQFN-15_L3.0-W2.5-P0.50-BL",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/VQFN-15_L3.0-W2.5-H0.9-P0.50-BL.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        12.77733,
-        25.86007,
-        1.6,
-        15.77732,
-        28.35993,
-        2.49992
+        12.77733039855957,
+        25.860069274902344,
+        1.600000023841858,
+        15.77731990814209,
+        28.35993003845215,
+        2.499919891357422
       ],
       "reviewedBounds": [
         12.77733,
@@ -7737,8 +8095,7 @@
         28.35993,
         2.49992
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 7.250976565842393e-07,
       "sourcePlacement": {
         "pcbXY": [
           86.2,
@@ -7766,23 +8123,41 @@
         14.090000000000003,
         27.110000000000014,
         1.6
-      ]
+      ],
+      "triangleCount": 568,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded QFN/DFN moulded body",
+        "individual metal lands aligned with source pads",
+        "pin-1 corner indicator derived from source pad 1"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "U9",
       "value": "MAX98357AETE+T",
       "footprint": "TQFN-16_L3.0-W3.0-P0.50-BL-EP1.5",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/TQFN-16_L3.0-W3.0-P0.50-BL-EP1.5.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        32.91997,
-        20.29997,
-        1.6,
-        35.94003,
-        23.32003,
-        2.35997
+        32.91997146606445,
+        20.299970626831055,
+        1.600000023841858,
+        35.94002914428711,
+        23.320030212402344,
+        2.3599700927734375
       ],
       "reviewedBounds": [
         32.91997,
@@ -7792,8 +8167,7 @@
         23.32003,
         2.35997
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 1.4660644538366796e-06,
       "sourcePlacement": {
         "pcbXY": [
           106.54,
@@ -7821,23 +8195,41 @@
         34.43000000000001,
         21.810000000000002,
         1.6
-      ]
+      ],
+      "triangleCount": 580,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "rounded QFN/DFN moulded body",
+        "individual metal lands aligned with source pads",
+        "pin-1 corner indicator derived from source pad 1"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "X1",
       "value": "ABS07-32.768KHZ-T",
       "footprint": "OSC-SMD_2P-L3.2-W1.5",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/OSC-SMD_2P-L3.2-W1.5-H0.9.wrl",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "VRML-derived bounding envelope (not exact solid)",
       "bounds": [
-        41.67994,
-        65.91005,
-        1.6,
-        43.18006,
-        69.10995,
-        2.33101
+        41.67993927001953,
+        65.91004943847656,
+        1.600000023841858,
+        43.18006134033203,
+        69.10994720458984,
+        2.331010103225708
       ],
       "reviewedBounds": [
         41.67994,
@@ -7847,8 +8239,7 @@
         69.10995,
         2.33101
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 2.795410154021738e-06,
       "sourcePlacement": {
         "pcbXY": [
           114.54,
@@ -7876,23 +8267,41 @@
         42.43000000000001,
         67.51,
         1.6
-      ]
+      ],
+      "triangleCount": 300,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "ceramic package base",
+        "rounded seam and metal crystal lid",
+        "source-oriented terminal pair"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     },
     {
       "ref": "X2",
       "value": "X50328MSB2GI",
       "footprint": "CRYSTAL-SMD_L5.0-W3.2",
-      "fidelity": "source-envelope-proxy",
+      "fidelity": "source-dimensioned-reconstruction",
       "sourceExpression": "${KIPRJMOD}/3dmodels/CRYSTAL-SMD_L5.0-W3.2.step",
       "source": "Mechanical/reference/component_envelopes.json",
-      "originalReferenceKind": "STEP solid",
       "bounds": [
-        14.37,
-        69.07,
-        1.59,
-        19.37,
-        72.27,
-        3.01
+        14.369999885559082,
+        69.06999969482422,
+        1.590000033378601,
+        19.3700008392334,
+        72.2699966430664,
+        3.009999990463257
       ],
       "reviewedBounds": [
         14.37,
@@ -7902,8 +8311,7 @@
         72.27,
         3.01
       ],
-      "maximumReviewedBoundDeviationMm": 0,
-      "missingGeometry": "No vendor surfaces, pins, connector internals or actuator topology supplied; rectangular reviewed envelope only",
+      "maximumReviewedBoundDeviationMm": 3.3569335897709607e-06,
       "sourcePlacement": {
         "pcbXY": [
           88.98,
@@ -7931,7 +8339,26 @@
         16.870000000000005,
         70.67,
         1.6
-      ]
+      ],
+      "triangleCount": 300,
+      "materialMeshCount": 3,
+      "geometryDetails": [
+        "ceramic package base",
+        "rounded seam and metal crystal lid",
+        "source-oriented terminal pair"
+      ],
+      "sourceDocuments": [
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/component_envelopes.json",
+          "purpose": "recorded component placement and bounding extent"
+        },
+        {
+          "url": "https://github.com/ProccyBoi/kiku/blob/d0c4d9ea34297d8671f464dedc6018189c33ea76/Mechanical/reference/board_datums.json",
+          "purpose": "footprint orientation and individual pad centers"
+        }
+      ],
+      "reconstructionLicense": "CERN-OHL-P-2.0",
+      "shapeLimitations": "Display reconstruction. Package internals, curves and finishes are simplified; no fit, electrical or manufacturing validation."
     }
   ],
   "componentTriangleRangesByMesh": {
@@ -9274,31 +9701,9 @@
         "triangleCount": 7
       }
     ],
-    "pcb_envelope_494f4c": [
+    "pcb_package_cavity": [
       {
-        "ref": "SW3",
-        "firstTriangle": 0,
-        "triangleCount": 12
-      },
-      {
-        "ref": "SW4",
-        "firstTriangle": 12,
-        "triangleCount": 12
-      },
-      {
-        "ref": "SW2",
-        "firstTriangle": 24,
-        "triangleCount": 12
-      },
-      {
-        "ref": "SW1",
-        "firstTriangle": 36,
-        "triangleCount": 12
-      }
-    ],
-    "pcb_envelope_9da59d": [
-      {
-        "ref": "X2",
+        "ref": "FPC1",
         "firstTriangle": 0,
         "triangleCount": 12
       },
@@ -9306,90 +9711,371 @@
         "ref": "J1",
         "firstTriangle": 12,
         "triangleCount": 12
-      },
+      }
+    ],
+    "pcb_package_ceramic": [
       {
         "ref": "X1",
-        "firstTriangle": 24,
-        "triangleCount": 12
+        "firstTriangle": 0,
+        "triangleCount": 92
+      },
+      {
+        "ref": "X2",
+        "firstTriangle": 92,
+        "triangleCount": 92
+      }
+    ],
+    "pcb_package_ferrite": [
+      {
+        "ref": "L1",
+        "firstTriangle": 0,
+        "triangleCount": 92
+      },
+      {
+        "ref": "L2",
+        "firstTriangle": 92,
+        "triangleCount": 92
+      }
+    ],
+    "pcb_package_gold": [
+      {
+        "ref": "FPC1",
+        "firstTriangle": 0,
+        "triangleCount": 144
+      },
+      {
+        "ref": "J1",
+        "firstTriangle": 144,
+        "triangleCount": 192
       },
       {
         "ref": "J3",
-        "firstTriangle": 36,
-        "triangleCount": 12
-      }
-    ],
-    "pcb_envelope_4a4c4c": [
-      {
-        "ref": "L2",
-        "firstTriangle": 0,
-        "triangleCount": 12
+        "firstTriangle": 336,
+        "triangleCount": 508
       },
       {
         "ref": "U1",
-        "firstTriangle": 12,
-        "triangleCount": 12
+        "firstTriangle": 844,
+        "triangleCount": 708
+      }
+    ],
+    "pcb_package_green": [
+      {
+        "ref": "U1",
+        "firstTriangle": 0,
+        "triangleCount": 92
+      }
+    ],
+    "pcb_package_ivory": [
+      {
+        "ref": "FPC1",
+        "firstTriangle": 0,
+        "triangleCount": 128
       },
       {
-        "ref": "U2",
-        "firstTriangle": 24,
-        "triangleCount": 12
+        "ref": "J3",
+        "firstTriangle": 128,
+        "triangleCount": 280
+      }
+    ],
+    "pcb_package_mark": [
+      {
+        "ref": "U10",
+        "firstTriangle": 0,
+        "triangleCount": 208
       },
       {
-        "ref": "L1",
-        "firstTriangle": 36,
-        "triangleCount": 12
-      },
-      {
-        "ref": "U7",
-        "firstTriangle": 48,
-        "triangleCount": 12
-      },
-      {
-        "ref": "U3",
-        "firstTriangle": 60,
+        "ref": "D2",
+        "firstTriangle": 208,
         "triangleCount": 12
       },
       {
         "ref": "D3",
-        "firstTriangle": 72,
-        "triangleCount": 12
-      },
-      {
-        "ref": "U10",
-        "firstTriangle": 84,
-        "triangleCount": 12
-      },
-      {
-        "ref": "U9",
-        "firstTriangle": 96,
-        "triangleCount": 12
-      },
-      {
-        "ref": "Q1",
-        "firstTriangle": 108,
-        "triangleCount": 12
-      },
-      {
-        "ref": "D2",
-        "firstTriangle": 120,
-        "triangleCount": 12
-      },
-      {
-        "ref": "U5",
-        "firstTriangle": 132,
+        "firstTriangle": 220,
         "triangleCount": 12
       },
       {
         "ref": "IC1",
-        "firstTriangle": 144,
-        "triangleCount": 12
+        "firstTriangle": 232,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U2",
+        "firstTriangle": 324,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U3",
+        "firstTriangle": 416,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U5",
+        "firstTriangle": 508,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U7",
+        "firstTriangle": 600,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U9",
+        "firstTriangle": 692,
+        "triangleCount": 92
       }
     ],
-    "pcb_envelope_cbc7a7": [
+    "pcb_package_mold": [
+      {
+        "ref": "U10",
+        "firstTriangle": 0,
+        "triangleCount": 1180
+      },
+      {
+        "ref": "D2",
+        "firstTriangle": 1180,
+        "triangleCount": 92
+      },
+      {
+        "ref": "D3",
+        "firstTriangle": 1272,
+        "triangleCount": 92
+      },
+      {
+        "ref": "FPC1",
+        "firstTriangle": 1364,
+        "triangleCount": 12
+      },
+      {
+        "ref": "IC1",
+        "firstTriangle": 1376,
+        "triangleCount": 92
+      },
+      {
+        "ref": "J1",
+        "firstTriangle": 1468,
+        "triangleCount": 92
+      },
+      {
+        "ref": "Q1",
+        "firstTriangle": 1560,
+        "triangleCount": 92
+      },
+      {
+        "ref": "SW1",
+        "firstTriangle": 1652,
+        "triangleCount": 216
+      },
+      {
+        "ref": "SW2",
+        "firstTriangle": 1868,
+        "triangleCount": 92
+      },
+      {
+        "ref": "SW3",
+        "firstTriangle": 1960,
+        "triangleCount": 280
+      },
+      {
+        "ref": "SW4",
+        "firstTriangle": 2240,
+        "triangleCount": 280
+      },
+      {
+        "ref": "U2",
+        "firstTriangle": 2520,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U3",
+        "firstTriangle": 2612,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U5",
+        "firstTriangle": 2704,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U7",
+        "firstTriangle": 2796,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U9",
+        "firstTriangle": 2888,
+        "triangleCount": 92
+      }
+    ],
+    "pcb_package_mold_edge": [
+      {
+        "ref": "L1",
+        "firstTriangle": 0,
+        "triangleCount": 92
+      },
+      {
+        "ref": "L2",
+        "firstTriangle": 92,
+        "triangleCount": 92
+      }
+    ],
+    "pcb_package_silver": [
+      {
+        "ref": "U10",
+        "firstTriangle": 0,
+        "triangleCount": 12400
+      },
+      {
+        "ref": "D2",
+        "firstTriangle": 12400,
+        "triangleCount": 24
+      },
+      {
+        "ref": "D3",
+        "firstTriangle": 12424,
+        "triangleCount": 24
+      },
+      {
+        "ref": "FPC1",
+        "firstTriangle": 12448,
+        "triangleCount": 192
+      },
+      {
+        "ref": "IC1",
+        "firstTriangle": 12640,
+        "triangleCount": 492
+      },
+      {
+        "ref": "J1",
+        "firstTriangle": 13132,
+        "triangleCount": 480
+      },
+      {
+        "ref": "J3",
+        "firstTriangle": 13612,
+        "triangleCount": 36
+      },
+      {
+        "ref": "L1",
+        "firstTriangle": 13648,
+        "triangleCount": 24
+      },
+      {
+        "ref": "L2",
+        "firstTriangle": 13672,
+        "triangleCount": 24
+      },
+      {
+        "ref": "Q1",
+        "firstTriangle": 13696,
+        "triangleCount": 72
+      },
+      {
+        "ref": "SW1",
+        "firstTriangle": 13768,
+        "triangleCount": 116
+      },
+      {
+        "ref": "SW2",
+        "firstTriangle": 13884,
+        "triangleCount": 540
+      },
+      {
+        "ref": "SW3",
+        "firstTriangle": 14424,
+        "triangleCount": 188
+      },
+      {
+        "ref": "SW4",
+        "firstTriangle": 14612,
+        "triangleCount": 188
+      },
+      {
+        "ref": "U1",
+        "firstTriangle": 14800,
+        "triangleCount": 92
+      },
+      {
+        "ref": "U2",
+        "firstTriangle": 14892,
+        "triangleCount": 588
+      },
+      {
+        "ref": "U3",
+        "firstTriangle": 15480,
+        "triangleCount": 780
+      },
+      {
+        "ref": "U5",
+        "firstTriangle": 16260,
+        "triangleCount": 204
+      },
+      {
+        "ref": "U7",
+        "firstTriangle": 16464,
+        "triangleCount": 384
+      },
+      {
+        "ref": "U9",
+        "firstTriangle": 16848,
+        "triangleCount": 396
+      },
+      {
+        "ref": "X1",
+        "firstTriangle": 17244,
+        "triangleCount": 116
+      },
+      {
+        "ref": "X2",
+        "firstTriangle": 17360,
+        "triangleCount": 116
+      }
+    ],
+    "pcb_package_steel": [
       {
         "ref": "FPC1",
         "firstTriangle": 0,
-        "triangleCount": 12
+        "triangleCount": 152
+      },
+      {
+        "ref": "J1",
+        "firstTriangle": 152,
+        "triangleCount": 60
+      },
+      {
+        "ref": "J3",
+        "firstTriangle": 212,
+        "triangleCount": 384
+      },
+      {
+        "ref": "SW2",
+        "firstTriangle": 596,
+        "triangleCount": 3472
+      },
+      {
+        "ref": "SW3",
+        "firstTriangle": 4068,
+        "triangleCount": 752
+      },
+      {
+        "ref": "SW4",
+        "firstTriangle": 4820,
+        "triangleCount": 752
+      },
+      {
+        "ref": "U1",
+        "firstTriangle": 5572,
+        "triangleCount": 92
+      },
+      {
+        "ref": "X1",
+        "firstTriangle": 5664,
+        "triangleCount": 92
+      },
+      {
+        "ref": "X2",
+        "firstTriangle": 5756,
+        "triangleCount": 92
       }
     ]
   },
@@ -9400,6 +10086,17 @@
     "finiteAttributes": true,
     "coordinatesUnrecentered": true,
     "nativeMaterialsKeptSeparate": true,
-    "bufferFourByteAligned": true
+    "bufferFourByteAligned": true,
+    "noComponentEnvelopeBoxes": true,
+    "reconstructedReferenceCount": 22,
+    "reconstructedReferencesHaveMultipleMaterials": true,
+    "minimumAddedComponentTriangles": 128,
+    "maximumAddedReviewedBoundDeviationMm": 0.0010212817382750927
+  },
+  "generation": {
+    "finishScript": "scripts/kiku-pcb/finish_component_packages.py",
+    "nativeGeometryPreserved": true,
+    "upstreamCompatibleModelSha256": "bcabc57a9c8710423a9e135eac98b4ea306d7fa097e089383c2a26c0f42a38dd",
+    "reconstructionReferenceCount": 22
   }
 }

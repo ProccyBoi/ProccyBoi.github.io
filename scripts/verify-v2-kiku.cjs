@@ -3,35 +3,50 @@
  * WebKit emulation establish browser behavior, not physical-device speed. */
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),baseline='3a582960c2d1e4d5efac313691f3b697501c5451';
+const root=path.resolve(__dirname,'..'),baseline='3263d8987dab6cdacdf5ff87775838ef567ca06d';
 const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080',out=process.env.KIKU_OUT||'/tmp/kiku-evidence',args=process.argv.slice(2);
 const route='/v2/projects/kiku/',viewports={desktop1440:{width:1440,height:900},phone320:{width:320,height:780,touch:true},phone390:{width:390,height:844,touch:true},ipad768:{width:768,height:1024,touch:true},ipad1024:{width:1024,height:768,touch:true},ipad1180:{width:1180,height:820,touch:true}};
 const source=()=>{
- const allowed=new Set(['v2/projects/kiku/index.html','assets/v2-kiku.js','assets/v2-kiku.css','assets/v2-kiku-model.js','assets/v2-kiku-explorer.js','assets/v2-kiku-simulator.js','assets/v2-kiku-audio.js','assets/images/kiku/v2-populated-assembly.png','assets/images/kiku/v2-populated-pcb.png','scripts/build-v2-cases.py','docs/v2-kiku-audio.md','scripts/build-v3-pages.py','scripts/audit-v3.py','scripts/v3_interior_source.py','scripts/content/v3-kiku-source.html','scripts/content/v2-kiku-hero.html','scripts/verify-v2-kiku.cjs','.github/workflows/verify-v2-kiku.yml']);
+ const allowed=new Set(['v2/projects/kiku/index.html','assets/v2-kiku.js','assets/v2-kiku.css','assets/v2-kiku-model.js','assets/v2-kiku-explorer.js','assets/v2-kiku-simulator.js','assets/v2-kiku-audio.js','assets/images/kiku/v2-populated-assembly.png','assets/images/kiku/v2-populated-pcb.png','assets/images/kiku/v2-product-assembly.png','scripts/build-v2-cases.py','docs/v2-kiku-audio.md','scripts/build-v3-pages.py','scripts/audit-v3.py','scripts/v3_interior_source.py','scripts/content/v3-kiku-source.html','scripts/content/v2-kiku-hero.html','scripts/content/v2-kiku-page.html','scripts/verify-v2-kiku.cjs','.github/workflows/verify-v2-kiku.yml']);
  const changed=execFileSync('git',['diff',baseline,'--name-only'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean);
  for(const file of changed)assert.ok(allowed.has(file)||file.startsWith('assets/models/kiku-pcb/')||file.startsWith('scripts/kiku-pcb/')||file.startsWith('assets/models/kiku-hardware/')||file.startsWith('scripts/kiku-hardware/')||file.startsWith('assets/kiku/audio/')||['scripts/kiku-simulator/compose-audio.py','scripts/kiku-simulator/verify-audio.cjs'].includes(file),'Unrelated file changed: '+file);
  for(const file of ['assets/models/kiku/assembly.json','assets/models/kiku/assembly.bin','assets/kiku-simulator.js','assets/kiku.js','assets/kiku.css','assets/kiku/firmware-ui.wasm','projects/kiku/index.html','v3/projects/kiku/index.html','v2/index.html'])assert.deepEqual(fs.readFileSync(path.join(root,file)),execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:20e6}),'Preserve '+file);
- assert.deepEqual(fs.readFileSync(path.join(root,'scripts/content/v3-kiku-source.html')),execFileSync('git',['show',baseline+':v2/projects/kiku/index.html'],{cwd:root,maxBuffer:1e6}),'Exact frozen v3 source');
+ assert.deepEqual(fs.readFileSync(path.join(root,'scripts/content/v3-kiku-source.html')),execFileSync('git',['show',baseline+':scripts/content/v3-kiku-source.html'],{cwd:root,maxBuffer:1e6}),'Exact frozen v3 source');
  for(const item of JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-pcb/poster-provenance.json'),'utf8')).captures)assert.equal(require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root,item.path))).digest('hex'),item.sha256,'Reviewed WebGL poster hash');
- for(const file of ['assets/v2-kiku.js','assets/v2-kiku-explorer.js'])assert.match(fs.readFileSync(path.join(root,file),'utf8'),/from '\.\/v2-kiku-model\.js\?v=hardware-audio-20261015'/,'Version changed shared-loader cache key');
- const html=fs.readFileSync(path.join(root,'v2/projects/kiku/index.html'),'utf8');assert.match(html,/data-kiku-story/);assert.match(html,/P2 enclosure \+ electronics \+ hardware/);
+ for(const file of ['assets/v2-kiku.js','assets/v2-kiku-explorer.js']){const script=fs.readFileSync(path.join(root,file),'utf8');if(script.includes('v2-kiku-model.js'))assert.match(script,/from '\.\/v2-kiku-model\.js\?v=finish-20261018'/,'Current shared-loader cache key');}
+ const html=fs.readFileSync(path.join(root,'v2/projects/kiku/index.html'),'utf8');
+ assert.equal((html.match(/data-kiku-story(?:\s|>)/g)||[]).length,1,'One consolidated product stage');
+ assert.equal((html.match(/data-model-canvas(?:\s|>)/g)||[]).length,1,'One CAD canvas');
+ assert.doesNotMatch(html,/\/(?:concepts|desk|stand|battery-cable|display-section)\.webp/,'Retired studies and repeated CAD galleries are absent');
+ const provenance=JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-pcb/pcb-provenance.json'),'utf8'));
+ assert.equal(provenance.components.length,133,'Preserve all133 placed components');
+ const ranges=Object.values(provenance.componentTriangleRangesByMesh).flat();
+ for(const ref of ['SW2','SW3','SW4','J1','U1','U10','FPC1']){const component=provenance.components.find(item=>item.ref===ref);assert.ok(component,'Required component '+ref);const triangles=ranges.filter(item=>item.ref===ref).reduce((n,item)=>n+item.triangleCount,0);assert.ok(triangles>12,'Major component has topology beyond one box: '+ref);assert.ok(['source-dimensioned-reconstruction','official-compatible-package-model'].includes(component.fidelity),'Honest geometry fidelity category: '+ref);assert.ok(component.sourceDocuments?.length||component.librarySource,'Traceable component source: '+ref);}
  const regenerated=execFileSync('python3',['-c',`import runpy; from pathlib import Path; m=runpy.run_path('scripts/build-v2-cases.py'); p=Path('projects/kiku/index.html').resolve(); print(m['normalized'](m['enrich_case'](m['make_case'](p),'kiku')),end='')`],{cwd:root,encoding:'utf8'});assert.equal(html,regenerated,'V2 regeneration');
  console.log('PASS exact Kiku-only production boundary, original meshes/firmware and root/v3 preservation, regeneration');
 };
+async function bounded(promise,ms,label){let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out after '+ms+' ms')),ms);})]);}finally{clearTimeout(timer);}}
+async function failure(run,name,error){
+ console.error('FAILED '+name+': '+String(error));
+ try{await run.page.screenshot({path:path.join(out,name+'-failure.png'),timeout:5000});}catch(_){}
+ let state;try{state=await bounded(run.page.evaluate(()=>({url:location.href,y:scrollY,story:{...document.querySelector('[data-kiku-story]')?.dataset},stage:{...document.querySelector('[data-model-stage]')?.dataset},focus:document.activeElement?.outerHTML})),2500,'Failure diagnostics');}catch(_){}
+ fs.writeFileSync(path.join(out,name+'-failure.json'),JSON.stringify({error:String(error),state,requests:run.requests,requestURLs:run.requestURLs,errors:run.errors},null,2));
+}
 async function open(browser,v,options={}){
  const context=await browser.newContext({viewport:{width:v.width,height:v.height},hasTouch:!!v.touch,isMobile:!!v.touch,deviceScaleFactor:1,reducedMotion:options.reduced?'reduce':'no-preference',javaScriptEnabled:!options.noJS,serviceWorkers:'block'});
- const requests=[],errors=[]; const gates={model:!!options.failModel,pcb:!!options.failPCB,hardware:!!options.failHardware};
+ const requests=[],requestURLs=[],errors=[]; const gates={model:!!options.failModel,pcb:!!options.failPCB,hardware:!!options.failHardware};
+ await context.addInitScript(()=>{const contexts=[];window.__kikuWebGL=contexts;const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...rest){const result=original.call(this,type,...rest);if(/^(webgl2?|experimental-webgl)$/.test(type)&&result&&!contexts.some(item=>item.context===result))contexts.push({canvas:this,context:result,type});return result;};});
  if(options.saveData)await context.addInitScript(()=>Object.defineProperty(navigator,'connection',{value:{saveData:true,addEventListener(){}}}));
  if(options.noDecompression)await context.addInitScript(()=>{window.DecompressionStream=undefined;});
  if(options.noGL)await context.addInitScript(()=>{const old=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...a){return /webgl/.test(type)?null:old.call(this,type,...a);};});
- await context.route('**/*',r=>{const u=new URL(r.request().url());requests.push(u.pathname);if(u.origin!==new URL(base).origin||r.request().method()!=='GET'||(gates.model&&u.pathname.endsWith('assembly.bin'))||(gates.pcb&&/\/pcb\.bin(\.gz)?$/.test(u.pathname))||(gates.hardware&&/\/hardware\.bin(\.gz)?$/.test(u.pathname))||(options.failWasm&&u.pathname.endsWith('.wasm')))return r.abort();return r.continue();});
- const page=await context.newPage();page.on('pageerror',e=>errors.push(String(e)));await page.goto(base+route,{waitUntil:'networkidle'});return{context,page,requests,errors,v,gates,options};
+ await context.route('**/*',r=>{const u=new URL(r.request().url());requests.push(u.pathname);requestURLs.push(u.pathname+u.search);if(u.origin!==new URL(base).origin||r.request().method()!=='GET'||(gates.model&&u.pathname.endsWith('assembly.bin'))||(gates.pcb&&/\/pcb\.bin(\.gz)?$/.test(u.pathname))||(gates.hardware&&/\/hardware\.bin(\.gz)?$/.test(u.pathname))||(options.failWasm&&u.pathname.endsWith('.wasm')))return r.abort();return r.continue();});
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(String(e)));await page.goto(base+route,{waitUntil:'networkidle'});return{context,page,requests,requestURLs,errors,v,gates,options};
 }
 async function stable(page){await page.evaluate(()=>{window.__kikuStable={value:document.querySelector('[data-kiku-story]').dataset.frames||'0',at:performance.now()};});await page.waitForFunction(()=>{const s=document.querySelector('[data-kiku-story]');const x=s.dataset.frames||'0';window.__kikuStable=window.__kikuStable||{value:x,at:performance.now()};if(window.__kikuStable.value!==x)window.__kikuStable={value:x,at:performance.now()};const r=s.querySelector('.kiku-story-stage').getBoundingClientRect();const current=s.dataset.ready!=='true'||r.bottom<=0||r.top>=innerHeight||Math.abs(Number(s.dataset.progress)-Number(s.dataset.target))<.00006;return current&&performance.now()-window.__kikuStable.at>300;},{},{timeout:30000,polling:50});}
 async function shot(run,name){
  if(!run.options.noJS)await stable(run.page);
  const pixels=await run.page.screenshot({path:path.join(out,name+'.png')});
- const data=await run.page.evaluate(()=>{const s=document.querySelector('[data-kiku-story]'),c=s.querySelector('canvas').getBoundingClientRect();return{width:innerWidth,height:innerHeight,y:scrollY,overflow:document.documentElement.scrollWidth>innerWidth+1,story:{...s.dataset},canvas:{x:c.x,y:c.y,width:c.width,height:c.height},pinned:s.classList.contains('is-pinned'),stage:s.querySelector('.kiku-story-stage').getBoundingClientRect().toJSON(),bounds:[...s.querySelectorAll('h1,.kiku-story-deck,.kiku-story-description,.kiku-actions,.kiku-story-navigation,.kiku-story-caption,.kiku-story-qualification,.kiku-story-scroll')].filter(e=>e.getClientRects().length&&getComputedStyle(e).display!=='none').map(e=>({name:e.className||e.tagName,...e.getBoundingClientRect().toJSON()})),active:document.activeElement?.getAttribute('aria-label')};});
+ const data=await run.page.evaluate(()=>{const s=document.querySelector('[data-kiku-story]'),c=s.querySelector('canvas').getBoundingClientRect();return{width:innerWidth,height:innerHeight,y:scrollY,overflow:document.documentElement.scrollWidth>innerWidth+1,story:{...s.dataset},canvas:{x:c.x,y:c.y,width:c.width,height:c.height},pinned:s.classList.contains('is-pinned'),stage:s.querySelector('.kiku-story-stage').getBoundingClientRect().toJSON(),bounds:[...s.querySelectorAll('h1,.kiku-story-deck,.kiku-story-description,.kiku-actions,.kiku-story-navigation,.kiku-inspector,.kiku-story-caption,.kiku-story-qualification,.kiku-story-scroll')].filter(e=>e.getClientRects().length&&getComputedStyle(e).display!=='none').map(e=>({name:e.className||e.tagName,...e.getBoundingClientRect().toJSON()})),active:document.activeElement?.getAttribute('aria-label')};});
  assert.equal(data.overflow,false,name+' overflow');
  if(data.pinned&&data.stage.y>=0&&data.stage.y<data.height&&data.stage.bottom<=data.height+2){
   for(const r of data.bounds)assert.ok(r.y>=data.stage.y-1&&r.bottom<=data.height+1,'Pinned '+r.name+' is fully visible at '+name+': '+JSON.stringify(r));
@@ -45,13 +60,30 @@ async function shot(run,name){
  }
  fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify(data,null,2));
 }
-async function pcbShot(page,name){
- await page.waitForTimeout(450);
+async function canvasShot(page,name){
+ await page.waitForTimeout(350);
  const pixels=await page.locator('[data-model-canvas]').screenshot({path:path.join(out,name+'.png')});
- const {PNG}=require('pngjs'),im=PNG.sync.read(pixels);let foreground=0,dark=0;
- for(let i=0;i<im.data.length;i+=4){if(Math.max(Math.abs(im.data[i]-228),Math.abs(im.data[i+1]-231),Math.abs(im.data[i+2]-218))>25)foreground++;if(im.data[i]<130&&im.data[i+1]<130&&im.data[i+2]<130)dark++;}
- assert.ok(foreground/(im.width*im.height)>.025,'Real populated PCB canvas '+name);assert.ok(dark>100,'Board/component material contrast '+name);
- fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({width:im.width,height:im.height,foreground,dark,stage:await page.locator('[data-model-stage]').evaluate(e=>({...e.dataset}))},null,2));
+ const {PNG}=require('pngjs'),im=PNG.sync.read(pixels),bg=Array.from(im.data.slice(0,3)),colors=new Set();let foreground=0;
+ for(let i=0;i<im.data.length;i+=4){if(Math.max(...bg.map((v,j)=>Math.abs(im.data[i+j]-v)))>25)foreground++;colors.add((im.data[i]>>4)*256+(im.data[i+1]>>4)*16+(im.data[i+2]>>4));}
+ assert.ok(foreground/(im.width*im.height)>.025,'Nonblank real model canvas '+name);assert.ok(colors.size>12,'Actual model shading/material variation '+name);
+ const stage=await page.locator('[data-model-stage]').evaluate(e=>({...e.dataset}));assert.ok(Number(stage.visibleMeshes)>0,'Visible render meshes '+name);
+ fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({width:im.width,height:im.height,foreground,colors:colors.size,stage},null,2));
+}
+async function singleRenderer(run,expectedContexts=1){
+ const {page}=run;assert.equal(await page.locator('[data-model-canvas]').count(),1,'One consolidated CAD canvas');assert.equal(await page.locator('[data-kiku-story-canvas]').count(),1,'One immersive canvas');
+ assert.ok(await page.evaluate(()=>document.querySelector('[data-model-canvas]')===document.querySelector('[data-kiku-story-canvas]')),'Inspector and scroll share their canvas');
+ const contexts=await page.evaluate(()=>window.__kikuWebGL.map(item=>({live:!item.context.isContextLost(),connected:item.canvas.isConnected})));
+ assert.equal(contexts.length,expectedContexts,'One context per initial load or explicit recovery');assert.equal(contexts.filter(item=>item.live&&item.connected).length,1,'Exactly one live connected WebGL renderer');
+}
+async function part(page,id){
+ await page.locator('[data-part-select]').selectOption(id);await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();
+ await page.waitForFunction(id=>{const s=document.querySelector('[data-model-stage]'),groups=JSON.parse(s.dataset.visibleGroups||'[]');return s.dataset.selected===id&&(id?groups.length===1&&groups[0]===id:groups.length===14);},id);
+ assert.equal(await page.locator('[data-model-stage]').getAttribute('data-mode'),'inspect','Part selection enters shared inspector');
+}
+async function camera(page,view){await page.locator('[data-view="'+view+'"]').click();await page.waitForFunction(view=>document.querySelector('[data-model-stage]').dataset.view===view,view);}
+async function loseContext(page){
+ await page.locator('[data-model-canvas]').evaluate(canvas=>{const item=window.__kikuWebGL.find(item=>item.canvas===canvas),extension=item.context.getExtension('WEBGL_lose_context');if(!extension)throw new Error('Real context-loss extension unavailable');extension.loseContext();});
+ await page.waitForSelector('[data-kiku-story][data-ready="false"]');
 }
 async function hit(locator){assert.ok(await locator.isVisible(),'Visible '+await locator.innerText());assert.ok(await locator.evaluate(e=>{const r=e.getBoundingClientRect();const h=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return e===h||e.contains(h);}), 'Hit target '+await locator.innerText());}
 async function scrollPose(page,p){await page.evaluate(p=>{const s=document.querySelector('[data-kiku-story]'),stage=s.querySelector('.kiku-story-stage');scrollTo({top:scrollY+s.getBoundingClientRect().top-parseFloat(getComputedStyle(stage).top)+(s.offsetHeight-stage.clientHeight)*p,behavior:'instant'});},p);await page.waitForFunction(p=>Math.abs(Number(document.querySelector('[data-kiku-story]').dataset.target)-p)<.002,p,{timeout:30000,polling:50});await stable(page);}
@@ -60,8 +92,8 @@ async function matrix(browser,name){
  try{
   await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:120000});await stable(page);
   assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-parts'),'9');assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-hardware-items'),'4');assert.ok(Number(await page.locator('[data-kiku-story]').getAttribute('data-pcb-parts'))>0,'Populated board meshes rendered');
-  await shot(run,name+'-exterior');
-  for(const b of await page.locator('[data-kiku-pose]').all())await hit(b);
+  await singleRenderer(run);await shot(run,name+'-exterior');
+  for(const b of await page.locator('[data-kiku-pose],[data-model-mode=pcb]').all())await hit(b);
   await page.locator('[data-kiku-pose="0.5"]').click();await stable(page);assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-progress'),'0.50000');await shot(run,name+'-layers');
   await page.locator('[data-kiku-pose="1"]').click();await page.locator('[data-kiku-pose="0"]').click();await page.locator('[data-kiku-pose="1"]').click();await stable(page);await shot(run,name+'-rear');
   await page.locator('[data-kiku-pose="0"]').focus();await page.keyboard.press('Enter');await stable(page);assert.equal(await page.locator('[data-kiku-pose="0"]').getAttribute('aria-pressed'),'true');assert.ok(await page.locator('[data-kiku-pose="0"]').evaluate(e=>e.matches(':focus-visible')&&parseFloat(getComputedStyle(e).outlineWidth)>=2),'Visible keyboard focus');for(const b of await page.locator('[data-kiku-pose]').all())assert.ok((await b.boundingBox()).height>=44,'44px view control');
@@ -82,38 +114,67 @@ async function matrix(browser,name){
   await page.locator('.kiku-sim-reset').click();await page.locator('.kiku-sim-canvas').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');assert.notEqual(await page.locator('.kiku-sim').getAttribute('data-screen'),'0');
   await page.locator('[data-source="fm"]').click();assert.equal(await page.locator('[data-signal-input]').innerText(),'FM broadcast');await page.locator('[data-source="bt"]').click();assert.match(await page.locator('[data-signal-description]').innerText(),/no Bluetooth-headphone transmit path/);await shot(run,name+'-signal');
   const f=await page.locator('[data-kiku-story]').getAttribute('data-frames');await page.waitForTimeout(500);assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-frames'),f,'No offscreen rendering');
-  await page.locator('[data-model-load]').click();await page.waitForSelector('[data-model-stage][data-ready="true"]',{timeout:120000});assert.equal(await page.locator('[data-part-list] button').count(),14);await page.locator('[data-part-list] button').nth(5).click();assert.equal(await page.locator('[data-part-name]').innerText(),'Display cradle');await page.locator('[data-model-all]').click();await page.locator('[data-explode]').fill('75');await page.locator('[data-model-stage]').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await shot(run,name+'-inspector');await page.locator('[data-part-list] button').filter({hasText:/^Populated PCB$/}).click();assert.equal(await page.locator('[data-part-name]').innerText(),'Populated PCB');await page.locator('[data-model-stage]').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));for(const view of ['front','iso','rear']){await page.locator('[data-view="'+view+'"]').click();await pcbShot(page,name+'-pcb-'+view);}await page.waitForFunction(()=>document.querySelector('[data-v2-section][aria-current="location"]')?.hash==='#explore');
-  for(const part of ['Battery','Antenna','Speaker','Screen + lens']){await page.locator('[data-part-list] button').filter({hasText:new RegExp('^'+part.replace('+','\\+')+'$')}).click();await page.locator('[data-explode]').fill('0');await page.locator('[data-view="iso"]').click();await page.locator('[data-model-stage]').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await pcbShot(page,name+'-hardware-'+part.split(' ')[0].toLowerCase());}
-  await page.locator('[data-model-all]').click();await page.locator('[data-explode]').fill('0');for(const view of ['front','rear']){await page.locator('[data-view="'+view+'"]').click();await pcbShot(page,name+'-complete-'+view);}
-  await page.locator('[data-explode]').fill('100');await page.locator('[data-view="iso"]').click();await pcbShot(page,name+'-complete-exploded');await page.locator('[data-view="front"]').click();await pcbShot(page,name+'-complete-exploded-front');
-  if(name==='desktop1440'){
-   // Native canvas captures become truthful populated fallback art after review.
-   await page.setViewportSize({width:1440,height:1500});await page.locator('[data-kiku-assembly]').evaluate(e=>e.style.display='block');await page.locator('.kiku-part-panel').evaluate(e=>e.style.visibility='hidden');await page.locator('[data-model-status]').evaluate(e=>e.style.visibility='hidden');
-   await page.locator('[data-model-stage]').evaluate(e=>{e.style.width='1200px';e.style.maxWidth='none';e.style.height='1000px';e.style.aspectRatio='auto';});
-   await page.locator('[data-model-all]').evaluate(e=>e.click());await page.locator('[data-explode]').fill('100');await page.locator('[data-view="iso"]').evaluate(e=>e.click());
-   await page.locator('[data-model-stage]').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await page.waitForTimeout(700);
-   await page.locator('[data-model-canvas]').screenshot({path:path.join(out,'kiku-populated-poster.png')});
-   await page.locator('[data-part-list] button').filter({hasText:/^Populated PCB$/}).evaluate(e=>e.click());await page.locator('[data-view="front"]').evaluate(e=>e.click());await page.locator('[data-model-stage]').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await page.waitForTimeout(700);
-   await page.locator('[data-model-canvas]').screenshot({path:path.join(out,'kiku-pcb-poster.png')});
-   await page.locator('[data-model-stage]').evaluate(e=>{e.style.width='';e.style.maxWidth='';e.style.height='';e.style.aspectRatio='';});await page.locator('[data-model-status]').evaluate(e=>e.style.visibility='');await page.locator('[data-kiku-assembly]').evaluate(e=>e.style.display='');await page.locator('.kiku-part-panel').evaluate(e=>e.style.visibility='');await page.setViewportSize({width:1440,height:900});
+  // One shared renderer serves the scroll narrative and optional inspection.
+  await page.locator('[data-kiku-pose="0"]').click();await stable(page);
+  const details=page.locator('[data-inspector-details]');
+  if(!(await details.evaluate(e=>e.open)))await details.locator('summary').click();
+  assert.ok(await details.evaluate(e=>e.open),'Inspector details open');
+  const expected=['',...JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku/assembly.json'))).parts.map(p=>p.id),'pcb',...JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-hardware/hardware.json'))).items.map(p=>p.id)];
+  assert.deepEqual(await page.locator('[data-part-select] option').evaluateAll(options=>options.map(o=>o.value)),expected,'All original enclosure, PCB and four hardware groups remain selectable');
+  await part(page,'display_carrier');assert.match(await page.locator('[data-part-name]').innerText(),/Display cradle/);
+  await part(page,'');await page.locator('[data-explode]').fill('75');await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-model-stage]').dataset.explode)-.75)<.001);
+  await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();
+  const openBounds=await page.locator('[data-model-stage]').boundingBox();assert.ok(openBounds.width>=180&&openBounds.height>=140,'Open inspector keeps a useful model viewport: '+JSON.stringify(openBounds));
+  await shot(run,name+'-inspector-open');
+  await page.locator('[data-model-mode="pcb"]').click();await page.waitForFunction(()=>document.querySelector('[data-model-stage]').dataset.selected==='pcb');
+  for(const view of ['front','iso','rear']){await camera(page,view);await canvasShot(page,name+'-pcb-'+view);}
+  const hardware=JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-hardware/hardware.json'))).items;
+  for(const item of hardware){await part(page,item.id);await page.locator('[data-explode]').fill('0');await camera(page,'iso');await canvasShot(page,name+'-hardware-'+item.id);}
+  await page.locator('[data-model-all]').click();await part(page,'');await page.locator('[data-explode]').fill('0');
+  for(const view of ['front','rear']){await camera(page,view);await canvasShot(page,name+'-complete-'+view);}
+  await page.locator('[data-explode]').fill('100');await camera(page,'iso');await canvasShot(page,name+'-complete-exploded');await camera(page,'front');await canvasShot(page,name+'-complete-exploded-front');
+  await part(page,'pcb');await camera(page,'iso');const stage=page.locator('[data-model-stage]');await stage.focus();
+  const keyboardBefore=await page.locator('[data-model-canvas]').screenshot();const angleBefore=Number(await stage.getAttribute('data-azimuth')),zoomBefore=Number(await stage.getAttribute('data-zoom'));
+  await page.keyboard.press('ArrowRight');await page.keyboard.press('+');await page.waitForTimeout(350);
+  assert.equal(await stage.getAttribute('data-view'),'custom');assert.notEqual(Number(await stage.getAttribute('data-azimuth')),angleBefore,'Keyboard rotates model');assert.notEqual(Number(await stage.getAttribute('data-zoom')),zoomBefore,'Keyboard zooms model');
+  assert.notDeepEqual(await page.locator('[data-model-canvas]').screenshot(),keyboardBefore,'Keyboard changes actual rendered pixels');
+  async function modelPoint(){await stage.scrollIntoViewIfNeeded();return page.locator('[data-model-canvas]').evaluate(e=>{const b=e.getBoundingClientRect(),top=Math.max(b.top+20,150),bottom=Math.min(b.bottom-20,innerHeight-30),x=b.left+b.width/2,y=(top+bottom)/2;const h=document.elementFromPoint(x,y);if(bottom-top<30||!(h===e||e.contains(h)))throw new Error('Model gesture point is obscured: '+JSON.stringify({b:b.toJSON(),top,bottom,hit:h?.outerHTML}));return{x,y};});}
+  if(run.v.touch){
+   const cdp=await run.context.newCDPSession(page);
+   async function modelGesture(dx,dy){const{x,y}=await modelPoint();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let i=1;i<=8;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*i/8,y:y+dy*i/8}]});await page.waitForTimeout(25);}await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(300);}
+   const azimuth=await stage.getAttribute('data-azimuth');await modelGesture(50,0);assert.notEqual(await stage.getAttribute('data-azimuth'),azimuth,'Real horizontal touch rotates shared model');assert.equal(await stage.getAttribute('data-selected'),'pcb','Touch orbit preserves selected PCB');
+   await modelPoint();const y=await page.evaluate(()=>scrollY);await modelGesture(0,-70);assert.ok(await page.evaluate(()=>scrollY)>y+3,'Vertical model swipe preserves native page scrolling');assert.equal(await stage.getAttribute('data-selected'),'pcb');await cdp.detach();
+  }else{
+   const point=await modelPoint(),azimuth=await stage.getAttribute('data-azimuth');await page.mouse.move(point.x,point.y);await page.mouse.down();await page.mouse.move(point.x+60,point.y+10,{steps:8});await page.mouse.up();await page.waitForTimeout(150);assert.notEqual(await stage.getAttribute('data-azimuth'),azimuth,'Pointer drag orbits shared model');assert.equal(await stage.getAttribute('data-selected'),'pcb');
+   await stage.focus();const before=Number(await stage.getAttribute('data-zoom')),y=await page.evaluate(()=>scrollY);await page.mouse.wheel(0,-100);await page.waitForTimeout(250);assert.notEqual(Number(await stage.getAttribute('data-zoom')),before,'Focused model wheel zooms');assert.ok(Math.abs(await page.evaluate(()=>scrollY)-y)<2,'Focused model wheel does not scroll the page');
+   await page.locator('[data-part-select]').focus();const p=await modelPoint(),unfocusedY=await page.evaluate(()=>scrollY);await page.mouse.move(p.x,p.y);await page.mouse.wheel(0,120);await page.waitForTimeout(250);assert.ok(await page.evaluate(()=>scrollY)>unfocusedY+3,'Unfocused model wheel preserves native scrolling');
   }
+  await singleRenderer(run);
+  for(const asset of ['/assets/models/kiku/assembly.json','/assets/models/kiku/assembly.bin','/assets/models/kiku-pcb/pcb.json','/assets/models/kiku-hardware/hardware.json'])assert.equal(run.requests.filter(p=>p===asset).length,1,'One shared asset pipeline: '+asset);
+  assert.ok(run.requestURLs.includes('/assets/models/kiku-pcb/pcb.json?v=finish-20261018'),'Versioned PCB manifest');assert.ok(run.requestURLs.some(p=>/^\/assets\/models\/kiku-pcb\/pcb\.bin(?:\.gz)?\?v=finish-20261018$/.test(p)),'Matching versioned PCB binary and correct gzip suffix');
+  assert.ok(!run.requests.some(p=>/\/(?:concepts|desk|stand|battery-cable|display-section)\.webp$/.test(p)),'No retired gallery requests');
+  if(await details.evaluate(e=>e.open))await details.locator('summary').click();await page.locator('[data-kiku-pose="0"]').click();await stable(page);assert.equal(await stage.getAttribute('data-mode'),'story');assert.equal(await stage.getAttribute('data-selected'),'');
+  if(await page.locator('[data-kiku-story]').evaluate(e=>e.classList.contains('is-pinned'))){await scrollPose(page,.5);assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-.5)<.002,'Native scroll story still works after inspector');}
   if(name==='desktop1440'){
-   await page.locator('[data-model-stage]').focus();await page.locator('[data-model-canvas]').evaluate(c=>c.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext());await page.waitForSelector('[data-model-stage][data-ready="false"]');assert.ok(await page.locator('[data-model-load]').evaluate(e=>e===document.activeElement),'Inspector failure focus');await page.keyboard.press('Enter');await page.waitForSelector('[data-model-stage][data-ready="true"]',{timeout:120000});assert.ok(await page.locator('[data-model-stage]').evaluate(e=>e===document.activeElement),'Inspector retry keyboard focus');assert.equal(await page.locator('[data-part-list] button').count(),14);await page.locator('[data-part-list] button').filter({hasText:/^Populated PCB$/}).click();await pcbShot(page,name+'-pcb-retry');
-   await page.locator('[data-kiku-pose="0.5"]').click();await stable(page);await page.evaluate(()=>{window.__kikuMediaEvents=[];window.__kikuTestMQL=matchMedia('(prefers-reduced-motion: reduce)');window.__kikuTestMQL.addEventListener('change',e=>window.__kikuMediaEvents.push({matches:e.matches,at:performance.now()}));});await page.emulateMedia({reducedMotion:'reduce'});try{await page.waitForFunction(()=>matchMedia('(prefers-reduced-motion: reduce)').matches&&!document.querySelector('[data-kiku-story]').classList.contains('is-pinned'),null,{polling:50});}catch(error){const debug=await page.evaluate(()=>({media:matchMedia('(prefers-reduced-motion: reduce)').matches,held:window.__kikuTestMQL.matches,events:window.__kikuMediaEvents,story:{...document.querySelector('[data-kiku-story]').dataset},classes:document.querySelector('[data-kiku-story]').className,transition:getComputedStyle(document.querySelector('[data-kiku-story-canvas]')).transitionDuration,visibility:document.visibilityState}));console.log('MEDIA DEBUG',JSON.stringify({debug,errors:run.errors}));await page.screenshot({path:path.join(out,'media-failure.png')});throw error;}await stable(page);assert.equal(await page.locator('[data-kiku-story]').evaluate(e=>e.classList.contains('is-pinned')),false);console.log('APP MEDIA',JSON.stringify(await page.locator('[data-kiku-story]').evaluate(e=>({...e.dataset}))));await shot(run,name+'-live-reduced');
+   if(!(await details.evaluate(e=>e.open)))await details.locator('summary').click();await part(page,'pcb');await stage.focus();await loseContext(page);
+   assert.ok(await page.locator('[data-model-load]').evaluate(e=>e===document.activeElement),'Inspector failure focus');await page.keyboard.press('Enter');await page.waitForSelector('[data-model-stage][data-ready="true"]',{timeout:120000});assert.ok(await stage.evaluate(e=>e===document.activeElement),'Inspector retry restores stage keyboard focus');await singleRenderer(run,2);assert.equal(await page.locator('[data-part-select] option').count(),15,'Retry does not duplicate inspector options');
+   if(!(await details.evaluate(e=>e.open)))await details.locator('summary').click();await part(page,'pcb');await camera(page,'front');await canvasShot(page,name+'-pcb-retry');
+   if(await details.evaluate(e=>e.open))await details.locator('summary').click();await page.locator('[data-kiku-pose="0.5"]').click();await stable(page);
+   await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>matchMedia('(prefers-reduced-motion: reduce)').matches&&!document.querySelector('[data-kiku-story]').classList.contains('is-pinned'),null,{polling:50});await stable(page);assert.ok(Math.abs(Number(await page.locator('[data-kiku-story]').getAttribute('data-progress'))-.5)<.00006,'Live reduced motion keeps selected pose');await shot(run,name+'-live-reduced');
    await page.emulateMedia({reducedMotion:'no-preference'});await page.waitForFunction(()=>!matchMedia('(prefers-reduced-motion: reduce)').matches&&document.querySelector('[data-kiku-story]').classList.contains('is-pinned'),null,{polling:50});await page.locator('[data-kiku-pose="0"]').click();await stable(page);
-   await page.locator('[data-kiku-pose="0"]').focus();await page.locator('[data-kiku-story-canvas]').evaluate(c=>c.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext());await page.waitForSelector('[data-kiku-story][data-ready="false"]');assert.ok(await page.locator('[data-kiku-story-load]').evaluate(e=>document.activeElement===e),'Context failure preserves focused control access');assert.equal(await page.locator('[data-kiku-story-poster]').evaluate(e=>getComputedStyle(e).visibility),'visible');await shot(run,name+'-context-loss');await page.locator('[data-kiku-story-load]').focus();await page.keyboard.press('Enter');await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:120000});assert.ok(await page.locator('[data-kiku-pose][aria-pressed="true"]').evaluate(e=>document.activeElement===e),'Explicit load restores keyboard control focus: '+JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,story:{...document.querySelector('[data-kiku-story]').dataset}}))));await shot(run,name+'-context-retry');
+   await page.locator('[data-kiku-pose="0"]').focus();await loseContext(page);assert.ok(await page.locator('[data-kiku-story-load]').evaluate(e=>document.activeElement===e),'Context failure preserves focused control access');assert.equal(await page.locator('[data-kiku-story-poster]').evaluate(e=>getComputedStyle(e).visibility),'visible');await shot(run,name+'-context-loss');await page.locator('[data-kiku-story-load]').focus();await page.keyboard.press('Enter');await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:120000});assert.ok(await page.locator('[data-kiku-pose][aria-pressed="true"]').evaluate(e=>document.activeElement===e),'Retry restores preset keyboard focus');await singleRenderer(run,3);await shot(run,name+'-context-retry');
   }
-  assert.deepEqual(run.errors,[],'No uncaught browser errors');fs.writeFileSync(path.join(out,name+'-report.json'),JSON.stringify({requests:run.requests,errors:run.errors},null,2));console.log('PASS '+name);
- }finally{await run.context.close();}
+  assert.deepEqual(run.errors,[],'No uncaught browser errors');fs.writeFileSync(path.join(out,name+'-report.json'),JSON.stringify({requests:run.requests,requestURLs:run.requestURLs,errors:run.errors},null,2));console.log('PASS '+name);
+ }catch(error){await failure(run,name,error);throw error;}finally{await bounded(run.context.close(),5000,'Browser context cleanup');}
 }
 // Fresh initial navigations with CAD deliberately held in flight. No synthetic
 // user events: wheel, pointer and key cancellation use browser input dispatch.
 async function initialFragments(browser){
  const scenarios=[
   {name:'simulator',hash:'#simulator',restore:true},
-  {name:'explore',hash:'#explore',restore:true},
+  {name:'details',hash:'#details',restore:true},
   {name:'no-hash',hash:''},
-  {name:'changed-hash',hash:'#simulator',change:'#explore'},
+  {name:'changed-hash',hash:'#simulator',change:'#details'},
   {name:'wheel-cancel',hash:'#simulator',input:'wheel'},
   {name:'pointer-cancel',hash:'#simulator',input:'pointerdown'},
   {name:'key-cancel',hash:'#simulator',input:'keydown'},
@@ -213,8 +274,38 @@ async function fallbacks(browser,webkit=false){
    if(options.noGL){await page.locator('[data-kiku-story-load]').focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>!document.querySelector('[data-kiku-story-load]').disabled);assert.ok(await page.locator('[data-kiku-story-load]').evaluate(e=>document.activeElement===e),'Failed explicit retry retains keyboard focus');}
    await page.locator('.kiku-story .kiku-primary').click();await page.waitForURL('**#simulator');
    if(!options.noJS){await page.waitForSelector(options.failWasm?'[data-kiku-mounted="error"]':'.kiku-sim');if(!options.failWasm){await page.locator('.kiku-sim-canvas').focus();await page.keyboard.press('ArrowRight');assert.equal(await page.locator('.kiku-look-choice').count(),10);}}
-   await shot(run,name+'-simulator');await page.locator('[data-model-stage]').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await page.waitForFunction(()=>document.querySelector('[data-model-poster]').complete&&document.querySelector('[data-model-poster]').naturalWidth===1201);assert.match(await page.locator('[data-model-poster]').getAttribute('src'),/v2-populated-assembly\.png\?v=hardware-audio-20261015$/);assert.equal(await page.locator('[data-model-poster]').evaluate(e=>getComputedStyle(e).mixBlendMode),'normal');assert.equal(await page.locator('[data-model-load]').isVisible(),!options.noJS,'Explorer load control follows JavaScript availability');await shot(run,name+'-populated-fallback');assert.deepEqual(run.errors,[]);console.log('PASS '+name);
-  }finally{await run.context.close();}
+   await shot(run,name+'-simulator');await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-model-poster]').complete&&document.querySelector('[data-model-poster]').naturalWidth===1200);assert.match(await page.locator('[data-model-poster]').getAttribute('src'),/v2-product-assembly\.png\?v=finish-20261018$/);assert.equal(await page.locator('[data-model-poster]').evaluate(e=>getComputedStyle(e).mixBlendMode),'normal');const ready=await page.locator('[data-kiku-story]').getAttribute('data-ready');assert.equal(await page.locator('[data-model-load]').isVisible(),!options.noJS&&ready!=='true','Only an unavailable renderer exposes load control');assert.equal(await page.locator('[data-model-canvas]').count(),1);if(ready==='true')await singleRenderer(run);await shot(run,name+'-single-stage-fallback');assert.deepEqual(run.errors,[]);console.log('PASS '+name);
+  }catch(error){await failure(run,name,error);throw error;}finally{await bounded(run.context.close(),5000,'Fallback context cleanup');}
  }
 }
-(async()=>{source();if(args.includes('--source-only'))return;fs.mkdirSync(out,{recursive:true});const{chromium,webkit}=require('playwright');const isWK=args.includes('--webkit');const browser=await(isWK?webkit:chromium).launch({headless:true,...(isWK?{}:{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-sandbox']})});try{if(isWK||args.includes('--fallbacks'))await fallbacks(browser,isWK);else{const viewport=args.find(a=>a.startsWith('--viewport='))?.split('=')[1]||'desktop1440';await matrix(browser,viewport);if(viewport==='desktop1440')await initialFragments(browser);}}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+// Evidence capture uses the same real renderer and assets, with only page layout
+// made deterministic. It runs first so geometry review survives later failures.
+async function capturePoster(browser){
+ const run=await open(browser,{width:1440,height:1500}),{page}=run;
+ try{
+  await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:120000});await singleRenderer(run);
+  await page.evaluate(()=>{
+   const story=document.querySelector('[data-kiku-story]');story.style.height='1100px';
+   for(const e of story.querySelectorAll('.kiku-story-copy,.kiku-story-scroll'))e.style.display='none';
+   Object.assign(story.querySelector('.kiku-story-stage').style,{display:'block',position:'relative',top:'0',width:'1200px',height:'1000px',maxWidth:'none',padding:'0'});
+   Object.assign(story.querySelector('[data-model-stage]').style,{width:'1200px',height:'1000px',maxWidth:'none',aspectRatio:'auto',border:'0',margin:'0'});
+  });
+  await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();await page.locator('[data-kiku-pose="0"]').evaluate(e=>e.click());await stable(page);await page.waitForTimeout(700);
+  assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-progress'),'0.00000','Assembled product capture');
+  const pixels=await page.locator('[data-model-canvas]').screenshot({path:path.join(out,'kiku-product-poster.png')}),{PNG}=require('pngjs'),im=PNG.sync.read(pixels);
+  assert.equal(im.width,1200);assert.equal(im.height,1000);
+  fs.writeFileSync(path.join(out,'kiku-product-poster.json'),JSON.stringify({sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),width:im.width,height:im.height,sha256:require('node:crypto').createHash('sha256').update(pixels).digest('hex'),pose:'assembled, progress 0',renderer:'Chromium ANGLE SwiftShader, native WebGL canvas capture',stage:await page.locator('[data-model-stage]').evaluate(e=>({...e.dataset})),errors:run.errors},null,2));
+  await page.locator('[data-part-select]').evaluate(e=>{e.value='pcb';e.dispatchEvent(new Event('change',{bubbles:true}));});
+  await page.waitForFunction(()=>document.querySelector('[data-model-stage]').dataset.selected==='pcb');
+  for(const view of ['front','iso','rear']){await page.locator('[data-view="'+view+'"]').evaluate(e=>e.click());await canvasShot(page,'early-pcb-'+view);}
+  assert.deepEqual(run.errors,[]);console.log('PASS native assembled poster and early PCB geometry captures');
+ }catch(error){await failure(run,'poster',error);throw error;}finally{await bounded(run.context.close(),5000,'Poster context cleanup');}
+}
+(async()=>{
+ source();if(args.includes('--source-only'))return;fs.mkdirSync(out,{recursive:true});
+ const watchdog=setTimeout(()=>{console.error('Browser verification exceeded 840 seconds');process.exit(1);},840000);watchdog.unref();
+ const{chromium,webkit}=require('playwright'),isWK=args.includes('--webkit');
+ const browser=await(isWK?webkit:chromium).launch({headless:true,...(isWK?{}:{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-sandbox']})});
+ try{if(args.includes('--capture-poster'))await capturePoster(browser);else if(isWK||args.includes('--fallbacks'))await fallbacks(browser,isWK);else{const viewport=args.find(a=>a.startsWith('--viewport='))?.split('=')[1]||'desktop1440';await matrix(browser,viewport);if(viewport==='desktop1440')await initialFragments(browser);}}
+ finally{clearTimeout(watchdog);await bounded(browser.close(),5000,'Browser cleanup');}
+})().catch(e=>{console.error(e);process.exitCode=1;});

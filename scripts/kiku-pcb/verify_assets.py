@@ -14,7 +14,7 @@ assert sha(b)==m['binarySha256'] and len(b)==m['binaryBytes']
 assert gzip.decompress((OUT/m['binaryGzip']).read_bytes())==b
 assert sha((OUT/m['binaryGzip']).read_bytes())==m['binaryGzipSha256']
 assert m['units']=='millimetres' and m['componentCount']==133
-assert m['counts']==pr['counts']=={'footprints':142,'modelReferences':133,'officialLibraryMeshes':111,'vendorEnvelopeProxies':21,'unverifiedAllowances':1,'footprintsWithoutModel':9}
+assert m['counts']==pr['counts']=={'footprints':142,'modelReferences':133,'officialLibraryMeshes':111,'vendorEnvelopeProxies':0,'unverifiedAllowances':1,'footprintsWithoutModel':9,'officialCompatiblePackageMeshes':1,'reconstructedPackageMeshes':20}
 for rel,expected in pr['generatedFrom'].items():assert sha((SRC/rel).read_bytes())==expected,(rel,'source hash')
 # Parse actual source independently, never trust historical metadata hashes.
 def parse(text):
@@ -48,7 +48,7 @@ for ref,f in actual.items():
 provenance={c['ref']:c for c in pr['components']};assert set(provenance)=={r for r,f in actual.items() if f['models']}
 env={e['ref']:e for e in json.loads((SRC/'Mechanical/reference/component_envelopes.json').read_text())}
 # Reconstruct component bounds directly from packed triangles using unambiguous ranges.
-component_vertices={r:[] for r in provenance};count_triangles=0
+component_vertices={r:[] for r in provenance};component_materials={r:set() for r in provenance};component_triangles={r:0 for r in provenance};count_triangles=0
 for p in m['parts']:
  assert p['group']=='pcb' and p['explode']==[0,0,0]
  assert re.fullmatch('#[0-9a-fA-F]{6}',p['color']) and 0<=p['opacity']<=1 and 0<=p['roughness']<=1 and 0<=p['metalness']<=1
@@ -61,23 +61,43 @@ for p in m['parts']:
  assert np.allclose(np.linalg.norm(normal,axis=1),1,atol=1e-4)
  assert np.allclose([pos.min(0),pos.max(0)],p['bounds'],atol=1e-5)
  assert len(idx)==p['triangles'];count_triangles+=len(idx)
- for segment in pr['componentTriangleRangesByMesh'].get(p['id'],[]):
+ segments=pr['componentTriangleRangesByMesh'].get(p['id'],[])
+ if segments:
+  assert segments[0]['firstTriangle']==0
+  assert all(a['firstTriangle']+a['triangleCount']==bb['firstTriangle'] for a,bb in zip(segments,segments[1:])),(p['id'],'range gap/overlap')
+  assert segments[-1]['firstTriangle']+segments[-1]['triangleCount']==len(idx),(p['id'],'unattributed component triangles')
+ if p['id'].startswith('pcb_package_'):
+  triangles=pos[idx];cross=np.cross(triangles[:,1]-triangles[:,0],triangles[:,2]-triangles[:,0]);area=np.linalg.norm(cross,axis=1)
+  assert (area>1e-10).all(),(p['id'],'degenerate finished face')
+  assert (np.sum(cross/area[:,None]*normal[idx[:,0]],axis=1)>.999).all(),(p['id'],'finished face normal/winding mismatch')
+ for segment in segments:
   first=segment['firstTriangle'];end=first+segment['triangleCount'];assert 0<=first<end<=len(idx)
-  component_vertices[segment['ref']].append(pos[idx[first:end]].reshape(-1,3))
+  ref=segment['ref'];component_vertices[ref].append(pos[idx[first:end]].reshape(-1,3));component_materials[ref].add(p['id']);component_triangles[ref]+=segment['triangleCount']
 assert count_triangles==m['triangles'] and len(m['parts'])==m['partCount']
 maxerr=0
 for ref,record in provenance.items():
  assert component_vertices[ref],ref
  points=np.concatenate(component_vertices[ref]);bounds=np.r_[points.min(0),points.max(0)]
  assert np.allclose(bounds,record['bounds'],atol=1e-5),(ref,'packed bound mismatch')
- assert np.allclose(bounds,env[ref]['bounds'],atol=1e-4),(ref,'reviewed envelope mismatch')
+ tolerance=.005 if record['fidelity']=='official-compatible-package-model' else .0001
+ assert np.allclose(bounds,env[ref]['bounds'],atol=tolerance,rtol=0),(ref,'reviewed envelope mismatch')
  maxerr=max(maxerr,float(np.max(np.abs(bounds-np.array(env[ref]['bounds'])))))
  f=actual[ref];place=record['sourcePlacement'];assert place['pcbXY']==f['xy'] and place['footprintAngleDegrees']==f['angle'] and place['layer']==f['layer']
  mod=f['models'][0];assert record['sourceExpression']==mod['path']
+ assert place['modelOffset']==mod['offset'] and place['modelRotationDegrees']==mod['rotation'] and place['modelScale']==mod['scale'],(ref,'model transform')
  if record['fidelity']=='official-library-model':
   assert record['librarySource']['release']=='9.0.2' and record['librarySource']['available']
   assert re.fullmatch('[0-9a-f]{64}',record['librarySource']['sha256'])
- else:assert record['fidelity']==('unverified-source-allowance' if ref=='D3' else 'source-envelope-proxy')
+ else:
+  assert record['fidelity']==('unverified-reconstructed-allowance' if ref=='D3' else 'official-compatible-package-model' if ref=='U10' else 'source-dimensioned-reconstruction')
+  assert component_triangles[ref]==record['triangleCount'] and component_triangles[ref]>100,(ref,'box-level topology')
+  assert len(component_materials[ref])==record['materialMeshCount'] and len(component_materials[ref])>=2,(ref,'no material detail')
+  assert len(record['geometryDetails'])>=2 and record['shapeLimitations'] and record['sourceDocuments'],(ref,'missing reconstruction provenance')
+  if ref=='U10':
+   assert record['librarySource']['sha256']=='bcabc57a9c8710423a9e135eac98b4ea306d7fa097e089383c2a26c0f42a38dd'
+   assert record['compatiblePackageTransform']['scale']==[1,1,1] and record['compatiblePackageTransform']['rotationDegrees']==[0,0,90]
+  if ref=='SW2':assert 'PEC11L' in record['shapeLimitations'] and 'PEC11R' in record['shapeLimitations']
+  if ref=='D3':assert 'UNVERIFIED' in record['shapeLimitations']
 assert 'design' in (OUT/'KICAD-LIBRARY-LICENSE.md').read_text().lower()
 assert (OUT/'CERN-OHL-P-2.0.txt').is_file()
-print(json.dumps({'result':'PASS','actualSourceFootprints':len(actual),'actualSourceModels':len(provenance),'placementsMatchCurrentPCB':True,'packedComponentBoundsMatchRecordedBounds':True,'maximumPackedEnvelopeErrorMm':maxerr,'binaryBytes':len(b),'compressedBytes':(OUT/m['binaryGzip']).stat().st_size,'materialMeshes':len(m['parts']),'triangles':count_triangles},indent=2))
+print(json.dumps({'result':'PASS','actualSourceFootprints':len(actual),'actualSourceModels':len(provenance),'placementsMatchCurrentPCB':True,'packedComponentBoundsWithinDocumentedTolerance':True,'finishedPackagesHaveMultipleMaterialsAndMoreThan100Triangles':True,'noComponentEnvelopeBoxes':True,'maximumPackedEnvelopeErrorMm':maxerr,'binaryBytes':len(b),'compressedBytes':(OUT/m['binaryGzip']).stat().st_size,'materialMeshes':len(m['parts']),'triangles':count_triangles},indent=2))
