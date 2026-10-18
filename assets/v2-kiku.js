@@ -146,7 +146,12 @@ if(story){
         const outward=new T.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
         let distance=0;const tan=Math.tan(16*Math.PI/180);
         for(const a of [box.min.x,box.max.x])for(const b of [box.min.y,box.max.y])for(const c of [box.min.z,box.max.z]){const v=new T.Vector3(a,b,c).sub(center);distance=Math.max(distance,v.dot(outward)+Math.max(Math.abs(v.dot(up))/tan,Math.abs(v.dot(right))/(tan*camera.aspect)));}
-        camera.position.copy(center).addScaledVector(outward,distance*1.10*(inspected?orbit.zoom:1));camera.lookAt(center);renderer.render(scene,camera);object.dataset.frames=String(frames+1);
+        // Keep depth precision appropriate to this millimetre-scale object. The
+        // display pixels sit 0.01 mm above their backing; a fixed 0.5–3000
+        // frustum caused z-fighting without any source geometry being wrong.
+        const fittedDistance=distance*1.10*(inspected?orbit.zoom:1);
+        camera.near=Math.max(.5,fittedDistance/50);camera.far=Math.max(camera.near+1,fittedDistance+box.getSize(new T.Vector3()).length()*2);
+        camera.updateProjectionMatrix();camera.position.copy(center).addScaledVector(outward,fittedDistance);camera.lookAt(center);renderer.render(scene,camera);object.dataset.frames=String(frames+1);
       },dispose(){meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.map?.dispose();mesh.material.dispose();});renderer.dispose();}};
       canvas.hidden=false;controls.hidden=false;inspector.hidden=false;load.hidden=true;loading=false;
       layout();progress=target;semantic();model.render(progress,0,0);

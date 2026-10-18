@@ -101,6 +101,16 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
  .kiku-story.is-pinned .kiku-story-scroll { display:none; }
  .kiku-story.is-pinned .kiku-inspector [data-model-controls] { max-height:160px; }
 }
+/* Inspection makes room for controls within the pinned viewport. */
+@media(min-width:601px) {
+ .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-copy { padding-block:16px 36px; }
+ .kiku-page .kiku-story.is-pinned:has(.kiku-inspector[open]) h1 { font-size:64px; margin:12px 0 18px; }
+ .kiku-page .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-deck { font-size:26px; }
+ .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-description { display:none; }
+ .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-actions { margin-block:14px; }
+ .kiku-story.is-pinned .kiku-inspector[open] [data-model-controls] { max-height:160px; }
+ .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-scroll { display:none; }
+}
 @media(max-width:1000px) {
  .kiku-story-stage { grid-template-columns:minmax(280px,.95fr) minmax(0,1.05fr); }
  .kiku-story-copy { padding-right:10px; }

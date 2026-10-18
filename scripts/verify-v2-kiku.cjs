@@ -80,7 +80,7 @@ async function part(page,id){
  await page.waitForFunction(id=>{const s=document.querySelector('[data-model-stage]'),groups=JSON.parse(s.dataset.visibleGroups||'[]');return s.dataset.selected===id&&(id?groups.length===1&&groups[0]===id:groups.length===14);},id);
  assert.equal(await page.locator('[data-model-stage]').getAttribute('data-mode'),'inspect','Part selection enters shared inspector');
 }
-async function camera(page,view){await page.locator('[data-view="'+view+'"]').click();await page.waitForFunction(view=>document.querySelector('[data-model-stage]').dataset.view===view,view);}
+async function camera(page,view){await page.locator('button[data-view="'+view+'"]').click();await page.waitForFunction(view=>document.querySelector('[data-model-stage]').dataset.view===view,view);}
 async function loseContext(page){
  await page.locator('[data-model-canvas]').evaluate(canvas=>{const item=window.__kikuWebGL.find(item=>item.canvas===canvas),extension=item.context.getExtension('WEBGL_lose_context');if(!extension)throw new Error('Real context-loss extension unavailable');extension.loseContext();});
  await page.waitForSelector('[data-kiku-story][data-ready="false"]');
@@ -122,17 +122,17 @@ async function matrix(browser,name){
   const expected=['',...JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku/assembly.json'))).parts.map(p=>p.id),'pcb',...JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-hardware/hardware.json'))).items.map(p=>p.id)];
   assert.deepEqual(await page.locator('[data-part-select] option').evaluateAll(options=>options.map(o=>o.value)),expected,'All original enclosure, PCB and four hardware groups remain selectable');
   await part(page,'display_carrier');assert.match(await page.locator('[data-part-name]').innerText(),/Display cradle/);
-  await part(page,'');await page.locator('[data-explode]').fill('75');await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-model-stage]').dataset.explode)-.75)<.001);
+  await part(page,'');await page.locator('input[data-explode]').fill('75');await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-model-stage]').dataset.explode)-.75)<.001);
   await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();
   const openBounds=await page.locator('[data-model-stage]').boundingBox();assert.ok(openBounds.width>=180&&openBounds.height>=140,'Open inspector keeps a useful model viewport: '+JSON.stringify(openBounds));
   await shot(run,name+'-inspector-open');
   await page.locator('[data-model-mode="pcb"]').click();await page.waitForFunction(()=>document.querySelector('[data-model-stage]').dataset.selected==='pcb');
   for(const view of ['front','iso','rear']){await camera(page,view);await canvasShot(page,name+'-pcb-'+view);}
   const hardware=JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-hardware/hardware.json'))).items;
-  for(const item of hardware){await part(page,item.id);await page.locator('[data-explode]').fill('0');await camera(page,'iso');await canvasShot(page,name+'-hardware-'+item.id);}
-  await page.locator('[data-model-all]').click();await part(page,'');await page.locator('[data-explode]').fill('0');
+  for(const item of hardware){await part(page,item.id);await page.locator('input[data-explode]').fill('0');await camera(page,'iso');await canvasShot(page,name+'-hardware-'+item.id);}
+  await page.locator('[data-model-all]').click();await part(page,'');await page.locator('input[data-explode]').fill('0');
   for(const view of ['front','rear']){await camera(page,view);await canvasShot(page,name+'-complete-'+view);}
-  await page.locator('[data-explode]').fill('100');await camera(page,'iso');await canvasShot(page,name+'-complete-exploded');await camera(page,'front');await canvasShot(page,name+'-complete-exploded-front');
+  await page.locator('input[data-explode]').fill('100');await camera(page,'iso');await canvasShot(page,name+'-complete-exploded');await camera(page,'front');await canvasShot(page,name+'-complete-exploded-front');
   await part(page,'pcb');await camera(page,'iso');const stage=page.locator('[data-model-stage]');await stage.focus();
   const keyboardBefore=await page.locator('[data-model-canvas]').screenshot();const angleBefore=Number(await stage.getAttribute('data-azimuth')),zoomBefore=Number(await stage.getAttribute('data-zoom'));
   await page.keyboard.press('ArrowRight');await page.keyboard.press('+');await page.waitForTimeout(350);
@@ -274,7 +274,7 @@ async function fallbacks(browser,webkit=false){
    if(options.noGL){await page.locator('[data-kiku-story-load]').focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>!document.querySelector('[data-kiku-story-load]').disabled);assert.ok(await page.locator('[data-kiku-story-load]').evaluate(e=>document.activeElement===e),'Failed explicit retry retains keyboard focus');}
    await page.locator('.kiku-story .kiku-primary').click();await page.waitForURL('**#simulator');
    if(!options.noJS){await page.waitForSelector(options.failWasm?'[data-kiku-mounted="error"]':'.kiku-sim');if(!options.failWasm){await page.locator('.kiku-sim-canvas').focus();await page.keyboard.press('ArrowRight');assert.equal(await page.locator('.kiku-look-choice').count(),10);}}
-   await shot(run,name+'-simulator');await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('[data-model-poster]').complete&&document.querySelector('[data-model-poster]').naturalWidth===1200);assert.match(await page.locator('[data-model-poster]').getAttribute('src'),/v2-product-assembly\.png\?v=finish-20261018$/);assert.equal(await page.locator('[data-model-poster]').evaluate(e=>getComputedStyle(e).mixBlendMode),'normal');const ready=await page.locator('[data-kiku-story]').getAttribute('data-ready');assert.equal(await page.locator('[data-model-load]').isVisible(),!options.noJS&&ready!=='true','Only an unavailable renderer exposes load control');assert.equal(await page.locator('[data-model-canvas]').count(),1);if(ready==='true')await singleRenderer(run);await shot(run,name+'-single-stage-fallback');assert.deepEqual(run.errors,[]);console.log('PASS '+name);
+   await shot(run,name+'-simulator');await page.locator('[data-model-stage]').evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));await page.waitForFunction(()=>document.querySelector('[data-model-poster]').complete&&document.querySelector('[data-model-poster]').naturalWidth===1200);assert.match(await page.locator('[data-model-poster]').getAttribute('src'),/v2-product-assembly\.png\?v=finish-20261018$/);assert.equal(await page.locator('[data-model-poster]').evaluate(e=>getComputedStyle(e).mixBlendMode),'normal');const ready=await page.locator('[data-kiku-story]').getAttribute('data-ready');assert.equal(await page.locator('[data-model-load]').isVisible(),!options.noJS&&ready!=='true','Only an unavailable renderer exposes load control');assert.equal(await page.locator('[data-model-canvas]').count(),1);if(ready==='true')await singleRenderer(run);await shot(run,name+'-single-stage-fallback');assert.deepEqual(run.errors,[]);console.log('PASS '+name);
   }catch(error){await failure(run,name,error);throw error;}finally{await bounded(run.context.close(),5000,'Fallback context cleanup');}
  }
 }
@@ -286,18 +286,26 @@ async function capturePoster(browser){
   await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:120000});await singleRenderer(run);
   await page.evaluate(()=>{
    const story=document.querySelector('[data-kiku-story]');story.style.height='1100px';
-   for(const e of story.querySelectorAll('.kiku-story-copy,.kiku-story-scroll'))e.style.display='none';
-   Object.assign(story.querySelector('.kiku-story-stage').style,{display:'block',position:'relative',top:'0',width:'1200px',height:'1000px',maxWidth:'none',padding:'0'});
+   for(const e of story.querySelectorAll('.kiku-story-copy,.kiku-story-scroll,.kiku-story-qualification'))e.style.display='none';
+   Object.assign(story.querySelector('.kiku-story-stage').style,{display:'block',position:'fixed',top:'0',left:'0',zIndex:'99999',width:'1200px',height:'1000px',maxWidth:'none',minHeight:'0',padding:'0',margin:'0'});
    Object.assign(story.querySelector('[data-model-stage]').style,{width:'1200px',height:'1000px',maxWidth:'none',aspectRatio:'auto',border:'0',margin:'0'});
   });
   await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();await page.locator('[data-kiku-pose="0"]').evaluate(e=>e.click());await stable(page);await page.waitForTimeout(700);
   assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-progress'),'0.00000','Assembled product capture');
-  const pixels=await page.locator('[data-model-canvas]').screenshot({path:path.join(out,'kiku-product-poster.png')}),{PNG}=require('pngjs'),im=PNG.sync.read(pixels);
-  assert.equal(im.width,1200);assert.equal(im.height,1000);
-  fs.writeFileSync(path.join(out,'kiku-product-poster.json'),JSON.stringify({sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),width:im.width,height:im.height,sha256:require('node:crypto').createHash('sha256').update(pixels).digest('hex'),pose:'assembled, progress 0',renderer:'Chromium ANGLE SwiftShader, native WebGL canvas capture',stage:await page.locator('[data-model-stage]').evaluate(e=>({...e.dataset})),errors:run.errors},null,2));
+  async function capture(name,pose){
+   const bounds=await page.locator('[data-model-canvas]').boundingBox();assert.deepEqual(bounds,{x:0,y:0,width:1200,height:1000},'Integer, unobscured native capture viewport');
+   await canvasShot(page,name);
+   const pixels=fs.readFileSync(path.join(out,name+'.png')),{PNG}=require('pngjs'),im=PNG.sync.read(pixels);assert.equal(im.width,1200);assert.equal(im.height,1000);
+   const evidence=JSON.parse(fs.readFileSync(path.join(out,name+'.json')));
+   fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({...evidence,sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha256:require('node:crypto').createHash('sha256').update(pixels).digest('hex'),pose,renderer:'Chromium ANGLE SwiftShader, native WebGL canvas capture',errors:run.errors},null,2));
+  }
+  await capture('kiku-product-poster','assembled, progress 0');
+  await page.locator('input[data-explode]').evaluate(e=>{e.value='100';e.dispatchEvent(new Event('input',{bubbles:true}));});await page.locator('button[data-view="iso"]').evaluate(e=>e.click());
+  await capture('kiku-populated-poster','complete assembly, full separation, iso');
   await page.locator('[data-part-select]').evaluate(e=>{e.value='pcb';e.dispatchEvent(new Event('change',{bubbles:true}));});
   await page.waitForFunction(()=>document.querySelector('[data-model-stage]').dataset.selected==='pcb');
-  for(const view of ['front','iso','rear']){await page.locator('[data-view="'+view+'"]').evaluate(e=>e.click());await canvasShot(page,'early-pcb-'+view);}
+  for(const view of ['front','iso','rear']){await page.locator('button[data-view="'+view+'"]').evaluate(e=>e.click());await capture('early-pcb-'+view,'PCB isolation, '+view);}
+  fs.copyFileSync(path.join(out,'early-pcb-front.png'),path.join(out,'kiku-pcb-poster.png'));fs.copyFileSync(path.join(out,'early-pcb-front.json'),path.join(out,'kiku-pcb-poster.json'));
   assert.deepEqual(run.errors,[]);console.log('PASS native assembled poster and early PCB geometry captures');
  }catch(error){await failure(run,'poster',error);throw error;}finally{await bounded(run.context.close(),5000,'Poster context cleanup');}
 }
