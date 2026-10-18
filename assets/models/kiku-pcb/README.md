@@ -32,6 +32,13 @@ metalness, group, name, description, bounds, size and explode [0,0,0]. Preserve
 material separation and transparency; transparent board coatings need depth
 write disabled while retaining depth testing against populated components.
 
+The consolidated browser stage fits camera clipping planes to visible model
+bounds. Native closed board surfaces use their outward faces; small depth-buffer
+biases resolve tied copper/via/pad planes without moving source vertices. Real
+via drill openings remain visible and must not be retouched as image noise.
+Reviewed assembled, separated and PCB-front native captures are recorded in
+`poster-provenance.json`; diagnostic-only captures are never published as posters.
+
 Optional gzip transport uses `manifest.binaryGzip` with DecompressionStream,
 falling back to `manifest.binary`. The decompressed bytes must hash to
 `binarySha256`; both transports have identical typed-array layout.

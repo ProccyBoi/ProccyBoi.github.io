@@ -42,13 +42,15 @@ async function open(browser,v,options={}){
  await context.route('**/*',r=>{const u=new URL(r.request().url());requests.push(u.pathname);requestURLs.push(u.pathname+u.search);if(u.origin!==new URL(base).origin||r.request().method()!=='GET'||(gates.model&&u.pathname.endsWith('assembly.bin'))||(gates.pcb&&/\/pcb\.bin(\.gz)?$/.test(u.pathname))||(gates.hardware&&/\/hardware\.bin(\.gz)?$/.test(u.pathname))||(options.failWasm&&u.pathname.endsWith('.wasm')))return r.abort();return r.continue();});
  if(options.diagnosticHideMeshes)await context.route('**/v2-kiku-model.js*',async request=>{
   const response=await request.fetch(),original=await response.text();
-  const injected=original.replace('return mesh;',`if(${JSON.stringify(options.diagnosticHideMeshes)}.includes(part.id)){mesh.material.opacity=0;mesh.material.transparent=true;mesh.material.depthWrite=false;}return mesh;`);
-  assert.notEqual(injected,original,'Diagnostic injection matched shared mesh constructor');await request.fulfill({response,body:injected});
+  let injected=original.replace('return mesh;',`if(${JSON.stringify(options.diagnosticHideMeshes)}.includes(part.id)){mesh.material.opacity=0;mesh.material.transparent=true;mesh.material.depthWrite=false;}return mesh;`);
+  assert.notEqual(injected,original,'Diagnostic injection matched shared mesh constructor');
+  if(options.diagnosticUnlitMeshes){const before=injected;injected=injected.replace('const materialOptions=',`if(${JSON.stringify(options.diagnosticUnlitMeshes)}.includes(part.id))part={...part,unlit:true};const materialOptions=`);assert.notEqual(injected,before,'Unlit diagnostic matched material construction');}
+  await request.fulfill({response,body:injected});
  });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(String(e)));await page.goto(base+route,{waitUntil:'networkidle'});return{context,page,requests,requestURLs,errors,v,gates,options};
 }
 async function stable(page){await page.evaluate(()=>{window.__kikuStable={value:document.querySelector('[data-kiku-story]').dataset.frames||'0',at:performance.now()};});await page.waitForFunction(()=>{const s=document.querySelector('[data-kiku-story]');const x=s.dataset.frames||'0';window.__kikuStable=window.__kikuStable||{value:x,at:performance.now()};if(window.__kikuStable.value!==x)window.__kikuStable={value:x,at:performance.now()};const r=s.querySelector('.kiku-story-stage').getBoundingClientRect();const current=s.dataset.ready!=='true'||r.bottom<=0||r.top>=innerHeight||Math.abs(Number(s.dataset.progress)-Number(s.dataset.target))<.00006;return current&&performance.now()-window.__kikuStable.at>300;},{},{timeout:30000,polling:50});}
-async function viewportProbe(page){return page.evaluate(()=>{const rect=selector=>document.querySelector(selector)?.getBoundingClientRect().toJSON(),v=visualViewport;return{y:scrollY,x:scrollX,innerWidth,innerHeight,devicePixelRatio,header:rect('.v2-header'),nav:rect('.v2-case-nav'),body:document.body.getBoundingClientRect().toJSON(),visualViewport:v?{offsetTop:v.offsetTop,offsetLeft:v.offsetLeft,pageTop:v.pageTop,pageLeft:v.pageLeft,width:v.width,height:v.height,scale:v.scale}:null};});}
+async function viewportProbe(page){return page.evaluate(()=>{const rect=selector=>document.querySelector(selector)?.getBoundingClientRect().toJSON(),v=visualViewport;return{y:scrollY,x:scrollX,innerWidth,innerHeight,devicePixelRatio,header:rect('.v2-header'),nav:rect('.v2-case-nav'),body:document.body.getBoundingClientRect().toJSON(),sections:[...document.querySelectorAll('[data-v2-section]')].map(link=>({hash:link.hash,current:link.getAttribute('aria-current'),target:document.getElementById(link.hash.slice(1))?.getBoundingClientRect().toJSON()})),visualViewport:v?{offsetTop:v.offsetTop,offsetLeft:v.offsetLeft,pageTop:v.pageTop,pageLeft:v.pageLeft,width:v.width,height:v.height,scale:v.scale}:null};});}
 async function shot(run,name){
  if(!run.options.noJS)await stable(run.page);
  const viewportBeforeCapture=await viewportProbe(run.page);
@@ -154,6 +156,7 @@ async function matrix(browser,name){
   await part(page,'display_carrier');assert.match(await page.locator('[data-part-name]').innerText(),/Display cradle/);
   await part(page,'');await page.locator('input[data-explode]').fill('75');await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-model-stage]').dataset.explode)-.75)<.001);
   await assertFramed(page,name+'-inspector-open');
+  await page.waitForFunction(()=>document.querySelector('[data-v2-section][aria-current=location]')?.hash==='#overview',null,{timeout:5000});
   for(const control of await page.locator('[data-inspector-details] summary,[data-part-select],input[data-explode],button[data-view],[data-model-reset]').all())await hit(control);
   const openBounds=await page.locator('[data-model-stage]').boundingBox();assert.ok(openBounds.width>=180&&openBounds.height>=140,'Open inspector keeps a useful model viewport: '+JSON.stringify(openBounds));
   await shot(run,name+'-inspector-open');
@@ -313,7 +316,7 @@ async function fallbacks(browser,webkit=false){
 // Evidence capture uses the same real renderer and assets, with only page layout
 // made deterministic. It runs first so geometry review survives later failures.
 async function capturePoster(browser,diagnostic=null){
- const run=await open(browser,{width:1440,height:1500},diagnostic?{diagnosticHideMeshes:diagnostic.ids}:{}),{page}=run;
+ const run=await open(browser,{width:1440,height:1500},diagnostic?{diagnosticHideMeshes:diagnostic.ids||[],diagnosticUnlitMeshes:diagnostic.unlitIds}:{}),{page}=run;
  try{
   await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:120000});await singleRenderer(run);
   await page.evaluate(()=>{
@@ -329,7 +332,7 @@ async function capturePoster(browser,diagnostic=null){
    await canvasShot(page,name,{nativeCapture:true});
    const pixels=fs.readFileSync(path.join(out,name+'.png')),{PNG}=require('pngjs'),im=PNG.sync.read(pixels);assert.equal(im.width,1200);assert.equal(im.height,1000);
    const evidence=JSON.parse(fs.readFileSync(path.join(out,name+'.json')));
-   fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({...evidence,sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha256:require('node:crypto').createHash('sha256').update(pixels).digest('hex'),pose,renderer:'Chromium ANGLE SwiftShader, native WebGL canvas capture',diagnostic:diagnostic?{label:diagnostic.name,hiddenNativeBatches:diagnostic.ids,publishable:false,scope:'Response-only material opacity override; geometry and camera bounds unchanged'}:null,errors:run.errors},null,2));
+   fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({...evidence,sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha256:require('node:crypto').createHash('sha256').update(pixels).digest('hex'),pose,renderer:'Chromium ANGLE SwiftShader, native WebGL canvas capture',diagnostic:diagnostic?{label:diagnostic.name,hiddenNativeBatches:diagnostic.ids||[],unlitNativeBatches:diagnostic.unlitIds||[],publishable:false,scope:'Response-only material diagnostic; geometry and camera bounds unchanged'}:null,errors:run.errors},null,2));
   }
   if(!diagnostic){
    await capture('kiku-product-poster','assembled, progress 0');
@@ -348,6 +351,6 @@ async function capturePoster(browser,diagnostic=null){
  const watchdog=setTimeout(()=>{console.error('Browser verification exceeded 840 seconds');process.exit(1);},840000);watchdog.unref();
  const{chromium,webkit}=require('playwright'),isWK=args.includes('--webkit');
  const browser=await(isWK?webkit:chromium).launch({headless:true,...(isWK?{}:{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-sandbox']})});
- try{if(args.includes('--capture-poster')){await capturePoster(browser);for(const diagnostic of [{name:'no-mask',ids:['pcb_soldermask']},{name:'no-copper',ids:['pcb_copper']},{name:'no-vias-pads',ids:['pcb_via','pcb_pad']}])await capturePoster(browser,diagnostic);}else if(isWK||args.includes('--fallbacks'))await fallbacks(browser,isWK);else{const viewport=args.find(a=>a.startsWith('--viewport='))?.split('=')[1]||'desktop1440';await matrix(browser,viewport);if(viewport==='desktop1440')await initialFragments(browser);}}
+ try{if(args.includes('--capture-poster')){await capturePoster(browser);for(const diagnostic of [{name:'no-mask',ids:['pcb_soldermask']},{name:'no-copper',ids:['pcb_copper']},{name:'no-vias-pads',ids:['pcb_via','pcb_pad']},{name:'unlit-copper',unlitIds:['pcb_copper']}])await capturePoster(browser,diagnostic);}else if(isWK||args.includes('--fallbacks'))await fallbacks(browser,isWK);else{const viewport=args.find(a=>a.startsWith('--viewport='))?.split('=')[1]||'desktop1440';await matrix(browser,viewport);if(viewport==='desktop1440')await initialFragments(browser);}}
  finally{try{await bounded(browser.close(),30000,'Browser process cleanup');}finally{clearTimeout(watchdog);}}
 })().catch(e=>{console.error(e);process.exitCode=1;});

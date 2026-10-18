@@ -4,35 +4,84 @@
   "captures": [
     {
       "path": "/assets/images/kiku/v2-product-assembly.png",
-      "sha256": "164ab8a8ce6c1d455015965714c75aa0d9a168df370f06cc3f3f48d0f0d21c39",
+      "sha256": "0632540e619b2b654e8c32124fae3f4739abfcb30e64d6c3df72e727d055a798",
       "width": 1200,
       "height": 1000,
       "selection": "Assembled P2 player, scroll progress 0",
-      "fidelity": "Original enclosure and KiCad geometry, compatible MCU model and documented package/hardware reconstructions. Firmware screen is a static source-renderer capture.",
-      "capturedCommit": "9cc309198a5949f7357cb374a8b7764941c8091f",
-      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39110595092",
-      "captureStep": "Native 1200 \u00d7 1000 WebGL canvas, no added labels; full desktop browser and audio job passed."
+      "fidelity": "Unmodified native enclosure/board/official component geometry, licensed compatible MCU package and documented source-dimensioned package/hardware reconstructions. Static firmware-renderer screen capture. See component/hardware provenance for limits.",
+      "capturedCommit": "4419dc95e7d066fbd3a9b4e9da053a37115c8279",
+      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39111997833",
+      "captureStep": "Actual production WebGL canvas, no added geometry or labels; independently reviewed. All nine source, viewport, fallback and audio jobs passed.",
+      "graphics": {
+        "type": "webgl2",
+        "depthBits": 24,
+        "attributes": {
+          "alpha": false,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": true,
+          "xrCompatible": false
+        }
+      }
     },
     {
       "path": "/assets/images/kiku/v2-populated-assembly.png",
-      "sha256": "ae800fc90ae64321d668d59ebc1d9af5e52c96f2d4958bffb3c59f284a29ba00",
-      "width": 1201,
-      "height": 1001,
-      "selection": "All nine printed parts, populated PCB and four hardware groups, 100 percent presentation separation, isometric",
-      "fidelity": "Original printed meshes, official KiCad component meshes and recorded package envelopes; source-dimension hardware reconstructions qualified in hardware-provenance.json",
-      "capturedCommit": "4c8564d68f06c89cc9c33b8ba3b09436d84db158",
-      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/38722332362",
-      "captureStep": "Native desktop canvas capture passed; later integrated-audio navigation check failed and was corrected separately."
+      "sha256": "207bc19fca4ce8fb9a66cb16fcabff158d8b9eaa4b3b8d504653b980ccd5a7b1",
+      "width": 1200,
+      "height": 1000,
+      "selection": "Complete assembly, all nine printed parts, PCB and four hardware groups; full presentation separation, isometric",
+      "fidelity": "Unmodified native enclosure/board/official component geometry, licensed compatible MCU package and documented source-dimensioned package/hardware reconstructions. Static firmware-renderer screen capture. See component/hardware provenance for limits.",
+      "capturedCommit": "4419dc95e7d066fbd3a9b4e9da053a37115c8279",
+      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39111997833",
+      "captureStep": "Actual production WebGL canvas, no added geometry or labels; independently reviewed. All nine source, viewport, fallback and audio jobs passed.",
+      "graphics": {
+        "type": "webgl2",
+        "depthBits": 24,
+        "attributes": {
+          "alpha": false,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": true,
+          "xrCompatible": false
+        }
+      }
     },
     {
       "path": "/assets/images/kiku/v2-populated-pcb.png",
-      "sha256": "3b2ae78d7c1c3f13e1e047e7c495e90ec816d6b7f898b088501d45bd83657421",
-      "width": 1201,
-      "height": 1001,
-      "selection": "Populated PCB, front view",
-      "fidelity": "Same official component meshes and recorded package envelopes as pcb-provenance.json",
-      "capturedCommit": "dc99da1203eb8bff0ba192a6a2ebfc67c6dded0c",
-      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/38712599833"
+      "sha256": "6b8f0ea06895f9b033dc4e404d7e16ad3dd532c6913502035dc2d1535117b33e",
+      "width": 1200,
+      "height": 1000,
+      "selection": "Populated source PCB, front view",
+      "fidelity": "Unmodified native enclosure/board/official component geometry, licensed compatible MCU package and documented source-dimensioned package/hardware reconstructions. Static firmware-renderer screen capture. See component/hardware provenance for limits.",
+      "capturedCommit": "4419dc95e7d066fbd3a9b4e9da053a37115c8279",
+      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39111997833",
+      "captureStep": "Actual production WebGL canvas, no added geometry or labels; independently reviewed. All nine source, viewport, fallback and audio jobs passed.",
+      "graphics": {
+        "type": "webgl2",
+        "depthBits": 24,
+        "attributes": {
+          "alpha": false,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": true,
+          "xrCompatible": false
+        }
+      }
     }
   ],
   "sourceModelManifests": [
