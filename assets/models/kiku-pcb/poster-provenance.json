@@ -3,6 +3,17 @@
   "renderer": "Chromium / ANGLE SwiftShader; native WebGL canvas, no added geometry or labels",
   "captures": [
     {
+      "path": "/assets/images/kiku/v2-product-assembly.png",
+      "sha256": "164ab8a8ce6c1d455015965714c75aa0d9a168df370f06cc3f3f48d0f0d21c39",
+      "width": 1200,
+      "height": 1000,
+      "selection": "Assembled P2 player, scroll progress 0",
+      "fidelity": "Original enclosure and KiCad geometry, compatible MCU model and documented package/hardware reconstructions. Firmware screen is a static source-renderer capture.",
+      "capturedCommit": "9cc309198a5949f7357cb374a8b7764941c8091f",
+      "workflowRun": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39110595092",
+      "captureStep": "Native 1200 \u00d7 1000 WebGL canvas, no added labels; full desktop browser and audio job passed."
+    },
+    {
       "path": "/assets/images/kiku/v2-populated-assembly.png",
       "sha256": "ae800fc90ae64321d668d59ebc1d9af5e52c96f2d4958bffb3c59f284a29ba00",
       "width": 1201,

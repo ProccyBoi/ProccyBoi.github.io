@@ -143,7 +143,7 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
  .kiku-story.is-pinned .kiku-actions { grid-column:1/-1; margin:12px 0; }
  .kiku-story.is-pinned .kiku-story-navigation,.kiku-story.is-pinned .kiku-inspector,.kiku-story.is-pinned .kiku-story-caption { grid-column:1/-1; }
  .kiku-story.is-pinned .kiku-story-object { height:auto; }
- .kiku-story.is-pinned .kiku-inspector [data-model-controls] { max-height:145px; }
+ .kiku-story.is-pinned .kiku-inspector [data-model-controls] { max-height:160px; }
  .kiku-page .kiku-story-qualification { bottom:12px; font-size:10px; }
  .kiku-project-context { padding-block:28px 16px; }
  .kiku-project-facts { grid-template-columns:1fr; gap:22px; }
@@ -187,3 +187,5 @@ body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:
 .kiku-sim-audio-value { min-width:3ch; }
 .kiku-page .kiku-sim-audio-status { margin:10px 0 0; }
 @media(max-width:600px) { .kiku-sim-audio-level { flex:1 0 100%; } .kiku-sim-audio-volume { width:min(180px,50vw); } }
+/* Preserve thin firmware strokes when the 320 px framebuffer is reduced. */
+@media(max-width:420px) { .kiku-page .kiku-sim-canvas { image-rendering:auto; } }

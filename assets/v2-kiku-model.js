@@ -21,6 +21,12 @@ export function makeKikuMesh(T,part,onTextureLoad=()=>{}){
  geometry.setIndex(new T.BufferAttribute(new Uint32Array(part.binary,part.index.byteOffset,part.index.count),1));geometry.computeBoundingBox();geometry.computeBoundingSphere();
  const materialOptions={color:part.colorLinear?new T.Color(...part.colorLinear):new T.Color(part.color).convertSRGBToLinear(),roughness:part.roughness??.65,metalness:part.metalness??0,opacity:part.opacity??1,transparent:(part.opacity??1)<1,depthWrite:(part.opacity??1)>=1,side:T.DoubleSide};
  if(part.unlit){delete materialOptions.roughness;delete materialOptions.metalness;}
+ // Native copper/via/pad faces share exact source planes. Resolve only their
+ // depth-buffer ties; retain every position, normal, material color and datum.
+ // These source solid surfaces have outward-wound front and rear faces.
+ if(['pcb_copper','pcb_via','pcb_pad','pcb_silkscreen','pcb_soldermask','pcb_pcb'].includes(part.id))materialOptions.side=T.FrontSide;
+ const boardDepth={'pcb_copper':1,'pcb_via':2,'pcb_pad':3}[part.id];
+ if(boardDepth)Object.assign(materialOptions,{polygonOffset:true,polygonOffsetFactor:0,polygonOffsetUnits:-boardDepth});
  const material=new (part.unlit?T.MeshBasicMaterial:T.MeshStandardMaterial)(materialOptions);
  if(part.texture){const texture=new T.TextureLoader().load(part.texture,onTextureLoad);texture.encoding=T.sRGBEncoding;texture.magFilter=T.NearestFilter;texture.minFilter=T.LinearFilter;material.map=texture;}
  const mesh=new T.Mesh(geometry,material);mesh.userData.part=part;
