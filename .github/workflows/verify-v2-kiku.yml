@@ -52,7 +52,18 @@ jobs:
       - run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/kiku-server.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/v2/projects/kiku/ >/dev/null && break; sleep 1; done
-          if [ '${{ matrix.viewport }}' = desktop1440 ]; then node scripts/verify-v2-kiku.cjs --capture-poster; fi
+      - name: Capture native posters and layer diagnostics
+        if: matrix.viewport == 'desktop1440'
+        run: node scripts/verify-v2-kiku.cjs --capture-poster
+      - name: Upload early desktop visual evidence
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.viewport == 'desktop1440'
+        with:
+          name: kiku-desktop-captures
+          path: /tmp/kiku-evidence/
+          retention-days: 14
+      - name: Verify interactions and audio
+        run: |
           node scripts/verify-v2-kiku.cjs --viewport=${{ matrix.viewport }}
           if [ '${{ matrix.viewport }}' = desktop1440 ]; then KIKU_BASE_URL=http://127.0.0.1:8080 node scripts/kiku-simulator/verify-audio.cjs > /tmp/kiku-evidence/audio-chromium.json; fi
       - uses: actions/upload-artifact@v4

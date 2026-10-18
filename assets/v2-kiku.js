@@ -61,6 +61,18 @@ if(story){
     object.dataset.explode=String(inspectionExplode);object.dataset.view=inspected?view:'choreography';
     object.dataset.zoom=String(orbit.zoom);object.dataset.azimuth=String(orbit.az);object.dataset.elevation=String(orbit.el);
   }
+  function frameInspection(){
+    // A deliberate inspection action should show the full pinned stage below
+    // the site navigation, including near the story's lower sticky boundary.
+    // Never run this during loading, native page scroll, or a deep-link visit.
+    if(!pinned)return;
+    const top=parseFloat(getComputedStyle(stage).top),start=scrollY+story.getBoundingClientRect().top-top;
+    const end=start+story.clientHeight-stage.clientHeight-1;
+    const next=clamp(scrollY,Math.max(0,start),Math.max(0,end));
+    if(Math.abs(next-scrollY)<1)return;
+    layoutLock=true;scrollTo({top:next,behavior:'instant'});
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{lastY=scrollY;layoutLock=false;update();}));
+  }
   function nativeProgress(){
     const distance=story.offsetHeight-stage.clientHeight;
     return pinned?clamp((-story.getBoundingClientRect().top+parseFloat(getComputedStyle(stage).top))/Math.max(1,distance)):0;
@@ -144,13 +156,13 @@ if(story){
         const right=new T.Vector3(Math.cos(az),0,-Math.sin(az));
         const up=new T.Vector3(-Math.sin(az)*Math.sin(el),Math.cos(el),-Math.cos(az)*Math.sin(el));
         const outward=new T.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
-        let distance=0;const tan=Math.tan(16*Math.PI/180);
-        for(const a of [box.min.x,box.max.x])for(const b of [box.min.y,box.max.y])for(const c of [box.min.z,box.max.z]){const v=new T.Vector3(a,b,c).sub(center);distance=Math.max(distance,v.dot(outward)+Math.max(Math.abs(v.dot(up))/tan,Math.abs(v.dot(right))/(tan*camera.aspect)));}
+        let distance=0,minDepth=Infinity,maxDepth=-Infinity;const tan=Math.tan(16*Math.PI/180);
+        for(const a of [box.min.x,box.max.x])for(const b of [box.min.y,box.max.y])for(const c of [box.min.z,box.max.z]){const v=new T.Vector3(a,b,c).sub(center),depth=v.dot(outward);minDepth=Math.min(minDepth,depth);maxDepth=Math.max(maxDepth,depth);distance=Math.max(distance,depth+Math.max(Math.abs(v.dot(up))/tan,Math.abs(v.dot(right))/(tan*camera.aspect)));}
         // Keep depth precision appropriate to this millimetre-scale object. The
         // display pixels sit 0.01 mm above their backing; a fixed 0.5–3000
         // frustum caused z-fighting without any source geometry being wrong.
         const fittedDistance=distance*1.10*(inspected?orbit.zoom:1);
-        camera.near=Math.max(.5,fittedDistance/50);camera.far=Math.max(camera.near+1,fittedDistance+box.getSize(new T.Vector3()).length()*2);
+        camera.near=Math.max(.01,(fittedDistance-maxDepth)*.9);camera.far=Math.max(camera.near+1,(fittedDistance-minDepth)*1.1);
         camera.updateProjectionMatrix();camera.position.copy(center).addScaledVector(outward,fittedDistance);camera.lookAt(center);renderer.render(scene,camera);object.dataset.frames=String(frames+1);
       },dispose(){meshes.forEach(mesh=>{mesh.geometry.dispose();mesh.material.map?.dispose();mesh.material.dispose();});renderer.dispose();}};
       canvas.hidden=false;controls.hidden=false;inspector.hidden=false;load.hidden=true;loading=false;
@@ -161,14 +173,14 @@ if(story){
     }catch(error){renderer?.dispose();fallback('Source CAD image shown. The interactive enclosure could not start.');if(restoreFocus&&(document.activeElement===load||document.activeElement===document.body))load.focus({preventScroll:true});}
   }
   load.addEventListener('click',()=>start(true));
-  poses.forEach(button=>button.addEventListener('click',()=>{resetInspection();manual=Number(button.dataset.kikuPose);update();}));
-  pcbControl.addEventListener('click',()=>{setView('iso');inspection('pcb');});
-  partSelect.addEventListener('change',()=>{setView('iso');inspection(partSelect.value);});
+  poses.forEach(button=>button.addEventListener('click',()=>{resetInspection();manual=Number(button.dataset.kikuPose);update();frameInspection();}));
+  pcbControl.addEventListener('click',()=>{setView('iso');inspection('pcb');frameInspection();});
+  partSelect.addEventListener('change',()=>{setView('iso');inspection(partSelect.value);frameInspection();});
   explodeControl.addEventListener('input',()=>{inspectionExplode=Number(explodeControl.value)/100;inspected=true;manual=progress;semantic();queue();});
   viewControls.forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
-  allControl.addEventListener('click',()=>inspection(null));
-  story.querySelector('[data-model-reset]').addEventListener('click',()=>{resetInspection();manual=0;update();});
-  inspector.addEventListener('toggle',()=>{if(inspector.open&&model)inspection(selected);});
+  allControl.addEventListener('click',()=>{inspection(null);frameInspection();});
+  story.querySelector('[data-model-reset]').addEventListener('click',()=>{resetInspection();manual=0;update();frameInspection();});
+  inspector.addEventListener('toggle',()=>{if(inspector.open&&model){inspection(selected);frameInspection();}});
   const pointers=new Map();let pinch=0;
   function startOrbit(){
     if(!inspected){inspectionExplode=smooth(progress/.45)*(1-smooth((progress-.62)/.32));orbit.az=.46+smooth(progress/.5)*.44+smooth((progress-.6)/.4)*2.5;orbit.el=.18+(1-smooth((progress-.62)/.32))*smooth(progress/.45)*.14;inspection(null);}

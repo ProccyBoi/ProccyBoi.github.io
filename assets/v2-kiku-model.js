@@ -26,7 +26,7 @@ export function makeKikuMesh(T,part,onTextureLoad=()=>{}){
  // These source solid surfaces have outward-wound front and rear faces.
  if(['pcb_copper','pcb_via','pcb_pad','pcb_silkscreen','pcb_soldermask','pcb_pcb'].includes(part.id))materialOptions.side=T.FrontSide;
  const boardDepth={'pcb_copper':1,'pcb_via':2,'pcb_pad':3}[part.id];
- if(boardDepth)Object.assign(materialOptions,{polygonOffset:true,polygonOffsetFactor:0,polygonOffsetUnits:-boardDepth});
+ if(boardDepth)Object.assign(materialOptions,{polygonOffset:true,polygonOffsetFactor:-.02*boardDepth,polygonOffsetUnits:-boardDepth});
  const material=new (part.unlit?T.MeshBasicMaterial:T.MeshStandardMaterial)(materialOptions);
  if(part.texture){const texture=new T.TextureLoader().load(part.texture,onTextureLoad);texture.encoding=T.sRGBEncoding;texture.magFilter=T.NearestFilter;texture.minFilter=T.LinearFilter;material.map=texture;}
  const mesh=new T.Mesh(geometry,material);mesh.userData.part=part;

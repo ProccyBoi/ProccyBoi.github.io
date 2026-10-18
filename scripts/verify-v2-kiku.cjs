@@ -40,6 +40,11 @@ async function open(browser,v,options={}){
  if(options.noDecompression)await context.addInitScript(()=>{window.DecompressionStream=undefined;});
  if(options.noGL)await context.addInitScript(()=>{const old=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...a){return /webgl/.test(type)?null:old.call(this,type,...a);};});
  await context.route('**/*',r=>{const u=new URL(r.request().url());requests.push(u.pathname);requestURLs.push(u.pathname+u.search);if(u.origin!==new URL(base).origin||r.request().method()!=='GET'||(gates.model&&u.pathname.endsWith('assembly.bin'))||(gates.pcb&&/\/pcb\.bin(\.gz)?$/.test(u.pathname))||(gates.hardware&&/\/hardware\.bin(\.gz)?$/.test(u.pathname))||(options.failWasm&&u.pathname.endsWith('.wasm')))return r.abort();return r.continue();});
+ if(options.diagnosticHideMeshes)await context.route('**/v2-kiku-model.js*',async request=>{
+  const response=await request.fetch(),original=await response.text();
+  const injected=original.replace('return mesh;',`if(${JSON.stringify(options.diagnosticHideMeshes)}.includes(part.id)){mesh.material.opacity=0;mesh.material.transparent=true;mesh.material.depthWrite=false;}return mesh;`);
+  assert.notEqual(injected,original,'Diagnostic injection matched shared mesh constructor');await request.fulfill({response,body:injected});
+ });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(String(e)));await page.goto(base+route,{waitUntil:'networkidle'});return{context,page,requests,requestURLs,errors,v,gates,options};
 }
 async function stable(page){await page.evaluate(()=>{window.__kikuStable={value:document.querySelector('[data-kiku-story]').dataset.frames||'0',at:performance.now()};});await page.waitForFunction(()=>{const s=document.querySelector('[data-kiku-story]');const x=s.dataset.frames||'0';window.__kikuStable=window.__kikuStable||{value:x,at:performance.now()};if(window.__kikuStable.value!==x)window.__kikuStable={value:x,at:performance.now()};const r=s.querySelector('.kiku-story-stage').getBoundingClientRect();const current=s.dataset.ready!=='true'||r.bottom<=0||r.top>=innerHeight||Math.abs(Number(s.dataset.progress)-Number(s.dataset.target))<.00006;return current&&performance.now()-window.__kikuStable.at>300;},{},{timeout:30000,polling:50});}
@@ -63,14 +68,22 @@ async function shot(run,name){
  }
  fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify(data,null,2));
 }
-async function canvasShot(page,name){
+async function assertFramed(page,label){
+ const geometry=await page.evaluate(()=>{const rect=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();return{stage:rect('.kiku-story-stage'),canvas:rect('[data-model-canvas]'),chromeBottom:Math.max(rect('.v2-header').bottom,rect('.v2-case-nav').bottom),height:innerHeight,pinned:document.querySelector('[data-kiku-story]').classList.contains('is-pinned')};});
+ if(geometry.pinned)assert.ok(geometry.stage.top>=geometry.chromeBottom-1,'Pinned stage clears sticky navigation: '+label+' '+JSON.stringify(geometry));
+ assert.ok(geometry.canvas.top>=geometry.chromeBottom-1&&geometry.canvas.bottom<=geometry.height+1,'Entire model canvas is unobscured: '+label+' '+JSON.stringify(geometry));
+ return geometry;
+}
+async function canvasShot(page,name,{nativeCapture=false}={}){
  await page.waitForTimeout(350);
+ const framing=nativeCapture?null:await assertFramed(page,name);
  const pixels=await page.locator('[data-model-canvas]').screenshot({path:path.join(out,name+'.png')});
  const {PNG}=require('pngjs'),im=PNG.sync.read(pixels),bg=Array.from(im.data.slice(0,3)),colors=new Set();let foreground=0;
  for(let i=0;i<im.data.length;i+=4){if(Math.max(...bg.map((v,j)=>Math.abs(im.data[i+j]-v)))>25)foreground++;colors.add(im.data[i]*65536+im.data[i+1]*256+im.data[i+2]);}
  assert.ok(foreground/(im.width*im.height)>.025,'Nonblank real model canvas '+name);assert.ok(colors.size>12,'Actual model shading/material variation '+name);
  const stage=await page.locator('[data-model-stage]').evaluate(e=>({...e.dataset}));assert.ok(Number(stage.visibleMeshes)>0,'Visible render meshes '+name);
- fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({width:im.width,height:im.height,foreground,colors:colors.size,stage},null,2));
+ const graphics=await page.locator('[data-model-canvas]').evaluate(canvas=>{const item=window.__kikuWebGL.find(item=>item.canvas===canvas),gl=item.context;return{type:item.type,depthBits:gl.getParameter(gl.DEPTH_BITS),attributes:gl.getContextAttributes()};});
+ fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({width:im.width,height:im.height,foreground,colors:colors.size,stage,framing,graphics},null,2));
 }
 async function singleRenderer(run,expectedContexts=1){
  const {page}=run;assert.equal(await page.locator('[data-model-canvas]').count(),1,'One consolidated CAD canvas');assert.equal(await page.locator('[data-kiku-story-canvas]').count(),1,'One immersive canvas');
@@ -79,7 +92,7 @@ async function singleRenderer(run,expectedContexts=1){
  assert.equal(contexts.length,expectedContexts,'One context per initial load or explicit recovery');assert.equal(contexts.filter(item=>item.live&&item.connected).length,1,'Exactly one live connected WebGL renderer');
 }
 async function part(page,id){
- await page.locator('[data-part-select]').selectOption(id);await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();
+ await page.locator('[data-part-select]').selectOption(id);
  await page.waitForFunction(id=>{const s=document.querySelector('[data-model-stage]'),groups=JSON.parse(s.dataset.visibleGroups||'[]');return s.dataset.selected===id&&(id?groups.length===1&&groups[0]===id:groups.length===14);},id);
  assert.equal(await page.locator('[data-model-stage]').getAttribute('data-mode'),'inspect','Part selection enters shared inspector');
 }
@@ -118,20 +131,34 @@ async function matrix(browser,name){
   await page.locator('.kiku-sim-reset').click();await page.locator('.kiku-sim-canvas').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');assert.notEqual(await page.locator('.kiku-sim').getAttribute('data-screen'),'0');
   await page.locator('[data-source="fm"]').click();assert.equal(await page.locator('[data-signal-input]').innerText(),'FM broadcast');await page.locator('[data-source="bt"]').click();assert.match(await page.locator('[data-signal-description]').innerText(),/no Bluetooth-headphone transmit path/);await shot(run,name+'-signal');
   const f=await page.locator('[data-kiku-story]').getAttribute('data-frames');await page.waitForTimeout(500);assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-frames'),f,'No offscreen rendering');
-  // One shared renderer serves the scroll narrative and optional inspection.
+  // Return through the actual section navigation, rather than artificially
+  // centering a sticky canvas below the end of its containing scroll range.
+  await page.locator('[data-v2-section][href$="#overview"]').click();await page.waitForURL('**#overview');await stable(page);
   await page.locator('[data-kiku-pose="0"]').click();await stable(page);
   const details=page.locator('[data-inspector-details]');
-  if(!(await details.evaluate(e=>e.open)))await details.locator('summary').click();
-  assert.ok(await details.evaluate(e=>e.open),'Inspector details open');
+  async function lowerBoundary(){
+   const pinned=await page.locator('[data-kiku-story]').evaluate(e=>e.classList.contains('is-pinned'));if(!pinned)return null;
+   await page.evaluate(()=>{const s=document.querySelector('[data-kiku-story]'),stage=s.querySelector('.kiku-story-stage'),top=parseFloat(getComputedStyle(stage).top),end=scrollY+s.getBoundingClientRect().top-top+s.offsetHeight-stage.clientHeight;scrollTo({top:end+48,behavior:'instant'});});await stable(page);
+   const state=await page.evaluate(()=>({y:scrollY,top:document.querySelector('.kiku-story-stage').getBoundingClientRect().top,chrome:document.querySelector('.v2-case-nav').getBoundingClientRect().bottom,selected:document.querySelector('[data-model-stage]').dataset.selected}));
+   assert.ok(state.top<state.chrome-20,'Regression begins beyond full sticky range: '+JSON.stringify(state));return state;
+  }
+  const boundaryBefore=await lowerBoundary();
+  if(!(await details.evaluate(e=>e.open))){await hit(details.locator('summary'));await details.locator('summary').click();}
+  assert.ok(await details.evaluate(e=>e.open),'Inspector details open');await stable(page);
+  const boundaryAfter=await assertFramed(page,name+'-inspector-boundary');
+  if(boundaryBefore){assert.equal(await page.locator('[data-model-stage]').getAttribute('data-selected'),boundaryBefore.selected,'Opening inspector preserves selection while reframing');fs.writeFileSync(path.join(out,name+'-inspector-boundary.json'),JSON.stringify({before:boundaryBefore,after:boundaryAfter},null,2));}
+
   const expected=['',...JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku/assembly.json'))).parts.map(p=>p.id),'pcb',...JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-hardware/hardware.json'))).items.map(p=>p.id)];
   assert.deepEqual(await page.locator('[data-part-select] option').evaluateAll(options=>options.map(o=>o.value)),expected,'All original enclosure, PCB and four hardware groups remain selectable');
   for(const id of expected.filter(id=>id&&id!=='pcb'&&!JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-hardware/hardware.json'))).items.some(item=>item.id===id)))await part(page,id);
   await part(page,'display_carrier');assert.match(await page.locator('[data-part-name]').innerText(),/Display cradle/);
   await part(page,'');await page.locator('input[data-explode]').fill('75');await page.waitForFunction(()=>Math.abs(Number(document.querySelector('[data-model-stage]').dataset.explode)-.75)<.001);
-  await page.locator('[data-model-stage]').scrollIntoViewIfNeeded();
+  await assertFramed(page,name+'-inspector-open');
+  for(const control of await page.locator('[data-inspector-details] summary,[data-part-select],input[data-explode],button[data-view],[data-model-reset]').all())await hit(control);
   const openBounds=await page.locator('[data-model-stage]').boundingBox();assert.ok(openBounds.width>=180&&openBounds.height>=140,'Open inspector keeps a useful model viewport: '+JSON.stringify(openBounds));
   await shot(run,name+'-inspector-open');
   await page.locator('[data-model-mode="pcb"]').click();await page.waitForFunction(()=>document.querySelector('[data-model-stage]').dataset.selected==='pcb');
+  const selectedBoundary=await lowerBoundary();if(selectedBoundary){assert.equal(selectedBoundary.selected,'pcb','Native scroll preserves open-inspector selection');await part(page,'pcb');await assertFramed(page,name+'-part-selection-boundary');}
   for(const view of ['front','iso','rear']){await camera(page,view);await canvasShot(page,name+'-pcb-'+view);}
   const hardware=JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-hardware/hardware.json'))).items;
   for(const item of hardware){await part(page,item.id);await page.locator('input[data-explode]').fill('0');await camera(page,'iso');await canvasShot(page,name+'-hardware-'+item.id);}
@@ -143,7 +170,7 @@ async function matrix(browser,name){
   await page.keyboard.press('ArrowRight');await page.keyboard.press('+');await page.waitForTimeout(350);
   assert.equal(await stage.getAttribute('data-view'),'custom');assert.notEqual(Number(await stage.getAttribute('data-azimuth')),angleBefore,'Keyboard rotates model');assert.notEqual(Number(await stage.getAttribute('data-zoom')),zoomBefore,'Keyboard zooms model');
   assert.notDeepEqual(await page.locator('[data-model-canvas]').screenshot(),keyboardBefore,'Keyboard changes actual rendered pixels');
-  async function modelPoint(){await stage.scrollIntoViewIfNeeded();return page.locator('[data-model-canvas]').evaluate(e=>{const b=e.getBoundingClientRect(),top=Math.max(b.top+20,150),bottom=Math.min(b.bottom-20,innerHeight-30),x=b.left+b.width/2,y=(top+bottom)/2;const h=document.elementFromPoint(x,y);if(bottom-top<30||!(h===e||e.contains(h)))throw new Error('Model gesture point is obscured: '+JSON.stringify({b:b.toJSON(),top,bottom,hit:h?.outerHTML}));return{x,y};});}
+  async function modelPoint(){return page.locator('[data-model-canvas]').evaluate(e=>{const b=e.getBoundingClientRect(),top=Math.max(b.top+20,150),bottom=Math.min(b.bottom-20,innerHeight-30),x=b.left+b.width/2,y=(top+bottom)/2;const h=document.elementFromPoint(x,y);if(bottom-top<30||!(h===e||e.contains(h)))throw new Error('Model gesture point is obscured: '+JSON.stringify({b:b.toJSON(),top,bottom,hit:h?.outerHTML}));return{x,y};});}
   if(run.v.touch){
    const cdp=await run.context.newCDPSession(page);
    async function modelGesture(dx,dy){const{x,y}=await modelPoint();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let i=1;i<=8;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*i/8,y:y+dy*i/8}]});await page.waitForTimeout(25);}await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(300);}
@@ -285,8 +312,8 @@ async function fallbacks(browser,webkit=false){
 }
 // Evidence capture uses the same real renderer and assets, with only page layout
 // made deterministic. It runs first so geometry review survives later failures.
-async function capturePoster(browser){
- const run=await open(browser,{width:1440,height:1500}),{page}=run;
+async function capturePoster(browser,diagnostic=null){
+ const run=await open(browser,{width:1440,height:1500},diagnostic?{diagnosticHideMeshes:diagnostic.ids}:{}),{page}=run;
  try{
   await page.waitForSelector('[data-kiku-story][data-ready="true"]',{timeout:120000});await singleRenderer(run);
   await page.evaluate(()=>{
@@ -299,19 +326,21 @@ async function capturePoster(browser){
   assert.equal(await page.locator('[data-kiku-story]').getAttribute('data-progress'),'0.00000','Assembled product capture');
   async function capture(name,pose){
    const bounds=await page.locator('[data-model-canvas]').boundingBox();assert.deepEqual(bounds,{x:0,y:0,width:1200,height:1000},'Integer, unobscured native capture viewport');
-   await canvasShot(page,name);
+   await canvasShot(page,name,{nativeCapture:true});
    const pixels=fs.readFileSync(path.join(out,name+'.png')),{PNG}=require('pngjs'),im=PNG.sync.read(pixels);assert.equal(im.width,1200);assert.equal(im.height,1000);
    const evidence=JSON.parse(fs.readFileSync(path.join(out,name+'.json')));
-   fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({...evidence,sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha256:require('node:crypto').createHash('sha256').update(pixels).digest('hex'),pose,renderer:'Chromium ANGLE SwiftShader, native WebGL canvas capture',errors:run.errors},null,2));
+   fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({...evidence,sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),sha256:require('node:crypto').createHash('sha256').update(pixels).digest('hex'),pose,renderer:'Chromium ANGLE SwiftShader, native WebGL canvas capture',diagnostic:diagnostic?{label:diagnostic.name,hiddenNativeBatches:diagnostic.ids,publishable:false,scope:'Response-only material opacity override; geometry and camera bounds unchanged'}:null,errors:run.errors},null,2));
   }
-  await capture('kiku-product-poster','assembled, progress 0');
-  await page.locator('input[data-explode]').evaluate(e=>{e.value='100';e.dispatchEvent(new Event('input',{bubbles:true}));});await page.locator('button[data-view="iso"]').evaluate(e=>e.click());
-  await capture('kiku-populated-poster','complete assembly, full separation, iso');
+  if(!diagnostic){
+   await capture('kiku-product-poster','assembled, progress 0');
+   await page.locator('input[data-explode]').evaluate(e=>{e.value='100';e.dispatchEvent(new Event('input',{bubbles:true}));});await page.locator('button[data-view="iso"]').evaluate(e=>e.click());
+   await capture('kiku-populated-poster','complete assembly, full separation, iso');
+  }
   await page.locator('[data-part-select]').evaluate(e=>{e.value='pcb';e.dispatchEvent(new Event('change',{bubbles:true}));});
   await page.waitForFunction(()=>document.querySelector('[data-model-stage]').dataset.selected==='pcb');
-  for(const view of ['front','iso','rear']){await page.locator('button[data-view="'+view+'"]').evaluate(e=>e.click());await capture('early-pcb-'+view,'PCB isolation, '+view);}
-  fs.copyFileSync(path.join(out,'early-pcb-front.png'),path.join(out,'kiku-pcb-poster.png'));fs.copyFileSync(path.join(out,'early-pcb-front.json'),path.join(out,'kiku-pcb-poster.json'));
-  assert.deepEqual(run.errors,[]);console.log('PASS native assembled poster and early PCB geometry captures');
+  for(const view of (diagnostic?['iso','rear']:['front','iso','rear'])){await page.locator('button[data-view="'+view+'"]').evaluate(e=>e.click());await capture((diagnostic?'diagnostic-only-'+diagnostic.name:'early-pcb')+'-'+view,'PCB isolation, '+view);}
+  if(!diagnostic){fs.copyFileSync(path.join(out,'early-pcb-front.png'),path.join(out,'kiku-pcb-poster.png'));fs.copyFileSync(path.join(out,'early-pcb-front.json'),path.join(out,'kiku-pcb-poster.json'));}
+  assert.deepEqual(run.errors,[]);console.log('PASS '+(diagnostic?'nonpublishable layer diagnostic '+diagnostic.name:'native assembled poster and early PCB geometry captures'));
  }catch(error){await failure(run,'poster',error);throw error;}finally{await bounded(run.context.close(),5000,'Poster context cleanup');}
 }
 (async()=>{
@@ -319,6 +348,6 @@ async function capturePoster(browser){
  const watchdog=setTimeout(()=>{console.error('Browser verification exceeded 840 seconds');process.exit(1);},840000);watchdog.unref();
  const{chromium,webkit}=require('playwright'),isWK=args.includes('--webkit');
  const browser=await(isWK?webkit:chromium).launch({headless:true,...(isWK?{}:{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-sandbox']})});
- try{if(args.includes('--capture-poster'))await capturePoster(browser);else if(isWK||args.includes('--fallbacks'))await fallbacks(browser,isWK);else{const viewport=args.find(a=>a.startsWith('--viewport='))?.split('=')[1]||'desktop1440';await matrix(browser,viewport);if(viewport==='desktop1440')await initialFragments(browser);}}
+ try{if(args.includes('--capture-poster')){await capturePoster(browser);for(const diagnostic of [{name:'no-mask',ids:['pcb_soldermask']},{name:'no-copper',ids:['pcb_copper']},{name:'no-vias-pads',ids:['pcb_via','pcb_pad']}])await capturePoster(browser,diagnostic);}else if(isWK||args.includes('--fallbacks'))await fallbacks(browser,isWK);else{const viewport=args.find(a=>a.startsWith('--viewport='))?.split('=')[1]||'desktop1440';await matrix(browser,viewport);if(viewport==='desktop1440')await initialFragments(browser);}}
  finally{try{await bounded(browser.close(),30000,'Browser process cleanup');}finally{clearTimeout(watchdog);}}
 })().catch(e=>{console.error(e);process.exitCode=1;});
