@@ -5,49 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/">
   <title>Flight Review | Skylabs</title>
-  <meta name="description" content="Private, in-browser Skylabs flight-log review with synchronized telemetry, MapLibre 3D terrain, optional satellite imagery and dense mapped vegetation.">
-  <meta name="theme-color" content="#08110f">
+  <meta name="description" content="Review Skylabs binary, Excel and CSV logs locally, with synchronized telemetry, sample inspection and optional 3D replay.">
+  <meta name="theme-color" content="#141412">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Skylabs Flight Review">
   <meta property="og:description" content="Review Skylabs binary, Excel and CSV flight logs entirely in your browser.">
   <meta property="og:url" content="https://proccyboi.github.io/shared/flight-review/">
   <link rel="canonical" href="https://proccyboi.github.io/shared/flight-review/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/vendor/maplibre-gl.css?v=5.24.0">
-  <link rel="stylesheet" href="assets/flight-review.css?v=20260810-1">
-  <script src="assets/vendor/maplibre-gl.js?v=5.24.0" defer></script>
-  <script src="assets/vendor/three.min.js" defer></script>
-  <script src="assets/vendor/xlsx.full.min.js" defer></script>
-  <script src="assets/flight-review.js?v=20260810-1" defer></script>
+  <link rel="stylesheet" href="assets/flight-review.css?v=20261019-1">
+  <script src="assets/flight-review.js?v=20261019-1" defer></script>
 </head>
 <body class="flight-review-page">
   <a class="flight-skip-link" href="/shared/flight-review/#main">Skip to flight review</a>
 
   <header class="flight-header">
-    <a class="flight-brand" href="projects/skylabs/" aria-label="Back to the Skylabs project">
+    <a class="flight-brand" href="v2/projects/skylabs/" aria-label="Back to the Skylabs project">
       <span class="flight-brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span><strong>Skylabs</strong><small>Flight Review</small></span>
+      <span><strong>Skylabs</strong></span>
     </a>
     <nav class="flight-header-nav" aria-label="Flight Review navigation">
-      <a href="./">Portfolio</a>
+      <a href="v2/">Portfolio</a>
       <a href="shared/projects/skylabs/f110211/">Reference flight</a>
       <button type="button" data-open-schema>Log format</button>
-      <a href="projects/skylabs/">Project</a>
+      <a href="v2/projects/skylabs/">Project</a>
     </nav>
   </header>
 
-  <main id="main" class="flight-main">
+  <main id="main" class="flight-main" tabindex="-1">
+    <noscript><p class="flight-noscript">Flight review needs JavaScript to process local files. Enable it, then reload this page.</p></noscript>
     <section class="flight-onboarding" data-onboarding aria-labelledby="flight-review-title">
       <div class="flight-onboarding-copy">
-        <p class="flight-kicker"><span aria-hidden="true"></span> Post-flight analysis / local processing</p>
-        <h1 id="flight-review-title">See the whole flight.<br><em>Interrogate every sample.</em></h1>
-        <p class="flight-lede">Review Skylabs aircraft logs with synchronized instruments, engineering plots and a georeferenced 3D route over terrain.</p>
-
-        <div class="flight-capability-list" aria-label="Flight Review capabilities">
-          <div><span>01</span><p><strong>Skylabs binary v1–v3</strong>Direct parsing of the aircraft SD-card format.</p></div>
-          <div><span>02</span><p><strong>Excel and CSV</strong>A clear, documented column schema with aliases.</p></div>
-          <div><span>03</span><p><strong>Local processing</strong>Your flight file is never uploaded to a server.</p></div>
-        </div>
+        <h1 id="flight-review-title">Flight review</h1>
+        <p class="flight-lede">Open a log to inspect telemetry, replay the route and review individual samples.</p>
       </div>
 
       <div class="flight-ingest-column">
@@ -57,31 +47,31 @@
             <svg viewBox="0 0 48 48"><path d="M24 34V9m0 0-8 8m8-8 8 8M9 30v7a3 3 0 0 0 3 3h24a3 3 0 0 0 3-3v-7"/></svg>
           </div>
           <p class="flight-dropzone-label">Drop a flight log here</p>
-          <p class="flight-dropzone-hint">SKYLBIN1 binary, Excel workbook or CSV · up to 150 MB</p>
+          <p class="flight-dropzone-hint">Skylabs binary v1–v3, Excel, CSV or TSV · up to 150 MB</p>
           <button class="flight-button flight-button-primary" type="button" data-choose-file>Choose flight log</button>
-          <div class="flight-file-types" aria-hidden="true"><span>.BIN</span><span>.XLSX</span><span>.XLS</span><span>.CSV</span></div>
         </div>
 
         <div class="flight-privacy-note">
           <span aria-hidden="true">
             <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
           </span>
-          <p><strong>Private by design.</strong> Parsing, charts and replay run in this tab. Only the coordinates needed to draw the open basemap and elevation tiles are requested.</p>
+          <p><strong>Your file stays in this browser.</strong> Terrain view requests map, elevation and vegetation data for the visible area from external providers.</p>
         </div>
 
         <button class="flight-schema-link" type="button" data-open-schema>
-          <span>Spreadsheet column format</span>
-          <strong>View the accepted column format <i aria-hidden="true">→</i></strong>
+          <span>Preparing a spreadsheet?</span>
+          <strong>View log format <i aria-hidden="true">→</i></strong>
         </button>
       </div>
     </section>
 
-    <section class="flight-loading" data-loading hidden aria-live="polite" aria-busy="true">
+    <section class="flight-loading" data-loading hidden aria-labelledby="flight-loading-title" aria-live="polite" aria-atomic="false">
       <div class="flight-loading-mark" aria-hidden="true"><span></span></div>
-      <p class="flight-kicker">Reading flight data</p>
-      <h2 data-loading-title>Validating log structure</h2>
-      <p data-loading-detail>Nothing leaves this browser tab.</p>
-      <div class="flight-progress"><span data-loading-progress></span></div>
+      <p class="flight-kicker">Processing locally</p>
+      <h2 id="flight-loading-title" tabindex="-1" data-loading-title>Validating log structure</h2>
+      <p data-loading-detail>Reading your file in this browser.</p>
+      <div class="flight-progress" aria-hidden="true"><span data-loading-progress></span></div>
+      <button class="flight-button" type="button" data-cancel-load>Cancel</button>
     </section>
 
     <section class="flight-workspace" data-workspace hidden aria-label="Flight log workspace">
@@ -97,7 +87,7 @@
         </div>
         <div class="flight-command-actions">
           <span class="flight-private-chip"><i aria-hidden="true"></i> Local session</span>
-          <button type="button" class="flight-command-button" data-download-csv>Export normalized CSV</button>
+          <button type="button" class="flight-command-button" data-download-csv title="Export normalized telemetry as CSV">Export CSV</button>
         </div>
       </header>
 
@@ -110,85 +100,82 @@
         <article><span>Logging</span><strong data-summary-rate>—</strong><small data-summary-records>—</small></article>
       </section>
 
-      <nav class="flight-view-tabs" aria-label="Workspace view">
-        <button type="button" aria-selected="true" data-view-button="terrain">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 18 5-7 4 5 3-4 6 6"/><path d="M3 20h18"/></svg>
-          Open 3D terrain
-        </button>
-        <button type="button" aria-selected="false" data-view-button="local">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
-          Local 3D replay
-        </button>
-        <button type="button" aria-selected="false" data-view-button="charts">
+      <p class="flight-data-note" id="flight-data-note">Position and ground speed may be derived or interpolated. Terrain clearance is adjusted for display, not measured AGL.</p>
+
+      <nav class="flight-view-tabs" role="tablist" aria-label="Workspace view">
+        <button id="flight-tab-charts" type="button" role="tab" aria-controls="flight-panel-charts" aria-selected="true" tabindex="0" data-view-button="charts">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 19h18M5 16l4-5 3 2 5-7 3 3"/></svg>
-          Telemetry traces
+          Telemetry
         </button>
-        <button type="button" aria-selected="false" data-view-button="samples">
+        <button id="flight-tab-terrain" type="button" role="tab" aria-controls="flight-panel-terrain" aria-selected="false" tabindex="-1" data-view-button="terrain">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 18 5-7 4 5 3-4 6 6"/><path d="M3 20h18"/></svg>
+          3D terrain
+        </button>
+        <button id="flight-tab-local" type="button" role="tab" aria-controls="flight-panel-local" aria-selected="false" tabindex="-1" data-view-button="local">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
+          Local 3D
+        </button>
+        <button id="flight-tab-samples" type="button" role="tab" aria-controls="flight-panel-samples" aria-selected="false" tabindex="-1" data-view-button="samples">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M10 5v14"/></svg>
-          Sample inspector
+          Samples
         </button>
       </nav>
 
       <div class="flight-review-grid">
         <section class="flight-visualizer" aria-label="Flight replay visualizer">
-          <div class="flight-view is-active" data-view="terrain">
+          <div id="flight-panel-terrain" class="flight-view" role="tabpanel" aria-labelledby="flight-tab-terrain" aria-describedby="flight-data-note" tabindex="0" data-view="terrain" hidden>
             <div id="flight-terrain-map" class="flight-map-host" aria-label="MapLibre 3D terrain flight replay"></div>
             <div class="flight-map-legend" data-terrain-legend aria-label="3D terrain overlay legend">
               <div><span class="flight-map-legend-line is-airborne" aria-hidden="true"></span>Airborne path</div>
               <div><span class="flight-map-legend-line is-ground" aria-hidden="true"></span>Ground projection</div>
               <div><span class="flight-map-legend-tree" aria-hidden="true"></span>3D vegetation</div>
-              <small data-terrain-clearance-status>Terrain aligned · 5 m minimum AGL</small>
-              <small data-vegetation-status>Loading mapped woodland…</small>
+              <small data-terrain-clearance-status>Visual clearance: 5 m · not measured AGL</small>
+              <small data-vegetation-status>Mapped vegetation loads with terrain</small>
             </div>
             <div class="flight-map-setup" data-map-setup>
               <div class="flight-map-setup-card">
-                <p class="flight-kicker"><span aria-hidden="true"></span> Open geospatial replay</p>
+                <p class="flight-kicker">Terrain view</p>
                 <h2 data-map-setup-title>Preparing 3D terrain</h2>
-                <p data-map-setup-copy>Loading the open basemap, elevation mesh and georeferenced flight overlay.</p>
-                <div class="flight-map-stack" aria-label="Open terrain technology stack">
-                  <span><b>Renderer</b> MapLibre GL JS</span>
-                  <span><b>Basemap</b> OpenFreeMap</span>
-                  <span><b>Elevation</b> Mapterhorn</span>
-                </div>
+                <p data-map-setup-copy>Loading map and elevation data for the flight area.</p>
                 <button class="flight-button flight-button-primary" type="button" data-map-retry hidden>Retry terrain</button>
-                <p class="flight-map-key-note">Satellite imagery uses a domain-restricted public MapTiler browser key. The open map remains available as a keyless fallback.</p>
+                <p class="flight-map-key-note">Map: OpenFreeMap · Elevation: Mapterhorn · Satellite: MapTiler. Providers receive requests for the viewed area.</p>
               </div>
             </div>
           </div>
 
-          <div class="flight-view" data-view="local" hidden>
+          <div id="flight-panel-local" class="flight-view" role="tabpanel" aria-labelledby="flight-tab-local" aria-describedby="flight-data-note" tabindex="0" data-view="local" hidden>
             <div id="flight-local-3d" class="flight-local-host" aria-label="Local WebGL 3D flight replay"></div>
           </div>
 
-          <div class="flight-view flight-chart-view" data-view="charts" hidden>
-            <div class="flight-chart-heading"><div><p class="flight-kicker">Linked engineering traces</p><h2>Telemetry timeline</h2></div><p>Click or drag across any plot to move the replay cursor.</p></div>
+          <div id="flight-panel-charts" class="flight-view flight-chart-view is-active" role="tabpanel" aria-labelledby="flight-tab-charts" tabindex="0" data-view="charts">
+            <div class="flight-chart-heading"><h2>Telemetry timeline</h2><p id="flight-trace-help">Drag a plot or use the replay controls to inspect a moment.</p></div>
             <div class="flight-chart-stack">
-              <article class="flight-chart-card" data-chart-card="attitude"><header><div><h3>Aircraft attitude</h3><p>Recorded sensor frame</p></div><div class="flight-chart-legend"><span style="--series:#62dfb3">Roll</span><span style="--series:#6bb6ff">Pitch</span><span style="--series:#f4c86a">Yaw</span></div></header><canvas data-chart="attitude" aria-label="Roll, pitch and yaw over time"></canvas></article>
-              <article class="flight-chart-card" data-chart-card="altitude"><header><div><h3>Vertical profile</h3><p>Absolute altitude</p></div><div class="flight-chart-legend"><span style="--series:#62dfb3">Barometer</span><span style="--series:#d4a5ff">GNSS</span></div></header><canvas data-chart="altitude" aria-label="Barometric and GNSS altitude over time"></canvas></article>
-              <article class="flight-chart-card" data-chart-card="speed"><header><div><h3>Speed</h3><p>Filtered ground estimate and onboard airspeed</p></div><div class="flight-chart-legend"><span style="--series:#f4c86a">Ground</span><span style="--series:#ff8f70">Airspeed</span></div></header><canvas data-chart="speed" aria-label="Ground speed and airspeed over time"></canvas></article>
-              <article class="flight-chart-card" data-chart-card="quality"><header><div><h3>Log and navigation quality</h3><p>Latency and GNSS uncertainty</p></div><div class="flight-chart-legend"><span style="--series:#6bb6ff">Log dt</span><span style="--series:#ff8f70">GNSS HAcc</span></div></header><canvas data-chart="quality" aria-label="Logging interval and GNSS horizontal accuracy over time"></canvas></article>
+              <article class="flight-chart-card" data-chart-card="attitude"><header><div><h3>Aircraft attitude</h3><p>Recorded attitude</p></div><div class="flight-chart-legend"><span style="--series:#7bbcff">Roll</span><span style="--series:#d4d1c5">Pitch</span><span style="--series:#d5b778">Yaw</span></div></header><canvas role="img" aria-describedby="flight-trace-help" data-chart="attitude" aria-label="Roll, pitch and yaw over time"></canvas></article>
+              <article class="flight-chart-card" data-chart-card="altitude"><header><div><h3>Vertical profile</h3><p>Absolute altitude</p></div><div class="flight-chart-legend"><span style="--series:#7bbcff">Barometer</span><span style="--series:#b8abd1">GNSS</span></div></header><canvas role="img" aria-describedby="flight-trace-help" data-chart="altitude" aria-label="Barometric and GNSS altitude over time"></canvas></article>
+              <article class="flight-chart-card" data-chart-card="speed"><header><div><h3>Speed</h3><p>Ground estimate and onboard airspeed</p></div><div class="flight-chart-legend"><span style="--series:#d5b778">Ground</span><span style="--series:#d99078">Airspeed</span></div></header><canvas role="img" aria-describedby="flight-trace-help" data-chart="speed" aria-label="Ground speed and airspeed over time"></canvas></article>
+              <article class="flight-chart-card" data-chart-card="quality"><header><div><h3>Log and navigation quality</h3><p>Latency and GNSS uncertainty</p></div><div class="flight-chart-legend"><span style="--series:#d4d1c5">Log dt</span><span style="--series:#d99078">GNSS HAcc</span></div></header><canvas role="img" aria-describedby="flight-trace-help" data-chart="quality" aria-label="Logging interval and GNSS horizontal accuracy over time"></canvas></article>
             </div>
           </div>
 
-          <div class="flight-view flight-sample-view" data-view="samples" hidden>
-            <div class="flight-sample-heading"><div><p class="flight-kicker">Current record</p><h2 data-sample-heading>Sample 1</h2></div><button type="button" data-copy-sample>Copy sample JSON</button></div>
+          <div id="flight-panel-samples" class="flight-view flight-sample-view" role="tabpanel" aria-labelledby="flight-tab-samples" tabindex="0" data-view="samples" hidden>
+            <div class="flight-sample-heading"><div><p class="flight-kicker">Current record</p><h2 data-sample-heading>Sample 1</h2><p>Raw fields preserve recorded values. Reconstructed position and ground speed may be derived or interpolated.</p></div><button type="button" data-copy-sample>Copy sample JSON</button></div>
             <div class="flight-sample-grid" data-sample-grid></div>
             <section class="flight-source-panel"><div><p class="flight-kicker">Data provenance</p><h3>Parser and source details</h3></div><dl data-source-details></dl></section>
           </div>
 
-          <div class="flight-hud" data-flight-hud>
+          <div class="flight-hud" data-flight-hud hidden>
             <div><span>Time</span><strong data-hud-time>00:00.000</strong></div>
             <div><span>Ground speed</span><strong data-hud-speed>—</strong></div>
             <div><span>Altitude</span><strong data-hud-altitude>—</strong></div>
             <div><span>Position</span><strong data-hud-position>—</strong></div>
           </div>
 
-          <div class="flight-visual-controls" data-visual-controls>
+          <div class="flight-visual-controls" data-visual-controls hidden>
             <label>Camera<select data-camera-mode><option value="orbit">Orbit</option><option value="follow">Follow</option><option value="top">Top</option></select></label>
             <label>Height<select data-height-source><option value="baro">Barometer profile</option><option value="gps">GNSS profile</option></select></label>
             <label>Vertical<select data-vertical-scale><option value="1">1×</option><option value="2">2×</option><option value="5">5×</option></select></label>
-            <label data-map-only-control>Basemap<select data-map-basemap><option value="map">Map</option><option value="satellite" selected>Satellite</option></select></label>
-            <label data-map-only-control>Minimum AGL<select data-terrain-clearance><option value="2">2 m</option><option value="5" selected>5 m</option><option value="10">10 m</option></select></label>
+            <label data-map-only-control>Basemap<select data-map-basemap><option value="map" selected>Map</option><option value="satellite">Satellite</option></select></label>
+            <label data-map-only-control title="Visual clearance above the terrain mesh, not measured AGL">Visual clearance<select data-terrain-clearance><option value="2">2 m</option><option value="5" selected>5 m</option><option value="10">10 m</option></select></label>
             <button type="button" data-map-only-control data-satellite-settings hidden>Imagery key</button>
             <button type="button" data-fit-track>Fit track</button>
           </div>
@@ -197,7 +184,7 @@
         <aside class="flight-inspector" aria-label="Live flight instruments and diagnostics">
           <section class="flight-instrument-panel">
             <header><div><p class="flight-kicker">Attitude</p><h2>Primary flight display</h2></div><span data-attitude-mode>Auto-level</span></header>
-            <div class="flight-horizon">
+            <div class="flight-horizon" aria-hidden="true">
               <div class="flight-horizon-world" data-horizon-world><div class="flight-sky"></div><div class="flight-ground"></div><i></i></div>
               <div class="flight-pitch-ladder" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
               <div class="flight-wings" aria-hidden="true"><span></span><i></i><span></span></div>
@@ -234,10 +221,10 @@
     </section>
   </main>
 
-  <dialog class="flight-schema-dialog" data-schema-dialog>
+  <dialog class="flight-schema-dialog" aria-labelledby="flight-schema-title" data-schema-dialog>
     <form method="dialog" class="flight-schema-dialog-inner">
-      <header><div><p class="flight-kicker">Spreadsheet ingestion</p><h2>Accepted flight-log columns</h2><p>Use the first worksheet and place field names in row 1. Column order does not matter; common Betaflight-style aliases are recognized.</p></div><button type="submit" aria-label="Close log format dialog">×</button></header>
-      <div class="flight-schema-requirement"><span>Minimum viable replay</span><p><code>time_s</code> or <code>timestamp_ms</code>, plus latitude and longitude. Altitude and attitude columns unlock the full 3D and instrument experience.</p></div>
+      <header><div><h2 id="flight-schema-title">Log format</h2><p>Use the first worksheet and place field names in row 1. Column order does not matter; common Betaflight-style aliases are recognized.</p></div><button type="submit" aria-label="Close log format dialog">×</button></header>
+      <div class="flight-schema-requirement"><span>Required</span><p>A time column and at least two usable rows. Latitude and longitude enable terrain replay; altitude and attitude add the flight profile and instruments.</p></div>
       <div class="flight-schema-table-wrap">
         <table>
           <thead><tr><th>Purpose</th><th>Preferred header</th><th>Recognized examples</th><th>Unit</th></tr></thead>
@@ -255,17 +242,17 @@
     </form>
   </dialog>
 
-  <dialog class="flight-provider-dialog" data-satellite-dialog>
+  <dialog class="flight-provider-dialog" aria-labelledby="flight-provider-title" data-satellite-dialog>
     <form class="flight-provider-dialog-inner" data-satellite-form>
       <header>
-        <div><p class="flight-kicker">Optional satellite basemap</p><h2>Connect MapTiler Satellite</h2></div>
+        <div><p class="flight-kicker">Optional satellite basemap</p><h2 id="flight-provider-title">Satellite imagery</h2></div>
         <button type="button" data-satellite-cancel aria-label="Close satellite imagery setup">×</button>
       </header>
       <p>Satellite imagery is supplied directly by MapTiler using the configured public browser key restricted to <code>proccyboi.github.io</code>. You can replace it for this browser; overrides are never included in flight exports.</p>
       <label>MapTiler API key<input type="text" data-satellite-key autocomplete="off" spellcheck="false" placeholder="Public browser key" required></label>
       <p class="flight-provider-error" data-satellite-error role="alert" hidden></p>
-      <div class="flight-provider-note"><strong>Free-plan friendly</strong><span>Create or manage a key in <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener noreferrer">MapTiler Cloud</a>. Provider attribution remains visible on the map.</span></div>
-      <footer><button type="button" data-satellite-cancel>Cancel</button><button type="submit" class="flight-button flight-button-primary" data-satellite-save>Save and enable satellite</button></footer>
+      <div class="flight-provider-note"><strong>MapTiler</strong><span>Create or manage a key in <a href="https://cloud.maptiler.com/account/keys/" target="_blank" rel="noopener noreferrer">MapTiler Cloud</a>. Provider attribution remains visible on the map.</span></div>
+      <footer><button type="button" data-satellite-cancel>Cancel</button><button type="submit" class="flight-button flight-button-primary" data-satellite-save>Save key</button></footer>
     </form>
   </dialog>
 

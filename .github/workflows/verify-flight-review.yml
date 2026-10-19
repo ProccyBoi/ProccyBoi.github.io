@@ -1,0 +1,134 @@
+name: Verify flight review performance and replay
+on:
+  push:
+    branches: [flight-review-upgrade]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: flight-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify parser fidelity and source contracts
+        run: |
+          node scripts/verify-flight-review-parser.cjs
+          node scripts/verify-flight-review-runtime.cjs
+          node scripts/flight-review/verify-source.cjs
+          FLIGHT_FIXTURES_OUT=/tmp/flight-review-fixtures node scripts/flight-review/fixtures.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flight-review-fixtures-${{ github.sha }}
+          path: /tmp/flight-review-fixtures/
+          retention-days: 14
+  responsive:
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop1440, phone390, phone320, tablet768, tablet1024, tablet1180]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned official browser dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Native controls, data export, focus, layout and screenshots
+        env:
+          FLIGHT_REVIEW_OUT: /tmp/flight-review-evidence
+        run: node scripts/flight-review/verify-browser.cjs --viewport=${{ matrix.viewport }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flight-review-${{ matrix.viewport }}-${{ github.sha }}
+          path: /tmp/flight-review-evidence/
+          retention-days: 14
+  regression:
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Real SwiftShader 3D, worker races, raw precision, timing and privacy
+        env:
+          FLIGHT_REVIEW_OUT: /tmp/flight-review-evidence
+        run: node scripts/flight-review/verify-browser.cjs --regression
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flight-review-regression-${{ github.sha }}
+          path: /tmp/flight-review-evidence/
+          retention-days: 14
+  fallbacks:
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Missing WebGL, unavailable workers, WebKit CSV and replay
+        env:
+          FLIGHT_REVIEW_OUT: /tmp/flight-review-evidence
+        run: node scripts/flight-review/verify-browser.cjs --engine=${{ matrix.engine }} --fallbacks --viewport=phone390
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flight-review-${{ matrix.engine }}-fallbacks-${{ github.sha }}
+          path: /tmp/flight-review-evidence/
+          retention-days: 14
+  performance:
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+          git worktree add --detach /tmp/flight-review-baseline d15883bd3945502c412121e1d434e04588f200d0
+      - name: Counterbalanced same-runner baseline comparison and active cancel
+        env:
+          FLIGHT_BASELINE_ROOT: /tmp/flight-review-baseline
+          FLIGHT_REVIEW_OUT: /tmp/flight-review-evidence
+          FLIGHT_PROFILE_RUNS: '4'
+          FLIGHT_PROFILE_RECORDS: '120001'
+        run: node scripts/flight-review/profile.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flight-review-performance-${{ github.sha }}
+          path: /tmp/flight-review-evidence/
+          retention-days: 14

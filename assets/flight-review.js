@@ -3,9 +3,6 @@
 
   const MAX_FILE_BYTES = 150 * 1024 * 1024;
   const EARTH_RADIUS_M = 6_371_000;
-  const MAGIC = "SKYLBIN1";
-  const HEADER_BYTES = 48;
-  const RECORD_SIZES = new Map([[1, 238], [2, 250], [3, 282]]);
   const OPEN_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
   const TERRAIN_TILEJSON = "https://tiles.mapterhorn.com/tilejson.json";
   const MAPTILER_SATELLITE_TILEJSON = "https://api.maptiler.com/tiles/satellite-v2/tiles.json";
@@ -19,7 +16,7 @@
     const parsed = Number(String(value).replace(/,/g, "").trim());
     return Number.isFinite(parsed) ? parsed : NaN;
   };
-  const finite = (value) => Number.isFinite(Number(value));
+  const finite = (value) => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
   const radians = (degrees) => Number(degrees || 0) * Math.PI / 180;
   const wrapDegrees = (degrees) => ((Number(degrees || 0) + 180) % 360 + 360) % 360 - 180;
@@ -128,7 +125,13 @@
   const state = {
     model: null,
     index: 0,
-    view: "terrain",
+    view: "charts",
+    loadId: 0,
+    parseJob: null,
+    viewId: 0,
+    playbackFrame: 0,
+    seekFrame: 0,
+    sampleValues: [],
     playing: false,
     playbackTime: 0,
     lastAnimationTime: null,
@@ -141,69 +144,6 @@
     toastTimer: null,
     lastMapCameraUpdate: 0
   };
-
-  const SERIES_KEYS = [
-    "time", "timestampMs", "rtcUnix", "lat", "lon", "gnssAlt", "baroAlt",
-    "roll", "pitch", "yaw", "accX", "accY", "accZ", "gyroX", "gyroY",
-    "gyroZ", "linX", "linY", "linZ", "airspeed", "groundSpeedInput",
-    "gnssHAcc", "gnssVAcc", "gnssHeading", "sats", "gnssFix", "logDt",
-    "overrun", "sdErrors", "current", "voltage", "escTemp", "throttle", "rpm",
-    "ekfHUnc", "ekfVelUnc", "imuSamples", "imuResets"
-  ];
-
-  const makeSeries = () => Object.fromEntries(SERIES_KEYS.map((key) => [key, []]));
-
-  const FIELD_ALIASES = {
-    time: ["time_s", "elapsed_s", "flight_time_s", "time_seconds"],
-    timeUs: ["time_us", "timestamp_us", "time_microseconds", "timestamp_microseconds"],
-    timestampMs: ["timestamp_ms", "time_ms", "elapsed_ms", "timestamp_milliseconds", "timestamp"],
-    rtcUnix: ["rtc_unix", "unix_time", "unix_timestamp"],
-    lat: ["gnss_lat", "gnss_lat_f", "gnss_lat_plot", "latitude", "gps_lat", "lat"],
-    latE7: ["gnss_lat_e7", "gps_lat_e7", "latitude_e7"],
-    lon: ["gnss_lon", "gnss_lon_f", "gnss_lon_plot", "longitude", "gps_lon", "lon", "lng"],
-    lonE7: ["gnss_lon_e7", "gps_lon_e7", "longitude_e7"],
-    gnssAlt: ["gnss_alt_m", "gnss_alt_m_f", "gnss_alt_plot", "gps_altitude", "gps_alt_m", "gnss_altitude_m"],
-    baroAlt: ["altitude_m", "altitude_m_f", "altitude_plot_m", "baro_alt_m", "barometric_altitude_m"],
-    roll: ["roll_deg", "roll_cal_deg", "roll_plot_deg", "mw_roll_deg", "roll"],
-    pitch: ["pitch_deg", "pitch_cal_deg", "pitch_plot_deg", "mw_pitch_deg", "pitch"],
-    yaw: ["yaw_deg", "yaw_cal_deg", "yaw_plot_deg", "mw_yaw_deg", "heading_deg", "yaw", "heading"],
-    accX: ["acc_x_f", "acc_x", "accel_x", "acceleration_x_mps2"],
-    accY: ["acc_y_f", "acc_y", "accel_y", "acceleration_y_mps2"],
-    accZ: ["acc_z_f", "acc_z", "accel_z", "acceleration_z_mps2"],
-    gyroX: ["gyro_x_f", "gyro_x", "gyroscope_x_rps"],
-    gyroY: ["gyro_y_f", "gyro_y", "gyroscope_y_rps"],
-    gyroZ: ["gyro_z_f", "gyro_z", "gyroscope_z_rps"],
-    linX: ["lin_x_f", "lin_x", "linear_acceleration_x_mps2"],
-    linY: ["lin_y_f", "lin_y", "linear_acceleration_y_mps2"],
-    linZ: ["lin_z_f", "lin_z", "linear_acceleration_z_mps2"],
-    airspeed: ["airspeed_mps", "aspd_airspeed_mps", "aspd_airspeed_mps_f", "airspeed_ms"],
-    groundSpeedInput: ["ground_speed_mps", "gps_speed_mps", "speed_mps", "groundspeed"],
-    gnssHAcc: ["gnss_h_acc_m", "gnss_h_acc_plot", "gps_hacc", "horizontal_accuracy_m"],
-    gnssVAcc: ["gnss_v_acc_m", "gnss_v_acc_plot", "gps_vacc", "vertical_accuracy_m"],
-    gnssHeading: ["gnss_heading_deg", "gps_heading_deg", "course_deg"],
-    sats: ["gnss_siv", "satellites", "gps_satellites", "sat_count"],
-    gnssFix: ["gnss_fix", "gps_fix", "fix_type"],
-    logDt: ["log_dt_ms", "logging_interval_ms", "sample_dt_ms"],
-    overrun: ["log_overrun_count", "overruns", "logging_overruns"],
-    sdErrors: ["sd_write_error_count", "sd_errors", "write_errors"],
-    current: ["esc_current_a", "esc_current_a_f", "current_a", "battery_current_a"],
-    voltage: ["esc_voltage_v", "esc_voltage_v_f", "voltage_v", "battery_voltage_v"],
-    escTemp: ["esc_temp_c", "esc_temp_c_f", "esc_temperature_c"],
-    throttle: ["esc_throttle_pct", "esc_throttle", "esc_throttle_f", "throttle_pct"],
-    rpm: ["esc_rpm", "esc_rpm_f", "rpm"],
-    ekfHUnc: ["ekf_pos_h_unc_m", "ekf_h_unc_plot", "ekf_horizontal_uncertainty_m"],
-    ekfVelUnc: ["ekf_vel_unc_mps", "ekf_vel_unc_plot", "ekf_velocity_uncertainty_mps"],
-    imuSamples: ["imu_samples", "imu_samples_plot"],
-    imuResets: ["imu_reset_count", "imu_resets"]
-  };
-
-  const normalizeHeader = (value) => String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/°/g, "deg")
-    .replace(/\([^)]*\)/g, "")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
 
   function toast(message, isError = false) {
     window.clearTimeout(state.toastTimer);
@@ -220,328 +160,115 @@
   }
 
   function showLoading() {
+    setPlaying(false);
+    state.localViewer?.pause();
     elements.onboarding.hidden = true;
     elements.workspace.hidden = true;
     elements.loading.hidden = false;
-    setLoading("Validating log structure", "Nothing leaves this browser tab.", 12);
+    setLoading("Validating log structure", "Your file is processed locally.", 12);
+    $("[data-cancel-load]").focus({ preventScroll: true });
   }
 
   function showOnboarding() {
-    state.playing = false;
+    setPlaying(false);
     elements.loading.hidden = true;
     elements.workspace.hidden = true;
     elements.onboarding.hidden = false;
   }
 
-  function readMagic(buffer) {
-    if (buffer.byteLength < MAGIC.length) return "";
-    return new TextDecoder("ascii").decode(new Uint8Array(buffer, 0, MAGIC.length));
+  const runtimeLoads = new Map();
+  function loadRuntime(path, globalName) {
+    if (window[globalName]) return Promise.resolve();
+    if (runtimeLoads.has(path)) return runtimeLoads.get(path);
+    const promise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      let settled = false;
+      const finish = (error) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        if (error) { runtimeLoads.delete(path); script.remove(); reject(error); }
+        else resolve();
+      };
+      const timer = window.setTimeout(() => finish(new Error("The rendering library took too long to load. Check your connection and retry.")), 20000);
+      script.src = path;
+      script.async = true;
+      script.onload = () => finish(window[globalName] ? null : new Error("The rendering library could not be initialized."));
+      script.onerror = () => finish(new Error("The rendering library could not load. Check your connection and retry."));
+      document.head.append(script);
+    });
+    runtimeLoads.set(path, promise);
+    return promise;
   }
 
-  async function parseFlightFile(file) {
+  function loadMapStyles() {
+    const path = "assets/vendor/maplibre-gl.css?v=5.24.0";
+    if (runtimeLoads.has(path)) return runtimeLoads.get(path);
+    const promise = new Promise((resolve, reject) => {
+      const link = document.createElement("link");
+      let settled = false;
+      const finish = (error) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        if (error) { runtimeLoads.delete(path); link.remove(); reject(error); }
+        else resolve();
+      };
+      const timer = window.setTimeout(() => finish(new Error("Map styles took too long to load. Retry terrain.")), 20000);
+      link.rel = "stylesheet"; link.href = path;
+      link.onload = () => finish();
+      link.onerror = () => finish(new Error("Map styles could not load. Retry terrain."));
+      document.head.append(link);
+    });
+    runtimeLoads.set(path, promise);
+    return promise;
+  }
+
+  function cancelParsing() {
+    state.loadId += 1;
+    state.parseJob?.cancel();
+    state.parseJob = null;
+  }
+
+  async function parseFlightFile(file, requestId) {
     if (!file || !file.size) throw new Error("The selected file is empty.");
     if (file.size > MAX_FILE_BYTES) throw new Error("This file is larger than the 150 MB browser limit.");
-    const extension = file.name.split(".").pop().toLowerCase();
+    if (!window.Worker) throw new Error("This browser cannot run the local file parser. Open this page in a current browser.");
     const buffer = await file.arrayBuffer();
-    setLoading("Decoding telemetry", `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`, 34);
-    await new Promise((resolve) => window.setTimeout(resolve, 16));
-    if (extension === "bin" || readMagic(buffer) === MAGIC) return parseBinaryLog(buffer, file);
-    if (["xlsx", "xls", "csv", "tsv"].includes(extension)) return parseSpreadsheet(buffer, file, extension);
-    throw new Error("Unsupported file type. Choose a .BIN, .XLSX, .XLS, .CSV or .TSV flight log.");
-  }
-
-  function parseBinaryLog(buffer, file) {
-    if (buffer.byteLength < HEADER_BYTES) throw new Error("The binary log is too small to contain a Skylabs header.");
-    const view = new DataView(buffer);
-    if (readMagic(buffer) !== MAGIC) throw new Error("The binary magic does not match SKYLBIN1.");
-    const version = view.getUint16(8, true);
-    const headerSize = view.getUint16(10, true);
-    const recordSize = view.getUint16(12, true);
-    const expectedSize = RECORD_SIZES.get(version);
-    if (!expectedSize || expectedSize !== recordSize) {
-      throw new Error(`Unsupported Skylabs binary schema v${version} with ${recordSize}-byte records.`);
-    }
-    if (headerSize < HEADER_BYTES || headerSize > buffer.byteLength) throw new Error("The binary header size is invalid.");
-    const recordCount = Math.floor((buffer.byteLength - headerSize) / recordSize);
-    if (!recordCount) throw new Error("The binary log contains no complete telemetry records.");
-
-    const series = makeSeries();
-    let firstTimestamp = null;
-    for (let index = 0; index < recordCount; index += 1) {
-      const base = headerSize + index * recordSize;
-      const u32 = (offset) => view.getUint32(base + offset, true);
-      const i32 = (offset) => view.getInt32(base + offset, true);
-      const u16 = (offset) => view.getUint16(base + offset, true);
-      const u8 = (offset) => view.getUint8(base + offset);
-      const f32 = (offset) => view.getFloat32(base + offset, true);
-      const timestamp = u32(0);
-      if (firstTimestamp === null) firstTimestamp = timestamp;
-      const requiredValues = [f32(58), f32(62), f32(66), f32(70), f32(74), f32(78), f32(82), f32(86), f32(90)];
-      if (!requiredValues.every(finite)) continue;
-      series.time.push((timestamp - firstTimestamp) / 1000);
-      series.timestampMs.push(timestamp);
-      series.rtcUnix.push(u32(4));
-      series.overrun.push(u32(8));
-      series.sdErrors.push(u32(12));
-      series.lat.push(i32(16) / 1e7);
-      series.lon.push(i32(20) / 1e7);
-      series.logDt.push(u16(40));
-      series.imuSamples.push(u16(42));
-      series.imuResets.push(u16(44));
-      series.gnssFix.push(u8(47));
-      series.sats.push(u8(48));
-      series.baroAlt.push(f32(66));
-      series.roll.push(f32(70));
-      series.pitch.push(f32(74));
-      series.yaw.push(f32(78));
-      series.accX.push(f32(82));
-      series.accY.push(f32(86));
-      series.accZ.push(f32(90));
-      series.gyroX.push(f32(94));
-      series.gyroY.push(f32(98));
-      series.gyroZ.push(f32(102));
-      series.linX.push(f32(106));
-      series.linY.push(f32(110));
-      series.linZ.push(f32(114));
-      series.airspeed.push(f32(134));
-      series.groundSpeedInput.push(NaN);
-      series.gnssAlt.push(f32(138));
-      series.gnssHAcc.push(f32(142));
-      series.gnssVAcc.push(f32(146));
-      series.gnssHeading.push(f32(154));
-      series.current.push(f32(162));
-      series.voltage.push(f32(166));
-      series.escTemp.push(f32(170));
-      series.throttle.push(f32(178));
-      series.rpm.push(f32(182));
-      series.ekfHUnc.push(f32(218));
-      series.ekfVelUnc.push(f32(226));
-    }
-
-    const completeBytes = headerSize + recordCount * recordSize;
-    return finalizeModel(series, {
-      name: file.name,
-      size: file.size,
-      format: "SKYLBIN1",
-      schema: `v${version}`,
-      source: "Skylabs aircraft SD binary",
-      headerSize,
-      recordSize,
-      configuredLogIntervalMs: view.getUint32(20, true),
-      createdUnix: view.getUint32(16, true),
-      sensorMask: view.getUint8(32),
-      sourceRecords: recordCount,
-      trailingBytes: buffer.byteLength - completeBytes
+    if (requestId !== state.loadId) throw new DOMException("Cancelled", "AbortError");
+    return new Promise((resolve, reject) => {
+      const worker = new Worker("assets/flight-review-worker.js?v=20261019-1");
+      const finish = (error, model) => {
+        worker.terminate();
+        if (state.parseJob?.worker === worker) state.parseJob = null;
+        error ? reject(error) : resolve(model);
+      };
+      state.parseJob = { worker, cancel: () => finish(new DOMException("Cancelled", "AbortError")) };
+      worker.onmessage = ({ data }) => {
+        if (data.requestId !== requestId || requestId !== state.loadId) return;
+        if (data.type === "progress") setLoading(data.title, data.detail, data.percent);
+        if (data.type === "complete") finish(null, data.model);
+        if (data.type === "error") finish(new Error(data.message));
+      };
+      worker.onerror = () => finish(new Error("The local parser could not start or ran out of memory. Try a smaller file or reload and retry."));
+      worker.onmessageerror = () => finish(new Error("The parsed file could not be read. Try a smaller log."));
+      worker.postMessage({ type: "parse", requestId, buffer, file: { name: file.name, size: file.size } }, [buffer]);
     });
-  }
-
-  function parseSpreadsheet(buffer, file, extension) {
-    if (!window.XLSX) throw new Error("The spreadsheet parser could not be loaded. Check the connection and retry.");
-    let workbook;
-    try {
-      workbook = window.XLSX.read(buffer, { type: "array", dense: true, cellDates: true });
-    } catch (error) {
-      throw new Error(`The ${extension.toUpperCase()} file could not be decoded: ${error.message}`);
-    }
-    const sheetName = workbook.SheetNames.find((name) => workbook.Sheets[name]?.["!ref"]);
-    if (!sheetName) throw new Error("The workbook does not contain a populated worksheet.");
-    const rows = window.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null, raw: true });
-    if (!rows.length) throw new Error("The first populated worksheet has no data rows.");
-
-    const headers = Object.keys(rows[0]);
-    const normalizedToOriginal = new Map(headers.map((header) => [normalizeHeader(header), header]));
-    const columnFor = (canonical) => {
-      const aliases = FIELD_ALIASES[canonical] || [];
-      for (const alias of aliases) {
-        if (normalizedToOriginal.has(alias)) return normalizedToOriginal.get(alias);
-      }
-      return null;
-    };
-    const columns = Object.fromEntries(Object.keys(FIELD_ALIASES).map((key) => [key, columnFor(key)]));
-    if (!columns.time && !columns.timeUs && !columns.timestampMs) {
-      throw new Error("Spreadsheet format error: add a time_s, time_us or timestamp_ms column.");
-    }
-    if ((!columns.lat && !columns.latE7) || (!columns.lon && !columns.lonE7)) {
-      throw new Error("Spreadsheet format error: add latitude and longitude columns for the flight map.");
-    }
-
-    const series = makeSeries();
-    const statusHeader = normalizedToOriginal.get("status");
-    for (const row of rows) {
-      if (statusHeader && String(row[statusHeader] || "").trim() && String(row[statusHeader]).toUpperCase() !== "LOGGING") continue;
-      const value = (key) => columns[key] ? number(row[columns[key]]) : NaN;
-      const timeSeconds = columns.time ? value("time") : (columns.timeUs ? value("timeUs") / 1e6 : value("timestampMs") / 1000);
-      if (!finite(timeSeconds)) continue;
-      series.time.push(timeSeconds);
-      series.timestampMs.push(columns.timestampMs ? value("timestampMs") : (columns.timeUs ? value("timeUs") / 1000 : timeSeconds * 1000));
-      series.rtcUnix.push(value("rtcUnix"));
-      const lat = columns.lat ? value("lat") : value("latE7") / 1e7;
-      const lon = columns.lon ? value("lon") : value("lonE7") / 1e7;
-      series.lat.push(lat);
-      series.lon.push(lon);
-      for (const key of SERIES_KEYS) {
-        if (["time", "timestampMs", "rtcUnix", "lat", "lon"].includes(key)) continue;
-        if (key === "gnssFix") series[key].push(columns[key] ? value(key) : (Math.abs(lat) > 0.0001 && Math.abs(lon) > 0.0001 ? 1 : 0));
-        else series[key].push(value(key));
-      }
-    }
-    if (series.time.length < 2) throw new Error("The spreadsheet has fewer than two usable telemetry rows.");
-    return finalizeModel(series, {
-      name: file.name,
-      size: file.size,
-      format: extension.toUpperCase(),
-      schema: "Header mapped",
-      source: `Spreadsheet · ${sheetName}`,
-      sourceRecords: rows.length,
-      mappedColumns: Object.values(columns).filter(Boolean).length,
-      worksheet: sheetName
-    });
-  }
-
-  function reorderSeries(series) {
-    const order = series.time.map((time, index) => [Number(time), index]).sort((a, b) => a[0] - b[0]).map((entry) => entry[1]);
-    for (const key of SERIES_KEYS) series[key] = order.map((index) => series[key][index]);
-  }
-
-  function interpolate(values, validPredicate = finite) {
-    const output = values.map((value) => validPredicate(value) ? Number(value) : NaN);
-    const validIndices = output.map((value, index) => finite(value) ? index : -1).filter((index) => index >= 0);
-    if (!validIndices.length) return output;
-    const first = validIndices[0];
-    const last = validIndices[validIndices.length - 1];
-    for (let index = 0; index < first; index += 1) output[index] = output[first];
-    for (let index = last + 1; index < output.length; index += 1) output[index] = output[last];
-    for (let pair = 0; pair < validIndices.length - 1; pair += 1) {
-      const left = validIndices[pair];
-      const right = validIndices[pair + 1];
-      const span = right - left;
-      for (let index = left + 1; index < right; index += 1) {
-        const ratio = (index - left) / span;
-        output[index] = output[left] + (output[right] - output[left]) * ratio;
-      }
-    }
-    return output;
-  }
-
-  function estimateGroundSpeed(time, east, north) {
-    const count = time.length;
-    const raw = new Array(count).fill(0);
-    let left = 0;
-    let right = 0;
-    for (let index = 0; index < count; index += 1) {
-      while (left < count - 1 && time[left] < time[index] - 0.5) left += 1;
-      right = Math.max(right, index);
-      while (right < count - 1 && time[right + 1] <= time[index] + 0.5) right += 1;
-      const elapsed = time[right] - time[left];
-      raw[index] = elapsed > 0.001 ? Math.hypot(east[right] - east[left], north[right] - north[left]) / elapsed : 0;
-    }
-    return raw.map((_, index) => median(raw.slice(Math.max(0, index - 2), Math.min(count, index + 3))));
-  }
-
-  function finalizeModel(series, meta) {
-    if (series.time.some((time, index) => index > 0 && Number(time) < Number(series.time[index - 1]))) reorderSeries(series);
-    const timeOrigin = firstFinite(series.time, 0);
-    series.time = series.time.map((time) => Number(time) - timeOrigin);
-    const count = series.time.length;
-    if (count < 2) throw new Error("The log contains fewer than two usable records.");
-
-    const validGps = series.lat.map((lat, index) => {
-      const lon = series.lon[index];
-      const fix = series.gnssFix[index];
-      return finite(lat) && finite(lon) && Math.abs(lat) > 0.0001 && Math.abs(lon) > 0.0001 && (!finite(fix) || Number(fix) > 0);
-    });
-    const lat = interpolate(series.lat.map((value, index) => validGps[index] ? value : NaN));
-    const lon = interpolate(series.lon.map((value, index) => validGps[index] ? value : NaN));
-    const hasGps = validGps.filter(Boolean).length >= 2;
-    const firstGpsIndex = validGps.indexOf(true);
-    const originLat = hasGps ? lat[firstGpsIndex] : NaN;
-    const originLon = hasGps ? lon[firstGpsIndex] : NaN;
-    const originLatRad = radians(originLat);
-    const east = new Array(count).fill(0);
-    const north = new Array(count).fill(0);
-    if (hasGps) {
-      for (let index = 0; index < count; index += 1) {
-        const latRad = radians(lat[index]);
-        const lonRad = radians(lon[index]);
-        east[index] = (lonRad - radians(originLon)) * Math.cos((latRad + originLatRad) * 0.5) * EARTH_RADIUS_M;
-        north[index] = (latRad - originLatRad) * EARTH_RADIUS_M;
-      }
-    }
-    const baroFilled = interpolate(series.baroAlt);
-    const gnssAltFilled = interpolate(series.gnssAlt);
-    const baroOrigin = firstFinite(baroFilled, 0);
-    const gnssAltOrigin = firstFinite(gnssAltFilled, baroOrigin);
-    const baroUp = baroFilled.map((value) => finite(value) ? value - baroOrigin : 0);
-    const gnssUp = gnssAltFilled.map((value, index) => finite(value) ? value - gnssAltOrigin : baroUp[index]);
-    const calculatedGroundSpeed = hasGps ? estimateGroundSpeed(series.time, east, north) : new Array(count).fill(0);
-    const groundSpeed = calculatedGroundSpeed.map((value, index) => {
-      const supplied = series.groundSpeedInput[index];
-      return hasGps || !finite(supplied) ? value : Number(supplied);
-    });
-    let trackDistance = 0;
-    if (hasGps) {
-      for (let index = 1; index < count; index += 1) trackDistance += Math.hypot(east[index] - east[index - 1], north[index] - north[index - 1]);
-    }
-    const firstThreeSeconds = series.time.map((time, index) => time <= 3 ? index : -1).filter((index) => index >= 0);
-    const defaultLevel = {
-      roll: median(firstThreeSeconds.map((index) => series.roll[index])),
-      pitch: median(firstThreeSeconds.map((index) => series.pitch[index])),
-      yaw: circularMeanDegrees(firstThreeSeconds.map((index) => series.yaw[index]))
-    };
-    const positiveDts = series.logDt.filter((value) => finite(value) && Number(value) > 0);
-    const derivedDts = series.time.slice(1).map((time, index) => (time - series.time[index]) * 1000).filter((value) => value > 0);
-    const logDtMedian = median(positiveDts.length ? positiveDts : derivedDts);
-    const baroRange = rangeOf(series.baroAlt);
-    const stats = {
-      duration: Math.max(0, series.time[count - 1] || 0),
-      trackDistance,
-      peakGroundSpeed: maxOf(groundSpeed),
-      baroMin: baroRange[0],
-      baroMax: baroRange[1],
-      baroClimb: finite(baroRange[0]) ? baroRange[1] - baroRange[0] : NaN,
-      gnssHAccMedian: median(series.gnssHAcc),
-      satsMedian: median(series.sats),
-      logDtMedian,
-      sampleRate: logDtMedian > 0 ? 1000 / logDtMedian : NaN,
-      validGpsPercent: validGps.filter(Boolean).length / count * 100,
-      sdErrors: lastFinite(series.sdErrors, 0),
-      overruns: lastFinite(series.overrun, 0),
-      ekfHUncFinal: lastFinite(series.ekfHUnc),
-      ekfVelUncFinal: lastFinite(series.ekfVelUnc),
-      imuResets: lastFinite(series.imuResets, 0)
-    };
-    return {
-      series,
-      meta: { ...meta, usableRecords: count },
-      count,
-      hasGps,
-      validGps,
-      lat,
-      lon,
-      east,
-      north,
-      baroFilled,
-      gnssAltFilled,
-      baroUp,
-      gnssUp,
-      groundSpeed,
-      origin: { lat: originLat, lon: originLon, baroAlt: baroOrigin, gnssAlt: gnssAltOrigin },
-      defaultLevel,
-      stats
-    };
   }
 
   function buildHealthItems(model) {
     const items = [];
     const add = (level, title, detail) => items.push({ level, title, detail });
-    if (model.stats.sdErrors > 0) add("critical", "SD write errors recorded", `${formatInteger(model.stats.sdErrors)} write errors accumulated in this log.`);
-    else add("good", "Aircraft log recovered", `No SD write errors across ${formatInteger(model.count)} usable records.`);
+    const peakSdErrors = maxOf(model.series.sdErrors);
+    if (peakSdErrors > 0) add("critical", "SD write errors recorded", `Highest recorded count: ${formatInteger(peakSdErrors)}.`);
+    else if (finite(model.stats.sdErrors)) add("good", "SD error counter", `Final recorded count: ${formatInteger(model.stats.sdErrors)}.`);
 
     if (model.stats.overruns > Math.max(10, model.count * 0.05)) add("warning", "Logging timing pressure", `${formatInteger(model.stats.overruns)} firmware overruns accumulated; median interval was ${formatFixed(model.stats.logDtMedian, 1, " ms")}.`);
-    else add("good", "Logging cadence stable", `Median sample interval ${formatFixed(model.stats.logDtMedian, 1, " ms")}.`);
+    else add("info", "Recorded cadence", `Median sample interval ${formatFixed(model.stats.logDtMedian, 1, " ms")}.${finite(model.stats.overruns) ? "" : " Overrun counter unavailable."}`);
 
     if (!model.hasGps) add("critical", "No usable GNSS track", "Latitude and longitude are missing or do not contain a valid fix.");
     else if (model.stats.validGpsPercent < 80 || model.stats.gnssHAccMedian > 5) add("warning", "GNSS quality reduced", `${model.stats.validGpsPercent.toFixed(1)}% valid fixes; median HAcc ${formatFixed(model.stats.gnssHAccMedian, 2, " m")}.`);
+    else if (!finite(model.stats.gnssHAccMedian)) add("info", "GNSS coordinates available", `${model.stats.validGpsPercent.toFixed(1)}% valid fixes. Horizontal accuracy was not recorded.`);
     else add("good", "GNSS track usable", `${model.stats.validGpsPercent.toFixed(1)}% valid fixes; median HAcc ${formatFixed(model.stats.gnssHAccMedian, 2, " m")}.`);
 
     if (finite(model.stats.ekfHUncFinal) && (model.stats.ekfHUncFinal > 50 || model.stats.ekfVelUncFinal > 10)) {
@@ -554,7 +281,10 @@
     const hasEsc = seriesHasSignal(model.series.voltage, 0.5) || seriesHasSignal(model.series.rpm, 10);
     if (!hasAirspeed || !hasEsc) add("info", "Optional channels absent", `${!hasAirspeed ? "Airspeed" : ""}${!hasAirspeed && !hasEsc ? " and " : ""}${!hasEsc ? "ESC telemetry" : ""} did not contain a usable signal.`);
     if (model.stats.imuResets > 0) add("warning", "IMU resets recorded", `${formatInteger(model.stats.imuResets)} reset events were counted.`);
-    else if (model.series.roll.some(finite)) add("good", "Attitude stream continuous", "Recorded roll, pitch and yaw are available for replay.");
+    const attitudeComplete = ["roll", "pitch", "yaw"].every((key) => model.series[key].every(finite));
+    if (attitudeComplete) add("info", "Attitude recorded", `Roll, pitch and yaw are present for every sample.${finite(model.stats.imuResets) ? "" : " Reset counter unavailable."}`);
+    else add("info", "Attitude incomplete", "Missing attitude values are unavailable; the 3D orientation is illustrative.");
+    if (!finite(model.stats.sdErrors)) add("info", "SD error counter unavailable", "This log does not include an SD write error count.");
     return items;
   }
 
@@ -598,7 +328,9 @@
   }
 
   function populateWorkspace(model) {
+    state.viewId += 1;
     disposeTerrainViewer();
+    disposeLocalViewer();
     elements.terrainHost.replaceChildren();
     showTerrainStatus("loading");
     state.model = model;
@@ -634,18 +366,14 @@
     elements.onboarding.hidden = true;
     elements.workspace.hidden = false;
 
-    window.requestAnimationFrame(() => {
-      disposeLocalViewer();
-      state.localViewer = createLocalViewer(model);
-      switchView(model.hasGps ? "terrain" : "local");
-      updateFrame(0, true);
-      if (model.hasGps) initializeTerrainViewer(model);
-    });
+    switchView("charts");
+    updateFrame(0, true);
+    $("[data-view-button='charts']").focus({ preventScroll: true });
   }
 
   function renderHealth(model) {
     const items = buildHealthItems(model);
-    const colors = { good: "#62dfb3", warning: "#f4c86a", critical: "#ff8f70", info: "#6bb6ff" };
+    const colors = { good: "#9fb5a0", warning: "#d5b778", critical: "#d99078", info: "#d4d1c5" };
     elements.healthList.replaceChildren(...items.map((item) => {
       const wrapper = document.createElement("div");
       wrapper.className = "flight-health-item";
@@ -662,7 +390,7 @@
       return wrapper;
     }));
     const alerts = items.filter((item) => ["warning", "critical"].includes(item.level)).length;
-    $("[data-health-count]").textContent = alerts ? `${alerts} alert${alerts === 1 ? "" : "s"}` : "Nominal";
+    $("[data-health-count]").textContent = alerts ? `${alerts} alert${alerts === 1 ? "" : "s"}` : (!finite(model.stats.sdErrors) || !finite(model.stats.gnssHAccMedian) ? "Limited data" : "No flagged issues");
   }
 
   function renderSourceDetails(model) {
@@ -672,7 +400,8 @@
       ["Source rows", formatInteger(model.meta.sourceRecords)],
       ["Usable rows", formatInteger(model.meta.usableRecords)],
       ["Parser", model.meta.format === "SKYLBIN1" ? "Direct little-endian DataView" : "SheetJS header mapping"],
-      ["Position", model.hasGps ? "Raw GNSS · local ENU derived" : "No geodetic solution"],
+      ["Position", model.hasGps ? "Valid GNSS fixes; gaps interpolated for display and normalized export" : "No geodetic solution"],
+      ["Ground speed", "Derived from the position track; not measured airspeed"],
       ["Height", finite(model.origin.baroAlt) ? "Barometer default · GNSS optional" : "GNSS"],
       ["Privacy", "Processed in browser memory"]
     ];
@@ -690,8 +419,10 @@
 
   const SAMPLE_FIELDS = [
     ["time", "Time", (model, index) => formatTime(model.series.time[index])],
-    ["latitude", "Latitude", (model, index) => formatFixed(model.lat[index], 7)],
-    ["longitude", "Longitude", (model, index) => formatFixed(model.lon[index], 7)],
+    ["rawLatitude", "Recorded latitude", (model, index) => formatFixed(model.series.lat[index], 7)],
+    ["rawLongitude", "Recorded longitude", (model, index) => formatFixed(model.series.lon[index], 7)],
+    ["latitude", "Display latitude (gap-filled)", (model, index) => formatFixed(model.lat[index], 7)],
+    ["longitude", "Display longitude (gap-filled)", (model, index) => formatFixed(model.lon[index], 7)],
     ["baroAlt", "Barometric altitude", (model, index) => formatFixed(model.baroFilled[index], 2, " m")],
     ["gnssAlt", "GNSS altitude", (model, index) => formatFixed(model.gnssAltFilled[index], 2, " m")],
     ["speed", "Ground speed", (model, index) => formatFixed(model.groundSpeed[index], 2, " m/s")],
@@ -710,15 +441,19 @@
   function updateSampleInspector(index) {
     const model = state.model;
     $("[data-sample-heading]").textContent = `Sample ${formatInteger(index + 1)} of ${formatInteger(model.count)}`;
-    elements.sampleGrid.replaceChildren(...SAMPLE_FIELDS.map(([, label, value]) => {
-      const wrapper = document.createElement("div");
-      const span = document.createElement("span");
-      const strong = document.createElement("strong");
-      span.textContent = label;
-      strong.textContent = value(model, index);
-      wrapper.append(span, strong);
-      return wrapper;
-    }));
+    if (state.sampleValues.length !== SAMPLE_FIELDS.length) {
+      state.sampleValues = [];
+      elements.sampleGrid.replaceChildren(...SAMPLE_FIELDS.map(([, label]) => {
+        const wrapper = document.createElement("div");
+        const span = document.createElement("span");
+        const strong = document.createElement("strong");
+        span.textContent = label;
+        state.sampleValues.push(strong);
+        wrapper.append(span, strong);
+        return wrapper;
+      }));
+    }
+    SAMPLE_FIELDS.forEach(([, , value], field) => { state.sampleValues[field].textContent = value(model, index); });
   }
 
   function sampleObject(index) {
@@ -726,6 +461,9 @@
     return {
       sample: index + 1,
       time_s: model.series.time[index],
+      recorded_latitude: model.series.lat[index],
+      recorded_longitude: model.series.lon[index],
+      position_interpolated: !model.validGps[index],
       latitude: model.lat[index],
       longitude: model.lon[index],
       barometric_altitude_m: model.baroFilled[index],
@@ -741,7 +479,10 @@
   }
 
   function setPlaying(playing) {
-    state.playing = Boolean(playing);
+    state.playing = Boolean(playing && state.model && !document.hidden);
+    if (state.playbackFrame) window.cancelAnimationFrame(state.playbackFrame);
+    state.playbackFrame = 0;
+    if (state.playing) state.playbackFrame = window.requestAnimationFrame(animatePlayback);
     state.lastAnimationTime = null;
     elements.play.setAttribute("aria-label", state.playing ? "Pause flight replay" : "Play flight replay");
     elements.playIcon.setAttribute("d", state.playing ? "M7 5h4v14H7zM14 5h4v14h-4z" : "m8 5 11 7-11 7z");
@@ -759,14 +500,15 @@
     return low;
   }
 
-  function updateFrame(index, force = false) {
+  function updateFrame(index, force = false, fromPlayback = false) {
     const model = state.model;
     if (!model) return;
     const next = clamp(Math.round(index), 0, model.count - 1);
     if (next === state.index && !force) return;
     state.index = next;
-    state.playbackTime = model.series.time[next];
+    if (!fromPlayback) state.playbackTime = model.series.time[next];
     elements.timeline.value = String(next);
+    elements.timeline.setAttribute("aria-valuetext", `${formatTime(model.series.time[next])}, sample ${next + 1} of ${model.count}`);
     elements.currentTime.textContent = formatTime(model.series.time[next]);
     elements.sampleReadout.textContent = `${formatInteger(next + 1)} / ${formatInteger(model.count)}`;
     $("[data-hud-time]").textContent = formatTime(model.series.time[next]);
@@ -789,12 +531,12 @@
     $("[data-baro-height]").textContent = formatFixed(model.baroUp[next], 1, " m");
     $("[data-satellites]").textContent = formatFixed(model.series.sats[next], 0);
     $("[data-hacc]").textContent = formatFixed(model.series.gnssHAcc[next], 2, " m");
-    $("[data-fix-status]").textContent = model.validGps[next] ? "3D fix" : "No fix";
+    $("[data-fix-status]").textContent = model.validGps[next] ? "Valid fix" : "No fix";
 
-    updateSampleInspector(next);
-    updateLocalViewer(next);
-    updateTerrainViewer(next);
-    if (state.view === "charts") drawAllCharts();
+    if (state.view === "samples") updateSampleInspector(next);
+    if (state.view === "local") updateLocalViewer(next);
+    if (state.view === "terrain") updateTerrainViewer(next);
+    if (state.view === "charts") updateChartCursors();
   }
 
   function headingLabel(yaw) {
@@ -805,13 +547,51 @@
     return `${points[Math.round(normalized / 45) % 8]} ${String(degrees).padStart(3, "0")}°`;
   }
 
+  async function prepareView(view, model, viewId) {
+    const current = () => state.model === model && state.viewId === viewId && state.view === view;
+    try {
+      if (view === "local" && !state.localViewer) {
+        elements.localHost.textContent = "Loading local 3D replay…";
+        await loadRuntime("assets/vendor/three.min.js", "THREE");
+        if (!current()) return;
+        state.localViewer = createLocalViewer(model);
+      }
+      if (view === "terrain" && !state.terrainViewer) {
+        showTerrainStatus("loading");
+        await Promise.all([loadMapStyles(), loadRuntime("assets/vendor/three.min.js", "THREE"), loadRuntime("assets/vendor/maplibre-gl.js?v=5.24.0", "maplibregl")]);
+        if (!current()) return;
+        initializeTerrainViewer(model);
+      }
+      if (!current()) return;
+      if (view === "local") { state.localViewer?.resize(); updateLocalViewer(state.index); }
+      if (view === "terrain" && state.terrainViewer) { state.terrainViewer.map.resize(); updateTerrainViewer(state.index, true); }
+    } catch (error) {
+      if (!current()) return;
+      if (view === "terrain") { disposeTerrainViewer(); showTerrainStatus("error", error.message); }
+      else {
+        disposeLocalViewer();
+        const message = document.createElement("p");
+        message.textContent = "Local 3D is unavailable in this browser. Traces and samples are still available.";
+        const retry = document.createElement("button");
+        retry.type = "button"; retry.className = "flight-button"; retry.textContent = "Retry local 3D";
+        retry.onclick = () => switchView("local");
+        elements.localHost.replaceChildren(message, retry);
+      }
+    }
+  }
+
   function switchView(view) {
     if (view === "terrain" && state.model && !state.model.hasGps) {
-      toast("This log has no usable GNSS coordinates, so terrain replay is unavailable.", true);
-      view = "local";
+      toast("This log has no usable GNSS coordinates. Traces and samples are still available.", true);
+      view = "charts";
     }
     state.view = view;
-    $$('[data-view-button]').forEach((button) => button.setAttribute("aria-selected", String(button.dataset.viewButton === view)));
+    const viewId = ++state.viewId;
+    $$('[data-view-button]').forEach((button) => {
+      const selected = button.dataset.viewButton === view;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
     $$('[data-view]').forEach((panel) => {
       const active = panel.dataset.view === view;
       panel.hidden = !active;
@@ -823,71 +603,113 @@
     $$('[data-map-only-control]').forEach((control) => {
       control.hidden = view !== "terrain" || control === elements.satelliteSettings && elements.mapBasemap.value !== "satellite";
     });
+    if (view !== "local") state.localViewer?.pause();
+    if (view !== "terrain") state.terrainViewer?.map.stop();
     if (view === "charts") drawAllCharts();
-    if (view === "local") state.localViewer?.resize();
-    if (view === "terrain" && state.terrainViewer) {
-      state.terrainViewer.map.resize();
-      updateTerrainViewer(state.index, true);
-    }
+    if (view === "samples" && state.model) updateSampleInspector(state.index);
+    if (overlayVisible && state.model) prepareView(view, state.model, viewId);
   }
 
   function setLevel(level, label) {
     state.level = level;
     state.levelLabel = label;
-    updateFrame(state.index, true);
+    updateFrame(state.index, true, state.playing);
   }
 
   function drawAllCharts() {
     if (!state.model) return;
     for (const chart of state.charts) drawChart(chart);
+    updateChartCursors();
   }
 
   function buildCharts(model) {
+    state.charts.forEach((chart) => chart.cursor?.remove());
     state.charts = [
       {
         canvas: $('[data-chart="attitude"]'),
         series: [
-          { values: model.series.roll, color: "#62dfb3", unit: "°" },
-          { values: model.series.pitch, color: "#6bb6ff", unit: "°" },
-          { values: model.series.yaw, color: "#f4c86a", unit: "°" }
+          { values: model.series.roll, color: "#7bbcff", unit: "°" },
+          { values: model.series.pitch, color: "#d4d1c5", unit: "°" },
+          { values: model.series.yaw, color: "#d5b778", unit: "°" }
         ]
       },
       {
         canvas: $('[data-chart="altitude"]'),
         series: [
-          { values: model.baroFilled, color: "#62dfb3", unit: "m" },
-          { values: model.gnssAltFilled, color: "#d4a5ff", unit: "m" }
+          { values: model.baroFilled, color: "#7bbcff", unit: "m" },
+          { values: model.gnssAltFilled, color: "#b8abd1", unit: "m" }
         ]
       },
       {
         canvas: $('[data-chart="speed"]'),
         series: [
-          { values: model.groundSpeed, color: "#f4c86a", unit: "m/s" },
-          { values: model.series.airspeed, color: "#ff8f70", unit: "m/s" }
+          { values: model.groundSpeed, color: "#d5b778", unit: "m/s" },
+          { values: model.series.airspeed, color: "#d99078", unit: "m/s" }
         ]
       },
       {
         canvas: $('[data-chart="quality"]'),
         independentScale: true,
         series: [
-          { values: model.series.logDt, color: "#6bb6ff", unit: "ms" },
-          { values: model.series.gnssHAcc, color: "#ff8f70", unit: "m" }
+          { values: model.series.logDt, color: "#d4d1c5", unit: "ms" },
+          { values: model.series.gnssHAcc, color: "#d99078", unit: "m" }
         ]
       }
     ];
     if (state.chartResizeObserver) state.chartResizeObserver.disconnect();
     state.chartResizeObserver = new ResizeObserver(() => state.view === "charts" && drawAllCharts());
     for (const chart of state.charts) {
+      chart.ranges = chart.series.map((series) => rangeOf(series.values));
+      chart.sharedRange = paddedRange(chart.ranges.flat());
+      chart.cursor = document.createElement("span");
+      chart.cursor.className = "flight-chart-cursor";
+      chart.cursor.setAttribute("aria-hidden", "true");
+      chart.canvas.parentElement.append(chart.cursor);
       state.chartResizeObserver.observe(chart.canvas);
       const scrub = (event) => {
         const rect = chart.canvas.getBoundingClientRect();
         const ratio = clamp((event.clientX - rect.left - 42) / Math.max(1, rect.width - 54), 0, 1);
-        setPlaying(false);
-        updateFrame(Math.round(ratio * (model.count - 1)), true);
+        queueSeek(findIndexAtTime(ratio * model.stats.duration));
       };
       chart.canvas.onpointerdown = (event) => { chart.canvas.setPointerCapture(event.pointerId); scrub(event); };
-      chart.canvas.onpointermove = (event) => { if (event.buttons) scrub(event); };
+      chart.canvas.onpointermove = (event) => { if (chart.canvas.hasPointerCapture(event.pointerId)) scrub(event); };
+      chart.canvas.onpointerup = (event) => { scrub(event); if (chart.canvas.hasPointerCapture(event.pointerId)) chart.canvas.releasePointerCapture(event.pointerId); };
+      chart.canvas.onpointercancel = (event) => { if (chart.canvas.hasPointerCapture(event.pointerId)) chart.canvas.releasePointerCapture(event.pointerId); };
     }
+  }
+
+  function queueSeek(index) {
+    setPlaying(false);
+    state.pendingSeek = index;
+    if (state.seekFrame) return;
+    state.seekFrame = window.requestAnimationFrame(() => {
+      state.seekFrame = 0;
+      updateFrame(state.pendingSeek, true);
+    });
+  }
+
+  // Preserve first/last and extrema in each time-pixel bucket. A missing value
+  // always breaks the line. This is display-only: samples and exports stay full-resolution.
+  function chartVertices(values, time, duration, pixels) {
+    const result = [];
+    let bucket = -1, first = -1, last = -1, min = -1, max = -1;
+    const flush = () => {
+      if (first < 0) return;
+      const indices = [...new Set([first, min, max, last])].sort((a, b) => a - b);
+      result.push(...indices);
+      first = last = min = max = -1;
+    };
+    for (let index = 0; index < values.length; index += 1) {
+      if (!finite(values[index])) { flush(); if (result[result.length - 1] !== -1) result.push(-1); bucket = -1; continue; }
+      const nextBucket = Math.floor(time[index] / Math.max(duration, 1e-9) * pixels);
+      if (nextBucket !== bucket) { flush(); bucket = nextBucket; }
+      if (first < 0) first = min = max = index;
+      last = index;
+      if (values[index] < values[min]) min = index;
+      if (values[index] > values[max]) max = index;
+    }
+    flush();
+    return result;
   }
 
   function drawChart(chart) {
@@ -895,17 +717,20 @@
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cacheKey = `${rect.width}:${rect.height}:${dpr}`;
+    if (chart.cacheKey === cacheKey) return;
+    chart.cacheKey = cacheKey;
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
     const context = canvas.getContext("2d");
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     const width = rect.width;
     const height = rect.height;
-    const plot = { left: 42, right: width - 12, top: 8, bottom: height - 23 };
+    const plot = chart.plot = { left: 42, right: width - 12, top: 8, bottom: height - 23 };
     context.clearRect(0, 0, width, height);
-    context.strokeStyle = "rgba(204,236,225,.10)";
-    context.fillStyle = "#6e837c";
-    context.font = "9px SFMono-Regular, Consolas, monospace";
+    context.strokeStyle = "#393a34";
+    context.fillStyle = "#aaa99f";
+    context.font = "10px 'IBM Plex Mono', Consolas, monospace";
     context.lineWidth = 1;
     for (let row = 0; row <= 4; row += 1) {
       const y = plot.top + (plot.bottom - plot.top) * row / 4;
@@ -917,36 +742,47 @@
       const time = state.model.stats.duration * column / 4;
       context.fillText(formatTime(time).replace(/\.\d{3}$/, ""), Math.min(x, plot.right - 35), height - 7);
     }
-
-    const sharedValues = chart.series.flatMap((series) => series.values.filter(finite));
-    const sharedRange = paddedRange(sharedValues);
-    const firstRange = chart.independentScale ? paddedRange(chart.series[0].values) : sharedRange;
+    const sharedRange = chart.sharedRange;
+    const firstRange = chart.independentScale ? paddedRange(chart.ranges[0]) : sharedRange;
     context.fillText(`${formatAxis(firstRange[1])}${chart.series[0].unit}`, 2, plot.top + 4);
     context.fillText(`${formatAxis(firstRange[0])}${chart.series[0].unit}`, 2, plot.bottom);
-    for (const definition of chart.series) {
+    chart.series.forEach((definition, seriesIndex) => {
       const values = definition.values;
-      const [low, high] = chart.independentScale ? paddedRange(values) : sharedRange;
-      if (!finite(low) || !finite(high)) continue;
+      const [low, high] = chart.independentScale ? paddedRange(chart.ranges[seriesIndex]) : sharedRange;
+      if (!finite(low) || !finite(high)) return;
       context.strokeStyle = definition.color;
       context.lineWidth = 1.4;
       context.beginPath();
-      const stride = Math.max(1, Math.floor(values.length / Math.max(1, plot.right - plot.left)));
       let started = false;
-      for (let index = 0; index < values.length; index += stride) {
-        const value = values[index];
-        if (!finite(value)) { started = false; continue; }
-        const x = plot.left + index / Math.max(1, values.length - 1) * (plot.right - plot.left);
-        const y = plot.bottom - (Number(value) - low) / Math.max(1e-9, high - low) * (plot.bottom - plot.top);
+      const indices = chartVertices(values, state.model.series.time, state.model.stats.duration, Math.ceil(plot.right - plot.left));
+      for (const index of indices) {
+        if (index < 0) { started = false; continue; }
+        const x = plot.left + state.model.series.time[index] / Math.max(1e-9, state.model.stats.duration) * (plot.right - plot.left);
+        const y = plot.bottom - (Number(values[index]) - low) / Math.max(1e-9, high - low) * (plot.bottom - plot.top);
         if (!started) { context.moveTo(x, y); started = true; } else context.lineTo(x, y);
       }
       context.stroke();
+      if (chart.independentScale && seriesIndex > 0) {
+        context.fillStyle = definition.color;
+        context.textAlign = "right";
+        context.fillText(`${formatAxis(high)}${definition.unit}`, plot.right, plot.top + 12);
+        context.fillText(`${formatAxis(low)}${definition.unit}`, plot.right, plot.bottom - 4);
+        context.textAlign = "left";
+      }
+    });
+    chart.cursor.style.top = `${canvas.offsetTop + plot.top}px`;
+    chart.cursor.style.height = `${plot.bottom - plot.top}px`;
+  }
+
+  function updateChartCursors() {
+    if (!state.model) return;
+    const ratio = state.model.series.time[state.index] / Math.max(1e-9, state.model.stats.duration);
+    for (const chart of state.charts) {
+      if (!chart.plot) continue;
+      const x = chart.canvas.offsetLeft + chart.plot.left + ratio * (chart.plot.right - chart.plot.left);
+      chart.cursor.style.top = `${chart.canvas.offsetTop + chart.plot.top}px`;
+      chart.cursor.style.transform = `translateX(${x}px)`;
     }
-    const cursorX = plot.left + state.index / Math.max(1, state.model.count - 1) * (plot.right - plot.left);
-    context.strokeStyle = "rgba(237,245,241,.92)";
-    context.lineWidth = 1;
-    context.beginPath(); context.moveTo(cursorX, plot.top); context.lineTo(cursorX, plot.bottom); context.stroke();
-    context.fillStyle = "#edf5f1";
-    context.beginPath(); context.arc(cursorX, plot.top + 3, 2.5, 0, Math.PI * 2); context.fill();
   }
 
   function paddedRange(values) {
@@ -980,8 +816,8 @@
     const THREE = window.THREE;
     elements.localHost.replaceChildren();
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x07100e);
-    scene.fog = new THREE.FogExp2(0x07100e, 0.00038);
+    scene.background = new THREE.Color(0x141412);
+    scene.fog = new THREE.FogExp2(0x141412, 0.00038);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     if ("outputEncoding" in renderer && THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
@@ -996,11 +832,11 @@
     const northRange = rangeOf(model.north);
     const horizontalSpan = Math.max(50, eastRange[1] - eastRange[0], northRange[1] - northRange[0]);
     const gridSize = Math.pow(10, Math.ceil(Math.log10(horizontalSpan * 1.45)));
-    const grid = new THREE.GridHelper(gridSize, 20, 0x315148, 0x19302a);
+    const grid = new THREE.GridHelper(gridSize, 20, 0x4b4d44, 0x292a25);
     grid.position.y = 0;
     scene.add(grid);
 
-    const compassMaterial = new THREE.LineBasicMaterial({ color: 0x62dfb3, transparent: true, opacity: 0.8 });
+    const compassMaterial = new THREE.LineBasicMaterial({ color: 0x7bbcff, transparent: true, opacity: 0.8 });
     const northArrowGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0.4, 0), new THREE.Vector3(0, 0.4, -horizontalSpan * 0.22),
       new THREE.Vector3(0, 0.4, -horizontalSpan * 0.22), new THREE.Vector3(-horizontalSpan * 0.018, 0.4, -horizontalSpan * 0.19),
@@ -1009,7 +845,7 @@
     scene.add(new THREE.LineSegments(northArrowGeometry, compassMaterial));
 
     const aircraft = new THREE.Group();
-    const aircraftMaterial = new THREE.MeshStandardMaterial({ color: 0x7af5c7, emissive: 0x173c30, roughness: 0.35, metalness: 0.12 });
+    const aircraftMaterial = new THREE.MeshStandardMaterial({ color: 0x7bbcff, emissive: 0x182b3c, roughness: 0.35, metalness: 0.12 });
     const body = new THREE.Mesh(new THREE.ConeGeometry(1.3, 5.5, 4), aircraftMaterial);
     body.rotation.x = Math.PI / 2;
     body.position.z = -0.8;
@@ -1023,7 +859,7 @@
 
     const startRing = new THREE.Mesh(
       new THREE.TorusGeometry(Math.max(2, horizontalSpan / 120), Math.max(0.28, horizontalSpan / 1400), 12, 64),
-      new THREE.MeshBasicMaterial({ color: 0x62dfb3 })
+      new THREE.MeshBasicMaterial({ color: 0x7bbcff })
     );
     startRing.rotation.x = Math.PI / 2;
     scene.add(startRing);
@@ -1038,6 +874,16 @@
     let pointerX = 0;
     let pointerY = 0;
     let disposed = false;
+    let renderFrame = 0;
+    let inViewport = true;
+    const pause = () => { if (renderFrame) window.cancelAnimationFrame(renderFrame); renderFrame = 0; };
+    const invalidate = () => {
+      if (disposed || !inViewport || renderFrame || state.view !== "local" || elements.workspace.hidden || document.hidden) return;
+      renderFrame = window.requestAnimationFrame(() => {
+        renderFrame = 0;
+        if (!disposed && inViewport && state.view === "local" && !elements.workspace.hidden && !document.hidden) renderer.render(scene, camera);
+      });
+    };
 
     const pointAt = (index) => {
       const source = elements.heightSource.value === "gps" ? model.gnssUp : model.baroUp;
@@ -1050,20 +896,19 @@
       const positions = new Float32Array(model.count * 3);
       const colors = new Float32Array(model.count * 3);
       const ground = new Float32Array(model.count * 3);
-      const lowColor = new THREE.Color(0x62dfb3);
+      const lowColor = new THREE.Color(0x7bbcff);
       const highColor = new THREE.Color(0xf4c86a);
+      const heights = elements.heightSource.value === "gps" ? model.gnssUp : model.baroUp;
+      const verticalScale = Number(elements.verticalScale.value);
       for (let index = 0; index < model.count; index += 1) {
-        const point = pointAt(index);
-        positions[index * 3] = point.x;
-        positions[index * 3 + 1] = point.y;
-        positions[index * 3 + 2] = point.z;
-        ground[index * 3] = point.x;
+        positions[index * 3] = ground[index * 3] = model.east[index];
+        positions[index * 3 + 1] = heights[index] * verticalScale;
+        positions[index * 3 + 2] = ground[index * 3 + 2] = -model.north[index];
         ground[index * 3 + 1] = 0.25;
-        ground[index * 3 + 2] = point.z;
-        const color = lowColor.clone().lerp(highColor, index / Math.max(1, model.count - 1));
-        colors[index * 3] = color.r;
-        colors[index * 3 + 1] = color.g;
-        colors[index * 3 + 2] = color.b;
+        const ratio = index / Math.max(1, model.count - 1);
+        colors[index * 3] = lowColor.r + (highColor.r - lowColor.r) * ratio;
+        colors[index * 3 + 1] = lowColor.g + (highColor.g - lowColor.g) * ratio;
+        colors[index * 3 + 2] = lowColor.b + (highColor.b - lowColor.b) * ratio;
       }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -1082,13 +927,14 @@
       const xCenter = (eastRange[0] + eastRange[1]) / 2;
       const zCenter = -(northRange[0] + northRange[1]) / 2;
       const upSource = elements.heightSource.value === "gps" ? model.gnssUp : model.baroUp;
-      const upRange = rangeOf(upSource.map((value) => value * Number(elements.verticalScale.value)));
+      const upRange = rangeOf(upSource).map((value) => value * Number(elements.verticalScale.value));
       orbitTarget = new THREE.Vector3(xCenter, finite(upRange[0]) ? (upRange[0] + upRange[1]) / 2 : points[1].y, zCenter);
       orbitDistance = Math.max(horizontalSpan * 1.55, (finite(upRange[1]) ? upRange[1] - upRange[0] : 0) * 2.2, 70);
       updateCamera(true);
     };
 
     const updateCamera = (forceOrbit = false) => {
+      invalidate();
       const mode = forceOrbit ? "orbit" : elements.cameraMode.value;
       const position = pointAt(state.index);
       if (mode === "follow") {
@@ -1112,12 +958,13 @@
     };
 
     const update = (index) => {
+      invalidate();
       const point = pointAt(index);
       const attitude = displayedAttitude(index);
       aircraft.position.copy(point);
       aircraft.rotation.order = "YXZ";
       aircraft.rotation.set(radians(attitude.pitch), -radians(attitude.yaw), -radians(attitude.roll));
-      if (["follow", "top"].includes(elements.cameraMode.value)) updateCamera();
+      updateCamera();
     };
 
     const resize = () => {
@@ -1126,6 +973,7 @@
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      invalidate();
     };
 
     renderer.domElement.addEventListener("pointerdown", (event) => {
@@ -1158,26 +1006,29 @@
     }, { passive: false });
     const observer = new ResizeObserver(resize);
     observer.observe(elements.localHost);
+    const visibilityObserver = typeof IntersectionObserver === "function" ? new IntersectionObserver(([entry]) => {
+      inViewport = entry.isIntersecting;
+      if (inViewport) invalidate(); else pause();
+    }) : null;
+    visibilityObserver?.observe(elements.localHost);
 
-    const animate = () => {
-      if (disposed) return;
-      renderer.render(scene, camera);
-      window.requestAnimationFrame(animate);
-    };
     rebuildPath();
     fit();
     resize();
     update(0);
-    animate();
+    invalidate();
 
     return {
       update,
+      pause,
       resize,
       fit,
       rebuildPath: () => { rebuildPath(); fit(); update(state.index); },
       dispose: () => {
         disposed = true;
+        pause();
         observer.disconnect();
+        visibilityObserver?.disconnect();
         scene.traverse((object) => {
           object.geometry?.dispose?.();
           if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose?.());
@@ -1223,12 +1074,14 @@
 
   function terrainMarkerGeoJson(currentIndex = state.index) {
     const model = state.model;
-    const valid = [];
-    for (let index = 0; index < model.count; index += 1) {
-      if (finite(model.lat[index]) && finite(model.lon[index])) valid.push(index);
+    if (!model.markerEndpoints) {
+      let first = -1, last = -1;
+      for (let index = 0; index < model.count; index += 1) {
+        if (finite(model.lat[index]) && finite(model.lon[index])) { if (first < 0) first = index; last = index; }
+      }
+      model.markerEndpoints = [Math.max(first, 0), Math.max(last, 0)];
     }
-    const first = valid[0] ?? 0;
-    const last = valid[valid.length - 1] ?? first;
+    const [first, last] = model.markerEndpoints;
     const current = finite(model.lat[currentIndex]) && finite(model.lon[currentIndex]) ? currentIndex : first;
     const feature = (index, kind, label) => ({
       type: "Feature",
@@ -1417,7 +1270,7 @@
         this.scene.rotateX(Math.PI / 2);
         this.scene.scale.multiply(new THREE.Vector3(1, 1, -1));
 
-        const aircraftMaterial = new THREE.MeshStandardMaterial({ color: 0x7af5c7, emissive: 0x173c30, roughness: 0.35, metalness: 0.12 });
+        const aircraftMaterial = new THREE.MeshStandardMaterial({ color: 0x7bbcff, emissive: 0x182b3c, roughness: 0.35, metalness: 0.12 });
         this.aircraft = new THREE.Group();
         const body = new THREE.Mesh(new THREE.ConeGeometry(1.3, 5.5, 4), aircraftMaterial);
         body.rotation.x = Math.PI / 2;
@@ -1435,7 +1288,7 @@
         const tetherAttribute = new THREE.BufferAttribute(this.tetherPositions, 3);
         tetherAttribute.setUsage(THREE.DynamicDrawUsage);
         this.tetherGeometry.setAttribute("position", tetherAttribute);
-        this.tether = new THREE.Line(this.tetherGeometry, new THREE.LineBasicMaterial({ color: 0x7af5c7, transparent: true, opacity: 0.42 }));
+        this.tether = new THREE.Line(this.tetherGeometry, new THREE.LineBasicMaterial({ color: 0x7bbcff, transparent: true, opacity: 0.42 }));
         this.scene.add(this.tether);
         this.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
         const sun = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -1485,7 +1338,7 @@
         if (points.length < 2) return;
         const curve = new THREE.CatmullRomCurve3(points, false, "centripetal", 0.35);
         const geometry = new THREE.TubeGeometry(curve, Math.min(1800, Math.max(240, points.length - 1)), pathRadius, 6, false);
-        const material = new THREE.MeshBasicMaterial({ color: 0x62dfb3, transparent: true, opacity: 0.94 });
+        const material = new THREE.MeshBasicMaterial({ color: 0x7bbcff, transparent: true, opacity: 0.94 });
         pathMesh = new THREE.Mesh(geometry, material);
         this.scene.add(pathMesh);
       },
@@ -1496,6 +1349,7 @@
           terrainElevations[index] = NaN;
           if (finite(groundAt(index))) available += 1;
         });
+        if (!available) return 0;
         launchTerrain = groundAt(originIndex);
         this.rebuildPath();
         this.update(state.index);
@@ -1725,7 +1579,7 @@
           paint: {
             "line-width": 3.5,
             "line-opacity": 0.9,
-            "line-gradient": ["interpolate", ["linear"], ["line-progress"], 0, "#6bb6ff", 0.55, "#62dfb3", 1, "#f4c86a"]
+            "line-gradient": ["interpolate", ["linear"], ["line-progress"], 0, "#d4d1c5", 0.55, "#7bbcff", 1, "#d5b778"]
           }
         }, firstSymbol);
         map.addSource("skylabs-track-points", { type: "geojson", data: terrainMarkerGeoJson(0) });
@@ -1735,7 +1589,7 @@
           source: "skylabs-track-points",
           paint: {
             "circle-radius": ["match", ["get", "kind"], "current", 7, 5],
-            "circle-color": ["match", ["get", "kind"], "start", "#62dfb3", "end", "#f4c86a", "#edf5f1"],
+            "circle-color": ["match", ["get", "kind"], "start", "#7bbcff", "end", "#d5b778", "#edf5f1"],
             "circle-stroke-color": "#07100e",
             "circle-stroke-width": 2
           }
@@ -1754,11 +1608,13 @@
         applyTerrainBasemap();
         fitTerrainMap(false);
         const refreshTerrain = () => {
-          if (state.terrainViewer !== viewer || viewer.aligned && viewer.refreshAttempts >= 6) return;
+          if (state.terrainViewer !== viewer || state.view !== "terrain" || elements.workspace.hidden || document.hidden || viewer.aligned && viewer.refreshAttempts >= 6) return;
           viewer.refreshAttempts += 1;
           const coverage = viewer.flightLayer.refreshTerrain();
+          viewer.coverage = coverage;
+          updateTerrainClearanceStatus();
           if (coverage <= 0) return;
-          if (!viewer.vegetationReady && map.isSourceLoaded("openmaptiles")) {
+          if (!viewer.vegetationReady && map.getSource("openmaptiles") && map.isSourceLoaded("openmaptiles")) {
             viewer.flightLayer.refreshVegetation();
             viewer.vegetationReady = true;
           }
@@ -1766,8 +1622,8 @@
             viewer.aligned = true;
             window.clearTimeout(viewer.loadTimer);
             showTerrainStatus("ready");
-            updateTerrainViewer(0, true);
-            toast("Terrain-aligned replay and 3D vegetation ready — satellite imagery is optional.");
+            updateTerrainViewer(state.index, true);
+            toast(`Terrain available for ${Math.round(coverage * 100)}% of sampled route points.`);
           }
           if ((coverage >= 0.98 && viewer.vegetationReady) || viewer.refreshAttempts >= 6) {
             map.off("sourcedata", viewer.onTerrainData);
@@ -1775,7 +1631,7 @@
           }
         };
         const scheduleTerrainRefresh = () => {
-          if (viewer.refreshTimer) return;
+          if (viewer.refreshTimer || state.view !== "terrain" || elements.workspace.hidden || document.hidden) return;
           viewer.refreshTimer = window.setTimeout(() => {
             viewer.refreshTimer = null;
             refreshTerrain();
@@ -1805,7 +1661,7 @@
 
   function updateTerrainViewer(index, force = false) {
     const viewer = state.terrainViewer;
-    if (!viewer?.ready || !state.model?.hasGps) return;
+    if (!viewer?.ready || !state.model?.hasGps || state.view !== "terrain" || elements.workspace.hidden) return;
     viewer.flightLayer.update(index);
     viewer.map.getSource("skylabs-track-points")?.setData(terrainMarkerGeoJson(index));
     const now = performance.now();
@@ -1832,7 +1688,8 @@
 
   function updateTerrainClearanceStatus() {
     const value = Number(elements.terrainClearance.value) || 5;
-    elements.terrainClearanceStatus.textContent = `Terrain aligned · ${value} m minimum AGL`;
+    const coverage = state.terrainViewer?.coverage;
+    elements.terrainClearanceStatus.textContent = `${finite(coverage) ? `Terrain coverage ${Math.round(coverage * 100)}% · ` : ""}Visual clearance ${value} m (not measured AGL)`;
   }
 
   function fitTerrainMap(animate = true) {
@@ -1863,7 +1720,7 @@
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function exportNormalizedCsv() {
+  async function exportNormalizedCsv() {
     const model = state.model;
     if (!model) return;
     const headers = [
@@ -1872,7 +1729,13 @@
       "gnss_h_acc_m", "log_dt_ms", "esc_current_a", "esc_voltage_v", "esc_rpm",
       "log_overrun_count", "sd_write_error_count"
     ];
-    const rows = [headers.join(",")];
+    const button = $("[data-download-csv]");
+    if (button.disabled) return;
+    button.disabled = true;
+    const label = button.textContent;
+    const parts = [];
+    let rows = [headers.join(",")];
+    try {
     for (let index = 0; index < model.count; index += 1) {
       rows.push([
         model.series.time[index], model.series.timestampMs[index], model.lat[index], model.lon[index],
@@ -1881,10 +1744,19 @@
         model.series.gnssHAcc[index], model.series.logDt[index], model.series.current[index], model.series.voltage[index],
         model.series.rpm[index], model.series.overrun[index], model.series.sdErrors[index]
       ].map(escapeCsv).join(","));
+      if ((index + 1) % 2000 === 0) {
+        parts.push(rows.join("\r\n") + (index < model.count - 1 ? "\r\n" : ""));
+        rows = [];
+        button.textContent = `Exporting ${Math.round((index + 1) / model.count * 100)}%`;
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+      }
     }
+    if (rows.length) parts.push(rows.join("\r\n"));
     const base = model.meta.name.replace(/\.[^.]+$/, "");
-    downloadBlob(`${base}_normalized.csv`, new Blob([rows.join("\r\n")], { type: "text/csv;charset=utf-8" }));
+    downloadBlob(`${base}_normalized.csv`, new Blob(parts, { type: "text/csv;charset=utf-8" }));
     toast("Normalized CSV export created.");
+    } catch { toast("The export could not be created. Try a smaller file.", true); }
+    finally { button.disabled = false; button.textContent = label; }
   }
 
   function downloadTemplate() {
@@ -1896,21 +1768,39 @@
     downloadBlob("skylabs_flight_log_template.csv", new Blob([content], { type: "text/csv;charset=utf-8" }));
   }
 
+  function restoreSession() {
+    elements.loading.hidden = true;
+    if (state.model) {
+      elements.workspace.hidden = false;
+      elements.onboarding.hidden = true;
+      switchView(state.view);
+    } else showOnboarding();
+  }
+
   async function handleFlightFile(file) {
     if (!file) return;
+    cancelParsing();
+    const requestId = state.loadId;
+    if (state.seekFrame) window.cancelAnimationFrame(state.seekFrame);
+    state.seekFrame = 0;
+    state.viewId += 1;
     showLoading();
+    elements.toast.hidden = true;
     try {
-      const model = await parseFlightFile(file);
-      setLoading("Building flight solution", "Deriving local coordinates, speed and diagnostic channels.", 70);
-      await new Promise((resolve) => window.setTimeout(resolve, 24));
-      setLoading("Preparing review workspace", `${formatInteger(model.count)} usable samples ready.`, 94);
-      await new Promise((resolve) => window.setTimeout(resolve, 24));
+      const model = await parseFlightFile(file, requestId);
+      if (requestId !== state.loadId) return;
+      setLoading("Preparing review", `${formatInteger(model.count)} samples decoded locally.`, 94);
+      // Paint the worker result before the one-time trace preparation.
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      if (requestId !== state.loadId) return;
       populateWorkspace(model);
     } catch (error) {
-      showOnboarding();
+      if (requestId !== state.loadId || error.name === "AbortError") return;
+      restoreSession();
+      (state.model ? $("[data-new-log]") : $("[data-choose-file]")).focus({ preventScroll: true });
       toast(error instanceof Error ? error.message : "The flight log could not be read.", true);
     } finally {
-      elements.fileInput.value = "";
+      if (requestId === state.loadId) elements.fileInput.value = "";
     }
   }
 
@@ -1919,6 +1809,12 @@
   }
 
   $$('[data-choose-file]').forEach((button) => button.addEventListener("click", openFilePicker));
+  $("[data-cancel-load]").addEventListener("click", () => {
+    cancelParsing();
+    elements.fileInput.value = "";
+    restoreSession();
+    (state.model ? $("[data-new-log]") : $("[data-choose-file]")).focus({ preventScroll: true });
+  });
   $("[data-new-log]").addEventListener("click", openFilePicker);
   elements.fileInput.addEventListener("change", () => handleFlightFile(elements.fileInput.files?.[0]));
 
@@ -1942,7 +1838,17 @@
   $("[data-download-csv]").addEventListener("click", exportNormalizedCsv);
 
   $$('[data-view-button]').forEach((button) => button.addEventListener("click", () => switchView(button.dataset.viewButton)));
-  elements.timeline.addEventListener("input", () => { setPlaying(false); updateFrame(Number(elements.timeline.value), true); });
+  $(".flight-view-tabs").addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const buttons = $$('[data-view-button]');
+    const current = buttons.indexOf(event.target);
+    if (current < 0) return;
+    event.preventDefault();
+    const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+    switchView(buttons[next].dataset.viewButton);
+    $("[data-view-button][aria-selected='true']").focus();
+  });
+  elements.timeline.addEventListener("input", () => queueSeek(Number(elements.timeline.value)));
   elements.play.addEventListener("click", () => {
     if (!state.model) return;
     if (!state.playing && state.index >= state.model.count - 1) updateFrame(0, true);
@@ -2010,7 +1916,7 @@
   }, `Leveled ${formatTime(state.model.series.time[state.index])}`));
   $("[data-level-reset]").addEventListener("click", () => setLevel(null, "Raw IMU"));
 
-  elements.mapRetry.addEventListener("click", () => initializeTerrainViewer(state.model));
+  elements.mapRetry.addEventListener("click", () => { disposeTerrainViewer(); switchView("terrain"); });
 
   $("[data-copy-sample]").addEventListener("click", async () => {
     try {
@@ -2022,6 +1928,7 @@
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.loading.hidden) { event.preventDefault(); $("[data-cancel-load]").click(); return; }
     if (!state.model || elements.workspace.hidden || elements.schemaDialog.open || elements.satelliteDialog.open) return;
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLButtonElement) return;
     if (event.code === "Space") { event.preventDefault(); elements.play.click(); }
@@ -2030,20 +1937,25 @@
   });
 
   function animatePlayback(timestamp) {
-    if (state.playing && state.model) {
-      if (state.lastAnimationTime === null) state.lastAnimationTime = timestamp;
-      const elapsed = Math.max(0, (timestamp - state.lastAnimationTime) / 1000) * Number(elements.rate.value);
-      state.lastAnimationTime = timestamp;
-      state.playbackTime += elapsed;
-      if (state.playbackTime >= state.model.stats.duration) {
-        updateFrame(state.model.count - 1, true);
-        setPlaying(false);
-      } else {
-        updateFrame(findIndexAtTime(state.playbackTime));
-      }
+    state.playbackFrame = 0;
+    if (!state.playing || !state.model || document.hidden) return;
+    if (state.lastAnimationTime === null) state.lastAnimationTime = timestamp;
+    const elapsed = Math.max(0, (timestamp - state.lastAnimationTime) / 1000) * Number(elements.rate.value);
+    state.lastAnimationTime = timestamp;
+    state.playbackTime += elapsed;
+    if (state.playbackTime >= state.model.stats.duration) {
+      updateFrame(state.model.count - 1, true);
+      setPlaying(false);
+    } else {
+      updateFrame(findIndexAtTime(state.playbackTime), false, true);
+      state.playbackFrame = window.requestAnimationFrame(animatePlayback);
     }
-    window.requestAnimationFrame(animatePlayback);
   }
 
-  window.requestAnimationFrame(animatePlayback);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { setPlaying(false); state.localViewer?.pause(); state.terrainViewer?.map.stop(); }
+    else if (state.model && !elements.workspace.hidden && state.view === "local") state.localViewer?.update(state.index);
+  });
+  window.addEventListener("pagehide", () => { cancelParsing(); setPlaying(false); disposeLocalViewer(); disposeTerrainViewer(); });
+  window.addEventListener("pageshow", (event) => { if (event.persisted) restoreSession(); });
 })();
