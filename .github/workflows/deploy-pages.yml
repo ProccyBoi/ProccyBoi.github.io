@@ -63,3 +63,6 @@ jobs:
           script: |
             const deploy = require('./.github/scripts/deploy-pages.cjs')
             await deploy({ github, context, core })
+
+      - name: Verify published Flight Review files and preserved redirects
+        run: node scripts/flight-review/verify-live.cjs

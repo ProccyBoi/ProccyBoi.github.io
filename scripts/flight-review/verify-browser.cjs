@@ -89,7 +89,12 @@ async function regression(browser,base) {
     await H.screenshot(run,out,'sparse-missing-fields');
   });
   await scenario(browser,base,'csv-no-usable-gps',async run=>{
-    const f=recordFixture(csv({missingGps:true,name:'no-gps.csv'}));await H.loaded(run,f);await run.page.locator('[data-view-button="terrain"]').click();
+    const f=recordFixture(csv({missingGps:true,name:'no-gps.csv'}));await H.loaded(run,f);
+    // aria-disabled correctly prevents Playwright's enabled-only click helper.
+    // A real pointer can still request the intentionally available explanation.
+    const terrain=run.page.locator('[data-view-button="terrain"]');assert.equal(await terrain.getAttribute('aria-disabled'),'true');
+    await H.target(run.page,'[data-view-button="terrain"]');const terrainBox=await terrain.boundingBox();await run.page.mouse.click(terrainBox.x+terrainBox.width/2,terrainBox.y+terrainBox.height/2);
+    assert.match(await run.page.locator('[data-toast]').textContent(),/no usable GNSS/i);
     await assertDefault(run,{csvImport:true});assert.match(await run.page.locator('[data-health-list]').textContent(),/No usable GNSS/);await assertExport(run,f);
     const p=run.page;assert.equal(await p.locator('[data-view-button="terrain"]').getAttribute('aria-disabled'),'true');
     await p.locator('[data-view-button="charts"]').focus();await p.keyboard.press('ArrowRight');assert.equal(await p.evaluate(()=>document.activeElement.dataset.viewButton),'local','No-GPS keyboard navigation skips unavailable terrain');

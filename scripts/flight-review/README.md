@@ -64,3 +64,22 @@ Median results, baseline → candidate:
 - Separate active 400,001-record / 112.8 MB parse cancellation: 3.1 ms handler, prior log retained
 
 All five performance gates passed. These are same-runner Chromium/SwiftShader observations, not physical-device performance promises. This is a **pre-final** map/style/layout revision: later map-error, bounded-scene and no-GPS keyboard fixes require their own exact-SHA rerun. The earlier Buffer/base64-injected exploratory timings are discarded and must not be compared to these native-input results.
+
+## Final production-asset comparison: 2b13f82
+
+Use `evidence/2b13f82-performance.json` for the final production-asset numbers. It preserves all eight core-metric samples from [run 39224280553](https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39224280553), [performance artifact 12173456669](https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39224280553/artifacts/12173456669). Exact candidate: `2b13f82d0ef664a7f8f5fc004692d5b83847eb42`; baseline unchanged. Both revisions use four counterbalanced native-file-input samples of the same 120,001-record binary on one runner.
+
+Median results, baseline → candidate:
+
+- Cold entry HTTP body bytes: 2,841,539 → 189,605 (93.33% reduction)
+- File to charts: 9,331.4 → 579.65 ms
+- Ingestion total blocking time: 8,547.5 → 21 ms
+- Ingestion maximum heartbeat gap: 6,868.7 → 86.65 ms
+- Scrub p95: 3,007.7 → 33 ms
+- Measured 1× playback rate: 0.4300 → 0.9984 log-seconds per wall-second
+- Paused 600 ms animation callbacks: 83 → 0
+- Active 400,001-record / 112.8 MB parse cancellation: 4 ms handler, prior log retained
+
+All five performance gates passed. Browser screenshots verify real SwiftShader-rendered local aircraft/grid/track and positive terrain/path/markers; both scene canvases are 640 px tall, the local aircraft is above replay controls, and the positive terrain scenario reports no MapLibre errors. The terrain fixture is synthetic flat 100 m elevation, not real map-service evidence.
+
+This SHA passed 16/17 browser regression cases; the sole failure was Playwright's enabled-only click helper refusing an intentionally `aria-disabled` terrain tab before the no-GPS keyboard test. The following test-only patch uses an actual bounded pointer click to request the explanation, then keeps the keyboard/privacy assertions unchanged. That later exact SHA must pass the complete workflow before release. Subsequent evidence/deployment-verification edits do not change these production assets. Earlier uncorrected Buffer-input timings remain discarded.

@@ -30,4 +30,6 @@ Run `node scripts/verify-flight-review-parser.cjs` for exact numerical compariso
 
 The browser workflow, `verify-flight-review.yml`, runs exact-commit browser regressions and captures viewport-emulated screenshots and matched before/after performance measurements. Synthetic logs are clearly labelled. Where the published F110211 replay is reconstructed into CSV for a test, it is a reconstruction of published arrays, not the original aircraft binary. Mocked provider tests establish UI and failure behavior, not availability or accuracy of live map providers.
 
+After Pages deployment, `scripts/flight-review/verify-live.cjs` fetches the public entry page, UI/worker/parser assets and legacy redirect pages and compares SHA-256 hashes with that exact checkout. It retries briefly for CDN propagation and fails visibly if any published file differs.
+
 Do not infer physical-device performance from headless Chromium/SwiftShader or WebKit viewport emulation. Timing results depend on hardware, browser and file size. Keep measurements tied to their commit and fixture rather than claiming an unconditional speed multiplier.
