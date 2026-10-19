@@ -1,0 +1,156 @@
+/* The opening keeps one shared CAD composition and a short, optional scroll. */
+.v2-assembly{position:relative;margin-top:-76px;background:var(--v2-bg);isolation:isolate}
+.v2-assembly-sticky{position:relative;min-height:760px;height:100svh;overflow:hidden;background:var(--v2-bg)}
+.v2-assembly-intro{position:absolute;z-index:3;top:clamp(112px,13svh,150px);left:var(--v2-gutter);right:var(--v2-gutter);display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);align-items:start;gap:clamp(28px,4vw,64px);pointer-events:none;will-change:transform,opacity}
+.v2-assembly-intro h1{display:flex;gap:.22em;font-size:clamp(66px,7.5vw,124px);line-height:.98;letter-spacing:-.065em;font-weight:500;white-space:nowrap;text-transform:none}
+.v2-assembly-intro h1 span{display:block;color:var(--v2-ink)}
+.v2-assembly-summary{max-width:47ch;padding-top:4px}
+.v2-assembly-summary>p{font:400 14px/1.65 var(--v2-mono);color:var(--v2-muted);letter-spacing:-.015em;text-wrap:pretty}
+.v2-assembly-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;margin-top:16px;pointer-events:auto}
+.v2-assembly-actions a{display:inline-flex;align-items:center;justify-content:center;gap:14px;min-height:44px;padding:9px 0;font-size:14px;line-height:1.4;border-bottom:1px solid var(--v2-line)}
+.v2-assembly-actions a:first-child{border-bottom-color:var(--v2-accent)}
+.v2-assembly-actions a:hover,.v2-assembly-navigation a:hover{color:var(--v2-accent)}
+.v2-assembly-intro[inert] .v2-assembly-actions{pointer-events:none}
+.v2-assembly-stage{position:absolute;inset:0;z-index:1;pointer-events:none}
+.v2-assembly-stage canvas{display:block;width:100%;height:100%;opacity:0;transition:opacity .25s}
+.v2-assembly.is-loaded canvas{opacity:1}
+.v2-assembly-posters{position:absolute;inset:0}
+.v2-assembly-posters img{position:absolute;object-fit:contain;filter:drop-shadow(0 38px 26px #13232118);transition:opacity .25s}
+.v2-assembly.is-enhanced .v2-assembly-posters img{max-width:none}
+.v2-assembly-posters .assembly-poster-telemetry{width:28%;height:50%;left:1%;top:39%;transform:rotate(-15deg)}
+.v2-assembly-posters .assembly-poster-tram{width:60%;height:60%;left:20%;top:35%;transform:rotate(-8deg)}
+.v2-assembly-posters .assembly-poster-pi{width:28%;height:50%;right:1%;top:39%;transform:rotate(15deg)}
+/* Scroll poses apply only to an animated screen. Static/print views preserve
+   all three images, including while a media-query callback is still pending. */
+@media screen and (prefers-reduced-motion:no-preference){
+  .v2-assembly.is-enhanced .v2-assembly-posters img[style]{width:var(--assembly-poster-width);height:var(--assembly-poster-height);left:var(--assembly-poster-left);top:var(--assembly-poster-top);transform:var(--assembly-poster-transform);opacity:var(--assembly-poster-opacity);visibility:var(--assembly-poster-visibility)}
+}
+.v2-assembly-caption{position:absolute;z-index:4;left:var(--v2-gutter);top:36%;max-width:32%;padding-top:20px;opacity:0;transform:translateY(30px);pointer-events:none;will-change:transform,opacity}
+.v2-assembly-caption>p:first-child{font:400 13px/1.6 var(--v2-mono);color:var(--v2-muted);margin-bottom:20px}
+.v2-assembly-caption h2{font-size:clamp(44px,5.1vw,78px);line-height:1.04;letter-spacing:-.05em;font-weight:500;text-transform:none}
+.v2-assembly-caption h2 a{display:inline-flex;align-items:start;gap:12px}
+.assembly-caption-arrow{font-size:.42em;line-height:1.4;color:var(--v2-accent);padding-top:.18em}
+.v2-assembly-caption>p:last-child{font-size:17px;color:var(--v2-muted);line-height:1.6;margin-top:22px;max-width:28ch}
+.v2-assembly-caption.is-active{pointer-events:auto}
+.v2-assembly-bottom{position:absolute;z-index:5;bottom:27px;left:var(--v2-gutter);right:var(--v2-gutter);display:flex;justify-content:space-between;gap:28px;align-items:end}
+.v2-assembly-navigation{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:center}
+.v2-assembly-navigation a{display:inline-flex;align-items:center;gap:14px;min-height:44px;padding:10px 0;font-size:14px;line-height:1.4}
+.v2-assembly-navigation a>span{color:var(--v2-accent)}
+.v2-assembly-explore{border-bottom:1px solid var(--v2-line)}
+.v2-assembly-jump{color:var(--v2-muted)!important}
+.v2-assembly-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;width:min(560px,54%);counter-reset:chapter}
+.v2-assembly-choices[hidden]{display:none}
+.v2-assembly-choices button{position:relative;display:flex;align-items:center;gap:10px;min-width:0;min-height:48px;padding:15px 0 5px;margin:0;border:0;background:transparent;border-radius:0;color:var(--v2-muted);font:400 14px/1.4 var(--v2-font);text-align:left;cursor:pointer;counter-increment:chapter}
+.v2-assembly-choices button::before{content:'0' counter(chapter);font:400 13px/1 var(--v2-mono);color:var(--v2-muted)}
+.v2-assembly-choices button::after{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(to right,var(--v2-accent) calc(var(--chapter-progress,0)*100%),var(--v2-line) 0)}
+.v2-assembly-choices button:hover,.v2-assembly-choices button[aria-pressed=true]{color:var(--v2-ink)}
+.v2-assembly-choices button[aria-pressed=true]::before{color:var(--v2-accent)}
+.v2-assembly-choices button:focus-visible,.v2-assembly-actions a:focus-visible,.v2-assembly-navigation a:focus-visible{outline:2px solid var(--v2-accent);outline-offset:4px}
+.v2-assembly-progress{position:absolute;z-index:5;bottom:0;left:0;right:0;height:1px;background:var(--v2-line)}
+.v2-assembly-progress span{display:block;width:100%;height:100%;background:var(--v2-accent);transform:scaleX(0);transform-origin:left}
+.v2-assembly.is-enhanced{height:240svh}
+.v2-assembly.is-enhanced .v2-assembly-sticky{position:sticky;top:0;min-height:0;height:100svh}
+.v2-assembly.is-static .v2-assembly-caption,.v2-assembly.is-static .v2-assembly-progress,.v2-assembly.is-static .v2-assembly-choices{display:none}
+.v2-assembly.is-static canvas{opacity:0}
+.v2-assembly.is-static .v2-assembly-posters img{transition:none}
+@media(min-width:1800px){
+  .v2-assembly-intro{left:max(var(--v2-gutter),calc((100% - 1520px)/2));right:max(var(--v2-gutter),calc((100% - 1520px)/2))}
+  .v2-assembly-caption{left:max(var(--v2-gutter),calc((100% - 1520px)/2));max-width:28%}
+}
+@media(max-width:1100px) and (min-width:901px){
+  .v2-assembly-intro{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px}
+  .v2-assembly-intro h1{font-size:7vw}
+  .v2-assembly-summary>p{font-size:13px}
+  .v2-assembly-navigation{gap:8px 18px}
+  .v2-assembly-choices{gap:16px;width:53%}
+}
+@media(max-width:900px){
+  .v2-assembly-intro{top:112px;display:block}
+  .v2-assembly-intro h1{font-size:clamp(64px,10.5vw,90px)}
+  .v2-assembly-summary{max-width:62ch;margin-top:20px;padding:0}
+  .v2-assembly-summary>p{font-size:14px}
+  .v2-assembly-actions{margin-top:10px}
+  .v2-assembly-caption{top:auto;bottom:156px;max-width:70%;padding-top:15px}
+  .v2-assembly-caption h2{font-size:50px}
+  .v2-assembly-caption>p:first-child{margin-bottom:13px}
+  .v2-assembly-caption>p:last-child{font-size:15px;margin-top:14px}
+  .v2-assembly-bottom{bottom:24px;gap:12px;align-items:stretch;flex-direction:column}
+  .v2-assembly-navigation{justify-content:space-between;order:2}
+  .v2-assembly-choices{width:100%;gap:24px}
+  .v2-assembly-choices button{min-height:48px}
+  .v2-assembly.is-enhanced{height:230svh}
+}
+@media(max-width:600px){
+  .v2-assembly{margin-top:-66px}
+  .v2-assembly-sticky{min-height:740px}
+  .v2-assembly-intro{top:98px;left:22px;right:22px}
+  .v2-assembly-intro h1{font-size:clamp(36px,11.7vw,64px);line-height:1;letter-spacing:-.06em}
+  .v2-assembly-summary{margin-top:16px;max-width:46ch}
+  .v2-assembly-summary>p{font-size:13px;line-height:1.6;letter-spacing:-.02em}
+  .v2-assembly-actions{gap:8px 24px;margin-top:12px}
+  .v2-assembly-actions a{font-size:14px}
+  .v2-assembly-caption{bottom:152px;max-width:calc(100% - 44px);padding-top:14px}
+  .v2-assembly-caption h2{font-size:40px}
+  .v2-assembly-caption>p:first-child{font-size:13px;margin-bottom:12px}
+  .v2-assembly-caption>p:last-child{font-size:14px;margin-top:12px;max-width:30ch}
+  .v2-assembly-bottom{bottom:20px;left:22px;right:22px;gap:12px}
+  .v2-assembly-choices{gap:12px}
+  .v2-assembly-choices button{font-size:13px;gap:6px;align-items:flex-start;flex-direction:column;padding:10px 0 2px;min-height:52px}
+  .v2-assembly-choices button::before{font-size:13px}
+  .v2-assembly-navigation{gap:12px}
+  .v2-assembly-navigation a{font-size:13px;gap:10px}
+  .v2-assembly-posters .assembly-poster-telemetry{width:36%;height:25%;left:1%;top:48%}
+  .v2-assembly-posters .assembly-poster-pi{width:36%;height:25%;right:1%;top:48%;transform:rotate(21deg)}
+  .v2-assembly-posters .assembly-poster-tram{width:100%;height:40%;left:0;top:48%;transform:rotate(-8deg)}
+}
+@media(max-width:380px){
+  .v2-assembly-caption h2{font-size:34px}
+  .v2-assembly-choices{gap:8px}
+  .v2-assembly-choices button{letter-spacing:-.03em}
+}
+/* Short portrait and landscape screens use readable, ordinary page flow.
+   This breakpoint matches the controller's compact media query. */
+@media(max-height:620px),(max-width:900px) and (max-height:700px){
+  .v2-assembly,.v2-assembly.is-enhanced{height:auto}
+  .v2-assembly-sticky,.v2-assembly.is-enhanced .v2-assembly-sticky{position:relative;height:auto;min-height:0;overflow:visible;display:flex;flex-direction:column;padding:106px var(--v2-gutter) 24px}
+  .v2-assembly-intro{position:relative;inset:auto;opacity:1!important;transform:none!important}
+  .v2-assembly-stage{position:relative;inset:auto;height:clamp(230px,45vw,360px);margin-top:18px}
+  .v2-assembly-stage canvas,.v2-assembly-caption,.v2-assembly-progress,.v2-assembly-choices{display:none}
+  .v2-assembly-posters .assembly-poster-telemetry,.v2-assembly.is-enhanced .v2-assembly-posters .assembly-poster-telemetry[style]{width:29%;height:75%;left:0;top:7%;transform:rotate(-15deg);opacity:1;visibility:visible}
+  .v2-assembly-posters .assembly-poster-pi,.v2-assembly.is-enhanced .v2-assembly-posters .assembly-poster-pi[style]{width:29%;height:75%;left:auto;right:0;top:7%;transform:rotate(15deg);opacity:1;visibility:visible}
+  .v2-assembly-posters .assembly-poster-tram,.v2-assembly.is-enhanced .v2-assembly-posters .assembly-poster-tram[style]{width:74%;height:100%;left:13%;top:5%;transform:rotate(-8deg);opacity:1;visibility:visible}
+  .v2-assembly-bottom{position:relative;inset:auto;display:block;margin-top:8px}
+  .v2-assembly-navigation{justify-content:space-between}
+}
+@media(max-width:600px) and (max-height:700px){.v2-assembly-sticky,.v2-assembly.is-enhanced .v2-assembly-sticky{padding-top:98px}}
+@media(prefers-reduced-motion:reduce){
+  .v2-assembly.is-enhanced{height:auto}
+  .v2-assembly.is-enhanced .v2-assembly-sticky{position:relative;min-height:0}
+  .v2-assembly-caption,.v2-assembly-progress,.v2-assembly-choices{display:none}
+  .v2-assembly-intro{opacity:1!important;transform:none!important}
+  .v2-assembly-intro h1 span{transform:none!important}
+  .v2-assembly.is-loaded canvas{opacity:0}
+  .v2-assembly-stage canvas,.v2-assembly-posters img{transition:none}
+}
+/* Without JavaScript the mobile header exposes its second navigation row.
+   Keep all project actions in normal flow before the static artwork instead
+   of positioning them against a viewport that begins below that taller header. */
+@media(max-width:540px){
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced){margin-top:0;height:auto}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-sticky{display:flex;flex-direction:column;position:relative;height:auto;min-height:0;padding:32px var(--v2-gutter) 24px}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-intro{position:relative;inset:auto}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-bottom{position:relative;inset:auto;order:2;display:block;margin-top:16px}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-stage{position:relative;inset:auto;order:3;height:clamp(230px,65vw,320px);margin-top:16px}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-stage canvas,.v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .v2-assembly-progress{display:none}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-telemetry{width:29%;height:75%;left:0;top:7%;transform:rotate(-15deg)}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-pi{width:29%;height:75%;left:auto;right:0;top:7%;transform:rotate(15deg)}
+  .v2:not(.v2-ready) .v2-assembly:not(.is-enhanced) .assembly-poster-tram{width:74%;height:100%;left:13%;top:5%;transform:rotate(-8deg)}
+}
+@media print{
+  .v2-assembly,.v2-assembly.is-enhanced{height:650px;margin-top:0}
+  .v2-assembly-sticky,.v2-assembly.is-enhanced .v2-assembly-sticky{height:650px;position:relative;min-height:0}
+  .v2-assembly-stage canvas{display:none}
+  .v2-assembly.is-loaded .v2-assembly-posters{opacity:1;visibility:visible}
+  .v2-assembly-posters img{transition:none}
+  .v2-assembly-bottom{display:none}
+}

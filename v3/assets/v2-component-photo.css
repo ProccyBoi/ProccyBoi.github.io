@@ -1,0 +1,47 @@
+.v2-case .project-interactive :is([data-dual-usb-stage], [data-pcb-object-canvas], [data-hardware-canvas]) {
+  scroll-margin-top: calc(var(--header-height, 76px) + 4.4rem);
+}
+.v2-case .project-interactive .v2-part-readout.has-component-photo {
+  top: var(--v2-component-photo-top, 18px);
+  width: clamp(136px, 18vw, 220px);
+  max-width: calc(100% - 36px);
+  padding: 10px;
+  border: 1px solid #44463e;
+  border-radius: 0;
+  background: #10110f;
+  color: #ecebe3;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: none;
+}
+.v2-part-readout[data-component-photo-clipped] { visibility: hidden; }
+.v2-component-photo {
+  display: block;
+  margin-top: 8px;
+  overflow: hidden;
+  aspect-ratio: 3 / 2;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+}
+.v2-component-photo.is-ready { opacity: 1; transform: none; animation: v2-component-photo-in 180ms ease-out both; }
+@keyframes v2-component-photo-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+.v2-component-photo[hidden] { display: none; }
+.v2-component-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+}
+@media (max-width: 700px) {
+  .v2-case .project-interactive .v2-part-readout.has-component-photo { top: var(--v2-component-photo-top, 12px); max-width: calc(100% - 24px); padding: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-component-photo, .v2-component-photo.is-ready { animation: none; transition: none; transform: none; }
+}

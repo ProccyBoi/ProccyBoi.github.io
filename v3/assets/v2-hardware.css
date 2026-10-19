@@ -1,0 +1,18 @@
+[data-hardware]{margin:0;color:var(--v2-ink);background:var(--v2-panel);border:1px solid var(--v2-line);border-radius:16px;overflow:hidden}
+[data-hardware] [hidden]{display:none!important}
+.hardware-stage{position:relative;height:570px;background:radial-gradient(ellipse at 50% 45%,#1c2730,#10161c 72%)}
+.hardware-stage canvas,.hardware-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.hardware-stage canvas{cursor:grab;touch-action:pan-y pinch-zoom}.hardware-stage canvas:active{cursor:grabbing}
+.hardware-start,.hardware-controls{text-align:center;padding:0 20px 26px}
+[data-hardware] button{font:inherit;font-size:12px;line-height:1.4;min-height:42px;padding:10px 20px;border:1px solid var(--v2-accent);border-radius:24px;color:var(--v2-on-accent);background:var(--v2-accent);cursor:pointer}
+[data-hardware] button:hover{filter:brightness(1.08)}[data-hardware] button:disabled{opacity:.45;cursor:default}
+[data-hardware-status]{font-size:12px;line-height:1.6;text-align:center;color:var(--v2-muted);padding:0 20px 20px;margin:0}[data-hardware-status]:empty{display:none}
+[data-hardware]:not([data-hardware-state=ready]) .hardware-controls,[data-hardware-state=ready] .hardware-start,[data-hardware]:not([data-hardware-mounted]) .hardware-start{display:none}
+[data-hardware] button:focus-visible,[data-hardware] canvas:focus-visible,.hardware-boards a:focus-visible{outline:2px solid var(--v2-accent);outline-offset:3px}
+[data-hardware] canvas:focus-visible{outline-offset:-5px}
+.hardware-boards{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:24px 20px 0}
+.hardware-boards a{display:inline-flex;align-items:center;min-height:42px;padding:10px 17px;border:1px solid #3c4853;border-radius:24px;background:#1b2630;color:var(--v2-ink);font-size:12px;line-height:1.4;text-decoration:none}
+.hardware-boards a:hover{background:#2a3947}.hardware-boards a[aria-current]{background:var(--v2-accent);border-color:var(--v2-accent);color:var(--v2-on-accent)}
+[data-hardware] .v2-part-readout{position:absolute;z-index:2;top:18px;right:18px;max-width:min(65%,280px);padding:9px 12px;border:1px solid #3c4853;border-radius:6px;background:#10161ced;color:var(--v2-ink);font-size:12px;line-height:1.5;text-align:left;pointer-events:none;overflow-wrap:anywhere}
+@media(max-width:700px){.hardware-stage{height:410px}.hardware-controls{padding:0 12px 24px}[data-hardware] button{font-size:12px}.hardware-boards{padding:20px 12px 0}.hardware-boards a{font-size:11px;padding:10px 13px}[data-hardware] .v2-part-readout{top:12px;right:12px;font-size:11px;max-width:68%}}
+@media(max-width:360px){.hardware-stage{height:350px}}

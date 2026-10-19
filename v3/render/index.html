@@ -15,11 +15,8 @@
     [data-cad-status] { position: absolute; top: 0; font: 12px monospace; color: white; }
     [data-cad-state="ready"] [data-cad-status] { display: none; }
   </style>
-  <link rel="stylesheet" href="/assets/v3-product.css?v=white-20261012">
-  <link rel="stylesheet" href="/assets/v3-product-light-interiors.css?v=white-20261012">
-  <script src="/assets/v3-product.js?v=white-20261012" defer></script>
 </head>
-<body class="v3-product v3-interior">
+<body>
   <main data-cad-hero data-cad-capture>
     <div class="stage"><canvas data-cad-canvas></canvas></div>
     <button data-cad-start>Render original CAD</button>
@@ -28,7 +25,7 @@
   <script>
     document.querySelector('[data-cad-hero]').dataset.cadModel = new URLSearchParams(location.search).get('model') || 'framework';
   </script>
-  <script src="/assets/v2-cad.js"></script>
+  <script src="/v3/assets/v2-cad.js"></script>
   <script>document.querySelector('[data-cad-start]').click();</script>
 </body>
 </html>
