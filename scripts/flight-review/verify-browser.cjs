@@ -42,6 +42,11 @@ async function responsive(browser,base) {
     await p.keyboard.press('Escape');assert.equal(await p.locator('[data-schema-dialog]').evaluate(n=>n.open),false);
     await H.screenshot(run,out,viewport+'-onboarding');
     const f=recordFixture(binary());await H.loaded(run,f);await assertDefault(run);
+    if(run.size.width<=380){
+      const tabs=await p.locator('.flight-view-tabs').evaluate(node=>{const b=node.getBoundingClientRect();return {scrollWidth:node.scrollWidth,clientWidth:node.clientWidth,left:b.left,right:b.right,viewport:innerWidth,buttons:[...node.querySelectorAll('[data-view-button]')].map(button=>{const r=button.getBoundingClientRect();return {name:button.dataset.viewButton,left:r.left,right:r.right,width:r.width,height:r.height};})};});
+      assert.ok(tabs.scrollWidth<=tabs.clientWidth+1,'Narrow-phone tabs require no horizontal scrolling');assert.equal(tabs.buttons.length,4);
+      assert.ok(tabs.buttons.every(b=>b.left>=tabs.left-1&&b.right<=tabs.right+1&&b.left>=-1&&b.right<=tabs.viewport+1&&b.width>=24&&b.height>=24),'All four narrow-phone tabs remain fully visible and operable: '+JSON.stringify(tabs));
+    }
     for(const selector of ['[data-play]','[data-step-back]','[data-step-forward]','[data-playback-rate]','[data-timeline]'])await H.target(p,selector);
     await H.screenshot(run,out,viewport+'-charts',{fullPage:true});
     await p.locator('[data-view-button="samples"]').click();await H.seekIndex(p,123);
@@ -62,6 +67,15 @@ async function responsive(browser,base) {
   });
 }
 async function regression(browser,base) {
+  await scenario(browser,base,'legacy-flight-review-route-preservation',async run=>{
+    for(const route of ['/projects/skylabs/flight-review/','/v2/projects/skylabs/flight-review/','/v3/projects/skylabs/flight-review/']){
+      await run.page.goto(run.base+route+'?source=legacy-review&sample=42#telemetry',{waitUntil:'load'});
+      await run.page.waitForURL(run.base+'/shared/flight-review/?source=legacy-review&sample=42#telemetry');
+      await run.page.locator('[data-choose-file]').first().waitFor();
+      const url=new URL(run.page.url());assert.equal(url.search,'?source=legacy-review&sample=42');assert.equal(url.hash,'#telemetry');
+    }
+    H.noExternal(run);await H.screenshot(run,out,'legacy-route-canonical');
+  });
   for(const version of [1,2,3])await scenario(browser,base,'binary-v'+version,async run=>{
     const f=recordFixture(binary({version}));await H.loaded(run,f);await assertDefault(run);await assertExport(run,f);
     assert.match(await run.page.locator('[data-format-badge]').textContent(),new RegExp('v'+version));
@@ -115,11 +129,11 @@ async function regression(browser,base) {
     await run.page.locator('[data-toast]').waitFor({state:'visible'});await run.page.waitForFunction(()=>document.querySelector('[data-loading]').hidden);
     assert.equal(await run.page.locator('[data-file-name]').textContent(),a.name);assert.equal(await H.index(run.page),22);assert.equal(await run.page.locator('[data-workspace]').isVisible(),true);
     run.faults.delayWorkerMs=1200;
-    await run.page.locator('[data-flight-file]').setInputFiles(payload(binary({count:120001,name:'cancel-large.bin'})));
+    await H.setFile(run,binary({count:120001,name:'cancel-large.bin'}));
     await run.page.locator('[data-cancel-load]').click();await run.page.waitForFunction(()=>document.querySelector('[data-loading]').hidden);
     assert.equal(await run.page.locator('[data-file-name]').textContent(),a.name);
-    await run.page.locator('[data-flight-file]').setInputFiles(payload(binary({count:100001,name:'stale-large.bin'})));
-    await run.page.locator('[data-flight-file]').setInputFiles(payload(b));
+    await H.setFile(run,binary({count:100001,name:'stale-large.bin'}));
+    await H.setFile(run,b);
     await run.page.waitForFunction(name=>!document.querySelector('[data-workspace]').hidden&&document.querySelector('[data-file-name]').textContent===name,b.name,{timeout:60000});
     await run.page.waitForTimeout(1700);assert.equal(await run.page.locator('[data-file-name]').textContent(),b.name);assert.match(await run.page.locator('[data-summary-records]').textContent(),/77 records/);
     run.faults.delayWorkerMs=0;await H.loaded(run,b);await assertExport(run,b);await assertDefault(run);
@@ -168,17 +182,25 @@ async function regression(browser,base) {
     assert.ok(run.network.some(x=>!x.local&&x.url.includes('tiles.openfreemap.org')),'Provider requests occur only after explicit terrain selection');
     const data=await H.screenshot(run,out,'terrain-real-maplibre-mocked-provider');assert.ok(data.webgl.some(x=>!x.lost),'Real MapLibre WebGL context');
     assert.equal(await p.locator('[data-map-setup]').isVisible(),true,'Unavailable DEM cannot falsely announce terrain ready');
-    const elevation=await p.evaluate(()=>{const map=window.__flightProbe.maps.at(-1);return map.queryTerrainElevation(map.getCenter());});assert.equal(elevation,null,'Missing DEM remains unavailable');
+    const elevation=await p.evaluate(()=>{const map=window.__flightProbe.maps.at(-1);return map.queryTerrainElevation(map.getCenter());});
+    // MapLibre5.24 returns0 for some missing raster tiles; zero is not proof of
+    // available DEM. Assert application readiness stays false instead.
+    report.missingTerrain={observedLibraryQuery:elevation,providerFixture:'Every DEM tile responds404',setupStillVisible:await p.locator('[data-map-setup]').isVisible()};
+    await p.waitForTimeout(1000);assert.equal(await p.locator('[data-map-setup]').isVisible(),true,'Failed DEM never becomes ready merely because library query falls back to0');
     await p.locator('[data-view-button="charts"]').click();await p.waitForTimeout(500);const before=await H.snapshot(run);await p.waitForTimeout(700);assert.equal((await H.snapshot(run)).drawCalls,before.drawCalls,'Inactive terrain stops rendering');
   },{blockDependencies:['maplibre-gl.js']});
   await scenario(browser,base,'terrain-positive-elevation-route-and-seek',async run=>{
     const f=binary();await H.loaded(run,f);await assertDefault(run);const p=run.page;
     await p.locator('[data-view-button="terrain"]').click();await p.locator('#flight-terrain-map canvas').waitFor();
     await p.waitForFunction(()=>document.querySelector('[data-map-setup]').hidden,null,{timeout:30000});
+    const mapLayout=await p.locator('#flight-terrain-map').evaluate(host=>{const rect=host.getBoundingClientRect(),canvas=host.querySelector('canvas').getBoundingClientRect();return {host:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},canvas:{x:canvas.x,y:canvas.y,width:canvas.width,height:canvas.height},position:getComputedStyle(host).position};});
+    assert.ok(mapLayout.host.height>=200&&mapLayout.canvas.height>=200,'Ready map has a real visible layout box, not a zero-height host clipped by late MapLibre CSS: '+JSON.stringify(mapLayout));
+    assert.ok(Math.abs(mapLayout.host.height-mapLayout.canvas.height)<2,'Map canvas fills the visible host');
+    await H.target(p,'#flight-terrain-map .maplibregl-ctrl-zoom-in');
     const inspect=()=>p.evaluate(()=>{
       const probe=window.__flightProbe,map=probe.maps.at(-1),layer=probe.customLayers.at(-1);
       const positions=[];layer.scene.traverse(object=>{const a=object.geometry?.attributes?.position?.array;if(a)positions.push({type:object.geometry.type,length:a.length,finite:Array.from(a).every(Number.isFinite)});});
-      return {elevation:map.queryTerrainElevation(map.getCenter()),aircraft:layer.aircraft.position.toArray(),geometry:positions,marker:map.getSource('skylabs-track-points')._data};
+      return {elevation:map.queryTerrainElevation(map.getCenter()),aircraft:layer.aircraft.position.toArray(),geometry:positions,marker:probe.geojsonData['skylabs-track-points']};
     });
     const initial=await inspect();assert.ok(Math.abs(initial.elevation-100)<.1,'Actual raster-dem query decodes synthetic 100 m terrain');
     assert.ok(initial.aircraft.every(Number.isFinite)&&initial.aircraft[1]>=100,'Aircraft is finite and terrain-aligned');
@@ -189,7 +211,7 @@ async function regression(browser,base) {
     await p.locator('[data-view-button="local"]').click();await p.locator('#flight-local-3d canvas').waitFor();await p.locator('[data-view-button="terrain"]').click();
     assert.equal(await p.locator('[data-map-setup]').isVisible(),false);assert.equal(await H.index(p),240,'Switching 3D views preserves selected sample');
     await p.waitForTimeout(1300);const before=await H.snapshot(run);await p.waitForTimeout(900);const after=await H.snapshot(run);assert.equal(after.drawCalls,before.drawCalls,'Ready paused terrain has no idle repaint loop');
-    report.positiveTerrain={provenance:'Synthetic flat100m Terrain-RGB PNG; no real provider imagery/elevation or OSM vegetation',initial,moved};
+    report.positiveTerrain={provenance:'Synthetic flat100m Terrain-RGB PNG; no real provider imagery/elevation or OSM vegetation',mapLayout,initial,moved};
   },{flatTerrain:true});
   await scenario(browser,base,'published-f110211-reconstructed-csv',async run=>{
     const f=recordFixture(reference());await H.loaded(run,f);await assertDefault(run,{csvImport:true});await assertExport(run,f);

@@ -1,12 +1,12 @@
 'use strict';
-const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), http=require('node:http');
+const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), http=require('node:http'), os=require('node:os');
 const {execFileSync}=require('node:child_process');
 const {ROOT,payload,flatTerrainPng}=require('./fixtures.cjs');
 const ROUTE='/shared/flight-review/';
 const VIEWPORTS={desktop1440:{width:1440,height:900},phone390:{width:390,height:844},phone320:{width:320,height:780},tablet768:{width:768,height:1024},tablet1024:{width:1024,height:768},tablet1180:{width:1180,height:820}};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function revision(root=ROOT) {try{return execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();}catch{return 'unknown';}}
-function dirty(root=ROOT) {try{return !!execFileSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'}).trim();}catch{return null;}}
+function dirty(root=ROOT) {try{return !!execFileSync('git',['status','--porcelain','--untracked-files=no'],{cwd:root,encoding:'utf8'}).trim();}catch{return null;}}
 async function server(root=ROOT) {
   root=path.resolve(root);
   const app=http.createServer((req,res)=>{
@@ -22,13 +22,25 @@ async function server(root=ROOT) {
   return {base:`http://127.0.0.1:${app.address().port}`,close:()=>new Promise(resolve=>app.close(resolve))};
 }
 function installProbe() {
-  const p=window.__flightProbe={raf:0,drawCalls:0,chartClears:0,longTasks:[],heartbeats:[],workers:[],contexts:[],timeline:[],clipboard:null,maps:[],customLayers:[],started:performance.now()};
+  const p=window.__flightProbe={raf:0,drawCalls:0,chartClears:0,longTasks:[],heartbeats:[],workers:[],contexts:[],timeline:[],clipboard:null,maps:[],customLayers:[],geojsonData:{},mapErrors:[],sourceEvents:[],started:performance.now()};
   // Passively retain actual public renderer/layer objects, without changing
   // production state or replacing geometry. Libraries still execute normally.
   let maplibre;
   Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>maplibre,set:value=>{
     maplibre=value;if(!value?.Map)return;
-    const Original=value.Map;value.Map=class extends Original{constructor(...args){super(...args);p.maps.push(this);const add=this.addLayer;this.addLayer=function(layer,...rest){if(layer.type==='custom')p.customLayers.push(layer);return add.call(this,layer,...rest);};}};
+    const Original=value.Map;value.Map=class extends Original{constructor(...args){
+      super(...args);p.maps.push(this);this.on('error',event=>p.mapErrors.push({message:event.error?.message,sourceId:event.sourceId}));
+      this.on('sourcedata',event=>{if(p.sourceEvents.length<500)p.sourceEvents.push({sourceId:event.sourceId,sourceDataType:event.sourceDataType,isSourceLoaded:event.isSourceLoaded,tileState:event.tile?.state,canonical:event.coord?.canonical||event.tile?.tileID?.canonical||event.tile?.coord?.canonical||null,hasDem:!!event.tile?.dem});});
+      const add=this.addLayer;this.addLayer=function(layer,...rest){if(layer.type==='custom')p.customLayers.push(layer);return add.call(this,layer,...rest);};
+      const addSource=this.addSource;this.addSource=function(id,definition,...rest){
+        const result=addSource.call(this,id,definition,...rest);
+        if(definition.type==='geojson'){
+          p.geojsonData[id]=structuredClone(definition.data);const source=this.getSource(id),set=source.setData;
+          source.setData=function(data,...args){p.geojsonData[id]=structuredClone(data);return set.call(this,data,...args);};
+        }
+        return result;
+      };
+    }};
   }});
   const raf=window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame=callback=>raf(t=>{p.raf++;callback(t);});
@@ -58,6 +70,8 @@ async function launch(engine='chromium') {
 async function open(browser,base,{viewport='desktop1440',noWebGL=false,noWorker=false,failWorker=false,blockDependencies=[],mockMap=true,flatTerrain=false,externalPolicy='block'}={}) {
   const size=typeof viewport==='string'?VIEWPORTS[viewport]:viewport;
   const context=await browser.newContext({viewport:size,deviceScaleFactor:1,hasTouch:size.width<800,isMobile:size.width<800,acceptDownloads:true,serviceWorkers:'block'});
+  const fixtureDirectory=fs.mkdtempSync(path.join(os.tmpdir(),'flight-review-input-'));
+  context.on('close',()=>fs.rmSync(fixtureDirectory,{recursive:true,force:true}));
   const network=[], errors=[],faults={dependencies:new Set(blockDependencies),worker:failWorker,delayWorkerMs:0};
   await context.route('**/*',async route=>{
     const req=route.request(),url=new URL(req.url()),local=url.origin===new URL(base).origin;
@@ -81,11 +95,16 @@ async function open(browser,base,{viewport='desktop1440',noWebGL=false,noWorker=
   if(noWebGL)await context.addInitScript(()=>{const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/.test(type)?null:get.call(this,type,...args);};});
   if(noWorker)await context.addInitScript(()=>{window.Worker=undefined;});
   const page=await context.newPage();page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.message));
-  return {browser,context,page,base,network,errors,faults,size};
+  return {browser,context,page,base,network,errors,faults,size,fixtureDirectory};
 }
 async function go(run) {const response=await run.page.goto(run.base+ROUTE,{waitUntil:'load',timeout:60000});assert.equal(response.status(),200);await run.page.locator('[data-choose-file]').first().waitFor();}
+async function setFile(run,fixture) {
+  // Native browser file input: never inject multi-megabyte base64 into the page.
+  const file=path.join(run.fixtureDirectory,path.basename(fixture.name));
+  fs.writeFileSync(file,fixture.buffer);await run.page.locator('[data-flight-file]').setInputFiles(file);
+}
 async function loaded(run,fixture,{timeout=60000}={}) {
-  await run.page.locator('[data-flight-file]').setInputFiles(payload(fixture));
+  await setFile(run,fixture);
   await run.page.waitForFunction(name=>{const w=document.querySelector('[data-workspace]');return w&&!w.hidden&&document.querySelector('[data-file-name]')?.textContent===name;},fixture.name,{timeout});
   await run.page.waitForFunction(()=>document.querySelector('[data-loading]').hidden);
   return run.page.locator('[data-summary-records]').textContent();
@@ -93,7 +112,15 @@ async function loaded(run,fixture,{timeout=60000}={}) {
 function seconds(text) {return text.trim().split(':').reduce((a,n)=>a*60+Number(n),0);}
 async function readTime(page){return seconds(await page.locator('[data-current-time]').textContent());}
 async function index(page){return Number((await page.locator('[data-sample-readout]').textContent()).split('/')[0].replace(/[^\d]/g,''))-1;}
-async function seekIndex(page,value) {await page.locator('[data-timeline]').evaluate((node,value)=>{node.value=String(value);node.dispatchEvent(new Event('input',{bubbles:true}));},value);await page.waitForTimeout(35);}
+async function seekIndex(page,value) {
+  await page.locator('[data-timeline]').evaluate((node,value)=>{node.value=String(value);node.dispatchEvent(new Event('input',{bubbles:true}));},value);
+  await page.waitForFunction(value=>{
+    const sample=Number(document.querySelector('[data-sample-readout]').textContent.split('/')[0].replace(/[^\d]/g,''));
+    if(sample!==value+1)return false;
+    if(document.querySelector('[data-view-button="samples"]').getAttribute('aria-selected')==='true')return document.querySelector('[data-sample-heading]').textContent.replace(/,/g,'').startsWith(`Sample ${value+1} of `);
+    return true;
+  },value);
+}
 async function download(page,selector='[data-download-csv]') {
   const [file]=await Promise.all([page.waitForEvent('download'),page.locator(selector).click()]);
   return {name:file.suggestedFilename(),text:fs.readFileSync(await file.path(),'utf8')};
@@ -102,7 +129,7 @@ function parseCsv(text) {const lines=text.trim().split(/\r?\n/),headers=lines.sh
 async function snapshot(run) {
   return run.page.evaluate(()=>{
     const p=window.__flightProbe;
-    return {at:performance.now(),url:location.href,viewport:{width:innerWidth,height:innerHeight},overflow:document.documentElement.scrollWidth>innerWidth+1,raf:p.raf,drawCalls:p.drawCalls,chartClears:p.chartClears,longTasks:p.longTasks,heartbeats:p.heartbeats,workers:p.workers,timeline:p.timeline,readout:document.querySelector('[data-sample-readout]')?.textContent,currentTime:document.querySelector('[data-current-time]')?.textContent,selectedView:document.querySelector('[data-view-button][aria-selected="true"]')?.dataset.viewButton,resources:performance.getEntriesByType('resource').map(e=>({name:e.name,initiatorType:e.initiatorType,duration:e.duration,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize})),navigation:performance.getEntriesByType('navigation').map(e=>({domContentLoaded:e.domContentLoadedEventEnd,load:e.loadEventEnd,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize})),webgl:p.contexts.map(({context,canvas,type})=>{let renderer;try{const ext=context.getExtension('WEBGL_debug_renderer_info');renderer=context.getParameter(ext?ext.UNMASKED_RENDERER_WEBGL:context.RENDERER);}catch{}return {type,renderer,lost:context.isContextLost(),width:canvas.width,height:canvas.height,host:canvas.parentElement?.id};})};
+    return {at:performance.now(),url:location.href,viewport:{width:innerWidth,height:innerHeight},overflow:document.documentElement.scrollWidth>innerWidth+1,raf:p.raf,drawCalls:p.drawCalls,chartClears:p.chartClears,longTasks:p.longTasks,heartbeats:p.heartbeats,workers:p.workers,timeline:p.timeline,readout:document.querySelector('[data-sample-readout]')?.textContent,currentTime:document.querySelector('[data-current-time]')?.textContent,selectedView:document.querySelector('[data-view-button][aria-selected="true"]')?.dataset.viewButton,resources:performance.getEntriesByType('resource').map(e=>({name:e.name,initiatorType:e.initiatorType,duration:e.duration,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize})),mapErrors:p.mapErrors,sourceEvents:p.sourceEvents,navigation:performance.getEntriesByType('navigation').map(e=>({domContentLoaded:e.domContentLoadedEventEnd,load:e.loadEventEnd,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize})),webgl:p.contexts.map(({context,canvas,type})=>{let renderer;try{const ext=context.getExtension('WEBGL_debug_renderer_info');renderer=context.getParameter(ext?ext.UNMASKED_RENDERER_WEBGL:context.RENDERER);}catch{}return {type,renderer,lost:context.isContextLost(),width:canvas.width,height:canvas.height,host:canvas.parentElement?.id};})};
   });
 }
 async function screenshot(run,out,name,{fullPage=false}={}) {
@@ -117,5 +144,5 @@ async function target(page,selector) {
   assert.ok(bounds.width>=24&&bounds.height>=24&&bounds.left>=-1&&bounds.right<=bounds.viewport+1&&bounds.hit,'Visible operable target '+selector+' '+JSON.stringify(bounds));return bounds;
 }
 function noExternal(run) {assert.deepEqual(run.network.filter(x=>!x.local),[],'No external requests before explicit terrain selection');assert.deepEqual(run.network.filter(x=>x.method!=='GET'),[],'No log uploads or non-GET requests');}
-function metadata(browser,extra={}) {return {candidateSha:revision(),dirtyWorkingTree:dirty(),recordedAt:new Date().toISOString(),node:process.version,playwright:require('playwright/package.json').version,browser:browser?.version(),environment:'Headless browser viewport emulation. Chromium uses software ANGLE/SwiftShader; not physical-device/GPU evidence.',...extra};}
-module.exports={ROOT,ROUTE,VIEWPORTS,sleep,revision,dirty,server,launch,open,go,loaded,readTime,index,seekIndex,download,parseCsv,snapshot,screenshot,target,noExternal,metadata};
+function metadata(browser,extra={}) {return {candidateSha:revision(),dirtyWorkingTree:dirty(),dirtyScope:'Tracked files only; npm/browser dependencies and generated fixtures excluded',fixtureDelivery:'Native filesystem-backed file input; no base64 buffer injection into page JavaScript',recordedAt:new Date().toISOString(),node:process.version,playwright:require('playwright/package.json').version,browser:browser?.version(),environment:'Headless browser viewport emulation. Chromium uses software ANGLE/SwiftShader; not physical-device/GPU evidence.',...extra};}
+module.exports={ROOT,ROUTE,VIEWPORTS,sleep,revision,dirty,server,launch,open,go,setFile,loaded,readTime,index,seekIndex,download,parseCsv,snapshot,screenshot,target,noExternal,metadata};

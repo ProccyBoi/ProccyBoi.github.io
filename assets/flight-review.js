@@ -480,11 +480,18 @@
   }
 
   function setPlaying(playing) {
+    // Include the intervals before the first frame and after the last frame:
+    // a click starts/stops the clock, rather than the next display refresh.
+    const now = performance.now();
+    if (state.playing && state.model && state.lastAnimationTime !== null) {
+      state.playbackTime = Math.min(state.model.stats.duration, state.playbackTime + Math.max(0, (now - state.lastAnimationTime) / 1000) * Number(elements.rate.value));
+      updateFrame(findIndexAtTime(state.playbackTime), true, true);
+    }
     state.playing = Boolean(playing && state.model && !document.hidden);
     if (state.playbackFrame) window.cancelAnimationFrame(state.playbackFrame);
     state.playbackFrame = 0;
     if (state.playing) state.playbackFrame = window.requestAnimationFrame(animatePlayback);
-    state.lastAnimationTime = null;
+    state.lastAnimationTime = state.playing ? now : null;
     elements.play.setAttribute("aria-label", state.playing ? "Pause flight replay" : "Play flight replay");
     elements.playIcon.setAttribute("d", state.playing ? "M7 5h4v14H7zM14 5h4v14h-4z" : "m8 5 11 7-11 7z");
   }
@@ -1180,13 +1187,41 @@
     window.clearTimeout(viewer.loadTimer);
     window.clearTimeout(viewer.refreshTimer);
     if (viewer.onTerrainData) viewer.map.off("sourcedata", viewer.onTerrainData);
+    if (viewer.onTerrainTile) viewer.map.off("sourcedata", viewer.onTerrainTile);
     if (viewer.onTerrainIdle) viewer.map.off("idle", viewer.onTerrainIdle);
     if (viewer.onZoom) viewer.map.off("zoom", viewer.onZoom);
     viewer.map.remove();
     state.terrainViewer = null;
   }
 
-  function createTerrainFlightLayer(model, map) {
+  // MapLibre 5.24's public elevation query can return a fallback zero without
+  // a DEM. Sample only decoded covering tiles using its bilinear DEM formula;
+  // this also avoids confusing a loaded child tile with a missing zoomed-out
+  // parent. This adapter is covered against the pinned renderer's real tiles.
+  function terrainElevationAt(tiles, longitude, latitude) {
+    if (!finite(longitude) || !finite(latitude) || Math.abs(latitude) > 85.051129) return NaN;
+    const x = ((Number(longitude) + 180) / 360 % 1 + 1) % 1;
+    const lat = radians(latitude);
+    const y = (1 - Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI) / 2;
+    let selected = null;
+    for (const tile of tiles.values()) {
+      const coordinate = tile.tileID?.canonical;
+      if (!tile.dem || typeof tile.dem.get !== "function" || !coordinate) continue;
+      const scale = 2 ** coordinate.z;
+      if (Math.floor(x * scale) === coordinate.x && Math.floor(y * scale) === coordinate.y && (!selected || coordinate.z > selected.tileID.canonical.z)) selected = tile;
+    }
+    if (!selected) return NaN;
+    const { z, x: tileX, y: tileY } = selected.tileID.canonical;
+    const dem = selected.dem;
+    const pixelX = (x * 2 ** z - tileX) * dem.dim;
+    const pixelY = (y * 2 ** z - tileY) * dem.dim;
+    const left = Math.floor(pixelX), top = Math.floor(pixelY);
+    const dx = pixelX - left, dy = pixelY - top;
+    return dem.get(left, top) * (1 - dx) * (1 - dy) + dem.get(left + 1, top) * dx * (1 - dy)
+      + dem.get(left, top + 1) * (1 - dx) * dy + dem.get(left + 1, top + 1) * dx * dy;
+  }
+
+  function createTerrainFlightLayer(model, map, terrainTiles) {
     const indices = decimatedTerrainIndices();
     const originIndex = indices[0] ?? 0;
     const sceneOrigin = [model.lon[originIndex], model.lat[originIndex]];
@@ -1247,8 +1282,8 @@
     const relativeProfile = () => elements.heightSource.value === "gps" ? model.gnssUp : model.baroUp;
     const groundAt = (index, query = true) => {
       if (finite(terrainElevations[index])) return terrainElevations[index];
-      if (!query || !map.isSourceLoaded("skylabs-terrain")) return NaN;
-      const elevation = map.queryTerrainElevation([model.lon[index], model.lat[index]]);
+      if (!query) return NaN;
+      const elevation = terrainElevationAt(terrainTiles, model.lon[index], model.lat[index]);
       if (finite(elevation)) terrainElevations[index] = Number(elevation);
       return finite(elevation) ? Number(elevation) : NaN;
     };
@@ -1344,7 +1379,6 @@
         this.scene.add(pathMesh);
       },
       refreshTerrain() {
-        if (!map.isSourceLoaded("skylabs-terrain")) return 0;
         let available = 0;
         indices.forEach((index) => {
           terrainElevations[index] = NaN;
@@ -1418,7 +1452,7 @@
         }));
         const trees = candidates.sort((left, right) => left.score - right.score).slice(0, settings.maximum).map((candidate, index) => {
           const coordinate = lngLatPoint(candidate.east, candidate.north);
-          const ground = map.queryTerrainElevation(coordinate);
+          const ground = terrainElevationAt(terrainTiles, coordinate[0], coordinate[1]);
           if (!finite(ground)) return null;
           return { ...candidate, ground: Number(ground), seed: randomAt(index, Math.round(candidate.east), 4) };
         }).filter(Boolean);
@@ -1535,6 +1569,8 @@
       refreshTimer: null,
       refreshAttempts: 0,
       vegetationReady: false,
+      terrainTiles: new Map(),
+      onTerrainTile: null,
       satelliteKey: "",
       onTerrainData: null,
       onTerrainIdle: null,
@@ -1544,6 +1580,13 @@
       }, 18000)
     };
     state.terrainViewer = viewer;
+    viewer.onTerrainTile = (event) => {
+      if (event.sourceId !== "skylabs-terrain" || !event.tile?.dem || !event.coord?.canonical) return;
+      for (const [key, tile] of viewer.terrainTiles) if (!tile.dem) viewer.terrainTiles.delete(key);
+      const { z, x, y } = event.coord.canonical;
+      viewer.terrainTiles.set(`${z}/${x}/${y}`, event.tile);
+    };
+    map.on("sourcedata", viewer.onTerrainTile);
 
     map.once("load", () => {
       if (state.terrainViewer !== viewer) return;
@@ -1603,7 +1646,7 @@
           layout: { "text-field": ["get", "label"], "text-font": ["Noto Sans Bold"], "text-size": 10, "text-offset": [0, 1.35], "text-allow-overlap": true },
           paint: { "text-color": "#edf5f1", "text-halo-color": "#07100e", "text-halo-width": 1.4 }
         });
-        viewer.flightLayer = createTerrainFlightLayer(model, map);
+        viewer.flightLayer = createTerrainFlightLayer(model, map, viewer.terrainTiles);
         map.addLayer(viewer.flightLayer, firstSymbol);
         viewer.ready = true;
         applyTerrainBasemap();

@@ -25,6 +25,7 @@ const model = {
   hasGps: false, validGps: new Array(count).fill(false)
 };
 let scheduled = 0;
+let wallNow = 0;
 const state = { model, index: 0, playing: false, playbackTime: 0, lastAnimationTime: null, view: 'charts', playbackFrame: 0 };
 const elements = {
   play: node(), playIcon: node(), timeline: node(), currentTime: node(),
@@ -33,6 +34,7 @@ const elements = {
 };
 const scope = {
   state, elements, document: { hidden: false, querySelector: node, querySelectorAll: () => [] },
+  performance: { now: () => wallNow },
   window: { requestAnimationFrame() { return ++scheduled; }, cancelAnimationFrame() {} },
   $: node, displayedAttitude: () => ({ roll: 0, pitch: 0, yaw: 0 }),
   headingLabel: String, updateChartCursors() {}, console
@@ -43,16 +45,21 @@ const functions = between('  function setPlaying(', '  function headingLabel(')
   + between('  function animatePlayback(', '  document.addEventListener("visibilitychange"')
   + between('  function chartVertices(', '  function drawChart(')
   + between('  function buildHealthItems(', '  function eulerToQuat(')
-  + between('  function terrainMarkerGeoJson(', '  function storedMapTilerKey(');
+  + between('  function terrainMarkerGeoJson(', '  function storedMapTilerKey(')
+  + between('  function terrainElevationAt(', '  function createTerrainFlightLayer(');
 const api = vm.runInContext(helpers + functions
-  + '\nreturn {setPlaying, animatePlayback, updateFrame, findIndexAtTime, chartVertices, buildHealthItems, terrainMarkerGeoJson, finite}; })();', scope);
+  + '\nreturn {setPlaying, animatePlayback, updateFrame, findIndexAtTime, chartVertices, buildHealthItems, terrainMarkerGeoJson, terrainElevationAt, finite}; })();', scope);
 
 // Exercise the real playback and sample update functions, not a rewritten clock.
 for (const rate of [.25, .5, 1, 2, 4, 8, 16]) {
   api.updateFrame(0, true);
   elements.rate.value = String(rate);
+  wallNow = 0;
   api.setPlaying(true);
-  for (let frame = 0; frame <= 600; frame++) api.animatePlayback(frame * 1000 / 60);
+  for (let frame = 0; frame <= 600; frame++) {
+    wallNow = frame * 1000 / 60;
+    api.animatePlayback(wallNow);
+  }
   assert.ok(Math.abs(state.playbackTime - 10 * rate) < 1e-9, 'Continuous clock at ' + rate + 'x');
   assert.ok(Math.abs(model.series.time[state.index] - 10 * rate) < .051, 'Sample follows time at ' + rate + 'x');
   api.setPlaying(false);
@@ -62,12 +69,28 @@ for (const rate of [.25, .5, 1, 2, 4, 8, 16]) {
 }
 api.updateFrame(count - 2, true);
 elements.rate.value = '1';
+wallNow = 0;
 api.setPlaying(true);
 api.animatePlayback(0);
+wallNow = 1000;
 api.animatePlayback(1000);
 assert.equal(state.index, count - 1);
 assert.equal(state.playing, false);
 assert.equal(state.playbackTime, model.stats.duration);
+api.updateFrame(0, true);
+elements.rate.value = '4';
+wallNow = 123.4; api.setPlaying(true);
+wallNow = 173.4; api.animatePlayback(wallNow);
+wallNow = 198.4; api.setPlaying(false);
+assert.ok(Math.abs(state.playbackTime - .3) < 1e-12, 'Include first-RAF delay and final fractional pause interval');
+api.updateFrame(0, true);
+wallNow = 1000; api.setPlaying(true);
+wallNow = 1040; api.setPlaying(false);
+assert.ok(Math.abs(state.playbackTime - .16) < 1e-12, 'Pause before the first RAF still advances exact elapsed time');
+wallNow = 2000; api.setPlaying(true);
+wallNow = 2050; api.animatePlayback(wallNow);
+wallNow = 2075; api.setPlaying(false);
+assert.ok(Math.abs(state.playbackTime - .46) < 1e-12, 'Resume excludes the paused interval without losing fractional progress');
 scope.document.hidden = true;
 api.setPlaying(true);
 assert.equal(state.playing, false, 'Cannot start in a hidden document');
@@ -77,7 +100,7 @@ assert.equal(api.findIndexAtTime(5), 2, 'Irregular time seek uses elapsed time')
 assert.equal(api.findIndexAtTime(10), 3);
 assert.equal(api.findIndexAtTime(20), 5);
 assert.match(source, /queueSeek\(findIndexAtTime\(ratio \* model\.stats\.duration\)\)/, 'Chart scrubbing uses the elapsed-time lookup');
-console.log('PASS actual playback controller: 0.25–16x clock, irregular time lookup, pause/hidden/end behavior');
+console.log('PASS actual playback controller: 0.25–16x, exact click/RAF/pause endpoints, irregular time, hidden/end behavior');
 
 const equal = (actual, expected, label) => assert.deepEqual(Array.from(actual), expected, label);
 equal(api.chartVertices(new Float64Array([1, 50, -20, 5, 8]), new Float64Array([0, .01, .02, .03, 10]), 10, 1), [0, 1, 2, 3, 4], 'Dense time-bucket extrema and endpoints');
@@ -111,18 +134,64 @@ assert.ok(resetHealth.some(item => item.level === 'critical' && /SD/.test(item.t
 console.log('PASS diagnostic integrity: unavailable counters/attitude/accuracy and earlier SD errors');
 
 assert.equal(api.finite(null), false); assert.equal(api.finite(undefined), false); assert.equal(api.finite(''), false); assert.equal(api.finite(0), true);
-let elevation = null, terrainQueries = 0;
+const flatDem = value => ({ dim: 256, get() { return value; } });
+const tile = (z, x, y, dem = flatDem(0)) => ({ tileID: { canonical: { z, x, y } }, dem });
+const terrainTiles = new Map();
+assert.ok(Number.isNaN(api.terrainElevationAt(terrainTiles, 0, 0)), 'No decoded tiles is no elevation evidence');
+terrainTiles.set('world', tile(0, 0, 0));
+for (const lon of [-540, -180, 0, 180, 540]) {
+  assert.equal(api.terrainElevationAt(terrainTiles, lon, 0), 0, 'Genuine sea-level world wrap at ' + lon);
+}
+for (const lat of [-90, 90, NaN, null]) assert.ok(Number.isNaN(api.terrainElevationAt(terrainTiles, 0, lat)), 'Invalid/polar terrain query rejected');
+assert.ok(Number.isNaN(api.terrainElevationAt(terrainTiles, NaN, 0)));
+assert.equal(api.terrainElevationAt(terrainTiles, 0, 85), 0);
+assert.equal(api.terrainElevationAt(terrainTiles, 0, -85), 0);
+terrainTiles.clear();
+terrainTiles.set('north-west', tile(1, 0, 0, flatDem(12)));
+assert.equal(api.terrainElevationAt(terrainTiles, -45, 45), 12, 'Coordinate inside decoded tile');
+assert.ok(Number.isNaN(api.terrainElevationAt(terrainTiles, 45, 45)), 'Same source does not imply east coverage');
+assert.ok(Number.isNaN(api.terrainElevationAt(terrainTiles, -45, -45)), 'Same source does not imply south coverage');
+assert.ok(Number.isNaN(api.terrainElevationAt(terrainTiles, -45, 0)), 'Tile border uses the correct south tile');
+terrainTiles.get('north-west').dem = null;
+assert.ok(Number.isNaN(api.terrainElevationAt(terrainTiles, -45, 45)), 'Evicted decoded data ceases to prove coverage');
+terrainTiles.clear();
+// A nonconstant 2x2 DEM verifies all four interpolation weights, independently
+// of the vendor query that can return a false zero for unavailable tiles.
+const pixels = [[0, 10, 20], [20, 30, 40], [40, 50, 60]];
+terrainTiles.set('world', tile(0, 0, 0, { dim: 2, get(x, y) { return pixels[y][x]; } }));
+const latForY = y => Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+assert.ok(Math.abs(api.terrainElevationAt(terrainTiles, -135, latForY(.375)) - 17.5) < 1e-10, 'Bilinear weights at pixel (0.25,0.75)');
+assert.ok(Math.abs(api.terrainElevationAt(terrainTiles, 135, latForY(.875)) - 52.5) < 1e-10, 'Bilinear weights near tile border');
+terrainTiles.set('child', tile(1, 0, 0, flatDem(100)));
+assert.equal(api.terrainElevationAt(terrainTiles, -135, latForY(.375)), 100, 'Highest-resolution decoded covering tile wins');
+terrainTiles.get('child').dem = null;
+assert.ok(Math.abs(api.terrainElevationAt(terrainTiles, -135, latForY(.375)) - 17.5) < 1e-10, 'Evicted child falls back to real decoded parent');
+terrainTiles.clear();
+let terrainQueries = 0;
 const terrainScope = {
-  finite: api.finite, terrainElevations: new Float64Array([NaN]), model: { lat: [0], lon: [0] },
-  map: { isSourceLoaded() { return true; }, queryTerrainElevation() { terrainQueries++; return elevation; } }
+  finite: api.finite, terrainElevationAt: api.terrainElevationAt, terrainTiles,
+  terrainElevations: new Float64Array([NaN]), model: { lat: [0], lon: [0] },
+  map: { isSourceLoaded() { return true; }, queryTerrainElevation() { terrainQueries++; return 0; } }
 };
 vm.createContext(terrainScope);
 const groundAt = vm.runInContext(between('    const groundAt =', '    const flightAltitude =') + ';groundAt;', terrainScope);
-assert.ok(Number.isNaN(groundAt(0)), 'Unavailable terrain is not sea level');
-assert.ok(Number.isNaN(terrainScope.terrainElevations[0]), 'Unavailable elevation is not cached as zero');
-elevation = 0; assert.equal(groundAt(0), 0, 'Real sea-level elevation remains valid');
-const queriesBefore = terrainQueries; groundAt(0); assert.equal(terrainQueries, queriesBefore, 'Valid elevation is cached');
-console.log('PASS null terrain remains unavailable while real sea-level elevation caches correctly');
+assert.ok(Number.isNaN(groundAt(0)), 'Vendor fallback zero without a decoded tile is unavailable');
+assert.equal(terrainQueries, 0, 'Do not query the vendor fallback');
+assert.ok(Number.isNaN(terrainScope.terrainElevations[0]), 'Vendor fallback zero is never cached');
+terrainTiles.set('world', tile(0, 0, 0, flatDem(NaN)));
+assert.ok(Number.isNaN(groundAt(0)), 'Invalid decoded elevation is unavailable');
+assert.ok(Number.isNaN(terrainScope.terrainElevations[0]), 'Invalid decoded elevation is not cached');
+terrainTiles.get('world').dem = flatDem(0);
+assert.equal(groundAt(0), 0, 'Real sea-level elevation remains valid');
+terrainTiles.get('world').dem = flatDem(20);
+assert.equal(groundAt(0), 0, 'Confirmed elevation is cached');
+terrainScope.terrainElevations.fill(NaN);
+assert.equal(groundAt(0), 20, 'Cache invalidation allows updated decoded elevations');
+terrainScope.terrainElevations.fill(NaN);
+terrainTiles.get('world').dem = null;
+assert.ok(Number.isNaN(groundAt(0)), 'Evicted DEM cannot create new zero elevation evidence');
+assert.equal(terrainQueries, 0, 'Ground samples never depend on ambiguous vendor fallback');
+console.log('PASS decoded terrain: missing/evicted DEM, partial coverage, wraps/poles, bilinear interpolation, highest zoom and sea level');
 
 let reads = 0;
 const coordinates = new Proxy(Array.from({ length: 100000 }, (_, i) => i / 100000), { get(target, key) { if (/^\d+$/.test(String(key))) reads++; return Reflect.get(target, key); } });

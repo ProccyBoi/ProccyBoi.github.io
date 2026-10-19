@@ -57,7 +57,7 @@ async function cancelActiveParse(browser,base){
     });
     // 400,001 v3 records = 112,800,330 bytes, below the production 150 MiB cap.
     const large=binary({count:400001,name:'cancel-active-parser.bin'});
-    await run.page.locator('[data-flight-file]').setInputFiles(payload(large));
+    await H.setFile(run,large);
     await run.page.waitForFunction(()=>window.__cancelEvidence.returned>0,{},{timeout:60000});
     await run.page.waitForFunction(()=>document.querySelector('[data-loading]').hidden);
     const evidence=await run.page.evaluate(()=>window.__cancelEvidence);evidence.cancelHandlerMs=evidence.returned-evidence.start;evidence.fixture=manifest(large);
@@ -69,7 +69,7 @@ function summarize(samples,label){const values=samples.filter(x=>x.label===label
 async function main(){
   assert.ok(baselineRoot,'Set FLIGHT_BASELINE_ROOT to the pinned baseline worktree');assert.equal(H.revision(baselineRoot),BASELINE);assert.ok(rounds>=2,'At least two counterbalanced pairs');assert.ok(count>=100001,'Large fixture must exceed 100k records');
   fs.mkdirSync(out,{recursive:true});const fixture=binary({count,name:`synthetic-${count}-v3.bin`}),hosts={baseline:await H.server(baselineRoot),candidate:await H.server()},browser=await H.launch();
-  const result={...H.metadata(browser),baselineSha:BASELINE,fixture:manifest(fixture),methodology:{rounds,order:'Even rounds baseline/candidate; odd rounds candidate/baseline',viewport:H.VIEWPORTS.desktop1440,cold:'Fresh browser context per sample, no-store identical static servers, same browser process and software renderer',network:'Map provider responses mocked identically; no internet dependency',measurement:'Startup encodedBodySize is actual uncompressed local HTTP body bytes. Transfer includes browser-reported HTTP overhead. File-to-charts includes read/parse/model transfer/first charts and baseline eager-view work; it is not an isolated parser benchmark. 20 ms heartbeat gap reports main-thread responsiveness.',hardware:'GitHub-hosted runner + ANGLE SwiftShader. No physical phone, Safari, or hardware GPU claim.'},samples:[],checks:[]};
+  const result={...H.metadata(browser),baselineSha:BASELINE,fixture:manifest(fixture),methodology:{rounds,order:'Even rounds baseline/candidate; odd rounds candidate/baseline',viewport:H.VIEWPORTS.desktop1440,cold:'Fresh browser context per sample, no-store identical static servers, same browser process and software renderer',network:'Map provider responses mocked identically; no internet dependency',fixtureInput:'Fixtures are written once to each browser context temporary directory and supplied by filesystem path to native setInputFiles; avoids Playwright Buffer/base64 page decoding. Both revisions use the same method.',measurement:'Startup encodedBodySize is actual uncompressed local HTTP body bytes. Transfer includes browser-reported HTTP overhead. File-to-charts includes read/parse/model transfer/first charts and baseline eager-view work; it is not an isolated parser benchmark. 20 ms heartbeat gap reports main-thread responsiveness.',hardware:'GitHub-hosted runner + ANGLE SwiftShader. No physical phone, Safari, or hardware GPU claim.'},samples:[],checks:[]};
   const write=()=>fs.writeFileSync(path.join(out,'profile.json'),JSON.stringify(result,null,2));
   try{
     for(let round=0;round<rounds;round++)for(const label of (round%2?['candidate','baseline']:['baseline','candidate'])){console.log('MEASURE',round,label);result.samples.push(await measure(browser,hosts[label].base,label,round,fixture));write();}

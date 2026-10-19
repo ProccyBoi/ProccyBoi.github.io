@@ -16,7 +16,7 @@ Telemetry opens first. Local 3D loads Three.js only when selected, and works wit
 - Charts use elapsed time rather than sample number. Pixel buckets retain first/last samples, minima/maxima and missing-value breaks, including narrow spikes. This only reduces display geometry; exported values are not downsampled.
 - Playback uses a continuously accumulated clock, so fractional time is retained between recorded samples. Pausing, stepping and scrubbing still select exact samples. Playback pauses when the document becomes hidden.
 - Coordinate validation now accepts equator/prime-meridian fixes and rejects out-of-range latitude/longitude. A (0, 0) pair requires an explicit positive fix. Missing diagnostic counters are unavailable rather than zero; the UI does not infer healthy logging from absent fields.
-- A missing terrain elevation (`null`) stays unavailable instead of being mistaken for sea-level terrain.
+- Missing terrain stays unavailable instead of being mistaken for sea level. The pinned MapLibre 5.24 runtime can return a fallback zero for absent DEM tiles, so the visualization samples only successfully decoded covering tiles using the renderer's bilinear DEM formula. This small adapter must be reverified when upgrading MapLibre.
 
 ## Rendering
 
