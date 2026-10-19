@@ -340,6 +340,7 @@
     state.lastAnimationTime = null;
     state.level = { ...model.defaultLevel };
     state.levelLabel = "Auto-level";
+    $("[data-view-button='terrain']").setAttribute("aria-disabled", String(!model.hasGps));
 
     $("[data-file-name]").textContent = model.meta.name;
     $("[data-format-badge]").textContent = `${model.meta.format} ${model.meta.schema}`;
@@ -1131,7 +1132,7 @@
     const map = viewer.map;
     if (mode !== "satellite") {
       if (map.getLayer("skylabs-satellite")) map.setLayoutProperty("skylabs-satellite", "visibility", "none");
-      if (map.getLayer("skylabs-hillshade")) map.setPaintProperty("skylabs-hillshade", "hillshade-opacity", 0.5);
+      if (map.getLayer("skylabs-hillshade")) map.setPaintProperty("skylabs-hillshade", "hillshade-exaggeration", 0.42);
       elements.satelliteSettings.hidden = true;
       return;
     }
@@ -1164,7 +1165,7 @@
     } else {
       map.setLayoutProperty("skylabs-satellite", "visibility", "visible");
     }
-    if (map.getLayer("skylabs-hillshade")) map.setPaintProperty("skylabs-hillshade", "hillshade-opacity", 0.28);
+    if (map.getLayer("skylabs-hillshade")) map.setPaintProperty("skylabs-hillshade", "hillshade-exaggeration", 0.24);
     elements.satelliteSettings.hidden = state.view !== "terrain";
     map.triggerRepaint();
   }
@@ -1601,7 +1602,6 @@
           source: "skylabs-hillshade",
           paint: {
             "hillshade-exaggeration": 0.42,
-            "hillshade-opacity": 0.5,
             "hillshade-shadow-color": "#10241f",
             "hillshade-highlight-color": "#dbe8e2",
             "hillshade-accent-color": "#53756a"
@@ -1884,8 +1884,10 @@
   $$('[data-view-button]').forEach((button) => button.addEventListener("click", () => switchView(button.dataset.viewButton)));
   $(".flight-view-tabs").addEventListener("keydown", (event) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    const buttons = $$('[data-view-button]');
-    const current = buttons.indexOf(event.target);
+    if (!event.target.matches("[data-view-button]")) return;
+    const buttons = $$('[data-view-button]').filter((button) => state.model?.hasGps || button.dataset.viewButton !== "terrain");
+    let current = buttons.indexOf(event.target);
+    if (current < 0) current = buttons.findIndex((button) => button.getAttribute("aria-selected") === "true");
     if (current < 0) return;
     event.preventDefault();
     const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;

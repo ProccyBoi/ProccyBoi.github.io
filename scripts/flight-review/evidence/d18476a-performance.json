@@ -1,0 +1,714 @@
+{
+  "candidateSha": "d18476a4277c51acdff34669d0effa2eaddff659",
+  "baselineSha": "d15883bd3945502c412121e1d434e04588f200d0",
+  "dirtyWorkingTree": false,
+  "dirtyScope": "Tracked files only; npm/browser dependencies and generated fixtures excluded",
+  "fixtureDelivery": "Native filesystem-backed file input; no base64 buffer injection into page JavaScript",
+  "recordedAt": "2026-10-19T08:32:18.210Z",
+  "node": "v22.23.3",
+  "playwright": "1.57.0",
+  "browser": "143.0.7499.4",
+  "environment": "Headless browser viewport emulation. Chromium uses software ANGLE/SwiftShader; not physical-device/GPU evidence.",
+  "fixture": {
+    "name": "synthetic-120001-v3.bin",
+    "mimeType": "application/octet-stream",
+    "count": 120001,
+    "duration": 6000,
+    "sha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+    "provenance": "Synthetic deterministic SKYLBIN1, not a captured log.",
+    "bytes": 33840330
+  },
+  "methodology": {
+    "rounds": 4,
+    "order": "Even rounds baseline/candidate; odd rounds candidate/baseline",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "cold": "Fresh browser context per sample, no-store identical static servers, same browser process and software renderer",
+    "network": "Map provider responses mocked identically; no internet dependency",
+    "fixtureInput": "Fixtures are written once to each browser context temporary directory and supplied by filesystem path to native setInputFiles; avoids Playwright Buffer/base64 page decoding. Both revisions use the same method.",
+    "measurement": "Startup encodedBodySize is actual uncompressed local HTTP body bytes. Transfer includes browser-reported HTTP overhead. File-to-charts includes read/parse/model transfer/first charts and baseline eager-view work; it is not an isolated parser benchmark. 20 ms heartbeat gap reports main-thread responsiveness.",
+    "hardware": "GitHub-hosted runner + ANGLE SwiftShader. No physical phone, Safari, or hardware GPU claim."
+  },
+  "summary": {
+    "baseline": {
+      "runs": 4,
+      "startupBodyBytes": 2841539,
+      "startupLoadMs": 197.04999999998836,
+      "startupTbtMs": 49.5,
+      "fileToChartsMs": 10504.800000000017,
+      "ingestionTbtMs": 9631,
+      "ingestionMaxTaskMs": 6987.5,
+      "ingestionMaxHeartbeatGapMs": 7428.500000000015,
+      "scrubP95Ms": 2707,
+      "replayRate": 0,
+      "pausedRaf": 85
+    },
+    "candidate": {
+      "runs": 4,
+      "startupBodyBytes": 189268,
+      "startupLoadMs": 39.79999999998836,
+      "startupTbtMs": 0,
+      "fileToChartsMs": 673.9500000000116,
+      "ingestionTbtMs": 34.5,
+      "ingestionMaxTaskMs": 84.5,
+      "ingestionMaxHeartbeatGapMs": 100.35000000000582,
+      "scrubP95Ms": 33.44999999999709,
+      "replayRate": 0.9978657689602658,
+      "pausedRaf": 0
+    }
+  },
+  "checks": [
+    {
+      "name": "Startup body bytes reduced at least 50%",
+      "pass": true,
+      "details": {
+        "baseline": 2841539,
+        "candidate": 189268
+      }
+    },
+    {
+      "name": "Candidate 1x replay tracks wall clock within 15%",
+      "pass": true,
+      "details": {
+        "baseline": 0,
+        "candidate": 0.9978657689602658
+      }
+    },
+    {
+      "name": "Candidate paused charts have no animation loop",
+      "pass": true,
+      "details": {
+        "baseline": 85,
+        "candidate": 0
+      }
+    },
+    {
+      "name": "Candidate scrub p95 below 200 ms",
+      "pass": true,
+      "details": {
+        "baseline": 2707,
+        "candidate": 33.44999999999709
+      }
+    },
+    {
+      "name": "Candidate ingestion median max heartbeat gap below 750 ms",
+      "pass": true,
+      "details": {
+        "baseline": 7428.500000000015,
+        "candidate": 100.35000000000582
+      }
+    }
+  ],
+  "activeParserCancellation": {
+    "phase": "Decoding telemetry",
+    "start": 1898.5999999999767,
+    "returned": 1901.7000000000116,
+    "cancelHandlerMs": 3.1000000000349246,
+    "fixture": {
+      "name": "cancel-active-parser.bin",
+      "mimeType": "application/octet-stream",
+      "count": 400001,
+      "duration": 20000,
+      "sha256": "02d0a4711308d3d967b098c9bb6a33f102a7caa771013ee3eae868d384ae760f",
+      "provenance": "Synthetic deterministic SKYLBIN1, not a captured log.",
+      "bytes": 112800330
+    }
+  },
+  "evidence": {
+    "runId": 39223353235,
+    "runUrl": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39223353235",
+    "performanceArtifactId": 12172552977,
+    "artifactUrl": "https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39223353235/artifacts/12172552977",
+    "artifactZipSha256": "ec01ecbe14b240746f0e07ed1178e30afb45e95197cc8a4d74a1a81cc7b88d4c",
+    "originalProfileJsonSha256": "9ff7bc5af0d3390fccad848c168d9726b0a5bba47da20673efddfd789d0c74d6",
+    "scope": "Exact pre-final d184 commit. Later map style, layout and no-GPS keyboard fixes require their own final CI run. Earlier Buffer/base64-injection performance measurements are discarded."
+  },
+  "samples": [
+    {
+      "label": "baseline",
+      "round": 0,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 15221.399999999994,
+      "ingestion": {
+        "longTasks": 9,
+        "longTaskTotalMs": 14298,
+        "totalBlockingTimeMs": 13848,
+        "maxLongTaskMs": 9189,
+        "heartbeatSamples": 46,
+        "maxHeartbeatGapMs": 9963.600000000006,
+        "heartbeatP95Ms": 1263.300000000003
+      },
+      "scrub": {
+        "samplesMs": [
+          153.90000000000873,
+          115.59999999999127,
+          815,
+          1597.4000000000087,
+          682.8999999999942,
+          974.6999999999971,
+          1104.199999999997,
+          1457,
+          1279.8999999999942,
+          165.39999999999418,
+          682.8999999999942,
+          1543.6000000000058,
+          1301.199999999997,
+          703.5,
+          1290.9000000000087,
+          859.5,
+          933.0999999999913,
+          1337.5,
+          922.0999999999913,
+          951.2999999999884
+        ],
+        "p50Ms": 942.1999999999898,
+        "p95Ms": 1597.4000000000087
+      },
+      "replay": {
+        "wallSeconds": 1.8025,
+        "observedLogSeconds": 0,
+        "ratio": 0,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 91,
+        "maxHeartbeatGapMs": 22.69999999999709,
+        "heartbeatP95Ms": 20.10000000000582
+      },
+      "paused": {
+        "rafCallbacks": 92,
+        "chartRedraws": 0,
+        "webglDraws": 368
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 196.5,
+        "loadMs": 196.5,
+        "bodyBytes": 2841539,
+        "transferBytes": 2843639,
+        "longTasks": 2,
+        "longTaskTotalMs": 148,
+        "totalBlockingTimeMs": 48,
+        "maxLongTaskMs": 78,
+        "heartbeatSamples": 22,
+        "maxHeartbeatGapMs": 156.39999999999418,
+        "heartbeatP95Ms": 26
+      }
+    },
+    {
+      "label": "candidate",
+      "round": 0,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 697.1999999999825,
+      "ingestion": {
+        "longTasks": 1,
+        "longTaskTotalMs": 87,
+        "totalBlockingTimeMs": 37,
+        "maxLongTaskMs": 87,
+        "heartbeatSamples": 30,
+        "maxHeartbeatGapMs": 101.90000000002328,
+        "heartbeatP95Ms": 53.20000000001164
+      },
+      "scrub": {
+        "samplesMs": [
+          24.300000000017462,
+          32.29999999998836,
+          31.79999999998836,
+          31.60000000000582,
+          31.800000000017462,
+          33.40000000002328,
+          30.70000000001164,
+          32.10000000000582,
+          34.30000000001746,
+          29.400000000023283,
+          29.39999999999418,
+          32.10000000000582,
+          31.400000000023283,
+          29.20000000001164,
+          32.10000000000582,
+          30.900000000023283,
+          29.20000000001164,
+          32,
+          24.20000000001164,
+          34.19999999998254
+        ],
+        "p50Ms": 31.69999999999709,
+        "p95Ms": 34.30000000001746
+      },
+      "replay": {
+        "wallSeconds": 1.8043999999999942,
+        "observedLogSeconds": 1.8,
+        "ratio": 0.997561516293508,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 91,
+        "maxHeartbeatGapMs": 23.5,
+        "heartbeatP95Ms": 21.70000000001164
+      },
+      "paused": {
+        "rafCallbacks": 0,
+        "chartRedraws": 0,
+        "webglDraws": 0
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 37.79999999998836,
+        "loadMs": 42.29999999998836,
+        "bodyBytes": 189268,
+        "transferBytes": 190468,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 20,
+        "maxHeartbeatGapMs": 26.20000000001164,
+        "heartbeatP95Ms": 26.20000000001164
+      }
+    },
+    {
+      "label": "candidate",
+      "round": 1,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 665.7000000000116,
+      "ingestion": {
+        "longTasks": 1,
+        "longTaskTotalMs": 83,
+        "totalBlockingTimeMs": 33,
+        "maxLongTaskMs": 83,
+        "heartbeatSamples": 31,
+        "maxHeartbeatGapMs": 98.79999999998836,
+        "heartbeatP95Ms": 28.29999999998836
+      },
+      "scrub": {
+        "samplesMs": [
+          23.199999999982538,
+          31.300000000017462,
+          31.89999999999418,
+          32.19999999998254,
+          32,
+          29.79999999998836,
+          32,
+          32,
+          32.10000000000582,
+          33.89999999999418,
+          30.099999999976717,
+          29.5,
+          31.89999999999418,
+          32.20000000001164,
+          29.60000000000582,
+          32.09999999997672,
+          30.400000000023283,
+          31.79999999998836,
+          31,
+          30.800000000017462
+        ],
+        "p50Ms": 31.84999999999127,
+        "p95Ms": 33.89999999999418
+      },
+      "replay": {
+        "wallSeconds": 1.8063999999999942,
+        "observedLogSeconds": 1.8,
+        "ratio": 0.996457041629764,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 90,
+        "maxHeartbeatGapMs": 20.20000000001164,
+        "heartbeatP95Ms": 20.10000000000582
+      },
+      "paused": {
+        "rafCallbacks": 0,
+        "chartRedraws": 0,
+        "webglDraws": 0
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 30.79999999998836,
+        "loadMs": 37.59999999997672,
+        "bodyBytes": 189268,
+        "transferBytes": 190468,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 20,
+        "maxHeartbeatGapMs": 28.20000000001164,
+        "heartbeatP95Ms": 28.20000000001164
+      }
+    },
+    {
+      "label": "baseline",
+      "round": 1,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 11124.200000000012,
+      "ingestion": {
+        "longTasks": 8,
+        "longTaskTotalMs": 10607,
+        "totalBlockingTimeMs": 10207,
+        "maxLongTaskMs": 7270,
+        "heartbeatSamples": 27,
+        "maxHeartbeatGapMs": 7929.899999999994,
+        "heartbeatP95Ms": 1536.1999999999825
+      },
+      "scrub": {
+        "samplesMs": [
+          199.60000000000582,
+          130.89999999999418,
+          1270.2999999999884,
+          119.69999999998254,
+          3253.7999999999884,
+          149.39999999999418,
+          583.2000000000116,
+          146.5,
+          737.2000000000116,
+          846.8999999999942,
+          632.6000000000058,
+          689.7999999999884,
+          1320.1999999999825,
+          773.8999999999942,
+          1187.6000000000058,
+          1198.4000000000233,
+          742.2000000000116,
+          1023.5,
+          1064.5,
+          930.5
+        ],
+        "p50Ms": 758.0500000000029,
+        "p95Ms": 3253.7999999999884
+      },
+      "replay": {
+        "wallSeconds": 1.8019000000000234,
+        "observedLogSeconds": 0,
+        "ratio": 0,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 90,
+        "maxHeartbeatGapMs": 26.89999999999418,
+        "heartbeatP95Ms": 20.70000000001164
+      },
+      "paused": {
+        "rafCallbacks": 84,
+        "chartRedraws": 0,
+        "webglDraws": 336
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 208.10000000000582,
+        "loadMs": 208.20000000001164,
+        "bodyBytes": 2841539,
+        "transferBytes": 2843639,
+        "longTasks": 2,
+        "longTaskTotalMs": 151,
+        "totalBlockingTimeMs": 51,
+        "maxLongTaskMs": 94,
+        "heartbeatSamples": 20,
+        "maxHeartbeatGapMs": 201.20000000001164,
+        "heartbeatP95Ms": 201.20000000001164
+      }
+    },
+    {
+      "label": "baseline",
+      "round": 2,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 9885.400000000023,
+      "ingestion": {
+        "longTasks": 9,
+        "longTaskTotalMs": 9505,
+        "totalBlockingTimeMs": 9055,
+        "maxLongTaskMs": 6421,
+        "heartbeatSamples": 20,
+        "maxHeartbeatGapMs": 6714.100000000006,
+        "heartbeatP95Ms": 6714.100000000006
+      },
+      "scrub": {
+        "samplesMs": [
+          157.20000000001164,
+          120.29999999998836,
+          2070.5,
+          2160.2000000000116,
+          130.39999999996508,
+          937.8999999999651,
+          1085.899999999965,
+          202.10000000003492,
+          686.9000000000233,
+          702.2000000000116,
+          1100.7000000000116,
+          817.8999999999651,
+          1420.2999999999884,
+          904.2000000000116,
+          1291.2000000000116,
+          856.7999999999884,
+          920.1000000000349,
+          917.4000000000233,
+          1347.5,
+          940.8000000000466
+        ],
+        "p50Ms": 918.7500000000291,
+        "p95Ms": 2160.2000000000116
+      },
+      "replay": {
+        "wallSeconds": 1.8026000000000348,
+        "observedLogSeconds": 0,
+        "ratio": 0,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 90,
+        "maxHeartbeatGapMs": 36,
+        "heartbeatP95Ms": 20.099999999976717
+      },
+      "paused": {
+        "rafCallbacks": 86,
+        "chartRedraws": 0,
+        "webglDraws": 344
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 197.59999999997672,
+        "loadMs": 197.59999999997672,
+        "bodyBytes": 2841539,
+        "transferBytes": 2843639,
+        "longTasks": 2,
+        "longTaskTotalMs": 172,
+        "totalBlockingTimeMs": 72,
+        "maxLongTaskMs": 115,
+        "heartbeatSamples": 21,
+        "maxHeartbeatGapMs": 188.89999999999418,
+        "heartbeatP95Ms": 25.5
+      }
+    },
+    {
+      "label": "candidate",
+      "round": 2,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 658.7000000000116,
+      "ingestion": {
+        "longTasks": 1,
+        "longTaskTotalMs": 80,
+        "totalBlockingTimeMs": 30,
+        "maxLongTaskMs": 80,
+        "heartbeatSamples": 30,
+        "maxHeartbeatGapMs": 86.79999999998836,
+        "heartbeatP95Ms": 25.699999999953434
+      },
+      "scrub": {
+        "samplesMs": [
+          23,
+          32.09999999997672,
+          32.09999999997672,
+          32.5,
+          27.699999999953434,
+          30.400000000023283,
+          31.900000000023283,
+          32.399999999965075,
+          32.20000000001164,
+          28.79999999998836,
+          32,
+          32,
+          27.900000000023283,
+          30.699999999953434,
+          32.20000000001164,
+          33,
+          31.199999999953434,
+          31.800000000046566,
+          32,
+          32.29999999998836
+        ],
+        "p50Ms": 32,
+        "p95Ms": 33
+      },
+      "replay": {
+        "wallSeconds": 1.8022000000000116,
+        "observedLogSeconds": 1.8,
+        "ratio": 0.9987792697813719,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 90,
+        "maxHeartbeatGapMs": 25,
+        "heartbeatP95Ms": 21.199999999953434
+      },
+      "paused": {
+        "rafCallbacks": 0,
+        "chartRedraws": 0,
+        "webglDraws": 0
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 22,
+        "loadMs": 33.90000000002328,
+        "bodyBytes": 189268,
+        "transferBytes": 190468,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 20,
+        "maxHeartbeatGapMs": 25.199999999953434,
+        "heartbeatP95Ms": 25.199999999953434
+      }
+    },
+    {
+      "label": "candidate",
+      "round": 3,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 682.2000000000116,
+      "ingestion": {
+        "longTasks": 1,
+        "longTaskTotalMs": 86,
+        "totalBlockingTimeMs": 36,
+        "maxLongTaskMs": 86,
+        "heartbeatSamples": 30,
+        "maxHeartbeatGapMs": 102.29999999998836,
+        "heartbeatP95Ms": 28.900000000023283
+      },
+      "scrub": {
+        "samplesMs": [
+          24.20000000001164,
+          32,
+          32.40000000002328,
+          31.900000000023283,
+          30.900000000023283,
+          32.399999999965075,
+          29.199999999953434,
+          32.20000000001164,
+          32.20000000001164,
+          30.599999999976717,
+          32.90000000002328,
+          30.5,
+          31.100000000034925,
+          30.599999999976717,
+          32.70000000001164,
+          31.20000000001164,
+          32.199999999953434,
+          31.599999999976717,
+          32.100000000034925,
+          29.599999999976717
+        ],
+        "p50Ms": 31.75,
+        "p95Ms": 32.90000000002328
+      },
+      "replay": {
+        "wallSeconds": 1.8032999999999884,
+        "observedLogSeconds": 1.8,
+        "ratio": 0.9981700216270236,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 90,
+        "maxHeartbeatGapMs": 23.099999999976717,
+        "heartbeatP95Ms": 21.400000000023283
+      },
+      "paused": {
+        "rafCallbacks": 0,
+        "chartRedraws": 0,
+        "webglDraws": 0
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 31.899999999965075,
+        "loadMs": 42,
+        "bodyBytes": 189268,
+        "transferBytes": 190468,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 20,
+        "maxHeartbeatGapMs": 31.900000000023283,
+        "heartbeatP95Ms": 31.900000000023283
+      }
+    },
+    {
+      "label": "baseline",
+      "round": 3,
+      "fixtureSha256": "42de5b52afe098ddb8e8643dcbbd502b130b975a475bb3c69ea9c39e1159ed07",
+      "sourceRecords": 120001,
+      "fileToChartsMs": 9859.5,
+      "ingestion": {
+        "longTasks": 7,
+        "longTaskTotalMs": 9394,
+        "totalBlockingTimeMs": 9044,
+        "maxLongTaskMs": 6705,
+        "heartbeatSamples": 19,
+        "maxHeartbeatGapMs": 6927.100000000035,
+        "heartbeatP95Ms": 6927.100000000035
+      },
+      "scrub": {
+        "samplesMs": [
+          136.59999999997672,
+          484.5,
+          145.29999999998836,
+          3838.5,
+          220.09999999997672,
+          957.5,
+          851.4000000000233,
+          462.6000000000349,
+          155.39999999996508,
+          902.3999999999651,
+          772.2999999999884,
+          1210.9000000000233,
+          842.4000000000233,
+          1294.5,
+          807.0999999999767,
+          925.5999999999767,
+          1341.899999999965,
+          924.9000000000233,
+          1195.0999999999767,
+          952.7000000000116
+        ],
+        "p50Ms": 876.8999999999942,
+        "p95Ms": 3838.5
+      },
+      "replay": {
+        "wallSeconds": 1.8016999999999534,
+        "observedLogSeconds": 0,
+        "ratio": 0,
+        "longTasks": 0,
+        "longTaskTotalMs": 0,
+        "totalBlockingTimeMs": 0,
+        "maxLongTaskMs": 0,
+        "heartbeatSamples": 90,
+        "maxHeartbeatGapMs": 21.5,
+        "heartbeatP95Ms": 20.100000000034925
+      },
+      "paused": {
+        "rafCallbacks": 80,
+        "chartRedraws": 0,
+        "webglDraws": 320
+      },
+      "errors": [],
+      "startup": {
+        "domContentLoadedMs": 171.79999999998836,
+        "loadMs": 171.90000000002328,
+        "bodyBytes": 2841539,
+        "transferBytes": 2843639,
+        "longTasks": 2,
+        "longTaskTotalMs": 137,
+        "totalBlockingTimeMs": 37,
+        "maxLongTaskMs": 86,
+        "heartbeatSamples": 21,
+        "maxHeartbeatGapMs": 141,
+        "heartbeatP95Ms": 24.70000000001164
+      }
+    }
+  ]
+}

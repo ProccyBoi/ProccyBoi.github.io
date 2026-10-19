@@ -91,6 +91,9 @@ async function regression(browser,base) {
   await scenario(browser,base,'csv-no-usable-gps',async run=>{
     const f=recordFixture(csv({missingGps:true,name:'no-gps.csv'}));await H.loaded(run,f);await run.page.locator('[data-view-button="terrain"]').click();
     await assertDefault(run,{csvImport:true});assert.match(await run.page.locator('[data-health-list]').textContent(),/No usable GNSS/);await assertExport(run,f);
+    const p=run.page;assert.equal(await p.locator('[data-view-button="terrain"]').getAttribute('aria-disabled'),'true');
+    await p.locator('[data-view-button="charts"]').focus();await p.keyboard.press('ArrowRight');assert.equal(await p.evaluate(()=>document.activeElement.dataset.viewButton),'local','No-GPS keyboard navigation skips unavailable terrain');
+    await p.keyboard.press('ArrowRight');assert.equal(await p.evaluate(()=>document.activeElement.dataset.viewButton),'samples','No-GPS keyboard can reach samples');H.noExternal(run);
   });
   await scenario(browser,base,'irregular-timestamp-chart-scrub',async run=>{
     const f=recordFixture(csv({irregular:true,name:'irregular.csv'}));await H.loaded(run,f);
@@ -169,6 +172,9 @@ async function regression(browser,base) {
     run.faults.dependencies.clear();await p.getByRole('button',{name:'Retry local 3D'}).click();await p.locator('#flight-local-3d canvas').waitFor();
     await p.waitForFunction(()=>window.__flightProbe.drawCalls>0);await p.waitForTimeout(350);
     const graphics=await H.snapshot(run);assert.ok(graphics.webgl.some(x=>x.host==='flight-local-3d'&&!x.lost),'Real local WebGL context');
+    const localLayout=await p.locator('#flight-local-3d').evaluate(host=>{const b=host.getBoundingClientRect(),transport=document.querySelector('.flight-transport').getBoundingClientRect();return {height:b.height,centerY:b.y+b.height/2,transportTop:transport.top,viewportHeight:innerHeight};});
+    if(run.size.width===1440&&run.size.height===900){assert.ok(localLayout.height>=300&&localLayout.height<=700,'Desktop local scene is bounded, not stretched to the diagnostics column: '+JSON.stringify(localLayout));assert.ok(localLayout.centerY<localLayout.transportTop-24,'Local aircraft region remains above fixed replay controls');}
+    report.localLayout=localLayout;
     await H.screenshot(run,out,'local-3d-real-webgl');
     const before=await H.snapshot(run);await p.waitForTimeout(650);const after=await H.snapshot(run);assert.equal(after.drawCalls,before.drawCalls,'Paused local 3D does not render continuously');
     await p.locator('[data-view-button="charts"]').click();await p.waitForTimeout(250);const hidden=await H.snapshot(run);await p.waitForTimeout(650);assert.equal((await H.snapshot(run)).drawCalls,hidden.drawCalls,'Inactive local 3D does not render');
@@ -187,6 +193,8 @@ async function regression(browser,base) {
     // available DEM. Assert application readiness stays false instead.
     report.missingTerrain={observedLibraryQuery:elevation,providerFixture:'Every DEM tile responds404',setupStillVisible:await p.locator('[data-map-setup]').isVisible()};
     await p.waitForTimeout(1000);assert.equal(await p.locator('[data-map-setup]').isVisible(),true,'Failed DEM never becomes ready merely because library query falls back to0');
+    const missingErrors=await p.evaluate(()=>window.__flightProbe.mapErrors);assert.ok(missingErrors.every(error=>/404|Not Found/i.test(error.message||'')),'Missing-DEM case permits only intentionally failed provider tiles, never style/API errors: '+JSON.stringify(missingErrors));
+    assert.ok(run.network.some(request=>request.url.includes('/__fixture_empty_dem/')),'Missing-DEM scenario actually requests its failing DEM fixture');
     await p.locator('[data-view-button="charts"]').click();await p.waitForTimeout(500);const before=await H.snapshot(run);await p.waitForTimeout(700);assert.equal((await H.snapshot(run)).drawCalls,before.drawCalls,'Inactive terrain stops rendering');
   },{blockDependencies:['maplibre-gl.js']});
   await scenario(browser,base,'terrain-positive-elevation-route-and-seek',async run=>{
@@ -196,6 +204,7 @@ async function regression(browser,base) {
     const mapLayout=await p.locator('#flight-terrain-map').evaluate(host=>{const rect=host.getBoundingClientRect(),canvas=host.querySelector('canvas').getBoundingClientRect();return {host:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},canvas:{x:canvas.x,y:canvas.y,width:canvas.width,height:canvas.height},position:getComputedStyle(host).position};});
     assert.ok(mapLayout.host.height>=200&&mapLayout.canvas.height>=200,'Ready map has a real visible layout box, not a zero-height host clipped by late MapLibre CSS: '+JSON.stringify(mapLayout));
     assert.ok(Math.abs(mapLayout.host.height-mapLayout.canvas.height)<2,'Map canvas fills the visible host');
+    if(run.size.width===1440&&run.size.height===900)assert.ok(mapLayout.host.height<=700,'Desktop terrain is bounded independently of diagnostics column');
     await H.target(p,'#flight-terrain-map .maplibregl-ctrl-zoom-in');
     const inspect=()=>p.evaluate(()=>{
       const probe=window.__flightProbe,map=probe.maps.at(-1),layer=probe.customLayers.at(-1);
@@ -211,6 +220,7 @@ async function regression(browser,base) {
     await p.locator('[data-view-button="local"]').click();await p.locator('#flight-local-3d canvas').waitFor();await p.locator('[data-view-button="terrain"]').click();
     assert.equal(await p.locator('[data-map-setup]').isVisible(),false);assert.equal(await H.index(p),240,'Switching 3D views preserves selected sample');
     await p.waitForTimeout(1300);const before=await H.snapshot(run);await p.waitForTimeout(900);const after=await H.snapshot(run);assert.equal(after.drawCalls,before.drawCalls,'Ready paused terrain has no idle repaint loop');
+    assert.deepEqual(await p.evaluate(()=>window.__flightProbe.mapErrors),[],'Positive terrain has no MapLibre style, source, glyph or rendering errors');
     report.positiveTerrain={provenance:'Synthetic flat100m Terrain-RGB PNG; no real provider imagery/elevation or OSM vegetation',mapLayout,initial,moved};
   },{flatTerrain:true});
   await scenario(browser,base,'published-f110211-reconstructed-csv',async run=>{

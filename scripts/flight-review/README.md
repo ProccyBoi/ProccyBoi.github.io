@@ -47,3 +47,20 @@ Large and small fixtures are written to temporary runner files and supplied via 
 A 20 ms main-thread heartbeat and Long Tasks observer report responsiveness; scrub latency is input-to-observed-readout plus one animation frame. Replay compares log seconds to actual elapsed browser time. Reported medians retain all raw runs; gates target deterministic byte reduction, correct replay, idle work, a broad 200 ms scrub p95 and 750 ms ingestion heartbeat budget. Provider responses are mocked identically. Performance on real phones, hardware GPUs, real Safari and internet networks remains unmeasured.
 
 Artifacts upload even on failure and include screenshots, fixture manifest, complete test JSON and benchmark JSON. A missing, failed or unrun browser job is not a pass. Local browser launch in the development sandbox was denied at Chromium `process_singleton_posix.cc` (`socket(): Operation not permitted`); no bypass was attempted. Source/fixture tests are independently runnable; browser evidence must come from the exact candidate Actions run.
+
+## Recorded pre-final comparison: d18476a
+
+`evidence/d18476a-performance.json` preserves all eight core-metric samples, fixture hashes, software versions, full method and checks from [run 39223353235](https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39223353235), [performance artifact 12172552977](https://github.com/ProccyBoi/ProccyBoi.github.io/actions/runs/39223353235/artifacts/12172552977). Exact candidate: `d18476a4277c51acdff34669d0effa2eaddff659`; baseline: `d15883bd3945502c412121e1d434e04588f200d0`. Four fresh-context paired comparisons use native file paths with the identical 120,001-record synthetic binary.
+
+Median results, baseline → candidate:
+
+- Cold entry HTTP body bytes: 2,841,539 → 189,268 (93.34% reduction; uncompressed local bytes)
+- File to charts: 10,504.8 → 673.95 ms (combined UX task, not isolated parser speed)
+- Ingestion total blocking time: 9,631 → 34.5 ms
+- Ingestion maximum heartbeat gap: 7,428.5 → 100.35 ms
+- Scrub p95: 2,707 → 33.45 ms
+- Measured 1× playback rate: 0 → 0.9979 log-seconds per wall-second
+- Paused 600 ms animation callbacks: 85 → 0
+- Separate active 400,001-record / 112.8 MB parse cancellation: 3.1 ms handler, prior log retained
+
+All five performance gates passed. These are same-runner Chromium/SwiftShader observations, not physical-device performance promises. This is a **pre-final** map/style/layout revision: later map-error, bounded-scene and no-GPS keyboard fixes require their own exact-SHA rerun. The earlier Buffer/base64-injected exploratory timings are discarded and must not be compared to these native-input results.

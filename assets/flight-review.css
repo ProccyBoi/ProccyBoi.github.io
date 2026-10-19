@@ -116,7 +116,7 @@ svg { display: block; fill: none; stroke: currentColor; stroke-linecap: round; s
 .flight-view-tabs svg { width: 1rem; }
 
 .flight-review-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem); }
-.flight-visualizer { position: relative; min-width: 0; min-height: 40rem; border-right: 1px solid var(--fr-line); background: var(--fr-bg); }
+.flight-visualizer { position: relative; align-self: start; min-width: 0; min-height: 40rem; border-right: 1px solid var(--fr-line); background: var(--fr-bg); }
 .flight-view { position: absolute; inset: 0; min-width: 0; }
 .flight-view.is-active { z-index: 1; }
 .flight-view:focus-visible { outline-offset: -4px; }
