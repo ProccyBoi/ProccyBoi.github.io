@@ -166,4 +166,48 @@ console.log('PASS cached terrain markers preserve endpoints without a per-frame 
     assert.equal(exportButton.disabled, false); assert.equal(exportButton.textContent, 'Export CSV');
   }
   console.log('PASS chunked CSV export: decimal precision, empty cells, exact row delimiters, boundary counts and duplicate guard');
+
+  const created = [], timers = new Map();
+  let timerId = 0;
+  const loaderWindow = {
+    setTimeout(callback) { timers.set(++timerId, callback); return timerId; },
+    clearTimeout(id) { timers.delete(id); }
+  };
+  const loaderScope = {
+    window: loaderWindow,
+    document: {
+      createElement(tag) { return { tag, removed: false, remove() { this.removed = true; } }; },
+      head: { append(element) { created.push(element); } }
+    }
+  };
+  vm.createContext(loaderScope);
+  const loaders = vm.runInContext(between('  const runtimeLoads =', '  function cancelParsing(')
+    + ';({loadRuntime, loadMapStyles});', loaderScope);
+  const styles = loaders.loadMapStyles();
+  assert.equal(loaders.loadMapStyles(), styles, 'Pending styles are deduplicated');
+  created.at(-1).onerror();
+  await assert.rejects(styles, /Map styles could not load/);
+  assert.equal(created.at(-1).removed, true);
+  const retryStyles = loaders.loadMapStyles();
+  assert.equal(created.length, 2, 'Failed styles can be requested again');
+  created.at(-1).onload(); await retryStyles;
+  assert.equal(loaders.loadMapStyles(), retryStyles, 'Successful styles stay cached');
+
+  const library = loaders.loadRuntime('test-runtime.js', 'TEST_RUNTIME');
+  assert.equal(loaders.loadRuntime('test-runtime.js', 'TEST_RUNTIME'), library, 'Pending scripts are deduplicated');
+  created.at(-1).onload();
+  await assert.rejects(library, /could not be initialized/);
+  const retryLibrary = loaders.loadRuntime('test-runtime.js', 'TEST_RUNTIME');
+  loaderWindow.TEST_RUNTIME = {};
+  created.at(-1).onload(); await retryLibrary;
+  const loadedCount = created.length;
+  await loaders.loadRuntime('test-runtime.js', 'TEST_RUNTIME');
+  assert.equal(created.length, loadedCount, 'Existing library does not reload');
+
+  const stalled = loaders.loadRuntime('stalled-runtime.js', 'STALLED_RUNTIME');
+  assert.equal(timers.size, 1, 'Successful/failed loader timers were cleared');
+  const timeout = [...timers.values()][0]; timeout();
+  await assert.rejects(stalled, /too long/);
+  assert.equal(created.at(-1).removed, true, 'Timed-out script is removed for retry');
+  console.log('PASS lazy dependency recovery: script/style deduplication, failure retry, missing global and timeout cleanup');
 })().catch(error => { console.error(error); process.exitCode = 1; });

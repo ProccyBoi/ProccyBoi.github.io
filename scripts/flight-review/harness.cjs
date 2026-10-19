@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), http=require('node:http');
 const {execFileSync}=require('node:child_process');
-const {ROOT,payload}=require('./fixtures.cjs');
+const {ROOT,payload,flatTerrainPng}=require('./fixtures.cjs');
 const ROUTE='/shared/flight-review/';
 const VIEWPORTS={desktop1440:{width:1440,height:900},phone390:{width:390,height:844},phone320:{width:320,height:780},tablet768:{width:768,height:1024},tablet1024:{width:1024,height:768},tablet1180:{width:1180,height:820}};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -22,7 +22,14 @@ async function server(root=ROOT) {
   return {base:`http://127.0.0.1:${app.address().port}`,close:()=>new Promise(resolve=>app.close(resolve))};
 }
 function installProbe() {
-  const p=window.__flightProbe={raf:0,drawCalls:0,chartClears:0,longTasks:[],heartbeats:[],workers:[],contexts:[],timeline:[],clipboard:null,started:performance.now()};
+  const p=window.__flightProbe={raf:0,drawCalls:0,chartClears:0,longTasks:[],heartbeats:[],workers:[],contexts:[],timeline:[],clipboard:null,maps:[],customLayers:[],started:performance.now()};
+  // Passively retain actual public renderer/layer objects, without changing
+  // production state or replacing geometry. Libraries still execute normally.
+  let maplibre;
+  Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>maplibre,set:value=>{
+    maplibre=value;if(!value?.Map)return;
+    const Original=value.Map;value.Map=class extends Original{constructor(...args){super(...args);p.maps.push(this);const add=this.addLayer;this.addLayer=function(layer,...rest){if(layer.type==='custom')p.customLayers.push(layer);return add.call(this,layer,...rest);};}};
+  }});
   const raf=window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame=callback=>raf(t=>{p.raf++;callback(t);});
   try {new PerformanceObserver(list=>p.longTasks.push(...list.getEntries().map(e=>({start:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:true});} catch {}
@@ -48,7 +55,7 @@ async function launch(engine='chromium') {
   if(process.env.FLIGHT_BROWSER_PATH)options.executablePath=process.env.FLIGHT_BROWSER_PATH;
   return playwright[engine].launch(options);
 }
-async function open(browser,base,{viewport='desktop1440',noWebGL=false,noWorker=false,failWorker=false,blockDependencies=[],mockMap=true,externalPolicy='block'}={}) {
+async function open(browser,base,{viewport='desktop1440',noWebGL=false,noWorker=false,failWorker=false,blockDependencies=[],mockMap=true,flatTerrain=false,externalPolicy='block'}={}) {
   const size=typeof viewport==='string'?VIEWPORTS[viewport]:viewport;
   const context=await browser.newContext({viewport:size,deviceScaleFactor:1,hasTouch:size.width<800,isMobile:size.width<800,acceptDownloads:true,serviceWorkers:'block'});
   const network=[], errors=[],faults={dependencies:new Set(blockDependencies),worker:failWorker,delayWorkerMs:0};
@@ -57,11 +64,12 @@ async function open(browser,base,{viewport='desktop1440',noWebGL=false,noWorker=
     network.push({url:url.href,method:req.method(),type:req.resourceType(),local,at:Date.now()});
     if(!local){
       if(externalPolicy==='allow')return route.continue();
-      if(mockMap&&url.href.includes('tiles.openfreemap.org/styles/'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({version:8,name:'Deterministic test style; provider imagery is not exercised',sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#091b36'}}]})});
-      if(mockMap&&url.href.includes('tiles.mapterhorn.com/tilejson'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({tilejson:'3.0.0',tiles:[base+'/__fixture_empty_dem/{z}/{x}/{y}.png'],minzoom:0,maxzoom:0})});
+      if(mockMap&&url.href.includes('tiles.openfreemap.org/styles/'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({version:8,name:'Deterministic test style; provider imagery is not exercised',glyphs:base+'/__fixture_glyphs/{fontstack}/{range}.pbf',sources:{openmaptiles:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[{id:'background',type:'background',paint:{'background-color':'#091b36'}}]})});
+      if(mockMap&&url.href.includes('tiles.mapterhorn.com/tilejson'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({tilejson:'3.0.0',tiles:[base+'/__fixture_empty_dem/{z}/{x}/{y}.png'],minzoom:0,maxzoom:0,encoding:'mapbox'})});
       return route.abort('blockedbyclient');
     }
-    if(url.pathname.includes('/__fixture_empty_dem/'))return route.fulfill({status:404,body:'Terrain intentionally absent: unavailable elevation fixture'});
+    if(url.pathname.includes('/__fixture_empty_dem/'))return flatTerrain?route.fulfill({status:200,contentType:'image/png',body:flatTerrainPng()}):route.fulfill({status:404,body:'Terrain intentionally absent: unavailable elevation fixture'});
+    if(url.pathname.includes('/__fixture_glyphs/'))return route.fulfill({status:200,contentType:'application/x-protobuf',body:Buffer.alloc(0)});
     if(/flight-review.*worker/.test(url.pathname)){
       if(faults.worker)return route.abort('failed');
       if(faults.delayWorkerMs)await sleep(faults.delayWorkerMs);

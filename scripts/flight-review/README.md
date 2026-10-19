@@ -33,7 +33,7 @@ The performance fixture is the identical 120,001-row v3 binary for both revision
 - True wall-clock replay at 0.25×, 1× and 4×; elapsed-time chart seeking rather than sample-index spacing; paused rendering stops; the document-visibility event pauses playback.
 - Bad replacement retains prior log; cancel, newer-load race, repeated import; worker/library failure then retry; local/terrain runtime failure and retry; no-WebGL chart/sample/export fallback; no-Worker clear error; WebKit import/play/export.
 - Synthetic persisted `pagehide`/`pageshow` during first/replacement parsing, followed by native away/Back navigation. The synthetic event verifies application lifecycle handling and does not assert real BFCache admission.
-- Real local Three and MapLibre WebGL contexts in Chromium/ANGLE/SwiftShader. Provider style and DEM responses are deterministic fixtures; the suite does not prove public provider availability or real terrain accuracy. Missing DEM remains unavailable rather than synthetic zero elevation.
+- Real local Three and MapLibre WebGL contexts in Chromium/ANGLE/SwiftShader. Provider style and DEM responses are deterministic fixtures; the suite does not prove public provider availability or real terrain accuracy. Missing DEM remains unavailable rather than synthetic zero elevation. A separate 100 m flat Terrain-RGB PNG fixture exercises actual raster-dem decoding, ready state, finite aircraft and TubeGeometry, marker/aircraft seek, view-switch preservation and idle rendering. This plateau and empty vegetation source are explicitly synthetic.
 
 ## Performance method and limits
 

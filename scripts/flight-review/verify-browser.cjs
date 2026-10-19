@@ -167,8 +167,30 @@ async function regression(browser,base) {
     await p.waitForFunction(()=>window.__flightProbe.contexts.some(x=>x.canvas.parentElement?.closest('#flight-terrain-map')));await p.waitForTimeout(1200);
     assert.ok(run.network.some(x=>!x.local&&x.url.includes('tiles.openfreemap.org')),'Provider requests occur only after explicit terrain selection');
     const data=await H.screenshot(run,out,'terrain-real-maplibre-mocked-provider');assert.ok(data.webgl.some(x=>!x.lost),'Real MapLibre WebGL context');
+    assert.equal(await p.locator('[data-map-setup]').isVisible(),true,'Unavailable DEM cannot falsely announce terrain ready');
+    const elevation=await p.evaluate(()=>{const map=window.__flightProbe.maps.at(-1);return map.queryTerrainElevation(map.getCenter());});assert.equal(elevation,null,'Missing DEM remains unavailable');
     await p.locator('[data-view-button="charts"]').click();await p.waitForTimeout(500);const before=await H.snapshot(run);await p.waitForTimeout(700);assert.equal((await H.snapshot(run)).drawCalls,before.drawCalls,'Inactive terrain stops rendering');
   },{blockDependencies:['maplibre-gl.js']});
+  await scenario(browser,base,'terrain-positive-elevation-route-and-seek',async run=>{
+    const f=binary();await H.loaded(run,f);await assertDefault(run);const p=run.page;
+    await p.locator('[data-view-button="terrain"]').click();await p.locator('#flight-terrain-map canvas').waitFor();
+    await p.waitForFunction(()=>document.querySelector('[data-map-setup]').hidden,null,{timeout:30000});
+    const inspect=()=>p.evaluate(()=>{
+      const probe=window.__flightProbe,map=probe.maps.at(-1),layer=probe.customLayers.at(-1);
+      const positions=[];layer.scene.traverse(object=>{const a=object.geometry?.attributes?.position?.array;if(a)positions.push({type:object.geometry.type,length:a.length,finite:Array.from(a).every(Number.isFinite)});});
+      return {elevation:map.queryTerrainElevation(map.getCenter()),aircraft:layer.aircraft.position.toArray(),geometry:positions,marker:map.getSource('skylabs-track-points')._data};
+    });
+    const initial=await inspect();assert.ok(Math.abs(initial.elevation-100)<.1,'Actual raster-dem query decodes synthetic 100 m terrain');
+    assert.ok(initial.aircraft.every(Number.isFinite)&&initial.aircraft[1]>=100,'Aircraft is finite and terrain-aligned');
+    assert.ok(initial.geometry.some(x=>x.type==='TubeGeometry'&&x.length>1000),'Actual 3D flight path geometry built');assert.ok(initial.geometry.every(x=>x.finite),'Every rendered coordinate is finite');
+    await H.seekIndex(p,240);await p.waitForTimeout(100);const moved=await inspect();assert.notDeepEqual(moved.aircraft,initial.aircraft,'Aircraft follows seek');
+    const markerPoint=moved.marker.features.find(x=>x.properties.kind==='current');assert.equal(markerPoint.geometry.coordinates[0],f.rows[240].gnss_lon);assert.equal(markerPoint.geometry.coordinates[1],f.rows[240].gnss_lat);
+    await H.screenshot(run,out,'terrain-synthetic-100m-ready');
+    await p.locator('[data-view-button="local"]').click();await p.locator('#flight-local-3d canvas').waitFor();await p.locator('[data-view-button="terrain"]').click();
+    assert.equal(await p.locator('[data-map-setup]').isVisible(),false);assert.equal(await H.index(p),240,'Switching 3D views preserves selected sample');
+    await p.waitForTimeout(1300);const before=await H.snapshot(run);await p.waitForTimeout(900);const after=await H.snapshot(run);assert.equal(after.drawCalls,before.drawCalls,'Ready paused terrain has no idle repaint loop');
+    report.positiveTerrain={provenance:'Synthetic flat100m Terrain-RGB PNG; no real provider imagery/elevation or OSM vegetation',initial,moved};
+  },{flatTerrain:true});
   await scenario(browser,base,'published-f110211-reconstructed-csv',async run=>{
     const f=recordFixture(reference());await H.loaded(run,f);await assertDefault(run,{csvImport:true});await assertExport(run,f);
     assert.match(await run.page.locator('[data-summary-records]').textContent(),/13,772 records|13772 records/);await H.screenshot(run,out,'f110211-reconstructed-arrays',{fullPage:true});

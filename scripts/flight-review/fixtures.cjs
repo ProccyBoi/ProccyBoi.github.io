@@ -46,6 +46,17 @@ function reference(root=ROOT) {
   const buffer=Buffer.from([Object.keys(fields).join(','),...rows.map(row=>Object.values(row).map(v=>v??'').join(','))].join('\r\n'));
   return {name:'F110211-reconstructed-published-arrays.csv',mimeType:'text/csv',buffer,rows,count:rows.length,duration:data.t.at(-1),sha256:sha256(buffer),provenance:'Reconstructed CSV from already-published, rounded replay arrays. This is NOT the original F110211.BIN and cannot prove raw binary fidelity.',source,sourceSha256:sha256(Buffer.from(html)),originalSourceSamples:data.source_samples};
 }
+// Synthetic Mapbox Terrain-RGB PNG: every pixel encodes a 100 m plateau.
+// It exercises the actual MapLibre raster-dem decoder, never real geography.
+function flatTerrainPng(elevation=100,size=256) {
+  const zlib=require('node:zlib');
+  const crc32=buffer=>{let crc=0xffffffff;for(const byte of buffer){crc^=byte;for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;};
+  const chunk=(name,data)=>{const type=Buffer.from(name),length=Buffer.alloc(4),crc=Buffer.alloc(4);length.writeUInt32BE(data.length);crc.writeUInt32BE(crc32(Buffer.concat([type,data])));return Buffer.concat([length,type,data,crc]);};
+  const value=Math.round((elevation+10000)*10),rgb=[(value>>>16)&255,(value>>>8)&255,value&255];
+  const raw=Buffer.alloc(size*(1+size*3));for(let y=0;y<size;y++)for(let x=0;x<size;x++)for(let c=0;c<3;c++)raw[y*(1+size*3)+1+x*3+c]=rgb[c];
+  const header=Buffer.alloc(13);header.writeUInt32BE(size,0);header.writeUInt32BE(size,4);header[8]=8;header[9]=2;
+  return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',zlib.deflateSync(raw)),chunk('IEND',Buffer.alloc(0))]);
+}
 function payload(fixture) {return {name:fixture.name,mimeType:fixture.mimeType,buffer:fixture.buffer};}
 function manifest(fixture) {const {buffer,rows,...meta}=fixture; return {...meta,bytes:buffer.length};}
 function selfTest() {
@@ -65,4 +76,4 @@ if(require.main===module) {
     fs.writeFileSync(path.join(out,'manifest.json'),JSON.stringify(fixtures.map(manifest),null,2));console.log(out);
   }
 }
-module.exports={ROOT,SIZES,binary,csv,reference,payload,manifest,sha256};
+module.exports={ROOT,SIZES,binary,csv,reference,flatTerrainPng,payload,manifest,sha256};

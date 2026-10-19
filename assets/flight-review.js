@@ -347,8 +347,9 @@
     $("[data-summary-duration]").textContent = formatDuration(model.stats.duration);
     $("[data-summary-window]").textContent = `${formatTime(0)}–${formatTime(model.stats.duration)}`;
     $("[data-summary-track]").textContent = model.hasGps ? (model.stats.trackDistance >= 1000 ? `${(model.stats.trackDistance / 1000).toFixed(2)} km` : `${model.stats.trackDistance.toFixed(0)} m`) : "No track";
-    $("[data-summary-speed]").textContent = formatFixed(model.stats.peakGroundSpeed, 1, " m/s");
-    $("[data-summary-speed-kmh]").textContent = finite(model.stats.peakGroundSpeed) ? `${(model.stats.peakGroundSpeed * 3.6).toFixed(1)} km/h` : "Unavailable";
+    const peakSpeed = model.hasGps ? model.stats.peakGroundSpeed : maxOf(model.series.groundSpeedInput);
+    $("[data-summary-speed]").textContent = formatFixed(peakSpeed, 1, " m/s");
+    $("[data-summary-speed-kmh]").textContent = finite(peakSpeed) ? `${(peakSpeed * 3.6).toFixed(1)} km/h` : "Unavailable";
     $("[data-summary-altitude]").textContent = finite(model.stats.baroMin) ? `${model.stats.baroMin.toFixed(1)}–${model.stats.baroMax.toFixed(1)} m` : "Unavailable";
     $("[data-summary-climb]").textContent = finite(model.stats.baroClimb) ? `${model.stats.baroClimb.toFixed(1)} m recorded range` : "No barometer column";
     $("[data-summary-gnss]").textContent = model.hasGps ? formatFixed(model.stats.gnssHAccMedian, 2, " m HAcc") : "No fix";
@@ -401,7 +402,7 @@
       ["Usable rows", formatInteger(model.meta.usableRecords)],
       ["Parser", model.meta.format === "SKYLBIN1" ? "Direct little-endian DataView" : "SheetJS header mapping"],
       ["Position", model.hasGps ? "Valid GNSS fixes; gaps interpolated for display and normalized export" : "No geodetic solution"],
-      ["Ground speed", "Derived from the position track; not measured airspeed"],
+      ["Ground speed", model.hasGps ? "Derived from position; not measured airspeed" : model.series.groundSpeedInput.some(finite) ? "Supplied ground speed; no usable position track" : "Unavailable; no usable position or supplied speed"],
       ["Height", finite(model.origin.baroAlt) ? "Barometer default · GNSS optional" : "GNSS"],
       ["Privacy", "Processed in browser memory"]
     ];
@@ -425,7 +426,7 @@
     ["longitude", "Display longitude (gap-filled)", (model, index) => formatFixed(model.lon[index], 7)],
     ["baroAlt", "Barometric altitude", (model, index) => formatFixed(model.baroFilled[index], 2, " m")],
     ["gnssAlt", "GNSS altitude", (model, index) => formatFixed(model.gnssAltFilled[index], 2, " m")],
-    ["speed", "Ground speed", (model, index) => formatFixed(model.groundSpeed[index], 2, " m/s")],
+    ["speed", "Ground speed", (model, index) => formatFixed(model.hasGps ? model.groundSpeed[index] : model.series.groundSpeedInput[index], 2, " m/s")],
     ["roll", "Roll", (model, index) => formatFixed(model.series.roll[index], 2, "°")],
     ["pitch", "Pitch", (model, index) => formatFixed(model.series.pitch[index], 2, "°")],
     ["yaw", "Yaw", (model, index) => formatFixed(model.series.yaw[index], 2, "°")],
@@ -468,7 +469,7 @@
       longitude: model.lon[index],
       barometric_altitude_m: model.baroFilled[index],
       gnss_altitude_m: model.gnssAltFilled[index],
-      ground_speed_mps: model.groundSpeed[index],
+      ground_speed_mps: model.hasGps ? model.groundSpeed[index] : model.series.groundSpeedInput[index],
       roll_deg: model.series.roll[index],
       pitch_deg: model.series.pitch[index],
       yaw_deg: model.series.yaw[index],
@@ -512,7 +513,7 @@
     elements.currentTime.textContent = formatTime(model.series.time[next]);
     elements.sampleReadout.textContent = `${formatInteger(next + 1)} / ${formatInteger(model.count)}`;
     $("[data-hud-time]").textContent = formatTime(model.series.time[next]);
-    $("[data-hud-speed]").textContent = formatFixed(model.groundSpeed[next], 1, " m/s");
+    $("[data-hud-speed]").textContent = formatFixed(model.hasGps ? model.groundSpeed[next] : model.series.groundSpeedInput?.[next], 1, " m/s");
     const shownAltitude = elements.heightSource.value === "gps" ? model.gnssAltFilled[next] : model.baroFilled[next];
     $("[data-hud-altitude]").textContent = formatFixed(shownAltitude, 1, " m");
     $("[data-hud-position]").textContent = model.hasGps ? `${formatFixed(model.lat[next], 5)}, ${formatFixed(model.lon[next], 5)}` : `${formatFixed(model.east[next], 1)} E · ${formatFixed(model.north[next], 1)} N`;
@@ -643,7 +644,7 @@
       {
         canvas: $('[data-chart="speed"]'),
         series: [
-          { values: model.groundSpeed, color: "#d5b778", unit: "m/s" },
+          { values: model.hasGps ? model.groundSpeed : model.series.groundSpeedInput, color: "#d5b778", unit: "m/s" },
           { values: model.series.airspeed, color: "#d99078", unit: "m/s" }
         ]
       },
