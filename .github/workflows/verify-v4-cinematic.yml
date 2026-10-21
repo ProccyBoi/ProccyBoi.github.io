@@ -1,0 +1,55 @@
+name: Verify independent v4 cinematic portfolio
+on:
+  push:
+    branches: [build/v4-cinematic-portfolio]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: v4-cinematic-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          V4_ISOLATION_BASE=e21ffc8a18c27b84abcc40fb6a3efe9132ba8391 python3 v4/tests/static.py
+          node --check v4/assets/site.js
+  browser:
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.62.1
+          npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Review real desktop and mobile pages
+        env:
+          V4_QA_OUT: /tmp/v4-evidence
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v4-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/v4/ >/dev/null && break; sleep 1; done
+          if [ '${{ matrix.engine }}' = webkit ]; then node v4/tests/browser.cjs --webkit; else node v4/tests/browser.cjs; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v4-${{ matrix.engine }}-${{ github.sha }}
+          path: |
+            /tmp/v4-evidence/
+            /tmp/v4-server.log
+          retention-days: 14

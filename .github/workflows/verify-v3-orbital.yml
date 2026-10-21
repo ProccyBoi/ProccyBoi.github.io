@@ -1,4 +1,4 @@
-name: Verify v3 Orbital Workshop
+name: Verify v3 Orbital and v4 Portfolio
 on:
   push:
     branches: [feat/v3-orbital-workshop]
@@ -22,7 +22,11 @@ jobs:
       - name: Verify authoring, source boundaries and preserved content
         run: |
           python3 scripts/build-v3-pages.py --check
-          python3 scripts/v3-webgpu/verify-isolation.py --base e21ffc8a18c27b84abcc40fb6a3efe9132ba8391
+          # Freeze the independently approved v4 tree; only v3/support deltas may differ.
+          git diff --exit-code 9976d4321e890b4598e98d6f3070b393f9df3c07 HEAD -- v4/ .github/workflows/verify-v4-cinematic.yml
+          python3 scripts/v3-webgpu/verify-isolation.py --base 9976d4321e890b4598e98d6f3070b393f9df3c07
+          python3 v4/tests/static.py
+          node --input-type=module --check < v4/assets/site.js
           python3 scripts/audit-v2.py
           node scripts/kiku-simulator/verify.cjs
           node scripts/verify-v3-aircraft-transport.cjs
@@ -61,11 +65,26 @@ jobs:
           else
             node scripts/v3-orbital/verify-browser.cjs --webkit
           fi
+      - name: Verify the approved v4 portfolio on the same release tree
+        env:
+          V4_BASE_URL: http://127.0.0.1:8080
+          V4_QA_OUT: /tmp/v4-evidence
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v4-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/v4/ >/dev/null && break; sleep 1; done
+          if [ '${{ matrix.engine }}' = webkit ]; then
+            node v4/tests/browser.cjs --webkit
+          else
+            node v4/tests/browser.cjs
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: v3-orbital-${{ matrix.engine }}-${{ github.sha }}
+          name: v3-v4-release-${{ matrix.engine }}-${{ github.sha }}
           path: |
             /tmp/v3-orbital-evidence/
             /tmp/v3-orbital-server.log
+            /tmp/v4-evidence/
+            /tmp/v4-server.log
           retention-days: 14

@@ -36,7 +36,7 @@ Earlier WebGPU aircraft/Kiku modules remain available for existing project explo
 Run:
 
 - `python3 scripts/build-v3-pages.py --check`
-- `python3 scripts/v3-webgpu/verify-isolation.py --base e21ffc8a18c27b84abcc40fb6a3efe9132ba8391`
+- `python3 scripts/v3-webgpu/verify-isolation.py --base 9976d4321e890b4598e98d6f3070b393f9df3c07`
 - `python3 scripts/audit-v2.py`
 - `node scripts/kiku-simulator/verify.cjs`
 - `node scripts/verify-v3-aircraft-transport.cjs`
@@ -45,3 +45,7 @@ Run:
 `.github/workflows/verify-v3-orbital.yml` runs source tests plus pinned Chromium and WebKit checks. Its native renderer check uses the proven headed Vulkan/SwiftShader configuration, independently observes native device/configure/draw/submit/completion calls, and checks screenshot pixels for actual cobalt geometry and dark structure. It covers responsive layouts, all four project destinations, keyboard activation, no-JavaScript content, reduced motion, Save Data, device loss, offscreen suspension and viewport changes. Artifacts contain screenshots and explicit test results.
 
 Browser correctness on software rendering is not a hardware performance benchmark. Native browser evidence and screenshot review are separate requirements from structural checks. No timing/speed claim should be made from instrumented CI.
+
+## Coordinated v3/v4 release gate
+
+The combined review candidate preserves the independently approved v4 tree at `9976d4321e890b4598e98d6f3070b393f9df3c07` byte-for-byte, including its own workflow. The v3 workflow checks that exact equality and uses that commit as the frozen isolation baseline, so root, v2, shared assets and the complete v4 implementation are protected while v3 changes are reviewed. It then runs both versions’ static and Chromium/WebKit suites on the same release SHA. V4’s optional stand-alone branch isolation variable is not used here because exact approved-tree equality is stronger. These frozen release gates apply to this integration review, not a restriction on future separately authorized versions.
