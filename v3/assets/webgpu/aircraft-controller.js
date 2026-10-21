@@ -6,7 +6,7 @@ import * as Atmosphere from './atmosphere.js';
 
 /* The accepted finite story controller, isolated from the page's r128 THREE.
  * Source geometry/poses stay intact; shader, color and queue paths are modern. */
-export function mount({ adapter, device, diagnostic, onFailure, preferences }) {
+export function mount({ adapter, device, diagnostic, onFailure, preferencesManaged = false }) {
   // Retain the adapter on an ordinary JS owner for the whole device lifetime.
   // Some Chromium/Dawn versions can drop the instance when its adapter is GC'd.
   // A GPUDevice host-object expando alone does not reliably preserve ownership.
@@ -44,7 +44,9 @@ export function mount({ adapter, device, diagnostic, onFailure, preferences }) {
   const showPoster = pose => { posterSources.forEach(source => { source.srcset = source.dataset[pose]; }); poster.src = poster.dataset[pose]; };
   const chapters = [...root.querySelectorAll('[data-aircraft-chapter]')], links = [...root.querySelectorAll('[data-aircraft-go]')];
   const bar = root.querySelector('[data-aircraft-progress]'), ids = chapters.map(chapter => chapter.id);
-  const reduced = preferences?.reduced || matchMedia('(prefers-reduced-motion: reduce)'), short = preferences?.short || matchMedia('(max-height:600px)');
+  // Poll separate query objects from the entry's event listeners: Chromium's
+  // matches getter can update a query before its pending change dispatch.
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)'), short = matchMedia('(max-height:600px)');
   const allowed = () => !reduced.matches && !short.matches && !navigator.connection?.saveData;
   const clamp = n => Math.max(0, Math.min(1, n));
   const smooth = n => { const p = clamp(n); return p * p * (3 - 2 * p); };
@@ -167,6 +169,7 @@ export function mount({ adapter, device, diagnostic, onFailure, preferences }) {
     }
   }
   function fallback(state = 'static') {
+    diagnostic.controllerFallbacks = (diagnostic.controllerFallbacks || 0) + 1;
     const restore = track && scrollY > rootTop + 200 ? Math.max(currentChapter, 0) : -1;
     if (background) { pauseLandingClock(); interruptLive(); }
     cancelAnimationFrame(frame); frame = 0; previousTime = 0; scrubTime = 0; renderedProgress = progress; landingDone = true;
@@ -777,6 +780,8 @@ export function mount({ adapter, device, diagnostic, onFailure, preferences }) {
   const storyLead = 420;
   const nearStory = () => { const bounds = root.getBoundingClientRect(); return bounds.top < innerHeight + storyLead && bounds.bottom > -storyLead; };
   const start = () => {
+    diagnostic.controllerPreferenceCalls = (diagnostic.controllerPreferenceCalls || 0) + 1;
+    diagnostic.controllerPreferences = {allowed:allowed(), failed, ready, hasTrack:Boolean(track), reduced:reduced.matches, short:short.matches, saveData:Boolean(navigator.connection?.saveData)};
     if (failed) return;
     if (!allowed()) { if (background) { publishAircraftPriority(); interruptBackground('paused-preferences'); } fallback(); return; }
     if (background) wakeBackground();
@@ -815,7 +820,7 @@ export function mount({ adapter, device, diagnostic, onFailure, preferences }) {
   }
   // The progressive entry owns browser preference events when mounted there.
   // Direct/native test mounts still have the standalone event contract.
-  if (!preferences) { listen(reduced, 'change', start); listen(short, 'change', start); listen(navigator.connection, 'change', start); }
+  if (!preferencesManaged) { listen(reduced, 'change', start); listen(short, 'change', start); listen(navigator.connection, 'change', start); }
   start();
   warmFallbackImages();
   return { gpuLifetime, updatePreferences: start, dispose() { gpuLifetime.adapter = null; lifetime.abort(); observers.forEach(observer => observer.disconnect()); cancelAnimationFrame(frame); atmosphere?.dispose(); environmentTarget?.dispose(); renderer?.dispose(); } };

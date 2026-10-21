@@ -304,28 +304,36 @@ async function aircraft(browser, label, mode, query, mobile = false) {
     }
     return { ...state, viewport, directAnchor, preferenceChecks, offscreenPacing, actualWebGPU: actualGPU, renderedCanvasSHA256: sha(visible), canvasHiddenSHA256: sha(hidden) };
   } catch (error) {
-    const failure = await page.evaluate(() => ({ url: location.href, dataset: { ...document.querySelector('[data-aircraft-hero]')?.dataset }, graphics: window.__v3QaGraphics, diagnostics: window.V3WebGPU?.snapshot?.(), errors: window.__v3QaGraphics?.validationErrors })).catch(() => null);
+    const failure = await page.evaluate(() => ({ url: location.href, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, visibility: document.visibilityState, classes: document.querySelector('[data-aircraft-hero]')?.className, dataset: { ...document.querySelector('[data-aircraft-hero]')?.dataset }, graphics: window.__v3QaGraphics, diagnostics: window.V3WebGPU?.snapshot?.(), errors: window.__v3QaGraphics?.validationErrors })).catch(() => null);
     fs.writeFileSync(path.join(output, `${engine}-${label}-failure.json`), JSON.stringify({ error: String(error.stack || error), failure }, null, 2));
     await capture(page, `${label}-failure`).catch(() => {});
     throw error;
   } finally { await context.close(); }
 }
 
-async function matchedPoses(browser, backend, reversedDepthDiagnostic = false) {
+async function matchedPoses(browser, backend, rasterBiasDiagnostic = 0) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   await prepare(context, 'normal');
-  const label = reversedDepthDiagnostic ? `${backend}-reversed-depth` : backend;
-  if (reversedDepthDiagnostic) {
-    const source = fs.readFileSync(path.join(root, 'v3/assets/webgpu/aircraft-controller.js'), 'utf8');
-    const original = 'new T.WebGPURenderer({ canvas, device,';
-    assert.ok(source.includes(original));
-    await context.route('**/webgpu/aircraft-controller.js*', route => route.fulfill({ contentType: 'text/javascript', body: source.replace(original, 'new T.WebGPURenderer({ canvas, device, reversedDepthBuffer: true,') }));
-  }
+  const label = rasterBiasDiagnostic ? `${backend}-raster-bias-${rasterBiasDiagnostic}` : backend;
   const page = await context.newPage(); page.setDefaultTimeout(timeout);
   try {
     await page.goto(`${base}/v3/?capture&renderer=${backend}#skylabs-aircraft`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(backend => window.__v3Aircraft?.flight?.telemetryReady && window.V3WebGPU?.ready && window.V3WebGPU.backend === backend, backend, { timeout });
     assert.equal(await page.evaluate(() => window.V3WebGPU.backend), backend);
+    if (rasterBiasDiagnostic) await page.evaluate(bias => {
+      const rig = window.__v3Aircraft;
+      rig.flight.group.traverse(node => {
+        if (!node.isMesh || !node.userData.filmSurface) return;
+        for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+          material.polygonOffset = true; material.polygonOffsetFactor = -1; material.polygonOffsetUnits = -bias; material.needsUpdate = true;
+        }
+      });
+      rig.scene.traverse(node => {
+        if (!node.material?.isShadowMaterial) return;
+        node.material.polygonOffset = true; node.material.polygonOffsetFactor = -1; node.material.polygonOffsetUnits = -4; node.material.needsUpdate = true;
+      });
+    }, rasterBiasDiagnostic);
+
     const poses = [];
     for (const [name, value] of [['assembled', 0], ['peel', .4], ['telemetry', 1]]) {
       const previous = await page.evaluate(value => {
@@ -344,40 +352,9 @@ async function matchedPoses(browser, backend, reversedDepthDiagnostic = false) {
       if (backend === 'webgpu') assert.ok(evidence.graphics.completedSubmits > 0 && evidence.graphics.aircraftWebglDraws === 0);
       await capture(page, `matched-${label}-${name}`);
       poses.push({ name, value, ...evidence });
-      if (backend === 'webgpu' && name === 'assembled' && !reversedDepthDiagnostic) {
-        // Diagnostic only: distinguish mesh overlap from shadow acne without
-        // changing the candidate's normal material/lighting configuration.
-        const previous = await page.evaluate(() => {
-          const frames = Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames);
-          window.__v3QaShadowReceivers = [];
-          window.__v3Aircraft.flight.group.traverse(node => { if (node.isMesh && node.receiveShadow) { window.__v3QaShadowReceivers.push(node); node.receiveShadow = false; } });
-          window.__v3Aircraft.seekProgress(0); return frames;
-        });
-        await page.waitForFunction(previous => Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames) > previous, previous, { timeout });
-        await capture(page, 'diagnostic-webgpu-assembled-no-self-shadow');
-        await page.evaluate(() => { window.__v3QaShadowReceivers.forEach(node => { node.receiveShadow = true; }); delete window.__v3QaShadowReceivers; });
-        for (const diagnostic of ['near-plane', 'film-offset']) {
-          const previous = await page.evaluate(diagnostic => {
-            const rig = window.__v3Aircraft, frames = Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames);
-            if (diagnostic === 'near-plane') {
-              const original = rig.flight.frame;
-              rig.flight.frame = function(camera, ...args) { const result = original.call(this, camera, ...args); camera.near = .4; camera.updateProjectionMatrix(); return result; };
-              window.__v3QaRestoreDepth = () => { rig.flight.frame = original; };
-            } else {
-              const materials = new Set(); rig.flight.group.traverse(node => { if (node.isMesh && node.userData.filmSurface) for (const material of Array.isArray(node.material) ? node.material : [node.material]) materials.add(material); });
-              const originals = [...materials].map(material => ({ material, enabled: material.polygonOffset, factor: material.polygonOffsetFactor, units: material.polygonOffsetUnits }));
-              originals.forEach(({ material }) => { material.polygonOffset = true; material.polygonOffsetFactor = -1; material.polygonOffsetUnits = -1; material.needsUpdate = true; });
-              window.__v3QaRestoreDepth = () => originals.forEach(({ material, enabled, factor, units }) => { material.polygonOffset = enabled; material.polygonOffsetFactor = factor; material.polygonOffsetUnits = units; material.needsUpdate = true; });
-            }
-            rig.seekProgress(0); return frames;
-          }, diagnostic);
-          await page.waitForFunction(previous => Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames) > previous, previous, { timeout });
-          await capture(page, `diagnostic-webgpu-assembled-${diagnostic}`);
-          await page.evaluate(() => { window.__v3QaRestoreDepth(); delete window.__v3QaRestoreDepth; });
-        }
-      }
+
     }
-    return { backend, reversedDepthDiagnostic, poses, limits: 'Identical viewport and source-geometry poses; lighting and material pipelines are intentionally not pixel-identical. Diagnostic captures explicitly modify test-only state and do not represent production defaults.' };
+    return { backend, rasterBiasDiagnostic, poses, limits: 'Identical viewport and source-geometry poses; lighting and material pipelines are intentionally not pixel-identical. Diagnostic captures explicitly modify test-only state and do not represent production defaults.' };
   } finally { await context.close(); }
 }
 
@@ -671,7 +648,7 @@ async function inspection(browser, forceCanvas, mobile = false) {
     if (engine === 'chromium') await test('mobile WebGPU renderer and changed preferences', () => aircraft(browser, 'webgpu-mobile', 'normal', 'renderer=webgpu', true));
     if (engine === 'chromium') await test('completed WebGPU assembled, peel and telemetry captures', () => matchedPoses(browser, 'webgpu'));
     if (engine === 'chromium') await test('matched WebGL assembled, peel and telemetry captures', () => matchedPoses(browser, 'webgl'));
-    if (engine === 'chromium') await test('diagnostic reversed-depth WebGPU captures', () => matchedPoses(browser, 'webgpu', true));
+    if (engine === 'chromium') for (const bias of [16, 64]) await test(`diagnostic film/contact-shadow raster bias ${bias}`, () => matchedPoses(browser, 'webgpu', bias));
     if (engine === 'chromium') await test('reported software adapters default to WebGL and Canvas2D without WebGPU allocation', () => softwareDefaults(browser));
     await test('forced WebGL renderer', () => aircraft(browser, 'forced-webgl', 'normal', 'renderer=webgl'));
     if (engine === 'webkit') await test('mobile WebGL renderer and changed preferences', () => aircraft(browser, 'webgl-mobile', 'normal', 'renderer=webgl', true));

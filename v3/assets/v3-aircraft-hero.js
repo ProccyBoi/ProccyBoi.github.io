@@ -82,11 +82,15 @@
         diagnostics.ready = false; diagnostics.backend = 'static'; diagnostics.state = 'static-preferences'; publish(); return;
       }
       diagnostics.state = 'initializing'; publish();
-      controller = module.mount({adapter, device, diagnostic:diagnostics, onFailure:fallback, preferences:{reduced, short}});
+      controller = module.mount({adapter, device, diagnostic:diagnostics, onFailure:fallback, preferencesManaged:true});
+      diagnostics.controllerAttached = Boolean(controller);
     } catch (error) { fallback(error); }
   }
   const near = () => {const bounds=root.getBoundingClientRect(); return bounds.top < innerHeight + 720 && bounds.bottom > -720;};
   function schedule() {
+    diagnostics.preferenceSchedules = (diagnostics.preferenceSchedules || 0) + 1;
+    diagnostics.controllerAttached = Boolean(controller);
+    diagnostics.loaderPreferences = {reduced:reduced.matches, short:short.matches, saveData:Boolean(navigator.connection?.saveData)};
     // One preference event authority owns the mounted renderer as well as
     // startup. A transition cannot leave only loader diagnostics updated.
     controller?.updatePreferences();
