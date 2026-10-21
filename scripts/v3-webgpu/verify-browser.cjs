@@ -252,7 +252,12 @@ async function aircraft(browser, label, mode, query, mobile = false) {
     assert.notEqual(sha(visible), sha(hidden), 'The visible aircraft canvas contributes real rendered pixels');
     for (const destination of ['1', '0', '1']) {
       await page.locator(`[data-aircraft-go="${destination}"]`).click();
-      await page.waitForTimeout(800);
+      await page.waitForFunction(value => {
+        const root = document.querySelector('[data-aircraft-hero]');
+        const progress = Number(root.dataset.aircraftRenderedProgress);
+        const settled = root.dataset.aircraftGPUPending !== 'true' && (root.dataset.webgpuBackend !== 'webgpu' || root.dataset.aircraftPresentedRevision === root.dataset.aircraftPoseRevision);
+        return settled && root.classList.contains('is-ready') && root.dataset.aircraftChapter === value && (value === '1' ? progress > .99 : progress < .02);
+      }, destination, { timeout });
       await checkRouteLeaks(page);
     }
     await capture(page, `${label}-telemetry`);
@@ -303,6 +308,50 @@ async function aircraft(browser, label, mode, query, mobile = false) {
     fs.writeFileSync(path.join(output, `${engine}-${label}-failure.json`), JSON.stringify({ error: String(error.stack || error), failure }, null, 2));
     await capture(page, `${label}-failure`).catch(() => {});
     throw error;
+  } finally { await context.close(); }
+}
+
+async function matchedPoses(browser, backend) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  await prepare(context, 'normal');
+  const page = await context.newPage(); page.setDefaultTimeout(timeout);
+  try {
+    await page.goto(`${base}/v3/?capture&renderer=${backend}#skylabs-aircraft`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(backend => window.__v3Aircraft?.flight?.telemetryReady && window.V3WebGPU?.ready && window.V3WebGPU.backend === backend, backend, { timeout });
+    assert.equal(await page.evaluate(() => window.V3WebGPU.backend), backend);
+    const poses = [];
+    for (const [name, value] of [['assembled', 0], ['peel', .4], ['telemetry', 1]]) {
+      const previous = await page.evaluate(value => {
+        const root = document.querySelector('[data-aircraft-hero]'), frames = Number(root.dataset.aircraftFrames || 0);
+        window.__v3Aircraft.seekProgress(value); return frames;
+      }, value);
+      await page.waitForFunction(({ previous, value }) => {
+        const root = document.querySelector('[data-aircraft-hero]');
+        return root.classList.contains('is-ready') && Number(root.dataset.aircraftFrames) > previous && Math.abs(Number(root.dataset.aircraftRenderedProgress) - value) < .000001;
+      }, { previous, value }, { timeout });
+      const evidence = await page.evaluate(() => {
+        const { camera } = window.__v3Aircraft;
+        return { dataset: { ...document.querySelector('[data-aircraft-hero]').dataset }, camera: { position: camera.position.toArray(), near: camera.near, far: camera.far, fov: camera.fov }, graphics: window.__v3QaGraphics };
+      });
+      assert.deepEqual(evidence.graphics.validationErrors, []); assert.deepEqual(evidence.graphics.queueErrors, []);
+      if (backend === 'webgpu') assert.ok(evidence.graphics.completedSubmits > 0 && evidence.graphics.aircraftWebglDraws === 0);
+      await capture(page, `matched-${backend}-${name}`);
+      poses.push({ name, value, ...evidence });
+      if (backend === 'webgpu' && name === 'assembled') {
+        // Diagnostic only: distinguish mesh overlap from shadow acne without
+        // changing the candidate's normal material/lighting configuration.
+        const previous = await page.evaluate(() => {
+          const frames = Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames);
+          window.__v3QaShadowReceivers = [];
+          window.__v3Aircraft.flight.group.traverse(node => { if (node.isMesh && node.receiveShadow) { window.__v3QaShadowReceivers.push(node); node.receiveShadow = false; } });
+          window.__v3Aircraft.seekProgress(0); return frames;
+        });
+        await page.waitForFunction(previous => Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFrames) > previous, previous, { timeout });
+        await capture(page, 'diagnostic-webgpu-assembled-no-self-shadow');
+        await page.evaluate(() => { window.__v3QaShadowReceivers.forEach(node => { node.receiveShadow = true; }); delete window.__v3QaShadowReceivers; });
+      }
+    }
+    return { backend, poses, limits: 'Identical viewport and source-geometry poses; lighting and material pipelines are intentionally not pixel-identical.' };
   } finally { await context.close(); }
 }
 
@@ -571,6 +620,8 @@ async function inspection(browser, forceCanvas, mobile = false) {
     report.launchConfig = launchConfig;
     if (engine === 'chromium') await test('real WebGPU renderer', () => aircraft(browser, 'webgpu', 'normal', 'renderer=webgpu'));
     if (engine === 'chromium') await test('mobile WebGPU renderer and changed preferences', () => aircraft(browser, 'webgpu-mobile', 'normal', 'renderer=webgpu', true));
+    if (engine === 'chromium') await test('completed WebGPU assembled, peel and telemetry captures', () => matchedPoses(browser, 'webgpu'));
+    if (engine === 'chromium') await test('matched WebGL assembled, peel and telemetry captures', () => matchedPoses(browser, 'webgl'));
     await test('forced WebGL renderer', () => aircraft(browser, 'forced-webgl', 'normal', 'renderer=webgl'));
     if (engine === 'webkit') await test('mobile WebGL renderer and changed preferences', () => aircraft(browser, 'webgl-mobile', 'normal', 'renderer=webgl', true));
     await test('missing WebGPU fallback', () => aircraft(browser, 'missing-webgpu', 'no-gpu', 'renderer=webgpu'));
