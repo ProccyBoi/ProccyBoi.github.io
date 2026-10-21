@@ -1,0 +1,15 @@
+/* The workshop's reading rooms retain real project explorers and their controls.
+   Only v3's presentation changes; source models and all v2 styles stay untouched. */
+:root{--v2-bg:#171a1e;--v2-panel:#242d3b;--v2-raised:#303949;--v2-ink:#e9e9df;--v2-muted:#b0b5be;--v2-line:#424b5a;--v2-accent:#8ea1ff;--v2-on-accent:#171a1e;color-scheme:dark}
+body.v2:not(.v3-product){--v2-accent:#8ea1ff;--v2-copper:#8ea1ff;--v2-on-accent:#171a1e}
+.v2-header{background:#e9e9df;border-color:#b9bcb7;color:#171a1e}
+.v2-header .v2-brand{color:#2349ed;font-weight:650;letter-spacing:-.05em}
+.v2-header .v2-brand:before{content:'↗';margin-right:14px;font-size:28px;vertical-align:-2px}
+.v2-header .v2-nav a:hover,.v2-header .v2-nav a[aria-current=page]{color:#2349ed}
+.v2-header .v2-nav[data-indicator]:after{background:#2349ed}
+.v2-header :focus-visible{outline-color:#2349ed}
+.v2-case .project-hero-copy h1,.v2-about .about-hero h1{letter-spacing:-.055em;font-weight:550}
+.v2-case-nav{background:#171a1e}
+.v2 .button-primary{background:#e9e9df;color:#171a1e}
+.v2-footer{border-top:1px solid #424b5a}
+@media(max-width:540px){.v2-ready .v2-header .v2-nav{background:#e9e9df}.v2-header .v2-menu{border-color:#b9bcb7}.v2-header .v2-brand:before{font-size:22px;margin-right:9px}}

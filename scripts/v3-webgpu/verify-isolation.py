@@ -24,7 +24,7 @@ ORIGIN = "https://proccyboi.github.io"
 SUPPORT = {
     "scripts/build-v3-pages.py", "scripts/audit-v3.py",
     ".github/workflows/deploy-pages.yml", ".github/workflows/verify-v3-webgpu.yml",
-    "docs/v3-webgpu.md",
+    "docs/v3-webgpu.md", ".github/workflows/verify-v3-orbital.yml",
 }
 
 
@@ -33,7 +33,7 @@ def git(*args: str) -> bytes:
 
 
 def allowed(path: str) -> bool:
-    return path.startswith(("v3/", "scripts/v3-webgpu/")) or path in SUPPORT
+    return path.startswith(("v3/", "scripts/v3-webgpu/", "scripts/v3-orbital/")) or path in SUPPORT
 
 
 def mapped(value: str) -> str:
