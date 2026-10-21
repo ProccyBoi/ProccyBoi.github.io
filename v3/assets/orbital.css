@@ -9,3 +9,8 @@
 .kiku-art{background:#f1f0ea}.kiku-art img{mix-blend-mode:normal}
 .site-head nav a,.render-controls button,.project-subroutes a,.book-link{min-height:44px;display:inline-flex;align-items:center}
 .site-footer a{display:inline-flex;align-items:center;min-height:44px}
+/* On phones the instrument owns the lower half, never the biography band. */
+@media(max-width:700px){
+ .orbital-instrument{left:0;right:0;top:40%;bottom:8%}
+ .instrument-coordinate,.instrument-tag,.instrument-cross{display:none}
+}
