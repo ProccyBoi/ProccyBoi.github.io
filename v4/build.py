@@ -15,7 +15,10 @@ def image(img, eager=False, sizes='100vw',cls=''):
  src=img['src']; width=img.get('width',1600); height=img.get('height',1200)
  small=src.replace('-1920.','-960.')
  srcset=f' srcset="{small} 960w, {src} 1920w" sizes="{sizes}"' if small!=src and (ROOT.parent/small.lstrip('/')).is_file() else ''
- return f'<img class="{cls}" src="{e(src)}"{srcset} width="{width}" height="{height}" alt="{e(img["alt"])}" loading="{"eager" if eager else "lazy"}" decoding="async"'+(' fetchpriority="high"' if eager else '')+'>'
+ markup = f'<img class="{cls}" src="{e(src)}"{srcset} width="{width}" height="{height}" alt="{e(img["alt"])}" loading="{"eager" if eager else "lazy"}" decoding="async"'+(' fetchpriority="high"' if eager else '')+'>'
+ if src=='/assets/images/v3/skylabs-stopped.webp':
+  return '<picture><source media="(max-width:600px)" srcset="/assets/images/v3/skylabs-stopped-mobile.webp" width="390" height="768">'+markup+'</picture>'
+ return markup
 def nav(active=''):
  items=[('/v4/#work','Selected work'),('/v4/projects/','Project index'),('/v4/about/','About')]
  links=''.join(f'<a href="{u}"'+(' aria-current="page"' if active==u else '')+f'>{l}</a>' for u,l in items)

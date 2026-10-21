@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '22'
       - run: |
-          python3 v4/tests/static.py
+          V4_ISOLATION_BASE=e21ffc8a18c27b84abcc40fb6a3efe9132ba8391 python3 v4/tests/static.py
           node --check v4/assets/site.js
   browser:
     needs: source

@@ -17,7 +17,8 @@
   const menu = $('#navigation-dialog'), toggle=$('.menu-toggle');
   if(menu && toggle && typeof menu.showModal==='function') {
     toggle.hidden=false;trapFocus(menu);
-    const close=()=>menu.open&&menu.close();
+    const close=()=>{if(menu.open){toggle.setAttribute('aria-expanded','false');menu.close();}};
+    menu.addEventListener('cancel',event=>{event.preventDefault();close();});
     toggle.addEventListener('click',()=>{ if(menu.open) close(); else { menu.showModal();toggle.setAttribute('aria-expanded','true'); } });
     $('.menu-close',menu).addEventListener('click',close);
     menu.addEventListener('click',event=>{if(event.target.closest('a'))close();});

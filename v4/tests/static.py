@@ -1,7 +1,7 @@
 from pathlib import Path
 from html.parser import HTMLParser
 from urllib.parse import urljoin,urlparse,unquote
-import json,subprocess,hashlib
+import json,subprocess,os
 ROOT=Path(__file__).resolve().parents[2]; V4=ROOT/'v4'
 class Page(HTMLParser):
  def __init__(self,text):super().__init__();self.tags=[];self.feed(text)
@@ -34,7 +34,8 @@ for f,max_bytes in [('assets/site.js',12000),('assets/site.css',40000)]:assert (
 assert 'requestAnimationFrame' in (V4/'assets/site.js').read_text()
 subprocess.run(['python3',str(V4/'build.py'),'--check'],check=True)
 # No modifications to root, v2, shared assets, old scripts or v3.
-changes=subprocess.check_output(['git','diff','e21ffc8a18c27b84abcc40fb6a3efe9132ba8391','--name-only'],cwd=ROOT,text=True).splitlines()
-assert all(p.startswith('v4/') or p=='.github/workflows/verify-v4-cinematic.yml' for p in changes),changes
+if baseline:=os.environ.get('V4_ISOLATION_BASE'):
+ changes=subprocess.check_output(['git','diff',baseline,'--name-only'],cwd=ROOT,text=True).splitlines()
+ assert all(p.startswith('v4/') or p=='.github/workflows/verify-v4-cinematic.yml' for p in changes),changes
 if problems:raise SystemExit('\n'.join(problems))
-print(f'PASS: {len(pages)} pages, all local links/assets/fragments, project inventory, source budgets and isolation.')
+print(f'PASS: {len(pages)} pages, all local links/assets/fragments, project inventory and source budgets; optional branch isolation.')
