@@ -6,19 +6,19 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const base=(process.env.V3_BASE_URL||'http://127.0.0.1:8080').replace(/\/$/,''),out=process.env.V3_PROFILE_OUT||'/tmp/v3-webgpu-profile';
 fs.mkdirSync(out,{recursive:true});
-const report={started:new Date().toISOString(),viewport:{width:1440,height:900},deviceScaleFactor:1,adapter:'SwiftShader software requested; inspect run diagnostics',method:'Same runner, direct aircraft anchor, uninstrumented native rendering, cold browser-context cache plus warm reload; deterministic completed-pose response timings.',limits:['Loopback HTTP is not a real network benchmark.','Software GPU numbers do not predict physical devices.','Lighting and material pipelines differ in the new renderer; this is not a pixel-identical performance comparison.','Pose response latency includes requestAnimationFrame scheduling, renderer work and asynchronous queue/fence completion; it is not an isolated GPU timer.'],runs:[],failures:[]};
+const report={started:new Date().toISOString(),viewport:{width:1440,height:900},deviceScaleFactor:1,adapter:'SwiftShader software requested; inspect run diagnostics',method:'Same runner, direct aircraft anchor, uninstrumented native rendering, initial and repeated uncached page loads (request interception disables HTTP cache); deterministic completed-pose response timings.',limits:['Loopback HTTP is not a real network benchmark.','Both loads are uncached because external-request blocking uses Playwright routing; repeated load is not a warm-cache measurement.','Software GPU numbers do not predict physical devices.','Lighting and material pipelines differ in the new renderer; this is not a pixel-identical performance comparison.','Pose response latency includes requestAnimationFrame scheduling, renderer work and asynchronous queue/fence completion; it is not an isolated GPU timer.'],runs:[],failures:[]};
 const save=()=>fs.writeFileSync(path.join(out,'profile.json'),JSON.stringify(report,null,2)+'\n');
 const percentile=(values,p)=>{const s=[...values].sort((a,b)=>a-b);return s[Math.min(s.length-1,Math.floor(s.length*p))]??null;};
 async function run(browser,variant,round){
  const context=await browser.newContext({viewport:report.viewport,deviceScaleFactor:1});
  const page=await context.newPage();page.setDefaultTimeout(180000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await context.route('**/*',route=>new URL(route.request().url()).origin===new URL(base).origin?route.continue():route.abort());
- const record={variant:variant.name,round,cold:null,warm:null,errors};
+ const record={variant:variant.name,round,initialUncached:null,repeatUncached:null,errors};
  try{
-  for(const cache of ['cold','warm']){
+  for(const cache of ['initialUncached','repeatUncached']){
    const started=Date.now();
    const url=base+variant.route+'?capture&'+variant.query+'#skylabs-aircraft';
-   if(cache==='cold')await page.goto(url,{waitUntil:'domcontentloaded'});else await page.reload({waitUntil:'domcontentloaded'});
+   if(cache==='initialUncached')await page.goto(url,{waitUntil:'domcontentloaded'});else await page.reload({waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>Number(document.querySelector('[data-aircraft-hero]')?.dataset.aircraftFrames||0)>0,null,{timeout:180000});
    const usable=await page.evaluate(()=>({at:performance.now(),firstLive:Number(document.querySelector('[data-aircraft-hero]').dataset.aircraftFirstLiveMs||0),state:{...document.querySelector('[data-aircraft-hero]').dataset},diagnostic:window.V3WebGPU?.snapshot?.()||null,resources:performance.getEntriesByType('resource').filter(x=>/script|fetch|xmlhttprequest/.test(x.initiatorType)).map(x=>({name:new URL(x.name).pathname,transferSize:x.transferSize,encodedBodySize:x.encodedBodySize,duration:x.duration})),navigation:performance.getEntriesByType('navigation').map(x=>({domContentLoaded:x.domContentLoadedEventEnd,load:x.loadEventEnd}))}));
    if(variant.name==='v3-webgpu'){assert.equal(usable.diagnostic?.backend,'webgpu','WebGPU profile may not silently measure fallback');assert.equal(usable.diagnostic?.ready,true);assert.ok(usable.diagnostic?.completedFrames>0);}

@@ -79,7 +79,7 @@ jobs:
       - run: |
           npm install --no-save --package-lock=false playwright@1.62.1
           npx playwright install --with-deps chromium
-      - name: Separate uninstrumented same-runner startup and pose timing
+      - name: Separate uninstrumented uncached startup and pose timing
         env:
           V3_PROFILE_OUT: /tmp/v3-webgpu-profile
           V3_BASE_URL: http://127.0.0.1:8080
