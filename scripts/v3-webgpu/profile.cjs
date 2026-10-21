@@ -38,7 +38,8 @@ async function run(browser,variant,round){
  finally{report.runs.push(record);save();await context.close();}
 }
 (async()=>{
- const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-unsafe-webgpu']});report.browserVersion=browser.version();
+ const launchConfig=require('./browser-config.cjs').chromiumConfig();report.launchConfig=launchConfig;
+ const browser=await chromium.launch(launchConfig);report.browserVersion=browser.version();
  const variants=[{name:'v2-webgl',route:'/v2/',query:''},{name:'v3-webgl',route:'/v3/',query:'renderer=webgl'},{name:'v3-webgpu',route:'/v3/',query:'renderer=webgpu'}];
  try{for(let round=0;round<2;round++)for(const variant of round?[...variants].reverse():variants)await run(browser,variant,round+1);}finally{await browser.close();report.finished=new Date().toISOString();report.passed=report.failures.length===0;save();}
  console.log(JSON.stringify(report,null,2));if(!report.passed)process.exitCode=1;

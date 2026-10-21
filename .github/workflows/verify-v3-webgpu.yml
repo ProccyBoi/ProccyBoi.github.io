@@ -46,6 +46,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.62.1
           npx playwright install --with-deps ${{ matrix.engine }}
+          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers xvfb xauth
       - name: Run actual backend, fallback, responsive and interaction checks
         env:
           V3_QA_OUT: /tmp/v3-webgpu-evidence
@@ -56,8 +57,7 @@ jobs:
           trap 'kill $!' EXIT
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
           if [ '${{ matrix.engine }}' = chromium ]; then
-            DEBUG=pw:browser node scripts/v3-webgpu/diagnose-backend.cjs
-            node scripts/v3-webgpu/verify-browser.cjs --require-webgpu
+            xvfb-run -a sh -c 'DEBUG=pw:browser node scripts/v3-webgpu/diagnose-backend.cjs --require-ci-config && node scripts/v3-webgpu/verify-browser.cjs --require-webgpu'
           else
             node scripts/v3-webgpu/verify-browser.cjs --webkit
           fi
@@ -81,6 +81,7 @@ jobs:
       - run: |
           npm install --no-save --package-lock=false playwright@1.62.1
           npx playwright install --with-deps chromium
+          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers xvfb xauth
       - name: Separate uninstrumented uncached startup and pose timing
         env:
           V3_PROFILE_OUT: /tmp/v3-webgpu-profile
@@ -89,7 +90,7 @@ jobs:
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v3-profile-server.log 2>&1 &
           trap 'kill $!' EXIT
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
-          node scripts/v3-webgpu/profile.cjs
+          xvfb-run -a node scripts/v3-webgpu/profile.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

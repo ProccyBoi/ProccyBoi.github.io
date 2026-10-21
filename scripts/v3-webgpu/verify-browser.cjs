@@ -564,10 +564,11 @@ async function inspection(browser, forceCanvas, mobile = false) {
 
 (async () => {
   const playwright = require('playwright');
-  const args = process.env.V3_BROWSER_ARGS ? JSON.parse(process.env.V3_BROWSER_ARGS) : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-unsafe-webgpu', '--js-flags=--expose-gc'];
-  const browser = await playwright[engine].launch({ headless: true, ...(engine === 'chromium' ? { executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args } : {}) });
+  const launchConfig = engine === 'chromium' ? require('./browser-config.cjs').chromiumConfig({ exposeGC: true }) : { headless: true };
+  const browser = await playwright[engine].launch(launchConfig);
   try {
     report.browserVersion = browser.version();
+    report.launchConfig = launchConfig;
     if (engine === 'chromium') await test('real WebGPU renderer', () => aircraft(browser, 'webgpu', 'normal', 'renderer=webgpu'));
     if (engine === 'chromium') await test('mobile WebGPU renderer and changed preferences', () => aircraft(browser, 'webgpu-mobile', 'normal', 'renderer=webgpu', true));
     await test('forced WebGL renderer', () => aircraft(browser, 'forced-webgl', 'normal', 'renderer=webgl'));
