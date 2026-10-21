@@ -4,7 +4,7 @@
 body.v2:not(.v3-product){--v2-accent:#8ea1ff;--v2-copper:#8ea1ff;--v2-on-accent:#171a1e}
 .v2-header{background:#e9e9df;border-color:#b9bcb7;color:#171a1e}
 .v2-header .v2-brand{color:#2349ed;font-weight:650;letter-spacing:-.05em}
-.v2-header .v2-brand:before{content:'↗';margin-right:14px;font-size:28px;vertical-align:-2px}
+.v2-header .v2-brand:before{content:'';display:inline-block;width:.85em;height:.85em;margin-right:14px;font-size:28px;vertical-align:-2px;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 13 13 3M3 3h10v10' fill='none' stroke='black' stroke-width='1.8'/%3E%3C/svg%3E") center/contain no-repeat}
 .v2-header .v2-nav a:hover,.v2-header .v2-nav a[aria-current=page]{color:#2349ed}
 .v2-header .v2-nav[data-indicator]:after{background:#2349ed}
 .v2-header :focus-visible{outline-color:#2349ed}

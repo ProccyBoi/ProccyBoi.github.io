@@ -13,6 +13,10 @@ for p in pages:
  if len(ids)!=len(set(ids)):problems.append(f'{rel}: duplicate IDs')
  if sum(t=='h1' for t,a in parsed.tags)!=1:problems.append(f'{rel}: expected one h1')
  if 'id="main"' not in raw or 'class="skip"' not in raw:problems.append(f'{rel}: skip link missing')
+ if '↗' in raw:problems.append(f'{rel}: font-dependent diagonal arrow')
+ if 'class="icon-arrow"' not in raw:problems.append(f'{rel}: vector arrow missing')
+ for tag,a in parsed.tags:
+  if tag=='svg' and (a.get('aria-hidden')!='true' or a.get('focusable')!='false'):problems.append(f'{rel}: decorative icon semantics')
  if 'Anduril' in raw:problems.append(f'{rel}: reference branding leaked into site')
  base='https://proccyboi.github.io/'+str(rel).replace('index.html','')
  for tag,attrs in parsed.tags:

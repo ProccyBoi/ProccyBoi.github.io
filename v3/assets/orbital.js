@@ -29,7 +29,9 @@ function selectScene(index) {
   document.querySelector('[data-brief-text]').textContent = scene.brief;
   const link = document.querySelector('[data-brief-link]');
   link.href = scene.link;
-  link.replaceChildren(`Enter ${scene.title} `, Object.assign(document.createElement('span'), {textContent: '↗'}));
+  const arrow = document.createElement('span');
+  arrow.innerHTML = '<svg class="icon-arrow" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 13 13 3M3 3h10v10"/></svg>';
+  link.replaceChildren(`Enter ${scene.title} `, arrow);
   link.lastElementChild.setAttribute('aria-hidden', 'true');
   document.querySelector('[data-scene-announcement]').textContent = `${scene.title} scene selected. ${scene.brief}`;
   controller?.setMode(scene.mode);

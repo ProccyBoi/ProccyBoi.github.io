@@ -36,7 +36,7 @@ Earlier WebGPU aircraft/Kiku modules remain available for existing project explo
 Run:
 
 - `python3 scripts/build-v3-pages.py --check`
-- `python3 scripts/v3-webgpu/verify-isolation.py --base 9976d4321e890b4598e98d6f3070b393f9df3c07`
+- `python3 scripts/v3-webgpu/verify-isolation.py --base 5ed8c5ef9ecedb0e2bdd2d92931da8d4f1a6af44`
 - `python3 scripts/audit-v2.py`
 - `node scripts/kiku-simulator/verify.cjs`
 - `node scripts/verify-v3-aircraft-transport.cjs`
@@ -48,4 +48,4 @@ Browser correctness on software rendering is not a hardware performance benchmar
 
 ## Coordinated v3/v4 release gate
 
-The combined review candidate preserves the independently approved v4 tree at `9976d4321e890b4598e98d6f3070b393f9df3c07` byte-for-byte, including its own workflow. The v3 workflow checks that exact equality and uses that commit as the frozen isolation baseline, so root, v2, shared assets and the complete v4 implementation are protected while v3 changes are reviewed. It then runs both versions’ static and Chromium/WebKit suites on the same release SHA. V4’s optional stand-alone branch isolation variable is not used here because exact approved-tree equality is stronger. These frozen release gates apply to this integration review, not a restriction on future separately authorized versions.
+The combined review candidate preserves the independently approved v4 tree at `5ed8c5ef9ecedb0e2bdd2d92931da8d4f1a6af44` byte-for-byte, including its own workflow. The v3 workflow checks that exact equality and uses that commit as the frozen isolation baseline, so root, v2, shared assets and the complete v4 implementation are protected while v3 changes are reviewed. It then runs both versions’ static and Chromium/WebKit suites on the same release SHA. V4’s optional stand-alone branch isolation variable is not used here because exact approved-tree equality is stronger. These frozen release gates apply to this integration review, not a restriction on future separately authorized versions.

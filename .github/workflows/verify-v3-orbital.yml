@@ -1,7 +1,7 @@
 name: Verify v3 Orbital and v4 Portfolio
 on:
   push:
-    branches: [feat/v3-orbital-workshop]
+    branches: [feat/v3-orbital-workshop, fix/portfolio-arrow-compatibility]
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,8 +23,8 @@ jobs:
         run: |
           python3 scripts/build-v3-pages.py --check
           # Freeze the independently approved v4 tree; only v3/support deltas may differ.
-          git diff --exit-code 9976d4321e890b4598e98d6f3070b393f9df3c07 HEAD -- v4/ .github/workflows/verify-v4-cinematic.yml
-          python3 scripts/v3-webgpu/verify-isolation.py --base 9976d4321e890b4598e98d6f3070b393f9df3c07
+          git diff --exit-code 5ed8c5ef9ecedb0e2bdd2d92931da8d4f1a6af44 HEAD -- v4/ .github/workflows/verify-v4-cinematic.yml
+          python3 scripts/v3-webgpu/verify-isolation.py --base 5ed8c5ef9ecedb0e2bdd2d92931da8d4f1a6af44
           python3 v4/tests/static.py
           node --input-type=module --check < v4/assets/site.js
           python3 scripts/audit-v2.py
