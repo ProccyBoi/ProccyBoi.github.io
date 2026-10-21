@@ -33,7 +33,7 @@ function nativeGraphicsObserver(mode) {
   const stats = window.__v3QaGraphics = {
     observerErrors: [], adapterRequests: 0, adapters: [], devices: 0, adapterUnavailable: 0,
     webgpuConfigured: 0, aircraftWebgpuConfigured: 0, inspectionWebgpuConfigured: 0,
-    textures: 0, aircraftTextures: 0, inspectionTextures: 0,
+    destroyCalls: [], deviceLosses: [], textures: 0, aircraftTextures: 0, inspectionTextures: 0,
     renderPasses: 0, drawCalls: 0, submits: 0, completedSubmits: 0, destroyedQueueCompletions: 0, queueErrors: [], validationErrors: [],
     webglContexts: 0, aircraftWebglContexts: 0, webglDraws: 0, aircraftWebglDraws: 0,
   };
@@ -86,10 +86,11 @@ function nativeGraphicsObserver(mode) {
   });
   wrap(window.GPUAdapter?.prototype, 'requestDevice', (_, args, result) => result.then(device => {
     stats.devices++;
+    device.lost.then(info => stats.deviceLosses.push({ reason: info.reason, message: info.message }));
     queueOwners.set(device.queue, device);
     device.addEventListener('uncapturederror', event => stats.validationErrors.push(event.error?.message || String(event.error)));
   }, error => stats.queueErrors.push(String(error))));
-  wrap(window.GPUDevice?.prototype, 'destroy', device => destroyedDevices.add(device));
+  wrap(window.GPUDevice?.prototype, 'destroy', device => { destroyedDevices.add(device); stats.destroyCalls.push(new Error('GPUDevice.destroy caller').stack); });
   wrap(window.GPUCanvasContext?.prototype, 'configure', (context, args) => {
     canvasDevices.set(context.canvas, args[0].device);
     stats.webgpuConfigured++;
@@ -165,7 +166,7 @@ async function prepare(context, mode = 'normal') {
     return route.abort();
   });
   context.on('page', page => {
-    page.on('pageerror', error => report.browserErrors.push({ url: page.url(), message: error.message }));
+    page.on('pageerror', error => report.browserErrors.push({ url: page.url(), message: error.message, stack: error.stack }));
     page.on('response', response => { if (response.url().startsWith(origin + '/') && response.status() >= 400) report.failedLocalResponses.push({ status: response.status(), url: response.url() }); });
   });
   return mock;
@@ -542,6 +543,10 @@ async function inspection(browser, forceCanvas, mobile = false) {
     assert.deepEqual(graphics.queueErrors, []);
     await checkOverflow(page); await checkRouteLeaks(page);
     return { forceCanvas, mobile, initial, recoveredAfterLoss, graphics, screenshotSHA256: sha(displayed) };
+  } catch (error) {
+    const failure = await page.evaluate(() => ({ inspection: window.V3Inspection, graphics: window.__v3QaGraphics })).catch(() => null);
+    fs.writeFileSync(path.join(output, `${engine}-inspection-failure.json`), JSON.stringify({ error: String(error.stack || error), failure }, null, 2));
+    throw error;
   } finally { await context.close(); }
 }
 

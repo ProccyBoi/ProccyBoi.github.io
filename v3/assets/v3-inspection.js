@@ -9,7 +9,7 @@
   if (!source || typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
 
   const forceCanvas = new URLSearchParams(location.search).get('renderer') === 'webgl';
-  const state = { backend: 'idle', readiness: 'idle', renderedFrames: 0, open: false, zoom: 2.5, x: .48, y: .49, lastBackend: null };
+  const state = { backend: 'idle', readiness: 'idle', renderedFrames: 0, open: false, zoom: 2.5, x: .48, y: .49, lastBackend: null, fallbackReason: null };
   let renderer = null, frame = 0, epoch = 0, startupTimer = 0, observer = null, returnFocus = null, oldOverflow = '', oldPadding = '';
   let imageReady = false, touchStart = null, backgroundPointerDown = false;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -208,7 +208,7 @@
         },
         destroy
       };
-    } catch (error) { destroy(); throw error; }
+    } catch (error) { state.fallbackReason = String(error?.message || error); destroy(); throw error; }
   }
 
   function requestFrame() {
