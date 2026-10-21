@@ -75,7 +75,7 @@
     },
     "lab": "/v2/projects/skylabs/#explore",
     "hero": {
-      "src": "/assets/images/v3-product/skylabs-stopped.webp",
+      "src": "/assets/images/v3/skylabs-stopped.webp",
       "alt": "CAD illustration of the Skylabs trainer aircraft",
       "width": 1600,
       "height": 1000
