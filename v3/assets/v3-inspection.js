@@ -8,8 +8,9 @@
   const source = card?.querySelector('.v2-project-image img');
   if (!source || typeof HTMLDialogElement === 'undefined' || !HTMLDialogElement.prototype.showModal) return;
 
-  const forceCanvas = new URLSearchParams(location.search).get('renderer') === 'webgl';
-  const state = { backend: 'idle', readiness: 'idle', renderedFrames: 0, open: false, zoom: 2.5, x: .48, y: .49, lastBackend: null, fallbackReason: null };
+  const requested = new URLSearchParams(location.search).get('renderer') || 'auto';
+  const forceCanvas = requested === 'webgl';
+  const state = { backend: 'idle', readiness: 'idle', renderedFrames: 0, open: false, zoom: 2.5, x: .48, y: .49, lastBackend: null, adapterClass: 'unknown', fallbackReason: null };
   let renderer = null, frame = 0, epoch = 0, startupTimer = 0, observer = null, returnFocus = null, oldOverflow = '', oldPadding = '';
   let imageReady = false, touchStart = null, backgroundPointerDown = false;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -170,6 +171,10 @@
     try {
       const adapter = gpuLifetime.adapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
       if (!adapter) throw new Error('No WebGPU adapter');
+      const info = adapter.info || (adapter.requestAdapterInfo ? await adapter.requestAdapterInfo() : {});
+      const software = adapter.isFallbackAdapter || info.isFallbackAdapter || /swiftshader|llvmpipe|software|lavapipe/i.test([info.vendor, info.architecture, info.device, info.description].join(' '));
+      state.adapterClass = software ? 'software' : info.vendor || info.device || info.description ? 'hardware-reported' : 'unknown';
+      if (requested !== 'webgpu' && software) throw new Error('Software WebGPU adapter; preferring Canvas2D');
       if (generation !== epoch || !dialog.open) throw new Error('Inspection closed');
       device = await adapter.requestDevice();
       device.lost.then(() => {

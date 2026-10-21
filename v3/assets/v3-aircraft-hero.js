@@ -66,6 +66,11 @@
       diagnostics.adapter = {vendor:info.vendor || '', architecture:info.architecture || '', device:info.device || '', description:info.description || '', isFallbackAdapter:Boolean(adapter.isFallbackAdapter || info.isFallbackAdapter)};
       const description = Object.values(diagnostics.adapter).join(' ');
       diagnostics.adapterClass = diagnostics.adapter.isFallbackAdapter || /swiftshader|llvmpipe|software|lavapipe/i.test(description) ? 'software' : info.vendor || info.device || info.description ? 'hardware-reported' : 'unknown';
+      // Same-runner measurements found the software WebGPU path slower. Keep
+      // it explicitly testable, but do not impose it on normal visitors.
+      if (requested !== 'webgpu' && diagnostics.adapterClass === 'software') {
+        fallback('Software WebGPU adapter; preferring legacy WebGL'); return;
+      }
       diagnostics.state = 'loading-module'; publish();
       // Feature detection happens before the modern renderer/module payload.
       const module = await import('./webgpu/aircraft-controller.js?v=20261019');
@@ -77,12 +82,16 @@
         diagnostics.ready = false; diagnostics.backend = 'static'; diagnostics.state = 'static-preferences'; publish(); return;
       }
       diagnostics.state = 'initializing'; publish();
-      controller = module.mount({adapter, device, diagnostic:diagnostics, onFailure:fallback});
+      controller = module.mount({adapter, device, diagnostic:diagnostics, onFailure:fallback, preferences:{reduced, short}});
     } catch (error) { fallback(error); }
   }
   const near = () => {const bounds=root.getBoundingClientRect(); return bounds.top < innerHeight + 720 && bounds.bottom > -720;};
   function schedule() {
+    // One preference event authority owns the mounted renderer as well as
+    // startup. A transition cannot leave only loader diagnostics updated.
+    controller?.updatePreferences();
     if (!allowed()) {diagnostics.ready=false; diagnostics.state='static-preferences'; diagnostics.backend='static'; publish(); return;}
+    if (controller) return;
     if (requested === 'webgl') {fallback('Forced legacy WebGL comparison'); return;}
     if (!isSecureContext || !navigator.gpu) {fallback(!isSecureContext ? 'WebGPU requires a secure context' : 'WebGPU API unavailable'); return;}
     if (near() || /^#skylabs-(aircraft|telemetry)$/.test(location.hash)) start();

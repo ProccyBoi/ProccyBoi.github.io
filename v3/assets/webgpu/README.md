@@ -5,6 +5,7 @@ This directory is an experiment layered over the fresh v2 copy. Root `assets/` a
 ## Renderer selection and evidence
 
 - Normal v3 visits progressively try WebGPU near the aircraft (720px proximity), or immediately for a direct aircraft/telemetry fragment. The modern JS is not imported until an adapter exists.
+- Explicitly reported software adapters use the legacy renderer on normal visits, before importing modern Three or allocating a WebGPU device. The measured software WebGPU path was slower; `?renderer=webgpu` overrides this choice for honest experimental validation. The inspection lens likewise chooses Canvas2D for software adapters unless explicitly forced.
 - `?renderer=webgpu` explicitly exercises this same real WebGPU path.
 - `?renderer=webgl` loads `legacy-aircraft-hero.js` without importing modern Three.
 - Unsupported APIs/adapters, import/device/scene/shader failures and device loss restore a clean canvas and the isolated legacy WebGL controller. The photographs remain the final fallback.

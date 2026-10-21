@@ -70,8 +70,103 @@ async function test(preference, interruptedAt) {
   assert.equal(observers.filter(observer => observer.active).length, 0, 'Mounted startup releases proximity observation');
   console.log(`PASS interrupted ${interruptedAt}, restore away, proximity restart: ${preference}`);
 }
+async function softwareSelection(requested, info, expectedFallback, isFallbackAdapter = false) {
+  let mounted = 0, devices = 0, imports = 0, scripts = 0;
+  const root = { dataset: {}, classList: { remove() {} }, getBoundingClientRect: () => ({ top: 0, bottom: 900 }), querySelector: () => ({ cloneNode: () => ({ style: {} }), replaceWith() {} }) };
+  const window = {};
+  const adapter = { info, isFallbackAdapter, features: [], requestDevice: async () => { devices++; return { destroy() {} }; } };
+  const context = { window, document: { querySelector: () => root, createElement: () => ({}), head: { append: () => { scripts++; } } },
+    location: { search: requested ? `?renderer=${requested}` : '', hash: '#skylabs-aircraft' },
+    matchMedia: () => ({ matches: false, addEventListener() {} }), URLSearchParams, innerHeight: 900, isSecureContext: true,
+    navigator: { connection: { addEventListener() {} }, gpu: { requestAdapter: async () => adapter } },
+    MutationObserver: class { observe() {} }, addEventListener() {}, __loadModule: async () => { imports++; return { mount() { mounted++; } }; } };
+  vm.runInNewContext(source, context); await flush();
+  assert.equal(scripts, expectedFallback ? 1 : 0);
+  assert.equal(imports, expectedFallback ? 0 : 1, 'Automatic software fallback must avoid modern renderer download');
+  assert.equal(devices, expectedFallback ? 0 : 1, 'Automatic software fallback must avoid device allocation');
+  assert.equal(mounted, expectedFallback ? 0 : 1);
+  console.log(`PASS adapter selection: ${requested || 'auto'} / ${JSON.stringify(info)} / fallback=${isFallbackAdapter}`);
+}
+async function mountedPreference(preference) {
+  let bounds = {top: 100, bottom: 1000};
+  let mounted = 0, imports = 0, deviceRequests = 0, adapterRequests = 0, destroyed = 0;
+  let mountedOptions;
+  const calls = [], globalEvents = new Map();
+  const media = new Map();
+  const mediaQueries = ['(prefers-reduced-motion: reduce)', '(max-height:600px)'];
+  for (const query of mediaQueries) {
+    media.set(query, {matches:false, callbacks:[], addEventListener(type, callback) {assert.equal(type, 'change'); this.callbacks.push(callback);}});
+  }
+  const connection = {saveData:false, callbacks:[], addEventListener(type, callback) {assert.equal(type, 'change'); this.callbacks.push(callback);}};
+  const root = {dataset:{}, getBoundingClientRect: () => bounds};
+  const window = {};
+  const device = {destroy() {destroyed++;}};
+  const adapter = {info:{vendor:'test-hardware'}, features:[], requestDevice:async () => {deviceRequests++; return device;}};
+  const module = {
+    mount(options) {
+      mounted++;
+      mountedOptions = options;
+      // Controller's initial start has already run on mount. Later starts must
+      // reach it through the retained public entry point, even when started=true.
+      options.diagnostic.ready = true;
+      options.diagnostic.state = 'ready';
+      options.diagnostic.backend = 'webgpu';
+      return {updatePreferences() {
+        const allowed = !media.get(mediaQueries[0]).matches && !media.get(mediaQueries[1]).matches && !connection.saveData;
+        calls.push(allowed);
+        // Verify the callback precedes the loader's static-state publication.
+        if (!allowed) assert.equal(options.diagnostic.state, 'ready');
+        root.dataset.aircraftState = allowed ? 'waiting-for-current-frame' : 'static';
+        if (!allowed) options.diagnostic.ready = false;
+        else {
+          // Model a current completed frame, not just an enabled preference.
+          options.diagnostic.ready = true;
+          options.diagnostic.state = 'ready';
+          options.diagnostic.backend = 'webgpu';
+        }
+      }};
+    }
+  };
+  const context = {window, document:{querySelector:() => root}, location:{search:'?renderer=webgpu', hash:'#skylabs-aircraft'},
+    matchMedia:query => media.get(query), URLSearchParams, innerHeight:900, isSecureContext:true,
+    navigator:{connection, gpu:{requestAdapter:async () => {adapterRequests++; return adapter;}}},
+    addEventListener(type, callback) {globalEvents.set(type, callback);},
+    __loadModule:async () => {imports++; return module;}};
+  vm.runInNewContext(source, context); await flush();
+  assert.equal(mounted, 1, 'Initial authorized startup mounts once');
+  const selected = preference === 'saveData' ? connection : media.get(preference);
+  const setPreference = value => {
+    selected[preference === 'saveData' ? 'saveData' : 'matches'] = value;
+    for (const callback of selected.callbacks) callback();
+  };
+  setPreference(true); await flush();
+  assert.deepEqual(calls, [false], 'Mounted controller must be notified before loader returns for disabled preferences');
+  assert.equal(root.dataset.aircraftState, 'static');
+  assert.equal(window.V3WebGPU.state, 'static-preferences');
+  assert.equal(window.V3WebGPU.backend, 'static');
+  assert.equal(window.V3WebGPU.ready, false);
+  assert.equal(mountedOptions.preferences.reduced, media.get(mediaQueries[0]), 'Controller receives the loader reduced-motion query object');
+  assert.equal(mountedOptions.preferences.short, media.get(mediaQueries[1]), 'Controller receives the loader short-viewport query object');
+  // Restoration cannot rely on near()/start(): the instance is already mounted
+  // and the visitor may have moved far away while its static copy was exposed.
+  bounds = {top:5000, bottom:6000}; context.location.hash = '';
+  setPreference(false); await flush();
+  assert.deepEqual(calls, [false, true], 'Mounted controller must be notified on offscreen reenable despite started=true');
+  // Exercise a second cycle to reject a one-shot listener/callback fix.
+  setPreference(true); await flush(); setPreference(false); await flush();
+  assert.deepEqual(calls, [false, true, false, true]);
+  assert.deepEqual([mounted, imports, deviceRequests, adapterRequests, destroyed], [1,1,1,1,0], 'Preference cycles reuse the mounted device/controller');
+  console.log(`PASS mounted disable/reenable twice, shared query ownership, offscreen restore: ${preference}`);
+}
+
 (async () => {
   for (const preference of ['(prefers-reduced-motion: reduce)', '(max-height:600px)', 'saveData']) {
     for (const stage of ['module', 'device']) await test(preference, stage);
+    await mountedPreference(preference);
   }
+  await softwareSelection('', { vendor: 'google', architecture: 'swiftshader' }, true);
+  await softwareSelection('', {}, true, true);
+  await softwareSelection('webgpu', { vendor: 'google', architecture: 'swiftshader' }, false);
+  await softwareSelection('', { vendor: 'test-hardware' }, false);
+  await softwareSelection('', {}, false);
 })().catch(error => { console.error(error); process.exitCode = 1; });

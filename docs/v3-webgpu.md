@@ -18,7 +18,9 @@ v3 was reset from the complete current v2 portfolio at commit `8e24c7d18bd745cda
 
 See [`v3/assets/webgpu/README.md`](../v3/assets/webgpu/README.md) for renderer, model and vendor provenance. No speedup is assumed from the API name. A browser exposing `navigator.gpu` alone is not proof that a scene used WebGPU or that physical GPU hardware was exercised.
 
-Use `/v3/?renderer=webgpu#skylabs-aircraft` for the real progressive WebGPU path, or `/v3/?renderer=webgl#skylabs-aircraft` to explicitly compare the fallback. `window.V3WebGPU.snapshot()` reports the actual backend and completed-frame evidence. The Kiku lens is on `/v3/projects/kiku/`.
+Use `/v3/?renderer=webgpu#skylabs-aircraft` for the real progressive WebGPU path, or `/v3/?renderer=webgl#skylabs-aircraft` to explicitly compare the fallback. `window.V3WebGPU.snapshot()` reports the actual backend and completed-frame evidence. The Kiku lens opens through **Inspect details** on the featured Kiku card on `/v3/`.
+
+Normal visits prefer WebGL for aircraft and Canvas2D for the lens when the adapter explicitly reports software rendering. This avoids automatically choosing the slower measured aircraft path. `?renderer=webgpu` still explicitly exercises software WebGPU for validation; unknown or hardware-reported adapters retain the progressive WebGPU path. This selection does not claim that hardware WebGPU is faster.
 
 ## Verification
 
