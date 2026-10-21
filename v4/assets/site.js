@@ -5,14 +5,23 @@
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
   const status = $('[data-status]');
   const tell = text => { if(status) status.textContent=text; };
+  // Keep Tab navigation in the modal even when a browser would hand focus to its chrome.
+  const trapFocus=dialog=>dialog.addEventListener('keydown',event=>{
+    if(event.key!=='Tab')return;
+    const items=$$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]',dialog).filter(n=>n.getClientRects().length);
+    const first=items[0],last=items.at(-1);
+    if(!first)return;
+    if(event.shiftKey&&(document.activeElement===first||!dialog.contains(document.activeElement))){event.preventDefault();last.focus();}
+    else if(!event.shiftKey&&(document.activeElement===last||!dialog.contains(document.activeElement))){event.preventDefault();first.focus();}
+  });
   const menu = $('#navigation-dialog'), toggle=$('.menu-toggle');
   if(menu && toggle && typeof menu.showModal==='function') {
-    toggle.hidden=false;
+    toggle.hidden=false;trapFocus(menu);
     const close=()=>menu.open&&menu.close();
     toggle.addEventListener('click',()=>{ if(menu.open) close(); else { menu.showModal();toggle.setAttribute('aria-expanded','true'); } });
     $('.menu-close',menu).addEventListener('click',close);
     menu.addEventListener('click',event=>{if(event.target.closest('a'))close();});
-    menu.addEventListener('close',()=>toggle.setAttribute('aria-expanded','false'));
+    menu.addEventListener('close',()=>{toggle.setAttribute('aria-expanded','false');if(toggle.getClientRects().length)toggle.focus({preventScroll:true});});
     const wide=matchMedia('(min-width:851px)');
     wide.addEventListener('change',e=>{if(e.matches)close();});
   }
@@ -53,7 +62,7 @@
   if(photos.length && typeof HTMLDialogElement!=='undefined' && 'showModal' in HTMLDialogElement.prototype) {
     const dialog=document.createElement('dialog');dialog.className='photo-dialog';dialog.setAttribute('aria-label','Project image viewer');
     dialog.innerHTML='<div class="photo-top"><span data-photo-counter></span><button type="button" data-photo-close aria-label="Close image viewer">Close ×</button></div><div class="photo-stage"><img alt=""></div><div class="photo-controls"><p class="photo-caption" aria-live="polite"></p><nav aria-label="Image navigation"><button type="button" data-photo-prev aria-label="Previous image">←</button><button type="button" data-photo-next aria-label="Next image">→</button></nav></div>';
-    document.body.append(dialog);let index=0,trigger=null;
+    document.body.append(dialog);trapFocus(dialog);let index=0,trigger=null;
     const show=value=>{index=(value+photos.length)%photos.length;const source=$('img',photos[index]), img=$('.photo-stage img',dialog);img.src=photos[index].href;img.alt=source.alt;$('.photo-caption',dialog).textContent=source.alt;$('[data-photo-counter]',dialog).textContent=`${String(index+1).padStart(2,'0')} / ${String(photos.length).padStart(2,'0')}`;};
     photos.forEach((a,i)=>a.addEventListener('click',event=>{if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();trigger=a;show(i);dialog.showModal();}));
     $('[data-photo-close]',dialog).addEventListener('click',()=>dialog.close());
