@@ -56,6 +56,7 @@ jobs:
           trap 'kill $!' EXIT
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
           if [ '${{ matrix.engine }}' = chromium ]; then
+            DEBUG=pw:browser node scripts/v3-webgpu/diagnose-backend.cjs
             node scripts/v3-webgpu/verify-browser.cjs --require-webgpu
           else
             node scripts/v3-webgpu/verify-browser.cjs --webkit
