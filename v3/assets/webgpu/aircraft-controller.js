@@ -536,7 +536,9 @@ export function mount({ adapter, device, diagnostic, onFailure, preferencesManag
       floorMaterial = Atmosphere.groundMaterial(groundUniforms, studioGround.clone());
       const floorGeometry = new T.PlaneGeometry(100, 100);
       const floor = new T.Mesh(floorGeometry, floorMaterial); floor.rotation.x = -Math.PI / 2; floor.position.y = -.0007; scene.add(floor);
-      const contactShadow = new T.Mesh(floorGeometry, new T.ShadowMaterial({ color: 0x000000, opacity: .35, transparent: true, depthWrite: false }));
+      // Separate the near-coplanar contact overlay from the modern ground.
+      // Bias only this overlay; authored aircraft film/materials stay unchanged.
+      const contactShadow = new T.Mesh(floorGeometry, new T.ShadowMaterial({ color: 0x000000, opacity: .35, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 }));
       contactShadow.rotation.x = -Math.PI / 2; contactShadow.position.y = -.0005; contactShadow.receiveShadow = true; scene.add(contactShadow);
       // Modern fog colors are linear, matching the output-managed CSS ground.
       scene.fog = new T.Fog(studioFog.clone(), 9, 28);

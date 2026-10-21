@@ -31,7 +31,7 @@ async function test(preference, interruptedAt) {
   const adapter = { info: {}, features: [], requestDevice: () => interruptedAt === 'device' ? new Promise(resolve => { resolveDevice = resolve; }) : Promise.resolve(device) };
   const window = { IntersectionObserver: Observer };
   const context = {
-    window, document: { querySelector: () => root }, location: { search: '', hash: '' },
+    window, document: { querySelector: () => root }, location: { search: '?renderer=webgpu', hash: '' },
     matchMedia: query => media.get(query), URLSearchParams, innerHeight: 900, isSecureContext: true,
     navigator: { connection, gpu: { requestAdapter: async () => adapter } },
     IntersectionObserver: Observer, addEventListener() {},
@@ -82,8 +82,8 @@ async function softwareSelection(requested, info, expectedFallback, isFallbackAd
     MutationObserver: class { observe() {} }, addEventListener() {}, __loadModule: async () => { imports++; return { mount() { mounted++; } }; } };
   vm.runInNewContext(source, context); await flush();
   assert.equal(scripts, expectedFallback ? 1 : 0);
-  assert.equal(imports, expectedFallback ? 0 : 1, 'Automatic software fallback must avoid modern renderer download');
-  assert.equal(devices, expectedFallback ? 0 : 1, 'Automatic software fallback must avoid device allocation');
+  assert.equal(imports, expectedFallback ? 0 : 1, 'Default aircraft selection must avoid modern renderer download');
+  assert.equal(devices, expectedFallback ? 0 : 1, 'Default aircraft selection must avoid device allocation');
   assert.equal(mounted, expectedFallback ? 0 : 1);
   console.log(`PASS adapter selection: ${requested || 'auto'} / ${JSON.stringify(info)} / fallback=${isFallbackAdapter}`);
 }
@@ -174,6 +174,10 @@ async function mountedPreference(preference) {
   await softwareSelection('', { vendor: 'google', architecture: 'swiftshader' }, true);
   await softwareSelection('', {}, true, true);
   await softwareSelection('webgpu', { vendor: 'google', architecture: 'swiftshader' }, false);
-  await softwareSelection('', { vendor: 'test-hardware' }, false);
-  await softwareSelection('', {}, false);
+  await softwareSelection('', { vendor: 'test-hardware' }, true);
+  await softwareSelection('webgpu', { vendor: 'test-hardware' }, false);
+  await softwareSelection('', {}, true);
+  await softwareSelection('webgpu', {}, false);
+  await softwareSelection('invalid', { vendor: 'test-hardware' }, true);
+  await softwareSelection('webgl', { vendor: 'test-hardware' }, true);
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -66,11 +66,6 @@
       diagnostics.adapter = {vendor:info.vendor || '', architecture:info.architecture || '', device:info.device || '', description:info.description || '', isFallbackAdapter:Boolean(adapter.isFallbackAdapter || info.isFallbackAdapter)};
       const description = Object.values(diagnostics.adapter).join(' ');
       diagnostics.adapterClass = diagnostics.adapter.isFallbackAdapter || /swiftshader|llvmpipe|software|lavapipe/i.test(description) ? 'software' : info.vendor || info.device || info.description ? 'hardware-reported' : 'unknown';
-      // Same-runner measurements found the software WebGPU path slower. Keep
-      // it explicitly testable, but do not impose it on normal visitors.
-      if (requested !== 'webgpu' && diagnostics.adapterClass === 'software') {
-        fallback('Software WebGPU adapter; preferring legacy WebGL'); return;
-      }
       diagnostics.state = 'loading-module'; publish();
       // Feature detection happens before the modern renderer/module payload.
       const module = await import('./webgpu/aircraft-controller.js?v=20261019');
@@ -96,7 +91,9 @@
     controller?.updatePreferences();
     if (!allowed()) {diagnostics.ready=false; diagnostics.state='static-preferences'; diagnostics.backend='static'; publish(); return;}
     if (controller) return;
-    if (requested === 'webgl') {fallback('Forced legacy WebGL comparison'); return;}
+    // Keep the visually established renderer for normal visits. The modern
+    // material/skin response is still an explicitly selected experiment.
+    if (requested !== 'webgpu') {fallback(requested === 'webgl' ? 'Forced legacy WebGL comparison' : 'Standard WebGL; WebGPU aircraft is opt-in'); return;}
     if (!isSecureContext || !navigator.gpu) {fallback(!isSecureContext ? 'WebGPU requires a secure context' : 'WebGPU API unavailable'); return;}
     if (near() || /^#skylabs-(aircraft|telemetry)$/.test(location.hash)) start();
     else if (!observer && 'IntersectionObserver' in window) {

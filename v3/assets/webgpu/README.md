@@ -4,9 +4,10 @@ This directory is an experiment layered over the fresh v2 copy. Root `assets/` a
 
 ## Renderer selection and evidence
 
-- Normal v3 visits progressively try WebGPU near the aircraft (720px proximity), or immediately for a direct aircraft/telemetry fragment. The modern JS is not imported until an adapter exists.
-- Explicitly reported software adapters use the legacy renderer on normal visits, before importing modern Three or allocating a WebGPU device. The measured software WebGPU path was slower; `?renderer=webgpu` overrides this choice for honest experimental validation. The inspection lens likewise chooses Canvas2D for software adapters unless explicitly forced.
-- `?renderer=webgpu` explicitly exercises this same real WebGPU path.
+- Normal v3 visits keep the established WebGL aircraft without requesting a WebGPU adapter or importing modern Three. A visible **WebGPU lab** panel offers both renderer choices.
+- `?renderer=webgpu` explicitly exercises the real WebGPU path near the aircraft (720px proximity), or immediately for a direct aircraft/telemetry fragment. Modern JS is not imported until an adapter exists.
+- This aircraft opt-in is deliberate: modern covering/skin response retains visible underlying-brace and tail-rib markings in some poses. It is not visual parity or a promised speedup. Ground/contact shadows have a separately validated overlay depth bias; authored film geometry/materials are unchanged.
+- The independent inspection lens remains progressive on hardware-reported/unknown adapters, but prefers Canvas2D for explicitly reported software unless forced. Software aircraft measurements were slower; no separate lens speedup has been measured.
 - `?renderer=webgl` loads `legacy-aircraft-hero.js` without importing modern Three.
 - Unsupported APIs/adapters, import/device/scene/shader failures and device loss restore a clean canvas and the isolated legacy WebGL controller. The photographs remain the final fallback.
 - Reduced motion, data-saving and short viewports keep the accessible static presentation.

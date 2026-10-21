@@ -18,12 +18,21 @@ EXPERIMENTS = '''  <link rel="stylesheet" href="/v3/assets/v3-inspection.css?v=w
   <script src="/v3/assets/v3-inspection.js?v=webgpu-20261019" defer></script>
 '''
 
+AIRCRAFT_LAB = '''    <aside class="v3-renderer-lab v2-shell" id="webgpu-lab" aria-labelledby="webgpu-lab-title">
+      <div><h2 id="webgpu-lab-title">WebGPU lab</h2><p>Try the aircraft’s experimental renderer. Surface shading can differ and it may be slower on your device. Standard WebGL remains the default.</p></div>
+      <nav aria-label="Aircraft renderer"><a class="v2-text-link" data-webgpu-experiment href="/v3/?renderer=webgpu#skylabs-aircraft">Try WebGPU <span aria-hidden="true">↗</span></a><a class="v2-text-link" data-webgpu-standard href="/v3/?renderer=webgl#skylabs-aircraft">Use standard rendering <span aria-hidden="true">↗</span></a></nav>
+    </aside>
+'''
+
 def copy_html(source, relative):
     result = ROUTE.sub(lambda m: (m['origin'] or '') + '/v3', source)
     for name in sorted(MANIFEST['clonedAssets'], key=len, reverse=True):
         result = result.replace('/assets/' + name, '/v3/assets/' + name)
     if relative == 'index.html':
         result = result.replace('</head>', EXPERIMENTS + '</head>', 1)
+        aircraft = '    <section class="v3-aircraft v2-aircraft-feature"'
+        assert result.count(aircraft) == 1, 'Expected one aircraft section'
+        result = result.replace(aircraft, AIRCRAFT_LAB + aircraft, 1)
     return result
 
 def main():

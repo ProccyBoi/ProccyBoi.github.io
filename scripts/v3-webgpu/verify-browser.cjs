@@ -214,7 +214,11 @@ async function aircraft(browser, label, mode, query, mobile = false) {
   page.setDefaultTimeout(timeout);
   try {
     const directAnchor = mobile ? '#skylabs-telemetry' : '#skylabs-aircraft';
-    await page.goto(`${base}/v3/?${query}${directAnchor}`, { waitUntil: 'domcontentloaded' });
+    if (label === 'webgpu') {
+      await page.goto(`${base}/v3/#webgpu-lab`, { waitUntil: 'domcontentloaded' });
+      await page.locator('[data-webgpu-experiment]').click();
+      await page.waitForURL('**/v3/?renderer=webgpu#skylabs-aircraft');
+    } else await page.goto(`${base}/v3/?${query}${directAnchor}`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => {
       const element = document.querySelector('[data-aircraft-hero]');
       return element?.classList.contains('is-ready') || element?.dataset.webgpuReady === 'true';
@@ -311,29 +315,15 @@ async function aircraft(browser, label, mode, query, mobile = false) {
   } finally { await context.close(); }
 }
 
-async function matchedPoses(browser, backend, rasterBiasDiagnostic = 0) {
+async function matchedPoses(browser, backend) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   await prepare(context, 'normal');
-  const label = rasterBiasDiagnostic ? `${backend}-raster-bias-${rasterBiasDiagnostic}` : backend;
+  const label = backend;
   const page = await context.newPage(); page.setDefaultTimeout(timeout);
   try {
     await page.goto(`${base}/v3/?capture&renderer=${backend}#skylabs-aircraft`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(backend => window.__v3Aircraft?.flight?.telemetryReady && window.V3WebGPU?.ready && window.V3WebGPU.backend === backend, backend, { timeout });
     assert.equal(await page.evaluate(() => window.V3WebGPU.backend), backend);
-    if (rasterBiasDiagnostic) await page.evaluate(bias => {
-      const rig = window.__v3Aircraft;
-      rig.flight.group.traverse(node => {
-        if (!node.isMesh || !node.userData.filmSurface) return;
-        for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
-          material.polygonOffset = true; material.polygonOffsetFactor = -1; material.polygonOffsetUnits = -bias; material.needsUpdate = true;
-        }
-      });
-      rig.scene.traverse(node => {
-        if (!node.material?.isShadowMaterial) return;
-        node.material.polygonOffset = true; node.material.polygonOffsetFactor = -1; node.material.polygonOffsetUnits = -4; node.material.needsUpdate = true;
-      });
-    }, rasterBiasDiagnostic);
-
     const poses = [];
     for (const [name, value] of [['assembled', 0], ['peel', .4], ['telemetry', 1]]) {
       const previous = await page.evaluate(value => {
@@ -354,7 +344,7 @@ async function matchedPoses(browser, backend, rasterBiasDiagnostic = 0) {
       poses.push({ name, value, ...evidence });
 
     }
-    return { backend, rasterBiasDiagnostic, poses, limits: 'Identical viewport and source-geometry poses; lighting and material pipelines are intentionally not pixel-identical. Diagnostic captures explicitly modify test-only state and do not represent production defaults.' };
+    return { backend, poses, limits: 'Unmodified production settings, identical viewport and source-geometry poses. Experimental WebGPU lighting/skin response differs from standard WebGL; pixel parity is not claimed.' };
   } finally { await context.close(); }
 }
 
@@ -367,10 +357,22 @@ async function softwareDefaults(browser) {
     await page.waitForFunction(() => window.V3WebGPU?.ready, null, { timeout });
     const aircraft = await page.evaluate(() => ({ diagnostic: window.V3WebGPU.snapshot(), graphics: window.__v3QaGraphics,
       modernModules: performance.getEntriesByType('resource').filter(entry => /webgpu\/(aircraft-controller|vendor\/three)/.test(entry.name)).map(entry => entry.name) }));
-    assert.equal(aircraft.diagnostic.adapterClass, 'software', 'This CI case requires a genuinely reported software adapter');
+    assert.equal(aircraft.graphics.adapterRequests, 0, 'Default aircraft never requests a WebGPU adapter');
+    assert.match(aircraft.diagnostic.fallbackReason, /opt-in/);
     assert.equal(aircraft.diagnostic.backend, 'webgl'); assert.ok(aircraft.graphics.aircraftWebglDraws > 0);
-    assert.deepEqual(aircraft.modernModules, [], 'Default software path does not download the modern renderer');
-    assert.equal(aircraft.graphics.devices, 0, 'Default software path allocates no WebGPU device');
+    assert.deepEqual(aircraft.modernModules, [], 'Default aircraft path does not download the modern renderer');
+    assert.equal(aircraft.graphics.devices, 0, 'Default aircraft path allocates no WebGPU device');
+    const lab = page.locator('#webgpu-lab');
+    await lab.scrollIntoViewIfNeeded();
+    await page.locator('[data-webgpu-experiment]').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('[data-webgpu-experiment]').getAttribute('href'), '/v3/?renderer=webgpu#skylabs-aircraft');
+    assert.equal(await page.locator('[data-webgpu-standard]').getAttribute('href'), '/v3/?renderer=webgl#skylabs-aircraft');
+    await capture(page, 'renderer-choice-desktop');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await lab.scrollIntoViewIfNeeded();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Experiment notice fits mobile width');
+    await capture(page, 'renderer-choice-mobile');
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.locator('[data-inspection-open]').click();
     await page.locator('[data-inspection][data-ready="true"]').waitFor({ timeout });
     const inspection = await page.evaluate(() => ({ state: { ...window.V3Inspection }, graphics: window.__v3QaGraphics }));
@@ -648,8 +650,7 @@ async function inspection(browser, forceCanvas, mobile = false) {
     if (engine === 'chromium') await test('mobile WebGPU renderer and changed preferences', () => aircraft(browser, 'webgpu-mobile', 'normal', 'renderer=webgpu', true));
     if (engine === 'chromium') await test('completed WebGPU assembled, peel and telemetry captures', () => matchedPoses(browser, 'webgpu'));
     if (engine === 'chromium') await test('matched WebGL assembled, peel and telemetry captures', () => matchedPoses(browser, 'webgl'));
-    if (engine === 'chromium') for (const bias of [16, 64]) await test(`diagnostic film/contact-shadow raster bias ${bias}`, () => matchedPoses(browser, 'webgpu', bias));
-    if (engine === 'chromium') await test('reported software adapters default to WebGL and Canvas2D without WebGPU allocation', () => softwareDefaults(browser));
+    if (engine === 'chromium') await test('default aircraft uses WebGL; discoverable renderer controls; software lens uses Canvas2D', () => softwareDefaults(browser));
     await test('forced WebGL renderer', () => aircraft(browser, 'forced-webgl', 'normal', 'renderer=webgl'));
     if (engine === 'webkit') await test('mobile WebGL renderer and changed preferences', () => aircraft(browser, 'webgl-mobile', 'normal', 'renderer=webgl', true));
     await test('missing WebGPU fallback', () => aircraft(browser, 'missing-webgpu', 'no-gpu', 'renderer=webgpu'));

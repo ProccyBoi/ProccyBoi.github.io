@@ -12,15 +12,17 @@ v3 was reset from the complete current v2 portfolio at commit `8e24c7d18bd745cda
 
 ## Experiments
 
-1. **Native WebGPU aircraft and telemetry.** A locally vendored Three r186 renderer owns a separate modern scene, without replacing the page's legacy Three global. Original model geometry, authored separation/peel motion, camera framing and telemetry artwork are retained. WGSL/TSL atmosphere and modern output-managed materials replace unsupported legacy shader hooks. Telemetry's color-space conversion and blue coating are explicit.
+1. **Opt-in native WebGPU aircraft and telemetry.** A locally vendored Three r186 renderer owns a separate modern scene, without replacing the page's legacy Three global. Original model geometry, authored separation/peel motion, camera framing and telemetry artwork are retained. WGSL/TSL atmosphere and modern output-managed materials replace unsupported legacy shader hooks. Telemetry's color-space conversion and blue coating are explicit.
 2. **Progressive fallback and pacing.** Unsupported WebGPU, missing adapters, initialization failure and device loss switch to an isolated legacy WebGL renderer on a fresh canvas. Images remain available without graphics or JavaScript. Reduced motion, Save Data and short viewports use the static presentation. Work pauses offscreen, and every published modern live pose waits for its real GPU queue and validation scopes.
 3. **Kiku original-image inspection.** A keyboard/touch-accessible detail lens samples the existing high-resolution image with a small WGSL pipeline, or Canvas2D when WebGPU is unavailable. It only redraws after input and does not invent image detail. Closing/reopening during loading, device loss, focus return and repeated dismissal are tested.
 
 See [`v3/assets/webgpu/README.md`](../v3/assets/webgpu/README.md) for renderer, model and vendor provenance. No speedup is assumed from the API name. A browser exposing `navigator.gpu` alone is not proof that a scene used WebGPU or that physical GPU hardware was exercised.
 
-Use `/v3/?renderer=webgpu#skylabs-aircraft` for the real progressive WebGPU path, or `/v3/?renderer=webgl#skylabs-aircraft` to explicitly compare the fallback. `window.V3WebGPU.snapshot()` reports the actual backend and completed-frame evidence. The Kiku lens opens through **Inspect details** on the featured Kiku card on `/v3/`.
+The visible **WebGPU lab** panel above the aircraft offers both renderer choices. Use `/v3/?renderer=webgpu#skylabs-aircraft` for the real opt-in WebGPU path, or `/v3/?renderer=webgl#skylabs-aircraft` to explicitly compare the fallback. `window.V3WebGPU.snapshot()` reports the actual backend and completed-frame evidence. The Kiku lens opens through **Inspect details** on the featured Kiku card on `/v3/`.
 
-Normal visits prefer WebGL for aircraft and Canvas2D for the lens when the adapter explicitly reports software rendering. This avoids automatically choosing the slower measured aircraft path. `?renderer=webgpu` still explicitly exercises software WebGPU for validation; unknown or hardware-reported adapters retain the progressive WebGPU path. This selection does not claim that hardware WebGPU is faster.
+Normal visits keep the established WebGL aircraft on every adapter. WebGPU is explicitly opt-in because its modern skin/material response still shows visible underlying-brace and tail-rib markings in some poses; telemetry color and detail are preserved, but full visual parity is not claimed. A narrow contact-shadow depth bias restores the ground shadow without changing authored film geometry/materials. No speculative film offsets or reversed-depth mode ship.
+
+The independent Kiku lens progressively uses WebGPU on unknown or hardware-reported adapters, and Canvas2D when an adapter explicitly reports software rendering. `?renderer=webgpu` permits software WebGPU validation; `?renderer=webgl` selects Canvas2D. Measured software aircraft WebGPU was slower, not faster. The conservative lens policy is not a separate lens-performance claim; physical-device gains remain unmeasured.
 
 ## Verification
 

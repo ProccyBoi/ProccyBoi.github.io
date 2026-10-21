@@ -42,3 +42,12 @@
 }
 @media(prefers-reduced-motion:reduce){.v3-inspection,.v3-inspection *{scroll-behavior:auto;transition:none;animation:none}}
 @media print{.v3-inspection-launch,.v3-inspection{display:none!important}}
+
+/* Discoverable opt-in, using the portfolio's existing type, lines and links. */
+.v3-renderer-lab{display:flex;align-items:center;justify-content:space-between;gap:32px;padding-block:28px;border-top:1px solid var(--v2-line,#393a34)}
+.v3-renderer-lab h2{margin:0 0 8px;font-size:24px;font-weight:500;line-height:1.15;letter-spacing:-.035em}
+.v3-renderer-lab p{max-width:62ch;margin:0;color:var(--v2-muted,#aaa99f);font-size:13px;line-height:1.6}
+.v3-renderer-lab nav{display:flex;flex-shrink:0;flex-wrap:wrap;gap:12px 24px}
+.v3-renderer-lab .v2-text-link{min-height:44px;gap:12px}
+@media(max-width:1000px){.v3-renderer-lab{align-items:flex-start;flex-direction:column;gap:16px}}
+@media(max-width:600px){.v3-renderer-lab{padding-block:24px}.v3-renderer-lab nav{gap:8px 20px}}
