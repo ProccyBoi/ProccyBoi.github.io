@@ -158,13 +158,17 @@
 
   async function gpuRenderer(target, generation) {
     let device, context, texture, uniform, disposed = false, loss = false;
+    // Keep the adapter strongly reachable from the ordinary renderer object,
+    // not only its native GPUDevice wrapper, until explicit disposal.
+    const gpuLifetime = { adapter: null };
     const destroy = () => {
       disposed = true;
       texture?.destroy(); uniform?.destroy(); context?.unconfigure(); device?.destroy();
+      gpuLifetime.adapter = null;
       target.width = 1; target.height = 1;
     };
     try {
-      const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
+      const adapter = gpuLifetime.adapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
       if (!adapter) throw new Error('No WebGPU adapter');
       if (generation !== epoch || !dialog.open) throw new Error('Inspection closed');
       device = await adapter.requestDevice();
@@ -194,6 +198,7 @@
       const error = await device.popErrorScope();
       if (error || loss || generation !== epoch || !dialog.open) throw new Error(error?.message || 'Inspection closed or device lost');
       return {
+        gpuLifetime,
         kind: 'webgpu',
         draw(g) {
           if (loss) throw new Error('WebGPU device lost');

@@ -77,7 +77,7 @@
         diagnostics.ready = false; diagnostics.backend = 'static'; diagnostics.state = 'static-preferences'; publish(); return;
       }
       diagnostics.state = 'initializing'; publish();
-      controller = module.mount({device, diagnostic:diagnostics, onFailure:fallback});
+      controller = module.mount({adapter, device, diagnostic:diagnostics, onFailure:fallback});
     } catch (error) { fallback(error); }
   }
   const near = () => {const bounds=root.getBoundingClientRect(); return bounds.top < innerHeight + 720 && bounds.bottom > -720;};

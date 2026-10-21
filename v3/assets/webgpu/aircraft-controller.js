@@ -6,7 +6,11 @@ import * as Atmosphere from './atmosphere.js';
 
 /* The accepted finite story controller, isolated from the page's r128 THREE.
  * Source geometry/poses stay intact; shader, color and queue paths are modern. */
-export function mount({ device, diagnostic, onFailure }) {
+export function mount({ adapter, device, diagnostic, onFailure }) {
+  // Retain the adapter on an ordinary JS owner for the whole device lifetime.
+  // Some Chromium/Dawn versions can drop the instance when its adapter is GC'd.
+  // A GPUDevice host-object expando alone does not reliably preserve ownership.
+  const gpuLifetime = { adapter };
   const lifetime = new AbortController(), observers = [];
   const listen = (target, type, callback, options = {}) => target?.addEventListener(type, callback, {...options, signal:lifetime.signal});
   const addEventListener = (...args) => listen(window, ...args);
@@ -813,5 +817,5 @@ export function mount({ device, diagnostic, onFailure }) {
   listen(reduced, 'change', preference); listen(short, 'change', preference); listen(navigator.connection, 'change', preference);
   start();
   warmFallbackImages();
-  return { dispose() { lifetime.abort(); observers.forEach(observer => observer.disconnect()); cancelAnimationFrame(frame); atmosphere?.dispose(); environmentTarget?.dispose(); renderer?.dispose(); } };
+  return { gpuLifetime, dispose() { gpuLifetime.adapter = null; lifetime.abort(); observers.forEach(observer => observer.disconnect()); cancelAnimationFrame(frame); atmosphere?.dispose(); environmentTarget?.dispose(); renderer?.dispose(); } };
 }

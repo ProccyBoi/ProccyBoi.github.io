@@ -232,6 +232,12 @@ async function aircraft(browser, label, mode, query, mobile = false) {
       assert.ok(state.graphics.aircraftWebglDraws > 0, 'Fallback must perform real WebGL aircraft draws');
       assert.equal(state.graphics.aircraftWebgpuConfigured, 0, 'Fallback must not configure a WebGPU aircraft canvas');
     }
+    if (actualGPU) {
+      assert.equal(await page.evaluate(() => typeof window.gc), 'function', 'GC retention regression requires exposed test-only gc');
+      await page.evaluate(() => { window.gc(); window.gc(); });
+      await page.waitForTimeout(200);
+      assert.equal(await page.evaluate(() => window.V3WebGPU.backend), 'webgpu', 'Adapter survives GC while its renderer is live');
+    }
     assert.deepEqual(state.graphics.validationErrors, [], 'No WebGPU validation errors');
     assert.deepEqual(state.graphics.queueErrors, [], 'GPU queue/device failures');
     assert.deepEqual(state.graphics.observerErrors, [], 'Native evidence observer must be active');
@@ -501,6 +507,12 @@ async function inspection(browser, forceCanvas, mobile = false) {
       assert.equal(initial.backend, 'webgpu');
       await page.waitForFunction(() => window.__v3QaGraphics.inspectionTextures > 0 && window.__v3QaGraphics.completedSubmits > 0);
     }
+    if (initial.backend === 'webgpu') {
+      assert.equal(await page.evaluate(() => typeof window.gc), 'function');
+      await page.evaluate(() => { window.gc(); window.gc(); });
+      await page.waitForTimeout(200);
+      assert.equal(await page.evaluate(() => window.V3Inspection.backend), 'webgpu', 'Lens adapter survives GC while open');
+    }
     await page.keyboard.press('ArrowRight');
     assert.ok(await page.evaluate(x => window.V3Inspection.x > x, initial.x));
     await page.keyboard.press('+');
@@ -552,7 +564,7 @@ async function inspection(browser, forceCanvas, mobile = false) {
 
 (async () => {
   const playwright = require('playwright');
-  const args = process.env.V3_BROWSER_ARGS ? JSON.parse(process.env.V3_BROWSER_ARGS) : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-unsafe-webgpu'];
+  const args = process.env.V3_BROWSER_ARGS ? JSON.parse(process.env.V3_BROWSER_ARGS) : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-unsafe-webgpu', '--js-flags=--expose-gc'];
   const browser = await playwright[engine].launch({ headless: true, ...(engine === 'chromium' ? { executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args } : {}) });
   try {
     report.browserVersion = browser.version();
