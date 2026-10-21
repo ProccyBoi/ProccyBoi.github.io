@@ -24,6 +24,7 @@ jobs:
           python3 scripts/build-v3-pages.py --check
           python3 scripts/v3-webgpu/verify-isolation.py
           python3 scripts/audit-v2.py
+          node scripts/v3-webgpu/verify-loader.cjs
           node scripts/verify-v3-aircraft-transport.cjs
           node scripts/kiku-simulator/verify.cjs
           node scripts/verify-flight-review-runtime.cjs

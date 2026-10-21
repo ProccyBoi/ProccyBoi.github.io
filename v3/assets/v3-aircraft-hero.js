@@ -27,7 +27,7 @@
   };
   async function fallback(error) {
     if (fallbackStarted) return;
-    fallbackStarted = true; observer?.disconnect();
+    fallbackStarted = true; observer?.disconnect(); observer = null;
     diagnostics.ready = false; diagnostics.state = 'fallback-loading';
     diagnostics.backend = 'legacy-pending'; diagnostics.fallbackReason = reason(error);
     root.classList.remove('is-ready');
@@ -57,7 +57,7 @@
   }
   async function start() {
     if (started || fallbackStarted || !allowed()) return;
-    started = true; observer?.disconnect();
+    started = true; observer?.disconnect(); observer = null;
     diagnostics.state = 'requesting-adapter'; publish();
     try {
       const adapter = await navigator.gpu.requestAdapter({powerPreference:'high-performance'});
@@ -72,6 +72,10 @@
       if (!allowed()) {started = false; diagnostics.ready = false; diagnostics.backend = 'static'; diagnostics.state = 'static-preferences'; publish(); return;}
       const features = [...adapter.features].filter(value => ['core-features-and-limits','float32-filterable','float32-blendable','texture-compression-bc','texture-compression-etc2','texture-compression-astc'].includes(value));
       device = await adapter.requestDevice({label:'v3 isolated aircraft',requiredFeatures:features});
+      if (!allowed()) {
+        device.destroy(); device = null; started = false;
+        diagnostics.ready = false; diagnostics.backend = 'static'; diagnostics.state = 'static-preferences'; publish(); return;
+      }
       diagnostics.state = 'initializing'; publish();
       controller = module.mount({device, diagnostic:diagnostics, onFailure:fallback});
     } catch (error) { fallback(error); }

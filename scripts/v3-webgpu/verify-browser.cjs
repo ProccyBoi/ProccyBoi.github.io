@@ -273,13 +273,70 @@ async function aircraft(browser, label, mode, query, mobile = false) {
       preferenceChecks.push('Save Data on/off restores static/actual rendering (simulated Network Information API)');
       await capture(page, `${label}-preferences-restored`);
     }
-    return { ...state, viewport, directAnchor, preferenceChecks, actualWebGPU: actualGPU, renderedCanvasSHA256: sha(visible), canvasHiddenSHA256: sha(hidden) };
+    let offscreenPacing = null;
+    if (actualGPU) {
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[data-aircraft-hero]');
+        return root.getBoundingClientRect().top > innerHeight * 2 && root.dataset.aircraftPreparationEligible === 'false' && root.dataset.aircraftGPUPending === 'false';
+      }, null, { timeout });
+      const sample = () => page.evaluate(() => {
+        const data = document.querySelector('[data-aircraft-hero]').dataset;
+        return { submitted: data.aircraftSubmittedFrames, completed: data.aircraftCompletedFrames, live: data.aircraftFrames, warm: data.aircraftWarmFrames };
+      });
+      const before = await sample();
+      await page.waitForTimeout(600);
+      const after = await sample();
+      assert.deepEqual(after, before, 'Far-offscreen aircraft must stop submissions after outstanding work settles');
+      offscreenPacing = { before, after, observationMs: 600 };
+    }
+    return { ...state, viewport, directAnchor, preferenceChecks, offscreenPacing, actualWebGPU: actualGPU, renderedCanvasSHA256: sha(visible), canvasHiddenSHA256: sha(hidden) };
   } catch (error) {
     const failure = await page.evaluate(() => ({ url: location.href, dataset: { ...document.querySelector('[data-aircraft-hero]')?.dataset }, graphics: window.__v3QaGraphics, diagnostics: window.V3WebGPU?.snapshot?.(), errors: window.__v3QaGraphics?.validationErrors })).catch(() => null);
     fs.writeFileSync(path.join(output, `${engine}-${label}-failure.json`), JSON.stringify({ error: String(error.stack || error), failure }, null, 2));
     await capture(page, `${label}-failure`).catch(() => {});
     throw error;
   } finally { await context.close(); }
+}
+
+async function interruptedAircraft(browser) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  await prepare(context);
+  let releaseModule;
+  const moduleGate = new Promise(resolve => { releaseModule = resolve; });
+  let moduleRequested = false;
+  await context.route('**/webgpu/aircraft-controller.js*', async route => {
+    moduleRequested = true;
+    await moduleGate;
+    await route.continue();
+  });
+  const page = await context.newPage();
+  page.setDefaultTimeout(timeout);
+  try {
+    await page.goto(`${base}/v3/?renderer=webgpu`, { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-aircraft-hero]').scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => window.V3WebGPU?.state === 'loading-module', null, { timeout });
+    assert.equal(moduleRequested, true, 'Pause the real controller module before startup completes');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    releaseModule();
+    await page.waitForFunction(() => window.V3WebGPU?.state === 'static-preferences');
+    // Allow the released module's promise to settle before restoring preferences.
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(200);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.locator('[data-aircraft-hero]').scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelector('[data-aircraft-hero]')?.classList.contains('is-ready'), null, { timeout });
+    const state = await page.evaluate(() => ({ diagnostics: window.V3WebGPU.snapshot(), graphics: window.__v3QaGraphics }));
+    if (requireWebGPU) {
+      assert.equal(state.diagnostics.backend, 'webgpu');
+      assert.ok(state.graphics.aircraftTextures > 0 && state.graphics.completedSubmits > 0);
+    }
+    assert.deepEqual(state.graphics.validationErrors, []);
+    assert.deepEqual(state.graphics.queueErrors, []);
+    await capture(page, 'aircraft-interrupted-startup-restored');
+    return state;
+  } finally { releaseModule(); await context.close(); }
 }
 
 async function deviceLossRecovery(browser) {
@@ -498,6 +555,7 @@ async function inspection(browser, forceCanvas, mobile = false) {
     if (engine === 'webkit') await test('mobile WebGL renderer and changed preferences', () => aircraft(browser, 'webgl-mobile', 'normal', 'renderer=webgl', true));
     await test('missing WebGPU fallback', () => aircraft(browser, 'missing-webgpu', 'no-gpu', 'renderer=webgpu'));
     if (engine === 'chromium') await test('adapter unavailable fallback', () => aircraft(browser, 'no-adapter', 'no-adapter', 'renderer=webgpu'));
+    if (engine === 'chromium') await test('aircraft startup resumes after interrupted preferences away from section', () => interruptedAircraft(browser));
     if (engine === 'chromium') await test('actual aircraft device loss recovers to a fresh WebGL canvas', () => deviceLossRecovery(browser));
     await test('mobile routes, navigation, search and mocked booking', () => content(browser));
     if (engine === 'chromium') await test('WebGPU inspection lens and repeated dismissal', () => inspection(browser, false));
