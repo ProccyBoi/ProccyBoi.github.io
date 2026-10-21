@@ -1,0 +1,98 @@
+name: Verify isolated v3 WebGPU experiment
+on:
+  push:
+    branches: [experiment/v3-webgpu-20261019]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: v3-webgpu-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify copied routes, protected production bytes and original geometry
+        run: |
+          python3 scripts/build-v3-pages.py --check
+          python3 scripts/v3-webgpu/verify-isolation.py
+          python3 scripts/audit-v2.py
+          node scripts/verify-v3-aircraft-transport.cjs
+          node scripts/kiku-simulator/verify.cjs
+          node scripts/verify-flight-review-runtime.cjs
+          find v3/assets -name '*.js' -not -path '*/vendor/*' -print0 | xargs -0 -n 1 node --check
+  browser:
+    needs: source
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned official browser dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.62.1
+          npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Run actual backend, fallback, responsive and interaction checks
+        env:
+          V3_QA_OUT: /tmp/v3-webgpu-evidence
+          V3_BASE_URL: http://127.0.0.1:8080
+          V3_QA_TIMEOUT: '120000'
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v3-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
+          if [ '${{ matrix.engine }}' = chromium ]; then
+            node scripts/v3-webgpu/verify-browser.cjs --require-webgpu
+          else
+            node scripts/v3-webgpu/verify-browser.cjs --webkit
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v3-${{ matrix.engine }}-${{ github.sha }}
+          path: |
+            /tmp/v3-webgpu-evidence/
+            /tmp/v3-server.log
+          retention-days: 14
+  performance:
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Separate uninstrumented same-runner startup and pose timing
+        env:
+          V3_PROFILE_OUT: /tmp/v3-webgpu-profile
+          V3_BASE_URL: http://127.0.0.1:8080
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/v3-profile-server.log 2>&1 &
+          trap 'kill $!' EXIT
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/v3/ >/dev/null && break; sleep 1; done
+          node scripts/v3-webgpu/profile.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v3-performance-${{ github.sha }}
+          path: |
+            /tmp/v3-webgpu-profile/
+            /tmp/v3-profile-server.log
+          retention-days: 14

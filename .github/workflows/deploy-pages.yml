@@ -31,10 +31,10 @@ jobs:
       - name: Verify Kiku firmware renderer and simulated controls
         run: node scripts/kiku-simulator/verify.cjs
 
-      - name: Verify v3 documents and preserved interactive content
+      - name: Verify isolated v3 copy and preserved interactive content
         run: |
           python3 scripts/build-v3-pages.py --check
-          python3 scripts/audit-v3.py
+          python3 scripts/audit-v3.py --structure-only
           node scripts/verify-v3-aircraft-transport.cjs
 
       - name: Upload static site

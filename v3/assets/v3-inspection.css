@@ -1,0 +1,44 @@
+/* V3's inspection action stays outside the original project link. */
+.v3-inspection-feature{position:relative;min-width:0}
+.v3-inspection-launch{position:absolute;top:18px;left:18px;display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:10px 15px;border:1px solid #54554d;border-radius:0;background:#141412eb;color:var(--v2-ink,#ecebe3);font:500 13px/1.2 var(--v2-font,Archivo,Arial,sans-serif);cursor:pointer}
+.v3-inspection-launch svg,.v3-inspection-close svg{stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+.v3-inspection-launch:hover{background:#292a25;border-color:var(--v2-muted,#aaa99f)}
+.v3-inspection{--inspection-line:#393a34;box-sizing:border-box;width:min(1060px,calc(100vw - 40px));height:min(900px,calc(100vh - 40px));height:min(900px,calc(100dvh - 40px));max-width:none;max-height:none;margin:auto;padding:0;overflow:hidden;border:1px solid var(--inspection-line);border-radius:0;background:var(--v2-bg,#141412);color:var(--v2-ink,#ecebe3);font-family:var(--v2-font,Archivo,Arial,sans-serif);box-shadow:0 24px 100px #0008}
+.v3-inspection[open]{display:flex;flex-direction:column}
+.v3-inspection::backdrop{background:#080907e8}
+.v3-inspection-header{display:flex;flex-shrink:0;align-items:center;justify-content:space-between;gap:20px;padding:15px 20px;border-bottom:1px solid var(--inspection-line)}
+.v3-inspection-header h2{margin:0;font-size:23px;font-weight:500;line-height:1.1;letter-spacing:-.035em}
+.v3-inspection-close{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border:1px solid var(--inspection-line);border-radius:0;background:transparent;color:inherit;cursor:pointer}
+.v3-inspection-close:hover{background:#292a25}
+.v3-inspection-stage{position:relative;min-height:100px;flex:1;overflow:hidden;background:#1c1d19;touch-action:pan-y pinch-zoom;cursor:crosshair}
+.v3-inspection-stage:focus-visible{outline:2px solid var(--v2-accent,#7bbcff);outline-offset:-4px}
+.v3-inspection-original,.v3-inspection-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;pointer-events:none}
+.v2 .v3-inspection-original{height:100%;max-width:none}
+.v3-inspection-footer{flex-shrink:0;padding:16px 20px 18px;border-top:1px solid var(--inspection-line)}
+.v3-inspection-controls{display:flex;align-items:center;gap:14px;min-height:44px;font-size:13px}
+.v3-inspection-controls label{color:var(--v2-muted,#aaa99f)}
+.v3-inspection-controls input[type=range]{width:clamp(90px,17vw,200px);min-width:70px;height:44px;margin:0;accent-color:var(--v2-accent,#7bbcff);cursor:pointer;touch-action:pan-y}
+.v3-inspection-controls output{min-width:38px;font-variant-numeric:tabular-nums}
+.v3-inspection-project{display:inline-flex;align-items:center;justify-content:space-between;gap:18px;min-height:44px;margin-left:auto;padding-inline:4px;color:inherit;text-decoration:none;white-space:nowrap}
+.v3-inspection-project span{color:var(--v2-accent,#7bbcff)}
+.v3-inspection-project:hover{color:var(--v2-accent,#7bbcff)}
+.v3-inspection-footer #v3-inspection-help{margin:9px 0 0;font-size:12px;line-height:1.5;color:var(--v2-muted,#aaa99f)}
+.v3-inspection-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.v3-inspection[data-readiness=error] .v3-inspection-status{position:static;width:auto;height:auto;margin:8px 0 0;overflow:visible;clip-path:none;white-space:normal;font-size:12px;line-height:1.5;color:var(--v2-muted,#aaa99f)}
+@media(max-width:600px){
+ .v3-inspection-launch{top:12px;left:12px;padding:10px 12px;font-size:12px}
+ .v3-inspection{width:calc(100vw - 20px);height:calc(100vh - 20px);height:calc(100dvh - 20px)}
+ .v3-inspection-header{padding:10px 14px}
+ .v3-inspection-footer{padding:12px 14px 14px}
+ .v3-inspection-controls{flex-wrap:wrap;gap:4px 12px}
+ .v3-inspection-controls input[type=range]{flex:1;width:auto}
+ .v3-inspection-controls label{font-size:12px}
+ .v3-inspection-project{margin-left:0;flex-basis:100%;justify-content:flex-start;gap:12px}
+}
+@media(max-height:500px) and (min-width:601px){
+ .v3-inspection-header{padding:4px 16px}
+ .v3-inspection-footer{padding:4px 16px 8px}
+ .v3-inspection-footer #v3-inspection-help{margin-top:0}
+}
+@media(prefers-reduced-motion:reduce){.v3-inspection,.v3-inspection *{scroll-behavior:auto;transition:none;animation:none}}
+@media print{.v3-inspection-launch,.v3-inspection{display:none!important}}
