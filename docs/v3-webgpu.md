@@ -1,55 +1,47 @@
-# v3 WebGPU experiment
+# V3: Orbital Workshop
 
-v3 was reset from the complete current v2 portfolio at commit `8e24c7d18bd745cdaf7b6b23ef87db8bb5f6ea33`. The previous v3 is retained in the durable branch `backup/v3-before-webgpu-20261019`. The review branch is `experiment/v3-webgpu-20261019`.
+The authored `/v3/` homepage is a new, independent portfolio direction. It does not load the previous v2 assembly/aircraft homepage controllers. Root, v2, shared assets, source models, and public project facts remain unchanged.
 
-## Boundaries
+## Visual language
 
-- All 27 v2 routes are inherited, including the current Kiku firmware simulator, booking page and Flight Review redirect.
-- Internal portfolio links, metadata and canonicals point to v3.
-- Mutable experiment scripts and styles live below `v3/assets/`. Existing root assets, v2, the root portfolio, lab tools and shared Flight Review are unchanged.
-- Original model geometry, images, fonts, firmware and immutable legacy libraries may still be read from shared root asset URLs. Their bytes are not changed.
-- `scripts/build-v3-pages.py` deterministically copies current v2 HTML and adds v3-only experiment entry points. It does not overwrite experiment JavaScript.
+Cobalt, graphite and paper; oversized self-hosted Archivo; quiet Plex Mono field labels; an enormous procedural orbital instrument. The scene is explicitly an abstract form study, not an aircraft simulation or live flight telemetry. Four destinations change its geometry: gimbal, network trajectories, stacked electronics, and an audio resonator. Real source-derived board images and existing case studies carry the project evidence below it.
 
-## Experiments
+Recovered references were reviewed for composition and interaction rather than copied wholesale: Taste's subject-specific art direction and screenshot iteration, SpaceX's scale and spare foreground hierarchy, Motion's scene/DOM continuity, and the repository's prior reference-capability ledger. These references are not endorsements. No new third-party design/runtime library is shipped.
 
-1. **Opt-in native WebGPU aircraft and telemetry.** A locally vendored Three r186 renderer owns a separate modern scene, without replacing the page's legacy Three global. Original model geometry, authored separation/peel motion, camera framing and telemetry artwork are retained. WGSL/TSL atmosphere and modern output-managed materials replace unsupported legacy shader hooks. Telemetry's color-space conversion and blue coating are explicit.
-2. **Progressive fallback and pacing.** Unsupported WebGPU, missing adapters, initialization failure and device loss switch to an isolated legacy WebGL renderer on a fresh canvas. Images remain available without graphics or JavaScript. Reduced motion, Save Data and short viewports use the static presentation. Work pauses offscreen, and every published modern live pose waits for its real GPU queue and validation scopes.
-3. **Kiku original-image inspection.** A keyboard/touch-accessible detail lens samples the existing high-resolution image with a small WGSL pipeline, or Canvas2D when WebGPU is unavailable. It only redraws after input and does not invent image detail. Closing/reopening during loading, device loss, focus return and repeated dismissal are tested.
+## Rendering
 
-See [`v3/assets/webgpu/README.md`](../v3/assets/webgpu/README.md) for renderer, model and vendor provenance. No speedup is assumed from the API name. A browser exposing `navigator.gpu` alone is not proof that a scene used WebGPU or that physical GPU hardware was exercised.
+- `v3/assets/orbital-engine.js` contains four procedural triangle assemblies, a native WGSL vertex/fragment pipeline, depth, four-sample antialiasing, camera math and an interruptible 620ms fixture transition.
+- WebGPU is the normal first choice on available hardware adapters, without an opt-in gate.
+- Software adapters and Save Data choose a static Canvas2D view of the same geometry. Missing WebGPU, initialization/validation errors, and device loss fall back without a retry storm. The UI identifies the actual renderer rather than inferring success from API presence.
+- `?gpu=force` is a diagnostic-only override allowing CI's known software adapter to exercise native WebGPU. It does not imply hardware speed.
+- The engine reports WebGPU only after a real queue completion. Submitted/completed counters are distinct and `getState()` is read-only.
+- One render loop runs only while visible and moving. Pause, hidden tabs, offscreen scenes and reduced motion stop continuous submission. Pointer input never animates the static fallback.
+- Reduced motion retains a still GPU view where supported and instantly changes scenes. The motion toggle is hidden while that preference is active. Save Data avoids requesting an adapter.
+- Device-pixel ratio and total pixel area are capped. Text, links and project evidence remain ordinary accessible HTML, independent of graphics readiness.
+- A CSS schematic is present before JavaScript and remains when scripting is disabled. Scene buttons begin disabled and are only enabled by their working controller.
 
-The visible **WebGPU lab** panel above the aircraft offers both renderer choices. Use `/v3/?renderer=webgpu#skylabs-aircraft` for the real opt-in WebGPU path, or `/v3/?renderer=webgl#skylabs-aircraft` to explicitly compare the fallback. `window.V3WebGPU.snapshot()` reports the actual backend and completed-frame evidence. The Kiku lens opens through **Inspect details** on the featured Kiku card on `/v3/`.
+## Files and maintenance
 
-Normal visits keep the established WebGL aircraft on every adapter. WebGPU is explicitly opt-in because its modern skin/material response still shows visible underlying-brace and tail-rib markings in some poses; telemetry color and detail are preserved, but full visual parity is not claimed. A narrow contact-shadow depth bias restores the ground shadow without changing authored film geometry/materials. No speculative film offsets or reversed-depth mode ship.
+- `v3/index.html`: authored homepage, factual project summaries and native routes.
+- `v3/assets/orbital.css`: homepage composition and responsive states.
+- `v3/assets/orbital.js`: progressive enhancement and scene/content selection.
+- `v3/assets/orbital-engine.js`: native WebGPU and Canvas2D fallback.
+- `v3/assets/orbital-interiors.css`: restrained v3-only reading-room styling.
+- `scripts/build-v3-pages.py`: maintains copied factual interiors and adds their v3 stylesheet; explicitly preserves the authored homepage.
 
-The independent Kiku lens progressively uses WebGPU on unknown or hardware-reported adapters, and Canvas2D when an adapter explicitly reports software rendering. `?renderer=webgpu` permits software WebGPU validation; `?renderer=webgl` selects Canvas2D. Measured software aircraft WebGPU was slower, not faster. The conservative lens policy is not a separate lens-performance claim; physical-device gains remain unmeasured.
+Earlier WebGPU aircraft/Kiku modules remain available for existing project explorers and historical diagnostic tooling. They are not the new homepage renderer.
 
 ## Verification
 
+Run:
+
 - `python3 scripts/build-v3-pages.py --check`
-- `python3 scripts/v3-webgpu/verify-isolation.py`
+- `python3 scripts/v3-webgpu/verify-isolation.py --base e21ffc8a18c27b84abcc40fb6a3efe9132ba8391`
 - `python3 scripts/audit-v2.py`
-- `node scripts/v3-webgpu/verify-loader.cjs`
-- `node scripts/verify-v3-aircraft-transport.cjs`
 - `node scripts/kiku-simulator/verify.cjs`
+- `node scripts/verify-v3-aircraft-transport.cjs`
 - `node scripts/verify-flight-review-runtime.cjs`
-- Browser checks in `scripts/v3-webgpu/` exercise desktop/mobile layouts, copied routes, explicit fallback, actual draw/submit/queue-completion evidence, GPU loss, forced GC, interrupted startup/preferences and idle/offscreen pacing. Booking is fully mocked and external requests are blocked.
 
-The workflow `.github/workflows/verify-v3-webgpu.yml` tests the experiment branch without publishing Pages. Chromium uses pinned Playwright, full headed Chromium under Xvfb, and a matched software Vulkan stack. The exact launch arguments are in `scripts/v3-webgpu/browser-config.cjs`. A blank-canvas smoke test validates native queue completion and a known pixel before the site tests run. Earlier Linux headless/ANGLE configurations lost the WebGPU device even on that independent clear-pass test; they are recorded as negative diagnostic controls, not renderer failures.
+`.github/workflows/verify-v3-orbital.yml` runs source tests plus pinned Chromium and WebKit checks. Its native renderer check uses the proven headed Vulkan/SwiftShader configuration, independently observes native device/configure/draw/submit/completion calls, and checks screenshot pixels for actual cobalt geometry and dark structure. It covers responsive layouts, all four project destinations, keyboard activation, no-JavaScript content, reduced motion, Save Data, device loss, offscreen suspension and viewport changes. Artifacts contain screenshots and explicit test results.
 
-To reproduce on a Linux test host with the official Playwright dependencies, Vulkan loader/drivers, Xvfb and xauth installed, start a repository-root HTTP server at `127.0.0.1:8080`, then run:
-
-```sh
-xvfb-run -a node scripts/v3-webgpu/diagnose-backend.cjs --require-ci-config
-xvfb-run -a node scripts/v3-webgpu/verify-browser.cjs --require-webgpu
-node scripts/v3-webgpu/verify-browser.cjs --webkit
-xvfb-run -a node scripts/v3-webgpu/profile.cjs
-```
-
-The SwiftShader flags are for trusted test pages on isolated CI hosts, not recommended end-user browser settings. These software-adapter runs establish browser correctness and visible output, not physical GPU performance or exhaustive device compatibility.
-
-## Performance method and limits
-
-`profile.cjs` runs without the correctness observers. It records v2 WebGL, v3 WebGL and actual v3 WebGPU on the same runner, viewport and browser, in forward then reverse order. Each variant gets initial and repeated **uncached** page loads and 15 deterministic completed-pose samples. It refuses to report WebGPU timings if the renderer silently fell back.
-
-Request interception disables HTTP cache, so the repeated load is not a warm-cache benchmark. Loopback serving removes real-world network latency. Pose response includes scheduling, rendering and native completion, rather than isolated GPU timer queries. The modern lighting/material pipeline differs from the legacy renderer, so the observations are not pixel-identical comparative benchmarks. No real-device speedup or battery improvement is claimed; those require hardware-browser profiling with matched visual settings.
+Browser correctness on software rendering is not a hardware performance benchmark. Native browser evidence and screenshot review are separate requirements from structural checks. No timing/speed claim should be made from instrumented CI.

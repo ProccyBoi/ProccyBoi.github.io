@@ -9,7 +9,7 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const scenes = [
   { code: '01 / FLIGHT SYSTEMS', tag: 'TRAJECTORY STUDY', caption: 'A small board.\nA much bigger journey.', brief: 'Avionics, telemetry and the software that brings a flight back into view.', link: '/v3/projects/skylabs/', title: 'Skylabs', mode: 0 },
   { code: '02 / EMBEDDED SYSTEMS', tag: 'ASSEMBLY STUDY', caption: 'Small format.\nOpen potential.', brief: 'A laptop expansion bay becomes a development board, extra ports or a logic analyser.', link: '/v3/projects/framework-expansion-card/', title: 'Framework', mode: 2 },
-  { code: '03 / CONNECTED SYSTEMS', tag: 'NETWORK STUDY', caption: 'A city's rhythm.\nMade tangible.', brief: '116 pixels following Sydney’s light-rail network, from live data to a physical display.', link: '/v3/projects/tramtrace/', title: 'TramTrace', mode: 1 },
+  { code: '03 / CONNECTED SYSTEMS', tag: 'NETWORK STUDY', caption: "A city's rhythm.\nMade tangible.", brief: '116 pixels following Sydney’s light-rail network, from live data to a physical display.', link: '/v3/projects/tramtrace/', title: 'TramTrace', mode: 1 },
   { code: '04 / AUDIO SYSTEMS', tag: 'RESONANCE STUDY', caption: 'Board, code, enclosure.\nMade for listening.', brief: 'A pocket audio player with SD music, FM radio, Bluetooth receiving and a real firmware simulator.', link: '/v3/projects/kiku/', title: 'Kiku', mode: 3 },
 ];
 let controller, paused = reducedMotion.matches, current = 0, alive = true;

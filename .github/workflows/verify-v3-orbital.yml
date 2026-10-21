@@ -27,6 +27,8 @@ jobs:
           node scripts/kiku-simulator/verify.cjs
           node scripts/verify-v3-aircraft-transport.cjs
           node scripts/verify-flight-review-runtime.cjs
+          node --input-type=module --check < v3/assets/orbital.js
+          node --input-type=module --check < v3/assets/orbital-engine.js
           find v3/assets -name '*.js' -not -path '*/vendor/*' -print0 | xargs -0 -n 1 node --check
   browser:
     needs: source
