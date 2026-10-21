@@ -304,9 +304,10 @@ async function interruptedAircraft(browser) {
   await prepare(context);
   let releaseModule;
   const moduleGate = new Promise(resolve => { releaseModule = resolve; });
-  let moduleRequested = false;
+  let acknowledgeModule, requestTimer;
+  const moduleRequested = new Promise(resolve => { acknowledgeModule = resolve; });
   await context.route('**/webgpu/aircraft-controller.js*', async route => {
-    moduleRequested = true;
+    acknowledgeModule();
     await moduleGate;
     await route.continue();
   });
@@ -316,7 +317,8 @@ async function interruptedAircraft(browser) {
     await page.goto(`${base}/v3/?renderer=webgpu`, { waitUntil: 'domcontentloaded' });
     await page.locator('[data-aircraft-hero]').scrollIntoViewIfNeeded();
     await page.waitForFunction(() => window.V3WebGPU?.state === 'loading-module', null, { timeout });
-    assert.equal(moduleRequested, true, 'Pause the real controller module before startup completes');
+    await Promise.race([moduleRequested, new Promise((_, reject) => { requestTimer = setTimeout(() => reject(new Error('Controller module was not intercepted')), timeout); })]);
+    clearTimeout(requestTimer);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     releaseModule();
@@ -336,7 +338,7 @@ async function interruptedAircraft(browser) {
     assert.deepEqual(state.graphics.queueErrors, []);
     await capture(page, 'aircraft-interrupted-startup-restored');
     return state;
-  } finally { releaseModule(); await context.close(); }
+  } finally { clearTimeout(requestTimer); releaseModule(); await context.close(); }
 }
 
 async function deviceLossRecovery(browser) {
