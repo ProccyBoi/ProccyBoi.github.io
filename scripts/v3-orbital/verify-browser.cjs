@@ -21,6 +21,8 @@ async function capture(page,options){
  }
  await page.evaluate(p=>scrollTo({left:p.x,top:p.y,behavior:'instant'}),before);
  await page.waitForTimeout(100);
+ const clipped=await page.locator('.compact-art img').evaluateAll(images=>images.filter(image=>{const r=image.getBoundingClientRect(),p=image.parentElement.getBoundingClientRect();return r.top<p.top-1||r.bottom>p.bottom+1||r.left<p.left-1||r.right>p.right+1;}).map(image=>image.currentSrc));
+ assert.deepEqual(clipped,[],'Project photographs must fit their art panels without clipping');
  return page.screenshot(options);
 }
 const save=()=>fs.writeFileSync(path.join(out,`${engine}-report.json`),JSON.stringify(report,null,2));
@@ -50,7 +52,7 @@ function observer(){
     await capture(page,{path:path.join(out,`${engine}-${name}.png`),fullPage:true});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No horizontal overflow');
     assert.equal(await page.locator('h1').count(),1);assert.match(await page.locator('h1').innerText(),/Andrew\s*Chung/);
-    assert.equal(await page.locator('.scene-choice').count(),4);
+    assert.equal(await page.locator('.scene-choice').count(),4);assert.equal(await page.locator('[data-motion-toggle]').isVisible(),false,'Static fallback must not offer a no-op motion control');
     for(let i=0;i<4;i++){await page.locator(`[data-scene="${i}"]`).click();await page.waitForTimeout(80);assert.equal(await page.locator(`[data-scene="${i}"]`).getAttribute('aria-pressed'),'true');assert.equal(await page.locator('.scene-choice[aria-pressed=true]').count(),1);const href=await page.locator('[data-brief-link]').getAttribute('href');assert.equal((await page.request.get(`${base}${href}`)).status(),200);}
     await page.locator('[data-scene="0"]').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('[data-scene="0"]').getAttribute('aria-pressed'),'true');
     const state=await page.evaluate(()=>window.OrbitalWorkshop.getState());assert.equal(state.submittedFrames,0,'Fallback must not fabricate GPU submissions');assert.deepEqual(errors,[]);
@@ -58,10 +60,10 @@ function observer(){
    });
   }
   await test('no JavaScript retains identity, project routes and designed schematic',async()=>{
-   const c=await context({javaScriptEnabled:false});const page=await c.newPage();await page.goto(`${base}/v3/`);assert.equal(await page.locator('.scene-static').isVisible(),true);assert.equal(await page.locator('.text-link[href^="/v3/projects/"]').count(),3);await capture(page,{path:path.join(out,`${engine}-no-js.png`),fullPage:true});await c.close();return {};
+   const c=await context({javaScriptEnabled:false});const page=await c.newPage();await page.goto(`${base}/v3/`);assert.equal(await page.locator('.scene-static').isVisible(),true);assert.equal(await page.locator('[data-motion-toggle]').isVisible(),false);assert.equal(await page.locator('.text-link[href^="/v3/projects/"]').count(),3);await capture(page,{path:path.join(out,`${engine}-no-js.png`),fullPage:true});await c.close();return {};
   });
   await test('reduced motion retains usable content',async()=>{
-   const c=await context({reducedMotion:'reduce'});await c.addInitScript(()=>Object.defineProperty(navigator,'gpu',{value:undefined,configurable:true}));const page=await c.newPage();await page.goto(`${base}/v3/`);await page.waitForFunction(()=>window.OrbitalWorkshop?.getState().backend==='canvas2d');await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(350);const first=await page.evaluate(()=>window.OrbitalWorkshop.getState());await page.waitForTimeout(250);const second=await page.evaluate(()=>window.OrbitalWorkshop.getState());assert.equal(first.renderedFrames,second.renderedFrames,'Static fallback is idle after initial font/resize settlement');assert.equal(second.time,0);assert.equal(second.reducedMotion,true);await page.locator('[data-scene="2"]').click();await page.waitForTimeout(80);assert.equal(await page.locator('[data-brief-link]').getAttribute('href'),'/v3/projects/tramtrace/');await capture(page,{path:path.join(out,`${engine}-reduced.png`),fullPage:true});await c.close();return {state:second};
+   const c=await context({reducedMotion:'reduce'});await c.addInitScript(()=>Object.defineProperty(navigator,'gpu',{value:undefined,configurable:true}));const page=await c.newPage();await page.goto(`${base}/v3/`);await page.waitForFunction(()=>window.OrbitalWorkshop?.getState().backend==='canvas2d');await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(350);const first=await page.evaluate(()=>window.OrbitalWorkshop.getState());await page.waitForTimeout(250);const second=await page.evaluate(()=>window.OrbitalWorkshop.getState());assert.equal(first.renderedFrames,second.renderedFrames,'Static fallback is idle after initial font/resize settlement');assert.equal(second.time,0);assert.equal(second.reducedMotion,true);assert.equal(await page.locator('[data-motion-toggle]').isVisible(),false);await page.locator('[data-scene="2"]').click();await page.waitForTimeout(80);assert.equal(await page.locator('[data-brief-link]').getAttribute('href'),'/v3/projects/tramtrace/');await capture(page,{path:path.join(out,`${engine}-reduced.png`),fullPage:true});await c.close();return {state:second};
   });
   await test('save data avoids GPU initialization',async()=>{
    const c=await context();await c.addInitScript(()=>{Object.defineProperty(navigator,'connection',{value:{saveData:true},configurable:true});window.__adapterRequests=0;if(navigator.gpu)navigator.gpu.requestAdapter=async()=>{window.__adapterRequests++;return null;};});const page=await c.newPage();await page.goto(`${base}/v3/`);await page.waitForFunction(()=>window.OrbitalWorkshop?.getState().backend==='canvas2d');assert.equal(await page.evaluate(()=>window.__adapterRequests),0);assert.equal(await page.evaluate(()=>window.OrbitalWorkshop.getState().reason),'save-data');await c.close();return {};
