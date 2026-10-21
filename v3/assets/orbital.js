@@ -33,7 +33,7 @@ function selectScene(index) {
   link.lastElementChild.setAttribute('aria-hidden', 'true');
   document.querySelector('[data-scene-announcement]').textContent = `${scene.title} scene selected. ${scene.brief}`;
   controller?.setMode(scene.mode);
-  instrument.dataset.scene = String(index);
+  instrument.dataset.activeScene = String(index);
 }
 choices.forEach((button, index) => { button.disabled = false; button.addEventListener('click', () => selectScene(index)); });
 motionButton.addEventListener('click', () => { paused = !paused; updateMotion(); });
