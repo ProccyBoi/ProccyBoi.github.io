@@ -1,0 +1,1729 @@
+[
+  {
+    "slug": "skylabs",
+    "name": "Skylabs",
+    "description": "Avionics and ground-station PCBs for flight logging and live LoRa telemetry.",
+    "spec": "STM32 + ESP32 · LoRa telemetry",
+    "category": "Flight systems",
+    "source": "/v2/projects/skylabs/",
+    "paragraphs": [
+      {
+        "heading": "My work",
+        "paragraphs": [
+          "I joined UNSW Skylabs in August 2025 and became Avionics & Payload Team Lead in May 2026. I represented UNSW at AIAA Design/Build/Fly 2026 in Wichita.",
+          "My work covers both ends of the link: the STM32 aircraft logger, the ESP32 LoRa ground station and the replay tools used after landing."
+        ]
+      },
+      {
+        "heading": "Logging and flight replay",
+        "paragraphs": [
+          "The aircraft binary log is the high-rate record, with a 40 Hz target. A smaller telemetry packet crosses the 915 MHz link at up to 10 Hz, where the ground station records it again and forwards a live stream over USB or its own Wi-Fi dashboard.",
+          "After the flight, the same data contract feeds a replay tool with the 3D route, attitude, artificial horizon, altitude, speed and GPS readouts kept on one timeline. Treating the boards, packet format and analysis software as one system has made faults much easier to trace."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/skylabs-telemetry.webp",
+        "alt": "Skylabs aircraft telemetry circuit board",
+        "width": 1600,
+        "height": 1200
+      }
+    ],
+    "specs": [
+      {
+        "label": "Team",
+        "value": "UNSW Skylabs"
+      },
+      {
+        "label": "Since",
+        "value": "August 2025"
+      },
+      {
+        "label": "Current role",
+        "value": "Avionics & Payload Team Lead"
+      },
+      {
+        "label": "Competition",
+        "value": "AIAA DBF 2026 / Wichita"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "From aircraft sensors to a flight record",
+      "role": "I developed the STM32 aircraft logger, ESP32 LoRa ground station and post-flight replay tools. I joined Skylabs in August 2025 and became Avionics & Payload Team Lead in May 2026.",
+      "problem": "Sensors update at different rates, the radio carries a smaller live subset, and the team still needs a useful record after landing.",
+      "decisions": [
+        "Keep the aircraft binary log separate from the live link. Record the received packets again on the ground, then use one data contract for synchronized replay."
+      ],
+      "validation": "The published F110211 flight contains 13,772 rows over 679.33 seconds. Its report records a 50.0 ms log interval, 13,402 log overruns and zero SD write errors.",
+      "limit": "40 Hz is the aircraft logger’s target. This flight does not demonstrate sustained 40 Hz logging; zero SD write errors does not mean every timing deadline was met.",
+      "links": [
+        {
+          "label": "Inspect the recorded flight",
+          "href": "/shared/projects/skylabs/f110211/"
+        },
+        {
+          "label": "Aircraft logging design",
+          "href": "/v3/projects/skylabs/boards/telemetry/#telemetry-firmware"
+        },
+        {
+          "label": "Open Flight Review",
+          "href": "/shared/flight-review/"
+        }
+      ]
+    },
+    "lab": "/v2/projects/skylabs/#explore",
+    "hero": {
+      "src": "/assets/images/v3-product/skylabs-stopped.webp",
+      "alt": "CAD illustration of the Skylabs trainer aircraft",
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "slug": "kiku",
+    "name": "Kiku",
+    "description": "A pocket audio player for SD music, FM radio and Bluetooth receiving.",
+    "spec": "Real firmware simulator · Nine-part CAD explorer",
+    "category": "Embedded systems",
+    "source": "/v2/projects/kiku/",
+    "paragraphs": [],
+    "images": [
+      {
+        "src": "/assets/images/kiku/v2-product-assembly.png",
+        "alt": "Kiku P2 source-CAD player with a cream shell, green dial, orange key and captured firmware screen",
+        "width": 1200,
+        "height": 1000
+      },
+      {
+        "src": "/assets/images/kiku/display-assembly.webp",
+        "alt": "Source display assembly guide identifying the protective lens, LCD, cradle and flex connection",
+        "width": 1600,
+        "height": 1100
+      }
+    ],
+    "specs": [
+      {
+        "label": "Controller",
+        "value": "STM32H523"
+      },
+      {
+        "label": "Audio domain",
+        "value": "48 kHz PCM"
+      },
+      {
+        "label": "Body",
+        "value": "77.1 × 120.9 × 33.2 mm"
+      },
+      {
+        "label": "Enclosure",
+        "value": "Nine printed parts"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "Three sources. One audio system.",
+      "role": "Circuit design, embedded firmware and enclosure development.",
+      "maturity": "Working development hardware · P2 enclosure awaiting physical fit check",
+      "problem": "Bring local files, FM radio and Bluetooth receiving into one tactile, handheld player.",
+      "decisions": [
+        "The STM32H523 brings three listening sources into a common 48 kHz PCM output domain for headphones and the built-in speaker.",
+        "A push encoder and two keys control the interface. The screen updates only its changed region, while audio buffering is prioritised.",
+        "The nine-part P2 enclosure develops the printed P1 design with a larger battery bay, removable display cradle and folding stand."
+      ],
+      "validation": "The browser simulator runs the actual C screen renderer compiled to WebAssembly. Hardware events, library data and radio data are simulated.",
+      "limit": "The P2 display flex and connector still need a physical mating check. The browser does not receive FM or pair over Bluetooth, and its demo music is separate from the STM32 audio pipeline."
+    },
+    "lab": "/v2/projects/kiku/#simulator",
+    "hero": {
+      "src": "/assets/images/kiku/v2-product-assembly.png",
+      "alt": "Kiku P2 source-CAD player, with cream shell, green dial and firmware display",
+      "width": 1200,
+      "height": 1000
+    }
+  },
+  {
+    "slug": "framework-raspberry-pi",
+    "name": "Raspberry Pi Expansion Card",
+    "description": "An RP2354B microcontroller board in the Framework expansion-card format.",
+    "spec": "RP2354B · 26 × 30 mm",
+    "category": "Expansion cards",
+    "source": "/v2/projects/framework-raspberry-pi/",
+    "paragraphs": [
+      {
+        "heading": "Board layout",
+        "paragraphs": [
+          "The RP2354B sits at the centre of the layout, with external flash, a crystal and the power circuit arranged around it."
+        ]
+      },
+      {
+        "heading": "Mechanical fit",
+        "paragraphs": [
+          "The 26 × 30 mm board is 0.8 mm thick and uses a straddle-mount USB-C plug. Its mounting points line up with the Framework reference enclosure. Two tactile controls sit at the opposite edge from the connector."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/framework-pi-cad.webp",
+        "alt": "Raspberry Pi expansion card showing its RP2354B controller, USB-C plug and compact green circuit board",
+        "width": 1600,
+        "height": 1200
+      }
+    ],
+    "specs": [
+      {
+        "label": "Controller",
+        "value": "RP2354B"
+      },
+      {
+        "label": "Board",
+        "value": "26 × 30 mm"
+      },
+      {
+        "label": "Interface",
+        "value": "USB-C"
+      },
+      {
+        "label": "Thickness",
+        "value": "0.8 mm"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "An RP2354B within the Framework outline",
+      "maturity": "PCB design",
+      "role": "A 26 × 30 mm RP2354B microcontroller-board design for a Framework laptop expansion bay.",
+      "media_label": "CAD render · reference-enclosure assembly",
+      "problem": "Arrange the microcontroller, USB connector, power circuit and controls around the reference enclosure's mounting points.",
+      "decisions": [
+        "The 0.8 mm PCB uses a straddle-mount USB-C plug. Two tactile controls sit at the opposite edge from the connector.",
+        "The RP2354B occupies the centre of the layout, with flash, crystal and power circuitry arranged around it."
+      ],
+      "outcome": "The board layout and its relationship to the Framework reference enclosure are available to inspect in the CAD assembly.",
+      "links": [
+        {
+          "label": "Inspect the CAD assembly",
+          "href": "/v2/projects/framework-raspberry-pi/#explore"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published layout and mechanical design",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-raspberry-pi/index.html#L40-L62"
+        }
+      ]
+    },
+    "lab": "/v2/projects/framework-raspberry-pi/#explore",
+    "hero": {
+      "src": "/assets/images/v2/framework-pi-cad.webp",
+      "alt": "Raspberry Pi expansion card showing its RP2354B controller, USB-C plug and compact green circuit board",
+      "width": 1600,
+      "height": 1200
+    }
+  },
+  {
+    "slug": "tramtrace",
+    "name": "TramTrace",
+    "description": "A live LED map of Sydney and Parramatta light rail, built around an ESP32.",
+    "spec": "207.81 × 94.55 mm · 116 RGB pixels",
+    "category": "Connected hardware",
+    "source": "/v2/projects/tramtrace/",
+    "paragraphs": [
+      {
+        "heading": "Metroboard's sibling",
+        "paragraphs": [
+          "Metroboard covered Sydney's heavy-rail network, so the obvious follow-up was the tram network. TramTrace squeezes the CBD and Parramatta lines onto a smaller board without turning the route into an unreadable knot.",
+          "The board joins Wi-Fi and gets vehicle positions from a small service I wrote. The LEDs then turn those positions into something I can read at a glance from across the room."
+        ]
+      },
+      {
+        "heading": "On the board",
+        "paragraphs": [
+          "An ESP32-WROOM-32E handles the network connection and display logic. A CH340C gives me a straightforward USB programming path, while level shifting keeps the ESP32 and LED data happy together.",
+          "The hard part was physical rather than computational: the station names, route geometry and components all had to share the same compact board. The silkscreen ended up doing real work as part map, part assembly drawing."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/tramtrace-cad.webp",
+        "alt": "TramTrace light-rail display PCB",
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "src": "/assets/images/projects/tramtrace-parramatta-1920.webp",
+        "alt": "Close-up of the illuminated Parramatta light-rail section",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/tramtrace-cbd-1920.webp",
+        "alt": "RGB LEDs around the Town Hall and Chinatown stops",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/tramtrace-controller-1920.webp",
+        "alt": "TramTrace ESP32, USB interface and level-shifting circuitry",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "Network",
+        "value": "L1, L2, L3 and L4"
+      },
+      {
+        "label": "Controller",
+        "value": "ESP32-WROOM-32E"
+      },
+      {
+        "label": "Display",
+        "value": "WS2812C-2020 RGB LEDs"
+      },
+      {
+        "label": "Board",
+        "value": "207.81 × 94.55 mm, Rev 1.0"
+      }
+    ],
+    "links": [
+      {
+        "label": "Firmware and service source",
+        "href": "https://github.com/ProccyBoi/TramTrace"
+      },
+      {
+        "label": "Hardware mapping and power limits",
+        "href": "https://github.com/ProccyBoi/TramTrace/blob/main/hardware/README.md"
+      },
+      {
+        "label": "Station-mapping tests",
+        "href": "https://github.com/ProccyBoi/TramTrace/blob/main/tests/hardware/test_station_mapping.py"
+      }
+    ],
+    "evidence": {
+      "title": "From station data to the right physical LED",
+      "maturity": "Assembled hardware + published firmware",
+      "role": "PCB design, embedded display logic and the vehicle-position service for the light-rail map.",
+      "media_label": "Illuminated hardware photography · interactive CAD assembly",
+      "problem": "Fit four light-rail lines, station labels and 116 RGB pixels onto a compact PCB, then map each live station state to its electrical position.",
+      "decisions": [
+        "The hardware cross-reference links printed stations to LED chain indices. It explicitly handles the shared L2/L3 trunk and L1 Central's single route pixel.",
+        "An ESP32 and level shifter drive five LED chains. Firmware caps route brightness and the hardware-test sequence lights one route pixel at a time.",
+        "The service tracks source freshness and caches the last good data; the board clears an expired frame after 60 seconds."
+      ],
+      "validation": "The build photographs show the assembled, illuminated map. Published mapping tests compare the 68 route/station entries with the firmware bindings, check pixel coverage and check the shared-route exceptions.",
+      "outcome": "The physical display is accompanied by public firmware, a traced station-to-pixel map, service code and test code. The documented test-pairs sequence provides a station-by-station check of the displayed direction convention.",
+      "links": [
+        {
+          "label": "Firmware and service source",
+          "href": "https://github.com/ProccyBoi/TramTrace"
+        },
+        {
+          "label": "Hardware mapping and power limits",
+          "href": "https://github.com/ProccyBoi/TramTrace/blob/main/hardware/README.md"
+        },
+        {
+          "label": "Station-mapping tests",
+          "href": "https://github.com/ProccyBoi/TramTrace/blob/main/tests/hardware/test_station_mapping.py"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published contribution and assembled display",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/tramtrace/index.html"
+        },
+        {
+          "label": "Firmware and service behaviour",
+          "href": "https://github.com/ProccyBoi/TramTrace/blob/0afb61a89a005fbba85201744a3132d2a5170ee3/README.md"
+        },
+        {
+          "label": "Hardware cross-reference and direction convention",
+          "href": "https://github.com/ProccyBoi/TramTrace/blob/0afb61a89a005fbba85201744a3132d2a5170ee3/hardware/README.md"
+        },
+        {
+          "label": "Mapping test assertions",
+          "href": "https://github.com/ProccyBoi/TramTrace/blob/0afb61a89a005fbba85201744a3132d2a5170ee3/tests/hardware/test_station_mapping.py"
+        }
+      ]
+    },
+    "lab": "/v2/projects/tramtrace/#explore",
+    "hero": {
+      "src": "/assets/images/projects/tramtrace-hero-1920.webp",
+      "alt": "A live LED map of Sydney and Parramatta light rail, built around an ESP32.",
+      "width": 1920,
+      "height": 1280
+    }
+  },
+  {
+    "slug": "framework-dual-usb",
+    "name": "Dual USB-C Framework Card",
+    "description": "One laptop expansion bay turned into two USB 2.0 Type-C ports.",
+    "spec": "CH334F · USB 2.0",
+    "category": "Expansion cards",
+    "source": "/v2/projects/framework-dual-usb/",
+    "paragraphs": [
+      {
+        "heading": "Two ports in one bay",
+        "paragraphs": [
+          "A normal expansion card spends the whole bay on one connector. I wanted two. USB 2.0 was enough for the small peripherals I actually plug in, and keeping the scope there made the routing and power design realistic in the Framework card outline.",
+          "The finished board fits the standard clear shell, so it looks and behaves like the other modules instead of hanging off the laptop as an adapter."
+        ]
+      },
+      {
+        "heading": "The circuit",
+        "paragraphs": [
+          "A CH334F handles the two-port hub. The TPS2065 switches and limits downstream power, and USBLC6-2SC6 parts sit close to the connectors for ESD protection. I also had to fit the crystal, configuration resistors and three Type-C connectors into a board that is mostly connector.",
+          "The layout is dense but still readable. The clear case makes that worthwhile: you can see the hub and power path when the card is installed."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/projects/framework-dual-hero-1920.webp",
+        "alt": "Green dual USB-C Framework expansion card in a clear shell",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-dual-installed-1920.webp",
+        "alt": "Dual USB-C expansion card installed in a Framework laptop",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-dual-sides-1920.webp",
+        "alt": "Front and back of the dual USB-C PCB side by side",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-dual-ports-1920.webp",
+        "alt": "Macro view of the two downstream USB-C receptacles",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-dual-hub-1920.webp",
+        "alt": "Close-up of the CH334F hub and surrounding components",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "Hub",
+        "value": "CH334F"
+      },
+      {
+        "label": "Power",
+        "value": "TPS2065"
+      },
+      {
+        "label": "Protection",
+        "value": "USBLC6-2SC6"
+      },
+      {
+        "label": "Enclosure",
+        "value": "Clear expansion-card shell"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "Two ports within one expansion bay",
+      "maturity": "Assembled and installed",
+      "role": "A custom two-port USB 2.0 hub PCB packaged in the standard Framework expansion-card shell.",
+      "media_label": "Installed hardware photography · interactive CAD assembly",
+      "problem": "Fit three Type-C connectors, the hub, downstream power switching and connector protection into the outline of one laptop bay.",
+      "decisions": [
+        "USB 2.0 meets the small-peripheral use case while keeping the routing and power design within the expansion-card envelope.",
+        "The CH334F implements the hub. Two TPS2065 switches limit downstream power, with USBLC6-2SC6 devices providing connector-side ESD protection."
+      ],
+      "validation": "Photographs show both sides of the assembled PCB, the two downstream ports and the card installed in a Framework laptop.",
+      "outcome": "The assembled card fits the standard clear shell and presents two Type-C ports from a single bay.",
+      "links": [
+        {
+          "label": "See the installed card",
+          "href": "/v2/projects/framework-dual-usb/#build"
+        },
+        {
+          "label": "Inspect the CAD assembly",
+          "href": "/v2/projects/framework-dual-usb/#explore"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published trade-off, circuit and photographs",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-dual-usb/index.html#L40-L64"
+        }
+      ]
+    },
+    "lab": "/v2/projects/framework-dual-usb/#explore",
+    "hero": {
+      "src": "/assets/images/projects/framework-dual-installed-1920.webp",
+      "alt": "One laptop expansion bay turned into two USB 2.0 Type-C ports.",
+      "width": 1920,
+      "height": 1280
+    }
+  },
+  {
+    "slug": "framework-expansion-card",
+    "name": "Framework ESP32 Card",
+    "description": "An ESP32-S3 squeezed into a black Framework expansion-card PCB.",
+    "spec": "ESP32-S3-MINI-1 · 0.6 mm PCB",
+    "category": "Expansion cards",
+    "source": "/v2/projects/framework-expansion-card/",
+    "paragraphs": [
+      {
+        "heading": "A laptop-bay dev board",
+        "paragraphs": [
+          "I liked the Framework expansion-card system, but I wanted a module that could do more than expose another laptop port. This one puts an ESP32-S3-MINI-1 in the bay and leaves the radio visible through a clear shell.",
+          "The 0.6 mm board thickness is part of the electrical design as much as the mechanical one: it lets the card mate with the laptop's USB-C connector without a separate plug or interposer.",
+          "The latest revision swaps the original green board for black solder mask and white silkscreen. It is now assembled in the clear enclosure, with the antenna end of the ESP32 left unobstructed."
+        ]
+      },
+      {
+        "heading": "Programming and power",
+        "paragraphs": [
+          "A CH340K provides the USB serial connection. The BC817 transistor pair handles automatic boot and reset, so uploading firmware feels like using a normal development board rather than a bare module.",
+          "An AMS1117-3.3 supplies the ESP32. None of those parts are exotic; fitting them, the USB routing and the module keep-out into the expansion-card outline was the real exercise."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/framework-cad.webp",
+        "alt": "Populated Framework ESP32 expansion card",
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "src": "/assets/images/projects/framework-black-overview-1920.webp",
+        "alt": "Finished black Framework ESP32 card in its clear enclosure",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-black-programming-1920.webp",
+        "alt": "Close-up of the USB-C, programming and power components on the black PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-angle-1920.webp",
+        "alt": "Earlier green revision of the Framework card with its ESP32-S3 module and USB-C connector",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-esp32-1920.webp",
+        "alt": "Macro view of the Espressif ESP32-S3-MINI-1 module",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/framework-detail-1920.webp",
+        "alt": "Close-up of the green PCB edge, module and USB-C connector inside the clear case",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "PCB",
+        "value": "0.6 mm, black 2-layer FR-4"
+      },
+      {
+        "label": "Form factor",
+        "value": "Framework Expansion Card"
+      },
+      {
+        "label": "Module",
+        "value": "ESP32-S3-MINI-1"
+      },
+      {
+        "label": "USB interface",
+        "value": "CH340K"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "A development board inside the laptop",
+      "maturity": "Assembled hardware",
+      "role": "ESP32-S3 PCB, USB programming and power circuitry in the Framework expansion-card format.",
+      "media_label": "Manufactured board photography · interactive CAD assembly",
+      "problem": "Fit an ESP32 development board, its USB connection and the antenna keep-out into one Framework expansion bay.",
+      "decisions": [
+        "The 0.6 mm PCB supports direct USB-C mating without a separate interposer. The module's antenna end remains unobstructed in the clear enclosure.",
+        "A CH340K provides USB serial, a BC817 pair handles automatic boot and reset, and an AMS1117-3.3 supplies the module."
+      ],
+      "validation": "The build photographs show the assembled black revision in its enclosure, close-ups of the programming and power circuit, and the earlier green PCB.",
+      "outcome": "The latest black two-layer board is assembled in the Framework shell, with the USB interface, power circuit and radio on one removable card.",
+      "links": [
+        {
+          "label": "Compare the built revisions",
+          "href": "/v2/projects/framework-expansion-card/#build"
+        },
+        {
+          "label": "Inspect the CAD assembly",
+          "href": "/v2/projects/framework-expansion-card/#explore"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published circuit and build record",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-expansion-card/index.html#L76-L129"
+        }
+      ]
+    },
+    "lab": "/v2/projects/framework-expansion-card/#explore",
+    "hero": {
+      "src": "/assets/images/projects/framework-black-hero-1920.webp",
+      "alt": "An ESP32-S3 squeezed into a black Framework expansion-card PCB.",
+      "width": 1920,
+      "height": 1280
+    }
+  },
+  {
+    "slug": "framework-logic-analyser",
+    "name": "Framework Logic Analyser",
+    "description": "An STM32 logic analyser with logic, serial-bus and passive CAN capture in a Framework expansion card.",
+    "spec": "STM32G474 · 4 layers · 10 MS/s",
+    "category": "Expansion cards",
+    "source": "/v2/projects/framework-logic-analyser/",
+    "paragraphs": [
+      {
+        "heading": "Capture interfaces",
+        "paragraphs": [
+          "The card brings logic and serial-bus capture into a Framework expansion bay. Its STM32G474 supports four-channel logic and SPI capture, two-channel UART and I²C capture, and passive monitoring of CAN, RS-485 and RS-422.",
+          "The firmware documents a maximum capture rate of 10 MS/s and a buffer of 32,768 samples. Those limits describe the acquisition modes; they do not imply that every protocol runs at the maximum rate."
+        ]
+      },
+      {
+        "heading": "Signal routing",
+        "paragraphs": [
+          "Two MAX14778 multiplexers route the inputs. A TCAN3413 handles the CAN interface, while a THVD4411 provides the multiprotocol transceiver. A seven-pin connector brings the signals and power to the edge of the card.",
+          "The four-layer PCB measures 26 × 30 mm."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/framework-logic-analyser.webp",
+        "alt": "Framework Logic Analyser",
+        "width": 1600,
+        "height": 1200
+      }
+    ],
+    "specs": [
+      {
+        "label": "Controller",
+        "value": "STM32G474CEU6"
+      },
+      {
+        "label": "Board",
+        "value": "26 × 30 mm · 4 layers"
+      },
+      {
+        "label": "Logic capture",
+        "value": "4 channels"
+      },
+      {
+        "label": "Capture limit",
+        "value": "10 MS/s · 32,768 samples"
+      }
+    ],
+    "links": [
+      {
+        "label": "Firmware and host tooling",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware"
+      },
+      {
+        "label": "Hardware map and electrical limits",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/main/docs/HARDWARE.md"
+      },
+      {
+        "label": "Host-side tests",
+        "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/main/tests/test_host.py"
+      }
+    ],
+    "evidence": {
+      "title": "Capture hardware with explicit safe states",
+      "maturity": "PCB design + prototype firmware",
+      "role": "An STM32G474 card design with board-specific capture firmware and Python host tooling.",
+      "media_label": "CAD render · published firmware and host tests",
+      "problem": "Bring logic and serial-bus capture into a 26 × 30 mm expansion card while keeping passive monitoring from driving the bus under observation.",
+      "decisions": [
+        "Timer-triggered DMA samples the GPIO inputs. Native USB CDC carries commands and captured bytes to a Python tool that exports VCD or CSV.",
+        "The firmware boots with the muxes disconnected, CAN in standby and the multiprotocol transceiver shut down. Route changes disable the drivers before reconnecting inputs.",
+        "Raw GPIO routes are limited to 3.3 V logic. RS-232 is excluded from passive capture because that transceiver mode also enables its transmitter."
+      ],
+      "validation": "Published host-side tests exercise binary framing, VCD/CSV export and command validation using simulated serial data. The hardware document maps firmware pins and safe states to the routed PCB.",
+      "outcome": "The prototype firmware implements immediate capture with configured limits of 10 MS/s and 32,768 samples, plus passive Classical CAN monitoring. Hardware trigger and pre-trigger capture remain unimplemented.",
+      "links": [
+        {
+          "label": "Firmware and host tooling",
+          "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware"
+        },
+        {
+          "label": "Hardware map and electrical limits",
+          "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/main/docs/HARDWARE.md"
+        },
+        {
+          "label": "Host-side tests",
+          "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/main/tests/test_host.py"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published PCB dimensions and CAD",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/framework-logic-analyser/index.html"
+        },
+        {
+          "label": "Firmware scope and limits",
+          "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/README.md"
+        },
+        {
+          "label": "Safe states and route rationale",
+          "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/docs/HARDWARE.md"
+        },
+        {
+          "label": "DMA acquisition implementation",
+          "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/src/capture.cpp"
+        },
+        {
+          "label": "Host test scope",
+          "href": "https://github.com/ProccyBoi/framework-logic-analyser-firmware/blob/4f7fab28231c551710e99b5fefebfb3a0a6669cf/tests/test_host.py"
+        }
+      ]
+    },
+    "lab": "/v2/projects/framework-logic-analyser/#explore",
+    "hero": {
+      "src": "/assets/images/v2/hardware/framework-logic-analyser.webp",
+      "alt": "Framework Logic Analyser",
+      "width": 1600,
+      "height": 1200
+    }
+  },
+  {
+    "slug": "coaster",
+    "name": "RGB Drink Coaster",
+    "description": "A 24-pixel STM32 coaster that reacts to cup shadow and local temperature change.",
+    "spec": "STM32C011F6 · SHT4x + VEML7700",
+    "category": "Embedded systems",
+    "source": "/v2/projects/coaster/",
+    "paragraphs": [
+      {
+        "heading": "Detect the drink",
+        "paragraphs": [
+          "The VEML7700 sits near the centre of the board and turns the cup's shadow into a placement signal. At startup the firmware learns the uncovered light level for two seconds. A drop to 65% or less of that reference for 500 ms marks the coaster occupied; light returning to at least 85% for 500 ms marks it empty again.",
+          "That makes the same sensor useful for both presence and brightness without adding a switch or load cell. The trade-off is optical: room-light changes, clear cups and RGB reflections through the lid can all affect the reading, so the firmware uses hysteresis and minimum-light thresholds rather than treating every dip as a cup."
+        ]
+      },
+      {
+        "heading": "Measure the change",
+        "paragraphs": [
+          "An SHT4x tracks local temperature under the centre of the coaster. The sensor is separated from the cup by the enclosure: the clear lid is 3 mm thick and the CAD leaves about 2.7 mm between the package and the lid. The firmware therefore displays change at the PCB sensor instead of pretending it knows the drink's actual temperature.",
+          "While the coaster is empty, its temperature reference follows the room slowly. When a cup is placed, that reference freezes and small local changes shift the colour from cool tones through neutral to warm tones. Temperature and light are sampled four times per second while the LED frame updates at 40 fps."
+        ]
+      },
+      {
+        "heading": "Firmware with two moods",
+        "paragraphs": [
+          "The default build keeps a calm six-second travelling highlight around the ring. A separate Drink Companion build adds a rainbow welcome, cool glints, warm embers, an aurora and a goodbye sparkle while keeping the same sensor and fault logic.",
+          "Both current images have been flash-verified on the assembled board. The fun build at source commit 9da0988 was also observed running at about 3.26 V with temperature, humidity, ambient-light, WHITE-channel and LED-frame counters advancing without recorded sensor or LED-transfer errors. Cup behaviour through the clear resin and the final thermal response still need physical tuning."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/projects/coaster-hero-1920.webp",
+        "alt": "Black circular RGB drink coaster PCB visible inside its clear resin enclosure",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/coaster-pcb-top-1920.webp",
+        "alt": "Top render of the black coaster PCB with gold HALO mask artwork and 24-pixel LED ring",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/coaster-pcb-bottom-1920.webp",
+        "alt": "Underside render of the black coaster PCB showing the Rev A Halo Designed by Andrew Chung silkscreen",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/coaster-exploded-1920.webp",
+        "alt": "Exploded view of the black coaster PCB between the clear resin lid and base",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "MCU",
+        "value": "STM32C011F6"
+      },
+      {
+        "label": "Sensors",
+        "value": "SHT4x + VEML7700"
+      },
+      {
+        "label": "Lighting",
+        "value": "24 × WS2812C"
+      },
+      {
+        "label": "Enclosure",
+        "value": "Clear resin"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "role": "Custom PCB, enclosure integration and STM32 firmware for a sensor-driven RGB coaster.",
+      "maturity": "Assembled hardware · firmware flash-verified",
+      "problem": "Infer cup presence and local thermal change through a clear resin enclosure without a mechanical switch.",
+      "validation": "Both firmware variants have been flash-verified on the assembled board. Cup behaviour through the resin and the final thermal response still need physical tuning."
+    },
+    "lab": "/v2/projects/coaster/#explore",
+    "hero": {
+      "src": "/assets/images/projects/coaster-hero-1920.webp",
+      "alt": "Black circular RGB drink coaster PCB visible inside its clear resin enclosure",
+      "width": 1920,
+      "height": 1280
+    }
+  },
+  {
+    "slug": "rf-test-board",
+    "name": "RF Test Board",
+    "description": "Feedlines and filter footprints made to be compared on a VNA.",
+    "spec": "50 Ω target · u.FL and SMA",
+    "category": "Radio & measurement",
+    "source": "/v2/projects/rf-test-board/",
+    "paragraphs": [
+      {
+        "heading": "Test setup",
+        "paragraphs": [
+          "The useful RF advice is usually short: control the impedance, keep the return path intact, and place the matching network close. What I wanted to know was how much each detail changed the result on the inexpensive two-layer process I was actually using.",
+          "I ordered this board without impedance control and measured it with a VNA. That gave me a physical reference for the manufacturer's stack-up instead of another calculator result."
+        ]
+      },
+      {
+        "heading": "What I compared",
+        "paragraphs": [
+          "The board carries straight coplanar traces, tuning-capacitor sections and split-pi filter footprints, with both u.FL and SMA transitions. It also repeats the feedline with and without solder mask.",
+          "The target was 50 Ω on 1.6 mm FR-4 with 1 oz outer copper and a 0.2 mm gap to the surrounding copper. The nominal trace widths printed on the back are 0.8877 mm with mask and 1.0244 mm without it. Keeping those numbers on the board means the sample stays useful after the design files have disappeared into an archive."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/rf-test-board.webp",
+        "alt": "RF Test Board circuit board assembly",
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "src": "/assets/images/projects/rf-test-sma-1920.webp",
+        "alt": "SMA end of the RF test PCB with filter and tuning footprints",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/rf-test-reverse-1920.webp",
+        "alt": "Back of the RF test board with revision title",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/rf-test-details-1920.webp",
+        "alt": "Silkscreen listing the RF test board stack-up and trace dimensions",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "Target",
+        "value": "50 Ω"
+      },
+      {
+        "label": "Connectors",
+        "value": "u.FL and SMA"
+      },
+      {
+        "label": "Stack-up",
+        "value": "2-layer, 1.6 mm FR-4"
+      },
+      {
+        "label": "Instrument",
+        "value": "Vector network analyser"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "A physical check on the RF layout",
+      "maturity": "Fabricated · VNA evaluation",
+      "role": "A two-layer RF comparison board, ordered without impedance control and measured with a vector network analyser.",
+      "media_label": "Manufactured test-board photography · interactive CAD assembly",
+      "problem": "Check calculated feedline geometry against the inexpensive 1.6 mm FR-4 fabrication process used for the preceding LoRa receiver.",
+      "decisions": [
+        "Place masked and unmasked coplanar traces, u.FL and SMA transitions, tuning sections and split-pi footprints on the same board.",
+        "Print the stack-up and nominal trace widths on the reverse: 1 oz copper, a 0.2 mm ground gap, and widths of 0.8877 mm with mask and 1.0244 mm without it. The design target is 50 Ω."
+      ],
+      "challenges": "The earlier LoRa receiver's Rev A feedline missed the intended 50 Ω impedance. Investigating it with a VNA led to this dedicated comparison board.",
+      "validation": "VNA evaluation is documented in the project record. Photographs identify the comparison structures and the printed stack-up and geometry.",
+      "outcome": "A reusable physical reference for comparing feedlines, connector transitions and filter footprints on the chosen fabrication process.",
+      "links": [
+        {
+          "label": "Inspect the test structures",
+          "href": "/v2/projects/rf-test-board/#build"
+        },
+        {
+          "label": "Read the preceding LoRa test",
+          "href": "/v2/projects/lora-receiver/#details"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published test method and geometry",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/rf-test-board/index.html#L49-L58"
+        },
+        {
+          "label": "Preceding feedline investigation",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/lora-receiver/index.html"
+        }
+      ]
+    },
+    "lab": "/v2/projects/rf-test-board/#explore",
+    "hero": {
+      "src": "/assets/images/projects/rf-test-hero-1920.webp",
+      "alt": "Feedlines and filter footprints made to be compared on a VNA.",
+      "width": 1920,
+      "height": 1280
+    }
+  },
+  {
+    "slug": "lora-receiver",
+    "name": "LoRa Receiver + GNSS",
+    "description": "An ESP32 receiver board with a u-blox NEO-M9N and 915 MHz LoRa.",
+    "spec": "Rev A · Tested beyond 1 km",
+    "category": "Radio & measurement",
+    "source": "/v2/projects/lora-receiver/",
+    "paragraphs": [
+      {
+        "heading": "Radio and position",
+        "paragraphs": [
+          "I designed this board as one half of a small telemetry link. An ESP32-WROOM-32E runs the application, a 915 MHz LoRa module handles the long-range connection, and a u-blox NEO-M9N supplies position data.",
+          "Putting the radio and GNSS on one board kept the wiring simple in use. It also made the RF layout impossible to ignore, which turned out to be the more valuable part of the project."
+        ]
+      },
+      {
+        "heading": "The first RF lesson",
+        "paragraphs": [
+          "The Rev A feedline was not as close to 50 Ω as I wanted. I checked it with a VNA, took the mismatch seriously, and used what I found when I laid out the dedicated RF test board.",
+          "Even with that first-pass layout, the pair reached at least one kilometre in testing. That result was useful, but the measurement was better: it gave the next board a specific problem to fix."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/lora-receiver.webp",
+        "alt": "LoRa Receiver + GNSS circuit board assembly",
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "src": "/assets/images/projects/lora-receiver-system-1920.webp",
+        "alt": "Low-angle view across the black receiver PCB and its three modules",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/lora-receiver-silkscreen-1920.webp",
+        "alt": "Macro view of the Rev A LoRa Receiver and GPS Module silkscreen",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/lora-receiver-antenna-1920.webp",
+        "alt": "Close view of the u-blox module and connected antenna lead",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "Band",
+        "value": "915 MHz"
+      },
+      {
+        "label": "Revision",
+        "value": "A"
+      },
+      {
+        "label": "Controller",
+        "value": "ESP32-WROOM-32E"
+      },
+      {
+        "label": "GNSS",
+        "value": "u-blox NEO-M9N"
+      },
+      {
+        "label": "Radio",
+        "value": "LoRa module"
+      },
+      {
+        "label": "Designer",
+        "value": "Andrew Chung"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "A range result, and a better RF question",
+      "role": "A receiver PCB combining an ESP32 application controller, 915 MHz LoRa and a u-blox NEO-M9N GNSS receiver.",
+      "problem": "Putting radio and navigation on one board reduces external wiring, but makes the feedline layout part of the system design.",
+      "decisions": [
+        "Check the Rev A feedline with a VNA. Its mismatch from the 50 Ω target informed a dedicated RF test board for comparing geometries and transitions."
+      ],
+      "validation": "The published case records a link reaching at least one kilometre in testing, alongside the VNA investigation of the first-pass feedline.",
+      "limit": "The distance is a reported test result. The page does not publish a complete range-test setup, packet-loss curve or measured impedance value.",
+      "links": [
+        {
+          "label": "Read the RF test-board follow-up",
+          "href": "/v3/projects/rf-test-board/"
+        },
+        {
+          "label": "See the Rev A build",
+          "href": "/v3/projects/lora-receiver/#build"
+        }
+      ]
+    },
+    "lab": "/v2/projects/lora-receiver/#explore",
+    "hero": {
+      "src": "/assets/images/projects/lora-receiver-hero-1920.webp",
+      "alt": "An ESP32 receiver board with a u-blox NEO-M9N and 915 MHz LoRa.",
+      "width": 1920,
+      "height": 1280
+    }
+  },
+  {
+    "slug": "switch-mode-power-supplies",
+    "name": "Switchmode Power Supplies",
+    "description": "Isolated test hardware and production PCB work from my trainee engineering role.",
+    "spec": "Industry work · 2026",
+    "category": "Power electronics",
+    "source": "/v2/projects/switch-mode-power-supplies/",
+    "paragraphs": [],
+    "images": [
+      {
+        "src": "/assets/images/projects/switchmode-channel-hero-1920.webp",
+        "alt": "Isolated Glitch Tester V03 black PCB with white Switchmode silkscreen",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/switchmode-channel-assembled-1920.webp",
+        "alt": "Component side of the Isolated Glitch Tester V03 PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/switchmode-channel-reverse-1920.webp",
+        "alt": "Reverse side of the Isolated Glitch Tester V03 PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/switchmode-channel-detail-1920.webp",
+        "alt": "Close detail of the Isolated Glitch Tester V03 PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/switchmode-bus-hero-1920.webp",
+        "alt": "Isolated Glitch Tester Bus V02 black PCB with white Switchmode silkscreen",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/switchmode-bus-detail-1920.webp",
+        "alt": "Close detail of the Isolated Glitch Tester Bus V02 PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/switchmode-bus-alt-1920.webp",
+        "alt": "Alternate view of the Isolated Glitch Tester Bus V02 PCB",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "Company",
+        "value": "Switchmode Power Supplies Pty Ltd"
+      },
+      {
+        "label": "Role",
+        "value": "Electronics Engineer Trainee"
+      },
+      {
+        "label": "Dates",
+        "value": "Jun. 2026 to present"
+      },
+      {
+        "label": "Board 01",
+        "value": "Isolated Glitch Tester V03"
+      },
+      {
+        "label": "Board 02",
+        "value": "Isolated Glitch Tester Bus V02"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "Power-supply testing and repair",
+      "maturity": "Professional work · assembled boards",
+      "role": "Electronics Engineer Trainee at Switchmode Power Supplies since June 2026, maintaining, testing and repairing low- and high-voltage power supplies and other equipment.",
+      "media_label": "Manufactured and assembled board photography",
+      "validation": "The photographs document the Isolated Glitch Tester V03 and Isolated Glitch Tester Bus V02, including component-side, reverse and detail views.",
+      "links": [
+        {
+          "label": "Inspect the photographed boards",
+          "href": "/v2/projects/switch-mode-power-supplies/#build"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published role and responsibilities",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/about/index.html#L56-L60"
+        },
+        {
+          "label": "Published board record and photographs",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/switch-mode-power-supplies/index.html"
+        }
+      ]
+    },
+    "lab": "/v2/projects/switch-mode-power-supplies/#details",
+    "hero": {
+      "src": "/assets/images/projects/switchmode-channel-hero-1920.webp",
+      "alt": "Isolated Glitch Tester V03 black PCB with white Switchmode silkscreen",
+      "width": 1920,
+      "height": 1280
+    }
+  },
+  {
+    "slug": "metroboard",
+    "name": "Metroboard",
+    "description": "A 300 × 305.7 mm Sydney rail map driven by live data and 291 LEDs.",
+    "spec": "Personal project · ESP32",
+    "category": "Connected hardware",
+    "source": "/v2/projects/metroboard/",
+    "paragraphs": [
+      {
+        "heading": "Sydney rail display",
+        "paragraphs": [
+          "I wanted Sydney's rail network to live on the wall, not in another browser tab. Metroboard is a 300 × 305.7 mm PCB with 291 LEDs, laid out as a physical map of the network.",
+          "The board joins Wi-Fi and gets TfNSW GTFS real-time data through a service I wrote. Each update turns vehicle positions into light, so the useful part of the display is visible before I have even picked up my phone."
+        ]
+      },
+      {
+        "heading": "The PCB is the interface",
+        "paragraphs": [
+          "There is no separate screen or printed overlay. The copper, solder mask, silkscreen and LEDs have to work together as both electronics and map graphics.",
+          "That constraint is what later led to TramTrace. The tram network needed a different scale and much tighter route geometry, but the idea stayed the same: make live transport data legible as a piece of hardware."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/metroboard.webp",
+        "alt": "Metroboard circuit board assembly",
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "src": "/assets/images/projects/metroboard1-web.jpg",
+        "alt": "Sydney rail network indicator with LEDs illuminated in a dark room",
+        "width": 1600,
+        "height": 900
+      },
+      {
+        "src": "/assets/images/projects/metroboard2-web.jpg",
+        "alt": "Sydney rail network PCB before its LEDs are illuminated",
+        "width": 1600,
+        "height": 900
+      },
+      {
+        "src": "/assets/images/projects/metroboard3-web.jpg",
+        "alt": "Low-angle view of Metroboard electronics near the USB connector",
+        "width": 1600,
+        "height": 900
+      },
+      {
+        "src": "/assets/images/projects/metroboard4-web.jpg",
+        "alt": "Close view of Metroboard LEDs illuminated across the Sydney rail map",
+        "width": 1600,
+        "height": 900
+      }
+    ],
+    "specs": [
+      {
+        "label": "Type",
+        "value": "Personal project"
+      },
+      {
+        "label": "Data",
+        "value": "TfNSW GTFS real-time"
+      },
+      {
+        "label": "Display",
+        "value": "291 LEDs"
+      },
+      {
+        "label": "Format",
+        "value": "300 × 305.7 mm PCB"
+      }
+    ],
+    "links": [
+      {
+        "label": "Service and firmware source",
+        "href": "https://github.com/ProccyBoi/Metroboard"
+      },
+      {
+        "label": "Feed-cache tests",
+        "href": "https://github.com/ProccyBoi/Metroboard/blob/main/tests/test_feed_cache.py"
+      }
+    ],
+    "evidence": {
+      "title": "A rail map driven by a small data contract",
+      "maturity": "Assembled hardware + published service",
+      "role": "A custom Sydney rail-map PCB and a service that converts TfNSW vehicle positions into LED states.",
+      "media_label": "Illuminated hardware photography · interactive CAD assembly",
+      "problem": "Make real-time rail activity readable on a 291-pixel PCB, with the copper, solder mask and silkscreen forming the map itself.",
+      "decisions": [
+        "The service builds station-and-route keys from static GTFS data and reduces realtime vehicle positions to a compact set of LED states for the Wi-Fi-connected board.",
+        "Feed caching, per-feed retry backoff and last-good-data expiry keep the update path bounded when an upstream feed fails or rate-limits requests."
+      ],
+      "validation": "The photographs show the assembled board and illuminated routes. The public service repository includes tests for feed caching, backoff and stale-data expiry.",
+      "outcome": "A 300 × 305.7 mm physical rail display with public service and firmware source. Its PCB-as-map approach later informed the smaller TramTrace layout.",
+      "links": [
+        {
+          "label": "Service and firmware source",
+          "href": "https://github.com/ProccyBoi/Metroboard"
+        },
+        {
+          "label": "Feed-cache tests",
+          "href": "https://github.com/ProccyBoi/Metroboard/blob/main/tests/test_feed_cache.py"
+        },
+        {
+          "label": "See the illuminated build",
+          "href": "/v2/projects/metroboard/#build"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published hardware, contribution and build",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/metroboard/index.html"
+        },
+        {
+          "label": "Service architecture and firmware entrypoint",
+          "href": "https://github.com/ProccyBoi/Metroboard/blob/b3f949929456845b8da3e8ad2c9915beee199b7f/README.md"
+        },
+        {
+          "label": "Feed failure test scope",
+          "href": "https://github.com/ProccyBoi/Metroboard/blob/b3f949929456845b8da3e8ad2c9915beee199b7f/tests/test_feed_cache.py"
+        }
+      ]
+    },
+    "lab": "/v2/projects/metroboard/#explore",
+    "hero": {
+      "src": "/assets/images/projects/metroboard1-web.jpg",
+      "alt": "A 300 × 305.7 mm Sydney rail map driven by live data and 291 LEDs.",
+      "width": 1600,
+      "height": 900
+    }
+  },
+  {
+    "slug": "runswift",
+    "name": "rUNSWift",
+    "description": "Humanoid robot software, hardware integration and competition preparation.",
+    "spec": "ROS2 · Python · C++",
+    "category": "Robotics",
+    "source": "/v2/projects/runswift/",
+    "paragraphs": [
+      {
+        "heading": "My work",
+        "paragraphs": [
+          "I develop and test Python/C++ ROS2 code for NAO V5/6 and Booster K1 humanoid robots in RoboCup's Standard Platform League (SPL). I also work on hardware integration and robot readiness. I prepared and led the Sydney team at RoboCup 2025 in Salvador, Brazil."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/projects/runswift1-web.jpg",
+        "alt": "rUNSWift robot soccer lab field and monitoring screens",
+        "width": 1600,
+        "height": 900
+      },
+      {
+        "src": "/assets/images/projects/runswift2-web.jpg",
+        "alt": "rUNSWift team jerseys laid out on the robot soccer turf",
+        "width": 1600,
+        "height": 900
+      }
+    ],
+    "specs": [
+      {
+        "label": "Role",
+        "value": "Behaviours & hardware team member"
+      },
+      {
+        "label": "Period",
+        "value": "Dec. 2024–present"
+      },
+      {
+        "label": "Platforms",
+        "value": "NAO V5/6 / Booster K1"
+      },
+      {
+        "label": "Stack",
+        "value": "Python / C++ / ROS2"
+      }
+    ],
+    "links": [],
+    "evidence": {},
+    "lab": "/v2/projects/runswift/#details",
+    "hero": {
+      "src": "/assets/images/projects/runswift1-web.jpg",
+      "alt": "rUNSWift robot soccer lab field and monitoring screens",
+      "width": 1600,
+      "height": 900
+    }
+  },
+  {
+    "slug": "tamagotchi-sd-card",
+    "name": "Tamagotchi SD Card",
+    "description": "An STM32F072 board combining a full-size SD-card socket, USB-C and a seven-pin interface.",
+    "spec": "STM32F072 · SD card · USB-C",
+    "category": "Expansion cards",
+    "source": "/v2/projects/tamagotchi-sd-card/",
+    "paragraphs": [
+      {
+        "heading": "Storage interface",
+        "paragraphs": [
+          "The board pairs an STM32F072C8 with a full-size SD-card socket. USB-C and a seven-pin header provide the external connections, with reset and boot switches available on the PCB.",
+          "The two-layer board measures 44.88 × 39.27 mm."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/tamagotchi-sd-card.webp",
+        "alt": "Tamagotchi SD Card",
+        "width": 1600,
+        "height": 1200
+      }
+    ],
+    "specs": [
+      {
+        "label": "Controller",
+        "value": "STM32F072C8"
+      },
+      {
+        "label": "Board",
+        "value": "44.88 × 39.27 mm"
+      },
+      {
+        "label": "Storage",
+        "value": "Full-size SD card"
+      },
+      {
+        "label": "Connection",
+        "value": "USB-C + 7-pin header"
+      }
+    ],
+    "links": [],
+    "evidence": {},
+    "lab": "/v2/projects/tamagotchi-sd-card/#explore",
+    "hero": {
+      "src": "/assets/images/v2/hardware/tamagotchi-sd-card.webp",
+      "alt": "Tamagotchi SD Card",
+      "width": 1600,
+      "height": 1200
+    }
+  },
+  {
+    "slug": "lora-talkie",
+    "name": "LoRa Talkie",
+    "description": "A one-button Morse message composer and handheld 915 MHz LoRa radio.",
+    "spec": "Heltec V3 · C++",
+    "category": "Radio & measurement",
+    "source": "/v2/projects/lora-talkie/",
+    "paragraphs": [
+      {
+        "heading": "One button, full messages",
+        "paragraphs": [
+          "LoRa Talkie normally sits in receive mode and prints incoming messages straight to its OLED. A double-click opens the composer, where the same program button becomes a Morse key. I added dedicated patterns for spaces and deleting the last character so a complete message can be written without a keyboard.",
+          "A two-second hold sends the message and returns to the chat screen. The device remembers the last four outgoing messages; they can be selected with one to four clicks, edited and sent again."
+        ]
+      },
+      {
+        "heading": "Radio and field controls",
+        "paragraphs": [
+          "The current radio profile uses 915 MHz LoRa with a 250 kHz bandwidth, spreading factor 12 and up to 22 dBm transmit power. After each transmission the firmware puts the radio straight back into continuous receive mode.",
+          "The status page shows battery voltage, the configured frequency and spreading factor, transmit power and board temperature. There is also a repeating beacon mode for link checks, battery and temperature safety cut-offs, and deep sleep for carrying the unit without running it flat.",
+          "The OLED interface is deliberately small but not purely functional: it has startup and shutdown animations, plus coin, dice and slot-machine diversions that use the same single-button control scheme."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/projects/loratalkie-web.jpg",
+        "alt": "LoRa Talkie handheld enclosure with screen and antenna",
+        "width": 1600,
+        "height": 900
+      }
+    ],
+    "specs": [
+      {
+        "label": "Type",
+        "value": "Personal project"
+      },
+      {
+        "label": "Hardware",
+        "value": "Heltec V3 LoRa board"
+      },
+      {
+        "label": "Radio",
+        "value": "915 MHz / SX126x"
+      },
+      {
+        "label": "Input",
+        "value": "One-button Morse code"
+      }
+    ],
+    "links": [],
+    "evidence": {},
+    "lab": "/v2/projects/lora-talkie/#details",
+    "hero": {
+      "src": "/assets/images/projects/loratalkie-web.jpg",
+      "alt": "LoRa Talkie handheld enclosure with screen and antenna",
+      "width": 1600,
+      "height": 900
+    }
+  },
+  {
+    "slug": "dash",
+    "name": "Dash",
+    "description": "An ESP32 focus companion with animated eyes, gestures and app-free session control.",
+    "spec": "ESP32 · FreeRTOS",
+    "category": "Embedded systems",
+    "source": "/v2/projects/dash/",
+    "paragraphs": [
+      {
+        "heading": "From the car to the desk",
+        "paragraphs": [
+          "Dash started as the vehicle-mounted safe-driving prototype shown in these photos. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.",
+          "The current version is a cube-shaped study companion. Its screen is a pair of animated eyes, so a tap, shake, change of orientation or completed session gets a reaction without turning the device into another notification-heavy display."
+        ]
+      },
+      {
+        "heading": "Firmware",
+        "paragraphs": [
+          "A single state machine coordinates the character, focus timer, games and low-power states. The MPU-6050 is sampled at 100 Hz for software tap and orientation detection, while separate tasks look after the OLED, audio, touch input and session timing.",
+          "Dash creates its own Wi-Fi access point and serves a captive portal from LittleFS, so a phone can start a study session, see recent stats and change settings without an app or account. Completed sessions are kept in a rolling on-device log, and in-progress sessions can survive a reset through RTC memory.",
+          "I also built reaction-time and gesture games, OTA update support and an ESP-NOW layer for experimenting with group sessions between nearby units. Power management drops the ESP32 from 240 to 80 MHz as Dash gets drowsy, then uses deep sleep when it has been left alone."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/projects/dash1-web.jpg",
+        "alt": "Dash ESP32 electronics PCB close-up",
+        "width": 1600,
+        "height": 900
+      },
+      {
+        "src": "/assets/images/projects/dash2-web.jpg",
+        "alt": "Dash safe driving detector enclosure mounted inside a vehicle",
+        "width": 1600,
+        "height": 900
+      }
+    ],
+    "specs": [
+      {
+        "label": "Type",
+        "value": "Personal project"
+      },
+      {
+        "label": "Core",
+        "value": "ESP32-WROOM"
+      },
+      {
+        "label": "Sensing",
+        "value": "MPU-6050 / capacitive touch"
+      },
+      {
+        "label": "Interface",
+        "value": "SH1106 OLED / captive portal"
+      }
+    ],
+    "links": [],
+    "evidence": {},
+    "lab": "/v2/projects/dash/#details",
+    "hero": {
+      "src": "/assets/images/projects/dash1-web.jpg",
+      "alt": "Dash ESP32 electronics PCB close-up",
+      "width": 1600,
+      "height": 900
+    }
+  },
+  {
+    "slug": "skylabs/boards/telemetry",
+    "name": "Aircraft telemetry",
+    "description": "STM32 sensor acquisition, onboard logging and the aircraft side of a live LoRa link.",
+    "spec": "UNSW Skylabs · Avionics",
+    "category": "Flight systems",
+    "source": "/v2/projects/skylabs/boards/telemetry/",
+    "paragraphs": [
+      {
+        "heading": "Sensors and logging",
+        "paragraphs": [
+          "I developed this PCB around an STM32G474RET6. It brings together a u-blox GNSS receiver, BNO08x IMU, BME280 barometer, digital and analogue airspeed inputs, an HX711 strain interface, RTC, microSD storage and an SX1262 radio.",
+          "Each sensor has its own useful rate, failure mode and definition of “fresh”. The firmware stores presence and validity beside each measurement; missing values are NaN, not zero."
+        ]
+      },
+      {
+        "heading": "Firmware and logging",
+        "paragraphs": [
+          "The IMU supplies acceleration and gyro reports at 100 Hz, attitude at 50 Hz and magnetometer data at 25 Hz. GNSS runs at 10 Hz. The aircraft logger samples at a 40 Hz target, batches eight binary records into each SD transaction and syncs once a second, which avoids making every sample wait for a card write.",
+          "A compact SX1262 packet carries the live subset to the ground station. The default profile sends at 22 dBm every 100 ms using 500 kHz bandwidth and spreading factor 5. Ground commands can start or stop the aircraft log, add an event marker and change the link profile without a USB cable in the aircraft."
+        ]
+      },
+      {
+        "heading": "After landing",
+        "paragraphs": [
+          "The binary record keeps GNSS, environment, attitude, airspeed, strain and estimator output together. My replay tool reads that file into a synchronized 3D path, aircraft attitude, artificial horizon and engineering plots, while leaving the recorded values untouched."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/skylabs-telemetry.webp",
+        "alt": "Telemetry / avionics circuit board assembly",
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "src": "/assets/images/projects/skylabs-telemetry-alt-1920.webp",
+        "alt": "Assembled blue Skylabs avionics and payload PCB, component side",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/skylabs-telemetry-gnss-1920.webp",
+        "alt": "Close view of the u-blox GNSS module on the Skylabs avionics PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/skylabs-telemetry-interface-1920.webp",
+        "alt": "Close view of the USB-C connector and microSD socket on the Skylabs avionics PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/skylabs-telemetry-macro-1920.webp",
+        "alt": "Macro view of the strain-sensing interface and controller on the Skylabs avionics PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/skylabs-telemetry-reverse-1920.webp",
+        "alt": "Reverse side of the blue Skylabs telemetry PCB showing routing and silkscreen",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "Controller",
+        "value": "STM32G474RET6"
+      },
+      {
+        "label": "Radio",
+        "value": "SX1262 / 915 MHz"
+      },
+      {
+        "label": "Aircraft log",
+        "value": "40 Hz target · binary log"
+      },
+      {
+        "label": "Live link",
+        "value": "Up to 10 Hz"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "Separate the logging target from the flight result",
+      "maturity": "Flight-tested hardware · post-flight revisions",
+      "role": "STM32 aircraft PCB, sensor acquisition, binary logging and the aircraft side of the SX1262 telemetry link.",
+      "media_label": "Assembled hardware photography · recorded flight evidence",
+      "problem": "Keep a useful onboard record while sensors update at different rates and the radio carries only a smaller live subset.",
+      "decisions": [
+        "Store sensor presence and validity beside the readings, with missing measurements represented as NaN.",
+        "After the reference flight, buffer eight records per SD write and run sensor capture and logging before radio service. The logging target remains 40 Hz.",
+        "Gate EKF outputs using uncertainty and plausibility checks. The replay uses valid GNSS horizontal position and barometric height for the reference flight."
+      ],
+      "challenges": "The F110211 flight averaged 20.27 Hz against the 40 Hz target and recorded 13,402 logging overruns. Its navigation EKF diverged, so the EKF path is excluded from the flight analysis.",
+      "validation": "The published diagnostic covers 679.331 seconds and 13,772 usable aircraft records, with a 50 ms median log interval and zero SD write errors. These storage and timing results are reported separately.",
+      "outcome": "A later 150-second bench hold produced 146/146 fresh samples with continuous BNO and BME validity. The revised SD rate and EKF recovery still require confirmation in a fresh aircraft binary log.",
+      "links": [
+        {
+          "label": "Read the flight diagnostic",
+          "href": "/shared/projects/skylabs/f110211/diagnostic.html"
+        },
+        {
+          "label": "Replay the reference flight",
+          "href": "/shared/projects/skylabs/f110211/"
+        },
+        {
+          "label": "Open Flight Review",
+          "href": "/shared/flight-review/"
+        }
+      ],
+      "sources": [
+        {
+          "label": "Published sensor and logger design",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/skylabs/boards/telemetry/index.html"
+        },
+        {
+          "label": "Flight result, changes and bench checks",
+          "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/shared/projects/skylabs/f110211/diagnostic.md"
+        }
+      ]
+    },
+    "lab": "/v2/projects/skylabs/boards/telemetry/#explore",
+    "hero": {
+      "src": "/assets/images/v2/hardware/skylabs-telemetry.webp",
+      "alt": "Telemetry / avionics circuit board assembly",
+      "width": 1600,
+      "height": 1200
+    }
+  },
+  {
+    "slug": "skylabs/boards/ground-station",
+    "name": "Ground station",
+    "description": "An ESP32 receiver, independent SD record and field interface for Skylabs.",
+    "spec": "UNSW Skylabs · Avionics",
+    "category": "Flight systems",
+    "source": "/v2/projects/skylabs/boards/ground-station/",
+    "paragraphs": [
+      {
+        "heading": "Ground station receiver",
+        "paragraphs": [
+          "I developed the ground station around an ESP32-WROOM-32E, SX1262 radio, microSD socket and a Qwiic connector for the OLED. Two buttons and two activity LEDs keep the common field actions available even when nobody has a laptop open.",
+          "Every valid aircraft packet can be stored locally, so the team gets an independent copy of the live data even if the aircraft is damaged or its card is hard to reach. The board can write readable CSV or an indexed, CRC-protected binary format that can recover past a damaged record."
+        ]
+      },
+      {
+        "heading": "Field workflow",
+        "paragraphs": [
+          "The OLED cycles between an artificial horizon, link figures and sensor status. It shows RSSI, GPS and SD state, heading, satellite count and IMU accuracy instead of reducing the whole system to a single “connected” light.",
+          "The ESP32 also creates a Wi-Fi access point with a captive dashboard and pre-flight checklist. From a phone, the crew can inspect fresh telemetry, name a flight, choose the log format, add a marker or change the radio profile. Start and stop commands are repeated over LoRa so the aircraft and ground logs begin together."
+        ]
+      },
+      {
+        "heading": "Aircraft, receiver and laptop logs",
+        "paragraphs": [
+          "The receiver streams a rate-limited 230400-baud feed over USB without slowing the SD logger. A PC dashboard can record that stream as another CSV backup, while the onboard dashboard remains available when the laptop is not.",
+          "Giving the aircraft, receiver and laptop separate records costs some storage, but it has made flight-day problems much less mysterious."
+        ]
+      }
+    ],
+    "images": [
+      {
+        "src": "/assets/images/v2/hardware/skylabs-ground-station.webp",
+        "alt": "Ground station circuit board assembly",
+        "width": 1600,
+        "height": 1200
+      },
+      {
+        "src": "/assets/images/projects/skylabs-ground-alt-1920.webp",
+        "alt": "Assembled blue Skylabs ground-station PCB, component side",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/skylabs-ground-detail-1920.webp",
+        "alt": "Close view of components and UNSW silkscreen on the ground-station PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/skylabs-ground-interface-1920.webp",
+        "alt": "Close view of the antenna connector and microSD socket on the Skylabs ground-station PCB",
+        "width": 1920,
+        "height": 1280
+      },
+      {
+        "src": "/assets/images/projects/skylabs-ground-reverse-1920.webp",
+        "alt": "Reverse side of the blue Skylabs ground-station PCB showing routing and design credit",
+        "width": 1920,
+        "height": 1280
+      }
+    ],
+    "specs": [
+      {
+        "label": "Controller",
+        "value": "ESP32-WROOM-32E"
+      },
+      {
+        "label": "Radio",
+        "value": "SX1262 / 915 MHz"
+      },
+      {
+        "label": "Storage",
+        "value": "microSD / CSV or binary"
+      },
+      {
+        "label": "Display",
+        "value": "128 × 64 OLED"
+      }
+    ],
+    "links": [],
+    "evidence": {
+      "title": "A second record at the field",
+      "role": "An ESP32-WROOM-32E ground-station PCB bringing together the SX1262 receiver, microSD storage, OLED connection and field controls.",
+      "problem": "The crew needs telemetry and logging controls without depending on a laptop, plus a separate record if the aircraft log becomes inaccessible.",
+      "decisions": [
+        "Store valid received packets locally as CSV or indexed, CRC-protected binary. Expose link and sensor status on the OLED, and provide a phone-ready Wi-Fi dashboard and pre-flight checklist."
+      ],
+      "validation": "The published build photographs show the receiver, antenna connection and microSD hardware. The documented workflow adds a rate-limited USB stream for another record on a laptop.",
+      "limit": "A ground log contains the received live subset, not the full aircraft log. No packet-loss benchmark or damaged-record recovery test result is published here.",
+      "links": [
+        {
+          "label": "Read the field workflow",
+          "href": "/v3/projects/skylabs/boards/ground-station/#ground-station-field"
+        },
+        {
+          "label": "Inspect the assembled receiver",
+          "href": "/v3/projects/skylabs/boards/ground-station/#build"
+        }
+      ]
+    },
+    "lab": "/v2/projects/skylabs/boards/ground-station/#explore",
+    "hero": {
+      "src": "/assets/images/v2/hardware/skylabs-ground-station.webp",
+      "alt": "Ground station circuit board assembly",
+      "width": 1600,
+      "height": 1200
+    }
+  }
+]
