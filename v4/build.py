@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parent
 DATA=json.loads((ROOT/'content/projects.json').read_text())
 BY={r['slug']:r for r in DATA}
 BASE='https://proccyboi.github.io'
-ARROW='<span aria-hidden="true">↗</span>'
+ARROW='<span class="icon-arrow" aria-hidden="true"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 17 17 3M3 3h14v14"/></svg></span>'
 OUT={}
 def e(v):return escape(str(v),quote=True)
 def href(slug):return '/v4/projects/'+slug+'/'
@@ -65,7 +65,7 @@ for idx,r in enumerate(DATA):
   if img['src']!=r['hero']['src'] and not img['src'].endswith('-960.webp'):gallery.append(img)
  gallery=gallery[:4]
  build='<section class="case-gallery section" id="build"><header class="section-head"><div><p class="eyebrow">A closer look</p><h2>The work, in detail.</h2></div><p>Open an image to inspect it.</p></header><div class="gallery-grid">'
- for i,img in enumerate(gallery):build+=f'<figure><a class="gallery-link" href="{e(img["src"])}" data-gallery aria-label="Enlarge: {e(img["alt"])}">{image(img,sizes="(max-width:700px) 100vw, 48vw")}<span aria-hidden="true">↗</span></a><figcaption>{e(img["alt"])}</figcaption></figure>'
+ for i,img in enumerate(gallery):build+=f'<figure><a class="gallery-link" href="{e(img["src"])}" data-gallery aria-label="Enlarge: {e(img["alt"])}">{image(img,sizes="(max-width:700px) 100vw, 48vw")}{ARROW}</a><figcaption>{e(img["alt"])}</figcaption></figure>'
  build+='</div></section>'
  if not gallery:build=''
  resource_links=''.join(link(l['href'],l['label']) for l in r['links'])
