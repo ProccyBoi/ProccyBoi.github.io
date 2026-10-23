@@ -1,6 +1,6 @@
 import {loadThree,loadKikuModel,makeKikuMesh} from '/v3/assets/v2-kiku-model.js?v=finish-20261018';
-/* V2-only choreography. All nine meshes retain their source CAD attributes.
- * Native page scroll is the clock; no wheel/touch scroll cancellation or loop. */
+/* V3-isolated viewer. All nine meshes retain their source CAD attributes.
+ * The immersive layout uses native scroll; editorial views keep explicit poses. */
 const story=document.querySelector('[data-kiku-story]');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const small=matchMedia('(max-width: 600px)');
@@ -9,6 +9,7 @@ let motionReduced=reduced.matches;
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
 if(story){
+  const editorial=story.dataset.kikuLayout==='editorial';
   const stage=story.querySelector('.kiku-story-stage'), object=story.querySelector('.kiku-story-object');
   let canvas=story.querySelector('canvas');
   const load=story.querySelector('[data-kiku-story-load]');
@@ -90,7 +91,7 @@ if(story){
     const header=document.querySelector('.v2-header'),nav=document.querySelector('.v2-case-nav');
     const top=(header?.offsetHeight||0)+(nav?.offsetHeight||0);
     story.style.setProperty('--kiku-top',top+'px');
-    pinned=!!model&&!motionReduced&&!connection?.saveData&&innerHeight-top>=(small.matches?590:580);
+    pinned=!editorial&&!!model&&!motionReduced&&!connection?.saveData&&innerHeight-top>=(small.matches?590:580);
     story.classList.toggle('is-pinned',pinned);cue.hidden=!pinned;story.dataset.motionReduced=String(motionReduced);
   }
   function layout(){
@@ -211,16 +212,18 @@ if(story){
     else orbit.zoom=clamp(orbit.zoom*(event.key==='-'?1.1:.9),.4,2.5);
     semantic();queue();
   });
-  addEventListener('scroll',()=>{if(!layoutLock&&Math.abs(scrollY-lastY)>2&&!inspector.open){manual=null;resetInspection();}lastY=scrollY;update();},{passive:true});
+  if(!editorial)addEventListener('scroll',()=>{if(!layoutLock&&Math.abs(scrollY-lastY)>2&&!inspector.open){manual=null;resetInspection();}lastY=scrollY;update();},{passive:true});
   addEventListener('resize',layout,{passive:true});
   addEventListener('visibilitychange',()=>{last=0;if(document.hidden){cancelAnimationFrame(raf);raf=0;}else update();});
   reduced.addEventListener('change',event=>{motionReduced=event.matches;story.dataset.motionEvents=String(Number(story.dataset.motionEvents||0)+1);story.dataset.motionEventValue=String(event.matches);story.dataset.motionHeldValue=String(reduced.matches);tx=ty=0;layout();});
   connection?.addEventListener('change',()=>{layout();if(connection.saveData&&!model){requestVersion++;loading=false;load.hidden=false;load.disabled=false;}});
-  object.addEventListener('pointermove',event=>{if(event.pointerType!=='mouse'||motionReduced||inspected||pointers.size)return;const r=object.getBoundingClientRect();tx=((event.clientX-r.left)/r.width-.5)*.1;ty=((event.clientY-r.top)/r.height-.5)*.06;queue();},{passive:true});
+  object.addEventListener('pointermove',event=>{if(editorial||event.pointerType!=='mouse'||motionReduced||inspected||pointers.size)return;const r=object.getBoundingClientRect();tx=((event.clientX-r.left)/r.width-.5)*.1;ty=((event.clientY-r.top)/r.height-.5)*.06;queue();},{passive:true});
   object.addEventListener('pointerleave',()=>{tx=ty=0;queue();},{passive:true});
   function bindContextLoss(){canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fallback('Graphics paused. The source CAD image is still available.');});}
   bindContextLoss();
   if('IntersectionObserver'in window)new IntersectionObserver(entries=>{visible=entries.some(e=>e.isIntersecting);if(visible){last=0;update();}else{cancelAnimationFrame(raf);raf=0;}},{rootMargin:'40px'}).observe(stage);
+  // Natural-height controls can resize the viewer without a window resize.
+  if('ResizeObserver'in window)new ResizeObserver(()=>queue()).observe(object);
   layout();start();
 }
 

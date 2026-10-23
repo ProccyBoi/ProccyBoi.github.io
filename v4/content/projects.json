@@ -121,27 +121,56 @@
         "value": "Nine printed parts"
       }
     ],
-    "links": [],
+    "links": [
+      {
+        "href": "https://github.com/ProccyBoi/kiku",
+        "label": "Project source"
+      },
+      {
+        "href": "/v3/projects/kiku/#explore",
+        "label": "Inspect the assembly"
+      }
+    ],
     "evidence": {
-      "title": "Three sources. One audio system.",
-      "role": "Circuit design, embedded firmware and enclosure development.",
+      "title": "Audio architecture",
+      "role": "Circuit design, embedded firmware and enclosure development. Personal project, 2026.",
       "maturity": "Working development hardware · P2 enclosure awaiting physical fit check",
       "problem": "Bring local files, FM radio and Bluetooth receiving into one tactile, handheld player.",
       "decisions": [
-        "The STM32H523 brings three listening sources into a common 48 kHz PCM output domain for headphones and the built-in speaker.",
-        "A push encoder and two keys control the interface. The screen updates only its changed region, while audio buffering is prioritised.",
-        "The nine-part P2 enclosure develops the printed P1 design with a larger battery bay, removable display cradle and folding stand."
+        "The STM32H523 brings three listening sources into a common 48 kHz PCM output domain for wired headphones and the built-in speaker. The BM83 receives Bluetooth audio from a phone; there is no transmit path to wireless headphones.",
+        "Audio DMA has a 2 ms service window. An 8,192-frame stereo FIFO provides roughly 171 ms of buffering, with local playback filled ahead of display work. The screen only sends the region that changed.",
+        "A push encoder and two keys control the interface, with ten selectable looks. The browser simulator runs the actual C screen renderer compiled to WebAssembly; its hardware events, library and radio data are simulated.",
+        "The nine-part P2 enclosure develops the printed P1 design with a larger battery bay, stronger port opening, removable display cradle and folding stand."
       ],
-      "validation": "The browser simulator runs the actual C screen renderer compiled to WebAssembly. Hardware events, library data and radio data are simulated.",
-      "limit": "The P2 display flex and connector still need a physical mating check. The browser does not receive FM or pair over Bluetooth, and its demo music is separate from the STM32 audio pipeline."
+      "validation": "The 12 October 2026 firmware record includes a clean build, host tests, 130 renderer captures and flash readback verification. The renderer captures passed bounds and full-frame versus dirty-region equivalence checks.",
+      "limit": "These checks establish the tested firmware image and behaviour, not extended listening reliability or physical fit. Longer Bluetooth playback, SD insertion, output switching, power measurements and a P2 assembly test remain on the bench. The browser does not receive FM or pair over Bluetooth, and its demo music is separate from the STM32 audio pipeline.",
+      "challenges": "The display sits in a removable cradle behind a 1 mm clear lens. Its flex follows a U-fold studied at roughly 4.3 mm bend radius. Supplier contact dimensions and connector insertion geometry still need a real mating check."
     },
-    "lab": "/v2/projects/kiku/#simulator",
+    "lab": "/v3/projects/kiku/#simulator",
     "hero": {
       "src": "/assets/images/kiku/v2-product-assembly.png",
       "alt": "Kiku P2 source-CAD player, with cream shell, green dial and firmware display",
       "width": 1200,
       "height": 1000
-    }
+    },
+    "intro": "A pocket audio player for SD music, FM radio and Bluetooth receiving, built around a custom STM32 board and a tactile interface.",
+    "actions": [
+      {
+        "href": "/v3/projects/kiku/#simulator",
+        "label": "Try the player"
+      },
+      {
+        "href": "/v3/projects/kiku/#explore",
+        "label": "Inspect the assembly"
+      },
+      {
+        "href": "https://github.com/ProccyBoi/kiku",
+        "label": "View source"
+      }
+    ],
+    "gallery_title": "Display assembly",
+    "resources_title": "Source files and interactive tools",
+    "lab_label": "Try the interface"
   },
   {
     "slug": "framework-raspberry-pi",

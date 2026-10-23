@@ -3,7 +3,7 @@
 
 Checks the working tree against a frozen pre-experiment commit, never regenerates
 pages, and verifies route/content/form contracts against the current v2 sources
-(or the accepted frozen source for the independently maintained Kiku interior).
+(or the independently maintained source for the Kiku interior).
 This is structural evidence, not a claim of browser or graphics correctness.
 """
 from __future__ import annotations
@@ -30,6 +30,7 @@ SUPPORT = {
     ".github/workflows/deploy-pages.yml", ".github/workflows/verify-v3-webgpu.yml",
     "docs/v3-webgpu.md", ".github/workflows/verify-v3-orbital.yml",
     "scripts/v3_interior_source.py", "scripts/content/v3-kiku-3311a49.html",
+    "scripts/content/v3-kiku-page.html",
 }
 
 

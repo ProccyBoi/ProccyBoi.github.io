@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Kiku — Pocket audio player | Andrew Chung</title>
+  <meta name="description" content="Explore Kiku: a custom STM32 pocket player for SD music, FM radio and Bluetooth receiving. Try its real firmware renderer, take apart the enclosure and trace every audio path.">
+  <meta name="theme-color" content="#141412">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Kiku — Pocket audio player | Andrew Chung">
+  <meta property="og:description" content="A custom pocket player, from circuit board to enclosure to firmware. Explore the assembly and try the real screen renderer.">
+  <meta property="og:url" content="https://proccyboi.github.io/v2/projects/kiku/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/kiku/v2-product-assembly.png">
+  <meta property="og:image:alt" content="Kiku Mame P2 enclosure CAD, with a cream front, green rotary control and orange button">
+  <link rel="canonical" href="https://proccyboi.github.io/v2/projects/kiku/">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/assets/images/kiku/v2-product-assembly.png?v=finish-20261018" as="image" type="image/png">
+  <link rel="stylesheet" href="/assets/site.css">
+
+  <script type="module" src="/assets/v2-kiku-explorer.js?v=finish-20261018"></script>
+<link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
+  <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
+  <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
+  <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
+<link rel="stylesheet" href="/assets/kiku.css">
+  <link rel="stylesheet" href="/assets/v2-kiku.css?v=case-20261023">
+  <script type="module" src="/assets/v2-kiku.js?v=case-20261023"></script>
+</head>
+<body class="v2 v2-case project-page kiku-page">
+  <a class="skip-link" href="/v2/projects/kiku/#main">Skip to content</a>
+  <header class="v2-header"><div class="v2-nav-shell">
+      <a class="v2-brand" href="/v2/">Andrew Chung</a>
+      <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
+        <a href="/v2/projects/" aria-current="page">Projects</a>
+        <a href="/v2/about/">About</a>
+        <a href="/v2/book/">Book</a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+      </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
+    </div></header>
+  <nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">Kiku</span><div class="v2-case-nav-links"><a href="/v2/projects/kiku/#overview" data-v2-section>Overview</a><a href="/v2/projects/kiku/#simulator" data-v2-section>Try it</a><a href="/v2/projects/kiku/#details" data-v2-section>Engineering</a><a href="/v2/projects/kiku/#verification" data-v2-section>Status</a></div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>
+  <main id="main">
+    <section class="project-hero kiku-story" id="overview" aria-labelledby="kiku-title" data-kiku-story data-kiku-assembly data-kiku-layout="editorial">
+      <span id="explore" class="kiku-anchor-alias" aria-hidden="true"></span>
+      <div class="project-hero-grid kiku-story-stage">
+        <div class="project-hero-copy">
+          <div><h1 id="kiku-title">Kiku</h1>
+          <p>A pocket audio player for SD music, FM radio and Bluetooth receiving, built around a custom STM32 board and a tactile interface.</p></div>
+          <div class="project-hero-actions"><a class="kiku-primary" href="/v2/projects/kiku/#simulator">Try the player <span aria-hidden="true">↗</span></a><a href="https://github.com/ProccyBoi/kiku" target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a></div>
+        </div>
+        <div class="kiku-story-tools">
+          <div class="kiku-story-navigation" data-kiku-story-controls hidden role="group" aria-label="Explore Kiku"><button type="button" data-kiku-pose="0" aria-pressed="true">Player</button><button type="button" data-kiku-pose="0.5" aria-pressed="false">Inside</button><button type="button" data-kiku-pose="1" aria-pressed="false">Rear</button><button type="button" data-model-mode="pcb" aria-pressed="false">Circuit board</button></div>
+          <details class="kiku-inspector" data-inspector-details hidden>
+            <summary>Inspect a part <span aria-hidden="true">+</span></summary>
+            <div data-model-controls>
+              <label class="kiku-part-choice">Part <select data-part-select aria-label="Inspect an assembly part"><option value="">Complete player</option></select></label>
+              <label class="kiku-explode-control">Separate <input type="range" min="0" max="100" value="0" data-explode aria-label="Explode enclosure"><output data-explode-value>0%</output></label>
+              <div class="kiku-model-views" role="group" aria-label="Model camera"><button type="button" data-view="iso" aria-pressed="true">Angle</button><button type="button" data-view="front" aria-pressed="false">Front</button><button type="button" data-view="rear" aria-pressed="false">Rear</button><button type="button" data-model-reset>Reset</button></div>
+              <p class="kiku-part-description" data-part-description>Drag to rotate. Focus the model for arrow keys and + / − zoom.</p>
+              <button type="button" data-model-all hidden>Show complete player</button>
+            </div>
+          </details>
+          <p class="kiku-story-caption" data-kiku-story-caption data-part-name>Mame P2 · source CAD</p>
+        </div>
+        <div class="project-hero-media kiku-story-object" data-model-stage tabindex="0" role="group" aria-label="Kiku assembly. Drag to rotate. Arrow keys rotate; plus and minus zoom.">
+          <img src="/assets/images/kiku/v2-product-assembly.png?v=finish-20261018" width="1200" height="1000" fetchpriority="high" alt="Kiku P2 source-CAD player with a cream shell, green dial, orange key and captured firmware screen" data-kiku-story-poster data-model-poster>
+          <canvas data-kiku-story-canvas data-model-canvas aria-hidden="true" hidden></canvas>
+          <button type="button" class="kiku-story-load" data-kiku-story-load data-model-load hidden>Explore in 3D <span aria-hidden="true">↗</span></button>
+          <p class="kiku-story-qualification" data-model-status>Enclosure CAD + populated electronics</p>
+        </div>
+        <p class="kiku-story-scroll" data-kiku-story-scroll hidden>Scroll to open it <span aria-hidden="true">↓</span></p>
+      </div>
+    </section>
+    <div class="kiku-wrap kiku-project-context">
+      <dl class="engineering-brief kiku-project-facts" aria-label="Engineering brief"><div><dt>My work</dt><dd>Circuit design, embedded firmware and enclosure development. Personal project, 2026.</dd></div><div><dt>Project stage</dt><dd>Working development hardware. P2 enclosure ready for a physical fit check.</dd></div><div><dt>The object</dt><dd>77.1 × 120.9 × 33.2 mm body. Nine printed parts. Three listening sources.</dd></div></dl>
+      <details class="kiku-source-disclosure"><summary>About the model and its sources</summary><p>The enclosure and PCB layout come from the project’s source CAD. Components combine official KiCad models with dimensioned package reconstructions where vendor CAD is unavailable. Battery, speaker, display and antenna are documented packaging reconstructions. Fasteners and wiring are omitted; this visual assembly does not establish physical fit.</p><p><a href="/assets/models/kiku-pcb/pcb-provenance.json">Component geometry ↗</a><a href="/assets/models/kiku-hardware/hardware-provenance.json">Hardware geometry ↗</a><a href="/docs/kiku-asset-ledger.json">Project sources ↗</a></p></details>
+    </div>
+    <section class="kiku-section kiku-simulator-section" id="simulator" aria-labelledby="simulator-title">
+      <div class="kiku-wrap">
+        <header class="kiku-section-head"><div><h2 id="simulator-title">Try the interface</h2></div><p>A push encoder, two keys and ten looks. Try the actual C screen renderer, compiled to WebAssembly. Press Play to hear original demo music.</p></header>
+        <div data-kiku-simulator><div class="kiku-sim-fallback"><strong>Three sources. Ten looks. One tiny screen.</strong><p>The player needs JavaScript and WebAssembly. On the device, a push encoder and two keys control the interface; Settings → Look changes its visual theme.</p></div></div>
+        <p class="kiku-sim-qualification">The pixels are from the firmware. Hardware events, library and radio data are simulated; browser music is separate from the STM32 audio pipeline. No FM reception or Bluetooth pairing happens here.</p>
+      </div>
+    </section>
+    <section class="kiku-section" id="details" aria-labelledby="signal-title">
+      <div class="kiku-wrap">
+        <header class="kiku-section-head"><div><h2 id="signal-title">Audio architecture</h2></div><p>Local files, radio and Bluetooth each arrive differently. The STM32 brings them into a common 48 kHz output domain for headphones and the built-in speaker.</p></header>
+        <div class="kiku-signal" data-signal-explorer>
+          <div class="kiku-segments" role="group" aria-label="Explore an audio source"><button type="button" data-source="sd" aria-pressed="true">01 / SD music</button><button type="button" data-source="fm" aria-pressed="false">02 / FM radio</button><button type="button" data-source="bt" aria-pressed="false">03 / Bluetooth</button></div>
+          <div class="kiku-signal-path" aria-label="Selected signal path"><div><span>Source</span><strong data-signal-input>microSD</strong><small data-signal-input-note>WAV / MP3 files</small></div><b aria-hidden="true">→</b><div><span>Front end</span><strong data-signal-front>FatFs + decoder</strong><small data-signal-front-note>WAV parser / minimp3</small></div><b aria-hidden="true">→</b><div><span>Audio engine</span><strong>STM32H523</strong><small data-signal-engine>Decode → resample → buffer</small></div><b aria-hidden="true">→</b><div><span>Output</span><strong>48 kHz PCM</strong><small>Codec + speaker amplifier</small></div></div>
+          <div class="kiku-signal-bottom"><p data-signal-description aria-live="polite">The SDMMC peripheral reads a FAT filesystem. WAV and MP3 decoding feed a stereo FIFO; local playback is prefetched before display work. Supported WAV input is 16-bit mono or stereo at 8–96 kHz, converted to the 48 kHz output domain.</p><div class="kiku-output-branches"><span>TLV320AIC3104 → 3.5 mm headphones</span><span>MAX98357A → mono speaker</span></div></div>
+        </div>
+        <noscript><p>FM: SI4705 analogue audio → TLV320AIC3104 ADC → STM32 I²S return → outputs. Bluetooth: phone → BM83 A2DP receiver → I²S2 PCM → STM32 → outputs.</p></noscript>
+        <div class="kiku-decision-grid">
+          <article><h3>Prioritise audio timing</h3><p>Audio DMA has a 2 ms service window. An 8,192-frame stereo FIFO provides roughly 171 ms of buffering, with local playback filled ahead of display work. The screen only sends the region that changed.</p></article>
+          <article><h3>Refine the enclosure</h3><p>P2 develops the printed P1 enclosure: a larger battery bay, stronger port opening, removable display cradle and folding stand. The display flex and connector remain the critical physical-fit check.</p></article>
+        </div>
+        <div class="kiku-technical-details">
+          <details class="kiku-detail"><summary>Hardware and connections <span aria-hidden="true">+</span></summary><div>
+        <div class="kiku-hardware-list">
+          <article><span>01</span><h4>Control + scheduling</h4><div><strong>STM32H523VET6</strong><p>Cortex-M33 configured at 160 MHz, with a 512 KiB flash / 272 KiB RAM linker layout. FreeRTOS runs the application task while circular DMA and interrupt callbacks sustain the audio stream; TIM6 supplies the HAL timebase.</p></div></article>
+          <article><span>02</span><h4>Bluetooth receiving</h4><div><strong>Microchip BM83</strong><p>Receives music from a phone over A2DP; there is no transmit path to wireless headphones. UART host control runs at 115,200 baud alongside a separate I²S2 PCM path.</p></div></article>
+          <article><span>03</span><h4>Radio</h4><div><strong>Silicon Labs SI4705-D60</strong><p>FM tuning and seek, with RDS station names and RadioText. Analogue left and right channels feed the codec ADC before joining the digital output path.</p></div></article>
+          <article><span>04</span><h4>Conversion + listening</h4><div><strong>TLV320AIC3104 + MAX98357A</strong><p>A stereo audio codec and headphone driver work alongside a mono I²S speaker amplifier. Bluetooth’s incoming 24-bit samples are reduced to 16-bit PCM in the current stream path.</p></div></article>
+          <article><span>05</span><h4>Power + battery</h4><div><strong>BQ25895 + MAX17048</strong><p>Power-path charging and fuel gauging are separate functions. USB-C provides power and detection. USB data lines are not routed to the MCU, so firmware programming uses SWD and files reach the player on the SD card.</p></div></article>
+          <article><span>06</span><h4>Display + storage</h4><div><strong>ST7789 + 4-bit SDMMC</strong><p>A 2-inch HS20HS072RX display runs in 320 × 240 landscape. The current library holds up to 64 tracks. A push encoder and two keys keep the interface usable without a touchscreen.</p></div></article>
+        </div>
+          </div></details>
+          <details class="kiku-detail" id="build"><summary>The display fit that shaped the enclosure <span aria-hidden="true">+</span></summary><div><p>The 2-inch display sits in a removable cradle behind a 1 mm clear lens. Its flex follows a U-fold studied at roughly 4.3 mm bend radius. Supplier contact dimensions and connector insertion geometry still need a real mating check.</p><figure class="kiku-figure"><img src="/assets/images/kiku/display-assembly.webp" width="1600" height="1100" loading="lazy" alt="Source display assembly guide identifying the protective lens, LCD, cradle and flex connection"><figcaption>Source assembly guide · dimensions are nominal, before physical qualification</figcaption></figure></div></details>
+          <details class="kiku-detail" id="firmware"><summary>Firmware decisions and trade-offs <span aria-hidden="true">+</span></summary><div><p>Two 9,600-byte one-bit masks track the current and previous screen; a theme palette turns them into RGB565 pixels. A dirty bounding rectangle reduces display traffic without changing the renderer between looks.</p><p>Bluetooth command ownership stays with a transaction until the matching response or profile boundary, so a late metadata response cannot become a new request. Settings use two CRC-protected records with retry backoff; persistence depends on a writable SD card.</p><p>The current sample-rate conversion is nearest-neighbour. Bluetooth drift uses basic frame dropping or duplication. These are implementation trade-offs, not claims of bit-perfect or transparent playback.</p></div></details>
+        </div>
+      </div>
+    </section>
+    <section class="kiku-section kiku-verification" id="verification" aria-labelledby="verification-title">
+      <div class="kiku-wrap">
+        <header class="kiku-section-head"><div><h2 id="verification-title">Development status</h2></div><p>The 12 October 2026 firmware record includes a clean build, host tests, 130 renderer captures and flash readback verification. Those checks establish the tested image and behaviour; they do not replace extended listening or a P2 fit test.</p></header>
+        <div class="kiku-next-tests"><h3>Next on the bench</h3><ul><li><strong>Listening:</strong> longer Bluetooth playback and metadata recovery, SD insertion and headphone switching, speaker output and stronger FM reception checks.</li><li><strong>Power:</strong> reconcile charger and fuel-gauge voltage readings, then validate charging policy and battery runtime.</li><li><strong>Assembly:</strong> print P2, mate the display flex, and check the actual battery, antenna, clearances and stand stability.</li></ul></div>
+        <details class="kiku-detail"><summary>Read the verification notes <span aria-hidden="true">+</span></summary><div><p>All 130 renderer captures passed bounds and full-frame versus dirty-region equivalence checks. The documented binary was 154,836 bytes; populated HEX ranges matched flash readback, and the observed boot reported no application or DMA errors.</p><p>The largest reported first-party static stack frame was 16,616 bytes, below the 24 KiB gate. This does not measure live call-chain stack headroom. The observed BM83 firmware was 1.2, below the project’s 1.3+ production requirement; a short FIFO overflow occurred around wake, and metadata recovery needs a longer soak.</p></div></details>
+        <div class="kiku-end"><p>Source files and development notes</p><a href="https://github.com/ProccyBoi/kiku" target="_blank" rel="noreferrer">View on GitHub <span aria-hidden="true">↗</span></a></div>
+      </div>
+    </section>
+  <nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">More projects</p><div>
+      <a href="/v2/projects/dash/"><span>← Previous project</span><strong>Dash</strong></a>
+      <a href="/v2/projects/tramtrace/"><span>Next project →</span><strong>TramTrace</strong></a>
+    </div><a class="v2-all-work" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></nav>
+</main>
+  <footer class="v2-footer"><div class="v2-shell"><a class="v2-footer-name" href="/v2/">Andrew Chung</a><div class="v2-footer-links"><a href="/v2/projects/">Projects</a><a href="/v2/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Sydney, Australia</p><p>© <span data-current-year>2026</span> Andrew Chung</p></div></footer>
+</body>
+</html>

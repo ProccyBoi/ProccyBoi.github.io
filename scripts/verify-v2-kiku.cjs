@@ -1,19 +1,21 @@
 #!/usr/bin/env node
-/* Exact v2 Kiku scope + native browser interaction. Chromium/SwiftShader and
+/* Authorized Kiku propagation scope + native v2 browser interaction. Chromium/SwiftShader and
  * WebKit emulation establish browser behavior, not physical-device speed. */
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),baseline='3311a4996d88a72a3ff9187b1a8b6fb80dd64a69';
+const root=path.resolve(__dirname,'..'),baseline='a0d1a326d1cf56c60a9e01adbdd64bb6fed0b6c7';
 const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080',out=process.env.KIKU_OUT||'/tmp/kiku-evidence',args=process.argv.slice(2);
 const route='/v2/projects/kiku/',viewports={desktop1440:{width:1440,height:900},phone320:{width:320,height:780,touch:true},phone390:{width:390,height:844,touch:true},ipad768:{width:768,height:1024,touch:true},ipad1024:{width:1024,height:768,touch:true},ipad1180:{width:1180,height:820,touch:true}};
 const source=()=>{
  const preserved=(file,original=file)=>{const expected=execFileSync('git',['show',baseline+':'+original],{cwd:root,maxBuffer:20e6}),actual=fs.readFileSync(path.join(root,file));if(/\.(html|css|js|json)$/.test(file))assert.equal(actual.toString('utf8').replace(/\r\n/g,'\n'),expected.toString('utf8').replace(/\r\n/g,'\n'),'Preserve '+file);else assert.deepEqual(actual,expected,'Preserve '+file);};
- const allowed=new Set(['v2/projects/kiku/index.html','assets/v2-kiku.js','assets/v2-kiku.css','assets/v2-kiku-model.js','assets/v2-kiku-explorer.js','assets/v2-kiku-simulator.js','assets/v2-kiku-audio.js','assets/images/kiku/v2-populated-assembly.png','assets/images/kiku/v2-populated-pcb.png','assets/images/kiku/v2-product-assembly.png','scripts/build-v2-cases.py','docs/v2-kiku-audio.md','scripts/build-v3-pages.py','scripts/audit-v3.py','scripts/v3_interior_source.py','scripts/v3-webgpu/verify-isolation.py','scripts/content/v3-kiku-3311a49.html','scripts/content/v3-kiku-source.html','scripts/content/v2-kiku-hero.html','scripts/content/v2-kiku-page.html','scripts/verify-v2-kiku.cjs','.github/workflows/verify-v2-kiku.yml']);
+ // The accepted v2 design is fixed for this v3/v4 carryover. Keep the scope
+ // explicit so unrelated project pages and shared firmware/assets stay protected.
+ const allowed=new Set(['scripts/verify-v2-kiku.cjs','scripts/v3-webgpu/verify-isolation.py','scripts/v3_interior_source.py','scripts/content/v3-kiku-page.html','v3/projects/kiku/index.html','v3/assets/v2-kiku.css','v3/assets/v2-kiku.js','v4/content/projects.json','v4/build.py','v4/assets/site.css','v4/projects/kiku/index.html']);
  const changed=execFileSync('git',['diff',baseline,'--name-only'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean);
- for(const file of changed)assert.ok(allowed.has(file)||file.startsWith('assets/models/kiku-pcb/')||file.startsWith('scripts/kiku-pcb/')||file.startsWith('assets/models/kiku-hardware/')||file.startsWith('scripts/kiku-hardware/')||file.startsWith('assets/kiku/audio/')||['scripts/kiku-simulator/compose-audio.py','scripts/kiku-simulator/verify-audio.cjs'].includes(file),'Unrelated file changed: '+file);
- for(const file of ['assets/models/kiku/assembly.json','assets/models/kiku/assembly.bin','assets/kiku-simulator.js','assets/kiku.js','assets/kiku.css','assets/kiku/firmware-ui.wasm','projects/kiku/index.html','v3/projects/kiku/index.html','v2/index.html'])preserved(file);
+ for(const file of changed)assert.ok(allowed.has(file),'Unrelated file changed: '+file);
+ for(const file of ['assets/models/kiku/assembly.json','assets/models/kiku/assembly.bin','assets/kiku-simulator.js','assets/kiku.js','assets/kiku.css','assets/kiku/firmware-ui.wasm','projects/kiku/index.html','v2/index.html','v2/projects/kiku/index.html','scripts/content/v2-kiku-page.html','assets/v2-kiku.css','assets/v2-kiku.js','assets/v2-kiku-model.js','assets/v2-kiku-explorer.js','assets/v2-kiku-simulator.js','assets/v2-kiku-audio.js'])preserved(file);
  preserved('scripts/content/v3-kiku-source.html');
- preserved('scripts/content/v3-kiku-3311a49.html','v2/projects/kiku/index.html');
+ preserved('scripts/content/v3-kiku-3311a49.html');
  for(const item of JSON.parse(fs.readFileSync(path.join(root,'assets/models/kiku-pcb/poster-provenance.json'),'utf8')).captures)assert.equal(require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root,item.path))).digest('hex'),item.sha256,'Reviewed WebGL poster hash');
  for(const file of ['assets/v2-kiku.js','assets/v2-kiku-explorer.js']){const script=fs.readFileSync(path.join(root,file),'utf8');if(script.includes('v2-kiku-model.js'))assert.match(script,/from '\.\/v2-kiku-model\.js\?v=finish-20261018'/,'Current shared-loader cache key');}
  const html=fs.readFileSync(path.join(root,'v2/projects/kiku/index.html'),'utf8');
@@ -26,7 +28,7 @@ const source=()=>{
  const ranges=Object.values(provenance.componentTriangleRangesByMesh).flat();
  for(const ref of ['SW2','SW3','SW4','J1','U1','U10','FPC1']){const component=provenance.components.find(item=>item.ref===ref);assert.ok(component,'Required component '+ref);const triangles=ranges.filter(item=>item.ref===ref).reduce((n,item)=>n+item.triangleCount,0);assert.ok(triangles>12,'Major component has topology beyond one box: '+ref);assert.ok(['source-dimensioned-reconstruction','official-compatible-package-model'].includes(component.fidelity),'Honest geometry fidelity category: '+ref);assert.ok(component.sourceDocuments?.length||component.librarySource,'Traceable component source: '+ref);}
  const regenerated=execFileSync(process.env.PYTHON||'python3',['-X','utf8','-c',`import runpy; from pathlib import Path; m=runpy.run_path('scripts/build-v2-cases.py'); p=Path('projects/kiku/index.html').resolve(); print(m['normalized'](m['enrich_case'](m['make_case'](p),'kiku')),end='')`],{cwd:root,encoding:'utf8'});assert.equal(html.replace(/\r\n/g,'\n'),regenerated.replace(/\r\n/g,'\n'),'V2 regeneration');
- console.log('PASS exact Kiku-only production boundary, original meshes/firmware and root/v3 preservation, regeneration');
+ console.log('PASS authorized Kiku v3/v4 boundary, original meshes/firmware, accepted v2 and historical snapshots preserved, v2 regeneration');
 };
 async function bounded(promise,ms,label){let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out after '+ms+' ms')),ms);})]);}finally{clearTimeout(timer);}}
 async function failure(run,name,error){
