@@ -557,7 +557,7 @@ def make_index():
     hero = tree.find('section', 'page-hero')
     new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems and robotics.</p></div></section>'''
     jump = tree.find('nav', 'project-jumpbar')
-    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>16</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>13</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
+    controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>16</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>13</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search><button type="button" data-v2-clear-filters hidden>Clear filters</button></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
     source = replace_nodes(source, [(hero, new_hero), (jump, controls)])
     hardware_catalog = Tree(source).find('div', 'project-catalog')
     pi_card = '''<a class="catalog-card v2-pi-card" href="projects/framework-raspberry-pi/">
@@ -606,7 +606,8 @@ def make_index():
             counts[ancestor.attrs['data-v2-project-group']] += 1
             counts['all'] += 1
     source = replace_nodes(source, [(node, re.sub(r'<span>\d+</span>', f'<span>{counts[node.attrs["data-v2-category"]]}</span>', node.outer(source))) for node in tree.nodes if 'data-v2-category' in node.attrs])
-    return common(source, 'v2-collection')
+    source = common(source, 'v2-collection')
+    return source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=collection-20261023b"')
 
 
 def make_about():

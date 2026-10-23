@@ -34,6 +34,16 @@ for p in pages:
 assert len(pages)==21,len(pages)
 data=json.loads((V4/'content/projects.json').read_text());assert len(data)==18
 assert len([a for t,a in Page((V4/'projects/index.html').read_text()).tags if 'data-project' in a])==16
+# The index must find details that visitors can read in the engineering records.
+index_cards={a['data-project-slug']:a for t,a in Page((V4/'projects/index.html').read_text()).tags if 'data-project' in a}
+for query in ['stm32h523','48 khz','bm83']:
+ assert query in index_cards['kiku']['data-search'],f'Kiku is missing the searchable detail: {query}'
+# Board records stay within their parent system instead of wrapping through the project list.
+for board,sibling in [('telemetry','ground-station'),('ground-station','telemetry')]:
+ tags=Page((V4/f'projects/skylabs/boards/{board}/index.html').read_text()).tags
+ assert any(t=='a' and a.get('class')=='back-link' and a.get('href')=='/v4/projects/skylabs/' for t,a in tags),f'{board}: missing Skylabs parent link'
+ next_link=next(a for t,a in tags if t=='a' and a.get('class')=='next-project section')
+ assert next_link['href']==f'/v4/projects/skylabs/boards/{sibling}/',f'{board}: incorrect sibling navigation'
 for f,max_bytes in [('assets/site.js',12000),('assets/site.css',40000)]:assert (V4/f).stat().st_size<max_bytes
 assert 'requestAnimationFrame' in (V4/'assets/site.js').read_text()
 subprocess.run(['python3',str(V4/'build.py'),'--check'],check=True)

@@ -1,8 +1,10 @@
 """Build the independent v4 portfolio. Python standard library; no runtime framework."""
 from pathlib import Path
 from html import escape
-import json,re,sys
+import hashlib,json,re,sys
 ROOT=Path(__file__).resolve().parent
+# Normalize text line endings so Windows and CI generate identical asset versions.
+ASSETS={name:'/v4/assets/'+name+'?v='+hashlib.sha256((ROOT/'assets'/name).read_text(encoding='utf-8').encode('utf-8')).hexdigest()[:12] for name in ('site.css','site.js')}
 DATA=json.loads((ROOT/'content/projects.json').read_text())
 BY={r['slug']:r for r in DATA}
 BASE='https://proccyboi.github.io'
@@ -11,6 +13,12 @@ OUT={}
 def e(v):return escape(str(v),quote=True)
 def href(slug):return '/v4/projects/'+slug+'/'
 def link(url,label,cls='text-link'):return f'<a class="{cls}" href="{e(url)}">{e(label)} {ARROW}</a>'
+def text_values(value):
+ if isinstance(value,dict):return ' '.join(text_values(v) for v in value.values())
+ if isinstance(value,list):return ' '.join(text_values(v) for v in value)
+ return str(value)
+def search_text(record):
+ return ' '.join(text_values(record.get(key,'')) for key in ('name','description','spec','category','specs','evidence','paragraphs')).lower()
 def image(img, eager=False, sizes='100vw',cls=''):
  src=img['src']; width=img.get('width',1600); height=img.get('height',1200)
  small=src.replace('-1920.','-960.')
@@ -27,7 +35,7 @@ def footer():return f'''<footer class="footer"><div class="footer-top"><a href="
 def page(path,title,desc,body,active='',hero=None,bodyclass=''):
  url=BASE+'/v4/'+path; og=hero['src'] if hero else '/assets/images/projects/skylabs-telemetry-macro-1920.webp'
  OUT[path+'index.html']=f'''<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><title>{e(title)}</title><meta name="description" content="{e(desc)}"><meta name="theme-color" content="#080a0c"><link rel="canonical" href="{url}"><meta property="og:type" content="website"><meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{url}"><meta property="og:image" content="{BASE}{og}"><meta property="og:image:alt" content="{e(hero['alt'] if hero else 'Skylabs telemetry circuit board detail')}"><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/v4/assets/site.css"><script src="/v4/assets/site.js" defer></script></head><body class="{bodyclass}">{nav(active)}<main id="main" tabindex="-1">{body}</main>{footer()}<p class="sr-only" role="status" aria-live="polite" data-status></p></body></html>\n'''
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><title>{e(title)}</title><meta name="description" content="{e(desc)}"><meta name="theme-color" content="#080a0c"><link rel="canonical" href="{url}"><meta property="og:type" content="website"><meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{url}"><meta property="og:image" content="{BASE}{og}"><meta property="og:image:alt" content="{e(hero['alt'] if hero else 'Skylabs telemetry circuit board detail')}"><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="{ASSETS['site.css']}"><script src="{ASSETS['site.js']}" defer></script></head><body class="{bodyclass}">{nav(active)}<main id="main" tabindex="-1">{body}</main>{footer()}<p class="sr-only" role="status" aria-live="polite" data-status></p></body></html>\n'''
 def tile(slug,wide=False,photo=None):
  r=BY[slug]; img=photo or r['hero']; cad=' cad' if ('/v2/' in img['src'] or '/kiku/' in img['src']) else ''
  return f'''<a data-project-slug="{e(slug)}" class="project-tile{' wide' if wide else ''}{cad}" href="{href(slug)}"><div class="tile-image">{image(img,sizes='(max-width: 700px) 100vw, '+('96vw' if wide else '32vw'))}</div><div class="tile-copy"><div><h3>{e(r['name'])}</h3><p>{e(r['description'])}</p></div>{ARROW}</div></a>'''
@@ -41,7 +49,7 @@ page('','Andrew Chung — Electrical Engineering','Electrical engineering, embed
 # Project index: meaningful links and all content work with scripting disabled.
 cards=''
 for i,r in enumerate(DATA[:16]):
- cards+=f'''<article class="index-card" data-project-slug="{e(r['slug'])}" data-project data-category="{e(r['category'])}" data-search="{e((r['name']+' '+r['description']+' '+r['spec']+' '+r['category']).lower())}"><a href="{href(r['slug'])}"><div class="index-image{' cad' if '/v2/' in r['hero']['src'] or '/kiku/' in r['hero']['src'] else ''}">{image(r['hero'],sizes='(max-width:600px) 100vw, (max-width:1000px) 48vw, 32vw')}</div><div class="index-label"><span>{i+1:02d} / {e(r['category'])}</span>{ARROW}</div><h2>{e(r['name'])}</h2><p>{e(r['description'])}</p></a></article>'''
+ cards+=f'''<article class="index-card" data-project-slug="{e(r['slug'])}" data-project data-category="{e(r['category'])}" data-search="{e(search_text(r))}"><a href="{href(r['slug'])}"><div class="index-image{' cad' if '/v2/' in r['hero']['src'] or '/kiku/' in r['hero']['src'] else ''}">{image(r['hero'],sizes='(max-width:600px) 100vw, (max-width:1000px) 48vw, 32vw')}</div><div class="index-label"><span>{i+1:02d} / {e(r['category'])}</span>{ARROW}</div><h2>{e(r['name'])}</h2><p>{e(r['description'])}</p><p class="index-spec">{e(r['spec'])}</p></a></article>'''
 cats=sorted(set(r['category'] for r in DATA[:16]))
 index=f'''<section class="index-intro section"><p class="eyebrow">The project archive</p><h1>Ideas, made real.</h1><div class="index-intro-bottom"><p>Hardware, embedded software and systems.<br>Sixteen projects, built from the inside out.</p><a href="/v4/about/">About the engineer {ARROW}</a></div></section><section class="collection section" aria-label="Project collection"><form class="filters" role="search" hidden><label><span>Find a project</span><input type="search" name="q" placeholder="Search projects, components, ideas…" autocomplete="off"></label><label class="category-label"><span>Discipline</span><select name="category"><option value="">All disciplines</option>{''.join('<option>'+e(c)+'</option>' for c in cats)}</select></label><button type="reset">Reset</button></form><p class="result-count" data-count aria-live="polite">16 projects</p><div class="index-grid">{cards}</div><p class="no-results" hidden>No matching projects. Try another term, or clear the filters.</p></section>'''
 page('projects/','Projects — Andrew Chung','Explore 16 projects in electronics, embedded systems, robotics and flight telemetry.',index,active='/v4/projects/')
@@ -77,8 +85,16 @@ for idx,r in enumerate(DATA):
  if slug=='skylabs':
   resource_links+=link(href('skylabs/boards/telemetry'),'Aircraft telemetry')+link(href('skylabs/boards/ground-station'),'Ground station')
  actions=('<nav class="case-actions" aria-label="Project tools">'+''.join(link(a['href'],a['label']) for a in r['actions'])+'</nav>') if r.get('actions') else ''
+ sections=[('engineering','Engineering')]+([('build','Images')] if gallery else [])+[('resources','Resources')]
+ section_nav='<nav class="case-sections" aria-label="On this page">'+''.join(f'<a href="#{anchor}">{label}</a>' for anchor,label in sections)+'</nav>'
+ back='<a class="back-link" href="/v4/projects/">← All projects</a>'
  nxt=DATA[(idx+1)%16]
- body=f'''<section class="case-head section"><a class="back-link" href="/v4/projects/">← All projects</a><h1>{e(title)}</h1><div class="case-summary"><p class="eyebrow">{e(r['category'])}</p><p>{e(r.get('intro',r['description']))}</p><a class="down-link" href="#engineering" aria-label="Read the engineering story">↓</a></div>{actions}</section><figure class="case-hero section{' cad' if '/v2/' in r['hero']['src'] or '/kiku/' in r['hero']['src'] else ''}">{image(r['hero'],True)}<figcaption>{e(r['hero']['alt'])}</figcaption></figure><div class="case-specs section">{''.join('<div><span>'+e(s['label'])+'</span><p>'+e(s['value'])+'</p></div>' for s in r['specs'])}</div><section class="case-story section" id="engineering"><header class="story-heading"><p class="eyebrow">Engineering record</p><h2>{e(ev.get('title', 'The thinking behind the build.'))}</h2>{'<p class="maturity">'+e(ev['maturity'])+'</p>' if ev.get('maturity') else ''}</header><div class="story-body">{notes}{prose if not rows or len(rows)<3 else ''}</div></section>{build}<section class="case-resources section"><p class="eyebrow">Go deeper</p><h2>{e(r.get('resources_title','Explore the engineering.'))}</h2><div class="resource-links">{resource_links}</div></section><a class="next-project section" href="{href(nxt['slug'])}"><span class="eyebrow">Next project</span><span class="next-name">{e(nxt['name'])} {ARROW}</span></a>'''
+ next_label='Next project'
+ if slug.startswith('skylabs/boards/'):
+  back='<nav class="case-breadcrumb" aria-label="Breadcrumb">'+back+'<span aria-hidden="true">/</span><a class="back-link" href="'+href('skylabs')+'">Skylabs</a></nav>'
+  sibling='ground-station' if slug.endswith('/telemetry') else 'telemetry'
+  nxt=BY['skylabs/boards/'+sibling]; next_label='More from Skylabs'
+ body=f'''<section class="case-head section">{back}<h1>{e(title)}</h1><div class="case-summary"><p class="eyebrow">{e(r['category'])}</p><p>{e(r.get('intro',r['description']))}</p><a class="down-link" href="#engineering" aria-label="Read the engineering story">↓</a></div>{actions}{section_nav}</section><figure class="case-hero section{' cad' if '/v2/' in r['hero']['src'] or '/kiku/' in r['hero']['src'] else ''}">{image(r['hero'],True)}<figcaption>{e(r['hero']['alt'])}</figcaption></figure><div class="case-specs section">{''.join('<div><span>'+e(s['label'])+'</span><p>'+e(s['value'])+'</p></div>' for s in r['specs'])}</div><section class="case-story section" id="engineering"><header class="story-heading"><p class="eyebrow">Engineering record</p><h2>{e(ev.get('title', 'The thinking behind the build.'))}</h2>{'<p class="maturity">'+e(ev['maturity'])+'</p>' if ev.get('maturity') else ''}</header><div class="story-body">{notes}{prose if not rows or len(rows)<3 else ''}</div></section>{build}<section class="case-resources section" id="resources"><p class="eyebrow">Go deeper</p><h2>{e(r.get('resources_title','Explore the engineering.'))}</h2><div class="resource-links">{resource_links}</div></section><a class="next-project section" href="{href(nxt['slug'])}"><span class="eyebrow">{next_label}</span><span class="next-name">{e(nxt['name'])} {ARROW}</span></a>'''
  page('projects/'+slug+'/',title+' — Andrew Chung',r['description'],body,active='/v4/projects/',hero=r['hero'],bodyclass='case-page project-'+slug.replace('/','-'))
 # Concise factual profile, clearly separating personal and team work.
 roles=[('Jun. 2026 — present','Electronics Engineer Trainee','Switchmode Power Supplies','Maintenance, testing and repair of low- and high-voltage power supplies and other equipment.'),('May 2026 — present','Avionics & Payload Team Lead','UNSW Skylabs','Aircraft telemetry, flight-data hardware and replay tools. Joined Mission Systems in August 2025.'),('Dec. 2023 — present','Senior Lab Demonstrator','UNSW','Teaching and assessing practical electrical engineering and design classes.'),('Dec. 2024 — present','Behaviours / Hardware Team Member','rUNSWift','Python, C++ and ROS2 for humanoid robots. Prepared and led the Sydney team at RoboCup 2025 in Salvador, Brazil.'),('Sep. 2024 — Jan. 2026','President','UNSW Electrical Engineering & Telecommunications Society','Led a team of more than 50 students. In 2025, the society ran 100+ events and delivered 4,000 hours of course support.')]

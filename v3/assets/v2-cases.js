@@ -30,20 +30,24 @@
     const groups = [...document.querySelectorAll('[data-v2-project-group]')];
     const categories = [...document.querySelectorAll('[data-v2-category]')];
     const status = document.querySelector('[data-v2-search-status]');
+    const clear = document.querySelector('[data-v2-clear-filters]');
     const controls = document.querySelector('.v2-collection-controls');
+    const normalize = value => value.trim().toLocaleLowerCase().replace(/\s+/g, ' ');
+    const searchable = new Map(groups.flatMap(group => [...group.querySelectorAll('[data-v2-project]')].map(card => [card, normalize(card.textContent)])));
+    const validCategory = value => categories.some(link => link.dataset.v2Category === value) ? value : 'all';
     const params = new URLSearchParams(location.search);
-    let category = params.get('category') || 'all';
-    if (!categories.some(link => link.dataset.v2Category === category)) category = 'all';
+    let category = validCategory(params.get('category'));
     search.value = params.get('q') || '';
     document.querySelector('[data-v2-search-wrap]').hidden = false;
     const apply = (updateURL = false) => {
-      const query = search.value.trim().toLocaleLowerCase();
+      const query = normalize(search.value);
+      const terms = query ? query.split(' ') : [];
       let total = 0;
       let relatedTools = 0;
       groups.forEach(group => {
         let visible = 0;
         group.querySelectorAll('[data-v2-project]').forEach(card => {
-          const matches = (category === 'all' || category === group.dataset.v2ProjectGroup) && (!query || card.textContent.toLocaleLowerCase().includes(query));
+          const matches = (category === 'all' || category === group.dataset.v2ProjectGroup) && terms.every(term => searchable.get(card).includes(term));
           card.hidden = !matches;
           if (matches) {
             visible++;
@@ -56,10 +60,11 @@
       });
       categories.forEach(link => link.dataset.v2Category === category ? link.setAttribute('aria-current', 'true') : link.removeAttribute('aria-current'));
       status.hidden = !query && category === 'all';
+      if (clear) clear.hidden = status.hidden;
       const resultParts = [];
       if (total) resultParts.push(`${total} ${total === 1 ? 'project' : 'projects'}`);
       if (relatedTools) resultParts.push(`${relatedTools} related ${relatedTools === 1 ? 'tool' : 'tools'}`);
-      status.textContent = resultParts.length ? `${resultParts.join(' and ')}${query ? ` matching “${search.value.trim()}”` : ''}.` : 'No projects match. Try another term or choose All work.';
+      status.textContent = resultParts.length ? `${resultParts.join(' and ')}${query ? ` matching “${search.value.trim()}”` : ''}.` : 'No projects match these filters. Clear filters to see all projects, or try another term.';
       if (updateURL) {
         const url = new URL(location.href);
         query ? url.searchParams.set('q', search.value.trim()) : url.searchParams.delete('q');
@@ -76,9 +81,15 @@
     }));
     search.addEventListener('input', () => apply(true));
     search.addEventListener('keydown', event => { if (event.key === 'Escape') { search.value = ''; apply(true); } });
+    clear?.addEventListener('click', () => {
+      category = 'all';
+      search.value = '';
+      apply(true);
+      search.focus({preventScroll: true});
+    });
     addEventListener('popstate', () => {
       const current = new URLSearchParams(location.search);
-      category = current.get('category') || 'all';
+      category = validCategory(current.get('category'));
       search.value = current.get('q') || '';
       apply();
     });

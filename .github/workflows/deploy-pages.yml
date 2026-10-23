@@ -37,6 +37,11 @@ jobs:
           python3 scripts/audit-v3.py --structure-only
           node scripts/verify-v3-aircraft-transport.cjs
 
+      - name: Verify v4 project pages and navigation
+        run: |
+          python3 v4/tests/static.py
+          node --check v4/assets/site.js
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v5
         with:
