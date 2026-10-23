@@ -1,167 +1,104 @@
-/* Kiku v2: one source-grounded product stage, progressive inspection. */
-body.v2.kiku-page:not(.v3-product) { --k-bg:#141412; --k-ink:#eeede8; --k-muted:#b0b0a8; --k-line:#3c3e3a; --k-accent:#7bbcff; --v2-accent:#7bbcff; }
-.kiku-page .kiku-wrap { width:min(1280px,calc(100% - 2 * var(--gutter,5vw))); }
-.kiku-page .kiku-section { padding-block:clamp(64px,7vw,105px); }
-.kiku-page .kiku-section-head { gap:9%; margin-bottom:48px; }
-.kiku-page .kiku-section-head h2 { font-size:clamp(34px,4.2vw,58px); margin-top:18px; }
-.kiku-page .kiku-actions .kiku-primary:hover { background:#a7d2ff; }
-.kiku-story { --kiku-top:130px; position:relative; border-bottom:1px solid var(--k-line); }
-.kiku-story-stage { position:relative; display:grid; grid-template-columns:minmax(290px,.82fr) minmax(0,1.18fr); min-height:660px; max-width:1600px; margin:auto; }
-.kiku-story-copy { padding:48px 0 60px clamp(22px,4.4vw,80px); align-self:center; z-index:2; }
-.kiku-page .kiku-story h1 { font-size:clamp(88px,9vw,132px); line-height:.92; letter-spacing:-.075em; margin:21px 0 25px -4px; }
-.kiku-story h1 span { color:var(--k-accent); }
-.kiku-page .kiku-story-deck { font-size:clamp(30px,3vw,44px); line-height:1.1; letter-spacing:-.045em; }
-.kiku-page .kiku-story-description { font-size:16px; line-height:1.7; color:var(--k-muted); max-width:35ch; margin-top:22px; }
-.kiku-story .kiku-actions { margin:25px 0 28px; gap:24px; }
-.kiku-story .kiku-actions a { font-size:13px; gap:18px; }
-.kiku-story-object { position:relative; min-width:0; min-height:540px; align-self:stretch; outline-offset:-4px!important; touch-action:pan-y; }
+/* Kiku uses the shared v2 case-study layout; the player keeps its own physical controls. */
+body.v2.kiku-page:not(.v3-product) { --k-bg:var(--v2-bg); --k-ink:var(--v2-ink); --k-muted:var(--v2-muted); --k-line:var(--v2-line); --k-accent:var(--v2-accent); }
+.kiku-page .kiku-wrap { width:min(var(--content),calc(100% - 2 * var(--gutter))); }
+.kiku-page .kiku-section { padding-block:clamp(3rem,5vw,5rem); background:var(--k-bg); }
+.kiku-page .kiku-section-head { align-items:start; gap:clamp(3rem,8vw,9rem); margin-bottom:2.5rem; }
+.kiku-page .kiku-section-head h2 { font-size:clamp(1.75rem,3vw,2.8rem); line-height:1.12; letter-spacing:-.025em; margin:0; }
+.kiku-page .kiku-section-head>p { font-size:1.065rem; line-height:1.85; max-width:55ch; }
+.kiku-story { position:relative; }
+.kiku-page .kiku-story-stage { position:relative; display:grid; grid-template-rows:auto auto auto 1fr; margin:auto; }
+.kiku-page .kiku-story-tools { grid-column:1; grid-row:4; min-width:0; max-width:24rem; }
+.kiku-page .kiku-story-object { grid-column:2; grid-row:2/5; position:relative; min-width:0; height:clamp(430px,42vw,590px); align-self:start; outline-offset:-4px!important; touch-action:pan-y; background:#141412; }
 .kiku-story-object[data-ready=true] { cursor:grab; }
 .kiku-story-object[data-ready=true]:active { cursor:grabbing; }
-.kiku-story-object>img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#141412; mix-blend-mode:normal; }
+.kiku-page .kiku-story-object>img { position:absolute; inset:0; width:100%; height:100%; max-height:none; object-fit:contain; background:#141412; mix-blend-mode:normal; }
 .kiku-story-object>canvas { position:absolute; inset:0; width:100%; height:100%; opacity:0; transition:opacity .25s ease; touch-action:pan-y; }
 .kiku-story[data-ready=true] .kiku-story-object>canvas { opacity:1; }
 .kiku-story[data-ready=true] .kiku-story-object>img { visibility:hidden; }
-.kiku-page .kiku-story-qualification { position:absolute; bottom:24px; left:24px; right:24px; text-align:center; font:11px/1.6 "IBM Plex Mono",monospace; color:#a6aaa9; pointer-events:none; }
-.kiku-story-navigation { display:flex; align-items:center; gap:3px; width:fit-content; border-bottom:1px solid var(--k-line); }
-.kiku-page .kiku-story-navigation button { border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:#afb4b9; font-size:12px; min-height:44px; padding:10px 11px; white-space:nowrap; }
+.kiku-page .kiku-story-qualification { position:absolute; bottom:16px; left:16px; right:16px; text-align:center; font:.75rem/1.6 var(--mono); color:var(--k-muted); pointer-events:none; }
+.kiku-story-navigation { display:flex; align-items:center; gap:3px; border-bottom:1px solid var(--k-line); }
+.kiku-page .kiku-story-navigation button { border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:var(--k-muted); font-size:.8125rem; min-height:44px; padding:10px; white-space:nowrap; }
 .kiku-page .kiku-story-navigation button:first-child { padding-left:0; }
-.kiku-page .kiku-story-navigation button[aria-pressed=true] { border-bottom-color:#7bbcff; color:#d3e9ff; }
-.kiku-page .kiku-story-caption { font:11px/1.65 "IBM Plex Mono",monospace; color:var(--k-muted); margin-top:15px; min-height:1.65em; }
-.kiku-page .kiku-story-scroll { position:absolute; bottom:19px; left:clamp(22px,4.4vw,80px); color:#b0b0a8; font:11px/1.6 "IBM Plex Mono",monospace; }
-.kiku-story-scroll span { margin-left:14px; color:var(--k-accent); }
-.kiku-page .kiku-story-load { position:absolute; top:60%; left:50%; transform:translate(-50%,-50%); color:#102131; background:#7bbcff; border:0; min-height:48px; padding:14px 20px; font-size:13px; white-space:nowrap; }
-.kiku-story.is-pinned { height:calc(100svh + 1150px); }
-.kiku-story.is-pinned .kiku-story-stage { position:sticky; top:var(--kiku-top); height:calc(100svh - var(--kiku-top)); min-height:0; grid-template-rows:minmax(0,1fr); }
-.kiku-story.is-pinned .kiku-story-object { min-height:0; }
-.kiku-story.is-pinned .kiku-story-copy { padding-block:22px 52px; }
+.kiku-page .kiku-story-navigation button[aria-pressed=true] { border-bottom-color:var(--k-accent); color:var(--k-ink); }
+.kiku-page .kiku-story-caption { font:.75rem/1.65 var(--mono); color:var(--k-muted); margin-top:12px; min-height:1.65em; }
+.kiku-story-scroll { display:none!important; }
+.kiku-page .kiku-story-load { position:absolute; top:60%; left:50%; transform:translate(-50%,-50%); color:var(--k-bg); background:var(--k-accent); border:0; min-height:48px; padding:14px 20px; font-size:.875rem; white-space:nowrap; }
 .kiku-anchor-alias { position:absolute; top:0; scroll-margin-top:150px; }
-.kiku-inspector { width:min(100%,370px); margin-top:6px; }
-.kiku-inspector summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; gap:18px; font-size:12px; color:#b8bec5; list-style:none; cursor:pointer; }
+.kiku-inspector { margin-top:6px; }
+.kiku-inspector summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; gap:18px; font-size:.8125rem; color:var(--k-muted); list-style:none; cursor:pointer; }
 .kiku-inspector summary::-webkit-details-marker { display:none; }
-.kiku-inspector summary span { color:#7bbcff; font-size:21px; }
+.kiku-inspector summary span { color:var(--k-accent); font-size:21px; }
 .kiku-inspector[open] summary span { transform:rotate(45deg); }
-.kiku-inspector [data-model-controls] { border-top:1px solid var(--k-line); padding-top:10px; max-height:210px; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; }
-.kiku-part-choice,.kiku-explode-control { display:flex; align-items:center; gap:12px; font-size:12px; min-height:44px; }
-.kiku-part-choice select { flex:1; min-width:0; max-width:100%; color:var(--k-ink); background:#20252b; border:1px solid #46505a; padding:8px 10px; font-size:12px; border-radius:0; }
-.kiku-explode-control input { flex:1; min-width:0; accent-color:#7bbcff; min-height:44px; }
-.kiku-explode-control output { min-width:3ch; font:11px/1.5 "IBM Plex Mono",monospace; }
+.kiku-inspector [data-model-controls] { border-top:1px solid var(--k-line); padding-top:10px; }
+.kiku-part-choice,.kiku-explode-control { display:flex; align-items:center; gap:12px; font-size:.8125rem; min-height:44px; }
+.kiku-part-choice select { flex:1; min-width:0; max-width:100%; color:var(--k-ink); background:var(--k-bg); border:1px solid var(--k-line); padding:8px 10px; font-size:.8125rem; border-radius:0; }
+.kiku-explode-control input { flex:1; min-width:0; accent-color:var(--k-accent); min-height:44px; }
+.kiku-explode-control output { min-width:3ch; font:.75rem/1.5 var(--mono); }
 .kiku-page .kiku-model-views { display:flex; gap:6px; margin:4px 0; }
-.kiku-page .kiku-model-views button { background:none; color:#c9d2da; border:1px solid #46505a; padding:7px 12px; font-size:12px; }
-.kiku-page .kiku-model-views button[aria-pressed=true] { background:#25364a; color:#d2e8ff; border-color:#7bbcff; }
-.kiku-page .kiku-part-description { font-size:12px; color:var(--k-muted); line-height:1.65; padding:8px 0; }
-.kiku-page [data-model-all] { color:#b9d9f6; border-color:#46505a; }
-.kiku-project-context { padding-block:32px 26px; }
-.kiku-project-facts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5%; }
-.kiku-project-facts dt { font:11px/1.7 "IBM Plex Mono",monospace; color:#b0b0a8; margin-bottom:12px; }
-.kiku-project-facts dd { font-size:15px; line-height:1.65; max-width:32ch; }
-.kiku-source-disclosure { margin-top:25px; border-top:1px solid var(--k-line); }
-.kiku-source-disclosure summary { display:flex; align-items:center; min-height:44px; font-size:12px; color:var(--k-muted); cursor:pointer; list-style-position:inside; }
-.kiku-page .kiku-source-disclosure p { font-size:13px; line-height:1.8; color:var(--k-muted); max-width:85ch; margin:12px 0; }
-.kiku-source-disclosure p a { display:inline-flex; margin-right:25px; min-height:44px; align-items:center; color:#b9d9f6; text-underline-offset:4px; }
-.kiku-page .kiku-simulator-section { background:#191c20; }
-.kiku-page .kiku-sim-eyebrow,.kiku-page .kiku-sim-keyboard,.kiku-page .kiku-sim-note { color:#b8bec5; }
-.kiku-page .kiku-sim-state { color:#c5ddf4; border-color:#424951; min-height:88px; font-size:13px; }
-.kiku-page .kiku-sim-guidance h3 { font-size:28px; margin-bottom:22px; }
+.kiku-page .kiku-model-views button { background:none; color:var(--k-muted); border:1px solid var(--k-line); padding:7px 10px; font-size:.8125rem; }
+.kiku-page .kiku-model-views button[aria-pressed=true] { color:var(--k-ink); border-color:var(--k-accent); }
+.kiku-page .kiku-part-description { font-size:.8125rem; color:var(--k-muted); line-height:1.65; padding:8px 0; }
+.kiku-page [data-model-all] { color:var(--k-accent); border-color:var(--k-line); }
+.kiku-project-context { border-top:1px solid var(--k-line); padding-bottom:2rem; }
+.kiku-page .kiku-project-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:0; }
+.kiku-source-disclosure { border-top:1px solid var(--k-line); }
+.kiku-source-disclosure summary { display:flex; align-items:center; min-height:44px; font-size:.8125rem; color:var(--k-muted); cursor:pointer; list-style-position:inside; }
+.kiku-page .kiku-source-disclosure p { font-size:.875rem; line-height:1.8; color:var(--k-muted); max-width:85ch; margin:12px 0; }
+.kiku-source-disclosure p a { display:inline-flex; margin-right:25px; min-height:44px; align-items:center; color:var(--k-accent); text-underline-offset:4px; }
+.kiku-page .kiku-sim-eyebrow,.kiku-page .kiku-sim-keyboard,.kiku-page .kiku-sim-note { color:var(--k-muted); font-size:.8125rem; }
+.kiku-page .kiku-sim-state { color:var(--k-ink); border-color:var(--k-line); min-height:88px; font-size:.8125rem; }
+.kiku-page .kiku-sim-guidance h3 { font-size:1.65rem; margin-bottom:22px; letter-spacing:-.025em; }
 .kiku-page .kiku-sim-notice { color:#ffd0b8; min-height:0; }
 .kiku-page .kiku-sim-keyboard { margin:10px 0; }
-.kiku-sim-help { margin-top:14px; color:var(--k-muted); font-size:13px; }
+.kiku-sim-help { margin-top:14px; color:var(--k-muted); font-size:.8125rem; }
 .kiku-sim-help summary { cursor:pointer; min-height:44px; display:flex; align-items:center; }
-.kiku-page .kiku-sim-qualification { color:#b8bec5; font-size:13px; line-height:1.8; margin-top:28px; max-width:86ch; }
-.kiku-page .kiku-sim-toolbar { border-color:#424951; }
-.kiku-page .kiku-sim-look { background:#20252b; border-color:#46505a; }
-.kiku-page .kiku-output-branches { color:#b9d9f6; }
-.kiku-page .kiku-output-branches span { border-color:#7bbcff; }
-.kiku-page .kiku-segments button { font-family:inherit; font-size:14px; }
+.kiku-page .kiku-sim-qualification { color:var(--k-muted); font-size:.8125rem; line-height:1.8; margin-top:28px; max-width:86ch; }
+.kiku-page .kiku-sim-toolbar { border-color:var(--k-line); }
+.kiku-page .kiku-sim-look { background:var(--k-bg); border-color:var(--k-line); }
+.kiku-page .kiku-output-branches { color:var(--k-muted); font-size:.8125rem; }
+.kiku-page .kiku-output-branches span { border-color:var(--k-accent); }
+.kiku-page .kiku-segments button { font-family:inherit; font-size:.9375rem; }
 .kiku-page .kiku-signal-path { padding-block:36px; }
-.kiku-decision-grid { display:grid; grid-template-columns:1fr 1fr; gap:9%; margin:56px 0; }
-.kiku-decision-grid h3 { font-size:27px; line-height:1.2; margin-bottom:18px; }
-.kiku-decision-grid p { color:var(--k-muted); font-size:16px; line-height:1.8; }
-.kiku-page .kiku-detail summary { font-size:20px; min-height:72px; }
+.kiku-page .kiku-signal-path small { font-size:.8125rem; }
+.kiku-decision-grid { display:grid; grid-template-columns:1fr 1fr; gap:clamp(3rem,8vw,9rem); margin:3.5rem 0; }
+.kiku-decision-grid h3 { font-size:1.6rem; line-height:1.2; letter-spacing:-.025em; margin-bottom:18px; }
+.kiku-decision-grid p { color:var(--k-muted); font-size:1.065rem; line-height:1.85; }
+.kiku-page .kiku-detail summary { font-size:1.25rem; min-height:72px; }
 .kiku-page .kiku-detail>div { max-width:100%; padding-bottom:30px; }
 .kiku-page .kiku-detail p { max-width:82ch; }
 .kiku-page .kiku-hardware-list article { grid-template-columns:35px 1fr 1.7fr; }
-.kiku-page .kiku-hardware-list h4 { font-size:20px; }
+.kiku-page .kiku-hardware-list h4 { font-size:1.25rem; }
 .kiku-detail .kiku-figure { max-width:1000px; margin-top:30px; }
-.kiku-page .kiku-verification { background:#191c20; }
-.kiku-next-tests { display:grid; grid-template-columns:1fr 1fr; gap:9%; margin:15px 0 40px; }
-.kiku-next-tests h3 { font-size:28px; }
-.kiku-next-tests ul { margin:0; padding-left:18px; color:var(--k-muted); font-size:15px; line-height:1.8; }
+.kiku-next-tests { display:grid; grid-template-columns:1fr 1fr; gap:clamp(3rem,8vw,9rem); margin:15px 0 40px; }
+.kiku-next-tests h3 { font-size:1.6rem; letter-spacing:-.025em; }
+.kiku-next-tests ul { margin:0; padding-left:18px; color:var(--k-muted); font-size:1rem; line-height:1.85; }
 .kiku-next-tests li { margin:0 0 15px; padding-left:4px; }
 .kiku-next-tests li::marker { color:var(--k-accent); }
 .kiku-next-tests strong { color:var(--k-ink); font-weight:500; }
 .kiku-page .kiku-end { border:0; padding-top:40px; align-items:center; }
-.kiku-end p { font-size:24px; letter-spacing:-.02em; }
-.kiku-end a { display:inline-flex; align-items:center; min-height:44px; gap:24px; font-size:14px; color:#b9d9f6; text-decoration:none; border-bottom:1px solid #46505a; }
-@media(min-width:601px) and (max-height:880px) {
- .kiku-story.is-pinned .kiku-story-copy { padding-block:16px 32px; }
- .kiku-page .kiku-story.is-pinned h1 { font-size:88px; margin:15px 0 18px; }
- .kiku-page .kiku-story.is-pinned .kiku-story-deck { font-size:30px; }
- .kiku-page .kiku-story.is-pinned .kiku-story-description { font-size:14px; margin-top:16px; }
- .kiku-story.is-pinned .kiku-actions { margin-block:18px; }
- .kiku-story.is-pinned .kiku-story-scroll { display:none; }
- .kiku-story.is-pinned .kiku-inspector [data-model-controls] { max-height:160px; }
-}
-/* Inspection makes room for controls within the pinned viewport. */
-@media(min-width:601px) {
- .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-copy { padding-block:16px 36px; }
- .kiku-page .kiku-story.is-pinned:has(.kiku-inspector[open]) h1 { font-size:64px; margin:12px 0 18px; }
- .kiku-page .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-deck { font-size:26px; }
- .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-description { display:none; }
- .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-actions { margin-block:14px; }
- .kiku-story.is-pinned .kiku-inspector[open] [data-model-controls] { max-height:160px; }
- .kiku-story.is-pinned:has(.kiku-inspector[open]) .kiku-story-scroll { display:none; }
-}
-@media(max-width:1000px) {
- .kiku-story-stage { grid-template-columns:minmax(280px,.95fr) minmax(0,1.05fr); }
- .kiku-story-copy { padding-right:10px; }
- .kiku-page .kiku-story h1 { font-size:100px; }
- .kiku-page .kiku-story-deck { font-size:34px; }
- .kiku-page .kiku-story-description { font-size:14px; }
- .kiku-page .kiku-story-navigation button { font-size:11px; padding-inline:9px; }
- .kiku-project-facts { gap:4%; }
- .kiku-project-facts dd { font-size:14px; }
-}
-@media(max-width:600px) {
- .kiku-page .kiku-wrap { width:calc(100% - 44px); }
- .kiku-story-stage { display:flex; flex-direction:column; min-height:0; }
- .kiku-story-copy { padding:30px 22px 0; }
- .kiku-page .kiku-story h1 { font-size:94px; margin:18px 0 22px; }
- .kiku-page .kiku-story-deck { font-size:32px; }
- .kiku-page .kiku-story-description { max-width:39ch; margin-top:18px; }
- .kiku-story .kiku-actions { margin:23px 0; gap:22px; }
- .kiku-story .kiku-actions a { font-size:12px; gap:12px; }
- .kiku-story-object { height:430px; min-height:0; }
- .kiku-story-navigation { width:100%; }
- .kiku-page .kiku-story-navigation button { flex:1; padding-inline:7px; font-size:11px; }
- .kiku-page .kiku-story-caption { margin-top:8px; font-size:10px; }
- .kiku-story.is-pinned { height:calc(100svh + 950px); }
- .kiku-story.is-pinned .kiku-story-stage { display:grid; grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr); }
- .kiku-story.is-pinned .kiku-story-copy { padding:14px 22px 0; display:grid; grid-template-columns:1fr auto; gap:0 12px; align-self:start; }
- .kiku-story.is-pinned .kiku-label,.kiku-story.is-pinned .kiku-story-description,.kiku-story.is-pinned .kiku-story-scroll { display:none; }
- .kiku-page .kiku-story.is-pinned h1 { font-size:64px; margin:0; grid-row:1/3; }
- .kiku-page .kiku-story.is-pinned .kiku-story-deck { font-size:21px; }
- .kiku-story.is-pinned .kiku-actions { grid-column:1/-1; margin:12px 0; }
- .kiku-story.is-pinned .kiku-story-navigation,.kiku-story.is-pinned .kiku-inspector,.kiku-story.is-pinned .kiku-story-caption { grid-column:1/-1; }
- .kiku-story.is-pinned .kiku-story-object { height:auto; }
- .kiku-story.is-pinned .kiku-inspector [data-model-controls] { max-height:160px; }
- .kiku-page .kiku-story-qualification { bottom:12px; font-size:10px; }
- .kiku-project-context { padding-block:28px 16px; }
- .kiku-project-facts { grid-template-columns:1fr; gap:22px; }
- .kiku-project-facts dt { margin-bottom:6px; }
- .kiku-project-facts dd { max-width:43ch; }
- .kiku-page .kiku-section-head { grid-template-columns:1fr; gap:24px; margin-bottom:32px; }
- .kiku-page .kiku-section-head h2 { font-size:38px; }
- .kiku-decision-grid,.kiku-next-tests { grid-template-columns:1fr; gap:30px; }
- .kiku-decision-grid { margin-block:40px; }
- .kiku-decision-grid h3 { font-size:25px; }
+.kiku-end p { font-size:1.25rem; letter-spacing:-.02em; }
+.kiku-end a { display:inline-flex; align-items:center; min-height:44px; gap:24px; font-size:.9375rem; color:var(--k-accent); text-decoration:none; border-bottom:1px solid var(--k-line); }
+@media(max-width:1000px) and (min-width:801px) { .kiku-page .kiku-story-navigation { flex-wrap:wrap; } .kiku-page .kiku-story-object { height:480px; } }
+@media(max-width:800px) {
+ .kiku-page .kiku-story-stage { grid-template-columns:1fr; grid-template-rows:auto; row-gap:1.5rem; }
+ .kiku-page .project-hero-copy h1,.kiku-page .project-hero-copy>div>p:not(.eyebrow),.kiku-page .project-hero-actions,.kiku-page .kiku-story-tools,.kiku-page .kiku-story-object { grid-column:1; grid-row:auto; }
+ .kiku-page .project-hero-copy h1 { margin-bottom:0; }
+ .kiku-page .project-hero-copy>div>p:not(.eyebrow) { max-width:45ch; }
+ .kiku-page .project-hero-actions { max-width:none; }
+ .kiku-page .kiku-story-tools { max-width:none; }
+ .kiku-page .kiku-story-object { height:clamp(360px,100vw,520px); }
+ .kiku-page .kiku-project-facts { grid-template-columns:1fr; }
+ .kiku-page .kiku-section-head { grid-template-columns:1fr; gap:1.5rem; margin-bottom:2rem; }
+ .kiku-page .kiku-section-head>p { font-size:1rem!important; }
+ .kiku-decision-grid,.kiku-next-tests { grid-template-columns:1fr; gap:2rem; }
+ .kiku-decision-grid { margin-block:2.5rem; }
  .kiku-page .kiku-hardware-list article { grid-template-columns:25px 1fr; }
- .kiku-page .kiku-detail summary { font-size:18px; }
+ .kiku-page .kiku-detail summary { font-size:1.125rem; }
  .kiku-page .kiku-end { align-items:flex-start; gap:20px; }
- .kiku-end p { font-size:22px; }
- .kiku-page .kiku-sim-press::before { transform-origin:1.5px 22px; height:8px; top:5px; }
 }
-@media(prefers-reduced-motion:reduce) { .kiku-story.is-pinned { height:auto; } .kiku-story.is-pinned .kiku-story-stage { position:relative; top:auto; height:auto; min-height:620px; } .kiku-story-scroll { display:none!important; } .kiku-story-object>canvas { transition:none; } .kiku-signal-path.is-tracing>div { animation:none!important; } }
-@media print { .kiku-story { height:auto!important; } .kiku-story-stage { position:static!important; height:auto!important; display:block; } .kiku-story-object { height:400px; } .kiku-story-object>img { visibility:visible!important; } .kiku-story canvas,.kiku-story-navigation,.kiku-story-scroll,.kiku-story-load,.kiku-look-strip,.kiku-inspector { display:none!important; } }
+@media(max-width:600px) { .kiku-page .kiku-sim-press::before { transform-origin:1.5px 22px; height:8px; top:5px; } }
+@media(prefers-reduced-motion:reduce) { .kiku-story-object>canvas { transition:none; } .kiku-signal-path.is-tracing>div { animation:none!important; } }
+@media print { .kiku-story-object>img { visibility:visible!important; } .kiku-story canvas,.kiku-story-navigation,.kiku-story-load,.kiku-look-strip,.kiku-inspector { display:none!important; } }
 .kiku-page .kiku-sim-press { position:relative; touch-action:pan-y; user-select:none; -webkit-user-select:none; }
 .kiku-sim-press::before { content:""; position:absolute; width:3px; height:11px; border-radius:2px; background:#b7d1bd; left:calc(50% - 1.5px); top:7px; transform-origin:1.5px 31px; transform:rotate(var(--dial-turn,0deg)); }
 .kiku-sim-press.is-turning { cursor:grabbing; }

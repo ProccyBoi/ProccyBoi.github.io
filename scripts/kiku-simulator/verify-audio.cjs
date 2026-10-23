@@ -3,7 +3,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {chromium, webkit} = require('playwright');
 const useWebKit = process.argv.includes('--webkit');
 const base = process.env.KIKU_BASE_URL || 'http://127.0.0.1:8766';
 const root = path.join(__dirname, '../..');
@@ -25,6 +24,7 @@ function bounded(promise, milliseconds, label) {
 }
 
 async function main() {
+  const {chromium, webkit} = require('playwright');
   saveResults({phase:'starting'});
   const {instance} = await WebAssembly.instantiate(fs.readFileSync(path.join(root,'assets/kiku/firmware-ui.wasm')));
   const api = instance.exports;
@@ -168,7 +168,7 @@ async function main() {
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   await page.waitForSelector('[data-kiku-mounted="ready"]',{timeout:60000});
   const linked=await page.locator('[data-kiku-simulator]').boundingBox();
-  assert.ok(linked.y<950&&linked.y+linked.height>0,'Direct simulator fragment stays visible after asynchronous hero pinning');
+  assert.ok(linked.y<950&&linked.y+linked.height>0,'Direct simulator fragment stays visible after asynchronous CAD loading');
   await page.locator('.kiku-sim-audio-play').scrollIntoViewIfNeeded();
   assert.equal((await probe()).contexts,0,'Integrated page does not autoplay');
   await page.locator('.kiku-sim-audio-play').click();await audible('Integrated page produces actual original audio');

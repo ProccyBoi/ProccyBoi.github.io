@@ -2,7 +2,8 @@
 """Independent, read-only boundaries for the v3 WebGPU experiment.
 
 Checks the working tree against a frozen pre-experiment commit, never regenerates
-pages, and verifies route/content/form contracts against the current untouched v2.
+pages, and verifies route/content/form contracts against the current v2 sources
+(or the accepted frozen source for the independently maintained Kiku interior).
 This is structural evidence, not a claim of browser or graphics correctness.
 """
 from __future__ import annotations
@@ -14,9 +15,12 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 from urllib.parse import unquote, urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
+from v3_interior_source import source as interior_source
 BASE = "8e24c7d18bd745cdaf7b6b23ef87db8bb5f6ea33"
 ORIGIN = "https://proccyboi.github.io"
 # Exact support files are allowed; existing assets and all production/v2 routes
@@ -25,6 +29,7 @@ SUPPORT = {
     "scripts/build-v3-pages.py", "scripts/audit-v3.py",
     ".github/workflows/deploy-pages.yml", ".github/workflows/verify-v3-webgpu.yml",
     "docs/v3-webgpu.md", ".github/workflows/verify-v3-orbital.yml",
+    "scripts/v3_interior_source.py", "scripts/content/v3-kiku-3311a49.html",
 }
 
 
@@ -94,8 +99,8 @@ def run(base: str, structure_only: bool = False) -> dict:
         after_path = ROOT / "v3" / rel
         if not after_path.exists():
             continue
-        before = Document(before_path.read_text())
-        after = Document(after_path.read_text())
+        before = Document(interior_source(rel))
+        after = Document(after_path.read_text(encoding="utf-8"))
         page_url = ORIGIN + "/v3/" + str(rel).removesuffix("index.html")
         base_url = next((attrs.get("href") for tag, attrs in after.nodes if tag == "base"), page_url)
         base_url = urljoin(page_url, base_url)
@@ -118,7 +123,7 @@ def run(base: str, structure_only: bool = False) -> dict:
                 if not local.exists():
                     errors.append(f"{rel}: missing local {tag}[{attr}] {value}")
                 elif url.fragment and local.suffix == ".html":
-                    target = after if local == after_path else Document(local.read_text())
+                    target = after if local == after_path else Document(local.read_text(encoding="utf-8"))
                     if url.fragment not in {a.get("id") for _, a in target.nodes}:
                         errors.append(f"{rel}: missing fragment in {value}")
         canonical = [attrs.get("href") for tag, attrs in after.nodes if tag == "link" and attrs.get("rel") == "canonical"]

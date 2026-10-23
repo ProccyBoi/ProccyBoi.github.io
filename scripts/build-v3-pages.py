@@ -3,13 +3,15 @@
 
 The homepage is authored separately as the Orbital Workshop. This generator
 never rewrites it, production assets, or rendering code. It derives interior
-HTML, rebases portfolio routes, and adds v3-only reading-room styling.
+HTML, rebases portfolio routes, and adds v3-only reading-room styling. Kiku uses
+its accepted frozen source so subsequent v2 design work stays isolated.
 Run without arguments to regenerate or with --check for deployment verification.
 """
 from argparse import ArgumentParser
 from pathlib import Path
 import json
 import re
+from v3_interior_source import source as interior_source
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / 'scripts/v3-webgpu/baseline-manifest.json').read_text())
@@ -39,13 +41,13 @@ def main():
             if not target.is_file():
                 errors.append('Authored v3 homepage is missing')
             continue
-        expected = copy_html(path.read_text(), relative)
+        expected = copy_html(interior_source(relative), relative)
         if args.check:
-            if not target.is_file() or target.read_text() != expected:
+            if not target.is_file() or target.read_text(encoding='utf-8') != expected:
                 errors.append('Generated route differs: v3/' + relative)
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(expected)
+            target.write_text(expected, encoding='utf-8')
     if errors:
         raise SystemExit('\n'.join(errors))
     print(f'{len(sources)} routes {"verified" if args.check else "maintained"} (authored home preserved); all production assets remain unchanged.')
