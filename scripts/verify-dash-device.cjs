@@ -123,9 +123,22 @@ async function geometryQA(page,original){
         if(mm<2)issues.push(`${p.ref} vs ${shell.ref}: ${mm.toFixed(3)} mm`);
       }
     }
+    const componentBounds=sourceParts.map(part=>({ref:part.ref,box:bounds(part.object)}));
+    let minimumComponentGap=Infinity;
+    for(let i=0;i<componentBounds.length;i++){
+      const p=componentBounds[i];
+      for(const q of componentBounds.slice(i+1)){
+        const mm=gap(p.box,q.box);minimumComponentGap=Math.min(minimumComponentGap,mm);
+        if(mm<2)issues.push(`${p.ref} vs ${q.ref}: ${mm.toFixed(3)} mm`);
+      }
+      for(const q of major){
+        const mm=gap(p.box,exploded.get(q.ref));
+        if(mm<2)issues.push(`${p.ref} vs ${q.ref}: ${mm.toFixed(3)} mm`);
+      }
+    }
     const explodedBounds=major.map(p=>({ref:p.ref,min:exploded.get(p.ref).min.toArray(),max:exploded.get(p.ref).max.toArray()}));
     for(const phase of [.21,.72,.34,1,0,.91,.04,0]){api.applyMotion(parts,phase);update();if(phase===0)group.traverse(o=>o.matrixWorld.elements.forEach((v,i)=>check(v===baseline.get(o.uuid)[i],`Exact reassembly ${o.name}[${i}]`)));}
-    return {parts:parts.length,majorParts:major.map(p=>p.ref),shellResults,oled:{activeCentre:activeCentre.toArray(),connector:connector.toArray(),visibility},assembledBounds,explodedBounds,gaps,componentHousing,componentPCB,issues,exactReassembly:true};
+    return {parts:parts.length,majorParts:major.map(p=>p.ref),shellResults,oled:{activeCentre:activeCentre.toArray(),connector:connector.toArray(),visibility},assembledBounds,explodedBounds,gaps,componentHousing,componentPCB,minimumComponentGap,issues,exactReassembly:true};
   },original);
 }
 
