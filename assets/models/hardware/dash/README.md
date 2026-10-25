@@ -8,13 +8,19 @@ The interactive assembly combines the supplied Dash base and lid, the Driving Co
 
 The other device parts are visual representations, with sources and limitations in `device-sources.json`:
 
-- The four-pin blue OLED module follows the supplied build photos and the user identification GME12864-80. Its approximate PCB is 35.5 × 33.5 mm. Current GoldenMorning 88/89 module drawings guide the panel, mounting holes and header dimensions; the manufacturer now uses the -80 label for a bare panel, so the exact module revision is not established.
+- The four-pin blue OLED module follows the supplied build photos and the user identification GME12864-80. Its approximate PCB is 35.5 × 33.6 mm, with the header at the top. Current GoldenMorning 88/89 module drawings guide the notched board, panel, mounting holes and header dimensions; the manufacturer now uses the -80 label for a bare panel, so the exact module revision is not established. The 1.2 mm PCB and 1.4 mm glass form a contiguous stack. Its glass face sits 0.1 mm behind the enclosure's inner front wall, with its active area aligned to the opening; this gap is an illustrative assembly allowance.
 - The speaker is identified as LCSC C49247039, XHXDZ 2831BOX-4Ω3W-2P1.25. Its 31 × 28 × 15.2 mm casing follows a manufacturer drawing for the same 2831BOX family. Mounting ears are omitted to follow the photographed enclosure. That drawing covers an 8 Ω / 2.0 mm connector sibling, so it is not exact CAD for the specified 4 Ω / 1.25 mm connector variant.
 - The 3.7 V, 1000 mAh LiPo is approximately 35 × 25 × 10 mm, using the user's estimated measurement. Its placement is illustrative: the supplied photos show it outside the assembled enclosure. The label `192535` has not been independently resolved to a manufacturer drawing.
 - C131337 is the JST B2B-PH-K-S board header. Its mating cable housing uses the official PHR-2 dimensions, 5.8 × 4.5 × 6.85 mm at 2 mm pitch. C398568 denotes green PHR-2-M; the viewer uses the same housing form in natural ivory as requested.
 - The top magnets, metal touch plate and wire paths follow the photos and housing features. Their details and placements are illustrative.
 
 The source housing and PCB geometry are retained, but the additional parts and their placement do not establish manufacturing clearances, cable routing or a physical fit check. The original vehicle-prototype photos remain separate from this assembly visualization.
+
+## Exploded view
+
+The base moves 70 mm below the assembly, clearing the PCB completely. Individual magnets, the touch plate and disc, all four wiring looms and the off-board components have separate paths. The 66 PCB components retain their assembled source transforms and spread into a plane with at least 2.5 mm between their bounding boxes. The camera follows the current device bounds so the assembled view remains large while the expanded view stays in frame. Reassembly restores the original transforms exactly.
+
+`node scripts/verify-dash-device.cjs` checks source mesh fidelity, upright display orientation, glass clearance, exploded part separation, framing and exact reassembly on desktop and mobile. Like the existing viewer checks, it uses `V2_BASE_URL` and optional `CHROMIUM_EXECUTABLE`.
 
 ## PCB source
 

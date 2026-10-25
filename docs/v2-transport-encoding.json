@@ -37,7 +37,7 @@
           "assets/models/hardware/skylabs-telemetry/silk-front.svg": "4fb0fad9f79d351c5a5799d40e0212bd40c75c53d0972e9e44be455bc32e551a",
           "assets/models/tramtrace/tramtrace-kicad-source.glb": "fb35ccad3efd7761b8e1b2253659aa33566f54f903945c1ecfd43612f31ec134",
           "assets/v2-assembly-models.js": "c3fc34a8c760a258015255c4c4d977711e5314ab60e1a7a4a4b2876c9eb5c19e",
-          "assets/v2-hardware-models.js": "e28793ead12df89b61a41cea459ce359e0c0cb3b761e8dff85dc88e01d75cc0b",
+          "assets/v2-hardware-models.js": "497ed335b95465041253888b2cbd7b0c9562ca06bf6dea8ef010205c4d37a296",
           "assets/vendor/GLTFLoader.js": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6",
           "assets/vendor/three.min.js": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
         },
@@ -585,6 +585,33 @@
         "node scripts/build-v2-hero-assets.cjs --verify"
       ],
       "result": "All three plaintext packs and parity hashes are byte-identical to the previous build. Original optimized and compatibility gzip files retained only after inflated-byte equality checks.",
+      "models": {
+        "tramtrace": {
+          "sha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb",
+          "paritySha256": "bac79baab53eecd452a0cd9b89b01551ce616b90fddb4d69f8c60f8d70b02cfa"
+        },
+        "telemetry": {
+          "sha256": "b63e3029ff928d0273d3116bd7faf9f188de1cade33ffc19319c2fdd741bb472",
+          "paritySha256": "87a45ca465c06d101f4ca4e9ee2f46cdb1e63006778e9021091944c0fe3b832d"
+        },
+        "pi": {
+          "sha256": "19949162fef21690983452c54342e020553486aeb08e230d1d01fe8c00f8bf09",
+          "paritySha256": "dad2bdb1710dc566231ab89edfde90fc52ea1894c183a3d6303054d289b6b82e"
+        }
+      }
+    },
+    {
+      "date": "2026-10-25",
+      "group": "hero",
+      "source": "assets/v2-hardware-models.js",
+      "previousSha256": "e28793ead12df89b61a41cea459ce359e0c0cb3b761e8dff85dc88e01d75cc0b",
+      "sha256": "497ed335b95465041253888b2cbd7b0c9562ca06bf6dea8ef010205c4d37a296",
+      "reason": "Dash assembly script cache key changed from dash-device-20261025 to dash-refined-20261025; all three unrelated hero source paths were rebuilt and compared against their prior output.",
+      "verification": [
+        "node scripts/build-v2-hero-assets.cjs",
+        "node scripts/build-v2-hero-assets.cjs --verify"
+      ],
+      "result": "All three plaintext packs and runtime parity hashes are byte-identical to the previous build. Original optimized and compatibility gzip bytes retained after inflated-byte equality checks; fresh source verification passed with those original encodings.",
       "models": {
         "tramtrace": {
           "sha256": "5466a5040ff83692e33b7d946a6da6ac58ed0af09f6870f96f6bd74b5fb933cb",

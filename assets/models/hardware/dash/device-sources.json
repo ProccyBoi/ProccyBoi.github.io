@@ -24,7 +24,7 @@
   "display": {
     "userPart": "GME12864-80",
     "photoForm": "Blue four-pin OLED module",
-    "approximatePcbDimensions": [35.5, 33.5],
+    "approximatePcbDimensions": [35.5, 33.6],
     "activeArea": [29.42, 14.7],
     "referenceModuleDrawing": "GME12864-88/89-IIC",
     "referenceDimensions": {
@@ -34,12 +34,16 @@
       "maximumThicknessWithHeader": 10.5,
       "mountingHoleDiameter": 3.1,
       "mountingHoleCenters": [30.5, 28.6],
-      "headerPitch": 2.54
+      "headerPitch": 2.54,
+      "headerCenterAbovePcbCenter": 12.8,
+      "glassCenterAbovePcbCenter": -0.8,
+      "activeCenterAbovePcbCenter": 1.25
     },
     "sources": [
       "https://goldenmorninglcd.com/oled-display/1.3-inch-oled-128x64-ch1116-gme12864-80-blue-on-black/",
       "https://goldenmorninglcd.com/oled-display-module/1.3-inch-128x64-ch1116-gme12864-89-iic-b/",
-      "https://goldenmorninglcd.com/wp-content/uploads/2025/08/Drawing-GME64128-89-IIC-B.webp"
+      "https://goldenmorninglcd.com/wp-content/uploads/2025/08/Drawing-GME64128-89-IIC-B.webp",
+      "https://goldenmorninglcd.com/wp-content/uploads/2025/06/Drawing-GME12864-80.webp"
     ],
     "note": "The current -80 manufacturer page identifies a bare 30-pin panel. The supplied photographs establish a four-pin module, but its exact revision is unverified. Geometry is guided by the equivalent 88/89 manufacturer module drawing."
   },

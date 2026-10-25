@@ -52,6 +52,7 @@
       const dt=lastTime?Math.min(64,time-lastTime):16;lastTime=time;
       current=reduced.matches?target:current+(target-current)*(1-Math.exp(-dt/115));if(Math.abs(target-current)<.0005)current=target;
       model.group.rotation.set(rotation.x,rotation.y,rotation.z);window.V2CadGeometry.applyMotion(model.parts,current);model.group.updateMatrixWorld(true);
+      if(model.metadata?.slug==='dash')frameCamera();
       if(!drag){const pick=pendingPick||hoverPick;pendingPick=null;if(pick)pickPart(pick);}
       renderer.render(scene,camera);poster.hidden=true;root.dataset.hardwareFrames=String(++frames);
       root.dataset.hardwareProgress=current.toFixed(4);root.dataset.hardwareDraws=String(renderer.info.render.calls);root.dataset.hardwareMotion=current===target?'idle':'transition';
@@ -62,9 +63,11 @@
     const frameCamera=()=>{
       const T=window.THREE,aspect=stage.clientWidth/Math.max(1,stage.clientHeight),bounds=new T.Box3();
       model.group.rotation.set(rotation.x,rotation.y,rotation.z);
-      // Reserve the complete motion envelope once when framing. The camera
-      // remains steady while components travel, including tall edge connectors.
-      for(const phase of [0,.25,.5,.75,1]){window.V2CadGeometry.applyMotion(model.parts,phase);model.group.updateMatrixWorld(true);bounds.union(new T.Box3().setFromObject(model.group));}
+      // Dash opens into a complete device teardown. Follow its current bounds
+      // so the closed device stays large and the expanded parts remain in view.
+      // PCB-only viewers retain their existing steady motion-envelope framing.
+      const phases=model.metadata?.slug==='dash'?[current]:[0,.25,.5,.75,1];
+      for(const phase of phases){window.V2CadGeometry.applyMotion(model.parts,phase);model.group.updateMatrixWorld(true);bounds.union(new T.Box3().setFromObject(model.group));}
       window.V2CadGeometry.applyMotion(model.parts,current);model.group.updateMatrixWorld(true);
       const extentX=Math.max(Math.abs(bounds.min.x),Math.abs(bounds.max.x)),extentY=Math.max(Math.abs(bounds.min.y),Math.abs(bounds.max.y));
       const half=Math.max(.77,model.span*.7,extentX*1.12/Math.max(1,aspect),extentY*1.12/Math.max(1,1/aspect))/zoom;
@@ -86,7 +89,7 @@
       if(loading||ready)return;loading=true;start.disabled=true;showRetry(false);showStatus('Loading assembly…');root.dataset.hardwareState='loading';const token=++generation;
       try{
         if(!window.THREE)await script('/assets/vendor/three.min.js');if(!window.THREE.GLTFLoader)await script('/assets/vendor/GLTFLoader.js');
-        if(!window.V2CadGeometry)await script('/v3/assets/v2-assembly-models.js?v=mechanics-20261003');if(!window.V2HardwareModels)await script('/v3/assets/v2-hardware-models.js?v=dash-device-20261025');
+        if(!window.V2CadGeometry)await script('/v3/assets/v2-assembly-models.js?v=mechanics-20261003');if(!window.V2HardwareModels)await script('/v3/assets/v2-hardware-models.js?v=dash-refined-20261025');
         if(token!==generation)return;const T=window.THREE;
         if(!renderer){
           renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:capture});

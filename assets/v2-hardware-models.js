@@ -7,7 +7,7 @@
   const loadDash = () => {
     if(window.DashAssembly && window.DashComponents)return Promise.resolve();
     if(!dashScript)dashScript=Promise.all(['dash-components','dash-assembly'].map(name=>new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src='/assets/'+name+'.js?v=dash-device-20261025';
+      const script=document.createElement('script');script.src='/assets/'+name+'.js?v=dash-refined-20261025';
       script.onload=resolve;script.onerror=()=>{script.remove();reject(new Error('Dash device unavailable'));};document.head.append(script);
     }))).catch(error=>{dashScript=null;throw error;});
     return dashScript;

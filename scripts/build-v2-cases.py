@@ -159,8 +159,9 @@ def common(source, body_class, active='work'):
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
     if 'data-hardware=' in source:
-        hardware_version = 'dash-device-20261025' if '/hardware/dash/assembly.json' in source else 'physical-20261007'
+        hardware_version = 'dash-refined-20261025' if '/hardware/dash/assembly.json' in source else 'physical-20261007'
         source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=' + hardware_version + '" defer></script>\n</head>')
+    source = re.sub(r'(assets/images/v2/hardware/dash\.webp)(?:\?v=[^"\s]+)?', r'\1?v=dash-refined-20261025', source)
     return route_links(clean_display_copy(source))
 
 

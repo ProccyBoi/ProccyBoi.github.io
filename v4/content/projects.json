@@ -1529,7 +1529,7 @@
     "lab_label": "Explore the device in 3D",
     "gallery_title": "The original vehicle prototype.",
     "hero": {
-      "src": "/assets/images/v2/hardware/dash.webp",
+      "src": "/assets/images/v2/hardware/dash.webp?v=dash-refined-20261025",
       "alt": "Dash device assembly with its enclosure, display and internal hardware",
       "width": 1600,
       "height": 1200
