@@ -1,0 +1,27 @@
+[
+  {
+    "file": "QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.6mm.step",
+    "libraryPath": "Package_DFN_QFN.3dshapes/QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.6mm.step",
+    "release": "6.0.11",
+    "url": "https://gitlab.com/kicad/libraries/kicad-packages3D/-/raw/6.0.11/Package_DFN_QFN.3dshapes/QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.6mm.step",
+    "sha256": "099fe7e326468b8c1cf3e1d07d23d30bb8060d9be55e667997e7ae97c8f9957b",
+    "bytes": 272922,
+    "available": true
+  },
+  {
+    "file": "LICENSE.md",
+    "libraryPath": "LICENSE.md",
+    "release": "8.0.9",
+    "url": "https://gitlab.com/kicad/libraries/kicad-packages3D/-/raw/8.0.9/LICENSE.md",
+    "sha256": "45d2bce75e5a4208f5afb01b8fb2c406e700371c4fe2b5f5cd5c443d46db4d8f",
+    "bytes": 2101,
+    "available": true
+  },
+  {
+    "file": "USB_C_Receptacle_HRO_TYPE-C-31-M-12.step",
+    "sha256": "b083e67ce4d06850a2c3835a6366f4012b2def64f8f2781636381ebcaa33e9a0",
+    "originalFilename": "J1_HRO_TYPE-C-31-M-12.step",
+    "source": "Original local component library",
+    "kind": "Exact HRO TYPE-C-31-M-12 part; registration checked against locating bosses, contacts and fabrication outline"
+  }
+]

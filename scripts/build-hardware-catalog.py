@@ -598,11 +598,56 @@ def export(slug, relative, root, destination, cli, libraries):
                     if candidate.suffix.lower() == '.wrl' and candidate.is_file():
                         vrml[footprint['ref']] = candidate
                         break
+    # Dash's authored library references include two packages absent from the
+    # installed/released libraries and one SOT-23-6 footprint with no model.
+    # Use documented, real KiCad package geometry without changing source CAD.
+    # The exposed-pad differences below remain explicit; these are library
+    # package representations, not claims of recovered manufacturer CAD.
+    dash_added_model = None
+    if slug == 'dash' and libraries.standard:
+        fallbacks = {
+            'U1': ('Package_SO.3dshapes/SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.41x3.81mm.step',
+                   'Same 3.9 x 4.9 mm SOIC body, eight leads and 1.27 mm pitch. The library underside exposed pad is 2.41 x 3.81 mm, while the source footprint specifies 2.41 x 3.3 mm; it is not an exact thermal-pad model.'),
+            'U6': ('Package_DFN_QFN.3dshapes/TQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm.step',
+                   'Same 3 x 3 mm, 16-lead TQFN body and 0.5 mm pitch. The library underside exposed pad is 1.6 x 1.6 mm, while the source footprint specifies 1.23 x 1.23 mm; it is not an exact thermal-pad model.'),
+            'U5': ('Package_TO_SOT_SMD.3dshapes/SOT-23-6.step',
+                   'The source explicitly identifies SOT-23-6 UMW, with a centred 1.6 x 3.0 mm fabrication outline and six pads at X +/-1.185 mm, Y -0.95/0/+0.95 mm. The centred KiCad SOT-23-6 body uses the same 0.95 mm lead pitch and authored 90-degree placement. Its 1.55 mm library height exceeds the source footprint maximum of 1.40 mm, so it is a display-only package representation, not housing-fit geometry; no UMW manufacturer CAD was supplied.'),
+        }
+        for ref, (relative_model, detail) in fallbacks.items():
+            footprint = next((item for item in footprints if item['ref'] == ref), None)
+            alternate = libraries.standard / relative_model
+            if footprint is None or not alternate.is_file():
+                continue
+            # Prefer an exact recovered source reference if one becomes available.
+            if footprint['models'] and all(resolutions.get(model) for model in footprint['models']):
+                continue
+            original = footprint['models'][0] if footprint['models'] else None
+            if original:
+                resolutions[original] = alternate
+            elif ref == 'U5' and footprint['footprint'] == '8205A:SOT95P285X140-6N':
+                dash_added_model = alternate
+            else:
+                continue
+            footprint['providedBy'] = 'packageLibraryFallback'
+            package_fallbacks.append({'ref': ref, 'kind': 'KiCad package-library representation; not manufacturer CAD',
+                                     'originalModel': Path(original).name if original else None,
+                                     'resolvedModel': relative_model, 'sourceHash': sha256(alternate),
+                                     'sourceUrl': 'https://gitlab.com/kicad/libraries/kicad-packages3D/-/blob/9.0.2/' + relative_model,
+                                     'registration': 'Original footprint centre, side and rotation retained; no extra model transform.',
+                                     'detailScope': detail})
+            missing = [item for item in missing if item['ref'] != ref]
     def rewrite(match):
         model = match.group(1)
         resolved = resolutions.get(model)
         return '(model "' + resolved.as_posix() + '"' if resolved else match.group(0)
     export_text = re.sub(r'\(model "([^"\n]+)"', rewrite, source_text)
+    if dash_added_model:
+        pattern = r'(\n\t\(footprint "8205A:SOT95P285X140-6N".*?)(\n\t\))'
+        match = re.search(pattern, export_text, re.S)
+        if not match or '(property "Reference" "U5"' not in match[1] or '(model ' in match[1]:
+            raise ValueError('Cannot safely place the documented Dash U5 package model')
+        model = '\n\t\t(model "' + dash_added_model.as_posix() + '" (offset (xyz 0 0 0)) (scale (xyz 1 1 1)) (rotate (xyz 0 0 0)))'
+        export_text = export_text[:match.end(1)] + model + export_text[match.end(1):]
     try:
         with tempfile.TemporaryDirectory(prefix="hardware-catalog-") as temporary:
             temporary_board = Path(temporary) / board.name
@@ -620,7 +665,7 @@ def export(slug, relative, root, destination, cli, libraries):
             additions = append_literal_vrml_boxes(out / "board.glb", footprints, vrml, float(child(general, 'thickness', [None,'1.6'])[1]))
             authored_vrml = preserve_authored_vrml_meshes(out / "board.glb", footprints, board, libraries)
             dimensioned = append_dimensioned_renata(out / "board.glb", footprints, float(child(general,'thickness',[None,'1.6'])[1]))
-            compaction = compact_source_geometry(out / 'board.glb') if slug.startswith('skylabs-') else None
+            compaction = compact_source_geometry(out / 'board.glb') if slug.startswith('skylabs-') or slug == 'dash' else None
             missing = [item for item in missing if item['ref'] not in {entry['ref'] for entry in dimensioned}]
             missing = [item for item in missing if item['ref'] not in {entry['ref'] for entry in additions}]
             gltf, materials, bounds, height, triangles = inspect_glb(out / "board.glb")
@@ -655,6 +700,9 @@ def export(slug, relative, root, destination, cli, libraries):
         metadata["dimensionedRepresentations"] = dimensioned
         metadata["modelRegistrations"] = registrations
         metadata['packageLibraryFallbacks'] = package_fallbacks
+        if slug == 'dash':
+            metadata['sourceUnassignedModelFootprints'] = metadata['unmodeledFootprints'][:]
+            metadata['unmodeledFootprints'] = [item['ref'] for item in footprints if not item['hasModel'] and not item['modelExported'] and not item['dnp']]
         if compaction:
             metadata['losslessCompaction'] = compaction
         used_libraries = []

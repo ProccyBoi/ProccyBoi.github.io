@@ -77,6 +77,15 @@
       "sourceHash": "ec67cc46d5da9fc4ac3f88ce1a029d4ae0db95685438da4dbd55a59ed2fb1c34",
       "missingModelCount": 0,
       "modelBytes": 7818648
+    },
+    {
+      "slug": "dash",
+      "exported": true,
+      "metadataUrl": "/assets/models/hardware/dash/assembly.json",
+      "source": "Driving Companion/Driving Companion.kicad_pcb",
+      "sourceHash": "88fb822d575644c5412ef8758e3cd9f3ed03730aa67f322563188b7846269b9e",
+      "missingModelCount": 1,
+      "modelBytes": 3533484
     }
   ]
 }

@@ -11,10 +11,10 @@
   <meta property="og:title" content="Dash | Andrew Chung">
   <meta property="og:description" content="An ESP32 focus companion built around gestures, animated eyes and app-free session control.">
   <meta property="og:url" content="https://proccyboi.github.io/projects/dash/">
-  <meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/dash1-web.jpg">
-  <meta property="og:image:alt" content="Dash safe-driving detector PCB">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/images/v2/hardware/dash.webp">
+  <meta property="og:image:alt" content="KiCad rendering of the Dash circuit board assembly">
   <link rel="canonical" href="https://proccyboi.github.io/projects/dash/">
-  <link rel="preload" as="image" href="assets/images/projects/dash1-web.jpg">
+  <link rel="preload" as="image" href="assets/images/v2/hardware/dash.webp">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
 </head>
@@ -45,14 +45,14 @@
             <p>An ESP32 focus companion that grew out of a vehicle-mounted sensor prototype.</p>
           </div>
           <dl class="project-meta">
-            <div><dt>Type</dt><dd>Personal project</dd></div>
-            <div><dt>Core</dt><dd>ESP32-WROOM</dd></div>
+            <div><dt>Core</dt><dd>ESP32-WROOM-32E</dd></div>
+            <div><dt>Board</dt><dd>45.2 × 45.2 mm / 2 layers</dd></div>
             <div><dt>Sensing</dt><dd>MPU-6050 / capacitive touch</dd></div>
             <div><dt>Interface</dt><dd>SH1106 OLED / captive portal</dd></div>
           </dl>
         </div>
         <figure class="project-hero-media">
-          <img src="assets/images/projects/dash1-web.jpg" width="1600" height="900" alt="Dash ESP32 electronics PCB close-up">
+          <img src="assets/images/v2/hardware/dash.webp" width="1600" height="1200" alt="KiCad rendering of the Dash circuit board assembly">
         </figure>
       </div>
     </section>
@@ -61,8 +61,17 @@
       <section class="project-summary" aria-labelledby="dash-summary">
         <h2 id="dash-summary">From the car to the desk</h2>
         <div class="project-prose">
-          <p>Dash started as the vehicle-mounted safe-driving prototype shown in these photos. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.</p>
+          <p>Dash started as the vehicle-mounted safe-driving prototype shown in the photos below. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.</p>
           <p>The current version is a cube-shaped study companion. Its screen is a pair of animated eyes, so a tap, shake, change of orientation or completed session gets a reaction without turning the device into another notification-heavy display.</p>
+        </div>
+      </section>
+
+      <section class="project-summary" aria-labelledby="dash-hardware">
+        <h2 id="dash-hardware">The board underneath</h2>
+        <div class="project-prose">
+          <p>The Driving Companion PCB measures 45.2 × 45.2 mm, with two copper layers on a 1.6 mm board. An ESP32-WROOM-32E connects to an MPU-6050 motion sensor, a four-pin display header and a MAX98357A audio amplifier for the speaker.</p>
+          <p>USB-C and a CH340C provide the wired programming interface. The battery supply combines TP4056 charging, DW01A / 8205A protection and a TPS62A01 regulator. Three mounting holes define the board's attachment points.</p>
+          <div class="hero-actions"><a class="button" href="/v2/projects/dash/#explore">Explore the board in 3D</a></div>
         </div>
       </section>
 
@@ -77,15 +86,15 @@
       </section>
 
       <section aria-labelledby="dash-gallery" data-reveal>
-        <div class="section-heading"><div><h2 id="dash-gallery">Photos</h2></div></div>
+        <div class="section-heading"><div><h2 id="dash-gallery">The original vehicle prototype</h2></div></div>
         <div class="project-gallery">
           <figure>
-            <img src="assets/images/projects/dash1-web.jpg" width="1600" height="900" alt="Dash ESP32 electronics PCB close-up with surface-mount components" data-zoomable data-caption="Dash PCB close-up">
-            <figcaption><span>PCB close-up</span><span>01 / 02</span></figcaption>
+            <img src="assets/images/projects/dash1-web.jpg" width="1600" height="900" alt="Original Dash vehicle prototype PCB close-up with surface-mount components" data-zoomable data-caption="Original vehicle prototype PCB">
+            <figcaption><span>Original prototype PCB</span><span>01 / 02</span></figcaption>
           </figure>
           <figure>
-            <img src="assets/images/projects/dash2-web.jpg" width="1600" height="900" alt="Dash safe driving detector enclosure mounted inside a vehicle" loading="lazy" data-zoomable data-caption="Dash mounted enclosure">
-            <figcaption><span>Mounted enclosure</span><span>02 / 02</span></figcaption>
+            <img src="assets/images/projects/dash2-web.jpg" width="1600" height="900" alt="Original Dash safe-driving prototype enclosure mounted inside a vehicle" loading="lazy" data-zoomable data-caption="Original vehicle prototype enclosure">
+            <figcaption><span>Original mounted enclosure</span><span>02 / 02</span></figcaption>
           </figure>
         </div>
       </section>

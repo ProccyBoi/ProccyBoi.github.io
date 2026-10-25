@@ -1458,8 +1458,15 @@
       {
         "heading": "From the car to the desk",
         "paragraphs": [
-          "Dash started as the vehicle-mounted safe-driving prototype shown in these photos. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.",
+          "Dash started as the vehicle-mounted safe-driving prototype shown in the photos below. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.",
           "The current version is a cube-shaped study companion. Its screen is a pair of animated eyes, so a tap, shake, change of orientation or completed session gets a reaction without turning the device into another notification-heavy display."
+        ]
+      },
+      {
+        "heading": "The board underneath",
+        "paragraphs": [
+          "The Driving Companion PCB measures 45.2 × 45.2 mm, with two copper layers on a 1.6 mm board. An ESP32-WROOM-32E connects to an MPU-6050 motion sensor, a four-pin display header and a MAX98357A audio amplifier for the speaker.",
+          "USB-C and a CH340C provide the wired programming interface. The battery supply combines TP4056 charging, DW01A / 8205A protection and a TPS62A01 regulator. Three mounting holes define the board's attachment points."
         ]
       },
       {
@@ -1474,25 +1481,25 @@
     "images": [
       {
         "src": "/assets/images/projects/dash1-web.jpg",
-        "alt": "Dash ESP32 electronics PCB close-up",
+        "alt": "Original Dash vehicle prototype PCB close-up",
         "width": 1600,
         "height": 900
       },
       {
         "src": "/assets/images/projects/dash2-web.jpg",
-        "alt": "Dash safe driving detector enclosure mounted inside a vehicle",
+        "alt": "Original Dash safe-driving prototype enclosure mounted inside a vehicle",
         "width": 1600,
         "height": 900
       }
     ],
     "specs": [
       {
-        "label": "Type",
-        "value": "Personal project"
+        "label": "Core",
+        "value": "ESP32-WROOM-32E"
       },
       {
-        "label": "Core",
-        "value": "ESP32-WROOM"
+        "label": "Board",
+        "value": "45.2 × 45.2 mm · 2 layers"
       },
       {
         "label": "Sensing",
@@ -1503,14 +1510,21 @@
         "value": "SH1106 OLED / captive portal"
       }
     ],
-    "links": [],
+    "links": [
+      {
+        "href": "https://github.com/JPhusion/dash",
+        "label": "View the firmware"
+      }
+    ],
     "evidence": {},
-    "lab": "/v2/projects/dash/#details",
+    "lab": "/v2/projects/dash/#explore",
+    "lab_label": "Explore the board in 3D",
+    "gallery_title": "The original vehicle prototype.",
     "hero": {
-      "src": "/assets/images/projects/dash1-web.jpg",
-      "alt": "Dash ESP32 electronics PCB close-up",
+      "src": "/assets/images/v2/hardware/dash.webp",
+      "alt": "KiCad rendering of the Dash circuit board assembly",
       "width": 1600,
-      "height": 900
+      "height": 1200
     }
   },
   {

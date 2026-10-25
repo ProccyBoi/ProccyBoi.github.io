@@ -92,6 +92,13 @@
   ],
   "assemblies": [
     {
+      "route": "dash",
+      "model": "dash",
+      "title": "Dash board assembly",
+      "mode": "add",
+      "note": "Inspect the two-layer PCB and component placements from the Driving Companion KiCad design. Component bodies use library CAD; the speaker connector is shown as a footprint only."
+    },
+    {
       "route": "lora-receiver",
       "model": "lora-receiver",
       "title": "LoRa receiver assembly",
