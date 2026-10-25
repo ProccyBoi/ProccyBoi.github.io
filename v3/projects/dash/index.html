@@ -12,7 +12,7 @@
   <meta property="og:description" content="An ESP32 focus companion built around gestures, animated eyes and app-free session control.">
   <meta property="og:url" content="https://proccyboi.github.io/v3/projects/dash/">
   <meta property="og:image" content="https://proccyboi.github.io/assets/images/v2/hardware/dash.webp">
-  <meta property="og:image:alt" content="KiCad rendering of the Dash circuit board assembly">
+  <meta property="og:image:alt" content="Dash device assembly with its enclosure, display and internal hardware">
   <link rel="canonical" href="https://proccyboi.github.io/v3/projects/dash/">
 
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
@@ -24,7 +24,7 @@
   <script src="/v3/assets/v2-component-photo.js?v=physical-20261007" defer></script>
   <script src="/v3/assets/v2.js?v=physical-20261007" defer></script><script src="/v3/assets/v2-cases.js" defer></script>
 <link rel="stylesheet" href="/v3/assets/v2-hardware.css">
-<script src="/v3/assets/v2-hardware.js?v=physical-20261007" defer></script>
+<script src="/v3/assets/v2-hardware.js?v=dash-device-20261025" defer></script>
   <link rel="stylesheet" href="/v3/assets/orbital-interiors.css">
 </head>
 <body class="v2 v2-case">
@@ -46,24 +46,24 @@
 
             <h1 id="project-title">Dash</h1>
             <p>An ESP32 focus companion that grew out of a vehicle-mounted sensor prototype.</p>
-          </div><div class="project-hero-actions"><a href="/v3/projects/dash/#explore">Explore the board <span aria-hidden="true">↗</span></a><a href="/v3/projects/dash/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/dash.webp" width="1600" height="1200" alt="Dash circuit board assembly" fetchpriority="high"></figure></div>
+          </div><div class="project-hero-actions"><a href="/v3/projects/dash/#explore">Explore the device in 3D <span aria-hidden="true">↗</span></a><a href="/v3/projects/dash/#details">Design details <span aria-hidden="true">↓</span></a></div></div><figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/hardware/dash.webp" width="1600" height="1200" alt="Dash device assembly with its enclosure, display and internal hardware" fetchpriority="high"></figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Core</dt><dd>ESP32-WROOM-32E</dd></div>
+            <div><dt>Enclosure</dt><dd>50 × 52 × 48 mm</dd></div>
             <div><dt>Board</dt><dd>45.2 × 45.2 mm / 2 layers</dd></div>
-            <div><dt>Sensing</dt><dd>MPU-6050 / capacitive touch</dd></div>
-            <div><dt>Interface</dt><dd>SH1106 OLED / captive portal</dd></div>
+            <div><dt>Interface</dt><dd>128 × 64 OLED / touch / gestures</dd></div>
           </dl></div></section>
 <dl class="engineering-brief shell" aria-label="Engineering brief"><div><dt>The interaction</dt><dd>Animated eyes, gestures and a focus timer in an ESP32 desk companion.</dd></div><div><dt>The firmware</dt><dd>A coordinating state machine with separate sensing, display and audio tasks.</dd></div><div><dt>The workflow</dt><dd>A local Wi-Fi captive portal for sessions, settings and recent statistics.</dd></div></dl>
 
     <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="explore-title"><div class="project-interactive-inner">
-      <header class="project-interactive-header"><div><h2 id="explore-title">Dash board assembly</h2></div></header>
-      <figure data-hardware="/assets/models/hardware/dash/assembly.json" data-hardware-title="Dash board assembly">
-      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/dash.webp" width="1600" height="1200" alt="Dash board assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas><output class="v2-part-readout" data-hardware-part hidden aria-live="polite"></output></div>
+      <header class="project-interactive-header"><div><h2 id="explore-title">Dash device assembly</h2></div></header>
+      <figure data-hardware="/assets/models/hardware/dash/assembly.json" data-hardware-title="Dash device assembly">
+      <div class="hardware-stage" data-hardware-stage><img data-hardware-poster src="/assets/images/v2/hardware/dash.webp" width="1600" height="1200" alt="Dash device assembly" loading="lazy"><canvas data-hardware-canvas hidden></canvas><output class="v2-part-readout" data-hardware-part hidden aria-live="polite"></output></div>
       <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D ↗</button></div>
       <div class="hardware-controls"><button type="button" data-hardware-explode aria-pressed="false">Disassemble</button></div>
       <p data-hardware-status role="status" aria-live="polite"></p>
     </figure>
-      <p class="v2-hardware-note">Inspect the two-layer PCB and component placements from the Driving Companion KiCad design. Component bodies use library CAD; the speaker connector is shown as a footprint only.</p>
+      <p class="v2-hardware-note">The housing and PCB use the supplied design files. Display, speaker, battery, plugs, magnets and touch plate are dimensioned visualizations guided by build photos. Their placement illustrates the assembly; it does not verify manufacturing fit.</p>
     </div></section>
 <div class="project-body shell" id="details">
       <section class="project-summary" aria-labelledby="dash-summary">
@@ -74,12 +74,21 @@
         </div>
       </section>
 
+      <section class="project-summary" aria-labelledby="dash-assembly">
+        <h2 id="dash-assembly">Inside the enclosure</h2>
+        <div class="project-prose">
+          <p>The base and lid form a 50 × 52 × 48 mm enclosure around the black PCB. A four-pin GME12864-80 OLED module faces forward, with the 4 Ω / 3 W box speaker behind the rear grille. Magnets sit at the top, alongside the metal capacitive touch plate.</p>
+          <p>A 3.7 V, 1000 mAh LiPo supplies the device through a JST PH connection. The battery representation is approximately 35 × 25 × 10 mm, with an ivory mating plug.</p>
+          <p>The 3D view uses the supplied housing meshes and PCB design. The other parts are dimensioned visualizations guided by the build photos; their placement, including the battery, illustrates the assembly rather than verifying manufacturing fit.</p>
+          <div class="hero-actions"><a class="button" href="/v3/projects/dash/#explore">Explore the device in 3D</a></div>
+        </div>
+      </section>
+
       <section class="project-summary" aria-labelledby="dash-hardware">
         <h2 id="dash-hardware">The board underneath</h2>
         <div class="project-prose">
           <p>The Driving Companion PCB measures 45.2 × 45.2 mm, with two copper layers on a 1.6 mm board. An ESP32-WROOM-32E connects to an MPU-6050 motion sensor, a four-pin display header and a MAX98357A audio amplifier for the speaker.</p>
           <p>USB-C and a CH340C provide the wired programming interface. The battery supply combines TP4056 charging, DW01A / 8205A protection and a TPS62A01 regulator. Three mounting holes define the board's attachment points.</p>
-          <div class="hero-actions"><a class="button" href="/v3/projects/dash/#explore">Explore the board in 3D</a></div>
         </div>
       </section>
 

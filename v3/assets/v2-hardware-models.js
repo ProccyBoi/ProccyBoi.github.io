@@ -3,6 +3,15 @@
 (() => {
   'use strict';
   let mechanicsScript;
+  let dashScript;
+  const loadDash = () => {
+    if(window.DashAssembly && window.DashComponents)return Promise.resolve();
+    if(!dashScript)dashScript=Promise.all(['dash-components','dash-assembly'].map(name=>new Promise((resolve,reject)=>{
+      const script=document.createElement('script');script.src='/v3/assets/'+name+'.js?v=dash-device-20261025';
+      script.onload=resolve;script.onerror=()=>{script.remove();reject(new Error('Dash device unavailable'));};document.head.append(script);
+    }))).catch(error=>{dashScript=null;throw error;});
+    return dashScript;
+  };
   const loadMechanics = () => {
     if (window.FrameworkMechanics) return Promise.resolve();
     if (!mechanicsScript) mechanicsScript = new Promise((resolve, reject) => {
@@ -30,11 +39,13 @@
     // The manufactured Skylabs boards use blue soldermask. Keep this finish
     // separate from the untouched CAD palette and from component substrates.
     const skylabsBlue=metadata.slug==='skylabs-telemetry'||metadata.slug==='skylabs-ground-station';
+    // Dash uses the requested black mask; all other CAD material roles stay intact.
+    const dashBlack=metadata.slug==='dash';
     const style=original=>{
       if(materials.has(original.name))return materials.get(original.name);
       const material=original.clone(),roles=metadata.materials||{};
       material.transparent=false;material.opacity=1;material.depthWrite=true;
-      if(original.name===roles.mask){if(skylabsBlue)material.color.setHex(0x043b7b);material.color.convertSRGBToLinear();material.roughness=.58;material.metalness=.03;material.side=T.DoubleSide;material.transparent=true;material.opacity=original.opacity;}
+      if(original.name===roles.mask){if(skylabsBlue)material.color.setHex(0x043b7b);else if(dashBlack)material.color.setHex(0x121416);material.color.convertSRGBToLinear();material.roughness=.58;material.metalness=.03;material.side=T.DoubleSide;material.transparent=true;material.opacity=original.opacity;}
       else if(original.name===roles.core){material.color.convertSRGBToLinear();material.roughness=.86;material.metalness=0;}
       else if(original.name===roles.pads){material.roughness=.31;material.metalness=.8;}
       else {
@@ -136,9 +147,15 @@
         group.add(part.object); parts.push(part);
       }
     }
-    disposeSource(source);group.updateMatrixWorld(true);
-    const bounds=new T.Box3().setFromObject(group),size=bounds.getSize(new T.Vector3());
-    return {group,parts,metadata,span:Math.max(size.x,size.y,size.z),centre:bounds.getCenter(new T.Vector3())};
+    let resultGroup=group,defaultRotation;
+    if(metadata.slug==='dash'){
+      await loadDash();
+      const device=await window.DashAssembly.add(T,{group,parts,units});
+      resultGroup=device.group;defaultRotation=device.defaultRotation;
+    }
+    disposeSource(source);resultGroup.updateMatrixWorld(true);
+    const bounds=new T.Box3().setFromObject(resultGroup),size=bounds.getSize(new T.Vector3());
+    return {group:resultGroup,parts,metadata,...(defaultRotation?{defaultRotation}:{}),span:Math.max(size.x,size.y,size.z),centre:bounds.getCenter(new T.Vector3())};
   }
   window.V2HardwareModels=Object.freeze({load:loadAssembly});
 })();

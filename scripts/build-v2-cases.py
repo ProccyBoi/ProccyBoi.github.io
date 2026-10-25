@@ -159,7 +159,8 @@ def common(source, body_class, active='work'):
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
     if 'data-hardware=' in source:
-        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=physical-20261007" defer></script>\n</head>')
+        hardware_version = 'dash-device-20261025' if '/hardware/dash/assembly.json' in source else 'physical-20261007'
+        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=' + hardware_version + '" defer></script>\n</head>')
     return route_links(clean_display_copy(source))
 
 
@@ -435,19 +436,20 @@ def make_case(path, slug=None, source=None):
         'skylabs': ('hardware/skylabs-telemetry.webp', 'Skylabs aircraft telemetry circuit board'),
     }
     if slug in HARDWARE_ASSEMBLIES:
-        model = HARDWARE_ASSEMBLIES[slug]['model']
-        cad_assets[slug] = (f'hardware/{model}.webp', f'{title} circuit board assembly')
+        assembly = HARDWARE_ASSEMBLIES[slug]
+        model = assembly['model']
+        cad_assets[slug] = (f'hardware/{model}.webp', assembly.get('poster_alt', f'{title} circuit board assembly'))
     hero_media = media.outer(source)
     if slug in cad_assets:
         asset, alt = cad_assets[slug]
-        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/{asset}" width="1600" height="1200" alt="{alt}" fetchpriority="high"></figure>'
+        hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/v2/{asset}" width="1600" height="1200" alt="{escape(alt)}" fetchpriority="high"></figure>'
     elif slug.startswith('skylabs'):
         board = 'ground' if slug.endswith('ground-station') else 'telemetry'
         width, height = (1376, 984) if board == 'telemetry' else (1400, 1000)
         hero_media = f'<figure class="project-hero-media v2-cad-media"><img src="/assets/images/interactive/skylabs/skylabs-{board}-turn-02.webp" width="{width}" height="{height}" alt="Assembled Skylabs {board} circuit board" fetchpriority="high"></figure>'
     has_explorer = 'id="explore"' in source
     explore_anchor = 'assembly' if 'id="assembly"' in source and 'data-skylabs-inspector' not in source else 'explore'
-    explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board'))
+    explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', HARDWARE_ASSEMBLIES.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board')))
     hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
@@ -576,11 +578,11 @@ def make_index():
     }
     for route, record in HARDWARE_ASSEMBLIES.items():
         if '/' not in route:
-            card_images[f'projects/{route}/'] = (f'v2/hardware/{record["model"]}.webp', 1600, 1200, LABELS[route] + ' circuit board assembly')
+            card_images[f'projects/{route}/'] = (f'v2/hardware/{record["model"]}.webp', 1600, 1200, record.get('poster_alt', LABELS[route] + ' circuit board assembly'))
     for node in tree.nodes:
         if node.has('catalog-card-media') and node.parent and node.parent.attrs.get('href') in card_images:
             filename, width, height, alt = card_images[node.parent.attrs['href']]
-            media_changes.append((node, f'<div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/{filename}" width="{width}" height="{height}" alt="{alt}" loading="lazy"></div>'))
+            media_changes.append((node, f'<div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/{filename}" width="{width}" height="{height}" alt="{escape(alt)}" loading="lazy"></div>'))
     source = replace_nodes(source, media_changes)
     source = re.sub(r'<p class="eyebrow">0[1-4] / (?:Hardware|Tools|Robotics|Archive)</p>', '', source)
     source = source.replace('Boards and systems', 'Hardware').replace('Software meets hardware', 'Robotics').replace('Earlier builds', 'Earlier projects')

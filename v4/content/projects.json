@@ -1451,7 +1451,7 @@
     "slug": "dash",
     "name": "Dash",
     "description": "An ESP32 focus companion with animated eyes, gestures and app-free session control.",
-    "spec": "ESP32 · FreeRTOS",
+    "spec": "ESP32 · 50 × 52 × 48 mm",
     "category": "Embedded systems",
     "source": "/v2/projects/dash/",
     "paragraphs": [
@@ -1460,6 +1460,14 @@
         "paragraphs": [
           "Dash started as the vehicle-mounted safe-driving prototype shown in the photos below. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.",
           "The current version is a cube-shaped study companion. Its screen is a pair of animated eyes, so a tap, shake, change of orientation or completed session gets a reaction without turning the device into another notification-heavy display."
+        ]
+      },
+      {
+        "heading": "Inside the enclosure",
+        "paragraphs": [
+          "The base and lid form a 50 × 52 × 48 mm enclosure around the black PCB. A four-pin GME12864-80 OLED module faces forward, with the 4 Ω / 3 W box speaker behind the rear grille. Magnets sit at the top, alongside the metal capacitive touch plate.",
+          "A 3.7 V, 1000 mAh LiPo supplies the device through a JST PH connection. The battery representation is approximately 35 × 25 × 10 mm, with an ivory mating plug.",
+          "The 3D view uses the supplied housing meshes and PCB design. The other parts are dimensioned visualizations guided by the build photos; their placement, including the battery, illustrates the assembly rather than verifying manufacturing fit."
         ]
       },
       {
@@ -1498,16 +1506,16 @@
         "value": "ESP32-WROOM-32E"
       },
       {
+        "label": "Enclosure",
+        "value": "50 × 52 × 48 mm"
+      },
+      {
         "label": "Board",
         "value": "45.2 × 45.2 mm · 2 layers"
       },
       {
-        "label": "Sensing",
-        "value": "MPU-6050 / capacitive touch"
-      },
-      {
         "label": "Interface",
-        "value": "SH1106 OLED / captive portal"
+        "value": "128 × 64 OLED / touch / gestures"
       }
     ],
     "links": [
@@ -1518,11 +1526,11 @@
     ],
     "evidence": {},
     "lab": "/v2/projects/dash/#explore",
-    "lab_label": "Explore the board in 3D",
+    "lab_label": "Explore the device in 3D",
     "gallery_title": "The original vehicle prototype.",
     "hero": {
       "src": "/assets/images/v2/hardware/dash.webp",
-      "alt": "KiCad rendering of the Dash circuit board assembly",
+      "alt": "Dash device assembly with its enclosure, display and internal hardware",
       "width": 1600,
       "height": 1200
     }

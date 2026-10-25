@@ -17,7 +17,8 @@
     const reduced=matchMedia('(prefers-reduced-motion: reduce)'),capture=root.hasAttribute('data-hardware-capture');
     const labels=JSON.parse(root.querySelector('[data-hardware-labels]')?.textContent||'{}');
     let renderer,scene,camera,model,environment,raycaster,pointer,frame=0,frames=0,ready=false,loading=false,visible=true,generation=0;
-    let current=0,target=0,rotation={x:1.03,y:-.16,z:-.26},zoom=1,drag,pendingPick,hoverPick,selected='',lastTime=0;
+    let initialRotation={x:1.03,y:-.16,z:-.26};
+    let current=0,target=0,rotation={...initialRotation},zoom=1,drag,pendingPick,hoverPick,selected='',lastTime=0;
     let pickables=[],partByMesh=new Map(),keyboardParts=[],keyboardIndex=-1;
     const abort=new AbortController(),listen=(node,event,callback,options={})=>node?.addEventListener(event,callback,{...options,signal:abort.signal});
     const showStatus=text=>{status.textContent=text;};
@@ -85,7 +86,7 @@
       if(loading||ready)return;loading=true;start.disabled=true;showRetry(false);showStatus('Loading assembly…');root.dataset.hardwareState='loading';const token=++generation;
       try{
         if(!window.THREE)await script('/assets/vendor/three.min.js');if(!window.THREE.GLTFLoader)await script('/assets/vendor/GLTFLoader.js');
-        if(!window.V2CadGeometry)await script('/assets/v2-assembly-models.js?v=mechanics-20261003');if(!window.V2HardwareModels)await script('/assets/v2-hardware-models.js?v=mechanics-20261003');
+        if(!window.V2CadGeometry)await script('/assets/v2-assembly-models.js?v=mechanics-20261003');if(!window.V2HardwareModels)await script('/assets/v2-hardware-models.js?v=dash-device-20261025');
         if(token!==generation)return;const T=window.THREE;
         if(!renderer){
           renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:capture});
@@ -98,7 +99,7 @@
           const pmrem=new T.PMREMGenerator(renderer);environment=pmrem.fromScene(studio,.06);scene.environment=environment.texture;pmrem.dispose();panel.geometry.dispose();material.dispose();
         }
         const loaded=await window.V2HardwareModels.load(root.dataset.hardware);if(token!==generation){releaseGroup(loaded.group);return;}
-        model=loaded;window.V2CadGeometry.prepareMotion(model.parts);scene.add(model.group);renderer.shadowMap.enabled=model.parts.length<80;renderer.shadowMap.type=T.PCFSoftShadowMap;
+        model=loaded;initialRotation=model.defaultRotation||{x:1.03,y:-.16,z:-.26};rotation={...initialRotation};window.V2CadGeometry.prepareMotion(model.parts);scene.add(model.group);renderer.shadowMap.enabled=model.parts.length<80;renderer.shadowMap.type=T.PCFSoftShadowMap;
         partByMesh=new Map();model.parts.forEach(part=>part.object.traverse(object=>{if(object.isMesh)partByMesh.set(object,part);}));
         keyboardParts=model.parts.flatMap(part=>part.object.userData.componentCenters||[{ref:part.ref,value:part.value}]);
         // Board surfaces occlude parts on the far side instead of picking
@@ -109,7 +110,7 @@
         ready=true;root.dataset.hardwareState='ready';root.dataset.hardwareComponents=String(model.parts.length);showStatus('');explode.disabled=!model.parts.length;layout();request();
       }catch(error){if(token===generation){console.warn('Assembly view unavailable.',error);unavailable();}}finally{if(token===generation)loading=false;}
     };
-    const reset=()=>{rotation={x:1.03,y:-.16,z:-.26};zoom=1;keyboardIndex=-1;setPhase(0);layout();};
+    const reset=()=>{rotation={...initialRotation};zoom=1;keyboardIndex=-1;setPhase(0);layout();};
     const showBoard=link=>{
       const load=ready||loading;if(load)releaseModel();current=0;target=0;drag=null;zoom=1;rotation={x:1.03,y:-.16,z:-.26};keyboardIndex=-1;setPhase(0);lastTime=0;
       root.dataset.hardware=link.dataset.hardwareModel;root.dataset.hardwareTitle=link.dataset.hardwareTitle;root.dataset.hardwareBoardKey=link.dataset.hardwareBoard;root.dataset.hardwareState='poster';

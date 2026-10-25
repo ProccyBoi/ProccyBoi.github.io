@@ -94,9 +94,11 @@
     {
       "route": "dash",
       "model": "dash",
-      "title": "Dash board assembly",
+      "title": "Dash device assembly",
       "mode": "add",
-      "note": "Inspect the two-layer PCB and component placements from the Driving Companion KiCad design. Component bodies use library CAD; the speaker connector is shown as a footprint only."
+      "poster_alt": "Dash device assembly with its enclosure, display and internal hardware",
+      "explore_label": "Explore the device in 3D",
+      "note": "The housing and PCB use the supplied design files. Display, speaker, battery, plugs, magnets and touch plate are dimensioned visualizations guided by build photos. Their placement illustrates the assembly; it does not verify manufacturing fit."
     },
     {
       "route": "lora-receiver",

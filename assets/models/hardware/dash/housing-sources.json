@@ -1,0 +1,14 @@
+[
+  {
+    "file": "base.stl",
+    "originalFilename": "Base Man (2).stl",
+    "sha256": "963bea21515f81566f5fda37e9305f588f1c09bda48bced8ea962c4f5ddf15bd",
+    "kind": "User-supplied original STL; unchanged triangle geometry"
+  },
+  {
+    "file": "lid.stl",
+    "originalFilename": "Lid Man (1).stl",
+    "sha256": "28d072fa9e58e386fc8fb5cea29715ae539d21099502426a7f4a76ce077822cc",
+    "kind": "User-supplied original STL; unchanged triangle geometry"
+  }
+]

@@ -74,7 +74,7 @@
     "assets/models/hardware/skylabs-telemetry/silk-front.svg": "4fb0fad9f79d351c5a5799d40e0212bd40c75c53d0972e9e44be455bc32e551a",
     "assets/models/tramtrace/tramtrace-kicad-source.glb": "fb35ccad3efd7761b8e1b2253659aa33566f54f903945c1ecfd43612f31ec134",
     "assets/v2-assembly-models.js": "c3fc34a8c760a258015255c4c4d977711e5314ab60e1a7a4a4b2876c9eb5c19e",
-    "assets/v2-hardware-models.js": "4491d95bd7ee8eb9378be39f0b6d032155e142fb219a983d67cb3ab8ff79e34f",
+    "assets/v2-hardware-models.js": "e28793ead12df89b61a41cea459ce359e0c0cb3b761e8dff85dc88e01d75cc0b",
     "assets/vendor/GLTFLoader.js": "5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6",
     "assets/vendor/three.min.js": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
   }
