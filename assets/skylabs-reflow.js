@@ -33,9 +33,11 @@
   }
   function tick(now) {
     frame=0;
-    const dt=Math.min((now-(last||now))/1000,.05);last=now;
+    // Use elapsed time for settling even on a slow software renderer. Visibility
+    // pauses reset the clock, so returning to the tab never accumulates a jump.
+    const elapsed=Math.max(0,(now-(last||now))/1000),dt=Math.min(elapsed,.25);last=now;
     if(playing){target=Math.min(1,target+dt/24);progress=target;if(target===1)pause();}
-    else if(Math.abs(target-progress)>.00005)progress+= (target-progress)*(1-Math.exp(-dt*9));
+    else if(Math.abs(target-progress)>.00005)progress+= (target-progress)*(1-Math.exp(-elapsed*9));
     else progress=target;
     pose();renderer.render(scene,camera);frames++;
     root.dataset.frames=String(frames);

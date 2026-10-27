@@ -52,6 +52,12 @@ const scrub=async(p,v)=>{await p.locator('#rf-progress').fill(String(v));await p
   const noJS=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:844}});watch(noJS);await noJS.goto(base+route);assert.ok(await noJS.locator('.rf-poster').isVisible());assert.ok(await noJS.locator('noscript').isVisible());assert.equal(await noJS.locator('.rf-controls').isVisible(),false);await noJS.close();
   const fail=await browser.newPage();watch(fail);await fail.route('**/telemetry.idx.bin.gz',r=>r.abort());await fail.goto(base+route);await fail.locator('[data-state=unavailable]').waitFor();assert.ok(await fail.locator('.rf-poster').isVisible());await fail.close();
   const save=await browser.newPage();watch(save);await save.addInitScript(()=>Object.defineProperty(navigator,'connection',{value:{saveData:true}}));const models=[];save.on('request',r=>{if(r.url().includes('telemetry.idx'))models.push(r.url());});await save.goto(base+route);await save.waitForTimeout(250);assert.equal(models.length,0);await save.getByRole('button',{name:'Load assembly'}).click();await save.locator('[data-state=ready]').waitFor({timeout:60000});await save.close();
+  const slow=await browser.newPage({viewport:{width:1440,height:1100}});watch(slow);
+  await slow.addInitScript(()=>{window.requestAnimationFrame=cb=>setTimeout(()=>cb(performance.now()),350);window.cancelAnimationFrame=clearTimeout;});
+  await slow.goto(base+route);await slow.locator('[data-state=ready]').waitFor({timeout:60000});
+  await slow.locator('[data-stage="5"]').click();
+  await slow.waitForFunction(()=>document.querySelector('[data-reflow]').reflowSnapshot().progress===1,null,{timeout:7000});
+  await slow.close();console.log('PASS elapsed-time settling with 350 ms frames');
   assert.deepEqual(errors,[]);assert.deepEqual(bad,[]);
   report.passed=['492 source-derived, undrilled front lands','exact final positions; unchanged rotations and X/Z throughout','six stages + repeated/reversed scrub + interrupted stage transitions','through-hole/back-side deferred until finish','play/pause/replay; keyboard Home/End','idle and offscreen rendering stops','live reduced-motion preference','desktop, 390 px and 320 px layouts; mobile navigation','context loss, failed CAD, no JavaScript and Save Data fallback'];
   fs.writeFileSync(path.join(shots,'results.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));
