@@ -1,0 +1,69 @@
+/* Source-geometry assembly studio; finite motion is managed by the controller. */
+.dash-assembly { --assembly-ink: #f0f1e6; --assembly-muted: #aab6a6; --assembly-line: #364232; --assembly-accent: #e1a17f; background: #101610; color: var(--assembly-ink); border: 1px solid var(--assembly-line); border-radius: 12px; overflow: hidden; }
+.dash-assembly [hidden] { display: none !important; }
+.dash-assembly__studio { display: grid; grid-template-columns: minmax(0, 1fr) 240px; }
+.dash-assembly__stage { position: relative; min-width: 0; height: clamp(420px, 40vw, 560px); overflow: hidden; background: #101610; }
+.dash-assembly__canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; outline-offset: -5px !important; }
+.dash-assembly__canvas:active { cursor: grabbing; }
+.dash-assembly__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: .72; }
+.dash-assembly__stage-top { position: absolute; top: 24px; left: 28px; right: 28px; display: flex; justify-content: space-between; gap: 1rem; pointer-events: none; color: var(--assembly-muted); font: .62rem/1.5 var(--mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
+.dash-assembly__stage-top span:first-child { color: var(--assembly-accent); }
+.dash-assembly__start { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-height: 46px; max-width: calc(100% - 3rem); padding: .8rem 1.2rem; border: 1px solid #e5e9dc; background: #e5e9dc; color: #172015; font: 500 .85rem/1.4 var(--sans, sans-serif); cursor: pointer; }
+.dash-assembly__hint { position: absolute; bottom: 17px; left: 28px; right: 28px; display: flex; justify-content: space-between; gap: 1rem; margin: 0; pointer-events: none; font: .6rem/1.6 var(--mono, monospace); color: var(--assembly-muted); }
+.dash-assembly__rail { display: flex; flex-direction: column; justify-content: center; padding: 2rem 1.5rem; border-left: 1px solid var(--assembly-line); background: #171e16; }
+.dash-assembly__label { margin: 0 0 1.4rem; font: .6rem/1.6 var(--mono, monospace); text-transform: uppercase; letter-spacing: .1em; color: var(--assembly-accent); }
+.dash-assembly__groups { margin: 0; padding: 0; list-style: none; }
+.dash-assembly__group { display: flex; width: 100%; align-items: center; gap: .9rem; text-align: left; background: transparent; color: var(--assembly-muted); border: 0; border-bottom: 1px solid var(--assembly-line); padding: 1rem 0; min-height: 48px; cursor: pointer; font: 400 .9rem/1.5 var(--sans, sans-serif); }
+.dash-assembly__group > span:first-child { flex: 0 0 1.2rem; font: .6rem var(--mono, monospace); color: #879781; }
+.dash-assembly__group[aria-pressed="true"] { color: var(--assembly-ink); }
+.dash-assembly__group[aria-pressed="true"] > span:first-child { color: var(--assembly-accent); }
+.dash-assembly__group:hover { color: #fff; }
+.dash-assembly__detail { color: var(--assembly-muted); font-size: .75rem; line-height: 1.7; margin: 1.5rem 0 0; min-height: 6em; }
+.dash-assembly__controls { padding: 1.3rem 1.7rem; border-top: 1px solid var(--assembly-line); background: #171e16; }
+.dash-assembly__transport { display: grid; grid-template-columns: auto minmax(8rem, 1fr) auto; align-items: center; gap: 1.5rem; }
+.dash-assembly button.dash-assembly__button { padding: .65rem .9rem; min-height: 42px; font: 500 .75rem/1.4 var(--sans, sans-serif); color: var(--assembly-ink); border: 1px solid #53634c; border-radius: 4px; background: transparent; cursor: pointer; }
+.dash-assembly button.dash-assembly__button:hover { border-color: #b5c4ab; background: #263323; }
+.dash-assembly button.dash-assembly__button--play { min-width: 9.5rem; background: #e5e9dc; color: #172015; border-color: #e5e9dc; }
+.dash-assembly button.dash-assembly__button--play:hover { background: #fff; border-color: #fff; }
+.dash-assembly button[aria-pressed="true"] { color: var(--assembly-accent); }
+.dash-assembly__scrub { display: grid; grid-template-columns: 1fr auto; gap: .7rem; align-items: center; }
+.dash-assembly__scrub label { font: .58rem/1.6 var(--mono, monospace); text-transform: uppercase; letter-spacing: .06em; color: var(--assembly-muted); }
+.dash-assembly__scrub output { font: .65rem/1.6 var(--mono, monospace); color: var(--assembly-accent); min-width: 3ch; text-align: right; }
+.dash-assembly__scrub input { grid-column: 1 / -1; width: 100%; min-width: 0; margin: 0; cursor: ew-resize; accent-color: var(--assembly-accent); min-height: 22px; }
+.dash-assembly__positions, .dash-assembly__views { display: flex; flex-wrap: wrap; gap: .45rem; }
+.dash-assembly__bottom { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
+.dash-assembly__bottom > p { color: var(--assembly-muted); font-size: .65rem; line-height: 1.6; margin: 0; }
+.dash-assembly__caption { border-top: 1px solid var(--assembly-line); display: flex; justify-content: space-between; gap: 1rem; padding: .9rem 1.7rem; margin: 0; font: .58rem/1.6 var(--mono, monospace); color: var(--assembly-muted); }
+.dash-assembly__fallback { padding: 0 1.7rem 1rem; margin: 0; font-size: .8rem; line-height: 1.6; color: var(--assembly-muted); }
+.dash-assembly__live { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.dash-assembly :is(button, input, canvas):focus-visible { outline: 2px solid var(--assembly-accent); outline-offset: 4px; }
+.dash-assembly:not([data-dash-assembly-state="ready"]) .dash-assembly__studio { grid-template-columns: 1fr; }
+.dash-assembly:not([data-dash-assembly-state="ready"]) .dash-assembly__hint { display: none; }
+@media (max-width: 900px) {
+  .dash-assembly__studio { grid-template-columns: minmax(0, 1fr) 190px; }
+  .dash-assembly__rail { padding-inline: 1rem; }
+  .dash-assembly__transport { grid-template-columns: auto 1fr; gap: 1rem; }
+  .dash-assembly__positions { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .dash-assembly__studio { grid-template-columns: 1fr; }
+  .dash-assembly__stage { height: 380px; }
+  .dash-assembly__rail { border-left: 0; border-top: 1px solid var(--assembly-line); padding: 1rem 1.15rem; }
+  .dash-assembly__label { margin-bottom: .4rem; }
+  .dash-assembly__groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; }
+  .dash-assembly__group { padding: .6rem 0; font-size: .75rem; gap: .5rem; min-height: 42px; }
+  .dash-assembly__detail { margin-top: .75rem; min-height: 0; font-size: .7rem; }
+  .dash-assembly__stage-top { top: 18px; left: 18px; right: 18px; font-size: .5rem; }
+  .dash-assembly__hint { left: 18px; right: 18px; bottom: 14px; font-size: .5rem; }
+  .dash-assembly__hint span:last-child { display: none; }
+  .dash-assembly__controls { padding: 1.1rem; }
+  .dash-assembly__transport { grid-template-columns: 1fr; gap: 1rem; }
+  .dash-assembly__positions { grid-column: auto; }
+  .dash-assembly__positions > button { flex: 1; }
+  .dash-assembly__bottom { flex-direction: column; align-items: stretch; }
+  .dash-assembly__views > button { flex: 1; }
+  .dash-assembly__caption { padding: .85rem 1.1rem; display: block; font-size: .55rem; }
+  .dash-assembly__caption span { display: block; }
+}
+@media (prefers-reduced-motion: reduce) { .dash-assembly *, .dash-assembly *::before, .dash-assembly *::after { animation: none !important; transition: none !important; } }
+@media print { .dash-assembly__canvas, .dash-assembly__controls, .dash-assembly__rail, .dash-assembly__start { display: none !important; } .dash-assembly [data-assembly-poster] { display: block !important; } }

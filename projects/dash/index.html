@@ -17,8 +17,13 @@
   <link rel="preload" as="image" href="assets/images/v2/hardware/dash.webp?v=dash-refined-20261025">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
+  <link rel="stylesheet" href="assets/dash-prototype-studio.css">
+  <link rel="stylesheet" href="assets/dash-demo.css">
+  <link rel="stylesheet" href="assets/dash-motion.css">
+  <script src="assets/dash-prototype-studio.js" defer></script>
+  <script src="assets/dash-demo.js" defer></script>
 </head>
-<body>
+<body class="dash-motion-page">
   <a class="skip-link" href="/projects/dash/#main">Skip to content</a>
 
   <header class="site-header">
@@ -44,6 +49,7 @@
             <h1 id="project-title">Dash</h1>
             <p>An ESP32 focus companion that grew out of a vehicle-mounted sensor prototype.</p>
           </div>
+          <div class="project-hero-actions"><a href="/v2/projects/dash/#explore">Explore the device <span aria-hidden="true">↗</span></a><a href="/projects/dash/#prototype">Prototype PCB <span aria-hidden="true">↓</span></a><a href="/projects/dash/#character">Meet Dash <span aria-hidden="true">↓</span></a></div>
           <dl class="project-meta">
             <div><dt>Core</dt><dd>ESP32-WROOM-32E</dd></div>
             <div><dt>Enclosure</dt><dd>50 × 52 × 48 mm</dd></div>
@@ -57,8 +63,88 @@
       </div>
     </section>
 
-    <div class="project-body shell">
-      <section class="project-summary" aria-labelledby="dash-summary">
+    <div class="project-body shell" id="dash-story">
+      <section class="dash-prototype dash-motion-section" id="prototype" aria-labelledby="dash-prototype-title">
+        <div class="dash-motion-heading dash-motion-heading-row"><div><p class="eyebrow">Earlier prototype / assembly study</p><h2 id="dash-prototype-title">The original board,<br>in motion.</h2></div><p>Follow the earlier driving-companion PCB from bare board to populated system. Its component positions come from the archived model; the sequence separates them for inspection.</p></div>
+<div class="dash-assembly" data-dash-assembly data-dash-assembly-state="idle" data-assembly-view="iso">
+  <div class="dash-assembly__studio">
+    <div class="dash-assembly__stage" data-assembly-stage>
+      <img class="dash-assembly__poster" data-assembly-poster src="/assets/images/projects/dash1-web.jpg" width="1600" height="900" alt="The original Dash prototype electronics PCB">
+      <canvas class="dash-assembly__canvas" data-assembly-canvas hidden tabindex="0" aria-label="Dash prototype PCB assembly. Drag to orbit, or use arrow keys. Home resets the view."></canvas>
+      <div class="dash-assembly__stage-top"><span>Dash / assembly study</span><span data-assembly-status>Prototype photograph</span></div>
+      <button class="dash-assembly__start" data-assembly-start type="button" hidden>Play the assembly <span aria-hidden="true">↗</span></button>
+      <p class="dash-assembly__hint"><span>Drag to orbit · arrow keys to inspect</span><span>Source geometry / four assembly stages</span></p>
+    </div>
+    <aside class="dash-assembly__rail" data-assembly-rail aria-label="Assembly stages" hidden>
+      <p class="dash-assembly__label">From board to system</p>
+      <ol class="dash-assembly__groups" data-assembly-groups></ol>
+      <p class="dash-assembly__detail" data-assembly-detail></p>
+    </aside>
+  </div>
+  <div class="dash-assembly__controls" data-assembly-controls hidden>
+    <div class="dash-assembly__transport">
+      <button class="dash-assembly__button dash-assembly__button--play" data-assembly-play type="button">Play assembly</button>
+      <div class="dash-assembly__scrub"><label for="dash-assembly-progress">Assembly progress</label><output data-assembly-amount aria-live="off">0%</output><input id="dash-assembly-progress" data-assembly-scrub type="range" min="0" max="100" step="1" value="0" aria-valuetext="0 percent assembled"></div>
+      <div class="dash-assembly__positions" role="group" aria-label="Component positions"><button class="dash-assembly__button" data-assembly-position="exploded" type="button">Exploded</button><button class="dash-assembly__button" data-assembly-position="assembled" type="button">Assembled</button></div>
+    </div>
+    <div class="dash-assembly__bottom"><p>Components separate vertically for inspection. Their assembled positions come from the original model.</p><div class="dash-assembly__views" role="group" aria-label="Camera view"><button class="dash-assembly__button" data-assembly-view="iso" type="button" aria-pressed="true">Isometric</button><button class="dash-assembly__button" data-assembly-view="top" type="button" aria-pressed="false">Top</button><button class="dash-assembly__button" data-assembly-view="bottom" type="button" aria-pressed="false">Bottom</button></div></div>
+  </div>
+  <p class="dash-assembly__caption"><span>July 2025 prototype PCB · source geometry</span><span>Earlier driving-companion hardware</span></p>
+  <p class="dash-assembly__fallback" data-assembly-fallback>Enable JavaScript to explore the source model and its assembly sequence.</p>
+  <p class="dash-assembly__live" data-assembly-live aria-live="polite" aria-atomic="true"></p>
+</div>
+      </section>
+
+      <section class="dash-character dash-motion-section" id="character" aria-labelledby="dash-character-title">
+      <div class="dash-motion-heading"><p class="eyebrow">The character / in motion</p><h2 id="dash-character-title">A little<br>personality.</h2><p>Move your pointer and Dash follows. Tap for a blink, shake for a dizzy reaction, or finish a short session to see it celebrate.</p><p>The browser sketch brings the expressions to life. Its controls and timing are simplified from the device firmware.</p><a class="dash-motion-source" href="/projects/dash/#dash-firmware">Inside the firmware <span aria-hidden="true">↓</span></a></div>
+
+          <div class="dash-demo" data-dash-demo data-dash-state="idle">
+  <div class="dash-demo__stage">
+    <div class="dash-demo__topline"><span>Dash / character study</span><span class="dash-demo__indicator">Illustration</span></div>
+    <div class="dash-demo__face" aria-hidden="true"><span class="dash-demo__eye"></span><span class="dash-demo__eye"></span></div>
+    <div class="dash-demo__readout">
+      <div><span class="dash-demo__readout-label">Time remaining</span><output class="dash-demo__time" data-dash-time role="timer" aria-label="Time remaining" aria-live="off">00:10</output></div>
+      <span class="dash-demo__state-tag" data-dash-state-label>Ready when you are</span>
+    </div>
+    <progress class="dash-demo__progress" data-dash-progress value="0" max="10000" aria-label="Focus session progress"></progress>
+  </div>
+  <div class="dash-demo__panel">
+    <div>
+      <p class="dash-demo__eyebrow">Browser interaction sketch</p>
+      <h3 class="dash-demo__title">Find your focus.</h3>
+      <p class="dash-demo__description" data-dash-description>Choose a session, then give one thing your attention.</p>
+    </div>
+    <div class="dash-demo__controls" data-dash-controls hidden>
+      <div>
+        <label class="dash-demo__duration-label" for="dash-session-length">Session length</label>
+        <select class="dash-demo__duration" id="dash-session-length" data-dash-duration>
+          <option value="10">10-second demo</option>
+          <option value="1500">25 minutes</option>
+          <option value="2700">45 minutes</option>
+          <option value="3600">60 minutes</option>
+        </select>
+      </div>
+      <div class="dash-demo__actions">
+        <button class="dash-demo__button dash-demo__button--primary" type="button" data-dash-action>Start focus</button>
+        <button class="dash-demo__button" type="button" data-dash-reset disabled>Reset</button>
+      </div>
+      <div class="dash-demo__gestures" role="group" aria-label="Illustrate a physical interaction">
+        <span>Try an interaction</span>
+        <button class="dash-demo__button" type="button" data-dash-gesture="tap">Tap <span aria-hidden="true">↗</span></button>
+        <button class="dash-demo__button" type="button" data-dash-gesture="shake">Shake <span aria-hidden="true">↔</span></button>
+      </div>
+      <p class="dash-demo__feedback" data-dash-feedback>Ten seconds to try the full focus-to-rest cycle.</p>
+    </div>
+    <p class="dash-demo__fallback" data-dash-fallback>Dash uses animated eyes to respond to touch, movement and focus sessions. Enable JavaScript to try a short browser illustration of those interactions.</p>
+    <p class="dash-demo__note">An illustration of the interaction, not the device firmware. Expressions and controls are simplified. This timer runs in your browser and resets when you reload.</p>
+  </div>
+  <p class="dash-demo__live" data-dash-live aria-live="polite" aria-atomic="true"></p>
+</div>
+
+
+</section>
+
+      <section class="project-summary" id="details" aria-labelledby="dash-summary">
         <h2 id="dash-summary">From the car to the desk</h2>
         <div class="project-prose">
           <p>Dash started as the vehicle-mounted safe-driving prototype shown in the photos below. I kept the useful hardware ideas—the ESP32, IMU, touch input, OLED, speaker and battery supply—but rebuilt the firmware around a different job: helping me stay focused at a desk.</p>
@@ -88,8 +174,8 @@
         <h2 id="dash-firmware">The firmware underneath</h2>
         <div class="project-prose">
           <p>A single state machine coordinates the character, focus timer, games and low-power states. The MPU-6050 is sampled at 100 Hz for software tap and orientation detection, while separate tasks look after the OLED, audio, touch input and session timing.</p>
-          <p>Dash creates its own Wi-Fi access point and serves a captive portal from LittleFS, so a phone can start a study session, see recent stats and change settings without an app or account. Completed sessions are kept in a rolling on-device log, and in-progress sessions can survive a reset through RTC memory.</p>
-          <p>I also built reaction-time and gesture games, OTA update support and an ESP-NOW layer for experimenting with group sessions between nearby units. Power management drops the ESP32 from 240 to 80 MHz as Dash gets drowsy, then uses deep sleep when it has been left alone.</p>
+          <p>Dash creates its own Wi-Fi access point and serves a captive portal from LittleFS, so a phone can start a study session, see recent stats and change settings without an app or account. Completed sessions are kept in a rolling on-device log, capped at 64 KiB. The session module accounts for elapsed time across running and paused states.</p>
+          <p>I also built reaction-time and gesture games, OTA update support and an ESP-NOW layer for experimenting with group sessions between nearby units. Power management drops the ESP32 from 240 to 80 MHz as Dash gets drowsy. The current firmware uses light sleep so the motion interrupt on GPIO19 can wake it; that pin cannot provide the same wake path from deep sleep.</p>
           <div class="hero-actions"><a class="button" href="https://github.com/JPhusion/dash" target="_blank" rel="noreferrer">View the firmware</a></div>
         </div>
       </section>

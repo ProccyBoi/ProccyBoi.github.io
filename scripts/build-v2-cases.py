@@ -239,9 +239,11 @@ def case_navigation(source, slug, title):
     tree = Tree(source)
     links = [('overview', 'Overview')]
     if 'id="explore"' in source:
-        links.append(('explore', 'Assembly' if 'data-skylabs-inspector' in source else 'Interactive'))
+        links.append(('explore', 'Assembly' if slug == 'dash' or 'data-skylabs-inspector' in source else 'Interactive'))
     if 'id="assembly"' in source and 'data-skylabs-inspector' not in source:
         links.append(('assembly', 'Assembly'))
+    if slug == 'dash':
+        links.extend((anchor, label) for anchor, label in [('prototype', 'Prototype'), ('character', 'Character')] if f'id="{anchor}"' in source)
     if 'id="details"' in source:
         links.append(('details', 'Details'))
     if 'id="build"' in source:
@@ -452,6 +454,8 @@ def make_case(path, slug=None, source=None):
     explore_anchor = 'assembly' if 'id="assembly"' in source and 'data-skylabs-inspector' not in source else 'explore'
     explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', HARDWARE_ASSEMBLIES.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board')))
     hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
+    if slug == 'dash':
+        hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/dash/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/dash/#prototype">Prototype PCB <span aria-hidden="true">↓</span></a><a href="/v2/projects/dash/#character">Meet Dash <span aria-hidden="true">↓</span></a><a href="/v2/projects/dash/#details">Design details <span aria-hidden="true">↓</span></a></div>'
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
     <div class="v2-case-specs shell">{meta.outer(source) if meta else ''}</div></section>'''

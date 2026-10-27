@@ -1,0 +1,1217 @@
+{
+  "model": "/assets/models/dash/dash-prototype.glb",
+  "units": "millimetres",
+  "coordinateSystem": "Y-up; board centered on X/Z, all part nodes share assembly coordinates",
+  "bounds": {
+    "min": [
+      -22.600000381469727,
+      -2.559999942779541,
+      -22.600000381469727
+    ],
+    "max": [
+      22.600000381469727,
+      9.380000114440918,
+      23.690000534057617
+    ],
+    "size": [
+      45.20000076293945,
+      11.940000534057617,
+      46.290000915527344
+    ]
+  },
+  "groups": [
+    {
+      "id": "board",
+      "label": "The board",
+      "description": "The original PCB, copper, solder mask and silkscreen stay together.",
+      "nodes": [
+        "part_board"
+      ]
+    },
+    {
+      "id": "power",
+      "label": "Power",
+      "description": "Battery connection, protection, regulator and power-support components.",
+      "nodes": [
+        "part_BT1",
+        "part_C1",
+        "part_C10",
+        "part_C11",
+        "part_C12",
+        "part_C2",
+        "part_C23",
+        "part_C24",
+        "part_C3",
+        "part_C7",
+        "part_C8",
+        "part_C9",
+        "part_D1",
+        "part_D2",
+        "part_D3",
+        "part_L1",
+        "part_Q3",
+        "part_R11",
+        "part_R13",
+        "part_R4",
+        "part_R5",
+        "part_R6",
+        "part_R7",
+        "part_R8",
+        "part_U2",
+        "part_U8"
+      ]
+    },
+    {
+      "id": "controller",
+      "label": "Control",
+      "description": "The ESP32 module and supporting components for control and motion sensing.",
+      "nodes": [
+        "part_C17",
+        "part_C18",
+        "part_C19",
+        "part_C20",
+        "part_C21",
+        "part_C22",
+        "part_R14",
+        "part_R15",
+        "part_R16",
+        "part_U3"
+      ]
+    },
+    {
+      "id": "interfaces",
+      "label": "Connections",
+      "description": "USB-to-serial bridge, display and touch headers, speaker connector and supporting components.",
+      "nodes": [
+        "part_C13",
+        "part_C14",
+        "part_C15",
+        "part_C16",
+        "part_C4",
+        "part_C5",
+        "part_C6",
+        "part_J2",
+        "part_LS1",
+        "part_Q1",
+        "part_Q2",
+        "part_R1",
+        "part_R10",
+        "part_R12",
+        "part_R2",
+        "part_R3",
+        "part_R9",
+        "part_T1",
+        "part_U4"
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "node": "part_board",
+      "reference": "board",
+      "group": "board",
+      "value": "PCB with copper, mask and silkscreen",
+      "triangles": 106262,
+      "bounds": {
+        "min": [
+          -22.600000381469727,
+          -0.8299999833106995,
+          -22.600000381469727
+        ],
+        "max": [
+          22.600000381469727,
+          0.8299999833106995,
+          22.600000381469727
+        ]
+      }
+    },
+    {
+      "node": "part_BT1",
+      "reference": "BT1",
+      "group": "power",
+      "value": "Battery_Cell",
+      "triangles": 580,
+      "bounds": {
+        "min": [
+          16.049999237060547,
+          -2.559999942779541,
+          9.050000190734863
+        ],
+        "max": [
+          21.950000762939453,
+          5.690000057220459,
+          16.649999618530273
+        ]
+      }
+    },
+    {
+      "node": "part_C1",
+      "reference": "C1",
+      "group": "power",
+      "value": "100nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          7.849999904632568,
+          0.8399999737739563,
+          -6.224999904632568
+        ],
+        "max": [
+          9.850000381469727,
+          2.0899999141693115,
+          -4.974999904632568
+        ]
+      }
+    },
+    {
+      "node": "part_C10",
+      "reference": "C10",
+      "group": "power",
+      "value": "10uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -10.949999809265137,
+          0.8399999737739563,
+          -15.824999809265137
+        ],
+        "max": [
+          -8.949999809265137,
+          2.0899999141693115,
+          -14.574999809265137
+        ]
+      }
+    },
+    {
+      "node": "part_C11",
+      "reference": "C11",
+      "group": "power",
+      "value": "22uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          3.575000047683716,
+          0.8399999737739563,
+          -19.149999618530273
+        ],
+        "max": [
+          4.824999809265137,
+          2.0899999141693115,
+          -17.149999618530273
+        ]
+      }
+    },
+    {
+      "node": "part_C12",
+      "reference": "C12",
+      "group": "power",
+      "value": "10uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          1.375,
+          0.8399999737739563,
+          -18.75
+        ],
+        "max": [
+          2.625,
+          2.0899999141693115,
+          -16.75
+        ]
+      }
+    },
+    {
+      "node": "part_C13",
+      "reference": "C13",
+      "group": "interfaces",
+      "value": "100nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          6.849999904632568,
+          0.8399999737739563,
+          -13.225000381469727
+        ],
+        "max": [
+          8.850000381469727,
+          2.0899999141693115,
+          -11.975000381469727
+        ]
+      }
+    },
+    {
+      "node": "part_C14",
+      "reference": "C14",
+      "group": "interfaces",
+      "value": "10uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          4.650000095367432,
+          0.8399999737739563,
+          -11.225000381469727
+        ],
+        "max": [
+          6.650000095367432,
+          2.0899999141693115,
+          -9.975000381469727
+        ]
+      }
+    },
+    {
+      "node": "part_C15",
+      "reference": "C15",
+      "group": "interfaces",
+      "value": "470pF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          20.375,
+          0.8399999737739563,
+          -14.850000381469727
+        ],
+        "max": [
+          21.625,
+          2.0899999141693115,
+          -12.850000381469727
+        ]
+      }
+    },
+    {
+      "node": "part_C16",
+      "reference": "C16",
+      "group": "interfaces",
+      "value": "470pF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          14.175000190734863,
+          0.8399999737739563,
+          -20.25
+        ],
+        "max": [
+          15.425000190734863,
+          2.0899999141693115,
+          -18.25
+        ]
+      }
+    },
+    {
+      "node": "part_C17",
+      "reference": "C17",
+      "group": "controller",
+      "value": "2.2nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -3.549999952316284,
+          0.8399999737739563,
+          -6.425000190734863
+        ],
+        "max": [
+          -1.5499999523162842,
+          2.0899999141693115,
+          -5.175000190734863
+        ]
+      }
+    },
+    {
+      "node": "part_C18",
+      "reference": "C18",
+      "group": "controller",
+      "value": "0.1uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -3.2249999046325684,
+          0.8399999737739563,
+          -15.149999618530273
+        ],
+        "max": [
+          -1.975000023841858,
+          2.0899999141693115,
+          -13.149999618530273
+        ]
+      }
+    },
+    {
+      "node": "part_C19",
+      "reference": "C19",
+      "group": "controller",
+      "value": "10nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          0.7749999761581421,
+          0.8399999737739563,
+          -15.125
+        ],
+        "max": [
+          2.0250000953674316,
+          2.0899999141693115,
+          -13.125
+        ]
+      }
+    },
+    {
+      "node": "part_C2",
+      "reference": "C2",
+      "group": "power",
+      "value": "10uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          7.849999904632568,
+          0.8399999737739563,
+          -4.224999904632568
+        ],
+        "max": [
+          9.850000381469727,
+          2.0899999141693115,
+          -2.9749999046325684
+        ]
+      }
+    },
+    {
+      "node": "part_C20",
+      "reference": "C20",
+      "group": "controller",
+      "value": "0.1uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -5.425000190734863,
+          0.8399999737739563,
+          -10.449999809265137
+        ],
+        "max": [
+          -4.175000190734863,
+          2.0899999141693115,
+          -8.449999809265137
+        ]
+      }
+    },
+    {
+      "node": "part_C21",
+      "reference": "C21",
+      "group": "controller",
+      "value": "100nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          12.649999618530273,
+          0.8399999737739563,
+          15.375
+        ],
+        "max": [
+          14.649999618530273,
+          2.0899999141693115,
+          16.625
+        ]
+      }
+    },
+    {
+      "node": "part_C22",
+      "reference": "C22",
+      "group": "controller",
+      "value": "10uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          12.649999618530273,
+          0.8399999737739563,
+          13.175000190734863
+        ],
+        "max": [
+          14.649999618530273,
+          2.0899999141693115,
+          14.425000190734863
+        ]
+      }
+    },
+    {
+      "node": "part_C23",
+      "reference": "C23",
+      "group": "power",
+      "value": "100nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          20.575000762939453,
+          0.8399999737739563,
+          5.550000190734863
+        ],
+        "max": [
+          21.825000762939453,
+          2.0899999141693115,
+          7.550000190734863
+        ]
+      }
+    },
+    {
+      "node": "part_C24",
+      "reference": "C24",
+      "group": "power",
+      "value": "10uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          18.575000762939453,
+          0.8399999737739563,
+          5.550000190734863
+        ],
+        "max": [
+          19.825000762939453,
+          2.0899999141693115,
+          7.550000190734863
+        ]
+      }
+    },
+    {
+      "node": "part_C3",
+      "reference": "C3",
+      "group": "power",
+      "value": "0.1u",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          7.849999904632568,
+          0.8399999737739563,
+          -16.024999618530273
+        ],
+        "max": [
+          9.850000381469727,
+          2.0899999141693115,
+          -14.774999618530273
+        ]
+      }
+    },
+    {
+      "node": "part_C4",
+      "reference": "C4",
+      "group": "interfaces",
+      "value": "100nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -21.549999237060547,
+          0.8399999737739563,
+          13.375
+        ],
+        "max": [
+          -19.549999237060547,
+          2.0899999141693115,
+          14.625
+        ]
+      }
+    },
+    {
+      "node": "part_C5",
+      "reference": "C5",
+      "group": "interfaces",
+      "value": "10uF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -21.549999237060547,
+          0.8399999737739563,
+          15.375
+        ],
+        "max": [
+          -19.549999237060547,
+          2.0899999141693115,
+          16.625
+        ]
+      }
+    },
+    {
+      "node": "part_C6",
+      "reference": "C6",
+      "group": "interfaces",
+      "value": "100nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -10.625,
+          0.8399999737739563,
+          10.25
+        ],
+        "max": [
+          -9.375,
+          2.0899999141693115,
+          12.25
+        ]
+      }
+    },
+    {
+      "node": "part_C7",
+      "reference": "C7",
+      "group": "power",
+      "value": "0.1u",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          12.774999618530273,
+          0.8399999737739563,
+          -11.149999618530273
+        ],
+        "max": [
+          14.024999618530273,
+          2.0899999141693115,
+          -9.149999618530273
+        ]
+      }
+    },
+    {
+      "node": "part_C8",
+      "reference": "C8",
+      "group": "power",
+      "value": "10u",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -10.949999809265137,
+          0.8399999737739563,
+          -17.825000762939453
+        ],
+        "max": [
+          -8.949999809265137,
+          2.0899999141693115,
+          -16.575000762939453
+        ]
+      }
+    },
+    {
+      "node": "part_C9",
+      "reference": "C9",
+      "group": "power",
+      "value": "100nF",
+      "triangles": 284,
+      "bounds": {
+        "min": [
+          -10.949999809265137,
+          0.8399999737739563,
+          -13.824999809265137
+        ],
+        "max": [
+          -8.949999809265137,
+          2.0899999141693115,
+          -12.574999809265137
+        ]
+      }
+    },
+    {
+      "node": "part_D1",
+      "reference": "D1",
+      "group": "power",
+      "value": "R LED",
+      "triangles": 264,
+      "bounds": {
+        "min": [
+          14.800000190734863,
+          0.8399999737739563,
+          -9.1875
+        ],
+        "max": [
+          15.600000381469727,
+          1.940000057220459,
+          -7.587500095367432
+        ]
+      }
+    },
+    {
+      "node": "part_D2",
+      "reference": "D2",
+      "group": "power",
+      "value": "G LED",
+      "triangles": 264,
+      "bounds": {
+        "min": [
+          16.799999237060547,
+          0.8399999737739563,
+          -9.1875
+        ],
+        "max": [
+          17.600000381469727,
+          1.940000057220459,
+          -7.587500095367432
+        ]
+      }
+    },
+    {
+      "node": "part_D3",
+      "reference": "D3",
+      "group": "power",
+      "value": "D",
+      "triangles": 340,
+      "bounds": {
+        "min": [
+          -4.735000133514404,
+          0.8399999737739563,
+          -20.899999618530273
+        ],
+        "max": [
+          -2.865000009536743,
+          1.7999999523162842,
+          -17.5
+        ]
+      }
+    },
+    {
+      "node": "part_J2",
+      "reference": "J2",
+      "group": "interfaces",
+      "value": "Conn_01x04_Pin",
+      "triangles": 292,
+      "bounds": {
+        "min": [
+          19.530000686645508,
+          -2.1600000858306885,
+          -5.889999866485596
+        ],
+        "max": [
+          22.06999969482422,
+          9.380000114440918,
+          4.269999980926514
+        ]
+      }
+    },
+    {
+      "node": "part_L1",
+      "reference": "L1",
+      "group": "power",
+      "value": "470nH",
+      "triangles": 188,
+      "bounds": {
+        "min": [
+          -2.25,
+          0.8399999737739563,
+          -18.78499984741211
+        ],
+        "max": [
+          -1.75,
+          1.340000033378601,
+          -17.78499984741211
+        ]
+      }
+    },
+    {
+      "node": "part_LS1",
+      "reference": "LS1",
+      "group": "interfaces",
+      "value": "Speaker",
+      "triangles": 340,
+      "bounds": {
+        "min": [
+          16.829999923706055,
+          0.8399999737739563,
+          -21.56999969482422
+        ],
+        "max": [
+          21.469999313354492,
+          8.239999771118164,
+          -16.290000915527344
+        ]
+      }
+    },
+    {
+      "node": "part_Q1",
+      "reference": "Q1",
+      "group": "interfaces",
+      "value": "BC817",
+      "triangles": 448,
+      "bounds": {
+        "min": [
+          -9.100000381469727,
+          0.8399999737739563,
+          -10.487500190734863
+        ],
+        "max": [
+          -6.099999904632568,
+          2.0399999618530273,
+          -7.987500190734863
+        ]
+      }
+    },
+    {
+      "node": "part_Q2",
+      "reference": "Q2",
+      "group": "interfaces",
+      "value": "BC817",
+      "triangles": 448,
+      "bounds": {
+        "min": [
+          -10.25,
+          0.8399999737739563,
+          -7.487500190734863
+        ],
+        "max": [
+          -7.25,
+          2.0399999618530273,
+          -4.987500190734863
+        ]
+      }
+    },
+    {
+      "node": "part_Q3",
+      "reference": "Q3",
+      "group": "power",
+      "value": "PMOS",
+      "triangles": 448,
+      "bounds": {
+        "min": [
+          -7.1875,
+          0.8399999737739563,
+          -17.700000762939453
+        ],
+        "max": [
+          -4.6875,
+          2.0399999618530273,
+          -14.699999809265137
+        ]
+      }
+    },
+    {
+      "node": "part_R1",
+      "reference": "R1",
+      "group": "interfaces",
+      "value": "1M",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -10.587499618530273,
+          0.8399999737739563,
+          3.700000047683716
+        ],
+        "max": [
+          -9.387499809265137,
+          1.2899999618530273,
+          5.699999809265137
+        ]
+      }
+    },
+    {
+      "node": "part_R10",
+      "reference": "R10",
+      "group": "interfaces",
+      "value": "10k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -13.3125,
+          0.8399999737739563,
+          -7.599999904632568
+        ],
+        "max": [
+          -11.3125,
+          1.2899999618530273,
+          -6.400000095367432
+        ]
+      }
+    },
+    {
+      "node": "part_R11",
+      "reference": "R11",
+      "group": "power",
+      "value": "100k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -13.0,
+          0.8399999737739563,
+          -4.887499809265137
+        ],
+        "max": [
+          -11.800000190734863,
+          1.2899999618530273,
+          -2.887500047683716
+        ]
+      }
+    },
+    {
+      "node": "part_R12",
+      "reference": "R12",
+      "group": "interfaces",
+      "value": "680k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          3.0875000953674316,
+          0.8399999737739563,
+          -13.300000190734863
+        ],
+        "max": [
+          5.087500095367432,
+          1.2899999618530273,
+          -12.100000381469727
+        ]
+      }
+    },
+    {
+      "node": "part_R13",
+      "reference": "R13",
+      "group": "power",
+      "value": "1M",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -1.712499976158142,
+          0.8399999737739563,
+          -20.799999237060547
+        ],
+        "max": [
+          0.2874999940395355,
+          1.2899999618530273,
+          -19.600000381469727
+        ]
+      }
+    },
+    {
+      "node": "part_R14",
+      "reference": "R14",
+      "group": "controller",
+      "value": "4.7k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -1.2000000476837158,
+          0.8399999737739563,
+          -15.087499618530273
+        ],
+        "max": [
+          0.0,
+          1.2899999618530273,
+          -13.087499618530273
+        ]
+      }
+    },
+    {
+      "node": "part_R15",
+      "reference": "R15",
+      "group": "controller",
+      "value": "10k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          2.6875,
+          0.8399999737739563,
+          -6.800000190734863
+        ],
+        "max": [
+          4.6875,
+          1.2899999618530273,
+          -5.599999904632568
+        ]
+      }
+    },
+    {
+      "node": "part_R16",
+      "reference": "R16",
+      "group": "controller",
+      "value": "10k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          0.48750001192092896,
+          0.8399999737739563,
+          -4.800000190734863
+        ],
+        "max": [
+          2.487499952316284,
+          1.2899999618530273,
+          -3.5999999046325684
+        ]
+      }
+    },
+    {
+      "node": "part_R2",
+      "reference": "R2",
+      "group": "interfaces",
+      "value": "5k1",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -13.287500381469727,
+          0.8399999737739563,
+          -1.600000023841858
+        ],
+        "max": [
+          -11.287500381469727,
+          1.2899999618530273,
+          -0.4000000059604645
+        ]
+      }
+    },
+    {
+      "node": "part_R3",
+      "reference": "R3",
+      "group": "interfaces",
+      "value": "5k1",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -13.3125,
+          0.8399999737739563,
+          0.4000000059604645
+        ],
+        "max": [
+          -11.3125,
+          1.2899999618530273,
+          1.600000023841858
+        ]
+      }
+    },
+    {
+      "node": "part_R4",
+      "reference": "R4",
+      "group": "power",
+      "value": "1k2",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          13.6875,
+          0.8399999737739563,
+          5.0
+        ],
+        "max": [
+          15.6875,
+          1.2899999618530273,
+          6.199999809265137
+        ]
+      }
+    },
+    {
+      "node": "part_R5",
+      "reference": "R5",
+      "group": "power",
+      "value": "1k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          14.600000381469727,
+          0.8399999737739563,
+          -6.112500190734863
+        ],
+        "max": [
+          15.800000190734863,
+          1.2899999618530273,
+          -4.112500190734863
+        ]
+      }
+    },
+    {
+      "node": "part_R6",
+      "reference": "R6",
+      "group": "power",
+      "value": "1k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          16.600000381469727,
+          0.8399999737739563,
+          -6.112500190734863
+        ],
+        "max": [
+          17.799999237060547,
+          1.2899999618530273,
+          -4.112500190734863
+        ]
+      }
+    },
+    {
+      "node": "part_R7",
+      "reference": "R7",
+      "group": "power",
+      "value": "1k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          3.487499952316284,
+          0.8399999737739563,
+          -21.600000381469727
+        ],
+        "max": [
+          5.487500190734863,
+          1.2899999618530273,
+          -20.399999618530273
+        ]
+      }
+    },
+    {
+      "node": "part_R8",
+      "reference": "R8",
+      "group": "power",
+      "value": "100",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -7.400000095367432,
+          0.8399999737739563,
+          -20.712499618530273
+        ],
+        "max": [
+          -6.199999809265137,
+          1.2899999618530273,
+          -18.712499618530273
+        ]
+      }
+    },
+    {
+      "node": "part_R9",
+      "reference": "R9",
+      "group": "interfaces",
+      "value": "10k",
+      "triangles": 244,
+      "bounds": {
+        "min": [
+          -6.599999904632568,
+          0.8399999737739563,
+          -6.787499904632568
+        ],
+        "max": [
+          -5.400000095367432,
+          1.2899999618530273,
+          -4.787499904632568
+        ]
+      }
+    },
+    {
+      "node": "part_T1",
+      "reference": "T1",
+      "group": "interfaces",
+      "value": "Conn_01x01_Pin",
+      "triangles": 76,
+      "bounds": {
+        "min": [
+          19.530000686645508,
+          -2.1600000858306885,
+          -10.270000457763672
+        ],
+        "max": [
+          22.06999969482422,
+          9.380000114440918,
+          -7.730000019073486
+        ]
+      }
+    },
+    {
+      "node": "part_U2",
+      "reference": "U2",
+      "group": "power",
+      "value": "DW01A",
+      "triangles": 892,
+      "bounds": {
+        "min": [
+          6.400000095367432,
+          0.8399999737739563,
+          -19.9375
+        ],
+        "max": [
+          9.300000190734863,
+          2.390000104904175,
+          -17.137500762939453
+        ]
+      }
+    },
+    {
+      "node": "part_U3",
+      "reference": "U3",
+      "group": "controller",
+      "value": "ESP32-WROOM-32E",
+      "triangles": 3920,
+      "bounds": {
+        "min": [
+          -6.949999809265137,
+          0.8399980068206787,
+          -1.809999942779541
+        ],
+        "max": [
+          11.050000190734863,
+          3.940000057220459,
+          23.690000534057617
+        ]
+      }
+    },
+    {
+      "node": "part_U4",
+      "reference": "U4",
+      "group": "interfaces",
+      "value": "CH340C",
+      "triangles": 2348,
+      "bounds": {
+        "min": [
+          -18.075000762939453,
+          0.8399999737739563,
+          6.605000019073486
+        ],
+        "max": [
+          -12.074999809265137,
+          2.5899999141693115,
+          16.5049991607666
+        ]
+      }
+    },
+    {
+      "node": "part_U8",
+      "reference": "U8",
+      "group": "power",
+      "value": "TPS62A01ADRL",
+      "triangles": 236,
+      "bounds": {
+        "min": [
+          -1.087499976158142,
+          0.8399999737739563,
+          -18.200000762939453
+        ],
+        "max": [
+          0.512499988079071,
+          1.4700000286102295,
+          -16.600000381469727
+        ]
+      }
+    }
+  ],
+  "source": {
+    "label": "Archived prototype PCB · July 2025",
+    "stl": "Driving Companion.stl",
+    "stlExportDate": "2025-07-28",
+    "stlSha256": "249ad1c73f92f23cfa8387513e0b8ddfebfbffb569f293952b3b416b6ac7a1a2",
+    "pcb": "PCB/Driving Companion.kicad_pcb",
+    "pcbSha256": "24da679229d5f9689fb42222af10ed7c001ef40763266ad7db9b35806b0aeccf",
+    "boardDimensionsMm": [
+      45.2,
+      45.2,
+      1.6
+    ],
+    "boardCornerRadiusMm": 2,
+    "sourceTriangles": 130671,
+    "triangles": 128066,
+    "connectedIslands": 512,
+    "privacyOmittedTriangles": 2605,
+    "componentMapping": "July PCB footprint positions; D3 and Q3 positions distinguish this from later revisions. Connector model origin offsets verified against STL bounds.",
+    "transform": {
+      "sourceOrigin": [
+        77.0,
+        -119.0,
+        0.755
+      ],
+      "mapping": "[x-77, z-0.755, -(y+119)]"
+    },
+    "geometry": "Source STL triangles retained except underside full-name and student-identifier annotations removed for the public derivative. No replacement component solids or enclosure added. Component packages and their contacts move together.",
+    "materials": "Illustrative material finishes assigned to source triangles; STL carries no original color information. Colors do not claim photographed finishes.",
+    "limitations": "Archived PCB export, not a complete mechanical device. Enclosure, external display, speaker and battery are absent. Some footprint packages are absent in the source STL; their board pads remain visible.",
+    "footprintsWithMissingModelGeometry": [
+      "J1",
+      "U1",
+      "U6",
+      "U7"
+    ],
+    "footprintsWithoutAssignedModels": [
+      "J3",
+      "J4",
+      "J5",
+      "U5"
+    ],
+    "revisionNote": "The September 2025 PCB is newer than this July export and is not represented by this model."
+  }
+}
