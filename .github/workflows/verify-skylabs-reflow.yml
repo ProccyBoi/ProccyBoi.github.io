@@ -1,0 +1,41 @@
+name: Verify published Skylabs reflow
+on:
+  workflow_run:
+    workflows: [Deploy static site to GitHub Pages]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-reflow:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact published revision and source assets
+        run: node scripts/verify-skylabs-reflow-live.cjs
+      - name: Install browser acceptance dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Verify live desktop, mobile and fallback interactions
+        env:
+          V2_BASE_URL: https://proccyboi.github.io
+        run: |
+          export CHROMIUM_EXECUTABLE="$(node -p "require('playwright').chromium.executablePath()")"
+          node scripts/verify-skylabs-reflow.cjs
+      - name: Upload exact revision, test results and rendered evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skylabs-reflow-live-${{ github.event.workflow_run.head_sha || github.sha }}
+          path: docs/reflow-review/
+          if-no-files-found: error
+          retention-days: 14
