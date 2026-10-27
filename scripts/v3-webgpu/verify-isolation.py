@@ -89,7 +89,10 @@ def run(base: str, structure_only: bool = False) -> dict:
     forbidden = [name for name in changed + untracked if not allowed(name)]
     errors.extend(f"Outside v3 isolation boundary: {name}" for name in forbidden)
     protected = [] if structure_only else [name for name in git("ls-tree", "-r", "--name-only", base).decode().splitlines() if not allowed(name)]
-    v2_pages = sorted((ROOT / "v2").rglob("*.html"))
+    # Keep the explicitly v2-only manufacturing study out of the v3 inventory.
+    v2_only = {"projects/skylabs/reflow/index.html"}
+    v2_pages = sorted(p for p in (ROOT / "v2").rglob("*.html")
+                      if p.relative_to(ROOT / "v2").as_posix() not in v2_only)
     route_names = [str(page.relative_to(ROOT / "v2")) for page in v2_pages]
     v3_routes = {str(page.relative_to(ROOT / "v3")) for page in (ROOT / "v3").rglob("*.html") if "assets" not in page.relative_to(ROOT / "v3").parts}
     missing = set(route_names) - v3_routes

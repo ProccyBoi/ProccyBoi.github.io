@@ -29,7 +29,10 @@ def main():
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     errors = []
-    sources = sorted((ROOT / 'v2').rglob('*.html'))
+    # This manufacturing study is deliberately v2-only; do not clone it into v3.
+    v2_only = {'projects/skylabs/reflow/index.html'}
+    sources = sorted(p for p in (ROOT / 'v2').rglob('*.html')
+                     if p.relative_to(ROOT / 'v2').as_posix() not in v2_only)
     expected_paths = {str(p.relative_to(ROOT / 'v2')) for p in sources}
     actual_paths = {str(p.relative_to(ROOT / 'v3')) for p in (ROOT / 'v3').rglob('*.html') if 'assets' not in p.relative_to(ROOT / 'v3').parts}
     if actual_paths - expected_paths:
