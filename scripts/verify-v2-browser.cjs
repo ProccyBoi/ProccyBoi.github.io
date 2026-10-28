@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright');
 const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
-const routes = ['/v2/projects/tramtrace/','/v2/projects/skylabs/boards/telemetry/','/v2/projects/framework-raspberry-pi/'];
+const routes = ['/v2/projects/tramtrace/','/v2/projects/dash/#explore','/v2/projects/framework-raspberry-pi/'];
 const primary = '[data-v2-project-group]:not([data-v2-project-group="demos"]) [data-v2-project]';
 const demos = '[data-v2-project-group="demos"] [data-v2-project]';
 async function posters(page) {
@@ -30,7 +30,9 @@ async function posters(page) {
     await page.locator('[data-assembly-state="ready"]').waitFor({timeout:60000});
     await page.locator('[data-assembly-models-settled="3"]').waitFor({timeout:60000});
     assert.equal(await page.locator('[data-assembly]').getAttribute('data-assembly-models-ready'),'3','All hero CAD must load');
-    for(const name of ['tramtrace','telemetry','pi'])assert.ok(requests.some(url=>new URL(url).pathname==='/assets/models/hero/'+name+'.idx.bin.gz'),'Hero must automatically load the compressed '+name+' CAD pack');
+    for(const name of ['tramtrace','dash','pi'])assert.ok(requests.some(url=>new URL(url).pathname==='/assets/models/hero/'+name+'.idx.bin.gz'),'Hero must automatically load the compressed '+name+' CAD pack');
+    assert.equal(requests.some(url=>new URL(url).pathname==='/assets/models/hero/telemetry.idx.bin.gz'),false,'Opening hero must not preload the aircraft telemetry model');
+    assert.equal(await page.locator('.v2-hero-loading-canvas').count(),0,'Current homepage uses crisp posters without a decorative loading canvas');
     assert.equal(requests.some(url=>/\.glb(?:\?|$)/.test(url)),false,'Normal hero loading must not download and merge the source GLBs');
     assert.equal(await page.locator('[data-assembly-canvas]').isVisible(),true);
     assert.equal(await page.locator('[data-assembly-canvas]').getAttribute('role'),'img');
@@ -38,8 +40,13 @@ async function posters(page) {
     assert.deepEqual(await page.locator('[data-assembly-select]').evaluateAll(items=>items.map(item=>({tag:item.tagName,type:item.type,href:item.getAttribute('href')}))),routes.map(()=>({tag:'BUTTON',type:'button',href:null})));
     assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[0],'First screen has a genuine project link independently of scene selectors');
     assert.equal(await page.locator('h1').count(),1);
-    assert.equal(await page.locator('.v2-gallery-photo-link, .v2-gallery-more-card').count(),7,'Seven public homepage projects');
-    assert.equal(await page.locator('.v2-gallery-photo-link').first().getAttribute('href'),'/v2/projects/tramtrace/');
+    assert.equal(await page.locator('#overview .v2-proof-row').count(),3,'Three concise proof rows');
+    assert.deepEqual(await page.locator('#overview .v2-proof-image').evaluateAll(items=>items.map(item=>item.getAttribute('href'))),['/v2/projects/skylabs/','/v2/projects/kiku/','/v2/projects/tramtrace/']);
+    assert.deepEqual(await page.locator('#demos .v2-build-links > a').evaluateAll(items=>items.map(item=>item.getAttribute('href'))),['/v2/projects/dash/#explore','/v2/projects/kiku/#overview','/v2/projects/skylabs/reflow/'],'Three purposeful build destinations');
+    assert.deepEqual(await page.locator('[data-framework-collection] .v2-framework-card').evaluateAll(items=>items.map(item=>item.getAttribute('href'))),['/v2/projects/framework-expansion-card/','/v2/projects/framework-dual-usb/','/v2/projects/framework-raspberry-pi/','/v2/projects/framework-logic-analyser/'],'Four Framework assemblies remain discoverable');
+    await page.locator('[data-assembly-select="1"]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-assembly]').dataset.assemblyActive==='dash');
+    assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'),routes[1],'Dash preview links directly to its complete device assembly');
     const skip=await page.locator('.v2-skip').getAttribute('href');
     assert.equal(await page.locator(skip).count(),1,'Skip target must exist');
     await page.locator('.v2-skip').focus();await page.keyboard.press('Enter');
@@ -90,7 +97,7 @@ async function posters(page) {
     await search.press('Escape');
     await page.setViewportSize({width:320,height:900});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
-    console.log('PASS automatic hero CAD packs without source GLBs, keyboard/menu navigation, 16 projects plus 6 separate interactive entries, four Framework cards, search and categories');
+    console.log('PASS TramTrace/Dash/Pi hero packs, three proof rows and build destinations, four Framework cards, keyboard/menu navigation, 16 projects plus 6 separate interactive entries, search and categories');
     await page.setViewportSize({width:1280,height:900});
     for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});
@@ -105,6 +112,16 @@ async function posters(page) {
       await action.click();
       assert.equal(await action.getAttribute('aria-pressed'),'false');
     }
+    await page.goto(base+routes[1],{waitUntil:'domcontentloaded'});
+    assert.equal(await page.locator('#explore [data-hardware]').count(),1,'Dash has one complete device viewer');
+    assert.equal(await page.locator('#explore [data-hardware]').getAttribute('data-hardware'),'/assets/models/hardware/dash/assembly.json');
+    await page.locator('#explore [data-hardware-stage]').scrollIntoViewIfNeeded();
+    await page.locator('[data-hardware-state="ready"]').waitFor({timeout:60000});
+    const dashAction=page.locator('#explore [data-hardware-explode]');
+    assert.equal(await dashAction.textContent(),'Disassemble');
+    await dashAction.click();assert.equal(await dashAction.getAttribute('aria-pressed'),'true');
+    assert.equal(await dashAction.textContent(),'Assemble');
+    await dashAction.click();assert.equal(await dashAction.getAttribute('aria-pressed'),'false');
     await page.goto(base+'/v2/projects/skylabs/',{waitUntil:'networkidle'});
     assert.equal(await page.locator('[data-hardware]').count(),1);
     await page.locator('[data-hardware-board="ground"]').click();
@@ -125,7 +142,7 @@ async function posters(page) {
     assert.equal(await page.locator('[data-pcb-explode]').textContent(),'Assemble');
     await page.locator('[data-pcb-explode]').click();
     await context.close();
-    console.log('PASS simplified ESP32/Dual USB assembly actions; Skylabs switching; TramTrace interactions');
+    console.log('PASS simplified ESP32/Dual USB and Dash device assembly actions; Skylabs switching; TramTrace interactions');
     const fallback=await browser.newContext({viewport:{width:1280,height:900}});
     await fallback.route(/\/models\/hero\/[^/?]+\.bin(?:\.gz)?(?:\?|$)/,route=>route.abort());
     await fallback.route('**/*.glb',route=>route.abort());

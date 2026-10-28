@@ -1,6 +1,14 @@
 # Dash case study
 
-The original page at `/projects/dash/` is the source for `/v2/projects/dash/`. The v2 generator applies `normalized(enrich_case(make_case(path), 'dash'))` to that source; use the same pipeline when regenerating only Dash. Run `python scripts/build-v3-pages.py` afterwards to update its derived v3 interior.
+The original page at `/projects/dash/` supplies the factual source for `/v2/projects/dash/`. The v2 generator applies `normalized(enrich_case(make_case(path), 'dash'))`, including its Dash-only simplification and `scripts/content/v2-dash-details.html`; use that pipeline when regenerating only Dash. The v2 changes do not require regenerating or changing the frozen v3 interior.
+
+## Current v2 page (28 October 2026)
+
+The page contains one complete-device assembly, specifications, two short context paragraphs and the firmware source link. Its navigation is Overview, Assembly and Details. The viewer retains drag/keyboard rotation, zoom, physical part identification and Disassemble/Assemble. `project-integrated.css` supplies the assembly section's layout independently of the removed demo styles.
+
+The prototype PCB studio, character sketch, timer, gesture controls and redundant gallery are removed from the v2 HTML and its dependencies. `assets/v2-hardware.js` loads the optional live display bridge only when a character controller exists, so the simplified v2 case does not fetch or mount those controls. The full Dash homepage assembly uses a static idle OLED image; see [v2-dash-hero.md](v2-dash-hero.md).
+
+The evidence and dated studies below describe retained firmware, assets and earlier presentations. Their interactive suites are not proof of acceptance for the simplified v2 page; check the current assembly and page directly and run `scripts/audit-v2.py` for generated links and structure.
 
 ## Evidence
 
@@ -18,7 +26,7 @@ The previous claim that a session survives resets was removed: RTC helpers exist
 
 Existing `dash1-web.jpg` and `dash2-web.jpg` show the earlier vehicle prototype, not the present desk companion. Keep that distinction in visible captions, alt text and metadata. No fabricated hardware photography was added.
 
-## Animated PCB assembly
+## Earlier prototype studio (retained outside the simplified v2 case)
 
 The separate `#prototype` studio uses the archived July 2025 `Driving Companion.stl`, matched to its contemporary `PCB/Driving Companion.kicad_pcb`. The folder named “Driving Companion V2” and the later September root PCB are different revisions; do not use their placement data to describe this mesh. The original source files remain unchanged. The current complete device assembly remains the main `#explore` viewer, with its own housing, display, speaker, battery and wiring assets.
 
@@ -28,7 +36,7 @@ The studio presents a finite assembly sequence with play/pause/replay, component
 
 Regenerate with `python scripts/build_dash_assets.py --stl <archived-STL> --pcb <matching-July-PCB>` (NumPy required). The derived GLB is about 1.83 MB, with 56 part nodes and 128,066 retained source triangles. Run `node scripts/verify-dash-assembly.cjs` against the preview to check movement, direct inspection, idle rendering, responsive layout and failures. Use a normal GPU-backed browser for animation timing; forcing CPU-only WebGL can reduce the frame rate severely.
 
-## Browser interaction sketch
+## Earlier browser interaction sketch (removed from v2)
 
 This is an explicitly labelled illustration, not firmware emulation. Eyes are drawn in CSS. The default 10-second session makes completion easy to explore; 25-, 45- and 60-minute countdowns are also available. Pause/resume/reset affect this browser session only. Nothing is persisted, uploaded or played as audio.
 
@@ -36,9 +44,9 @@ The timer uses a wall-clock deadline, reconciles when a hidden tab returns, and 
 
 Run `node scripts/verify-dash-browser.cjs` against the local preview for behavioral and layout checks. The repository-wide `audit-v2.py` validates generated links, metadata and document structure.
 
-## Live full-device study (28 October 2026)
+## Earlier live full-device study (28 October 2026)
 
-The v2/v3 complete-device viewer now subscribes to the existing character
+The earlier v2/v3 complete-device presentation subscribed to the existing character
 controller; it does not create a second session or timer. Controls beside the
 model and in the character section address the same countdown, pause/resume,
 reset, duration and gesture state. The existing illustrative CSS character stays
@@ -67,7 +75,8 @@ Run `scripts/verify-dash-live.cjs` for shared-state/framebuffer, inspection,
 responsive and idle lifecycle checks in v2/v3, plus the existing
 `verify-dash-browser.cjs`, `verify-dash-device.cjs` and
 `verify-dash-assembly.cjs` suites for retained content and separate model paths.
-The source baseline for this revision is remote main `aa49484`. Direct live-site
+These checks describe that earlier live-controls revision, not the simplified
+current v2 case. The source baseline for that revision is remote main `aa49484`. Direct live-site
 and Pages deployment API access were blocked in the editing environment; local
 renders of that fetched revision establish the comparison, not proof of the
 current deployment's response. No new reference photographs were available as

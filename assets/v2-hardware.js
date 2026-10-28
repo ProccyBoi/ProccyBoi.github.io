@@ -113,7 +113,7 @@
         canvas.hidden=false;canvas.tabIndex=0;canvas.setAttribute('role','img');
         canvas.setAttribute('aria-label',root.dataset.hardwareTitle+'. Drag or use arrow keys to rotate. Hover or tap a part to identify it; use bracket keys to browse parts, Escape to clear, plus or minus to zoom, or Home to reset.');
         ready=true;
-        if(model.metadata?.slug==='dash'){
+        if(model.metadata?.slug==='dash'&&document.querySelector('[data-dash-demo]')?.dashController){
           try{await Promise.all(['dash-display','dash-device'].map(name=>script('/assets/'+name+'.js?v=20261028')));if(token!==generation)return;dashDevice=window.DashDevice.mount(root,model,{invalidate:request,view:name=>{rotation=name==='front'?{x:0,y:-Math.PI/2,z:0}:name==='rear'?{x:0,y:Math.PI/2,z:0}:{...initialRotation};zoom=1;hoverPick=null;clearPart();layout();}});}catch(error){console.warn('Live Dash display unavailable.',error);}
         }
         root.dataset.hardwareState='ready';root.dataset.hardwareComponents=String(model.parts.length);showStatus('');explode.disabled=!model.parts.length;layout();request();

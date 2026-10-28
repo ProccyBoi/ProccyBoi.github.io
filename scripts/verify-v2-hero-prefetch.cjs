@@ -10,7 +10,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const scripts = ['assets/v2-hero-assets.js', 'assets/v2-hero-environment.js'];
 const startup = 'assets/v2-hero-startup.js';
-const names = ['tramtrace', 'telemetry', 'pi'];
+const names = ['tramtrace', 'dash', 'pi'];
 const packTextures = Object.fromEntries(names.map(name => {
   const bytes = fs.readFileSync(path.join(root, 'assets/models/hero', name + '.bin'));
   const data = JSON.parse(bytes.subarray(16, 16 + bytes.readUInt32LE(8)).toString());
@@ -23,9 +23,11 @@ function context({reduced = false, saveData = false, failHelpers = false} = {}) 
   const requests = [], images = [], downloads = new Map(), scriptRequests = [];
   const sandbox = {
     TextDecoder, DataView, Uint8Array, performance, setTimeout,
-    navigator:{connection:{saveData}},
+    navigator:{connection:{saveData}}, location:{hash:''}, innerHeight:900, addEventListener() {},
     matchMedia:() => ({matches:reduced}),
     document:{
+      readyState:'loading', hidden:false, addEventListener() {}, getElementById:() => null,
+      querySelector:() => ({getBoundingClientRect:() => ({top:0,bottom:1000}),contains:() => false}),
       createElement:() => ({}),
       head:{append:script => {
         scriptRequests.push(script.src);

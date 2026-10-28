@@ -1,22 +1,22 @@
 # Hero geometry and loading
 
-The homepage loads prepared versions of the existing TramTrace, Skylabs telemetry and Pi assemblies. Source CAD files, standalone viewers, photography, poster resolution, render pixel ratio and SVG texture resolution remain unchanged.
+As of 28 October 2026, the homepage loads prepared TramTrace, complete Dash device and Pi assemblies. The telemetry pack remains available to the aircraft story. The Dash pack retains the device's housing, electronics, wiring and authored assembly paths; see [v2-dash-hero.md](v2-dash-hero.md). The current source and asset hashes are recorded in `assets/models/hero/manifest.json`.
+
+The dated benchmark tables below describe their original telemetry-era revisions. Their timings, byte counts and comparisons are historical measurements, not results for the current Dash hero or proximity-loading changes. See [the 28 October controlled comparison](v2-dash-loading-results.md) for current measurements and their limitations. Updating this document does not establish that a browser suite has been rerun.
 
 The build runs the existing factories once and records their final geometry, materials, scene hierarchy, physical references and motion origins. Vertices may share an index only when all their attribute bytes match. No triangle is removed, no coordinates are quantized and no normal, UV or colour data is approximated. Material colours are stored as linear RGB values rather than rounded hex colours.
 
 The hero downloads these prepared assets alongside Three.js, directly creates their renderable buffers and loads the original silkscreens. It no longer needs GLTFLoader or the two source factories on a successful normal visit. A failed prepared asset uses the corresponding source factory; a failed source keeps that project's moving poster. Reduced motion and Save Data retain the static composition without downloading either set of models.
 
-Packs ship as explicit `.idx.bin.gz` files, decoded with the browser's native `DecompressionStream`. This keeps delivery compressed regardless of the host's MIME policy. Before compression, each triangle-index array is rearranged into byte lanes; the browser reverses that arrangement into the exact original bytes. Vertices, triangle order and material data do not change. The current three files total 2,541,070 bytes, including the Pi housing and mounting screws. Decoding yields between bounded chunks when its work exceeds an 8 ms budget.
+Packs ship as explicit `.idx.bin.gz` files, decoded with the browser's native `DecompressionStream`. This keeps delivery compressed regardless of the host's MIME policy. Before compression, each triangle-index array is rearranged into byte lanes; the browser reverses that arrangement into the exact original bytes. Vertices, triangle order and material data do not change. Current per-model compressed sizes are in the manifest; the earlier three-file set documented for the original implementation totalled 2,541,070 bytes, including the Pi housing and mounting screws. Decoding yields between bounded chunks when its work exceeds an 8 ms budget.
 
 Browsers without native decompression use the identical `.bin` data. The preceding `.bin.gz` files remain available for cached older loaders. New filenames and a versioned loader URL prevent a cached old script from receiving the new transport format.
 
-## Immediate interaction
+## Current startup and browsing
 
-`assets/v2-hero-loading.js` and `.css` start independently of Three.js. A lightweight 2D field uses colours and positions sampled from the original board posters, with a diagonal light sweep following each board's alpha silhouette. Moving over a board lifts the field and opens a soft magnifying lens onto its full-resolution image; a tap briefly inspects that area and sends a radial pulse through the nearby samples. The lens never substitutes fabricated component detail.
+The homepage no longer imports `assets/v2-hero-loading.js` or `.css`. Their optional particle field, magnifier, sweep and ripple are absent from the current experience. Original object posters, headings, project links and native scrolling remain available while each real assembly prepares; no loading animation or minimum duration gates the page.
 
-The heading, project links, native scrolling and original posters remain available throughout. Each finished CAD assembly appears immediately, with its own short field fade; there is no minimum loading duration or invented progress percentage. Loading animation pauses offscreen, in a hidden tab, under reduced motion or Save Data, and stops after all models have either appeared or failed. Pointer and touch handling is passive and does not capture scrolling.
-
-The light sweep uses small cached alpha masks on the same 2D canvas. The field and its small lens buffers request CPU backing, avoiding promoted CSS mask layers competing with WebGL startup. Original posters and the magnifying lens retain their full resolution. Canvas paints are capped at 30 per second.
+The deferred `v2-hero-startup.js` checks the hero's proximity and respects a direct destination elsewhere on the page. The quick overview and compact **Inside the builds** section provide paths to projects without waiting for CAD. Selected Work and aircraft source loading, model transfers, reconstruction and GPU preparation also require their own section proximity or explicit navigation. Shared transport promises retain completed work for later entry. See [v2-aircraft.md](v2-aircraft.md) for the secondary-scene contract.
 
 ## Prepared lighting
 
@@ -24,7 +24,7 @@ The product studio PMREM environment is baked into a 164,981-byte compressed ass
 
 The geometry files and lighting download together while Three.js starts. The original SVG silkscreens begin fetching alongside their geometry, removing the previous dependency on a fully downloaded and decoded pack. Their Image objects are reused at full resolution when textures are constructed; the pack's texture properties remain authoritative.
 
-The homepage's small async `v2-hero-startup.js` queues the unchanged Three.js and motion runtime before CAD resources compete for the connection. It then starts the geometry and lighting helpers. The scene uses the same script promises if it initializes first or while these requests are in flight. Failed early requests can be retried by normal scene initialization. This work never gates the poster scene, native page scrolling, or navigation. Both the early startup and scene retain the reduced-motion and Save Data guards.
+When the hero is eligible, `v2-hero-startup.js` queues Three.js and the motion runtime, then starts the geometry and lighting helpers. The scene uses the same script promises if it initializes first or while these requests are in flight. Failed early requests can be retried by normal scene initialization. This work never gates the poster scene, native page scrolling, or navigation. Both startup and scene retain the reduced-motion and Save Data guards.
 
 ## Rebuilding
 
@@ -33,6 +33,8 @@ Serve the repository root, then run `node scripts/build-v2-hero-assets.cjs`. `V2
 `assets/models/hero/manifest.json` records the source hashes, pack hashes, triangle counts and parity fingerprints. Expanded triangle attributes are compared byte for byte; material properties, texture URLs/settings, transforms and component metadata are compared structurally. Text source hashes normalize CRLF to LF so Windows and Linux agree. The site audit checks source freshness, generated file hashes and that each gzip file decompresses to its exact plain counterpart before deployment.
 
 `node scripts/render-product-posters.cjs` renders the same complete CAD and studio into transparent 1600×1200 poster candidates. It writes a native PNG reference and a WebP encoded at quality 88 with lossless alpha, checking the decoded alpha bytes exactly. `PRODUCT_POSTER_OUT` selects the candidate directory; the script never replaces production images itself. The three current candidates total 358,572 bytes. They preserve fine component edges and the clear enclosure in Chromium; stepped white edges shown by one transparent-WebP preview tool were absent from both the native PNG and actual browser composition, with zero decoded alpha differences. No supersampling or lower resolution was required.
+
+The following geometry counts describe the retained telemetry-era baseline. Current Dash counts are documented in [v2-dash-hero.md](v2-dash-hero.md) and the manifest.
 
 | Assembly | Physical groups | Meshes | Triangles |
 | --- | ---: | ---: | ---: |
@@ -56,7 +58,8 @@ Hero motion has separate lift-off, spread, rotation and settling phases. Compone
 
 ## Verification and measurement
 
-- `node scripts/verify-v2-hero-startup.cjs` checks pre-WebGL pointer/touch interaction, actual magnification, mobile scrolling and links, per-model handoff, animation suspension, motion preferences and prepared-lighting recovery.
+- `node scripts/verify-v2-proximity-loading.cjs` checks production scheduling gates with controlled viewport/dependency scenarios. It is a source/runtime contract check, not a browser speed measurement.
+- `node scripts/verify-v2-hero-startup.cjs` now targets the current poster-first startup, delayed CAD handoff, mobile fallback, motion preferences and lighting recovery. Older optional loading-field checks remain behind `--legacy-loading-effect`. The updated full browser suite was not run for this change; see the controlled comparison above for the browser checks and measurements that were completed.
 - `node scripts/verify-v2-hero-prefetch.cjs` checks exact texture URL parity with committed pack headers, texture requests while geometry is blocked, shared downloads, failed-helper retry, and reduced-motion/Save Data suppression without a browser.
 - `node scripts/verify-v2-product-studio.cjs` loads the real prepared CAD without a GPU and checks byte-identical vertex/index data, exact transforms, source colours/maps/alpha, housing and screws, physical shader activation, and the intentional soldermask-only shadow-casting exception.
 - `node scripts/verify-v2-hero-choreography.cjs` checks deterministic trajectories, reverse sampling, exact reassembly and bounded movement without changing geometry or materials.
@@ -155,6 +158,9 @@ inferred from the number of queued frames alone.
 
 
 ## Lossless transport encoding (12 October 2026)
+
+This section records the earlier seven-pack set; its numeric comparison does not
+include the complete Dash pack added to the hero on 28 October.
 
 The seven Hero and Selected Work indexed packs use the same gzip and
 `V2HIDX1` formats, now encoded offline with Zopfli 0.4.3 (five iterations).

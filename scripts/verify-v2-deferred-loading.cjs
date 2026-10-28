@@ -14,19 +14,19 @@ assert.ok(start >= 0 && end > start, 'Production transfer gate exists');
 const transferFunction = source.slice(start, end);
 const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return {promise, resolve}; };
 const flush = async () => { for (let i=0;i<12;i++) await Promise.resolve(); };
-function setup({eligible=false, sourceGate, heroGate}={}) {
-  const requests = [];
+function setup({eligible=false, sourceGate, heroGate, heroStarted}={}) {
+  const requests = [], heroRequests = [];
   const state = {eligible, sourceCalls:0};
   const context = vm.createContext({
     allowed:()=>true, failed:false, activePage:true, visible:false, preparationIntent:false,
     preparationEligible:()=>state.eligible, document:{hidden:false}, root:{dataset:{}},
     prepareSources:async()=>{state.sourceCalls++;if(sourceGate)await sourceGate.promise;},
     names:['esp32','dual','pi','logic'],
-    window:{V2HeroAssets:{whenTransferSettled:()=>heroGate?.promise||Promise.resolve()},V2SelectedAssets:{prefetch:name=>{requests.push(name);return Promise.resolve();}}},
+    window:{V2HeroStartup:heroStarted===undefined?undefined:{hasStarted:()=>heroStarted,models:['tramtrace','dash','pi']},V2HeroAssets:{whenTransferSettled:name=>{heroRequests.push(name);return heroGate?.promise||Promise.resolve();}},V2SelectedAssets:{prefetch:name=>{requests.push(name);return Promise.resolve();}}},
     setTimeout:()=>1, clearTimeout:()=>{},
   });
   vm.runInContext(`let transferTask,releaseTransfer;\n${transferFunction}\nglobalThis.prepare=prepareTransfers;globalThis.pending=()=>transferTask;`,context);
-  return {context,state,requests};
+  return {context,state,requests,heroRequests};
 }
 (async()=>{
   let h=setup(); await h.context.prepare();
@@ -42,11 +42,15 @@ function setup({eligible=false, sourceGate, heroGate}={}) {
   assert.equal(h.requests.length,0);assert.equal(h.context.pending(),null);
   h.state.eligible=true;await h.context.prepare();assert.equal(h.requests.length,4);
   h=setup({eligible:true});h.context.document.hidden=true;await h.context.prepare();assert.equal(h.state.sourceCalls,0);
+  h=setup({eligible:true,heroStarted:false});await h.context.prepare();assert.equal(h.heroRequests.length,0);assert.equal(h.requests.length,4);
+  h=setup({eligible:true,heroStarted:true});await h.context.prepare();assert.deepEqual(h.heroRequests,['tramtrace','dash','pi']);
   const startup=fs.readFileSync(path.join(repo,'assets/v2-hero-startup.js'),'utf8');
   for(const preference of ['compact','reduced','data']){
     let requests=0;
-    vm.runInNewContext(startup,{matchMedia:q=>({matches:preference==='compact'?q.includes('max-height'):preference==='reduced'?q.includes('reduced-motion'):false}),navigator:{connection:{saveData:preference==='data'}},window:{},document:{head:{append:()=>requests++}}});
+    const window={};
+    vm.runInNewContext(startup,{matchMedia:q=>({matches:preference==='compact'?q.includes('max-height'):preference==='reduced'?q.includes('reduced-motion'):false}),navigator:{connection:{saveData:preference==='data'}},window,location:{hash:''},addEventListener(){},document:{querySelector:()=>null,addEventListener(){},head:{append:()=>requests++}}});
     assert.equal(requests,0,`${preference} should retain poster-only startup`);
+    assert.equal(window.V2HeroStartup.hasStarted(),false,`${preference} publishes inactive coordinator so secondary scenes cannot wake hero models`);
   }
   console.log('PASS: far-section deferral, first approach, repeat requests, exit during dependency/hero gates, return after cancellation, hidden-tab deferral, compact/reduced/data-saving startup. Source scheduling only; no browser performance claim.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

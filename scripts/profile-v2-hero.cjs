@@ -5,6 +5,9 @@
  * use it for fair before/after comparison. HERO_PROFILE_ROOT can point to an
  * immutable baseline snapshot. HERO_EXPECT_PACKS=1 rejects source fallback
  * and verifies the prepared environment; leave it unset for old baselines.
+ * Current model expectations default to tramtrace,dash,pi. For historical
+ * telemetry-era fixtures set HERO_EXPECT_MODELS=tramtrace,telemetry,pi.
+ * Loading-effect timings are optional: the current homepage uses posters.
  * SwiftShader makes GPU/compile durations machine-specific; compare runs on
  * the same host. Readiness is observed after the first successful CAD render,
  * not merely after download. Long-task timing includes parsing and rendering. */
@@ -22,6 +25,8 @@ const fixtureRoot=path.resolve(process.env.HERO_PROFILE_ROOT||process.cwd());
 const base=gzipFixture?'http://127.0.0.1:8188':process.env.V2_BASE_URL||'http://127.0.0.1:8080';
 const out=process.env.HERO_PROFILE_OUT||'.codex-temp/hero-performance/profile.json';
 const runs=Math.max(1,Number(process.env.HERO_PROFILE_RUNS)||1);
+const expectedModels=(process.env.HERO_EXPECT_MODELS||'tramtrace,dash,pi').split(',').map(name=>name.trim());
+assert.equal(new Set(expectedModels).size,3,'The fixture must name three distinct expected hero models');
 const network={latency:40,downloadThroughput:10_000_000/8,uploadThroughput:10_000_000/8,connectionType:'wifi'};
 const isModel=url=>/\.(?:glb|gltf|stl|bin)(?:\.gz)?(?:\?|$)/i.test(url)||/\/models\/.*\.json(?:\?|$)/i.test(url);
 const round=n=>Math.round(n*10)/10;
@@ -124,6 +129,7 @@ async function profile(browser,index){
       resources:performance.getEntriesByType('resource').map(entry=>({url:entry.name,encodedBodyBytes:entry.encodedBodySize,decodedBodyBytes:entry.decodedBodySize})),
       state:document.querySelector('[data-assembly]').dataset.assemblyState,
       environment:document.querySelector('[data-assembly]').dataset.assemblyEnvironment,
+      loadingEffectPresent:Boolean(window.V2HeroLoading),
       draws:Number(document.querySelector('[data-assembly]').dataset.assemblyDraws),
       renderer:navigator.userAgent,
     }));
@@ -169,21 +175,22 @@ async function profile(browser,index){
     assert.ok(measured.posterMs!==null&&measured.firstCadMs!==null&&measured.leadCadMs!==null&&measured.allCadMs!==null,'Poster, lead CAD, and all CAD must become visible');
     assert.ok(modelRequests.every(record=>!record.cache),'Profile must not use cached model responses');
     if(process.env.HERO_EXPECT_PACKS==='1'){
-      assert.equal(Object.keys(measured.models).length,3,'All three packed models must load');
+      assert.deepEqual(Object.keys(measured.models).sort(),[...expectedModels].sort(),'The three expected packed models must load');
       assert.ok(Object.values(measured.models).every(model=>model.factory==='V2HeroAssets'),'Measurements must use ready packs rather than silently falling back to original source parsing');
       assert.equal(measured.environment,'prepared','Measurements must use the identical prepared lighting instead of silently rebuilding it');
-      assert.ok(measured.loadingAnimationMs>0&&measured.loadingAnimationMs<measured.firstCadMs,'The interactive loading animation must start before CAD is ready');
+      if(measured.loadingEffectPresent)assert.ok(measured.loadingAnimationMs>0&&measured.loadingAnimationMs<measured.firstCadMs,'A historical loading effect must start before CAD is ready');
+      else assert.equal(measured.loadingAnimationMs,null,'Poster-only startup has no decorative animation timing');
     }
     if(process.env.HERO_EXPECT_PRIORITY==='1') {
       assert.equal(measured.firstModel,'tramtrace','Lead CAD renders first on untouched opening');
       const leadRequest=modelRequests.find(record=>record.url.includes('/tramtrace.'));
-      for(const name of ['telemetry','pi']) {
+      for(const name of expectedModels.filter(name=>name!=='tramtrace')) {
         const request=modelRequests.find(record=>record.url.includes('/'+name+'.'));
         assert.ok(request && request.startMs >= leadRequest.endMs-25, name+' transport waits for lead bytes, then overlaps first render');
       }
     }
     if(process.env.HERO_EXPECT_PARALLEL==='1') {
-      const boardRequests=modelRequests.filter(record=>/\/(?:tramtrace|telemetry|pi)\./.test(record.url));
+      const boardRequests=modelRequests.filter(record=>expectedModels.some(name=>record.url.startsWith('/assets/models/hero/'+name+'.')));
       assert.equal(boardRequests.length,3,'Three visible boards each have one transport');
       assert.ok(Math.max(...boardRequests.map(record=>record.startMs))-Math.min(...boardRequests.map(record=>record.startMs))<150,'Board transports start together, without serial model gates');
     }
@@ -216,12 +223,13 @@ async function profile(browser,index){
   let revision='unknown';
   try{revision=execFileSync('git',['-c','safe.directory='+process.cwd().replaceAll('\\','/'),'rev-parse','HEAD'],{encoding:'utf8'}).trim();}catch{}
   if(process.env.HERO_PROFILE_REVISION) revision=process.env.HERO_PROFILE_REVISION;
-  const data={capturedAt:new Date().toISOString(),revision,url:base+'/v2/',viewport:{width:1440,height:1000},network,cache:'disabled',gzipFixture,renderer:'Chromium SwiftShader software WebGL',caveats:[
+  const data={capturedAt:new Date().toISOString(),revision,url:base+'/v2/',expectedModels,viewport:{width:1440,height:1000},network,cache:'disabled',gzipFixture,renderer:'Chromium SwiftShader software WebGL',caveats:[
     'Readiness is the first successful physical CAD render observed through DOM attributes; posterMs is the first decoded lead poster eligible for paint observed at requestAnimationFrame. First-contentful-paint is reported separately; compositor presentation can occur later.',
     'Software WebGL makes absolute compile/render timings host-specific. Compare cold runs on the same machine and avoid other rendering jobs.',
     'Encoded bytes include response headers. Use HERO_PROFILE_GZIP=1 for the identical compressed local fixture on both baseline and after; CDN gzip may differ slightly.',
     'Model transfer totals include geometry, prepared lighting and model manifests; source posters and JavaScript are separate from model bytes.',
     'Explicit .bin.gz payloads use the gzip ISIZE footer for modelDecodedBytes; modelHttpDecodedBytes is the Resource Timing size before application-level decompression.',
+    'loadingAnimationMs is null when the fixture omits the historical decorative loading effect; poster and CAD milestones remain required.',
   ],runs:results};
   fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(data,null,2)+'\n');
   console.log(JSON.stringify({output:out,runs:results.map(r=>({run:r.run,posterMs:round(r.posterMs),loadingAnimationMs:r.loadingAnimationMs===null?null:round(r.loadingAnimationMs),environment:r.environment,firstContentfulPaintMs:r.paints.find(paint=>paint.name==='first-contentful-paint')?.ms,firstModel:r.firstModel,firstCadMs:round(r.firstCadMs),leadCadMs:round(r.leadCadMs),allCadMs:round(r.allCadMs),modelBytes:r.transfer.modelBytes,modelDecodedBytes:r.transfer.modelDecodedBytes,draws:r.draws,maxDraws:r.maxDraws,blocking:r.blocking,models:r.models}))},null,2));

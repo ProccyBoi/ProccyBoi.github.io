@@ -1,12 +1,14 @@
 # V2 — hardware, inside and out
 
-Revised 7 October 2026. The portfolio lives at `/v2/` and contains 15 projects, including the expanded electronics collection and Coaster. The standalone browser tools are not presented as portfolio projects.
+Current-state notes updated 28 October 2026. The portfolio lives at `/v2/` and contains 16 projects, including Kiku, the expanded electronics collection and Coaster. The standalone browser tools remain separate from that project count. Dated design and acceptance notes below describe their original revisions; they are not new verification results for this update.
+
+The first screen now exposes Andrew's university and engineering roles, Quick overview and CV. Three concise project rows lead into compact **Inside the builds** links for Dash, Kiku and Skylabs. The repeated full-size Kiku feature is removed. Dash's case study retains one complete-device assembly and short context; the prototype, character, timer and gesture demos are removed from v2. Optional loading particles, lens and ripples are no longer imported. Secondary Framework and aircraft source loading and GPU preparation follow proximity or explicit navigation.
 
 ## Visual direction
 
-The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses warm charcoal, chalk-white text and a restrained vermilion accent. Dark image surfaces suit the original black-background photographs. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections leaves enough space to see how the parts relate.
+The theme is the physical assembly. Board outlines, copper, chips and connectors provide the shapes and colour; the surrounding page uses warm charcoal, chalk-white text and a restrained blue accent. Dark image surfaces suit the original black-background photographs. There are no decorative circuit traces, fabricated component labels or artificial engineering readouts. Separation between sections leaves enough space to see how the parts relate.
 
-The opening is a full-screen, scroll-controlled scene led by TramTrace, followed by Skylabs telemetry and the Raspberry Pi card. It starts with all three boards, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their registered positions; reverse scrolling reconstructs the same assembly.
+The opening is a full-screen, scroll-controlled scene led by TramTrace, followed by the complete Dash device and the Raspberry Pi card. It starts with all three objects, moves one into focus, separates its actual components, then reassembles it before the next project enters. The components use their registered positions; reverse scrolling reconstructs the same assembly. Dash's screen uses a static idle frame, and Skylabs telemetry remains in the later aircraft story.
 
 Project names and concise descriptions carry the interface. CAD provenance belongs in development documentation, not repeated as decorative captions. Titles should identify work or explain a real design decision. Technical specifications belong where they help someone understand a project.
 
@@ -29,8 +31,7 @@ The theme acceptance suite passes all 23 public routes at 1440 px and 390 px, in
 ## Interaction
 
 - Native scrolling controls the hero. The page never intercepts wheel/touch input.
-- The project selector moves to a project in the sequence; its caption links to the full case study. “View projects” skips the sequence.
-- “View projects” targets the gallery heading, clearing the sticky navigation without leaving the hero controls above it.
+- The project selector moves to a project in the sequence; its caption links to the case study or assembly. “Quick overview” and “Skip intro” target the compact overview; “Explore the builds” targets the assembly links.
 - Rendering runs only while a pose changes, a viewport resizes, or the scene enters view. Hidden tabs and offscreen scenes stop rendering.
 - Physical CAD faces are merged by material within moving components. Dense LED arrays and telemetry passives form small spatial groups, retaining every original geometry and placement. Components separate with stable stagger, different heights, lateral movement and gentle rotation; reversing the motion restores their original positions and orientations.
 - The hero uses still images and direct project links for reduced motion and Save Data; JavaScript/WebGL failure retains the same navigation. No loading gate blocks the page.
@@ -51,7 +52,7 @@ The Pi card is based on `D:/Electronics Projects/Framework Expansion Card - Rasp
 - `assets/v2-assembly.js`: scene lighting, responsive composition and deterministic scroll poses.
 - `assets/v2-assembly.css`: fullscreen scene and static fallback.
 - `assets/v2.css`, `assets/v2-case.css`: shared gallery theme and interior pages.
-- `assets/v2-hardware-models.js`: shared source-CAD loading, materials and reference groups for inspectors and the telemetry hero.
+- `assets/v2-hardware-models.js`: shared source-CAD loading, materials and reference groups for inspectors, complete Dash hero and aircraft telemetry.
 - `assets/v2-hardware.js`, `assets/v2-hardware.css`: shared controls and finite inspector lifecycle.
 - `scripts/content/hardware-catalog.json`: factual content, sources, new routes and existing-page assembly integrations.
 - `scripts/build-v2-cases.py`: reproducible case/collection/About generation, including the Pi source fragment.

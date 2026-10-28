@@ -1,14 +1,15 @@
 /* Lossless render-ready hero assemblies, baked from the source CAD factories. */
 (() => {
   'use strict';
-  const names = new Set(['tramtrace', 'telemetry', 'pi']);
-  const versions = {pi:'mechanics-20261003'};
+  const names = new Set(['tramtrace', 'telemetry', 'pi', 'dash']);
+  const versions = {pi:'mechanics-20261003', dash:'device-20261028'};
   // These are the original textures recorded in the lossless packs. Discover
   // them before the geometry arrives, rather than adding a network round trip
   // after decompression and index restoration. The pack remains authoritative.
   const textureSources = {
     tramtrace:['/assets/images/v2/tramtrace-silk.svg'],
     telemetry:['/assets/models/hardware/skylabs-telemetry/silk-front.svg', '/assets/models/hardware/skylabs-telemetry/silk-back.svg'],
+    dash:['/assets/models/hardware/dash/silk-front.svg', '/assets/models/hardware/dash/silk-back.svg', '/assets/images/v2/dash-idle-display.png'],
     pi:['/assets/models/framework-pi/framework-pi-silk-front.svg']
   };
   const pending = new Map(), transfers = new Map();
@@ -120,7 +121,7 @@
       textures[index] = texture;
     }));
     const materials = data.materials.map(item => {
-      if (!['MeshStandardMaterial', 'MeshBasicMaterial', 'MeshPhysicalMaterial'].includes(item.type)) throw new Error('Unsupported hero material');
+      if (!['MeshStandardMaterial', 'MeshBasicMaterial', 'MeshPhysicalMaterial', 'LineBasicMaterial'].includes(item.type)) throw new Error('Unsupported hero material');
       const material = new T[item.type](); Object.assign(material, decode(item.properties)); return material;
     });
     function attribute(item) {
@@ -137,7 +138,7 @@
     });
     const nodes = data.nodes.map(item => {
       const material = Array.isArray(item.material) ? item.material.map(index => materials[index]) : materials[item.material];
-      const object = item.type === 'Mesh' ? new T.Mesh(geometries[item.geometry], material) : new T.Group();
+      const object = item.type === 'Mesh' ? new T.Mesh(geometries[item.geometry], material) : item.type === 'LineSegments' ? new T.LineSegments(geometries[item.geometry], material) : new T.Group();
       object.name = item.name; object.rotation.order = item.rotationOrder; object.position.fromArray(item.position); object.quaternion.fromArray(item.quaternion); object.scale.fromArray(item.scale);
       object.matrixAutoUpdate = item.matrixAutoUpdate; object.matrix.fromArray(item.matrix);
       for (const key of ['visible', 'castShadow', 'receiveShadow', 'frustumCulled', 'renderOrder']) object[key] = item[key];

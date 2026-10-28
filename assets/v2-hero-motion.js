@@ -41,6 +41,12 @@
     if (!T) throw new Error('V2HeroMotion requires THREE');
     for (const [index, part] of parts.entries()) {
       if (part.heroMotion) continue;
+      if (metadata.name === 'dash' && part.motion?.mechanical) {
+        // The full device already has collision-aware authored paths for its
+        // shell, display, looms and each PCB component. Keep them unchanged.
+        part.heroMotion = {sourceMechanical:true};
+        continue;
+      }
       const ref = String(part.ref || part.object.userData.partRef || part.object.name || `component-${index}`);
       const seed = seedFor(ref);
       const a = (seed & 1023) / 1023;
@@ -84,6 +90,14 @@
       const motion = part.heroMotion;
       if (!motion) throw new Error('Hero motion must be prepared before use');
       const object = part.object;
+      if (motion.sourceMechanical) {
+        const source = part.motion, p = smooth((progress - source.delay) / (source.end - source.delay));
+        object.position.copy(part.base).addScaledVector(source.offset, p);
+        object.position.y += Math.sin(p * Math.PI) * source.arc;
+        object.quaternion.copy(source.baseQuaternion).slerp(source.targetQuaternion, p);
+        if (source.spin) object.rotateY(source.spin * p);
+        continue;
+      }
       object.position.copy(part.base);
       object.quaternion.copy(motion.baseQuaternion);
       if (progress <= motion.delay) continue;

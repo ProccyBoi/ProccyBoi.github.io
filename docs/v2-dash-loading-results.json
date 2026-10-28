@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-28",
+  "baselineCommit": "df85853e22be52c16bb941fd153be00a392f6387",
+  "method": {
+    "browser": "Codex in-app Chromium browser via CUA",
+    "viewport": [
+      1440,
+      900
+    ],
+    "transport": "Local fixture: shared 10 Mbps per origin plus 40 ms per request, gzip text, Cache-Control no-store",
+    "samples": 3,
+    "window": "20 seconds without scrolling",
+    "notes": [
+      "Body bytes are sum of PerformanceResourceTiming.encodedBodySize; exclude main document and HTTP headers.",
+      "Readiness uses production hero data-assembly-models-ready attributes; first CAD when >0, all CAD when 3.",
+      "Long tasks and blocking (duration minus 50 ms) collected with PerformanceObserver during the sample window; this is not Lighthouse TBT.",
+      "The fixture is a controlled comparison, not a CDN field measurement. One candidate sample had a 3.215 second graphics stall; all three final samples retained.",
+      "Intermediate candidate predates restoration of overview CSS; excluded from final medians but retained for traceability."
+    ]
+  },
+  "runs": {
+    "candidate": [
+      {
+        "firstCAD": 3464,
+        "allCAD": 4486,
+        "FCP": 660,
+        "maxLongTask": 687,
+        "blocking": 1280,
+        "requests": 33,
+        "bodyBytes": 3066141,
+        "modelBytes": 2162176
+      },
+      {
+        "firstCAD": 7225,
+        "allCAD": 9293,
+        "FCP": 1012,
+        "maxLongTask": 3215,
+        "blocking": 5596,
+        "requests": 33,
+        "bodyBytes": 3066141,
+        "modelBytes": 2162176
+      },
+      {
+        "firstCAD": 3893,
+        "allCAD": 4795,
+        "FCP": 1120,
+        "maxLongTask": 615,
+        "blocking": 1572,
+        "requests": 34,
+        "bodyBytes": 3066371,
+        "modelBytes": 2162176
+      }
+    ],
+    "baseline": [
+      {
+        "firstCAD": 5759,
+        "allCAD": 7663,
+        "FCP": 1432,
+        "maxLongTask": 833,
+        "blocking": 2443,
+        "requests": 46,
+        "bodyBytes": 9576488,
+        "modelBytes": 8042955
+      },
+      {
+        "firstCAD": 5002,
+        "allCAD": 6083,
+        "FCP": 1248,
+        "maxLongTask": 442,
+        "blocking": 1722,
+        "requests": 46,
+        "bodyBytes": 9576488,
+        "modelBytes": 8042955
+      },
+      {
+        "firstCAD": 4759,
+        "allCAD": 6113,
+        "FCP": 736,
+        "maxLongTask": 446,
+        "blocking": 1678,
+        "requests": 46,
+        "bodyBytes": 9576488,
+        "modelBytes": 8042955
+      }
+    ],
+    "intermediateCandidate": [
+      {
+        "firstCAD": 3450,
+        "allCAD": 4494,
+        "FCP": 876,
+        "maxLongTask": 547,
+        "blocking": 1767,
+        "requests": 33,
+        "bodyBytes": 3041830,
+        "modelBytes": 2162176
+      }
+    ]
+  }
+}

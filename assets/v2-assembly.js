@@ -19,7 +19,7 @@
   const posters = [...root.querySelectorAll('[data-assembly-posters] img')];
   const projects = [
     {name:'tramtrace', title:'TramTrace', kind:'Live light-rail display', description:'116 pixels following Sydney’s light-rail network.', href:'/v2/projects/tramtrace/'},
-    {name:'telemetry', title:'Telemetry', kind:'Skylabs avionics', description:'Navigation, sensing and a radio link to the ground.', href:'/v2/projects/skylabs/boards/telemetry/'},
+    {name:'dash', title:'Dash', kind:'Focus companion', description:'A small companion, from its circuit board to the complete device.', href:'/v2/projects/dash/#explore'},
     {name:'pi', title:'Raspberry Pi', kind:'Framework expansion card', description:'An RP2354B microcontroller in the same compact format.', href:'/v2/projects/framework-raspberry-pi/'}
   ];
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
@@ -77,7 +77,7 @@
     // A visitor can choose a supporting chapter while Three is still loading.
     // Promote its transport immediately; installation follows renderer setup.
     const prefetch = async () => {
-      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=load-20261012');
+      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=dash-20261028');
       window.V2HeroAssets.prefetch(projects[index].name).catch(() => {});
     };
     prefetch().catch(() => {});
@@ -112,7 +112,7 @@
   const loadSourceModel = async name => {
     if (name !== 'telemetry') await window.V2TransportPriority?.wait('hero');
     sourceFactories ||= Promise.all([
-      window.V2AssemblyModels ? Promise.resolve() : loadScript('/assets/v2-assembly-models.js?v=mechanics-20261003'),
+      window.V2AssemblyModels ? Promise.resolve() : loadScript('/assets/v2-assembly-models.js?v=dash-20261028'),
       window.V2HardwareModels ? Promise.resolve() : loadScript('/assets/v2-hardware-models.js?v=mechanics-20261003'),
       window.THREE.GLTFLoader ? Promise.resolve() : loadScript('/assets/vendor/GLTFLoader.js')
     ]);
@@ -220,7 +220,7 @@
     const sideStart=startScale*(small?.57:.8);
     poses = [
       [pose(0,0,small?-1.9:-.95,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.445,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
-      [pose(0,left,small ? -.2 : -.8,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.31,off,-.6,scale,1.18,-.3,.25),pose(.385,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale*(small?.9:1),.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.765,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
+      [pose(0,left,small ? -.2 : -.8,sideStart,.02,.08,-.04),pose(.10,-off,-1,sideStart,.02,.08,-.04),pose(.31,off,-.6,scale,.02,-.05,.02),pose(.385,focusX,focusY,scale,0,0,0),pose(.565,focusX,focusY-.15,scale*(small?.94:1),.02,.04,0,1),pose(.65,focusX,focusY,scale,0,0,0),pose(.765,-off,1,scale,.03,-.12,-.04),pose(1,-off,1,scale,.03,-.12,-.04)],
       [pose(0,right,small ? -.25 : -.8,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.625,off,-.2,scale,1.1,.1,-.05),pose(.695,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
     updateProgress();
@@ -291,6 +291,16 @@
       group.position.set(transform.x,transform.y-(1-settle)*.6,0);
       group.scale.setScalar(transform.s*(.94+settle*.06));
       group.rotation.set(transform.rx,transform.ry,transform.rz+(1-settle)*.11);
+      if (model.heroFraming) {
+        // Fit the device's real, much wider exploded envelope without changing
+        // its source part trajectories. Framing was baked with the full model.
+        const key=clamp(transform.e)*(model.heroFraming.length-1), index=Math.min(Math.floor(key),model.heroFraming.length-2);
+        const a=model.heroFraming[index],b=model.heroFraming[index+1],p=key-index;
+        const size=Math.max(a.span,b.span);
+        group.scale.divideScalar(size);
+        model.heroCentre.set(...a.centre).lerp(model.heroNextCentre.set(...b.centre),p).applyEuler(group.rotation).multiplyScalar(group.scale.x);
+        group.position.sub(model.heroCentre);
+      }
       window.V2HeroMotion.apply(model.parts,transform.e);
       shadow.position.set(transform.x,transform.y-transform.s*.43,-3);
       shadow.scale.set(transform.s*.9,transform.s*.18,1);
@@ -372,7 +382,7 @@
   root.querySelector('.v2-assembly-jump')?.addEventListener('click', () => {
     if (active !== 0 && active !== 1) return;
     window.dispatchEvent(new CustomEvent('v2:gallery-project', {
-      detail: {project: active === 0 ? 'tramtrace' : 'skylabs'}
+      detail: {project: active === 0 ? 'tramtrace' : 'dash'}
     }));
   });
   const staticMode = () => {
@@ -390,6 +400,8 @@
   };
   async function initialize(){
     if(loading || ready || failed || !motionAllowed()) return;
+    await window.V2HeroStartup?.whenEligible?.();
+    if(loading || ready || failed || !motionAllowed()) return;
     loading=true; root.dataset.assemblyState='loading';
     root.classList.add('is-enhanced'); root.classList.remove('is-static');
     setSceneControls(true);
@@ -401,7 +413,7 @@
       // Download prepared geometry alongside Three.js. Source CAD remains a
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
-        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=load-20261012');
+        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=dash-20261028');
         if (motionAllowed()) projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
       })().catch(()=>{});
       const lighting=(async()=>{
@@ -411,7 +423,7 @@
       await Promise.all([
         assets,lighting,
         window.V2GPUPreparation?Promise.resolve():loadScript('/assets/v2-gpu-preparation.js?v=paced-20261011'),
-        window.V2HeroMotion?Promise.resolve():loadScript('/assets/v2-hero-motion.js?v=mechanics-20261003'),
+        window.V2HeroMotion?Promise.resolve():loadScript('/assets/v2-hero-motion.js?v=dash-20261028'),
         window.THREE?Promise.resolve():loadScript('/assets/vendor/three.min.js')
       ]);
       const T=window.THREE;
@@ -478,6 +490,7 @@
             model.group.traverse(object=>{if(object.isMesh&&(Array.isArray(object.material)?object.material:[object.material]).every(material=>material.name===maskName))object.castShadow=false;});
           }
           window.V2HeroMotion.prepare(model.parts,{name});
+          if(model.heroFraming){model.heroCentre=new T.Vector3();model.heroNextCentre=new T.Vector3();}
           const shadow=new T.Mesh(new T.PlaneGeometry(1.5,1.5),new T.MeshBasicMaterial({map:shadowTexture,transparent:true,depthWrite:false,opacity:.08}));
           models[index]=model;shadows[index]=shadow;scene.add(model.group);scene.add(shadow);
           modelStates[index]='ready';

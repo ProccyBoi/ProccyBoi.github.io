@@ -10,15 +10,20 @@
   const ids = ['work-framework'];
   const images = [...root.querySelectorAll('img')];
   root.dataset.selectedReady = 'false';
-  Promise.all(images.map(async image => {
-    image.loading = 'eager'; image.dataset.imageDecoded = 'false';
-    try {
-      if (image.decode) await image.decode();
-      else if (!image.complete) await new Promise((resolve, reject) => { image.addEventListener('load', resolve, {once:true}); image.addEventListener('error', reject, {once:true}); });
-      if (!image.naturalWidth) throw new Error('Image unavailable');
-      image.dataset.imageDecoded = 'true'; return true;
-    } catch (_) { image.dataset.imageError = 'decode'; return false; }
-  })).then(results => { root.dataset.selectedReady = String(results.every(Boolean)); });
+  let imagesStarted = false;
+  function warmImages() {
+    if (imagesStarted || document.hidden || !activePage || !preparationEligible()) return;
+    imagesStarted = true;
+    Promise.all(images.map(async image => {
+      image.loading = 'eager'; image.dataset.imageDecoded = 'false';
+      try {
+        if (image.decode) await image.decode();
+        else if (!image.complete) await new Promise((resolve, reject) => { image.addEventListener('load', resolve, {once:true}); image.addEventListener('error', reject, {once:true}); });
+        if (!image.naturalWidth) throw new Error('Image unavailable');
+        image.dataset.imageDecoded = 'true'; return true;
+      } catch (_) { image.dataset.imageError = 'decode'; return false; }
+    })).then(results => { root.dataset.selectedReady = String(results.every(Boolean)); });
+  }
 
   let settleBackground;
   const backgroundSettled = new Promise(resolve => { settleBackground = resolve; });
@@ -120,6 +125,7 @@
     const wasNear=preparationNear;preparationNear=b.top<innerHeight*2&&b.bottom>-innerHeight;
     if(!preparationNear&&!visible){preparationIntent=false;if(wasNear&&(backgroundBusy||initialization))invalidate();}
     root.dataset.selectedPreparationEligible=String(preparationEligible());
+    warmImages();
     // The negative-margin track is the stage's stable flow placeholder; its
     // document position does not change when the stage becomes sticky.
     top=scrollY+track.getBoundingClientRect().top;
@@ -250,14 +256,15 @@
     }
   }
   function prepareSources() {
+    warmImages();
     return sourceTask ||= Promise.all([
       window.THREE?Promise.resolve():script('/assets/vendor/three.min.js'),
-      window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=load-20261012'),
+      window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=dash-20261028'),
       window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=load-20261012'),
       script('/assets/v2-selected-assets.js?v=load-20261012'),
       script('/assets/v2-framework-scene.js?v=20261015'),
       script('/assets/v2-gpu-preparation.js?v=paced-20261011')
-    ]).then(()=>{if(allowed()&&!failed)window.V2HeroEnvironment.prefetch().catch(()=>{});});
+    ]).then(()=>{if(allowed()&&!failed&&preparationEligible()&&activePage&&!document.hidden)window.V2HeroEnvironment.prefetch().catch(()=>{});});
   }
   async function prepareTransfers(promote=false) {
     if(!allowed()||failed||!preparationEligible()||!activePage||document.hidden){
@@ -274,7 +281,9 @@
       const gate=new Promise(resolve=>{
         const finish=()=>{clearTimeout(timer);resolve();};releaseTransfer=finish;
         const timer=setTimeout(finish,4500);
-        Promise.allSettled(['tramtrace','telemetry','pi'].map(name=>window.V2HeroAssets.whenTransferSettled(name))).then(finish);
+        if(window.V2HeroStartup&&!window.V2HeroStartup.hasStarted()){finish();return;}
+        const heroModels=window.V2HeroStartup?.models||['tramtrace','dash','pi'];
+        Promise.allSettled(heroModels.map(name=>window.V2HeroAssets.whenTransferSettled(name))).then(finish);
       });
       // Once direct-aircraft critical bytes release the gate, all unrelated
       // transports can overlap again rather than serializing behind the hero.
@@ -291,7 +300,7 @@
   }
   const foregroundSettled=()=>new Promise(resolve=>{
     const hero=document.querySelector('[data-assembly]');
-    if(!hero||hero.dataset.assemblyModelsSettled==='3'||['unavailable','static'].includes(hero.dataset.assemblyState)){resolve();return;}
+    if(!hero||window.V2HeroStartup?.eligible()===false||hero.dataset.assemblyModelsSettled==='3'||['unavailable','static'].includes(hero.dataset.assemblyState)){resolve();return;}
     let observer;const finish=()=>{clearTimeout(timer);observer?.disconnect();if(releaseForeground===finish)releaseForeground=undefined;resolve();};const timer=setTimeout(finish,12000);releaseForeground=finish;
     observer=new MutationObserver(()=>{if(hero.dataset.assemblyModelsSettled==='3'||['unavailable','static'].includes(hero.dataset.assemblyState))finish();});
     observer.observe(hero,{attributes:true,attributeFilter:['data-assembly-models-settled','data-assembly-state']});

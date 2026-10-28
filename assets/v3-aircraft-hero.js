@@ -39,6 +39,7 @@
   const completedWarmPoses = new Set(), preparationMeasurements = [], backgroundWaiters = new Set();
   let preparationNear = false, preparationIntent = false;
   const preparationEligible = () => !background || visible || preparationNear || preparationIntent;
+  const sourceEligible = () => !background || (preparationEligible() && allowed() && activePage && !document.hidden && !failed);
   const selectedVisible = () => Boolean(background && window.V2SelectedWork?.isVisible?.());
   const aircraftVisible = () => Boolean(background && track && visible && allowed() && activePage && !document.hidden && !failed);
   function publishAircraftPriority() {
@@ -131,7 +132,7 @@
       const step = document.createElement('div'); step.id = ids[index]; step.className = 'v3-aircraft-step'; track.append(step);
     });
     root.append(track); root.classList.add('is-story'); currentChapter = -1; chapter(0); layout();
-    showPoster('approach');
+    if (!background || preparationEligible()) showPoster('approach');
     if (ids.includes(location.hash.slice(1))) {
       endLanding(); requestAnimationFrame(() => document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'instant' }));
     }
@@ -157,7 +158,7 @@
       visible = bounds.top < innerHeight && bounds.bottom > pinnedTop;
       if (background) {
         publishAircraftPriority();
-        const wasNear = preparationNear; preparationNear = bounds.top < innerHeight * 2 && bounds.bottom > -innerHeight;
+        const wasNear = preparationNear; preparationNear = nearStory();
         if (!preparationNear && !visible) { preparationIntent = false; if (wasNear && backgroundBusy) interruptBackground('deferred-distance'); }
         root.dataset.aircraftPreparationEligible = String(preparationEligible());
         if (wasNear !== preparationNear) { wakeBackground(); if (preparationNear && !visible) prepareInBackground(); }
@@ -386,8 +387,9 @@
     telemetryLoading = true;
     return telemetryTask = (async () => {
     try {
-      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'load-20261012' : 'startup-20261007'));
+      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'dash-20261028' : 'startup-20261007'));
       if (background) {
+        if (!await backgroundCPU('telemetry-transfer')) return;
         await window.V2HeroAssets.prefetch('telemetry');
         if (!await backgroundCPU('telemetry-load')) return;
       }
@@ -407,6 +409,7 @@
     })();
   }
   function prepareAirframe(promote = false) {
+    if (!sourceEligible()) return Promise.resolve(null);
     const transfer = () => {
       if (!airframeTransport) {
         airframeTransport = window.V3AircraftScene.prefetch().then(value => {
@@ -435,28 +438,38 @@
       const timer = setTimeout(resolve, 4500);
       releaseTransport = () => { clearTimeout(timer); resolve(); };
       (async () => {
-        if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=load-20261012');
-        await Promise.all(['tramtrace', 'telemetry', 'pi'].map(name => window.V2HeroAssets.whenTransferSettled(name)));
+        if (window.V2HeroStartup && !window.V2HeroStartup.hasStarted()) return;
+        if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=dash-20261028');
+        if (!sourceEligible()) return;
+        const heroModels = window.V2HeroStartup?.models || ['tramtrace', 'dash', 'pi'];
+        await Promise.all(heroModels.map(name => window.V2HeroAssets.whenTransferSettled(name)));
       })().then(releaseTransport, releaseTransport);
     }).then(() => {
-      if (!allowed() || failed) return null;
+      if (!sourceEligible()) { transportGate = null; return null; }
       if (!airframeTransport) root.dataset.aircraftTransportState = 'loading';
       return transfer();
     });
   }
   function prepareSources() {
+    if (!sourceEligible()) return Promise.resolve(false);
+    warmFallbackImages();
     return sourcePreparation ||= Promise.all([
-        (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (!window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
+        (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (sourceEligible() && !window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
         (async () => {
           if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=' + (background ? 'load-20261012' : 'aircraft-transition-20261010'));
+          if (!sourceEligible()) return;
           if (background && !window.MeshoptDecoder) await script('/assets/vendor/meshopt_decoder.js').catch(() => {});
+          if (!sourceEligible()) return;
           prepareAirframe(!background || nearStory()).catch(() => {});
         })(),
-        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=' + (background ? 'load-20261012' : 'product-20261007')); window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
+        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=' + (background ? 'load-20261012' : 'product-20261007')); if (sourceEligible()) window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
         script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
         detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve(),
         background ? script('/assets/v2-gpu-preparation.js?v=paced-20261011') : Promise.resolve()
-      ]);
+      ]).then(() => {
+        if (sourceEligible()) return true;
+        sourcePreparation = null; return false;
+      }, error => { sourcePreparation = null; throw error; });
   }
   async function initialize() {
     if (!allowed() || failed || !preparationEligible()) return;
@@ -465,7 +478,7 @@
     if (loading) return;
     loading = true; root.dataset.aircraftState = 'loading';
     try {
-      await prepareSources();
+      if (!await prepareSources()) { loading = false; return; }
       prepareAirframe(true).catch(() => {});
       if (failed || !allowed()) { loading = false; return; }
       if (background) {
@@ -522,8 +535,11 @@
       if (background && !visible) prepareInBackground();
     } catch (error) { fail(error); }
   }
+  let fallbackImagesStarted = false;
   function warmFallbackImages() {
-    if (!background) return;
+    if (!background || fallbackImagesStarted || !sourceEligible()) return;
+    fallbackImagesStarted = true;
+    showPoster('approach');
     const images = [...root.querySelectorAll('img')];
     if (allowed()) {
       const source = posterSources.find(item => matchMedia(item.media).matches) || poster;
@@ -556,7 +572,7 @@
   });
   const foregroundSettled = signal => new Promise(resolve => {
     const hero = document.querySelector('[data-assembly]');
-    if (signal?.aborted || !hero || hero.dataset.assemblyModelsSettled === '3' || ['unavailable', 'static'].includes(hero.dataset.assemblyState)) { resolve(); return; }
+    if (signal?.aborted || !hero || window.V2HeroStartup?.eligible() === false || hero.dataset.assemblyModelsSettled === '3' || ['unavailable', 'static'].includes(hero.dataset.assemblyState)) { resolve(); return; }
     let observer, finished = false;
     const finish = () => {
       if (finished) return; finished = true;
@@ -630,7 +646,7 @@
     root.dataset.aircraftBackgroundState = 'warming';
     root.dataset.aircraftBackgroundStartedMs ||= performance.now().toFixed(1);
     try {
-      await prepareSources();
+      if (!await prepareSources()) return;
       if (!current()) return;
       await foregroundSettled(abort.signal);
       if (!current()) return;
@@ -750,7 +766,7 @@
     if (background) {
       publishAircraftPriority();
       // Proximity starts transport, never bypasses Selected's CPU/GPU turn.
-      prepareSources().catch(fail);
+      if (sourceEligible()) prepareSources().catch(fail);
       if (visible) initialize();
       else { if (!ready && !loading) root.dataset.aircraftState = 'waiting'; prepareInBackground(); }
     } else {
@@ -778,8 +794,11 @@
     });
   }
   const preference = start;
+  if (background) addEventListener('hashchange', () => {
+    if (!ids.includes(location.hash.slice(1))) return;
+    preparationIntent = true; wakeBackground(); initialize();
+  });
   reduced.addEventListener('change', preference); short.addEventListener('change', preference); navigator.connection?.addEventListener?.('change', preference);
   canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); fail(new Error('WebGL context unavailable')); });
   start();
-  warmFallbackImages();
 })();

@@ -13,7 +13,10 @@ const {chromium} = require('playwright');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'assets/models/hero');
 const base = process.env.V2_BASE_URL || 'http://127.0.0.1:8080';
-const names = ['tramtrace', 'telemetry', 'pi'];
+const allNames = ['tramtrace', 'telemetry', 'pi', 'dash'];
+const selectedModel = process.argv.find(argument => argument.startsWith('--model='))?.slice(8);
+if (selectedModel && !allNames.includes(selectedModel)) throw new Error('Unknown selected hero model: ' + selectedModel);
+const names = selectedModel ? [selectedModel] : allNames;
 const verifyOnly = process.argv.includes('--verify');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -102,13 +105,13 @@ function captureAssembly(assembly) {
   }
   function visit(object) {
     const id = nodes.length; nodeIds.set(object, id);
-    const node = {type:object.isMesh ? 'Mesh' : 'Group', name:object.name, position:object.position.toArray(),
+    const node = {type:object.isMesh ? 'Mesh' : object.isLineSegments ? 'LineSegments' : 'Group', name:object.name, position:object.position.toArray(),
       quaternion:object.quaternion.toArray(), rotationOrder:object.rotation.order, scale:object.scale.toArray(),
       matrixAutoUpdate:object.matrixAutoUpdate, matrix:object.matrix.toArray(), visible:object.visible,
       castShadow:object.castShadow, receiveShadow:object.receiveShadow, frustumCulled:object.frustumCulled,
       renderOrder:object.renderOrder, layers:object.layers.mask, userData:encode(object.userData), children:[]};
     nodes.push(node);
-    if (object.isMesh) {
+    if (object.isMesh || object.isLineSegments) {
       node.geometry = geometryId(object.geometry);
       node.material = Array.isArray(object.material) ? object.material.map(materialId) : materialId(object.material);
     }
@@ -175,13 +178,29 @@ function pack(capture) {
 async function main() {
   fs.mkdirSync(output, {recursive:true});
   const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_EXECUTABLE || undefined, args:['--use-angle=swiftshader', '--enable-unsafe-swiftshader']});
-  const report = {format:1, sourceHashNormalization:'utf8-lf', preservation:'Exact expanded triangle attribute bytes, materials, textures, transforms, reference metadata and source motion', models:{}, sources:{}};
+  const previous = selectedModel && fs.existsSync(path.join(output, 'manifest.json')) ? JSON.parse(fs.readFileSync(path.join(output, 'manifest.json'))) : null;
+  const report = {format:1, sourceHashNormalization:'utf8-lf', preservation:'Exact expanded triangle attribute bytes, materials, textures, transforms, reference metadata and source motion', models:previous?.models || {}, sources:{}};
   try {
     const page = await browser.newPage();
     // A blank same-origin surface avoids mounting the hero or any renderer.
     await page.route(base + '/v2/render/', route => route.fulfill({contentType:'text/html', body:'<!doctype html><title>Hero asset build</title>'}));
     await page.goto(base + '/v2/render/', {waitUntil:'domcontentloaded'});
-    for (const url of ['/assets/vendor/three.min.js', '/assets/vendor/GLTFLoader.js', '/assets/v2-assembly-models.js', '/assets/v2-hardware-models.js', '/assets/v2-hero-assets.js']) await page.addScriptTag({url:base + url});
+    for (const url of ['/assets/vendor/three.min.js', '/assets/vendor/GLTFLoader.js', '/assets/v2-assembly-models.js', '/assets/v2-hardware-models.js', '/assets/v2-hero-assets.js', '/assets/v2-hero-motion.js']) await page.addScriptTag({url:base + url});
+    if (names.includes('dash')) {
+      // Compile the real browser display's quantized idle framebuffer once.
+      // The hero needs no character controller, canvas loop or approximation.
+      await page.addScriptTag({url:base + '/assets/dash-display.js'});
+      const idle = await page.evaluate(async () => {
+        const state = {state:'idle', remainingMs:10000, totalMs:10000, gaze:{x:0,y:0}, reaction:null, motion:null, reactionStartedAt:0, motionStartedAt:0};
+        const controller = {snapshot:() => state, subscribe(listener) {listener(state);return () => {};}};
+        let display;
+        const png = await new Promise(resolve => {display=window.DashDisplay.create(controller,{reducedMotion:true,onFrame:() => resolve(display.canvas.toDataURL('image/png'))});});
+        display.dispose();return png.split(',')[1];
+      });
+      const idlePath = path.join(root, 'assets/images/v2/dash-idle-display.png'), idleBytes = Buffer.from(idle, 'base64');
+      if (verifyOnly) assert.deepEqual(fs.readFileSync(idlePath), idleBytes, 'Dash idle texture must match the actual display renderer');
+      else fs.writeFileSync(idlePath, idleBytes);
+    }
     await page.evaluate('window.__captureHero = ' + captureAssembly.toString());
     for (const name of names) {
       console.log('Capturing source factory:', name);
@@ -192,24 +211,48 @@ async function main() {
         const bytes = pack(source); fs.writeFileSync(filepath, bytes); fs.writeFileSync(filepath + '.gz', zlib.gzipSync(bytes, {level:9}));
         fs.writeFileSync(compressedPath, zlib.gzipSync(indexTransport(bytes), {level:9}));
       }
-      const restored = await page.evaluate(async name => {const assembly = await window.V2HeroAssets.load(name); const capture = window.__captureHero(assembly); for (const group of [assembly.group, window.__sourceAssembly.group]) group.traverse(node => {node.geometry?.dispose();}); return capture;}, name);
+      const restored = await page.evaluate(async name => {
+        const assembly = await window.V2HeroAssets.load(name), source = window.__sourceAssembly;
+        const capture = window.__captureHero(assembly);
+        if (name === 'dash') {
+          window.V2HeroMotion.prepare(assembly.parts, {name});
+          const poses = model => model.parts.map(part => [...part.object.position.toArray(), ...part.object.quaternion.toArray()]);
+          for (const phase of [0, .03, .125, .25, .5, .75, 1, .7, .2, 0]) {
+            window.V2CadGeometry.applyMotion(source.parts, phase);window.V2HeroMotion.apply(assembly.parts, phase);
+            if (JSON.stringify(poses(assembly)) !== JSON.stringify(poses(source))) throw new Error('Dash source motion differs at phase ' + phase);
+          }
+          if (assembly.parts.length !== 86 || !assembly.group.getObjectByName('Inactive OLED viewing area') || !assembly.group.getObjectByName('Housing base') || !assembly.group.getObjectByName('Magnetic lid')) throw new Error('Incomplete Dash device pack');
+        }
+        for (const group of [assembly.group, source.group]) group.traverse(node => {node.geometry?.dispose();});
+        return capture;
+      }, name);
       assert.deepEqual(canonical(restored), canonical(source), name + ': runtime reconstruction must match exact source factory output');
       const bytes = fs.readFileSync(filepath);
-      const triangles = source.geometries.reduce((sum, geometry) => sum + expandGeometry(geometry).position.length / (geometry.attributes.position.itemSize * globalThis[geometry.attributes.position.arrayType].BYTES_PER_ELEMENT * 3), 0);
+      const primitiveCount = (type, vertices) => [...new Set(source.nodes.filter(node => node.type === type).map(node => node.geometry))].reduce((sum, geometryIndex) => {
+        const geometry = source.geometries[geometryIndex];
+        return sum + expandGeometry(geometry).position.length / (geometry.attributes.position.itemSize * globalThis[geometry.attributes.position.arrayType].BYTES_PER_ELEMENT * vertices);
+      }, 0);
+      const triangles = primitiveCount('Mesh', 3), lineSegments = primitiveCount('LineSegments', 2);
       const compressed = fs.readFileSync(compressedPath), legacy = fs.readFileSync(filepath + '.gz');
       const transported = zlib.gunzipSync(compressed);
       assert.deepEqual(indexTransport(transported, true), bytes, 'Gzip and plain delivery must reconstruct identical bytes');
       assert.deepEqual(zlib.gunzipSync(legacy), bytes, 'Existing cached loaders retain their original gzip asset');
       report.models[name] = {url:'/assets/models/hero/' + name + '.bin', compressedUrl:'/assets/models/hero/' + name + '.idx.bin.gz', bytes:bytes.length, gzipBytes:compressed.length,
         transport:'index-byte-planes-v1', transportBytes:transported.length, legacyCompressedUrl:'/assets/models/hero/' + name + '.bin.gz', legacyGzipBytes:legacy.length,
-        sha256:hash(bytes), parts:source.parts.length, meshes:source.nodes.filter(node => node.type === 'Mesh').length, triangles, textures:source.textures.map(texture => texture.url), paritySha256:hash(Buffer.from(JSON.stringify(canonical(source))))};
+        sha256:hash(bytes), parts:source.parts.length, meshes:source.nodes.filter(node => node.type === 'Mesh').length, triangles, ...(lineSegments ? {lineSegments} : {}), textures:source.textures.map(texture => texture.url), paritySha256:hash(Buffer.from(JSON.stringify(canonical(source))))};
       console.log(name + ': exact runtime parity passed; ' + bytes.length + ' bytes, ' + report.models[name].gzipBytes + ' gzip bytes; ' + triangles + ' triangles');
     }
-    const sources = ['assets/v2-assembly-models.js', 'assets/v2-hardware-models.js', 'assets/framework-mechanics.js', 'assets/vendor/three.min.js', 'assets/vendor/GLTFLoader.js',
+    const sources = ['assets/v2-assembly-models.js', 'assets/v2-hardware-models.js', 'assets/v2-hero-motion.js', 'assets/framework-mechanics.js', 'assets/vendor/three.min.js', 'assets/vendor/GLTFLoader.js',
       'assets/models/tramtrace/tramtrace-kicad-source.glb', 'assets/images/v2/tramtrace-silk.svg',
       'assets/models/framework-pi/framework-pi-board.glb', 'assets/models/framework-pi/framework-pi-silk-front.svg', 'assets/models/framework-esp32/framework-usbc.glb',
       'assets/models/framework-pi/framework-pi-enclosure.stl', 'assets/models/framework-mechanics/framework-m2x3-screw.stl', 'assets/models/framework-mechanics/framework-m2x3-screw.json',
-      'assets/models/hardware/skylabs-telemetry/assembly.json'];
+      'assets/models/hardware/skylabs-telemetry/assembly.json',
+      'assets/dash-assembly.js', 'assets/dash-components.js', 'assets/dash-display.js',
+      'assets/models/hardware/dash/assembly.json', 'assets/models/hardware/dash/board.glb',
+      'assets/models/hardware/dash/silk-front.svg', 'assets/models/hardware/dash/silk-back.svg',
+      'assets/models/hardware/dash/base.stl', 'assets/models/hardware/dash/lid.stl',
+      'assets/models/hardware/dash/device-sources.json', 'assets/models/hardware/dash/housing-sources.json',
+      'assets/images/v2/dash-idle-display.png'];
     const metadata = JSON.parse(fs.readFileSync(path.join(root, 'assets/models/hardware/skylabs-telemetry/assembly.json')));
     sources.push(metadata.modelUrl.slice(1), metadata.silk.frontUrl.slice(1), metadata.silk.backUrl.slice(1));
     // The exact USB-C plug is loaded separately by the Pi factory.
@@ -221,7 +264,7 @@ async function main() {
     }
     if (!verifyOnly) fs.writeFileSync(path.join(output, 'manifest.json'), JSON.stringify(report, null, 2) + '\n');
     else assert.deepEqual(report, JSON.parse(fs.readFileSync(path.join(output, 'manifest.json'))), 'Committed provenance must match freshly verified source');
-    console.log('All hero packs preserve source geometry and appearance exactly.');
+    console.log('Verified hero packs preserve source geometry and appearance exactly: ' + names.join(', '));
   } finally { await browser.close(); }
 }
 module.exports = {indexTransport, captureAssembly, expandGeometry, canonical, compactGeometry, pack};

@@ -8,6 +8,8 @@
  * renderer.compile(scene,camera), once immediately before each new installed
  * model set's existing first draw. Debug checking and installation yield remain
  * unchanged. No gl.finish, forced readiness, interception, or disabled cache.
+ * This historical fixture deliberately retains Telemetry. It is not a current
+ * Dash-homepage profile; use profile-v2-hero.cjs for the current candidate.
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -22,6 +24,7 @@ const shared = require('./profile-v2-load.cjs');
 const repo = path.resolve(__dirname, '..');
 const revision = '5a50d2f336accccaf1577ad43f1465506bdbeb5c';
 const assemblyHash = '170880ccd680a7acfcc4b5f0c8f64a30c70c7df6482218492b56b989a1f4aeaa';
+const historicalModels = Object.freeze(['pi', 'telemetry', 'tramtrace']);
 const modes = ['baseline', 'compile-first'];
 const viewport = {width:1440, height:1000};
 const network = {offline:false, latency:40, downloadThroughput:10_000_000/8, uploadThroughput:10_000_000/8, connectionType:'wifi'};
@@ -269,7 +272,7 @@ function summarize(sample) {
 }
 function assertSample(sample) {
   assert.deepEqual(sample.errors,[],'No uncaught errors');
-  assert.ok(sample.hero?.ready,'All three current models must complete an existing own-context fence');
+  assert.ok(sample.hero?.ready,'All three pinned baseline models must complete an existing own-context fence');
   assert.deepEqual(sample.hero.violations,[],'No blocking completion instrumentation');
   const ready=sample.hero.ready,frame=sample.hero.frames.find(item=>item.id===ready.frameID),completion=frame.completion;
   assert.equal(completion.fence.result.state,'complete');assert.ok(completion.fence.startMs>=frame.endMs);
@@ -297,7 +300,7 @@ function assertSample(sample) {
   assert.ok(sample.metrics.inputs.some(item=>item.trusted),'Trusted input probe must run');
   assert.ok(sample.metrics.observerSupport.longtask,'Long-task API supported');
   assert.equal(sample.metrics.factory.some(item=>item.factory==='V2AssemblyModels'&&item.method==='load'),false,'No geometry fallback');
-  assert.deepEqual([...new Set(sample.metrics.factory.filter(item=>item.factory==='V2HeroAssets'&&item.method==='load'&&item.endMs&&!item.error).map(item=>item.name))].sort(),['pi','telemetry','tramtrace']);
+  assert.deepEqual([...new Set(sample.metrics.factory.filter(item=>item.factory==='V2HeroAssets'&&item.method==='load'&&item.endMs&&!item.error).map(item=>item.name))].sort(),historicalModels,'Preserve the immutable telemetry-era fixture model set');
   const models=sample.requests.filter(item=>modelURL(item.url)&&item.finished);
   assert.ok(models.length);assert.equal(sample.requests.some(item=>item.fromServiceWorker),false);
   assert.deepEqual(sample.requests.filter(item=>item.error&&!/ERR_ABORTED/.test(item.error)),[],'No network failure');
@@ -459,7 +462,7 @@ async function main() {
   const pairs=3,timeout=120000,fixtures=Object.fromEntries(modes.map(mode=>[mode,prepare(root,mode)]));
   const out=path.resolve(process.env.V2_HERO_FIRST_USE_OUT||'/tmp/v2-hero-first-use/profile.json');
   const browserArgs=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];
-  const report={capturedAt:new Date().toISOString(),valid:false,revision,root,network,viewport,deviceScaleFactor:1,pairs,visits:12,modes,browserArgs,
+  const report={capturedAt:new Date().toISOString(),valid:false,revision,expectedModels:historicalModels,root,network,viewport,deviceScaleFactor:1,pairs,visits:12,modes,browserArgs,
     fixtureSources:Object.fromEntries(modes.map(mode=>[mode,fixtures[mode].traces])),
     contract:{completion:'Existing own-context fence completed for one current-size visible hero frame containing all three installed models; no added GPU drain or gl.finish.',
       cache:'Fresh context per pair/mode. Cold page closes, then NEW page in same context establishes real HTTP cache evidence. No disabled cache or route interception.',

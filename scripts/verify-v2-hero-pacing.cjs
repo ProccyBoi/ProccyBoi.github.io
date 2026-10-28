@@ -21,7 +21,7 @@ const test = (name, run) => tests.push({ name, run });
 const near = (actual, expected, label, epsilon = 1e-11) => assert.ok(Math.abs(actual - expected) <= epsilon, `${label}: ${actual} vs ${expected}`);
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
-function harness({ unsupported = false } = {}) {
+function harness({ unsupported = false, withoutLoadingEffect = false } = {}) {
   let now = 100, sequence = 0, top = 0, held = false, lost = false;
   const raf = new Map(), timers = new Map(), draws = [], resizes = [], fences = [], warnings = [];
   const events = () => {
@@ -88,7 +88,7 @@ function harness({ unsupported = false } = {}) {
     Vector3: Vector, Box3: class { makeEmpty() {} expandByObject() {} isEmpty() { return true; } }, Mesh, MeshBasicMaterial: Material,
     PlaneGeometry: class { dispose() {} }, CanvasTexture: class {}, GLTFLoader: class {},
   };
-  const gates = Object.fromEntries(['tramtrace', 'telemetry', 'pi'].map(name => [name, deferred()]));
+  const gates = Object.fromEntries(['tramtrace', 'dash', 'pi'].map(name => [name, deferred()]));
   const model = name => { const group = new Object3D(); group.modelName = name; return { group, parts: [] }; };
   const loaderReady = [], loaderFailed = [];
   const reduced = { ...events(), matches: false };
@@ -97,6 +97,7 @@ function harness({ unsupported = false } = {}) {
     V2HeroEnvironment: { prefetch: async () => {}, load: async () => ({ dispose() {} }) },
     V2HeroMotion: { apply() {}, prepare() {} }, V2HeroLoading: { create: () => ({ setPose() {}, modelReady(index) { loaderReady.push(index); }, modelFailed(index) { loaderFailed.push(index); }, suspend() {} }) },
   };
+  if (withoutLoadingEffect) delete window.V2HeroLoading;
   const context = vm.createContext({ window, document, navigator: {}, matchMedia: () => reduced, performance: { now: () => now },
     AbortController, Map, console: { warn: (...args) => warnings.push(args.map(String).join(' ')) },
     innerWidth: stage.clientWidth, innerHeight: stage.clientHeight, devicePixelRatio: 1, scrollY: 0, scrollTo() {}, CustomEvent: class { constructor(type, options) { Object.assign(this, { type }, options); } },
@@ -134,14 +135,14 @@ function harness({ unsupported = false } = {}) {
 
 async function loaded(options) {
   const h = harness(options); await h.flush(); await h.frame();
-  for (const name of ['tramtrace', 'telemetry', 'pi']) await h.release(name);
+  for (const name of ['tramtrace', 'dash', 'pi']) await h.release(name);
   await h.settle(); return h;
 }
 
 test('one in-flight frame coalesces rapid input and protects late-model posters', async () => {
   const h = harness(); await h.flush(); await h.frame(); h.hold(); await h.release('tramtrace'); await h.frame();
   assert.equal(h.draws.length, 1); assert.equal(h.snapshot().assemblyGPUPending, 'true');
-  await h.release('telemetry'); await h.release('pi');
+  await h.release('dash'); await h.release('pi');
   for (let i = 0; i < 36; i++) { h.scroll(i % 2 ? .88 : .565); await h.frame(); }
   assert.equal(h.draws.length, 1, '36 animation opportunities must not queue 36 obsolete GPU draws');
   assert.equal(h.raf.size, 0, 'Scroll does not spin RAF while GPU completion is pending');
@@ -153,8 +154,8 @@ test('one in-flight frame coalesces rapid input and protects late-model posters'
   h.hold(); await h.frame();
   const submitted = h.snapshot().submission;
   assert.equal(submitted.raw, .565, 'The next draw reads the latest target, not the first queued input');
-  assert.deepEqual(h.draws[1].names, ['tramtrace', 'telemetry', 'pi']);
-  assert.equal(h.posters[1].style.getPropertyValue('--assembly-poster-opacity'), '1', 'Telemetry remains covered until its own draw completes');
+  assert.deepEqual(h.draws[1].names, ['tramtrace', 'dash', 'pi']);
+  assert.equal(h.posters[1].style.getPropertyValue('--assembly-poster-opacity'), '1', 'Dash remains covered until its own draw completes');
   assert.equal(h.snapshot().assemblyCompletedFrames, '1');
   h.hold(false); await h.advance(4); await h.settle();
   assert.deepEqual(h.loaderReady, [0, 1], 'An offscreen model is not falsely certified as painted');
@@ -275,7 +276,7 @@ test('a settled hero remains idle and unchanged resize does not resubmit buffer 
 
 test('visible resize cannot hand off posters for the superseded drawing buffer', async () => {
   const h = harness(); await h.flush(); await h.frame(); h.hold();
-  for (const name of ['tramtrace', 'telemetry', 'pi']) await h.release(name);
+  for (const name of ['tramtrace', 'dash', 'pi']) await h.release(name);
   await h.frame(); const allocations = h.resizes.length;
   assert.equal(h.snapshot().assemblyModelsInstalled, '3', 'CPU installation is distinct from completed GPU readiness');
   assert.equal(h.snapshot().assemblyModelsSettled, '3'); assert.deepEqual(h.loaderReady, []);
@@ -320,6 +321,21 @@ test('unsupported fence capability uses explicitly labelled finite compatibility
   return { evidence: 'unsupported', allocatedFences: 0 };
 });
 
+test('plain posters hand off all three models without the decorative loading effect', async () => {
+  const h = await loaded({ withoutLoadingEffect: true });
+  assert.equal(h.snapshot().assemblyModelsReady, '3');
+  assert.ok(h.posters.every(poster => poster.dataset.assemblyModelState === 'ready'));
+  assert.ok(h.posters.every(poster => poster.style.getPropertyValue('--assembly-poster-opacity') === '0'));
+  assert.deepEqual(h.loaderReady, [], 'No loading-effect callback is needed for the model handoff');
+  h.hidden(true); await h.settle();
+  const hiddenDraws = h.draws.length; h.scroll(.565); await h.frame();
+  assert.equal(h.draws.length, hiddenDraws, 'Hidden page remains idle without the effect');
+  h.hidden(false); await h.settle();
+  assert.equal(h.snapshot().assemblyModelsReady, '3');
+  assert.deepEqual(h.warnings, []);
+  return { modelsReady:3, loadingEffect:false, hiddenPageIdle:true, resume:true };
+});
+
 async function sourceTests() {
   const evidence = [];
   for (const { name, run } of tests) { const result = await run(); evidence.push({ name, result }); console.log('PASS ' + name); }
@@ -331,7 +347,7 @@ async function sourceTests() {
 function browserProbe() {
   const control = window.__heroPacing = { hold: false, allowedThrough: 0, prepared: {}, released: {}, fences: [], samples: [], opportunities: 0 };
   const gates = {}, release = {};
-  for (const name of ['tramtrace', 'telemetry', 'pi']) gates[name] = new Promise(resolve => { release[name] = resolve; });
+  for (const name of ['tramtrace', 'dash', 'pi']) gates[name] = new Promise(resolve => { release[name] = resolve; });
   control.releaseModel = name => { control.released[name] = true; release[name](); };
   let assets;
   Object.defineProperty(window, 'V2HeroAssets', { configurable: true, get: () => assets, set(value) {
@@ -394,11 +410,11 @@ async function browserTests() {
   });
   try {
     await page.goto(base + '/v2/', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => ['tramtrace', 'telemetry', 'pi'].every(name => window.__heroPacing.prepared[name]));
+    await page.waitForFunction(() => ['tramtrace', 'dash', 'pi'].every(name => window.__heroPacing.prepared[name]));
     await page.evaluate(() => { window.__heroPacing.hold = true; window.__heroPacing.releaseModel('tramtrace'); });
     await held(); const first = await snapshot();
     assert.equal(first.dataset.assemblySubmittedFrames, '1'); assert.equal(first.pending, 1);
-    await page.evaluate(() => { window.__heroPacing.releaseModel('telemetry'); window.__heroPacing.releaseModel('pi'); });
+    await page.evaluate(() => { window.__heroPacing.releaseModel('dash'); window.__heroPacing.releaseModel('pi'); });
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const late = await snapshot();
     assert.equal(late.dataset.assemblyModelsInstalled, '3', 'All genuine models are installed while the first draw remains pending');
@@ -453,7 +469,7 @@ async function browserTests() {
     assert.equal(idle.dataset.assemblySubmittedFrames, settledState.dataset.assemblySubmittedFrames, 'Settled hero has no idle draw loop');
     assert.equal(idle.pending, 0); assert.ok(idle.fences.every(fence => fence.deleteCalls === 1 && fence.outstandingAtCreate === 1 && fence.maxTimeout === 0));
     evidence.push({ name: 'pagehide-drain-resize-and-finite-idle', beforeHide, canceled, draining, settled: settledState, idle });
-    await page.screenshot({ path: path.join(output, 'resumed-latest-telemetry.png'), animations: 'disabled' });
+    await page.screenshot({ path: path.join(output, 'resumed-latest-dash.png'), animations: 'disabled' });
     assert.deepEqual(errors, []);
     const report = { passed: true, evidence, scope: 'Real software-WebGL scheduling and rendered fallback coverage. Deliberate completion holds are not a real-device FPS or wall-time performance claim.' };
     fs.writeFileSync(path.join(output, 'hero-pacing.json'), JSON.stringify(report, null, 2) + '\n');

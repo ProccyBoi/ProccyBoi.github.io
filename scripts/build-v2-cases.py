@@ -93,7 +93,7 @@ def header(active='work'):
       <a class="v2-brand" href="/v2/">Andrew Chung</a>
       <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
         <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Projects</a>
-        <a href="/v2/#demos">Demos</a>
+        <a href="/v2/#demos">Explore</a>
         <a href="/v2/about/"{' aria-current="page"' if active == 'about' else ''}>About</a>
         <a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV <span aria-hidden="true">↗</span></a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
@@ -151,7 +151,7 @@ def common(source, body_class, active='work'):
     source = re.sub(r'(<meta name="theme-color" content=")[^"]*(">)', r'\g<1>#141412\2', source)
     if '<base' not in source:
         source = source.replace('<head>', '<head>\n<base href="/">', 1)
-    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=review-20261028">
+    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=dash-20261028">
   <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
@@ -161,7 +161,7 @@ def common(source, body_class, active='work'):
         source = source.replace('</body>', FOOTER + '\n</body>')
     if 'data-hardware=' in source:
         source = source.replace('assets/dash-demo.js"', 'assets/dash-demo.js?v=20261028"')
-        hardware_version = 'dash-live-20261028' if '/hardware/dash/assembly.json' in source else 'physical-20261007'
+        hardware_version = 'dash-assembly-20261028' if '/hardware/dash/assembly.json' in source else 'physical-20261007'
         source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=' + hardware_version + '" defer></script>\n</head>')
     source = re.sub(r'(assets/images/v2/hardware/dash\.webp)(?:\?v=[^"\s]+)?', r'\1?v=dash-refined-20261025', source)
     return route_links(clean_display_copy(source))
@@ -409,6 +409,31 @@ def simplify_viewers(source, slug):
     return source
 
 
+def simplify_dash_case(source):
+    """Keep the v2 Dash story focused on the complete device assembly."""
+    tree = Tree(source)
+    body = tree.find('div', 'project-body')
+    details = (ROOT / 'scripts/content/v2-dash-details.html').read_text(encoding='utf-8')
+    changes = [(body, details)]
+    obsolete_assets = {
+        'assets/dash-prototype-studio.css', 'assets/dash-prototype-studio.js',
+        'assets/dash-demo.css', 'assets/dash-demo.js', 'assets/dash-motion.css',
+    }
+    for node in tree.nodes:
+        asset = (node.attrs.get('src') or node.attrs.get('href', '')).split('?')[0].lstrip('/')
+        if node.tag in ('script', 'link') and asset in obsolete_assets:
+            changes.append((node, ''))
+        if node.tag == 'dialog' and node.has('lightbox'):
+            changes.append((node, ''))
+    source = replace_nodes(source, changes)
+    source = source.replace('<body class="dash-motion-page">', '<body>')
+    source = source.replace('</head>', '<link rel="stylesheet" href="/assets/project-integrated.css">\n</head>', 1)
+    source = source.replace('Dash is an ESP32 focus companion with animated eyes, IMU gestures, a phone-based captive portal, session tracking and ESP-NOW experiments.', 'Explore the Dash desk companion: its enclosure, ESP32 board, display, speaker and battery in one device assembly.')
+    source = source.replace('An ESP32 focus companion built around gestures, animated eyes and app-free session control.', 'An ESP32 desk companion, from its enclosure to the electronics inside.')
+    source = source.replace('An ESP32 focus companion that grew out of a vehicle-mounted sensor prototype.', 'An ESP32 desk companion with an OLED display, touch input and a battery-powered enclosure.')
+    return source
+
+
 def make_case(path, slug=None, source=None):
     slug = slug or path.parent.relative_to(ROOT / 'projects').as_posix()
     source = source if source is not None else path.read_text(encoding='utf-8')
@@ -416,6 +441,8 @@ def make_case(path, slug=None, source=None):
         # A maintained v2 product story. Root and v3 keep their frozen sources.
         return (ROOT / 'scripts/content/v2-kiku-page.html').read_text(encoding='utf-8')
     source = integrate_hardware(source, slug)
+    if slug == 'dash':
+        source = simplify_dash_case(source)
     source = simplify_viewers(source, slug)
     if slug == 'skylabs/flight-review':
         return source
@@ -456,8 +483,6 @@ def make_case(path, slug=None, source=None):
     explore_anchor = 'assembly' if 'id="assembly"' in source and 'data-skylabs-inspector' not in source else 'explore'
     explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', HARDWARE_ASSEMBLIES.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board')))
     hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
-    if slug == 'dash':
-        hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/dash/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/dash/#prototype">Prototype PCB <span aria-hidden="true">↓</span></a><a href="/v2/projects/dash/#character">Meet Dash <span aria-hidden="true">↓</span></a><a href="/v2/projects/dash/#details">Design details <span aria-hidden="true">↓</span></a></div>'
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
     <div class="v2-case-specs shell">{meta.outer(source) if meta else ''}</div></section>'''
@@ -474,7 +499,7 @@ def make_case(path, slug=None, source=None):
     source = re.sub(r'<div class="project-body shell"(?! id=)', '<div class="project-body shell" id="details"', source, count=1)
     if 'id="build"' not in source and 'class="project-gallery"' in source:
         source = source.replace('class="project-gallery"', 'class="project-gallery" id="build"', 1)
-    if 'class="engineering-brief' not in source and slug in BRIEFS:
+    if 'class="engineering-brief' not in source and slug in BRIEFS and slug != 'dash':
         brief = '<dl class="engineering-brief shell" aria-label="Engineering brief">' + ''.join(f'<div><dt>{escape(a)}</dt><dd>{escape(b)}</dd></div>' for a, b in BRIEFS[slug]) + '</dl>'
         source = source.replace('</section>', '</section>\n' + brief, 1)
     source = common(source, 'v2-case')
@@ -563,14 +588,14 @@ def make_index():
     tools = next(node for node in tree.nodes if node.tag == 'section' and node.attrs.get('id') == 'interactive')
     demos = [
         ('/v2/projects/kiku/#simulator', 'Kiku firmware simulator', 'Turn the dial, change the look and try the player interface.', 'Real C screen renderer · simulated hardware'),
-        ('/v2/projects/dash/#character', 'Meet Dash', 'Move your pointer, trigger a reaction or finish a short focus session.', 'Browser character sketch · simplified controls'),
+        ('/v2/projects/dash/#explore', 'Dash device assembly', 'Inspect the complete enclosure, circuit board, display and power system.', 'Full-device CAD · component inspection'),
         ('/shared/projects/skylabs/f110211/', 'Replay a Skylabs flight', 'Scrub the recorded route, attitude and sensor timeline. A reference flight is already loaded.', 'Recorded flight · F110211'),
         ('/v2/projects/scopelab/#details', 'ScopeLab teaching bench', 'Explore micro:bit waveform labs and starter code. Hardware exercises need a board and test equipment.', 'Teaching tool · GPIO, UART, I2C and SPI'),
         ('/v2/projects/mosfet-operating-regions/', 'MOSFET Region Explorer', 'Change the bias and see the channel, operating region and characteristic curves respond.', 'Illustrative long-channel model'),
         ('/v2/projects/lithography-animation/', 'Optical lithography', 'Explore how exposure, focus and resist tone affect pattern transfer.', 'Illustrative teaching model'),
     ]
     demo_rows = ''.join(f'<a class="project-list-row" href="{escape(href, quote=True)}"><div><h3>{escape(title)}</h3><p>{escape(description)}</p></div><small>{escape(label)}</small><b aria-hidden="true">↗</b></a>' for href, title, description, label in demos)
-    demo_shelf = '<section class="project-index-section project-index-subsection shell" id="demos" data-v2-project-group="demos" aria-labelledby="demos-title"><div class="index-section-heading"><div><h2 id="demos-title">Demos &amp; tools</h2></div><p>Try an interface, replay a flight or explore a teaching model. These are ways into the work, separate from the 16-project collection.</p></div><div class="project-list v2-related-tool">' + demo_rows + '</div></section>'
+    demo_shelf = '<section class="project-index-section project-index-subsection shell" id="demos" data-v2-project-group="demos" aria-labelledby="demos-title"><div class="index-section-heading"><div><h2 id="demos-title">Demos &amp; tools</h2></div><p>Inspect a device, try its firmware or explore recorded data and teaching models.</p></div><div class="project-list v2-related-tool">' + demo_rows + '</div></section>'
     source = replace_nodes(source, [(tools, demo_shelf)])
     tree = Tree(source)
     hero = tree.find('section', 'page-hero')
@@ -636,7 +661,8 @@ def make_index():
             counts['all'] += 1
     source = replace_nodes(source, [(node, re.sub(r'<span>\d+</span>', f'<span>{counts[node.attrs["data-v2-category"]]}</span>', node.outer(source))) for node in tree.nodes if 'data-v2-category' in node.attrs])
     source = common(source, 'v2-collection')
-    return source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=demos-20261028"')
+    source = source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=demos-20261028"')
+    return '\n'.join(line.rstrip() for line in source.splitlines()) + '\n'
 
 
 def make_about():

@@ -67,7 +67,7 @@ function sourceHarness() {
   root.getBoundingClientRect = () => ({ top: 1000 - context.scrollY, bottom: 1000 + parseFloat(track.style.height) - context.scrollY });
   stage.getBoundingClientRect = () => ({ top: Math.max(0, 1000 - context.scrollY), bottom: Math.max(0, 1000 - context.scrollY) + stage.clientHeight });
   const names = ['maskCanvas', 'revisePose', 'pauseLandingClock', 'interruptLive', 'pixelRatio', 'endLanding', 'updateScroll', 'layout', 'render', 'gpuSucceeded', 'renderPaced', 'gpuComplete'];
-  const declarations = ['request', 'chapterAt', 'aircraftVisible'].map(name => { const line = source.match(new RegExp('^  const ' + name + ' = .+$', 'm'))?.[0]; assert.ok(line); return line; });
+  const declarations = ['request', 'chapterAt', 'aircraftVisible', 'storyLead', 'nearStory'].map(name => { const line = source.match(new RegExp('^  const ' + name + ' = .+$', 'm'))?.[0]; assert.ok(line); return line; });
   const lifecycleStart = source.indexOf("  document.addEventListener('visibilitychange',"), lifecycleEnd = source.indexOf('  const storyLead', lifecycleStart);
   assert.ok(lifecycleStart >= 0 && lifecycleEnd > lifecycleStart);
   vm.runInContext(gpuSource, context, { filename: 'v2-gpu-preparation.js' });

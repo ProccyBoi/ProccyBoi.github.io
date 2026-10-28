@@ -12,6 +12,9 @@
     telemetry: {
       manifest: '/assets/models/hardware/skylabs-telemetry/assembly.json'
     },
+    dash: {
+      manifest: '/assets/models/hardware/dash/assembly.json'
+    },
     esp32: {
       model: '/assets/models/framework-esp32/framework-board.glb',
       silk: '/assets/models/framework-esp32/framework-markings-silk.svg',
@@ -334,6 +337,31 @@
     if (definition.manifest) {
       if (!window.V2HardwareModels) throw new Error('Shared hardware model factory unavailable');
       const assembly = await window.V2HardwareModels.load(definition.manifest);
+      if (name === 'dash') {
+        // Reuse the complete device, including its unchanged source housing,
+        // wiring and independent component paths. The tiny display texture is
+        // the existing browser renderer's idle face, not a second controller.
+        const screen = assembly.group.getObjectByName('Inactive OLED viewing area');
+        if (!screen) throw new Error('Dash OLED missing from the complete assembly');
+        const texture = await new Promise((resolve, reject) => new T.TextureLoader().load('/assets/images/v2/dash-idle-display.png', resolve, undefined, reject));
+        texture.encoding = T.sRGBEncoding; texture.minFilter = texture.magFilter = T.NearestFilter; texture.generateMipmaps = false;
+        screen.material = new T.MeshBasicMaterial({map:texture, toneMapped:false});
+        screen.position.z += .055;
+        const device = assembly.group, group = new T.Group(); group.name = 'dash';
+        device.rotation.set(assembly.defaultRotation.x, assembly.defaultRotation.y, assembly.defaultRotation.z);
+        group.add(device);
+        // Preserve the authored clear-shell and part finishes under hero lights.
+        group.userData.productStudio = true;
+        group.userData.completeDashDevice = true;
+        const heroFraming = [];
+        for (let step = 0; step <= 40; step++) {
+          applyMotion(assembly.parts, step / 40); group.updateMatrixWorld(true);
+          const bounds = new T.Box3().setFromObject(group), size = bounds.getSize(new T.Vector3());
+          heroFraming.push({phase:step / 40, centre:bounds.getCenter(new T.Vector3()).toArray(), span:Math.max(size.x, size.y, size.z) * 1.10});
+        }
+        applyMotion(assembly.parts, 0); group.updateMatrixWorld(true);
+        return {...assembly, group, heroFraming};
+      }
       assembly.group.name = name;
       batchHeroPassives(T, assembly);
       prepareMotion(assembly.parts);

@@ -4,6 +4,9 @@
  * ignored evidence directory. Source CAD, materials, and the real renderer
  * remain active. Only network timing and a deliberate failed dependency vary.
  * --static-only limits verification to reduced motion, Save Data and no-JS.
+ * The default checks the current poster-only TramTrace/Dash/Pi homepage.
+ * --legacy-loading-effect is only for an explicitly selected historical URL
+ * that still serves the decorative loading canvas and async startup script.
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -134,6 +137,103 @@ async function canvasHasInk(page) {
   });
 }
 
+async function currentState(page) {
+  return page.locator(root).evaluate(node => ({
+    state: node.dataset.assemblyState, frames: Number(node.dataset.assemblyFrames || 0),
+    modelsReady: Number(node.dataset.assemblyModelsReady || 0), modelsSettled: Number(node.dataset.assemblyModelsSettled || 0),
+    posters: [...node.querySelectorAll('[data-assembly-posters] img')].map(item => item.dataset.assemblyModelState || 'poster'),
+  }));
+}
+
+async function stableCurrentFrames(page, label) {
+  await pause(180); const first = await currentState(page);
+  await pause(300); const last = await currentState(page);
+  assert.equal(last.frames, first.frames, label); return last;
+}
+
+async function currentStartup(browser, evidence, observeErrors) {
+  const desktop = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference' });
+  const page = await desktop.newPage(), three = gate(), pi = gate(), requests = [];
+  observeErrors(page); page.on('request', request => requests.push(new URL(request.url()).pathname));
+  await page.route('**/three.min.js', async route => { await three.promise; await route.continue(); });
+  await page.route(/\/models\/hero\/pi(?:\.idx)?\.bin(?:\.gz)?(?:\?|$)/, async route => { await pi.promise; await route.continue(); });
+  try {
+    await page.goto(base + '/v2/', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => Number(document.querySelector('[data-assembly]')?.dataset.assemblyFrames) > 0);
+    assert.equal(await page.evaluate(() => Boolean(window.THREE)), false, 'Poster scene works before Three.js');
+    assert.equal(await page.locator('.v2-hero-loading, .v2-hero-loading-canvas').count(), 0, 'Current homepage has no decorative loading canvas');
+    const initial = await visiblePoster(page, 0), poses = [];
+    for (const [index, value, href] of [[0, .265, '/v2/projects/tramtrace/'], [1, .565, '/v2/projects/dash/#explore'], [2, .88, '/v2/projects/framework-raspberry-pi/']]) {
+      await phase(page, value);
+      poses.push({ index, phase: value, poster: await visiblePoster(page, index) });
+      assert.equal(await page.locator('[data-assembly-explore]').getAttribute('href'), href, 'Project navigation remains available while CAD waits');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+    await page.screenshot({ path: path.join(output, 'desktop-posters-before-three.png') });
+    evidence.cases.push({ name: 'decoded posters and real project links before Three.js', initial, poses });
+    await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    const offscreen = await stableCurrentFrames(page, 'Offscreen poster scene must stop requesting frames');
+    await phase(page, 0); await page.emulateMedia({ reducedMotion: 'reduce' });
+    const reduced = await stableCurrentFrames(page, 'Preference change must stop hero frames');
+    await page.emulateMedia({ reducedMotion: 'no-preference' }); await phase(page, 0);
+    three.release(); await gpuReady(page, 2);
+    await phase(page, .88); const partial = await visiblePoster(page, 2);
+    assert.notEqual(await page.locator('[data-assembly-posters] img').nth(2).getAttribute('data-assembly-model-state'), 'ready', 'Delayed Pi is not falsely marked painted');
+    pi.release(); await gpuReady(page);
+    assert.equal(await page.locator(root).getAttribute('data-assembly-models-settled'), '3');
+    assert.equal(await page.locator(root).getAttribute('data-assembly-environment'), 'prepared');
+    assert.equal(await page.locator('[data-assembly-posters] img').nth(2).evaluate(node => Number(getComputedStyle(node).opacity) < .05), true);
+    const settled = await stableCurrentFrames(page, 'Completed hero must stop idle frame work');
+    for (const dependency of ['/assets/vendor/three.min.js', '/assets/v2-hero-assets.js', '/assets/v2-hero-environment.js', '/assets/v2-hero-motion.js']) {
+      assert.equal(requests.filter(url => url === dependency).length, 1, 'Deferred startup and controller share dependency: ' + dependency);
+    }
+    await page.screenshot({ path: path.join(output, 'desktop-complete.png') });
+    evidence.cases.push({ name: 'finite frames, preference suspension and independent Pi handoff', offscreen, reduced, partial, settled });
+  } catch (error) { await failureSnapshot(page, 'desktop-startup', error, { requests }); throw error; }
+  finally { three.release(); pi.release(); await desktop.close(); }
+
+  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'no-preference' });
+  const phone = await mobile.newPage(), mobileThree = gate(); observeErrors(phone);
+  await phone.route('**/three.min.js', async route => { await mobileThree.promise; await route.abort('failed'); });
+  try {
+    await phone.goto(base + '/v2/', { waitUntil: 'domcontentloaded' });
+    await phone.waitForFunction(() => Number(document.querySelector('[data-assembly]')?.dataset.assemblyFrames) > 0);
+    await phase(phone, .565); const pending = await visiblePoster(phone, 1);
+    assert.equal(await phone.locator('[data-assembly-explore]').getAttribute('href'), '/v2/projects/dash/#explore');
+    assert.equal(await phone.locator('.v2-hero-loading-canvas').count(), 0);
+    const beforeScroll = await phone.evaluate(() => scrollY), session = await mobile.newCDPSession(phone);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 350, y: 600 }] });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 350, y: 400 }] });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await phone.waitForFunction(value => scrollY > value + 50, beforeScroll);
+    // Allow native momentum to stop before the next deliberate chapter seek.
+    await phone.evaluate(() => new Promise(resolve => {
+      let previous = scrollY, stableAt = performance.now();
+      const check = now => { if (Math.abs(scrollY - previous) > .2) stableAt = now; previous = scrollY; if (now - stableAt > 220) resolve(); else requestAnimationFrame(check); };
+      requestAnimationFrame(check);
+    }));
+    mobileThree.release(); await phone.waitForFunction(() => document.querySelector('[data-assembly]').dataset.assemblyState === 'unavailable');
+    await phase(phone, .565); const failed = await visiblePoster(phone, 1);
+    assert.equal(await phone.locator(root).evaluate(node => !node.classList.contains('is-loaded')), true);
+    assert.equal(await phone.locator('[data-assembly-explore]').getAttribute('href'), '/v2/projects/dash/#explore');
+    await phone.screenshot({ path: path.join(output, 'mobile-failed-fallback.png') });
+    evidence.cases.push({ name: 'mobile native scrolling and decoded Dash fallback', pending, failed });
+  } catch (error) { await failureSnapshot(phone, 'mobile-startup', error); throw error; }
+  finally { mobileThree.release(); await mobile.close(); }
+
+  const lighting = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
+  const fallback = await lighting.newPage(); observeErrors(fallback);
+  try {
+    await fallback.route(/\/models\/hero\/environment\.bin(?:\.gz)?(?:\?|$)/, route => route.abort('failed'));
+    await fallback.goto(base + '/v2/', { waitUntil: 'domcontentloaded' });
+    await gpuReady(fallback);
+    assert.equal(await fallback.locator(root).getAttribute('data-assembly-environment'), 'generated');
+    assert.equal(await fallback.locator('.v2-hero-loading-canvas').count(), 0);
+    evidence.cases.push({ name: 'prepared-lighting failure recovers original lighting', ...await currentState(fallback) });
+  } catch (error) { await failureSnapshot(fallback, 'lighting-fallback-startup', error); throw error; }
+  finally { await lighting.close(); }
+}
+
 (async () => {
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -141,6 +241,7 @@ async function canvasHasInk(page) {
   const observeErrors = page => page.on('pageerror', error => evidence.errors.push(error.message));
   try {
     if (!process.argv.includes('--static-only')) {
+    if (process.argv.includes('--legacy-loading-effect')) {
     const desktop = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference' });
     const page = await desktop.newPage();
     observeErrors(page);
@@ -256,7 +357,7 @@ async function canvasHasInk(page) {
       await phone.touchscreen.tap(point.x, point.y);
       await phone.waitForFunction(value => Number(document.querySelector('[data-assembly]').dataset.heroLoadingPulses) > value, beforeTap.pulses);
       await phone.waitForFunction(() => document.querySelector('[data-assembly]').dataset.heroLoadingLensActive === 'true');
-      await phone.screenshot({ path: path.join(output, 'mobile-telemetry-touch.png') });
+      await phone.screenshot({ path: path.join(output, 'mobile-dash-touch.png') });
       const beforeScroll = await phone.evaluate(() => scrollY);
       const session = await mobile.newCDPSession(phone);
       await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 350, y: 600 }] });
@@ -283,7 +384,7 @@ async function canvasHasInk(page) {
       assert.deepEqual(failed.boards, ['failed', 'failed', 'failed']);
       await phase(phone, .565);
       const poster = await visiblePoster(phone, 1);
-      assert.ok(poster.decoded && poster.opacity > .95 && poster.visibility === 'visible', 'A failed renderer must retain a fully visible decoded telemetry poster');
+      assert.ok(poster.decoded && poster.opacity > .95 && poster.visibility === 'visible', 'A failed renderer must retain a fully visible decoded dash poster');
       assert.equal(await phone.locator(root).evaluate(node => node.dataset.assemblyState === 'unavailable' && !node.classList.contains('is-loaded')), true);
       await phone.screenshot({ path: path.join(output, 'mobile-failed-fallback.png') });
       evidence.cases.push({ name: 'touch, native scrolling, mobile pose and failed dependency', pose, beforeTap, failed, poster });
@@ -306,6 +407,7 @@ async function canvasHasInk(page) {
     } catch (error) {
       await failureSnapshot(fallback, 'lighting-fallback-startup', error, { errors: evidence.errors }); throw error;
     } finally { await lightingFallback.close(); }
+    } else { await currentStartup(browser, evidence, observeErrors); }
     }
 
     for (const mode of ['reduced-motion', 'save-data', 'no-js']) {
@@ -320,9 +422,12 @@ async function canvasHasInk(page) {
       assert.equal(await page.locator('[data-assembly-posters] img').evaluateAll(nodes => nodes.every(node => node.naturalWidth > 0 && getComputedStyle(node).visibility === 'visible' && getComputedStyle(node).opacity === '1')), true, `${mode} must retain all original project posters`);
       assert.equal(heavy.some(url => /three\.min\.js|\/models\/hero\//.test(url)), false, `${mode} must not download 3D assets`);
       if (mode !== 'no-js') {
-        const state = await stableFrames(page, `${mode} must not animate loading particles`);
+        const state = process.argv.includes('--legacy-loading-effect')
+          ? await stableFrames(page, `${mode} must not animate historical loading particles`)
+          : await stableCurrentFrames(page, `${mode} must not animate hero frames`);
         assert.equal(state.frames, 0);
       }
+      if (!process.argv.includes('--legacy-loading-effect')) assert.equal(await page.locator('.v2-hero-loading-canvas').count(), 0);
       await page.screenshot({ path: path.join(output, mode + '.png') });
       for (const viewport of [{width:320,height:740},{width:600,height:670}]) {
         await page.setViewportSize(viewport);
@@ -336,7 +441,7 @@ async function canvasHasInk(page) {
         await failureSnapshot(page, mode + '-startup', error, { heavyRequests: heavy, errors: evidence.errors }); throw error;
       } finally { await context.close(); }
     }
-    assert.deepEqual(evidence.errors, [], 'The loading experience must not emit uncaught JavaScript errors');
+    assert.deepEqual(evidence.errors, [], 'Hero startup must not emit uncaught JavaScript errors');
     fs.writeFileSync(path.join(output, 'acceptance.json'), JSON.stringify(evidence, null, 2) + '\n');
     console.log(JSON.stringify({ result: 'PASS', cases: evidence.cases.map(item => item.name), evidence: path.join(output, 'acceptance.json') }, null, 2));
   } catch (error) {

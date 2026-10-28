@@ -281,8 +281,8 @@ def main() -> int:
     hero_manifest = ROOT / "assets/models/hero/manifest.json"
     try:
         hero = json.loads(hero_manifest.read_text(encoding="utf-8"))
-        if set(hero["models"]) != {"tramtrace", "telemetry", "pi"}:
-            error(hero_manifest, "hero requires the three featured assemblies")
+        if set(hero["models"]) != {"tramtrace", "dash", "telemetry", "pi"}:
+            error(hero_manifest, "hero requires TramTrace, Dash and Pi plus the retained aircraft telemetry pack")
         for model in hero["models"].values():
             for url in (model["url"], model["compressedUrl"], *model["textures"]):
                 reference(hero_manifest, url, ORIGIN)

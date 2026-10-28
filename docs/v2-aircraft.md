@@ -1,27 +1,33 @@
 # Skylabs aircraft and Selected Work in v2
 
-The aircraft story follows Selected Work and precedes About. The opening
-three-project composition stays intact. The detailed story uses the accepted
+The aircraft story follows the Framework composition and continues into the
+power, measurement and flight links before About. The opening composition is
+TramTrace, the complete Dash device and the Pi card. The detailed story uses the accepted
 v3 aircraft geometry, film peel and telemetry extraction, with two namespaced
 anchors: `#skylabs-aircraft` and `#skylabs-telemetry`. Film is fully gone at .60;
 rigid exterior motion begins after .62. Those scene mechanics are unchanged.
 
 ## Loading and proximity preparation
 
-Only v2 opts into `data-aircraft-background`. The three opening model packs
-download concurrently. Selected Work has real eager HTML image sources and
-explicit decode tracking; no image source is withheld until intersection.
-Aircraft scripts and its decoder prepare without scrolling. The larger aircraft
-transfer starts after all three hero raw transfers settle, or a 4.5-second
-fallback. Entry and deep links bypass that gate immediately; shared promises
-prevent duplicate model and decoder requests.
+The v2 homepage opts into `data-aircraft-background`. At the opening, the three
+hero packs can download concurrently. Direct links to later sections defer hero
+startup until the opening is approached again. Selected Work and aircraft keep
+real lazy HTML image sources with explicit decode tracking; their extra source
+helpers, geometry transfers and reconstruction begin only near the relevant
+section or on explicit navigation. Native image lazy-loading may fetch a poster
+before the application gate; it does not start a 3D scene.
 
-Secondary construction and GPU preparation now require section proximity or
+Once a secondary scene is eligible, its transfer can wait for an already-started
+hero's raw bytes, with a 4.5-second fallback. Entry and deep links promote the
+requested scene; a hero intentionally left unstarted cannot block it. Shared
+promises prevent duplicate model and decoder requests.
+
+Secondary source loading, construction and GPU preparation require section proximity or
 explicit scene intent. Proximity is an absolute section top below twice the
 viewport height and a section bottom above minus one viewport height. This is
 one viewport of advance preparation, not two viewports beyond the visible edge.
-A distant untouched page keeps the secondary renderers unconstructed. Fetching,
-pack decompression/index restoration and poster decoding still occur early.
+A distant untouched page keeps secondary model transfers, reconstruction and
+renderers unstarted. Once requested, completed stages are retained for re-entry.
 
 Eligible offscreen construction waits for the foreground model set to settle
 (with a 12-second fallback). Aircraft waits for actively requested Selected
@@ -42,34 +48,30 @@ capture seeks remain exact. Native scrolling is never intercepted.
 
 ## Selected Work
 
-Six genuine assemblies share one viewport-sized canvas, renderer, scene and
-camera. ESP32-S3, Dual USB-C, RP2354B and Logic analyser form one composition;
-a continuous pullback and pan carries the same space into MetroBoard and
-TramTrace together. Real PCB, electronics, connector and screw groups seat
-reversibly over the first .311 of scroll; the camera journey begins afterward.
+Four genuine assemblies share one viewport-sized canvas, renderer, scene and
+camera: ESP32-S3, Dual USB-C, RP2354B and Logic analyser. Real PCB, electronics,
+connector and screw groups assemble and separate reversibly. The former transit
+pair is no longer loaded by this homepage section.
 Dual connector/screw views use verified provenance ranges and share the original
 attributes, indices and materials. Assembled source poses are restored exactly.
-The transit camera looks down at roughly 63–65 degrees for legibility. One world
-unit is 30 mm, retaining relative physical board sizes. Mobile rearranges the
-quartet into two rows and the transit pair vertically. Native chapter anchors
-and all six ordinary project links remain keyboard accessible.
+One world unit is 30 mm, retaining relative physical board sizes. Mobile
+rearranges the quartet into two rows. The native chapter anchor and all four
+ordinary project links remain keyboard accessible.
 
-The new `V2SelectedAssets` reader loads four verified compressed source packs;
-Pi and TramTrace reuse the opening hero transport cache but get independent
-Object3Ds, materials and GPU resources. Dual USB uses the complete existing
+The `V2SelectedAssets` reader loads the Framework assemblies; Pi reuses the
+opening hero transport cache but gets independent Object3Ds, materials and GPU
+resources. Dual USB uses the complete existing
 procedural inspector assembly, with compatible opaque meshes batched without
-triangle decimation. Its visible board-edge lines are preserved. MetroBoard
-retains the existing dimensioned representations of 291 LEDs; unavailable
-supplier LED CAD and J1/U2/U5 bodies are not invented. A shared factory bugfix
-defaults omitted zero-angle placements to zero rather than NaN. Hero model
-bytes and the accepted aircraft scene geometry are unchanged.
+triangle decimation. Its visible board-edge lines are preserved. A shared factory
+bugfix defaults omitted zero-angle placements to zero rather than NaN. The
+accepted aircraft scene geometry is unchanged by the loading gates.
 
-Scripts, original fallback images and silk textures prepare without scrolling.
-The four new geometry transfers start after all three hero transfers settle or
-a 4.5-second timeout, with immediate entry promotion. When proximity or intent permits, CPU reconstruction yields
+Source helpers, fallback-image decoding and geometry transfers follow section
+proximity or explicit intent. Eligible transfers wait for already-started hero
+transfers or a 4.5-second timeout, with immediate entry promotion. CPU reconstruction yields
 between models after the foreground settles. Moving away cancels owned pending
 stages and pauses reconstruction; completed stages are retained for re-entry. GPU preparation is also staged:
-six real model-only draws use a 64-pixel long-side buffer with the final lights,
+four real model-only draws use a 64-pixel long-side buffer with the final lights,
 materials and shadows, followed by two complete 640-pixel composition draws.
 Each stage yields to input and waits on an owned WebGL2 fence using zero-timeout
 polling. An initial fence avoids immediately forcing queued work into a new
@@ -91,9 +93,8 @@ Separate counters distinguish model preparation, composition submissions and
 completed composition poses. Bounded per-stage measurements record CPU draw
 work, program counts and asynchronous completion waits. The first full-size
 frame still has its own allocation/fill cost; preparation does not make it free.
-Compatible opaque MetroBoard and TramTrace meshes are batched only in
-Selected Work's separate instances; transparent meshes and source hero packs
-remain unchanged. Batching yields between construction slices and cancels
+Compatible opaque meshes are batched in Selected Work's separate instances;
+transparent meshes and source hero packs remain unchanged. Batching yields between construction slices and cancels
 transactionally when the page or motion preference no longer permits work.
 Visible work has priority in both directions. Selected preparation pauses at
 CPU and GPU boundaries while the aircraft is actually visible; aircraft
@@ -123,7 +124,7 @@ at most three WebGL contexts total: hero, Selected Work, and aircraft. Preferenc
 restore the original static collections; renderer reuse avoids context growth.
 
 Reduced motion, Save Data, short viewports, missing DecompressionStream, no JS,
-or failed WebGL retain the six original images and source links. The images are
+or failed WebGL retain the four original images and source links. The images are
 posters/fallbacks only; the enhanced presentation is actual volumetric geometry.
 Pack provenance and exact source hashes are in `assets/models/selected/`;
 `scripts/build-v2-selected-assets.cjs` reproduces and verifies the assemblies.
@@ -151,14 +152,17 @@ both settle. No new model, texture, renderer or continual animation is added.
 
 ## Shorter browsing paths
 
-The opening hero uses 240svh total on desktop and 230svh on tablet/mobile,
-rather than 380/350svh. Selected Work's native-scroll travel is 1.7 stage heights
-on desktop and 1.9 on mobile; v2 Skylabs uses 1.8/2.1. Normalized CAD choreography
+The opening hero uses 210svh total on desktop and 200svh in the smaller-screen
+enhanced layout. Selected Work's native-scroll travel is 1.15 stage heights;
+v2 Skylabs uses 1.8/2.1. Normalized CAD choreography
 and accepted aircraft peel timing remain unchanged; v3 keeps its original track.
 
-Projects and CV are available on the first screen. Native buttons select hero
-scenes; the independent Explore project link always navigates. Direct case-study
-links precede Selected Work and each scene has a visible skip. Framework project
+Quick overview and CV are available on the first screen. Native buttons select
+hero scenes; the independent project link always navigates. The three-project
+overview and compact Inside the builds links precede the Framework composition.
+The repeated full-size Kiku feature is removed; `#work-kiku` points to its
+overview row. The aircraft's Skip animation link moves forward to
+`#engineering-range`. Framework project
 descriptions stay visible on mobile, with responsive framing above their text.
 The About booking action stays in /v2/book/ and Contact consistently targets the
 v2 About contact section. Evidence records in scripts/content/v2-case-evidence.json
@@ -183,15 +187,22 @@ Serve the repository on port 8080 and run:
   held real aircraft fences, landing clock, current-size reveal and cancellation.
 - `node scripts/verify-v2-framework-inspection.cjs`: physical separation, native
   hover/focus/tap, overview/Escape, mobile bounds and held-GPU selection recovery.
-- `node scripts/verify-v2-selected-scene.cjs`: real six-model parity, shared
+- `node scripts/verify-v2-selected-scene.cjs`: shared
   camera framing/reversal, three-context budget, native input and lifecycle.
   `--source-only` needs no browser; `--study` captures desktop/mobile renderings.
-- `node scripts/verify-v2-background.cjs`: no-scroll image decode and finite GPU
-  preparation, delayed/failing transport, early entry, deep links and fallbacks.
+- `node scripts/verify-v2-proximity-loading.cjs`: controlled production-gate
+  scenarios for distant scenes, explicit entry and lifecycle changes, without a browser.
+- `node scripts/verify-v2-background.cjs`: proximity-gated source loading and
+  finite GPU preparation, delayed/failing transport, early entry, deep links and fallbacks.
 - `node scripts/verify-v2-aircraft.cjs`: entry landing, accepted CAD/peel, reverse,
   capture, native hashes/focus, shared telemetry, mobile and v3 regression.
 - `node scripts/verify-v2-wheel.cjs`: wheel, touch, reversal and lifecycle checks.
 - `node scripts/verify-v2-polish.cjs`: responsive routes, navigation and pictures.
+
+These commands describe available checks, not a record that they have all run
+against the current revision. Older fixed-baseline scene checks can still encode
+the former six-model composition and must not be presented as current coverage
+without examining their assertions and results.
 
 The review workflow also exercises Book with mocked submissions, WebKit mobile
 emulation, source/transport contracts and matched three-run cold-cache profiles.
