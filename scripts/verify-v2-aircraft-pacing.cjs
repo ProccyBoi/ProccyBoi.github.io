@@ -45,7 +45,7 @@ function sourceHarness() {
     setSize(width, height) { rendererWidth = width; rendererHeight = height; canvas.width = Math.floor(width * ratio); canvas.height = Math.floor(height * ratio); allocations.push({ at: now, width, height }); } };
   const document = { ...events, hidden: false, activeElement: null, documentElement: {} };
   const context = vm.createContext({ window: {}, document, renderer, root, stage, canvas, track, ...events,
-    background:true,preparationNear:true,preparationIntent:false,preparationEligible:()=>context.visible||context.preparationNear||context.preparationIntent,deferred:true,detailed:true,visible:true, activePage: true, failed: false, ready: true, backgroundBusy: false, backgroundDone: true,
+    background:true,collection:false,preparationNear:true,preparationIntent:false,preparationEligible:()=>context.visible||context.preparationNear||context.preparationIntent,deferred:true,detailed:true,visible:true, activePage: true, failed: false, ready: true, backgroundBusy: false, backgroundDone: true,
     frame: 0, frameCount: 0, liveBusy: false, liveAbort: undefined, liveGeneration: 0, gpuAbort: undefined, needsDrain: true,
     poseRevision: 0, presentedRevision: -1, layoutRevision: 0, submittedFrames: 0, completedFrames: 0,
     desiredRatio: 1, bufferWidth: 0, bufferHeight: 0, bufferRatio: 0,
@@ -195,6 +195,17 @@ async function sourceTests() {
     for (let i = 0; i < 12; i++) { h.request(); await h.frame(); }
     assert.equal(h.draws.length, draws); assert.equal(h.raf.size + h.timers.size, 0);
     reports.push({ name: 'fixed-header-covered-root-has-no-readable-aircraft-or-live-work', rootBottom: box.bottom, pinnedTop: h.context.pinnedTop });
+  }
+  {
+    const h = sourceHarness(); h.context.collection = true; h.context.pinnedTop = 76; h.context.landingDone = true;
+    h.context.layout(); assert.equal(h.context.distance, h.stage.clientHeight, 'Collection uses one stage of native scroll');
+    h.scroll(1);
+    const roomBelowStage = h.root.getBoundingClientRect().bottom - h.stage.clientHeight;
+    assert.equal(roomBelowStage, 76, 'Final telemetry frame retains the sticky header band instead of being pushed behind it');
+    h.context.collection = false; h.context.layout();
+    assert.equal(h.context.distance, h.stage.clientHeight * 1.8, 'Existing background-scene scroll length is preserved');
+    assert.equal(parseFloat(h.context.track.style.height), h.context.distance + h.stage.clientHeight, 'Existing track has no collection-only header adjustment');
+    reports.push({ name: 'collection-endpoint-keeps-fixed-header-clearance', roomBelowStage });
   }
   for (const report of reports) console.log('PASS ' + report.name);
   return { scope: 'Unchanged production pacing/lifecycle/layout functions and shared completion helper, with renderer/DOM doubles. Real browser acceptance is a separate required stage.', reports };

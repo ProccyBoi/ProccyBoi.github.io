@@ -25,7 +25,7 @@
   const clamp = (value, low = 0, high = 1) => Math.min(high, Math.max(low, value));
   const smooth = value => { const p = clamp(value); return p*p*(3-2*p); };
   const ramp = (value, start, end) => smooth((value-start)/(end-start));
-  let renderer, scene, camera, environment, keyLight, shadowBounds, shadowCorner, shadowCentre, loadingExperience;
+  let renderer, scene, camera, environment, keyLight, shadowBounds, shadowCorner, shadowCentre, loadingExperience, dashBlink;
   const models = Array(projects.length).fill(null);
   const shadows = Array(projects.length).fill(null);
   const modelStates = Array(projects.length).fill('pending');
@@ -41,7 +41,9 @@
   let gpuBusy = false, gpuAbort = null, gpuNeedsDrain = false, submittedFrames = 0, completedFrames = 0;
   let bufferWidth = 0, bufferHeight = 0, bufferRatio = 0, desiredRatio = 0;
   const drawable = () => ready && visible && activePage && !document.hidden && motionAllowed();
+  const blinkAllowed = () => drawable() && models[1]?.group.visible && current===target && (!entry || performance.now()-entry>=1250);
   const interrupt = () => {
+    dashBlink?.setActive(false);
     if(frame) cancelAnimationFrame(frame); frame=0;
     renderTime=0; revision++;
     gpuAbort?.abort();
@@ -307,6 +309,8 @@
       shadow.material.opacity=.14*(1-transform.e*.6);
     });
     if(renderer && models.some(Boolean)) {
+      if(!blinkAllowed()) dashBlink?.setActive(false);
+      const drawnBlinkVersion=dashBlink?.version;
       const ratio=desiredRatio;
       if(ratio!==bufferRatio) {renderer.setPixelRatio(ratio);bufferRatio=ratio;}
       if(width!==bufferWidth||height!==bufferHeight) {renderer.setSize(width,height,false);bufferWidth=width;bufferHeight=height;}
@@ -329,6 +333,8 @@
       root.dataset.assemblyLastSubmission=JSON.stringify({sequence:submittedFrames,at:started,value:current,raw:target,revision:drawnRevision,cpuMs:performance.now()-started});
       if(!await gpuWait(abort,'frame')) return;
       gpuNeedsDrain=false;
+      dashBlink?.setActive(blinkAllowed());
+      dashBlink?.didRender(drawnBlinkVersion);
       if(root.dataset.assemblyGPUCompletion==='complete') root.dataset.assemblyCompletedFrames=String(++completedFrames);
       root.dataset.assemblyLastCompletedMs=performance.now().toFixed(1);
       // Only hand off a poster after this exact installed model was drawn.
@@ -367,9 +373,10 @@
       else renderTime=0;
     }
   };
-  function request(){if(!frame && !gpuBusy && drawable()) frame=requestAnimationFrame(render);}
+  function request(){if(!blinkAllowed())dashBlink?.setActive(false);if(!frame && !gpuBusy && drawable()) frame=requestAnimationFrame(render);}
   function failRenderer(error) {
     failed=true; interrupt();
+    dashBlink?.dispose();dashBlink=null;
     setSceneControls(false);
     renderer?.dispose(); renderer=null; models.fill(null); paintedModels.fill(null); submittedModels.fill(null); shadows.fill(null);
     modelStates.fill('unavailable');
@@ -497,6 +504,17 @@
           // Installation cannot bypass the single in-flight draw gate. The
           // matching poster stays until a completed draw includes this model.
           revision++; request();
+          if(name==='dash' && model.group.getObjectByName?.('Inactive OLED viewing area')) {
+            // Optional and independent of the first CAD frame. The helper
+            // reuses its tiny baked OLED image and sleeps between blinks.
+            (async()=>{
+              if(!window.DashIdleBlink) await loadScript('/assets/dash-idle-blink.js?v=idle-20261028');
+              if(failed || models[index]!==model) return;
+              const blink=await window.DashIdleBlink.mount(model,{allowed:blinkAllowed,diagnostics:root,invalidate:()=>{revision++;request();}});
+              if(failed || models[index]!==model) {blink?.dispose();return;}
+              dashBlink=blink;revision++;request();
+            })().catch(error=>console.warn('Dash idle blink unavailable; the static display remains.',error));
+          }
         } catch(error) {
           // Installation failures remain independent; the renderer's async
           // failure path restores every poster if the context cannot continue.
@@ -536,6 +554,7 @@
       if(!motionAllowed()) staticMode();
     } catch(error) {
       failed=true;root.dataset.assemblyState='unavailable';
+      dashBlink?.dispose();dashBlink=null;
       setSceneControls(false);
       modelStates.fill('unavailable');
       posters.forEach(poster=>{poster.dataset.assemblyModelState='unavailable';});
@@ -591,6 +610,7 @@
   };
   reduced.addEventListener('change',syncMotionMode);
   compact.addEventListener('change',syncMotionMode);
+  navigator.connection?.addEventListener?.('change',syncMotionMode);
   canvas.addEventListener('webglcontextlost',event=>{
     event.preventDefault();failRenderer(new Error('Hero WebGL context lost'));request();
   });

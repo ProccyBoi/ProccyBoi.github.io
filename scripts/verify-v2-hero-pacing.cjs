@@ -13,6 +13,7 @@ const vm = require('node:vm');
 const repo = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(repo, 'assets/v2-assembly.js'), 'utf8');
 const gpuSource = fs.readFileSync(path.join(repo, 'assets/v2-gpu-preparation.js'), 'utf8');
+const blinkSource = fs.readFileSync(path.join(repo, 'assets/dash-idle-blink.js'), 'utf8');
 const base = (process.env.V2_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '').replace(/\/v2$/, '');
 const output = process.env.HERO_PACING_OUT || path.join(process.env.HERO_STARTUP_OUT || '.codex-temp/hero-startup', 'pacing');
 const timeout = Number(process.env.V2_BROWSER_TIMEOUT || 120000);
@@ -21,7 +22,7 @@ const test = (name, run) => tests.push({ name, run });
 const near = (actual, expected, label, epsilon = 1e-11) => assert.ok(Math.abs(actual - expected) <= epsilon, `${label}: ${actual} vs ${expected}`);
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
-function harness({ unsupported = false, withoutLoadingEffect = false } = {}) {
+function harness({ unsupported = false, withoutLoadingEffect = false, withBlink = false } = {}) {
   let now = 100, sequence = 0, top = 0, held = false, lost = false;
   const raf = new Map(), timers = new Map(), draws = [], resizes = [], fences = [], warnings = [];
   const events = () => {
@@ -55,7 +56,7 @@ function harness({ unsupported = false, withoutLoadingEffect = false } = {}) {
   root.querySelector = key => { if (!nodes.has(key)) nodes.set(key, node()); return nodes.get(key); };
   root.querySelectorAll = key => key === '[data-assembly-select]' ? selectors : posters;
   const document = { ...events(), hidden: false, querySelector: selector => selector === '.v2-header' ? header : root, head: { append() { throw new Error('Unexpected script transport'); } }, createElement(name) {
-    assert.equal(name, 'canvas'); return { getContext: () => ({ createRadialGradient: () => ({ addColorStop() {} }), fillRect() {} }) };
+    assert.equal(name, 'canvas'); return { getContext: () => ({ createRadialGradient: () => ({ addColorStop() {} }), fillRect() {}, drawImage() {} }) };
   } };
   class Vector {
     set(x, y, z) { Object.assign(this, { x, y, z }); return this; }
@@ -86,19 +87,27 @@ function harness({ unsupported = false, withoutLoadingEffect = false } = {}) {
   class Light extends Object3D { constructor() { super(); this.target = new Object3D(); this.shadow = { camera: new Object3D(), mapSize: { set() {} } }; } }
   const THREE = { WebGLRenderer: Renderer, Scene: Object3D, OrthographicCamera: Object3D, HemisphereLight: Light, DirectionalLight: Light,
     Vector3: Vector, Box3: class { makeEmpty() {} expandByObject() {} isEmpty() { return true; } }, Mesh, MeshBasicMaterial: Material,
-    PlaneGeometry: class { dispose() {} }, CanvasTexture: class {}, GLTFLoader: class {},
+    PlaneGeometry: class { dispose() {} }, CanvasTexture: class { dispose() {} }, GLTFLoader: class {},
   };
   const gates = Object.fromEntries(['tramtrace', 'dash', 'pi'].map(name => [name, deferred()]));
-  const model = name => { const group = new Object3D(); group.modelName = name; return { group, parts: [] }; };
+  const model = name => {
+    const group = new Object3D(); group.modelName = name;
+    if (withBlink && name === 'dash') {
+      const screen = { position: {z:0}, material: new Material({map:{image:{width:128,height:64,decode:async()=>{}}}}) };
+      group.getObjectByName = key => key === 'Inactive OLED viewing area' ? screen : null;
+    }
+    return { group, parts: [] };
+  };
   const loaderReady = [], loaderFailed = [];
   const reduced = { ...events(), matches: false };
+  const connection = { ...events(), saveData: false };
   let intersection;
   const window = { ...events(), THREE, V2HeroAssets: { prefetch: async () => {}, load: name => gates[name].promise },
     V2HeroEnvironment: { prefetch: async () => {}, load: async () => ({ dispose() {} }) },
     V2HeroMotion: { apply() {}, prepare() {} }, V2HeroLoading: { create: () => ({ setPose() {}, modelReady(index) { loaderReady.push(index); }, modelFailed(index) { loaderFailed.push(index); }, suspend() {} }) },
   };
   if (withoutLoadingEffect) delete window.V2HeroLoading;
-  const context = vm.createContext({ window, document, navigator: {}, matchMedia: () => reduced, performance: { now: () => now },
+  const context = vm.createContext({ window, document, navigator: { connection }, matchMedia: () => reduced, performance: { now: () => now },
     AbortController, Map, console: { warn: (...args) => warnings.push(args.map(String).join(' ')) },
     innerWidth: stage.clientWidth, innerHeight: stage.clientHeight, devicePixelRatio: 1, scrollY: 0, scrollTo() {}, CustomEvent: class { constructor(type, options) { Object.assign(this, { type }, options); } },
     addEventListener: window.addEventListener, requestAnimationFrame(callback) { const id = ++sequence; raf.set(id, callback); return id; }, cancelAnimationFrame(id) { raf.delete(id); },
@@ -106,6 +115,7 @@ function harness({ unsupported = false, withoutLoadingEffect = false } = {}) {
     ResizeObserver: class { observe() {} }, IntersectionObserver: class { constructor(callback) { intersection = callback; } observe() {} },
   });
   vm.runInContext(gpuSource, context, { filename: 'v2-gpu-preparation.js' });
+  if (withBlink) vm.runInContext(blinkSource, context, { filename: 'dash-idle-blink.js' });
   vm.runInContext(source, context, { filename: 'v2-assembly.js' });
   const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
   const advance = async duration => {
@@ -120,16 +130,21 @@ function harness({ unsupported = false, withoutLoadingEffect = false } = {}) {
   };
   const frame = async (elapsed = 1000 / 60) => { await advance(elapsed); const pending = [...raf.values()]; raf.clear(); pending.forEach(callback => callback(now)); await flush(); await advance(0); };
   const settle = async () => { for (let i = 0; i < 240 && (raf.size || timers.size); i++) await frame(); assert.equal(raf.size + timers.size, 0, 'Settled hero must stop RAF and timer work'); };
+  const settleMotion = async () => {
+    for (let i=0;i<240&&(raf.size||root.dataset.assemblyGPUPending==='true');i++) await frame();
+    assert.equal(raf.size,0);assert.notEqual(root.dataset.assemblyGPUPending,'true');
+  };
   const release = async name => { gates[name].resolve(model(name)); await flush(); };
   const scrollPixels = (value, notify = true) => { top = -value; context.scrollY = value; if (notify) window.dispatchEvent({ type: 'scroll' }); };
   const scroll = value => scrollPixels(value * (root.offsetHeight - stage.clientHeight));
   const boundary = (bottom, notify = true) => scrollPixels(root.offsetHeight - bottom, notify);
   const snapshot = () => ({ ...root.dataset, submission: root.dataset.assemblyLastSubmission ? JSON.parse(root.dataset.assemblyLastSubmission) : null });
   return { root, stage, header, posters, raf, timers, draws, resizes, fences, loaderReady, loaderFailed, warnings, reduced, document, gl, context,
-    renderer: () => renderer, now: () => now, flush, advance, frame, settle, release, scroll, boundary, snapshot,
+    renderer: () => renderer, now: () => now, flush, advance, frame, settle, settleMotion, release, scroll, boundary, snapshot,
     hold(value = true) { held = value; }, lose() { lost = true; }, emit(type) { window.dispatchEvent({ type }); },
     intersect(visible) { intersection([{ isIntersecting: visible, boundingClientRect: root.getBoundingClientRect() }]); },
     hidden(value) { document.hidden = value; document.dispatchEvent({ type: 'visibilitychange' }); },
+    saveData(value) { connection.saveData=value;connection.dispatchEvent({type:'change'}); },
   };
 }
 
@@ -138,6 +153,45 @@ async function loaded(options) {
   for (const name of ['tramtrace', 'dash', 'pi']) await h.release(name);
   await h.settle(); return h;
 }
+
+async function blinkingHero() {
+  const h=harness({withBlink:true,withoutLoadingEffect:true});await h.flush();await h.frame();
+  for(const name of ['tramtrace','dash','pi'])await h.release(name);
+  await h.settleMotion();assert.equal(h.snapshot().dashBlinkState,'idle');assert.equal(h.timers.size,1);
+  return h;
+}
+
+test('OLED blink sleeps between four GPU-paced texture draws',async()=>{
+  const h=await blinkingHero(),draws=h.draws.length;
+  await h.advance(5200);assert.equal(h.snapshot().dashBlinkState,'closing');assert.equal(h.raf.size,1);
+  h.hold();await h.frame();await h.advance(300);
+  assert.equal(h.draws.length,draws+1);assert.equal(h.raf.size,0);assert.equal(h.snapshot().dashBlinkState,'closing','No closing step advances behind a held GPU fence');
+  h.hold(false);await h.advance(4);await h.advance(35);assert.equal(h.snapshot().dashBlinkState,'closed');await h.frame();
+  await h.advance(90);assert.equal(h.snapshot().dashBlinkState,'opening');await h.frame();
+  await h.advance(45);assert.equal(h.snapshot().dashBlinkState,'open');await h.frame();
+  assert.equal(h.snapshot().dashBlinkCycles,'1');assert.equal(h.snapshot().dashBlinkState,'idle');
+  assert.equal(h.draws.length,draws+4);assert.equal(h.raf.size,0);assert.equal(h.timers.size,1);assert.equal(h.warnings.length,0);
+  await h.advance(1000);assert.equal(h.draws.length,draws+4,'Sleeping does not submit frames');
+  return {blinkDraws:4,heldGPUSubmissions:1,sleepingRAF:0};
+});
+
+for(const reason of ['offscreen','hidden','pagehide','reduced','saveData'])test(`OLED ${reason} pause clears timers and restores open before resuming`,async()=>{
+  const h=await blinkingHero();await h.advance(5200);await h.frame();const draws=h.draws.length;
+  if(reason==='offscreen'){h.boundary(-1);h.intersect(false);}
+  else if(reason==='hidden')h.hidden(true);
+  else if(reason==='pagehide')h.emit('pagehide');
+  else if(reason==='reduced'){h.reduced.matches=true;h.reduced.dispatchEvent({type:'change'});}
+  else h.saveData(true);
+  await h.flush();assert.equal(h.snapshot().dashBlinkState,'paused');assert.equal(h.raf.size+h.timers.size,0);
+  await h.advance(60000);assert.equal(h.draws.length,draws);assert.equal(h.snapshot().dashBlinkCycles,'0');
+  if(reason==='offscreen'){h.scroll(0);h.intersect(true);}
+  else if(reason==='hidden')h.hidden(false);
+  else if(reason==='pagehide')h.emit('pageshow');
+  else if(reason==='reduced'){h.reduced.matches=false;h.reduced.dispatchEvent({type:'change'});}
+  else h.saveData(false);
+  await h.settleMotion();assert.equal(h.snapshot().dashBlinkState,'idle');assert.equal(h.raf.size,0);assert.equal(h.timers.size,1);
+  return {reason,noHiddenDraws:true,noCatchupBlink:true};
+});
 
 test('one in-flight frame coalesces rapid input and protects late-model posters', async () => {
   const h = harness(); await h.flush(); await h.frame(); h.hold(); await h.release('tramtrace'); await h.frame();

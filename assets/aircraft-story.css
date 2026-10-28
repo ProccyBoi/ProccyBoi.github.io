@@ -55,3 +55,34 @@
 @media(max-width:760px){.v2-aircraft-feature .v2-aircraft-actions{column-gap:24px}.v2-aircraft-feature .v2-aircraft-actions .v3-story-next{margin-top:15px}}
 @media(max-width:600px){.v2-aircraft-feature{--v3-header-height:66px}}
 @media print{.v3-aircraft .v3-story-nav{display:none!important}}
+
+/* The Projects header fills its viewport; native collection links skip it. */
+.v2-projects-aircraft{border-top:0;--v3-header-height:var(--header-height,76px)}
+.v2-projects-aircraft.is-story .v3-aircraft-stage{height:calc(100svh - var(--header-height))}
+.v2-projects-aircraft .v3-aircraft-copy h1{font-size:clamp(58px,6.6vw,96px);line-height:1.02;letter-spacing:-.055em;text-transform:none}
+.v2-projects-aircraft.is-story .v3-aircraft-copy article{top:30px;width:min(45%,560px)}
+.v2-projects-aircraft.is-story .v3-aircraft-copy article:not(:first-child){top:44%;width:34%}
+.v2-projects-aircraft .v3-aircraft-copy article>p:not(.v3-intro-line){font-size:16px;line-height:1.55;margin-top:14px;max-width:30ch}
+.v2-projects-aircraft .v3-aircraft-copy .v3-intro-line{margin:14px 0 0!important}
+.v2-projects-aircraft .v3-aircraft-copy .v2-collection-jump{margin-top:12px;color:var(--v2-ink);border-color:var(--v2-accent)}
+.v2-projects-aircraft .v3-aircraft-foot .v3-story-skip{display:flex;color:var(--v2-ink)!important;border-bottom:1px solid var(--v2-accent)}
+.v2-projects-aircraft:not(.is-story) .v3-aircraft-stage{gap:22px;padding-top:30px}
+.v2-projects-aircraft:not(.is-story) .v3-aircraft-visual{max-height:330px;aspect-ratio:16/7}
+.v2-projects-aircraft:not(.is-story) .v3-aircraft-copy article:not(:first-child){padding-top:20px}
+.v2-collection #collection{scroll-margin-top:var(--header-height);outline-offset:-3px}
+@media(max-width:760px){
+ .v2-projects-aircraft.is-story .v3-aircraft-stage{height:calc(100svh - var(--header-height))}
+ .v2-projects-aircraft.is-story .v3-aircraft-copy article,.v2-projects-aircraft.is-story .v3-aircraft-copy article:not(:first-child){top:24px;width:calc(100% - 2*var(--v2-gutter));transform:translateY(8px)}
+ .v2-projects-aircraft.is-story .v3-aircraft-copy article.is-current{transform:none}
+ .v2-projects-aircraft .v3-aircraft-copy h1{font-size:64px}
+ .v2-projects-aircraft .v3-aircraft-copy article:not(:first-child) h2{font-size:42px}
+ .v2-projects-aircraft .v3-aircraft-copy article>p:not(.v3-intro-line){font-size:14px;max-width:32ch}
+ .v2-projects-aircraft .v3-aircraft-copy .v3-intro-line{font-size:10px;margin-top:10px!important}
+ .v2-projects-aircraft .v3-aircraft-copy .v2-collection-jump{margin-top:4px;font-size:13px}
+ .v2-projects-aircraft.is-story .v3-aircraft-foot{flex-wrap:nowrap;gap:10px;justify-content:space-between}
+ .v2-projects-aircraft.is-story .v3-story-nav{order:0;gap:0;width:auto}
+ .v2-projects-aircraft.is-story .v3-story-nav a{padding-inline:8px;font-size:12px}
+ .v2-projects-aircraft.is-story .v3-story-skip{display:flex;flex-shrink:0;gap:8px;font-size:12px}
+ .v2-projects-aircraft .v3-aircraft-skip{bottom:68px}
+ .v2-projects-aircraft:not(.is-story) .v3-aircraft-visual{max-height:260px;aspect-ratio:5/3}
+}

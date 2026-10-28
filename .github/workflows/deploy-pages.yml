@@ -33,6 +33,8 @@ jobs:
           node scripts/verify-v2-deferred-loading.cjs
           node scripts/verify-v2-hero-handoffs.cjs
           node scripts/verify-v2-proximity-loading.cjs
+          node scripts/verify-v2-projects-aircraft.cjs
+          node scripts/verify-dash-idle-blink.cjs
           node scripts/verify-v2-hero-pacing.cjs --source-only
 
       - name: Verify Kiku firmware renderer and simulated controls

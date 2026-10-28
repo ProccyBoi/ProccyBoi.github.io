@@ -5,6 +5,7 @@
   const deferred = root.hasAttribute('data-aircraft-deferred');
   const detailed = root.hasAttribute('data-aircraft-detailed');
   const background = root.hasAttribute('data-aircraft-background');
+  const collection = root.hasAttribute('data-aircraft-collection');
   // Opt-in v2 wheel interpolation leaves the accepted v3 controller unchanged.
   const scrub = root.hasAttribute('data-aircraft-smooth') && window.V2ScrollSmoothing;
   let renderedProgress = 0, scrubTime = 0, directScrub = false;
@@ -14,6 +15,10 @@
   const showPoster = pose => { posterSources.forEach(source => { source.srcset = source.dataset[pose]; }); poster.src = poster.dataset[pose]; };
   const chapters = [...root.querySelectorAll('[data-aircraft-chapter]')], links = [...root.querySelectorAll('[data-aircraft-go]')];
   const bar = root.querySelector('[data-aircraft-progress]'), ids = chapters.map(chapter => chapter.id);
+  const initialCollectionHash = location.hash;
+  const collectionDestination = initialCollectionHash && document.getElementById(initialCollectionHash.slice(1));
+  let collectionNavigationPending = Boolean(collection && collectionDestination && !root.contains(collectionDestination));
+  let restoringCollectionNavigation = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)'), short = matchMedia('(max-height:600px)');
   const allowed = () => !reduced.matches && !short.matches && !navigator.connection?.saveData;
   const clamp = n => Math.max(0, Math.min(1, n));
@@ -38,7 +43,14 @@
   let desiredRatio = 1, bufferWidth = 0, bufferHeight = 0, bufferRatio = 0, landingClockStarted = false;
   const completedWarmPoses = new Set(), preparationMeasurements = [], backgroundWaiters = new Set();
   let preparationNear = false, preparationIntent = false;
-  const preparationEligible = () => !background || visible || preparationNear || preparationIntent;
+  function collectionPreparationAllowed() {
+    if (!collection) return true;
+    if (collectionNavigationPending) return false;
+    // A collection jump leaves a thin scene tail behind the sticky filters.
+    // Require a meaningful return to the scene before starting its CAD.
+    return preparationIntent || root.getBoundingClientRect().bottom > Math.min(240, innerHeight * .25);
+  }
+  const preparationEligible = () => collectionPreparationAllowed() && (!background || visible || preparationNear || preparationIntent);
   const sourceEligible = () => !background || (preparationEligible() && allowed() && activePage && !document.hidden && !failed);
   const selectedVisible = () => Boolean(background && window.V2SelectedWork?.isVisible?.());
   const aircraftVisible = () => Boolean(background && track && visible && allowed() && activePage && !document.hidden && !failed);
@@ -168,6 +180,7 @@
         else { pauseLandingClock(); interruptLive(); prepareInBackground(); }
         wakeBackground();
       }
+      if (collection && preparationEligible() && !ready && !loading) initialize();
     }
     const stageTop = stage.getBoundingClientRect().top;
     const pinnedTop = parseFloat(getComputedStyle(stage).top) || 0;
@@ -196,8 +209,9 @@
       if (changed) { desiredRatio = nextRatio; root.dataset.aircraftLayoutRevision = String(++layoutRevision); interruptLive(); }
     }
     width = nextWidth; height = nextHeight;
-    distance = height * (background ? (width < 761 ? 2.1 : 1.8) : (width < 761 ? 3.7 : 3.1));
-    track.style.height = `${distance + height}px`; track.style.marginTop = `${-height}px`;
+    distance = height * (collection ? 1 : background ? (width < 761 ? 2.1 : 1.8) : (width < 761 ? 3.7 : 3.1));
+    const collectionHeader = collection ? parseFloat(getComputedStyle(stage).top) || 0 : 0;
+    track.style.height = `${distance + height + collectionHeader}px`; track.style.marginTop = `${-height}px`;
     const padding = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
     // The story starts when its section reaches the document's scroll origin;
     // the sticky stage reserves the header band inside that section.
@@ -438,6 +452,7 @@
       const timer = setTimeout(resolve, 4500);
       releaseTransport = () => { clearTimeout(timer); resolve(); };
       (async () => {
+        if (!document.querySelector('[data-assembly]')) return;
         if (window.V2HeroStartup && !window.V2HeroStartup.hasStarted()) return;
         if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=dash-20261028');
         if (!sourceEligible()) return;
@@ -756,6 +771,16 @@
   addEventListener('pageshow', () => { activePage = true; previousTime = 0; scrubTime = 0; renderedProgress = progress; wakeBackground(); updateScroll(); if (background) publishAircraftPriority(); request(); if (background) prepareInBackground(); });
   const storyLead = 420;
   const nearStory = () => { const bounds = root.getBoundingClientRect(); return bounds.top < innerHeight + storyLead && bounds.bottom > -storyLead; };
+  function restoreCollectionNavigation() {
+    if (!collectionNavigationPending || restoringCollectionNavigation) return;
+    restoringCollectionNavigation = true;
+    document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    requestAnimationFrame(() => {
+      restoringCollectionNavigation = false; collectionNavigationPending = false;
+      updateScroll(); wakeBackground();
+      if (preparationEligible()) visible ? initialize() : prepareInBackground();
+    });
+  }
   const start = () => {
     if (failed) return;
     if (!allowed()) { if (background) { publishAircraftPriority(); interruptBackground('paused-preferences'); } fallback(); return; }
@@ -796,8 +821,13 @@
   const preference = start;
   if (background) addEventListener('hashchange', () => {
     if (!ids.includes(location.hash.slice(1))) return;
-    preparationIntent = true; wakeBackground(); initialize();
+    collectionNavigationPending = false; preparationIntent = true; wakeBackground(); initialize();
   });
+  if (collectionNavigationPending) {
+    if (document.readyState === 'complete') requestAnimationFrame(restoreCollectionNavigation);
+    else addEventListener('load', restoreCollectionNavigation, { once: true });
+    addEventListener('pageshow', restoreCollectionNavigation);
+  }
   reduced.addEventListener('change', preference); short.addEventListener('change', preference); navigator.connection?.addEventListener?.('change', preference);
   canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); fail(new Error('WebGL context unavailable')); });
   start();

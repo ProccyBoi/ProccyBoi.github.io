@@ -1,26 +1,33 @@
 # Skylabs aircraft and Selected Work in v2
 
-The aircraft story follows the Framework composition and continues into the
-power, measurement and flight links before About. The opening composition is
-TramTrace, the complete Dash device and the Pi card. The detailed story uses the accepted
-v3 aircraft geometry, film peel and telemetry extraction, with two namespaced
-anchors: `#skylabs-aircraft` and `#skylabs-telemetry`. Film is fully gone at .60;
-rigid exterior motion begins after .62. Those scene mechanics are unchanged.
+The aircraft story now introduces the Projects collection at `/v2/projects/`.
+Its first heading is **Projects**, with Skylabs identified as the featured build;
+**Browse projects** links jump to `#collection` and its filters. The homepage
+retains the TramTrace, complete Dash device and Pi opening, quick overview,
+Framework composition and broader engineering links. Its Skylabs overview links
+to the aircraft story; legacy homepage aircraft anchors remain on that overview.
+The detailed story uses the accepted v3 aircraft geometry, film peel and telemetry
+extraction, with two collection-page anchors: `#skylabs-aircraft` and
+`#skylabs-telemetry`. Film is fully gone at .60; rigid exterior motion begins
+after .62. Those scene mechanics are unchanged.
 
 ## Loading and proximity preparation
 
-The v2 homepage opts into `data-aircraft-background`. At the opening, the three
-hero packs can download concurrently. Direct links to later sections defer hero
-startup until the opening is approached again. Selected Work and aircraft keep
-real lazy HTML image sources with explicit decode tracking; their extra source
-helpers, geometry transfers and reconstruction begin only near the relevant
-section or on explicit navigation. Native image lazy-loading may fetch a poster
-before the application gate; it does not start a 3D scene.
+The Projects header opts into `data-aircraft-background` and
+`data-aircraft-collection`; the homepage no longer imports the aircraft controller
+or mounts an aircraft canvas. Its three opening hero packs can still download
+concurrently, while direct links farther down defer hero startup until the opening
+is approached again. Selected Work retains lazy images; the Projects aircraft has
+an eager poster because it introduces that page. Source helpers, geometry transfers
+and reconstruction begin only near each scene or on explicit navigation. An image
+request alone does not start a 3D scene. Direct catalogue/category links remain
+available without completing the aircraft animation.
 
-Once a secondary scene is eligible, its transfer can wait for an already-started
-hero's raw bytes, with a 4.5-second fallback. Entry and deep links promote the
-requested scene; a hero intentionally left unstarted cannot block it. Shared
-promises prevent duplicate model and decoder requests.
+Once Selected Work is eligible, its transfer can wait for an already-started
+homepage hero's raw bytes, with a 4.5-second fallback. Entry and deep links promote
+the requested scene; a hero intentionally left unstarted cannot block it. The
+Projects page has no opening hero or Selected Work sibling to wait for. Shared
+promises prevent duplicate model and decoder requests within a page.
 
 Secondary source loading, construction and GPU preparation require section proximity or
 explicit scene intent. Proximity is an absolute section top below twice the
@@ -29,11 +36,14 @@ one viewport of advance preparation, not two viewports beyond the visible edge.
 A distant untouched page keeps secondary model transfers, reconstruction and
 renderers unstarted. Once requested, completed stages are retained for re-entry.
 
-Eligible offscreen construction waits for the foreground model set to settle
-(with a 12-second fallback). Aircraft waits for actively requested Selected
-preparation (18-second starvation timeout), but reports a deferred sibling rather
-than waiting for intentionally unrequested work. Ready/static/failed outcomes
-retain their real diagnostics. Aircraft entry bypasses that CPU ordering; its downloads stay concurrent. Separate bounded idle tasks construct the scene, attach a
+The retained shared runtime supports foreground ordering: eligible offscreen
+construction can wait for the foreground model set (12-second fallback) and
+actively requested Selected preparation (18-second starvation timeout), but it
+reports absent or deferred siblings instead of waiting for unrequested work.
+Those former same-page aircraft/Selected priorities do not add a dependency
+between the current separate homepage and Projects documents. Ready/static/failed
+outcomes retain their real diagnostics. Aircraft entry promotes its own work.
+Separate bounded idle tasks construct the scene, attach a
 separate telemetry object from the shared transport, draw telemetry, then restore
 the landing pose. Real render calls prepare GPU materials and textures. These
 draws do not consume landing time, expose intermediate poses or run a continuing
@@ -96,11 +106,12 @@ frame still has its own allocation/fill cost; preparation does not make it free.
 Compatible opaque meshes are batched in Selected Work's separate instances;
 transparent meshes and source hero packs remain unchanged. Batching yields between construction slices and cancels
 transactionally when the page or motion preference no longer permits work.
-Visible work has priority in both directions. Selected preparation pauses at
+The shared runtime retains its former same-page priority rules: Selected preparation pauses at
 CPU and GPU boundaries while the aircraft is actually visible; aircraft
 preparation does the same while Selected is visible. Downloads remain
-concurrent. Visibility/priority events resume incomplete work without a polling
-render loop. Aircraft proximity alone no longer bypasses this optional CPU
+concurrent. The current v2 routes do not mount Selected and aircraft together.
+Visibility/priority events resume incomplete work without a polling
+render loop. Aircraft proximity alone does not bypass this optional CPU
 order; genuine entry still promotes its accepted live animation immediately.
 Its two offscreen poses use a capped 640-pixel buffer and owned completion fences.
 The v2 aircraft's live draws share that same single GPU owner: entering cancels
@@ -117,11 +128,13 @@ first pose is revealed its original 5,400 ms visible wall-clock timeline resumes
 including slow frames, with hidden time excluded. Every live aircraft draw
 restores its original DPR, geometry and choreography. This is v2-only; the v3
 controller retains its existing synchronous path. The opening v2 hero also has
-one-in-flight backpressure, preventing any of the three renderers from building
-an unbounded queue of obsolete frames.
-Hidden/offscreen scenes have no continuing render loop. The page has
-at most three WebGL contexts total: hero, Selected Work, and aircraft. Preference changes
-restore the original static collections; renderer reuse avoids context growth.
+one-in-flight backpressure, preventing its renderer from building an unbounded
+queue of obsolete frames.
+Hidden/offscreen scenes have no continuing render loop. The homepage mounts at
+most two WebGL contexts (hero and Selected Work); the Projects header mounts one
+aircraft context. Preference changes restore static content; renderer reuse avoids
+context growth. Dash's separate, brief idle blink requests finite hero draws and
+sleeps between cycles.
 
 Reduced motion, Save Data, short viewports, missing DecompressionStream, no JS,
 or failed WebGL retain the four original images and source links. The images are
@@ -143,7 +156,7 @@ card cannot cover another card's native tap target. Every target stays at least
 moving the document.
 
 Inspection weights compose with the original reversible part assembly and fade
-out before the transport chapter. Offscreen or static-preference changes reset
+out at the section boundary. Offscreen or static-preference changes reset
 the selection. A first reveal after a masked resize adopts the latest selection;
 already-visible transitions coalesce behind the existing single pending frame.
 Only real pointer movement changes hover selection, so moving hit bounds cannot
@@ -154,18 +167,20 @@ both settle. No new model, texture, renderer or continual animation is added.
 
 The opening hero uses 210svh total on desktop and 200svh in the smaller-screen
 enhanced layout. Selected Work's native-scroll travel is 1.15 stage heights;
-v2 Skylabs uses 1.8/2.1. Normalized CAD choreography
+the Projects aircraft uses one stage height of scroll travel. Normalized CAD choreography
 and accepted aircraft peel timing remain unchanged; v3 keeps its original track.
 
 Quick overview and CV are available on the first screen. Native buttons select
 hero scenes; the independent project link always navigates. The three-project
 overview and compact Inside the builds links precede the Framework composition.
 The repeated full-size Kiku feature is removed; `#work-kiku` points to its
-overview row. The aircraft's Skip animation link moves forward to
-`#engineering-range`. Framework project
+overview row. The homepage continues directly from Framework to
+`#engineering-range`; the aircraft story has moved to the Projects header and its
+browse links target `/v2/projects/#collection`. Framework project
 descriptions stay visible on mobile, with responsive framing above their text.
-The About booking action stays in /v2/book/ and Contact consistently targets the
-v2 About contact section. Evidence records in scripts/content/v2-case-evidence.json
+Primary navigation is Projects, About, CV, Contact, Book time. Booking stays in
+`/v2/book/`, and Contact consistently targets the v2 About contact section.
+Evidence records in scripts/content/v2-case-evidence.json
 add only published decisions, maturity and measured outcomes. A build-only v3
 filter excludes these explicitly v2-scoped additions, preserving existing v3 bytes.
 
@@ -188,7 +203,7 @@ Serve the repository on port 8080 and run:
 - `node scripts/verify-v2-framework-inspection.cjs`: physical separation, native
   hover/focus/tap, overview/Escape, mobile bounds and held-GPU selection recovery.
 - `node scripts/verify-v2-selected-scene.cjs`: shared
-  camera framing/reversal, three-context budget, native input and lifecycle.
+  camera framing/reversal, context budget, native input and lifecycle.
   `--source-only` needs no browser; `--study` captures desktop/mobile renderings.
 - `node scripts/verify-v2-proximity-loading.cjs`: controlled production-gate
   scenarios for distant scenes, explicit entry and lifecycle changes, without a browser.
@@ -204,10 +219,13 @@ against the current revision. Older fixed-baseline scene checks can still encode
 the former six-model composition and must not be presented as current coverage
 without examining their assertions and results.
 
-The review workflow also exercises Book with mocked submissions, WebKit mobile
+Earlier review workflows exercised Book with mocked submissions, WebKit mobile
 emulation, source/transport contracts and matched three-run cold-cache profiles.
-Performance compares current published v2 at 10Mbps/40ms on the same runner;
-the wheel-only historical comparison uses the original unfiltered controller.
+Those performance comparisons used their then-published v2 at 10Mbps/40ms on the
+same runner; the wheel-only historical comparison used the original unfiltered
+controller. The [28 October measurements](v2-dash-loading-results.md) predate this
+aircraft relocation and the occasional Dash blink and are not measurements of the
+current page arrangement.
 Chromium uses software WebGL, so timing evidence does not prove hardware-GPU FPS
 or physical-iOS performance. Readiness requires decoded images and real warm
 draws, not merely completed downloads. `verify-v2-background.cjs --profile-only`

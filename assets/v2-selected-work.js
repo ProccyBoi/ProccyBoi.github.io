@@ -83,7 +83,7 @@
     stage=document.createElement('div');stage.className='v2-selected-stage';
     canvas=document.createElement('canvas');canvas.className='v2-selected-canvas';canvas.setAttribute('data-selected-canvas','');canvas.setAttribute('aria-hidden','true');stage.append(canvas);
     articles.forEach((article,i)=>{article.id='copy-'+ids[i];stage.append(article);});
-    const skipScene=document.createElement('a');skipScene.className='v2-selected-skip';skipScene.href='#skylabs-aircraft';skipScene.textContent='Skip';skipScene.setAttribute('aria-label','Skip Selected Work animation');stage.append(skipScene);
+    const skipScene=document.createElement('a');skipScene.className='v2-selected-skip';skipScene.href='#engineering-range';skipScene.textContent='Skip';skipScene.setAttribute('aria-label','Skip Selected Work animation');stage.append(skipScene);
     const progressElement=document.createElement('div');progressElement.className='v2-selected-progress';progressElement.setAttribute('aria-hidden','true');
     bar=document.createElement('span');progressElement.append(bar);stage.append(progressElement);
     track=document.createElement('div');track.className='v2-selected-track';track.setAttribute('aria-hidden','true');

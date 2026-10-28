@@ -93,9 +93,9 @@ def header(active='work'):
       <a class="v2-brand" href="/v2/">Andrew Chung</a>
       <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
         <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Projects</a>
-        <a href="/v2/#demos">Explore</a>
         <a href="/v2/about/"{' aria-current="page"' if active == 'about' else ''}>About</a>
         <a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV <span aria-hidden="true">↗</span></a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+        <a class="v2-nav-book" href="/v2/book/">Book time</a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>'''
 
@@ -151,7 +151,7 @@ def common(source, body_class, active='work'):
     source = re.sub(r'(<meta name="theme-color" content=")[^"]*(">)', r'\g<1>#141412\2', source)
     if '<base' not in source:
         source = source.replace('<head>', '<head>\n<base href="/">', 1)
-    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=dash-20261028">
+    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=projects-20261028">
   <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
@@ -161,7 +161,7 @@ def common(source, body_class, active='work'):
         source = source.replace('</body>', FOOTER + '\n</body>')
     if 'data-hardware=' in source:
         source = source.replace('assets/dash-demo.js"', 'assets/dash-demo.js?v=20261028"')
-        hardware_version = 'dash-assembly-20261028' if '/hardware/dash/assembly.json' in source else 'physical-20261007'
+        hardware_version = 'blink-20261028' if '/hardware/dash/assembly.json' in source else 'physical-20261007'
         source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-hardware.css">\n<script src="/assets/v2-hardware.js?v=' + hardware_version + '" defer></script>\n</head>')
     source = re.sub(r'(assets/images/v2/hardware/dash\.webp)(?:\?v=[^"\s]+)?', r'\1?v=dash-refined-20261025', source)
     return route_links(clean_display_copy(source))
@@ -582,6 +582,28 @@ def hardware_card(record):
     return f'''<a class="catalog-card" href="projects/{record['slug']}/"><div class="catalog-card-media v2-catalog-cad"><img src="{poster}" width="1600" height="1200" alt="{escape(record['title'])}" loading="lazy"></div><div class="catalog-card-copy"><div><span class="catalog-category">{escape(record['category'])}</span><h3>{escape(record['title'])}</h3><p>{escape(record['summary'])}</p><small>{escape(record['card_specs'])}</small></div><span aria-hidden="true">↗</span></div></a>'''
 
 
+def projects_aircraft_header():
+    return '''<section class="v3-aircraft v2-aircraft-feature v2-projects-aircraft" data-aircraft-hero data-aircraft-detailed data-aircraft-deferred data-aircraft-smooth data-aircraft-background data-aircraft-collection aria-labelledby="projects-title">
+      <div class="v3-aircraft-stage" data-aircraft-stage>
+        <div class="v3-aircraft-visual" data-aircraft-visual>
+          <picture data-aircraft-picture><source media="(max-width:760px)" srcset="/assets/images/v3/skylabs-stopped-mobile.webp?v=sky-20261008" data-approach="/assets/images/v3/skylabs-approach-mobile.webp?v=sky-20261008" data-stopped="/assets/images/v3/skylabs-stopped-mobile.webp?v=sky-20261008"><img data-aircraft-poster src="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" data-approach="/assets/images/v3/skylabs-approach.webp?v=sky-20261008" data-stopped="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" width="1600" height="1000" alt="The Skylabs trainer aircraft, with its wing, tail and landing gear assembled" decoding="async" fetchpriority="high"></picture>
+          <canvas data-aircraft-canvas aria-hidden="true"></canvas>
+        </div>
+        <div class="v3-aircraft-copy" data-aircraft-copy>
+          <article id="skylabs-aircraft" data-aircraft-chapter="0"><h1 id="projects-title">Projects</h1><p>PCBs, embedded systems and robotics.</p><p class="v3-intro-line">Featured build / UNSW Skylabs</p><a class="v3-link v2-collection-jump" href="/v2/projects/#collection">Browse all 16 projects <span aria-hidden="true">↓</span></a></article>
+          <article id="skylabs-telemetry" data-aircraft-chapter="1"><h2>Inside Skylabs.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><div class="v2-aircraft-actions"><a class="v3-link" href="/v2/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a></div></article>
+        </div>
+        <button class="v3-aircraft-skip" data-aircraft-skip type="button" hidden>Skip landing <span aria-hidden="true">↘</span></button>
+        <div class="v3-aircraft-foot">
+          <a class="v3-story-project" href="/v2/projects/skylabs/">View Skylabs <span aria-hidden="true">↗</span></a>
+          <nav class="v3-story-nav" aria-label="Explore the featured Skylabs build" data-aircraft-nav><a href="/v2/projects/#skylabs-aircraft" data-aircraft-go="0">Aircraft</a><a href="/v2/projects/#skylabs-telemetry" data-aircraft-go="1">Telemetry</a></nav>
+          <a class="v3-story-skip" href="/v2/projects/#collection">Browse projects <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="v3-aircraft-progress" aria-hidden="true"><span data-aircraft-progress></span></div>
+      </div>
+    </section>'''
+
+
 def make_index():
     source = (ROOT / 'projects/index.html').read_text(encoding='utf-8')
     tree = Tree(source)
@@ -599,10 +621,11 @@ def make_index():
     source = replace_nodes(source, [(tools, demo_shelf)])
     tree = Tree(source)
     hero = tree.find('section', 'page-hero')
-    new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems and robotics.</p><div class="home-links"><a href="/v2/projects/?category=demos#demos">Try a demo or tool ↗</a></div></div></section>'''
+    new_hero = projects_aircraft_header()
     jump = tree.find('nav', 'project-jumpbar')
     controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>16</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>13</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search><button type="button" data-v2-clear-filters hidden>Clear filters</button></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
     controls = controls.replace('</nav>', '<a href="/v2/projects/#demos" data-v2-category="demos">Demos &amp; tools <span>6</span></a></nav>', 1).replace('Find a project', 'Find work or a demo').replace('placeholder="Search projects"', 'placeholder="Search projects, demos and tools"')
+    controls = controls.replace('<div class="v2-collection-controls">', '<div class="v2-collection-controls" id="collection" tabindex="-1">', 1)
     source = replace_nodes(source, [(hero, new_hero), (jump, controls)])
     hardware_catalog = Tree(source).find('div', 'project-catalog')
     pi_card = '''<a class="catalog-card v2-pi-card" href="projects/framework-raspberry-pi/">
@@ -662,6 +685,11 @@ def make_index():
     source = replace_nodes(source, [(node, re.sub(r'<span>\d+</span>', f'<span>{counts[node.attrs["data-v2-category"]]}</span>', node.outer(source))) for node in tree.nodes if 'data-v2-category' in node.attrs])
     source = common(source, 'v2-collection')
     source = source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=demos-20261028"')
+    source = source.replace('class="skip-link" href="/v2/projects/#main"', 'class="skip-link" href="/v2/projects/#collection"')
+    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/aircraft-story.css?v=collection-20261029">
+  <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
+  <script src="/assets/v3-aircraft-hero.js?v=collection-20261029" defer></script>
+</head>''')
     return '\n'.join(line.rstrip() for line in source.splitlines()) + '\n'
 
 

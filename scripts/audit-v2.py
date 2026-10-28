@@ -441,6 +441,12 @@ def main() -> int:
             for skip in skips:
                 target = local_target(skip.attrs.get("href", ""), doc.base)
                 main_ids = {item.attrs.get("id") for item in doc.tags("main")}
+                # The collection intentionally skips its optional aircraft
+                # header and focuses the real filters/listing inside main.
+                if page == ROOT / "v2/projects/index.html":
+                    main_ids.update(item.attrs["id"] for item in doc.elements
+                                    if item.attrs.get("id") == "collection"
+                                    and item.attrs.get("tabindex") == "-1" and "main" in item.ancestors)
                 if not target or target[0].resolve() != page.resolve() or not target[1] or target[1] not in main_ids:
                     error(page, "skip link must target this page's main landmark (including <base> resolution)", skip.line)
 

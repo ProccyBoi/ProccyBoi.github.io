@@ -2,7 +2,9 @@
 
 The second homepage chapter uses the complete device from `V2HardwareModels` and `DashAssembly`, with the original PCB and supplied base/lid meshes, OLED module, speaker, battery, magnets, touch surfaces and wiring. Its 86 movable parts retain the standalone assembly's authored paths and exact reassembly poses. The existing geometry provenance and representation limits remain in `assets/models/hardware/dash/README.md` and `device-sources.json`.
 
-The hero does not run a second character simulation. `scripts/build-v2-hero-assets.cjs` renders a static 128 × 64 idle frame with the existing `assets/dash-display.js` renderer. The 656-byte PNG is applied to the existing OLED surface. It is derived from the source-informed browser display adaptation, with the AGPL-3.0-or-later attribution and source references retained in `assets/dash-display.js`.
+`scripts/build-v2-hero-assets.cjs` renders a static 128 × 64 idle frame with the existing `assets/dash-display.js` renderer. The 656-byte PNG is applied to the existing OLED surface. It is derived from the source-informed browser display adaptation, with the AGPL-3.0-or-later attribution and source references retained in `assets/dash-display.js`.
+
+At runtime, `assets/dash-idle-blink.js` shares an occasional idle blink between the hero and the simplified v2 Dash viewer. It compresses the existing image vertically through four finite steps and sleeps for several seconds between cycles. Each step waits for the owning scene's completed draw before scheduling the next; the helper has no animation-frame loop. Offscreen/hidden state and reduced-motion or Save Data preferences suspend blinking. The still PNG remains the fallback. This does not restore the character controller, timer, gestures or related controls.
 
 ## Pack and framing
 
@@ -11,7 +13,7 @@ The hero does not run a second character simulation. `scripts/build-v2-hero-asse
 - The complete device has 86 movable parts, 248 meshes, three line groups and 126,872 triangles. The line groups include the original housing outlines; they are preserved by the pack serializer.
 - Forty-one bounds samples follow the original explosion. The hero interpolates those precomputed framing values so the full assembled or exploded device stays readable without recomputing its bounds on every frame.
 - Source part geometry, materials, component identity and transforms remain intact. The hero uses the existing assembled device orientation within its scene.
-- The previous telemetry pack remains available to the aircraft story. Building Dash does not rewrite the TramTrace, telemetry or Pi packs.
+- The previous telemetry pack remains available to the aircraft story in the Projects collection header. Building Dash does not rewrite the TramTrace, telemetry or Pi packs.
 
 ## Build and verification
 

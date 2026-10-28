@@ -43,7 +43,7 @@ const sourceEligibility = aircraftSource.match(/^  const sourceEligible = .+$/m)
 assert.ok(sourceEligibility, 'Production aircraft eligibility gate exists');
 const aircraftFunctions = between(aircraftSource, '  function prepareAirframe(', '  async function initialize(')
   + between(aircraftSource, '  let fallbackImagesStarted', '  const idleTurn');
-function aircraft({ eligible = false, background = true, near = eligible, dependencies, heroStarted = false } = {}) {
+function aircraft({ eligible = false, background = true, near = eligible, dependencies, heroStarted = false, heroPresent = true } = {}) {
   const state = { eligible, hidden: false, near, scripts: [], transport: [], heroRequests: [], images: 0, decoded: 0, environment: 0 };
   const image = () => ({ dataset: { approach: 'approach.webp', stopped: 'stopped.webp' }, decode: async () => state.decoded++ });
   const window = { V2HeroStartup: { models: ['tramtrace', 'dash', 'pi'], hasStarted: () => heroStarted },
@@ -51,7 +51,7 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   const context = vm.createContext({
     window, background, detailed: true, failed: false, activePage: true,
     preparationEligible: () => state.eligible, allowed: () => true, nearStory: () => state.near,
-    document: { get hidden() { return state.hidden; } }, matchMedia: () => ({ matches: true }),
+    document: { get hidden() { return state.hidden; }, querySelector: () => heroPresent ? {} : null }, matchMedia: () => ({ matches: true }),
     root: { dataset: {}, querySelectorAll: () => [image()] }, posterSources: [], poster: image(),
     showPoster: () => {}, Image: function () { state.images++; return image(); },
     setTimeout: () => 1, clearTimeout: () => {},
@@ -113,6 +113,9 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   assert.equal(a.state.images, 0, 'Far aircraft requests no alternate posters');
   assert.equal(a.state.decoded, 0, 'Far aircraft performs no image decode');
   a.state.eligible = true; a.state.near = true; await a.context.prepare(); await flush();
+  assert.deepEqual(a.state.transport, ['airframe']);
+  a = aircraft({ eligible: true, near: false, heroPresent: false, heroStarted: true }); await a.context.prepare(); await flush();
+  assert.equal(a.state.heroRequests.length, 0, 'Projects aircraft never asks for absent homepage hero models');
   assert.deepEqual(a.state.transport, ['airframe']);
   assert.equal(a.state.images, 2); assert.equal(a.state.decoded, 3);
   assert.equal(a.state.heroRequests.length, 0, 'Aircraft direct visit does not wake unrelated hero models');
