@@ -1,0 +1,33 @@
+/* The full device and its controls share a compact instrument-panel layout. */
+[data-hardware].dash-device-live{display:grid;grid-template-columns:minmax(0,1fr) 330px;border-radius:10px;background:#101614;color:#e9ede5}
+.dash-device-live .hardware-stage{grid-column:1;grid-row:1;height:540px;background:radial-gradient(ellipse at 50% 45%,#202a27,#101614 76%)}
+.dash-device-live .hardware-controls{grid-column:1;grid-row:2;padding:16px 20px 22px;border-top:1px solid #303c36}
+.dash-device-live [data-hardware-status]{grid-column:1}
+.dash-device-panel{grid-column:2;grid-row:1/span 3;border-left:1px solid #303c36;padding:25px;min-width:0;background:#151d19;text-align:left;font:14px/1.55 var(--sans, sans-serif)}
+.dash-device-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dash-device-kicker{font:10px/1.5 var(--mono,monospace);letter-spacing:.08em;color:#afbdaf}
+.dash-device-badge{font-size:10px;color:#c1dbbc;border:1px solid #4c614c;padding:3px 7px;border-radius:12px;white-space:nowrap}
+.dash-device-panel h3{font-size:24px;line-height:1.15;letter-spacing:-.035em;font-weight:500;color:#eff3eb;margin:18px 0 10px}
+.dash-device-intro{font-size:13px;color:#b7c2b6;margin:0 0 20px}
+.dash-device-screen{border:1px solid #39483d;padding:12px;background:#080e0b;border-radius:7px}
+.dash-device-screen canvas{display:block;width:100%;height:auto;aspect-ratio:2;image-rendering:pixelated;margin-top:8px;border-radius:3px}
+.dash-device-readout{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px}
+.dash-device-readout output{font:28px/1 var(--mono,monospace);color:#eef4e7;letter-spacing:-.06em}
+.dash-device-readout span{font-size:12px;color:#bed1b7}
+.dash-device-duration{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:#b7c2b6}
+.dash-device-duration select{min-width:0;padding:10px 7px;min-height:44px;background:#202c23;color:#e7efdf;border:1px solid #4e6050;border-radius:4px;font:12px var(--sans,sans-serif)}
+.dash-device-transport,.dash-device-gestures{display:flex;gap:8px;margin-top:12px}
+[data-hardware] .dash-device-panel button{flex:1;min-height:44px;border-radius:4px;padding:10px 7px;color:#182218;background:#d5e4c8;border-color:#d5e4c8;font-size:12px}
+[data-hardware] .dash-device-panel [data-device-command=reset],[data-hardware] .dash-device-panel [data-device-gesture]{background:transparent;color:#c7d5c2;border-color:#485c49}
+.dash-device-note,.dash-device-panel details{font-size:11px;color:#aebdad;line-height:1.6;margin:16px 0 0}
+.dash-device-panel details p{font-size:11px}.dash-device-panel summary{cursor:pointer}.dash-device-panel a{color:#d2e5c7;text-decoration:underline}
+.dash-device-views{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.dash-device-views>span{font:10px var(--mono,monospace);letter-spacing:.1em;color:#97aa99;margin-right:6px}
+.v2-case .project-interactive [data-hardware] .dash-device-views button{min-height:44px;padding:7px 12px;border:1px solid #465b4b;border-radius:4px;background:transparent;color:#c1d3bd;font-size:11px}
+.v2-case .project-interactive [data-hardware] .dash-device-views button[aria-pressed=true]{background:#314733;color:#f2f7e9;border-color:#75936d}
+.dash-device-panel :focus-visible{outline:2px solid #daf3bb;outline-offset:3px}
+@media(max-width:850px){[data-hardware].dash-device-live{grid-template-columns:minmax(0,1fr)}.dash-device-live .hardware-stage{height:440px}.dash-device-panel{grid-column:1;grid-row:3;border-left:0;border-top:1px solid #303c36;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 22px;padding:22px}.dash-device-heading,.dash-device-panel h3,.dash-device-intro,.dash-device-note,.dash-device-panel details{grid-column:1/-1;margin:0}.dash-device-screen{grid-column:1;grid-row:4/span 4;align-self:start}.dash-device-readout,.dash-device-duration,.dash-device-transport,.dash-device-gestures{grid-column:2;margin:0}.dash-device-live [data-hardware-status]{grid-row:4}}
+@media(max-width:480px){.dash-device-live .hardware-stage{height:390px}.dash-device-panel{display:block;padding:22px}.dash-device-heading{margin-bottom:14px}.dash-device-panel h3{margin-bottom:10px}.dash-device-intro{margin-bottom:18px}.dash-device-screen{max-width:256px;margin:0 auto}.dash-device-readout{margin:16px 0}.dash-device-transport,.dash-device-gestures{margin-top:12px}.dash-device-note,.dash-device-panel details{margin-top:16px}.dash-device-views>span{display:none}}
+
+.v2-case .project-interactive .dash-device-panel .dash-device-intro{margin:0 0 20px}
+.v2-case .project-interactive .dash-device-live .hardware-controls>[data-hardware-explode]{border-radius:4px;background:#d5e4c8;color:#182218;border-color:#d5e4c8}

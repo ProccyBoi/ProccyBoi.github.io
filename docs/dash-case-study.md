@@ -35,3 +35,40 @@ This is an explicitly labelled illustration, not firmware emulation. Eyes are dr
 The timer uses a wall-clock deadline, reconciles when a hidden tab returns, and has no idle rendering loop. A one-time welcome, staggered double blink, dizzy shake, settling expressions and completion bounce are finite. Mouse gaze is bounded and returns to center on exit. Reduced-motion users receive static state changes, including when their preference changes during a sequence. Live announcements describe state changes without announcing every second. The static face, engineering story and source links remain usable without JavaScript; inactive controls stay hidden.
 
 Run `node scripts/verify-dash-browser.cjs` against the local preview for behavioral and layout checks. The repository-wide `audit-v2.py` validates generated links, metadata and document structure.
+
+## Live full-device study (28 October 2026)
+
+The v2/v3 complete-device viewer now subscribes to the existing character
+controller; it does not create a second session or timer. Controls beside the
+model and in the character section address the same countdown, pause/resume,
+reset, duration and gesture state. The existing illustrative CSS character stays
+available even when 3D fails. The archived July prototype studio is unchanged.
+
+`assets/dash-demo.js` exposes a snapshot/subscription/command interface on its
+own demo element. `assets/dash-display.js` turns that state into a 128 × 64,
+one-bit framebuffer used by both the small OLED preview and the device mesh.
+Its eye dimensions, offsets and mirroring follow the retained firmware eye
+presets; its Canvas rasterizer, bitmap clock and finite gestures remain a browser
+adaptation, not execution of the ESP32 firmware. Attribution and license terms
+are retained in the source. The deliberate 10-second demo remains available.
+
+`assets/dash-device.js` mounts the bridge and inspection controls only in the
+complete device viewer. Front/rear/angled camera presets and a reversible shell
+visibility toggle expose the construction without modifying source meshes or
+component placements. The OLED viewing surface is moved forward by 0.055 mm
+relative to its previous position to avoid glass depth fighting; it remains
+behind the housing wall. The existing exploded endpoints are preserved, with
+slower device-only transition damping. Rendering is capped at 30 fps during
+finite expressions and stops while settled, hidden or offscreen. Reduced motion
+uses static expressions. The 3D runtime stays available if the optional display
+adapter fails to load.
+
+Run `scripts/verify-dash-live.cjs` for shared-state/framebuffer, inspection,
+responsive and idle lifecycle checks in v2/v3, plus the existing
+`verify-dash-browser.cjs`, `verify-dash-device.cjs` and
+`verify-dash-assembly.cjs` suites for retained content and separate model paths.
+The source baseline for this revision is remote main `aa49484`. Direct live-site
+and Pages deployment API access were blocked in the editing environment; local
+renders of that fetched revision establish the comparison, not proof of the
+current deployment's response. No new reference photographs were available as
+readable pixels, so photo-dependent proportion changes remain outstanding.

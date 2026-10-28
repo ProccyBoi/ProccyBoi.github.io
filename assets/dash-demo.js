@@ -34,6 +34,39 @@
     const stage = root.querySelector('.dash-demo__stage');
     const face = root.querySelector('.dash-demo__face');
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const subscribers = new Set();
+    let reactionStartedAt = 0, motionStartedAt = 0;
+    // The character UI owns the session. Other views subscribe to this same
+    // state rather than starting another timer or dispatching synthetic data.
+    const snapshot = () => Object.freeze({
+      state, totalMs, remainingMs: state === 'focus' ? Math.max(0, deadline - Date.now()) : remainingMs,
+      reaction: root.dataset.dashReaction || '', motion: root.dataset.dashMotion || '',
+      reactionStartedAt, motionStartedAt,
+      gaze: Object.freeze({
+        x: (parseFloat(face?.style.getPropertyValue('--dash-gaze-x')) || 0) / 10,
+        y: (parseFloat(face?.style.getPropertyValue('--dash-gaze-y')) || 0) / 6
+      })
+    });
+    const emit = () => { const value = snapshot(); subscribers.forEach(callback => callback(value)); };
+    const command = (name, value) => {
+      if (name === 'action' || name === 'reset') {
+        const button = name === 'action' ? action : reset;
+        if (button.disabled) return false;
+        button.click(); return true;
+      }
+      if (name === 'gesture') {
+        const button = [...root.querySelectorAll('[data-dash-gesture]')].find(node => node.dataset.dashGesture === value);
+        if (!button || button.disabled) return false;
+        button.click(); return true;
+      }
+      if (name === 'duration' && !duration.disabled && [...duration.options].some(option => option.value === String(value))) {
+        duration.value = String(value); duration.dispatchEvent(new Event('change', {bubbles:true})); return true;
+      }
+      return false;
+    };
+    root.dashController = Object.freeze({snapshot, command, subscribe(callback) {
+      subscribers.add(callback); callback(snapshot()); return () => subscribers.delete(callback);
+    }});
 
     const announce = message => { live.textContent = message; };
     const clearTick = () => {
@@ -43,15 +76,18 @@
     const clearReaction = () => {
       clearTimeout(reactionHandle);
       root.removeAttribute('data-dash-reaction');
+      reactionStartedAt = 0; emit();
     };
     const centerGaze = () => {
       if (!face) return;
       face.style.setProperty('--dash-gaze-x', '0px');
       face.style.setProperty('--dash-gaze-y', '0px');
+      emit();
     };
     const clearMotion = () => {
       clearTimeout(motionHandle);
       root.removeAttribute('data-dash-motion');
+      motionStartedAt = 0;
       centerGaze();
     };
     function playMotion(name, durationMs = 1200) {
@@ -60,6 +96,7 @@
       // Repeated input can restart a sequence; there is no idle animation loop.
       void root.offsetWidth;
       root.dataset.dashMotion = name;
+      motionStartedAt = performance.now(); emit();
       motionHandle = setTimeout(clearMotion, durationMs);
     }
 
@@ -69,6 +106,7 @@
       progress.value = totalMs - remainingMs;
       progress.max = totalMs;
       progress.setAttribute('aria-valuetext', `${Math.round((totalMs - remainingMs) / totalMs * 100)} percent complete`);
+      emit();
     }
 
     function renderState(nextState) {
@@ -161,12 +199,13 @@
         void root.offsetWidth;
         const gesture = button.dataset.dashGesture;
         root.dataset.dashReaction = gesture;
+        reactionStartedAt = performance.now(); emit();
         const message = gesture === 'tap'
           ? 'Tap → a quick blink. The timer keeps its place.'
           : 'Shake → a dizzy wobble. The timer keeps its place.';
         feedback.textContent = message;
         announce(message);
-        reactionHandle = setTimeout(() => root.removeAttribute('data-dash-reaction'), gesture === 'tap' ? 1150 : 1650);
+        reactionHandle = setTimeout(clearReaction, gesture === 'tap' ? 1150 : 1650);
       });
     });
 
@@ -180,6 +219,7 @@
         const y = Math.max(-1, Math.min(1, (event.clientY - box.top) / box.height * 2 - 1));
         face.style.setProperty('--dash-gaze-x', `${(x * 10).toFixed(1)}px`);
         face.style.setProperty('--dash-gaze-y', `${(y * 6).toFixed(1)}px`);
+        emit();
       }, {passive: true});
       stage.addEventListener('pointerleave', centerGaze);
       stage.addEventListener('pointercancel', centerGaze);

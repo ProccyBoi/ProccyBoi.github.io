@@ -19,6 +19,7 @@
     let renderer,scene,camera,model,environment,raycaster,pointer,frame=0,frames=0,ready=false,loading=false,visible=true,generation=0;
     let initialRotation={x:1.03,y:-.16,z:-.26};
     let current=0,target=0,rotation={...initialRotation},zoom=1,drag,pendingPick,hoverPick,selected='',lastTime=0;
+    let dashDevice=null;
     let pickables=[],partByMesh=new Map(),keyboardParts=[],keyboardIndex=-1;
     const abort=new AbortController(),listen=(node,event,callback,options={})=>node?.addEventListener(event,callback,{...options,signal:abort.signal});
     const showStatus=text=>{status.textContent=text;};
@@ -36,7 +37,7 @@
       if(!ready)return;const bounds=canvas.getBoundingClientRect();
       pointer.set((pick.x-bounds.left)/bounds.width*2-1,-((pick.y-bounds.top)/bounds.height)*2+1);
       camera.updateMatrixWorld();raycaster.setFromCamera(pointer,camera);
-      const hit=raycaster.intersectObjects(pickables,false)[0],part=hit&&partByMesh.get(hit.object);
+      const hit=raycaster.intersectObjects(pickables,false).find(hit=>{for(let node=hit.object;node;node=node.parent)if(!node.visible)return false;return true;}),part=hit&&partByMesh.get(hit.object);
       if(!part){clearPart();return;}
       let ref=part.ref,value=part.value;
       const centers=part.object.userData.componentCenters;
@@ -50,7 +51,7 @@
     function render(time){
       frame=0;if(!ready||!visible||document.hidden)return;
       const dt=lastTime?Math.min(64,time-lastTime):16;lastTime=time;
-      current=reduced.matches?target:current+(target-current)*(1-Math.exp(-dt/115));if(Math.abs(target-current)<.0005)current=target;
+      current=reduced.matches?target:current+(target-current)*(1-Math.exp(-dt/(model.metadata?.slug==='dash'?210:115)));if(Math.abs(target-current)<.0005)current=target;
       model.group.rotation.set(rotation.x,rotation.y,rotation.z);window.V2CadGeometry.applyMotion(model.parts,current);model.group.updateMatrixWorld(true);
       if(model.metadata?.slug==='dash')frameCamera();
       if(!drag){const pick=pendingPick||hoverPick;pendingPick=null;if(pick)pickPart(pick);}
@@ -77,6 +78,7 @@
     const layout=()=>{if(!renderer||!ready)return;renderer.setSize(stage.clientWidth,stage.clientHeight,false);frameCamera();request();};
     const releaseGroup=group=>group?.traverse(object=>{object.geometry?.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>{material?.map?.dispose();material?.dispose();});});
     const releaseModel=()=>{
+      dashDevice?.dispose();dashDevice=null;
       generation++;ready=false;loading=false;cancelAnimationFrame(frame);frame=0;
       if(model){scene.remove(model.group);releaseGroup(model.group);model=null;}pickables=[];partByMesh.clear();keyboardParts=[];hoverPick=null;clearPart();
     };
@@ -110,10 +112,14 @@
         pickables=[];model.group.traverse(object=>{if(object.isMesh)pickables.push(object);});
         canvas.hidden=false;canvas.tabIndex=0;canvas.setAttribute('role','img');
         canvas.setAttribute('aria-label',root.dataset.hardwareTitle+'. Drag or use arrow keys to rotate. Hover or tap a part to identify it; use bracket keys to browse parts, Escape to clear, plus or minus to zoom, or Home to reset.');
-        ready=true;root.dataset.hardwareState='ready';root.dataset.hardwareComponents=String(model.parts.length);showStatus('');explode.disabled=!model.parts.length;layout();request();
+        ready=true;
+        if(model.metadata?.slug==='dash'){
+          try{await Promise.all(['dash-display','dash-device'].map(name=>script('/assets/'+name+'.js?v=20261028')));if(token!==generation)return;dashDevice=window.DashDevice.mount(root,model,{invalidate:request,view:name=>{rotation=name==='front'?{x:0,y:-Math.PI/2,z:0}:name==='rear'?{x:0,y:Math.PI/2,z:0}:{...initialRotation};zoom=1;hoverPick=null;clearPart();layout();}});}catch(error){console.warn('Live Dash display unavailable.',error);}
+        }
+        root.dataset.hardwareState='ready';root.dataset.hardwareComponents=String(model.parts.length);showStatus('');explode.disabled=!model.parts.length;layout();request();
       }catch(error){if(token===generation){console.warn('Assembly view unavailable.',error);unavailable();}}finally{if(token===generation)loading=false;}
     };
-    const reset=()=>{rotation={...initialRotation};zoom=1;keyboardIndex=-1;setPhase(0);layout();};
+    const reset=()=>{dashDevice?.setView('angled');rotation={...initialRotation};zoom=1;keyboardIndex=-1;setPhase(0);layout();};
     const showBoard=link=>{
       const load=ready||loading;if(load)releaseModel();current=0;target=0;drag=null;zoom=1;rotation={x:1.03,y:-.16,z:-.26};keyboardIndex=-1;setPhase(0);lastTime=0;
       root.dataset.hardware=link.dataset.hardwareModel;root.dataset.hardwareTitle=link.dataset.hardwareTitle;root.dataset.hardwareBoardKey=link.dataset.hardwareBoard;root.dataset.hardwareState='poster';
@@ -131,7 +137,7 @@
     listen(canvas,'pointerdown',event=>{if(event.button!==0||!ready)return;drag={x:event.clientX,y:event.clientY,rx:rotation.x,ry:rotation.y,moved:false};canvas.setPointerCapture(event.pointerId);});
     listen(canvas,'pointermove',event=>{
       if(!ready)return;
-      if(drag){if(Math.hypot(event.clientX-drag.x,event.clientY-drag.y)>6)drag.moved=true;if(drag.moved){hoverPick=null;clearPart();rotation.x=drag.rx+(event.clientY-drag.y)*.006;rotation.y=drag.ry+(event.clientX-drag.x)*.006;request();}}
+      if(drag){if(Math.hypot(event.clientX-drag.x,event.clientY-drag.y)>6)drag.moved=true;if(drag.moved){dashDevice?.setView('custom');hoverPick=null;clearPart();rotation.x=drag.rx+(event.clientY-drag.y)*.006;rotation.y=drag.ry+(event.clientX-drag.x)*.006;request();}}
       else if(event.pointerType==='mouse'){hoverPick={x:event.clientX,y:event.clientY};pendingPick=hoverPick;request();}
     });
     listen(canvas,'pointerup',event=>{const tap=drag&&!drag.moved;drag=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);if(tap){hoverPick=event.pointerType==='mouse'?{x:event.clientX,y:event.clientY}:null;pendingPick={x:event.clientX,y:event.clientY,toggle:event.pointerType!=='mouse'};request();}});
@@ -140,7 +146,7 @@
       if(!ready)return;const keys=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','+','=','-','[',']','Escape'];if(!keys.includes(event.key))return;event.preventDefault();hoverPick=null;pendingPick=null;
       if(event.key==='Home'){reset();return;}if(event.key==='Escape'){clearPart();return;}
       if(event.key==='['||event.key===']'){if(!keyboardParts.length)return;keyboardIndex=(keyboardIndex+(event.key===']'?1:-1)+keyboardParts.length)%keyboardParts.length;const part=keyboardParts[keyboardIndex];showPart(part.ref,part.value);return;}
-      clearPart();if(event.key==='ArrowLeft')rotation.y-=.15;if(event.key==='ArrowRight')rotation.y+=.15;if(event.key==='ArrowUp')rotation.x-=.15;if(event.key==='ArrowDown')rotation.x+=.15;
+      clearPart();if(event.key.startsWith('Arrow'))dashDevice?.setView('custom');if(event.key==='ArrowLeft')rotation.y-=.15;if(event.key==='ArrowRight')rotation.y+=.15;if(event.key==='ArrowUp')rotation.x-=.15;if(event.key==='ArrowDown')rotation.x+=.15;
       if(event.key==='+'||event.key==='=')zoom=clamp(zoom+.1,.6,1.5);if(event.key==='-')zoom=clamp(zoom-.1,.6,1.5);layout();
     });
     listen(canvas,'webglcontextlost',event=>{event.preventDefault();unavailable();});
@@ -149,7 +155,7 @@
       const preload=new IntersectionObserver(([entry])=>{if(entry.isIntersecting){preload.disconnect();initialize();}},{rootMargin:'400px 0px'});preload.observe(stage);
     }else initialize();
     new ResizeObserver(layout).observe(stage);
-    listen(document,'visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;hoverPick=null;clearPart();}else{lastTime=0;request();}});
-    listen(reduced,'change',request);listen(window,'pagehide',()=>{cancelAnimationFrame(frame);frame=0;hoverPick=null;clearPart();});listen(window,'pageshow',()=>{lastTime=0;request();});if(capture)initialize();
+    listen(document,'visibilitychange',()=>{dashDevice?.setActive(!document.hidden);if(document.hidden){cancelAnimationFrame(frame);frame=0;hoverPick=null;clearPart();}else{lastTime=0;request();}});
+    listen(reduced,'change',request);listen(window,'pagehide',()=>{dashDevice?.setActive(false);cancelAnimationFrame(frame);frame=0;hoverPick=null;clearPart();});listen(window,'pageshow',()=>{dashDevice?.setActive(!document.hidden);lastTime=0;request();});if(capture)initialize();
   });
 })();
