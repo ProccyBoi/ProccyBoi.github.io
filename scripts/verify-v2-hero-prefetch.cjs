@@ -6,11 +6,21 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const root = path.resolve(__dirname, '..');
 const scripts = ['assets/v2-hero-assets.js', 'assets/v2-hero-environment.js'];
 const startup = 'assets/v2-hero-startup.js';
 const names = ['tramtrace', 'dash', 'pi'];
+const fingerprints = Object.fromEntries([...names,'telemetry'].map(name => [name,
+  crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'assets/models/hero',name+'.bin'))).digest('hex').slice(0,12)]));
+function fingerprintRequests(requests, expected) {
+  for (const name of expected) {
+    const urls = requests.filter(url => url.includes('/' + name + '.'));
+    assert.equal(urls.length,1,name+' has one cache-bound request');
+    assert.equal(new URL(urls[0],'https://example.test').searchParams.get('h'),fingerprints[name],name+' URL binds the exact source pack');
+  }
+}
 const packTextures = Object.fromEntries(names.map(name => {
   const bytes = fs.readFileSync(path.join(root, 'assets/models/hero', name + '.bin'));
   const data = JSON.parse(bytes.subarray(16, 16 + bytes.readUInt32LE(8)).toString());
@@ -80,11 +90,18 @@ function smallPack(textures) {
   assert.strictEqual(original, observed.sandbox.V2HeroEnvironment.prefetch(), 'Lighting prefetch must share its download');
   observed.downloads.get(observed.requests.find(url => url.startsWith('/assets/models/hero/environment.bin'))).release(new ArrayBuffer(0)); await original;
   await assert.rejects(observed.sandbox.V2HeroAssets.prefetch('unknown'), /Unknown hero assembly/);
+  const telemetry = observed.sandbox.V2HeroAssets.prefetch('telemetry');
+  observed.downloads.get(observed.requests.find(url => url.includes('/telemetry.'))).release(smallPack([])); await telemetry;
+  fingerprintRequests(observed.requests,[...names,'telemetry']);
 
-  const early = context(); early.run(startup); early.run(startup); await flush();
+  const early = context(); early.run(startup);
+  assert.equal(early.requests.length, 4, 'Full-detail fetches begin before any dynamically loaded helper executes');
+  assert.equal(early.sandbox.V2HeroAssets, undefined);
+  early.run(startup); await flush();
   assert.equal(early.scriptRequests.length, 4, 'Concurrent startup calls must share runtime and helper requests');
   assert.ok(early.scriptRequests[0].includes('three.min.js'), 'Request the renderer before geometry and images compete for the connection');
   assert.equal(early.requests.length, 4, 'All three visible boards and lighting begin without a serial model gate');
+  fingerprintRequests(early.requests,names);
   assert.deepEqual(early.images, Object.values(packTextures).flat(), 'All original board textures begin together');
   const leadUrl = early.requests.find(url => url.includes('/tramtrace.'));
   early.downloads.get(leadUrl).release(smallPack(packTextures.tramtrace));
@@ -105,6 +122,7 @@ function smallPack(textures) {
   decoding.sandbox.Blob = class { stream() { return {pipeThrough:() => ({})}; } };
   decoding.sandbox.Response = class { arrayBuffer() { return decode.promise; } };
   decoding.run(startup); await flush();
+  fingerprintRequests(decoding.requests,names);
   const compressedLead = decoding.requests.find(url => url.includes('/tramtrace.'));
   const prepared = decoding.sandbox.V2HeroAssets.prefetch('tramtrace');
   let leadPrepared = false; prepared.then(() => { leadPrepared = true; });
@@ -129,6 +147,10 @@ function smallPack(textures) {
 
   const unavailable = context({failHelpers:true}); unavailable.run(startup); await flush();
   assert.equal(unavailable.sandbox.V2HeroScripts.size, 0, 'Failed early helpers must be retryable by scene initialization');
-  assert.deepEqual(unavailable.requests, []);
+  assert.equal(unavailable.requests.length, 4, 'Eligible visible models start during the helper round trip, even if a helper later fails');
+  unavailable.run(scripts[0]); unavailable.run(scripts[1]);
+  unavailable.sandbox.V2HeroAssets.prefetch('tramtrace').catch(() => {});
+  unavailable.sandbox.V2HeroEnvironment.prefetch().catch(() => {});
+  assert.equal(unavailable.requests.length, 4, 'Recovered helpers reuse responses already in flight');
   console.log('PASS: original texture parity, raw-transfer overlap, decode/failure release, deduplication, opt-in startup, reduced-motion and Save Data guards.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

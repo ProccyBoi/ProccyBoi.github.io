@@ -85,15 +85,51 @@
   }
   window.V2ProductStudio = Object.freeze({createEnvironment, configureRenderer, createLights, applyMaterials});
   let pending;
+  // Shared by independently loaded helpers, including older project pages.
+  // Inflate while bytes arrive; sniff the payload because HTTP Content-Encoding
+  // may already have decoded an explicitly named .gz file.
+  const readBinary = window.V2ReadBinaryResponse ||= async (response, settled = () => {}) => {
+    let notified = false;
+    const finish = error => { if (!notified) { notified = true; settled(error); } };
+    try {
+      if (!response.ok) throw new Error('Hero binary unavailable');
+      if (!response.body?.getReader || typeof ReadableStream === 'undefined') {
+        const bytes = await response.arrayBuffer(); finish();
+        const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
+        return signature[0] === 31 && signature[1] === 139
+          ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : bytes;
+      }
+      const reader = response.body.getReader(), prefix = [], signature = [];
+      let ended = false;
+      while (signature.length < 2 && !ended) {
+        const {value, done} = await reader.read(); ended = done;
+        if (value?.byteLength) {
+          prefix.push(value);
+          for (const byte of value) { signature.push(byte); if (signature.length === 2) break; }
+        }
+      }
+      const stream = new ReadableStream({
+        start(controller) {
+          prefix.forEach(chunk => controller.enqueue(chunk));
+          if (ended) { finish(); controller.close(); }
+        },
+        async pull(controller) {
+          try {
+            const {value, done} = await reader.read();
+            if (done) { finish(); controller.close(); } else controller.enqueue(value);
+          } catch (error) { finish(error); controller.error(error); }
+        },
+        cancel(reason) { finish(reason); return reader.cancel(reason); }
+      });
+      const decoded = signature[0] === 31 && signature[1] === 139 ? stream.pipeThrough(new DecompressionStream('gzip')) : stream;
+      return await new Response(decoded).arrayBuffer();
+    } catch (error) { finish(error); throw error; }
+  };
   function prefetch() {
-    pending ||= fetch('/assets/models/hero/environment.bin' + (window.DecompressionStream ? '.gz' : '') + '?v=product-20261007').then(async response => {
-      if (!response.ok) throw new Error('Hero environment unavailable');
-      const bytes = await response.arrayBuffer();
-      window.V2TransportPriority?.settle('environment');
-      const signature = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
-      if (signature[0] === 31 && signature[1] === 139) return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-      return bytes;
-    }).catch(error => { window.V2TransportPriority?.settle('environment', error); throw error; });
+    const url = '/assets/models/hero/environment.bin' + (window.DecompressionStream ? '.gz' : '') + '?v=product-20261007';
+    pending ||= (window.V2HeroResponses?.get(url) || fetch(url))
+      .then(response => readBinary(response, error => window.V2TransportPriority?.settle('environment', error)))
+      .catch(error => { window.V2TransportPriority?.settle('environment', error); throw error; });
     return pending;
   }
   async function load(T = window.THREE) {

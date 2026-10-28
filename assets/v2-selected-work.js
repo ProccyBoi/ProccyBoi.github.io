@@ -259,8 +259,8 @@
     warmImages();
     return sourceTask ||= Promise.all([
       window.THREE?Promise.resolve():script('/assets/vendor/three.min.js'),
-      window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=dash-20261028'),
-      window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=load-20261012'),
+      window.V2HeroAssets?Promise.resolve():script('/assets/v2-hero-assets.js?v=speed-20261029'),
+      window.V2HeroEnvironment?Promise.resolve():script('/assets/v2-hero-environment.js?v=speed-20261029'),
       script('/assets/v2-selected-assets.js?v=load-20261012'),
       script('/assets/v2-framework-scene.js?v=20261015'),
       script('/assets/v2-gpu-preparation.js?v=paced-20261011')

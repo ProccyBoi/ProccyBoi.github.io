@@ -79,7 +79,7 @@
     // A visitor can choose a supporting chapter while Three is still loading.
     // Promote its transport immediately; installation follows renderer setup.
     const prefetch = async () => {
-      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=dash-20261028');
+      if (!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=speed-20261029');
       window.V2HeroAssets.prefetch(projects[index].name).catch(() => {});
     };
     prefetch().catch(() => {});
@@ -420,11 +420,11 @@
       // Download prepared geometry alongside Three.js. Source CAD remains a
       // recovery path, without putting its parsing cost on the normal visit.
       const assets=(async()=>{
-        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=dash-20261028');
+        if(!window.V2HeroAssets) await loadScript('/assets/v2-hero-assets.js?v=speed-20261029');
         if (motionAllowed()) projects.forEach(project=>window.V2HeroAssets.prefetch(project.name).catch(()=>{}));
       })().catch(()=>{});
       const lighting=(async()=>{
-        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=load-20261012');
+        if(!window.V2HeroEnvironment) await loadScript('/assets/v2-hero-environment.js?v=speed-20261029');
         window.V2HeroEnvironment.prefetch().catch(()=>{});
       })().catch(()=>{});
       await Promise.all([

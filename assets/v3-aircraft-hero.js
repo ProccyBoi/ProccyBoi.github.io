@@ -401,7 +401,7 @@
     telemetryLoading = true;
     return telemetryTask = (async () => {
     try {
-      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'dash-20261028' : 'startup-20261007'));
+      if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=' + (root.hasAttribute('data-aircraft-smooth') ? 'speed-20261029' : 'startup-20261007'));
       if (background) {
         if (!await backgroundCPU('telemetry-transfer')) return;
         await window.V2HeroAssets.prefetch('telemetry');
@@ -454,7 +454,7 @@
       (async () => {
         if (!document.querySelector('[data-assembly]')) return;
         if (window.V2HeroStartup && !window.V2HeroStartup.hasStarted()) return;
-        if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=dash-20261028');
+        if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=speed-20261029');
         if (!sourceEligible()) return;
         const heroModels = window.V2HeroStartup?.models || ['tramtrace', 'dash', 'pi'];
         await Promise.all(heroModels.map(name => window.V2HeroAssets.whenTransferSettled(name)));
@@ -471,13 +471,22 @@
     return sourcePreparation ||= Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (sourceEligible() && !window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
         (async () => {
-          if (!window.V3AircraftScene) await script('/assets/v3-aircraft-scene.js?v=' + (background ? 'load-20261012' : 'aircraft-transition-20261010'));
-          if (!sourceEligible()) return;
-          if (background && !window.MeshoptDecoder) await script('/assets/vendor/meshopt_decoder.js').catch(() => {});
+          // The decoder is independent of Three and the scene factory. Start
+          // both helpers together so their round trips do not serialize.
+          await Promise.all([
+            window.V3AircraftScene ? Promise.resolve() : script('/assets/v3-aircraft-scene.js?v=' + (background ? 'speed-20261029' : 'aircraft-transition-20261010')),
+            background && !window.MeshoptDecoder ? script('/assets/vendor/meshopt_decoder.js').catch(() => {}) : Promise.resolve()
+          ]);
           if (!sourceEligible()) return;
           prepareAirframe(!background || nearStory()).catch(() => {});
         })(),
-        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=' + (background ? 'load-20261012' : 'product-20261007')); if (sourceEligible()) window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
+        background ? (async () => {
+          if (!window.V2HeroAssets) await script('/assets/v2-hero-assets.js?v=speed-20261029');
+          // Full-detail readiness includes this board. Its bytes can arrive
+          // while the airframe downloads; attachment still waits for flight.
+          if (sourceEligible()) window.V2HeroAssets.prefetch('telemetry').catch(() => {});
+        })() : Promise.resolve(),
+        (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=' + (background ? 'speed-20261029' : 'product-20261007')); if (sourceEligible()) window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
         script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
         detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve(),
         background ? script('/assets/v2-gpu-preparation.js?v=paced-20261011') : Promise.resolve()

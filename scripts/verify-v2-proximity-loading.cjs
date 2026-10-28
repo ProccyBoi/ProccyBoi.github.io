@@ -16,7 +16,7 @@ const between = (source, from, to) => {
 };
 
 function hero({ direct = false, top = 0, hidden = false, compact = false } = {}) {
-  const events = new Map(), requests = [], models = [], environment = [];
+  const events = new Map(), requests = [], binaries = [], models = [], environment = [];
   const state = { top, hidden, fragmentRestores: 0 };
   const root = { contains: () => false, getBoundingClientRect: () => ({ top: state.top, bottom: state.top + 2000 }) };
   const on = (name, callback) => { if (!events.has(name)) events.set(name, []); events.get(name).push(callback); };
@@ -24,6 +24,7 @@ function hero({ direct = false, top = 0, hidden = false, compact = false } = {})
   const window = { V2HeroAssets: { prefetch: async name => models.push(name) }, V2HeroEnvironment: { prefetch: async () => environment.push(true) } };
   const context = {
     window, location: { hash: direct ? '#overview' : '' }, innerHeight: 900,
+    fetch: url => { binaries.push(url); return new Promise(() => {}); },
     navigator: {}, matchMedia: query => query.includes('max-height') ? compactMedia : { matches: false }, addEventListener: on,
     requestAnimationFrame: callback => callback(),
     document: { get hidden() { return state.hidden; }, readyState: 'interactive',
@@ -33,7 +34,7 @@ function hero({ direct = false, top = 0, hidden = false, compact = false } = {})
       createElement: () => ({}), head: { append: script => requests.push(script) } },
   };
   vm.runInNewContext(read('assets/v2-hero-startup.js'), context);
-  return { state, window, requests, models, environment, compactMedia,
+  return { state, window, requests, binaries, models, environment, compactMedia,
     event: name => { for (const callback of events.get(name) || []) callback(); },
     loaded: async () => { requests.forEach(script => script.onload()); await flush(); } };
 }
@@ -44,10 +45,10 @@ assert.ok(sourceEligibility, 'Production aircraft eligibility gate exists');
 const aircraftFunctions = between(aircraftSource, '  function prepareAirframe(', '  async function initialize(')
   + between(aircraftSource, '  let fallbackImagesStarted', '  const idleTurn');
 function aircraft({ eligible = false, background = true, near = eligible, dependencies, heroStarted = false, heroPresent = true } = {}) {
-  const state = { eligible, hidden: false, near, scripts: [], transport: [], heroRequests: [], images: 0, decoded: 0, environment: 0 };
+  const state = { eligible, hidden: false, near, scripts: [], transport: [], telemetry: [], heroRequests: [], images: 0, decoded: 0, environment: 0 };
   const image = () => ({ dataset: { approach: 'approach.webp', stopped: 'stopped.webp' }, decode: async () => state.decoded++ });
   const window = { V2HeroStartup: { models: ['tramtrace', 'dash', 'pi'], hasStarted: () => heroStarted },
-    V2HeroAssets: { whenTransferSettled: async name => state.heroRequests.push(name) } };
+    V2HeroAssets: { whenTransferSettled: async name => state.heroRequests.push(name), prefetch: async name => state.telemetry.push(name) } };
   const context = vm.createContext({
     window, background, detailed: true, failed: false, activePage: true,
     preparationEligible: () => state.eligible, allowed: () => true, nearStory: () => state.near,
@@ -82,6 +83,7 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   assert.ok(heroBudget <= 2200000, `Hero geometry + environment exceeds the 2.2 MB explicit gzip budget: ${heroBudget}`);
   let h = hero();
   assert.equal(h.requests.length, 4, 'Visible hero starts its four shared helpers');
+  assert.equal(h.binaries.length, 4, 'Visible hero starts exact full-detail transfers before helpers finish');
   await h.loaded();
   assert.deepEqual(h.models, ['tramtrace', 'dash', 'pi'], 'Hero loads full Dash and never telemetry');
   h.event('scroll'); assert.equal(h.requests.length, 4, 'Revisiting does not duplicate helpers');
@@ -89,18 +91,21 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   h = hero({ direct: true });
   let released = false; h.window.V2HeroStartup.whenEligible().then(() => { released = true; });
   assert.equal(h.requests.length, 0, 'Direct overview link does not load pre-scroll hero');
+  assert.equal(h.binaries.length, 0, 'Direct overview link has no speculative CAD transfers');
   h.event('load'); await flush();
   assert.equal(h.state.fragmentRestores, 1, 'Fresh navigation restores its destination before opening the loading gate');
   assert.equal(h.state.top, -1900);
   assert.equal(h.requests.length, 0); assert.equal(released, false);
   h.state.top = -1800; h.event('scroll'); await flush();
   assert.equal(h.requests.length, 0, 'A thin hero tail beneath the header does not wake CAD');
+  assert.equal(h.binaries.length, 0, 'A thin hero tail cannot bypass the early-transfer gate');
   h.state.top = -1700; h.event('scroll'); await flush();
   assert.equal(released, true, 'Returning to an appreciable hero viewport releases assembly controller');
   assert.equal(h.requests.length, 4);
 
   h = hero(); h.state.top = -3000; await h.loaded();
-  assert.equal(h.models.length, 0, 'Leaving while helpers load does not start CAD transfer');
+  assert.equal(h.models.length, 0, 'Leaving while helpers load does not start CAD decode');
+  assert.equal(h.binaries.length, 4, 'Only previously eligible transfers remain in flight after leaving');
   assert.equal(h.environment.length, 0, 'Leaving while helpers load does not inflate environment');
   h = hero({ hidden: true }); assert.equal(h.requests.length, 0);
   h.state.hidden = false; h.event('visibilitychange'); assert.equal(h.requests.length, 4);
@@ -114,6 +119,7 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   assert.equal(a.state.decoded, 0, 'Far aircraft performs no image decode');
   a.state.eligible = true; a.state.near = true; await a.context.prepare(); await flush();
   assert.deepEqual(a.state.transport, ['airframe']);
+  assert.deepEqual(a.state.telemetry, ['telemetry'], 'Detailed telemetry starts with source preparation, before the flight scene exists');
   a = aircraft({ eligible: true, near: false, heroPresent: false, heroStarted: true }); await a.context.prepare(); await flush();
   assert.equal(a.state.heroRequests.length, 0, 'Projects aircraft never asks for absent homepage hero models');
   assert.deepEqual(a.state.transport, ['airframe']);
@@ -126,7 +132,8 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   const pending = a.context.prepare(); a.state.eligible = false; gate.resolve(); await pending; await flush();
   assert.equal(a.state.transport.length, 0, 'Leaving during helper transport prevents airframe download');
   assert.equal(a.state.environment, 0);
-  assert.equal(a.state.scripts.some(url => /GLTFLoader|meshopt_decoder/.test(url)), false, 'No second-wave dependencies after leaving');
+  assert.equal(a.state.scripts.some(url => /GLTFLoader/.test(url)), false, 'No second-wave renderer dependencies after leaving');
+  assert.ok(a.state.scripts.some(url => /meshopt_decoder/.test(url)), 'The independent decoder begins in the initial eligible helper wave');
   a.state.eligible = true; a.state.near = true; await a.context.prepare(); await flush();
   assert.deepEqual(a.state.transport, ['airframe'], 'Return resumes incomplete source preparation');
 
@@ -134,6 +141,7 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   assert.equal(a.state.scripts.length, 0, 'Hidden tab defers aircraft work');
   a = aircraft({ eligible: false, background: false }); await a.context.prepare(); await flush();
   assert.deepEqual(a.state.transport, ['airframe'], 'v3 top-fold aircraft still prepares immediately');
+  assert.equal(a.state.telemetry.length, 0, 'v3 retains its existing telemetry scheduling');
   a = aircraft({ eligible: true, near: false }); await a.context.prepare(); await flush();
   assert.equal(a.state.heroRequests.length, 0, 'Explicit aircraft intent skips a hero that never started');
   assert.deepEqual(a.state.transport, ['airframe']);

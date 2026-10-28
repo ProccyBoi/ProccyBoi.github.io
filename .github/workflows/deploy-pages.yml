@@ -26,12 +26,17 @@ jobs:
         uses: actions/configure-pages@v6
 
       - name: Verify v2 documents and local assets
-        run: python3 scripts/audit-v2.py
+        run: |
+          python3 scripts/build-v2-home-styles.py --check
+          python3 scripts/audit-v2.py
 
       - name: Verify v2 loading gates and hero handoffs
         run: |
           node scripts/verify-v2-deferred-loading.cjs
           node scripts/verify-v2-hero-handoffs.cjs
+          node scripts/verify-v2-hero-transport.cjs
+          node scripts/build-v2-hero-geometry.cjs --verify
+          node scripts/verify-v2-hero-geometry.cjs
           node scripts/verify-v2-proximity-loading.cjs
           node scripts/verify-v2-projects-aircraft.cjs
           node scripts/verify-dash-idle-blink.cjs

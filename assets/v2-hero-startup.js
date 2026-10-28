@@ -5,6 +5,8 @@
   const compact = matchMedia('(max-height: 620px), (max-width: 900px) and (max-height: 700px)');
   const allowed = () => !reduced.matches && !compact.matches && !navigator.connection?.saveData;
   const models = Object.freeze(['tramtrace', 'dash', 'pi']);
+  // Generated with the loader's exact source pack fingerprints.
+  const packRevisions = Object.freeze({"tramtrace":"5466a5040ff8","dash":"40b4955b9a1f","pi":"19949162fef2","telemetry":"b63e3029ff92"});
   const waiters = new Set();
   let started = false;
   // Fragment scrolling happens after deferred scripts. Do not mistake the
@@ -24,6 +26,14 @@
   window.V2HeroStartup = Object.freeze({ models, eligible, hasStarted: () => started,
     whenEligible: () => eligible() ? Promise.resolve() : new Promise(resolve => waiters.add(resolve)) });
   const pending = window.V2HeroScripts ||= new Map();
+  const responses = window.V2HeroResponses ||= new Map();
+  const fetchEarly = (url, gate) => {
+    if (responses.has(url)) return;
+    // Fetch exact eventual URLs during the helper round trip. The helper takes
+    // this same Response, so there is one request and one decompression pass.
+    const response = gate ? gate.then(() => fetch(url)) : fetch(url);
+    response.catch(() => {}); responses.set(url, response);
+  };
   const loadScript = source => {
     if (!pending.has(source)) {
       const request = new Promise((resolve, reject) => {
@@ -43,12 +53,18 @@
     started = true;
     loadScript('/assets/vendor/three.min.js').catch(() => {});
     loadScript('/assets/v2-hero-motion.js?v=dash-20261028').catch(() => {});
-    loadScript('/assets/v2-hero-assets.js?v=dash-20261028').then(() => {
+    loadScript('/assets/v2-hero-assets.js?v=speed-20261029').then(() => {
       if (eligible()) models.forEach(name => window.V2HeroAssets.prefetch(name).catch(() => {}));
     }).catch(() => {});
-    loadScript('/assets/v2-hero-environment.js?v=load-20261012').then(() => {
+    loadScript('/assets/v2-hero-environment.js?v=speed-20261029').then(() => {
       if (eligible()) window.V2HeroEnvironment.prefetch().catch(() => {});
     }).catch(error => window.V2TransportPriority?.settle('environment', error));
+    const gate = window.V2TransportPriority?.wait('hero');
+    const extension = window.DecompressionStream ? '.idx.bin.gz' : '.bin';
+    fetchEarly('/assets/models/hero/tramtrace' + extension + '?h=' + packRevisions.tramtrace, gate);
+    fetchEarly('/assets/models/hero/dash' + extension + '?v=device-20261028&h=' + packRevisions.dash, gate);
+    fetchEarly('/assets/models/hero/pi' + extension + '?v=mechanics-20261003&h=' + packRevisions.pi, gate);
+    fetchEarly('/assets/models/hero/environment.bin' + (window.DecompressionStream ? '.gz' : '') + '?v=product-20261007');
   };
   const afterNavigation = () => {
     if (restoringNavigation) return;

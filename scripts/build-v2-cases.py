@@ -684,11 +684,15 @@ def make_index():
             counts['all'] += 1
     source = replace_nodes(source, [(node, re.sub(r'<span>\d+</span>', f'<span>{counts[node.attrs["data-v2-category"]]}</span>', node.outer(source))) for node in tree.nodes if 'data-v2-category' in node.attrs])
     source = common(source, 'v2-collection')
+    # Collection cards do not use the case-study component-photo controller.
+    source = re.sub(r'\s*<(?:link|script)[^>]+(?:href|src)="/assets/v2-component-photo\.(?:css|js)[^"]*"[^>]*>(?:</script>)?', '', source)
+    source = source.replace('loading="lazy"', 'loading="lazy" decoding="async" fetchpriority="low"')
+    source = source.replace('</head>', '<link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>\n</head>')
     source = source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=demos-20261028"')
     source = source.replace('class="skip-link" href="/v2/projects/#main"', 'class="skip-link" href="/v2/projects/#collection"')
     source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/aircraft-story.css?v=collection-20261029">
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
-  <script src="/assets/v3-aircraft-hero.js?v=collection-20261029" defer></script>
+  <script src="/assets/v3-aircraft-hero.js?v=speed-20261029" defer></script>
 </head>''')
     return '\n'.join(line.rstrip() for line in source.splitlines()) + '\n'
 

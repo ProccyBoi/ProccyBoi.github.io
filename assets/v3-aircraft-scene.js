@@ -29,15 +29,17 @@
     }).then(async () => { if (!window.MeshoptDecoder?.supported) throw new Error('Mesh transport decoder unavailable'); await window.MeshoptDecoder.ready; });
   }
   async function download(source, revision) {
+    const began = performance.now();
     const compressed = !!window.DecompressionStream && source.compressedModel;
     let buffer;
     try {
       const response = await fetch(directory + (compressed || source.model) + '?v=' + encodeURIComponent(revision));
       if (!response.ok) throw new Error('Trainer model unavailable');
-      buffer = await response.arrayBuffer();
-      transferComplete();
+      if (window.V2ReadBinaryResponse) buffer = await window.V2ReadBinaryResponse(response, transferComplete);
+      else { buffer = await response.arrayBuffer(); transferComplete(); }
     } catch (error) { transferComplete(error); throw error; }
     if (compressed && new Uint8Array(buffer)[0] === 31) buffer = await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+    window.V2SpeedProbe?.('aircraft:receive-and-inflate', performance.now() - began);
     return buffer;
   }
   function prefetch() {
