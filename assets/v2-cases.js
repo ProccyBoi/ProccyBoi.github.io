@@ -51,7 +51,7 @@
           card.hidden = !matches;
           if (matches) {
             visible++;
-            // Flight Review is a tool within Skylabs, not an additional project.
+            // Demo shortcuts and teaching tools are separate from the project inventory.
             if (!card.closest('.v2-related-tool')) total++;
             else relatedTools++;
           }
@@ -63,8 +63,9 @@
       if (clear) clear.hidden = status.hidden;
       const resultParts = [];
       if (total) resultParts.push(`${total} ${total === 1 ? 'project' : 'projects'}`);
-      if (relatedTools) resultParts.push(`${relatedTools} related ${relatedTools === 1 ? 'tool' : 'tools'}`);
-      status.textContent = resultParts.length ? `${resultParts.join(' and ')}${query ? ` matching “${search.value.trim()}”` : ''}.` : 'No projects match these filters. Clear filters to see all projects, or try another term.';
+      if (relatedTools) resultParts.push(`${relatedTools} ${relatedTools === 1 ? 'demo or tool' : 'demos and tools'}`);
+      const resultSummary = total && relatedTools ? `${total + relatedTools} results: ${resultParts.join('; ')}` : resultParts.join('');
+      status.textContent = resultParts.length ? `${resultSummary}${query ? ` matching “${search.value.trim()}”` : ''}.` : 'No results match these filters. Clear filters to see all projects, demos and tools, or try another term.';
       if (updateURL) {
         const url = new URL(location.href);
         query ? url.searchParams.set('q', search.value.trim()) : url.searchParams.delete('q');

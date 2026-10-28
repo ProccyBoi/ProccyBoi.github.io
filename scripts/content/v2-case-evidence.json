@@ -220,8 +220,8 @@
   },
   "rf-test-board": {
     "title": "A physical check on the RF layout",
-    "maturity": "Fabricated · VNA evaluation",
-    "role": "A two-layer RF comparison board, ordered without impedance control and measured with a vector network analyser.",
+    "maturity": "Fabricated test board · 50 Ω design target",
+    "role": "Designed a two-layer RF comparison board and investigated its feedlines and transitions with a vector network analyser.",
     "media_label": "Manufactured test-board photography · interactive CAD assembly",
     "problem": "Check calculated feedline geometry against the inexpensive 1.6 mm FR-4 fabrication process used for the preceding LoRa receiver.",
     "decisions": [
@@ -229,7 +229,7 @@
       "Print the stack-up and nominal trace widths on the reverse: 1 oz copper, a 0.2 mm ground gap, and widths of 0.8877 mm with mask and 1.0244 mm without it. The design target is 50 Ω."
     ],
     "challenges": "The earlier LoRa receiver's Rev A feedline missed the intended 50 Ω impedance. Investigating it with a VNA led to this dedicated comparison board.",
-    "validation": "VNA evaluation is documented in the project record. Photographs identify the comparison structures and the printed stack-up and geometry.",
+    "validation": "The build photographs document the test structures and their nominal geometry. The project record describes VNA investigation; quantitative traces and calibration details are not published here, so 50 Ω remains a design target.",
     "outcome": "A reusable physical reference for comparing feedlines, connector transitions and filter footprints on the chosen fabrication process.",
     "links": [
       {
@@ -254,10 +254,10 @@
   },
   "switch-mode-power-supplies": {
     "title": "Power-supply testing and repair",
-    "maturity": "Professional work · assembled boards",
-    "role": "Electronics Engineer Trainee at Switchmode Power Supplies since June 2026, maintaining, testing and repairing low- and high-voltage power supplies and other equipment.",
-    "media_label": "Manufactured and assembled board photography",
-    "validation": "The photographs document the Isolated Glitch Tester V03 and Isolated Glitch Tester Bus V02, including component-side, reverse and detail views.",
+    "maturity": "Industry role · June 2026 to present",
+    "role": "Maintenance, testing and repair of low- and high-voltage power supplies and other equipment as an Electronics Engineer Trainee.",
+    "media_label": "Employer hardware · assembled board photographs",
+    "validation": "My role covers power-supply maintenance, testing and repair. The photographed employer hardware is the Isolated Glitch Tester V03 and Isolated Glitch Tester Bus V02, shown from the component side, reverse and in detail.",
     "links": [
       {
         "label": "Inspect the photographed boards",
@@ -272,6 +272,38 @@
       {
         "label": "Published board record and photographs",
         "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/switch-mode-power-supplies/index.html"
+      }
+    ]
+  },
+  "skylabs/boards/ground-station": {
+    "title": "A useful flight record without depending on a laptop",
+    "maturity": "Assembled ground-station hardware",
+    "role": "Ground-station PCB and receiver workflow: LoRa reception, independent storage, a field display and a phone dashboard.",
+    "media_label": "Assembled board photographs · interactive CAD assembly",
+    "problem": "Keep a second record of the aircraft telemetry and make the field controls available when a laptop is absent.",
+    "decisions": [
+      "Record received packets to the ground station's own microSD card. Offer readable CSV or indexed, CRC-protected binary records alongside a rate-limited USB stream.",
+      "Put link and sensor status on the OLED, with a local Wi-Fi dashboard for pre-flight checks, log controls and event markers."
+    ],
+    "validation": "The build photographs show the assembled receiver, radio, microSD interface and reverse routing. The workflow below describes the logging and field interface; the linked aircraft diagnostic reports onboard logging results separately.",
+    "links": [
+      {
+        "label": "Inspect the assembled receiver",
+        "href": "/v2/projects/skylabs/boards/ground-station/#build"
+      },
+      {
+        "label": "Read the complete system",
+        "href": "/v2/projects/skylabs/"
+      },
+      {
+        "label": "Read the aircraft log diagnostic",
+        "href": "/shared/projects/skylabs/f110211/diagnostic.html"
+      }
+    ],
+    "sources": [
+      {
+        "label": "Ground-station development, workflow and build photographs",
+        "href": "https://github.com/ProccyBoi/ProccyBoi.github.io/blob/cdf869ee4e664cce5797cc36e074da5ed61c908d/projects/skylabs/boards/ground-station/index.html"
       }
     ]
   },

@@ -156,12 +156,14 @@
     renderer.shadowMap.needsUpdate=true;
   };
   const captionAt = value => {
-    const windows = [[.09,.365],[.405,.685],[.725,1.2]];
+    // Adjacent captions overlap with the incoming board. Select the strongest
+    // one so a scene handoff never leaves an empty caption interval.
+    const windows = [[.09,.405],[.34,.725],[.66,1.2]];
     let next = -1, opacity = 0;
     windows.forEach(([start,end], index) => {
       if (value >= start && value <= end) {
-        next = index;
-        opacity = ramp(value,start,start+.055) * (1-ramp(value,end-.04,end));
+        const candidate = ramp(value,start,start+.055) * (1-ramp(value,end-.04,end));
+        if (candidate > opacity) { next = index; opacity = candidate; }
       }
     });
     if (next >= 0 && next !== active) {
@@ -217,9 +219,9 @@
     const leadStart=startScale*(small?1.2:1.7);
     const sideStart=startScale*(small?.57:.8);
     poses = [
-      [pose(0,0,small?-1.9:-.95,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.405,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
-      [pose(0,left,small ? -.2 : -.8,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.345,off,-.6,scale,1.18,-.3,.25),pose(.445,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale*(small?.9:1),.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.725,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
-      [pose(0,right,small ? -.25 : -.8,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.65,off,-.2,scale,1.1,.1,-.05),pose(.76,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
+      [pose(0,0,small?-1.9:-.95,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.445,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
+      [pose(0,left,small ? -.2 : -.8,sideStart,1.08,.28,-.24),pose(.10,-off,-1,sideStart,1.08,.28,-.24),pose(.31,off,-.6,scale,1.18,-.3,.25),pose(.385,focusX,focusY,scale,1.12,-.25,.22),pose(.565,focusX,focusY-.35,scale*(small?.9:1),.82,-.2,.16,1),pose(.65,focusX,focusY,scale,1.1,-.35,.05),pose(.765,-off,1,scale,1.12,-.6,-.2),pose(1,-off,1,scale,1.12,-.6,-.2)],
+      [pose(0,right,small ? -.25 : -.8,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.625,off,-.2,scale,1.1,.1,-.05),pose(.695,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
     updateProgress();
     refreshVisibility();
@@ -260,7 +262,7 @@
     entryUnsettled=settle<1;
     projects.forEach((project,index) => {
       const transform=interpolate(poses[index],current);
-      const inScene=index===0 ? current<.405 : index===1 ? current<.105 || (current>=.345 && current<.725) : current<.115 || current>=.65;
+      const inScene=index===0 ? current<.445 : index===1 ? current<.105 || (current>=.31 && current<.765) : current<.115 || current>=.625;
       const inView=inScene && Math.abs(transform.x)<5*width/height+transform.s;
       const poster=posters[index];
       if(poster) {

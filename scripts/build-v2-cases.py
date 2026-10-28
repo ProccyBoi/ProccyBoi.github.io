@@ -93,8 +93,9 @@ def header(active='work'):
       <a class="v2-brand" href="/v2/">Andrew Chung</a>
       <nav class="v2-nav" id="v2-navigation" aria-label="Primary navigation" data-v2-nav>
         <a href="/v2/projects/"{' aria-current="page"' if active == 'work' else ''}>Projects</a>
+        <a href="/v2/#demos">Demos</a>
         <a href="/v2/about/"{' aria-current="page"' if active == 'about' else ''}>About</a>
-        <a href="/v2/book/">Book</a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+        <a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV <span aria-hidden="true">↗</span></a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav><button class="v2-menu" data-v2-menu type="button" aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div></header>'''
 
@@ -150,11 +151,11 @@ def common(source, body_class, active='work'):
     source = re.sub(r'(<meta name="theme-color" content=")[^"]*(">)', r'\g<1>#141412\2', source)
     if '<base' not in source:
         source = source.replace('<head>', '<head>\n<base href="/">', 1)
-    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=physical-20261007">
+    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/v2.css?v=review-20261028">
   <link rel="stylesheet" href="/assets/v2-case.css?v=physical-20261007">
   <link rel="stylesheet" href="/assets/v2-component-photo.css?v=physical-20261007">
   <script src="/assets/v2-component-photo.js?v=physical-20261007" defer></script>
-  <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js" defer></script>
+  <script src="/assets/v2.js?v=physical-20261007" defer></script><script src="/assets/v2-cases.js?v=review-20261028" defer></script>
 </head>''')
     if not old_footer:
         source = source.replace('</body>', FOOTER + '\n</body>')
@@ -560,12 +561,23 @@ def make_index():
     source = (ROOT / 'projects/index.html').read_text(encoding='utf-8')
     tree = Tree(source)
     tools = next(node for node in tree.nodes if node.tag == 'section' and node.attrs.get('id') == 'interactive')
-    source = replace_nodes(source, [(tools, '')])
+    demos = [
+        ('/v2/projects/kiku/#simulator', 'Kiku firmware simulator', 'Turn the dial, change the look and try the player interface.', 'Real C screen renderer · simulated hardware'),
+        ('/v2/projects/dash/#character', 'Meet Dash', 'Move your pointer, trigger a reaction or finish a short focus session.', 'Browser character sketch · simplified controls'),
+        ('/shared/projects/skylabs/f110211/', 'Replay a Skylabs flight', 'Scrub the recorded route, attitude and sensor timeline. A reference flight is already loaded.', 'Recorded flight · F110211'),
+        ('/v2/projects/scopelab/#details', 'ScopeLab teaching bench', 'Explore micro:bit waveform labs and starter code. Hardware exercises need a board and test equipment.', 'Teaching tool · GPIO, UART, I2C and SPI'),
+        ('/v2/projects/mosfet-operating-regions/', 'MOSFET Region Explorer', 'Change the bias and see the channel, operating region and characteristic curves respond.', 'Illustrative long-channel model'),
+        ('/v2/projects/lithography-animation/', 'Optical lithography', 'Explore how exposure, focus and resist tone affect pattern transfer.', 'Illustrative teaching model'),
+    ]
+    demo_rows = ''.join(f'<a class="project-list-row" href="{escape(href, quote=True)}"><div><h3>{escape(title)}</h3><p>{escape(description)}</p></div><small>{escape(label)}</small><b aria-hidden="true">↗</b></a>' for href, title, description, label in demos)
+    demo_shelf = '<section class="project-index-section project-index-subsection shell" id="demos" data-v2-project-group="demos" aria-labelledby="demos-title"><div class="index-section-heading"><div><h2 id="demos-title">Demos &amp; tools</h2></div><p>Try an interface, replay a flight or explore a teaching model. These are ways into the work, separate from the 16-project collection.</p></div><div class="project-list v2-related-tool">' + demo_rows + '</div></section>'
+    source = replace_nodes(source, [(tools, demo_shelf)])
     tree = Tree(source)
     hero = tree.find('section', 'page-hero')
-    new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems and robotics.</p></div></section>'''
+    new_hero = '''<section class="v2-collection-hero shell"><div><h1>Projects</h1><p>PCBs, embedded systems and robotics.</p><div class="home-links"><a href="/v2/projects/?category=demos#demos">Try a demo or tool ↗</a></div></div></section>'''
     jump = tree.find('nav', 'project-jumpbar')
     controls = '''<div class="v2-collection-controls"><div class="shell"><nav class="v2-collection-categories" aria-label="Project categories"><a href="/v2/projects/#hardware" data-v2-category="all" aria-current="true">All work <span>16</span></a><a href="/v2/projects/#hardware" data-v2-category="hardware">Hardware <span>13</span></a><a href="/v2/projects/#robotics" data-v2-category="robotics">Robotics <span>1</span></a><a href="/v2/projects/#archive" data-v2-category="archive">Archive <span>2</span></a></nav><div class="v2-project-search" hidden data-v2-search-wrap><label for="v2-project-search">Find a project</label><input type="search" id="v2-project-search" placeholder="Search projects" autocomplete="off" data-v2-search><button type="button" data-v2-clear-filters hidden>Clear filters</button></div></div></div><p class="v2-search-status shell" data-v2-search-status aria-live="polite" hidden></p>'''
+    controls = controls.replace('</nav>', '<a href="/v2/projects/#demos" data-v2-category="demos">Demos &amp; tools <span>6</span></a></nav>', 1).replace('Find a project', 'Find work or a demo').replace('placeholder="Search projects"', 'placeholder="Search projects, demos and tools"')
     source = replace_nodes(source, [(hero, new_hero), (jump, controls)])
     hardware_catalog = Tree(source).find('div', 'project-catalog')
     pi_card = '''<a class="catalog-card v2-pi-card" href="projects/framework-raspberry-pi/">
@@ -596,6 +608,9 @@ def make_index():
     source = source.replace('Two boards &middot; Interactive boards', 'STM32 + ESP32 &middot; LoRa telemetry')
     source = source.replace('CH334F &middot; Interactive 3D assembly', 'CH334F &middot; USB 2.0')
     source = source.replace('ESP32-S3-MINI-1 &middot; Interactive 3D assembly', 'ESP32-S3-MINI-1 &middot; 0.6 mm PCB')
+    source = source.replace('Isolated test hardware and production PCB work from my trainee engineering role.', 'Power-supply testing and repair, with photographed isolated test hardware.')
+    source = source.replace('10 MS/s</small>', '10 MS/s configured limit</small>')
+    source = source.replace('Tested beyond 1 km', 'Tested to at least 1 km')
     source = source.replace('id="hardware"', 'id="hardware" data-v2-project-group="hardware"', 1).replace('id="interactive"', 'id="interactive" data-v2-project-group="interactive"', 1).replace('id="robotics"', 'id="robotics" data-v2-project-group="robotics"', 1).replace('id="archive"', 'id="archive" data-v2-project-group="archive"', 1)
     source = re.sub(r'(<a class="(?:catalog-card|project-list-row)[^"]*")', r'\1 data-v2-project', source)
     source = source.replace('href="shared/flight-review/"', 'href="/shared/flight-review/"')
@@ -603,23 +618,43 @@ def make_index():
     source = source.replace('class="catalog-card wide"', 'class="catalog-card wide v2-featured-card"', 2)
     source = source.replace('class="project-list tool-list"', 'class="project-list tool-list v2-related-tool"')
     tree = Tree(source)
-    counts = {name: 0 for name in ['all', 'hardware', 'interactive', 'robotics', 'archive']}
+    counts = {name: 0 for name in ['all', 'hardware', 'demos', 'robotics', 'archive']}
     for node in tree.nodes:
-        if 'data-v2-project' not in node.attrs or not re.fullmatch(r'/?(?:v2/)?projects/[^/]+/', node.attrs.get('href', '')):
+        if 'data-v2-project' not in node.attrs:
             continue
         ancestor = node.parent
         while ancestor and 'data-v2-project-group' not in ancestor.attrs:
             ancestor = ancestor.parent
         if ancestor:
-            counts[ancestor.attrs['data-v2-project-group']] += 1
+            group = ancestor.attrs['data-v2-project-group']
+            if group == 'demos':
+                counts[group] += 1
+                continue
+            if not re.fullmatch(r'/?(?:v2/)?projects/[^/]+/', node.attrs.get('href', '')):
+                continue
+            counts[group] += 1
             counts['all'] += 1
     source = replace_nodes(source, [(node, re.sub(r'<span>\d+</span>', f'<span>{counts[node.attrs["data-v2-category"]]}</span>', node.outer(source))) for node in tree.nodes if 'data-v2-category' in node.attrs])
     source = common(source, 'v2-collection')
-    return source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=collection-20261023b"')
+    return source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=demos-20261028"')
 
 
 def make_about():
     source = (ROOT / 'about/index.html').read_text(encoding='utf-8')
+    # Lead with the most relevant engineering experience while retaining the
+    # original role descriptions and dates in the shared factual source.
+    timeline = Tree(source).find('div', 'timeline')
+    experience = [node for node in timeline.children if node.tag == 'article']
+    role_order = [
+        'Electronics Engineer Trainee', 'Avionics & Payload Team Lead',
+        'Senior Lab Demonstrator', 'Behaviours / Hardware Team Member',
+        'President', 'Student Ambassador',
+    ]
+    def experience_rank(node):
+        role = text(Tree(node.outer(source)).find('h3').inner(node.outer(source)))
+        return role_order.index(role) if role in role_order else len(role_order)
+    ordered = sorted(experience, key=experience_rank)
+    source = replace_nodes(source, [(old, new.outer(source)) for old, new in zip(experience, ordered)])
     source = source.replace('Andrew Chung / background', 'Electrical engineering · Sydney')
     source = source.replace('Engineering, in practice.', 'Andrew Chung')
     source = source.replace('My projects cover PCB design, embedded software, telemetry and robotics.', 'I work across the boundary between hardware and software: from a schematic and PCB layout to the firmware, measurements and interface that make a system useful.')

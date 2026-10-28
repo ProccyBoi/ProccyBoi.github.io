@@ -28,6 +28,11 @@ jobs:
       - name: Verify v2 documents and local assets
         run: python3 scripts/audit-v2.py
 
+      - name: Verify v2 loading gates and hero handoffs
+        run: |
+          node scripts/verify-v2-deferred-loading.cjs
+          node scripts/verify-v2-hero-handoffs.cjs
+
       - name: Verify Kiku firmware renderer and simulated controls
         run: node scripts/kiku-simulator/verify.cjs
 

@@ -72,17 +72,17 @@
       addEventListener('keydown', key); document.addEventListener('click', click);
     })();
   </script>
-  <script src="/assets/v2-hero-startup.js?v=load-20261012" async></script>
-  <link rel="stylesheet" href="/assets/v2.css?v=review-20261012">
-  <link rel="stylesheet" href="/assets/v2-assembly.css?v=review-20261012">
+  <script src="/assets/v2-hero-startup.js?v=review-20261028" async></script>
+  <link rel="stylesheet" href="/assets/v2.css?v=review-20261028">
+  <link rel="stylesheet" href="/assets/v2-assembly.css?v=review-20261028">
   <link rel="stylesheet" href="/assets/v2-hero-loading.css">
   <link rel="stylesheet" href="/assets/v2-selected-work.css?v=review-20261012">
   <link rel="stylesheet" href="/assets/aircraft-story.css?v=v2-aircraft-20261011">
   <link rel="stylesheet" href="/assets/v2-home-controls.css?v=blue-20261015">
   <script src="/assets/v2.js?v=controls-20261014" defer></script>
   <script src="/assets/v2-hero-loading.js" defer></script>
-  <script src="/assets/v2-assembly.js?v=controls-20261014" defer></script>
-  <script src="/assets/v2-selected-work.js?v=framework-20261015" defer></script>
+  <script src="/assets/v2-assembly.js?v=review-20261028" defer></script>
+  <script src="/assets/v2-selected-work.js?v=review-20261028" defer></script>
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
   <script src="/assets/v3-aircraft-hero.js?v=load-20261012" defer></script>
 </head>
@@ -92,7 +92,10 @@
     <div class="v2-nav-shell">
       <a class="v2-brand" href="/v2/">Andrew Chung</a>
       <nav class="v2-nav" id="v2-navigation" data-v2-nav aria-label="Primary navigation">
-        <a href="/v2/projects/">Projects</a><a href="/v2/about/">About</a><a href="/v2/book/">Book</a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
+        <a href="/v2/projects/">Projects</a>
+        <a href="/v2/#demos">Demos</a>
+        <a href="/v2/about/">About</a>
+        <a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV <span aria-hidden="true">↗</span></a><a class="v2-nav-contact" href="/v2/about/#contact">Contact <span aria-hidden="true">↗</span></a>
       </nav>
       <button class="v2-menu" type="button" data-v2-menu aria-expanded="false" aria-controls="v2-navigation" aria-label="Open navigation"><span></span><span></span></button>
     </div>
@@ -101,8 +104,8 @@
     <section class="v2-assembly" data-assembly aria-labelledby="hero-title">
       <div class="v2-assembly-sticky">
         <div class="v2-assembly-intro" data-assembly-intro>
-          <h1 id="hero-title"><span>Andrew</span> <span>Chung</span></h1>
-          <div class="v2-assembly-summary"><p>Electrical engineering student specialising in embedded systems, power electronics and avionics. Designing hardware from PCB to firmware.</p><div class="v2-assembly-actions"><a href="/v2/projects/">View projects <span aria-hidden="true">↗</span></a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf" download>Download CV <span aria-hidden="true">↓</span></a></div></div>
+          <div class="v2-hero-identity"><h1 id="hero-title"><span>Andrew</span> <span>Chung</span></h1><p class="v2-hero-credentials"><span class="v2-credentials-full">UNSW Electrical Engineering<br>Electronics Engineer Trainee · Switchmode<br>Avionics &amp; Payload Lead · UNSW Skylabs</span><span class="v2-credentials-compact">UNSW · Switchmode trainee<br>Skylabs avionics &amp; payload lead</span></p></div>
+          <div class="v2-assembly-summary"><p>I build PCBs, firmware and tools for embedded systems, power electronics and avionics.</p><div class="v2-assembly-actions"><a href="#overview">Quick overview <span aria-hidden="true">↓</span></a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf" download>Download CV <span aria-hidden="true">↓</span></a></div></div>
         </div>
         <div class="v2-assembly-stage">
           <canvas data-assembly-canvas role="img" aria-label="Three electronic projects: the TramTrace light-rail display, the Skylabs telemetry board, and a Raspberry Pi microcontroller expansion card."></canvas>
@@ -117,7 +120,7 @@
           <p data-assembly-description>116 pixels following Sydney’s light-rail network.</p>
         </div>
         <div class="v2-assembly-bottom">
-          <div class="v2-assembly-navigation"><a class="v2-assembly-explore" data-assembly-explore href="/v2/projects/tramtrace/" aria-label="Open TramTrace project"><span data-assembly-open-label>Open TramTrace</span> <span aria-hidden="true">↗</span></a><a class="v2-assembly-jump" href="#work">Skip intro <span aria-hidden="true">↓</span></a></div>
+          <div class="v2-assembly-navigation"><a class="v2-assembly-explore" data-assembly-explore href="/v2/projects/tramtrace/" aria-label="Open TramTrace project"><span data-assembly-open-label>Open TramTrace</span> <span aria-hidden="true">↗</span></a><a class="v2-assembly-jump" href="#overview">Skip intro <span aria-hidden="true">↓</span></a><a class="v2-assembly-jump" href="#demos">Try a demo <span aria-hidden="true">↗</span></a></div>
           <div class="v2-assembly-choices" data-assembly-choices role="group" aria-label="Preview featured project scenes" hidden>
             <span class="v2-assembly-preview-label" aria-hidden="true">Preview</span>
             <button type="button" data-assembly-select="0" aria-pressed="false" aria-label="Preview TramTrace scene">TramTrace</button>
@@ -128,8 +131,26 @@
         <div class="v2-assembly-progress" aria-hidden="true"><span data-assembly-progress></span></div>
       </div>
     </section>
+    <section class="v2-overview v2-shell" id="overview" aria-labelledby="overview-title">
+      <header class="v2-browse-heading"><div><p class="v2-eyebrow">The work, at a glance</p><h2 id="overview-title">Small boards.<br>Working systems.</h2></div><p>I build the board, write the firmware and make the tools to understand it. Start with three projects, or <a href="#demos">try one for yourself <span aria-hidden="true">↓</span></a>.</p></header>
+      <div class="v2-proof-list">
+        <article class="v2-proof-row"><a class="v2-proof-image" href="/v2/projects/skylabs/" aria-label="Read the Skylabs project"><img src="/assets/images/projects/skylabs-telemetry-hero-960.webp" width="960" height="640" loading="lazy" alt="The assembled Skylabs flight telemetry board"></a><div class="v2-proof-copy"><p class="v2-eyebrow">01 / Avionics &amp; telemetry</p><h3>Skylabs</h3><p>An aircraft-to-ground system, from sensor logging to flight replay.</p><dl><div><dt>My role</dt><dd>Avionics lead · boards, firmware &amp; analysis</dd></div><div><dt>Evidence</dt><dd>Recorded flight, timing diagnostics &amp; a revised logger awaiting flight validation</dd></div></dl></div><div class="v2-proof-links"><a href="/v2/projects/skylabs/">Read the project <span aria-hidden="true">↗</span></a><a href="/shared/projects/skylabs/f110211/">Replay a flight <span aria-hidden="true">↗</span></a></div></article>
+        <article class="v2-proof-row"><a class="v2-proof-image" href="/v2/projects/kiku/" aria-label="Read the Kiku project"><img src="/assets/images/kiku/hero.webp" width="1400" height="1390" loading="lazy" alt="Kiku pocket player enclosure CAD"></a><div class="v2-proof-copy"><p class="v2-eyebrow">02 / Audio &amp; embedded systems</p><h3>Kiku</h3><p>A pocket audio player with a tactile dial and three listening sources.</p><dl><div><dt>My role</dt><dd>Circuit design · firmware · enclosure</dd></div><div><dt>Stage</dt><dd>Working development hardware · P2 enclosure awaiting a physical fit check</dd></div></dl></div><div class="v2-proof-links"><a href="/v2/projects/kiku/">Read the project <span aria-hidden="true">↗</span></a><a href="/v2/projects/kiku/#simulator">Try the player <span aria-hidden="true">↗</span></a></div></article>
+        <article class="v2-proof-row"><a class="v2-proof-image" href="/v2/projects/tramtrace/" aria-label="Read the TramTrace project"><img src="/assets/images/projects/tramtrace-hero-1920.jpg" width="1920" height="1280" loading="lazy" alt="TramTrace light-rail display illuminated on the workbench"></a><div class="v2-proof-copy"><p class="v2-eyebrow">03 / Live data &amp; physical interfaces</p><h3>TramTrace</h3><p>Sydney and Parramatta light rail, made tangible in 116 pixels.</p><dl><div><dt>My role</dt><dd>PCB · firmware · transport-data service</dd></div><div><dt>Evidence</dt><dd>Assembled display · published station-to-pixel mapping tests</dd></div></dl></div><div class="v2-proof-links"><a href="/v2/projects/tramtrace/">Read the project <span aria-hidden="true">↗</span></a><a href="/v2/projects/tramtrace/#explore">Inspect the board <span aria-hidden="true">↗</span></a></div></article>
+      </div>
+      <a class="v2-text-link v2-browse-all" href="/v2/projects/">Browse all projects <span aria-hidden="true">↗</span></a>
+    </section>
+    <section class="v2-demo-shelf v2-shell" id="demos" aria-labelledby="demos-title">
+      <header class="v2-browse-heading"><div><p class="v2-eyebrow">Stay a little longer</p><h2 id="demos-title">Try something<br>I built.</h2></div><p>Turn a dial, meet a small companion, or follow a flight. Choose a demo and start exploring.</p></header>
+      <div class="v2-demo-grid">
+        <a class="v2-demo-card" href="/v2/projects/kiku/#simulator"><span class="v2-demo-art v2-demo-art--kiku" aria-hidden="true"><img src="/assets/images/kiku/hero.webp" width="1400" height="1390" loading="lazy" alt=""></span><span class="v2-eyebrow">01 / Real firmware interface</span><h3>Turn the dial. <span aria-hidden="true">↗</span></h3><p>Explore Kiku’s menus and ten looks. The firmware draws the pixels; hardware inputs are simulated.</p><span class="v2-demo-action">Play Kiku</span></a>
+        <a class="v2-demo-card" href="/v2/projects/dash/#character"><span class="v2-demo-art v2-demo-art--dash" aria-hidden="true"><span class="v2-demo-eyes"><i></i><i></i></span><span>00:10</span></span><span class="v2-eyebrow">02 / Browser interaction sketch</span><h3>Meet Dash. <span aria-hidden="true">↗</span></h3><p>Tap for a blink, shake for a reaction, or take a ten-second focus break with a little desk companion.</p><span class="v2-demo-action">Try the 10-second demo</span></a>
+        <a class="v2-demo-card" href="/shared/projects/skylabs/f110211/"><span class="v2-demo-art v2-demo-art--flight" aria-hidden="true"><img src="/assets/images/v3/skylabs-stopped.webp?v=sky-20261008" width="1600" height="1000" loading="lazy" alt=""></span><span class="v2-eyebrow">03 / Recorded flight data</span><h3>Follow a flight. <span aria-hidden="true">↗</span></h3><p>Open a reference flight and connect aircraft movement with the measurements recorded by its electronics.</p><span class="v2-demo-action">Open Flight Review</span></a>
+      </div>
+      <div class="v2-demo-more"><a href="/v2/projects/skylabs/reflow/">Watch a board come together <span aria-hidden="true">↗</span><small>Source CAD · illustrative assembly process</small></a><a href="/v2/projects/?category=demos#demos">More demos &amp; teaching tools <span aria-hidden="true">↗</span><small>ScopeLab · MOSFETs · optical lithography</small></a></div>
+    </section>
     <section class="v2-work v2-shell v2-selected-work" data-selected-work data-framework-background aria-labelledby="work-title">
-      <div class="v2-gallery-heading" id="work"><h2 id="work-title">Selected work</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
+      <div class="v2-gallery-heading" id="work"><h2 id="work-title">A closer look.</h2><a class="v2-text-link" href="/v2/projects/">All projects <span aria-hidden="true">↗</span></a></div>
       <section class="v2-framework-collection" id="work-framework" data-selected-chapter="0" aria-labelledby="framework-title">
         <header class="v2-selected-heading">
           <h3 id="framework-title">Framework expansion cards</h3>
@@ -169,7 +190,7 @@
         <div class="v3-aircraft-foot">
           <a class="v3-story-project" href="/v2/projects/skylabs/">View Skylabs <span aria-hidden="true">↗</span></a>
           <nav class="v3-story-nav" aria-label="Explore Skylabs" data-aircraft-nav><a href="#skylabs-aircraft" data-aircraft-go="0">Aircraft</a><a href="#skylabs-telemetry" data-aircraft-go="1">Telemetry</a></nav>
-          <a class="v3-story-skip" href="#about">Skip animation <span aria-hidden="true">↓</span></a>
+          <a class="v3-story-skip" href="#work-kiku">Skip animation <span aria-hidden="true">↓</span></a>
         </div>
         <div class="v3-aircraft-progress" aria-hidden="true"><span data-aircraft-progress></span></div>
       </div>

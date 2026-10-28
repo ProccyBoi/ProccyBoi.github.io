@@ -369,6 +369,11 @@ def main() -> int:
         for link in collection.tags("a"):
             if "data-v2-project" not in link.attrs:
                 continue
+            # Demo shortcuts are indexed separately, including links into
+            # existing projects. Full URL/fragment validation still runs below.
+            if link.project_group == "demos":
+                category_counts["demos"] += 1
+                continue
             target = local_target(link.attrs.get("href", ""), collection.base)
             match = re.fullmatch(r"/v2/projects/([^/]+)/?", target[2]) if target else None
             if match:

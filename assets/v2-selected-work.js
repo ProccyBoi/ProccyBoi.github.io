@@ -1,6 +1,6 @@
 /* Framework background: four real assemblies, one physical space and one renderer.
- * Native scrolling remains in charge. CAD bytes prefetch immediately;
- * scene construction and GPU preparation follow proximity or explicit intent. */
+ * Native scrolling remains in charge. CAD transfer, scene construction and
+ * GPU preparation follow section proximity or explicit intent. */
 (() => {
   'use strict';
   const root = document.querySelector('[data-selected-work]');
@@ -260,8 +260,12 @@
     ]).then(()=>{if(allowed()&&!failed)window.V2HeroEnvironment.prefetch().catch(()=>{});});
   }
   async function prepareTransfers(promote=false) {
+    if(!allowed()||failed||!preparationEligible()||!activePage||document.hidden){
+      if(!transferTask)root.dataset.selectedTransportState='deferred-distance';
+      return;
+    }
     if(promote&&(visible||preparationIntent))window.V2TransportPriority?.promote('selected');
-    await prepareSources();if(!allowed()||failed)return;
+    await prepareSources();if(!allowed()||failed||!preparationEligible()||!activePage||document.hidden)return;
     const waiting=window.V2TransportPriority?.wait('selected');
     if(waiting){root.dataset.selectedTransportState='waiting-aircraft-bytes';await waiting;if(!allowed()||failed)return;}
     if(promote)releaseTransfer?.();
@@ -276,7 +280,9 @@
       // transports can overlap again rather than serializing behind the hero.
       if(promote||waiting)releaseTransfer();
       transferTask=gate.then(()=>{
-        if(!allowed()||failed)return;
+        if(!allowed()||failed||!preparationEligible()||!activePage||document.hidden){
+          transferTask=null;root.dataset.selectedTransportState='deferred-distance';return;
+        }
         root.dataset.selectedTransportState='loading';
         return Promise.all(names.map(name=>window.V2SelectedAssets.prefetch(name))).then(()=>{root.dataset.selectedTransportState='ready';});
       });
@@ -386,7 +392,7 @@
   }
   function start(){
     if(failed)return;if(!allowed()){fallback();return;}enable();
-    prepareSources().then(()=>prepareTransfers(near())).catch(fail);
+    if(!preparationEligible()&&!transferTask)root.dataset.selectedTransportState='deferred-distance';
     if(near())initialize(true);else{root.dataset.selectedState=ready?'prepared':'waiting';prepareInBackground();}
   }
   addEventListener('v2:aircraft-priority',()=>{

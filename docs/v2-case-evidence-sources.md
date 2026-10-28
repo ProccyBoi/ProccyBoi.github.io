@@ -69,13 +69,22 @@ Public repository verified: [Metroboard](https://github.com/ProccyBoi/Metroboard
 - [RF baseline](https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/rf-test-board/index.html#L49-L58) and [preceding LoRa case](https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/lora-receiver/index.html) support the failure-to-test-coupon narrative.
 - The record supports fabrication without impedance control, VNA investigation, masked/unmasked coplanar structures, u.FL/SMA transitions, filter footprints and printed nominal dimensions.
 - `50 Ω` remains a design target. No measured impedance, S-parameter plot, test-fixture calibration or numeric improvement is available to add.
+- The 28 October review keeps the public summary at fabricated hardware and stated VNA investigation. It explicitly separates the nominal target from the quantitative measurement evidence that is not available on this page.
 
 ## Switchmode Power Supplies
 
 - [About baseline](https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/about/index.html#L56-L60) supports trainee role, dates and maintaining/testing/repairing low- and high-voltage supplies.
 - [Project baseline](https://github.com/ProccyBoi/ProccyBoi.github.io/blob/d725a378806eb05c8d5b981f8e54d33dde502cac/v2/projects/switch-mode-power-supplies/index.html) supports the two named boards. The component-side photo of the V03 board was visually inspected as manufactured/assembled hardware.
 - No evidence here assigns the user sole design ownership of these employer boards. Keep the role precise, and omit problem/decisions/outcome rather than invent design intent or measurements.
+- The 28 October summary identifies the images as employer hardware and states the supported maintenance/testing/repair role. It does not assign individual schematic or PCB-layout authorship.
 - Suitable homepage copy: “Power-supply testing and repair. Electronics Engineer Trainee at Switchmode Power Supplies, with published photographs of two isolated glitch-tester boards.” Link the existing case. This adds professional testing range; it does not fulfil a new converter/thesis case study with losses and simulation results.
+
+## Skylabs ground station
+
+- [Published ground-station record](https://github.com/ProccyBoi/ProccyBoi.github.io/blob/cdf869ee4e664cce5797cc36e074da5ed61c908d/projects/skylabs/boards/ground-station/index.html) supports PCB development, the ESP32/SX1262 architecture, local SD recording, OLED status and the phone dashboard.
+- The component-side photograph `assets/images/projects/skylabs-ground-alt-960.webp` was visually inspected during the 28 October review and shows an assembled PCB with the ESP32 module, radio and microSD socket. The stage remains assembled ground-station hardware.
+- The new summary makes the receiver's role and data redundancy clear without treating the aircraft's flight diagnostic as a ground-link validation. No packet-loss rate, receiver range, command-delivery guarantee or field-reliability result is added.
+- Existing receiver functionality is summarized from the published case record; this content pass does not represent a new firmware or hardware verification.
 
 ## Skylabs aircraft telemetry
 
