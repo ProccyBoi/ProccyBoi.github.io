@@ -7,7 +7,7 @@
   background: #10171b;
   scroll-margin-top: var(--v5-header-height, 76px);
 }
-[data-v5-assembly].is-active { height: 420svh; }
+[data-v5-assembly].is-active { height: 460svh; }
 .assembly-stage {
   position: sticky;
   top: var(--v5-header-height, 76px);
@@ -74,7 +74,7 @@
 .assembly-load:focus-visible { outline: 3px solid #d9f2ff; outline-offset: 4px; }
 @media (max-width: 600px) {
   [data-v5-assembly] { --assembly-height: 76svh; }
-  [data-v5-assembly].is-active { height: 380svh; }
+  [data-v5-assembly].is-active { height: 420svh; }
   .assembly-poster { padding: 18px; }
   .assembly-status { font-size: 12px; }
 }

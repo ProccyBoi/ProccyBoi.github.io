@@ -16,11 +16,10 @@
   const ease = value => { value = clamp(value); return value * value * (3 - 2 * value); };
   const ramp = (value, from, to) => ease((value - from) / (to - from));
   const mix = (from, to, amount) => from + (to - from) * amount;
-  let T, renderer, scene, camera, model, deposits, depositMaterial, ground;
+  let T, renderer, scene, camera, model, solderProcess, ground;
   let ready = false, loading = false, failed = false, visible = false, near = false;
   let optedIn = false, progress = 0, frame = 0, frames = 0, aspect = 1;
-  let focus = {x: 0, z: -.1};
-  const uniform = {print: {value: 0}, wet: {value: 0}};
+  let focus = {x: .174, z: -.04053};
   const scripts = new Map();
   const script = (src, present) => {
     if (present()) return Promise.resolve();
@@ -86,55 +85,12 @@
     loadButton.hidden = true;
     renderer?.dispose();
   }
-  function createDeposits(data) {
-    const positions = [], centres = [], normals = [];
-    const add = (point, centre, y, normal) => {
-      positions.push(point[0], y, point[1]); centres.push(...centre); normals.push(...normal);
-    };
-    for (const land of data.lands) {
-      const centre = land.p.reduce((a, point) => [a[0] + point[0] / land.p.length, a[1] + point[1] / land.p.length], [0, 0]);
-      for (const tri of land.t) for (const i of tri) add(land.p[i], centre, .002, [0, 1, 0]);
-      for (const [a, b] of land.e) {
-        const A = land.p[a], B = land.p[b], dx = B[0] - A[0], dz = B[1] - A[1];
-        const length = Math.hypot(dx, dz);
-        if (!length) continue;
-        const normal = [-dz / length, 0, dx / length];
-        for (const [point, y] of [[A, 0], [B, 0], [B, .002], [A, 0], [B, .002], [A, .002]]) add(point, centre, y, normal);
-      }
-    }
-    const geometry = new T.BufferGeometry();
-    geometry.setAttribute('position', new T.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('normal', new T.Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('landCentre', new T.Float32BufferAttribute(centres, 2));
-    depositMaterial = new T.MeshStandardMaterial({color: 0xa2abb0, roughness: .9, metalness: .12, side: T.DoubleSide});
-    depositMaterial.onBeforeCompile = shader => {
-      shader.uniforms.print = uniform.print;
-      shader.uniforms.wet = uniform.wet;
-      shader.vertexShader = 'attribute vec2 landCentre; uniform float wet; varying float landX;\n' + shader.vertexShader;
-      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-        transformed.xz = landCentre + (position.xz - landCentre) * mix(.88, 1., wet);
-        transformed.y = .02194 + position.y * mix(1., .4, wet);
-        landX = landCentre.x;`);
-      shader.fragmentShader = 'uniform float print; varying float landX;\n' + shader.fragmentShader;
-      shader.fragmentShader = shader.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (landX > mix(-.51, .51, print)) discard;');
-    };
-    depositMaterial.customProgramCacheKey = () => 'v5-source-land-deposits';
-    deposits = new T.Mesh(geometry, depositMaterial);
-    deposits.frustumCulled = false;
-    model.group.add(deposits);
-    root.dataset.lands = String(data.lands.length);
-  }
   function pose() {
-    const p = progress, wet = ramp(p, .53, .68);
-    uniform.print.value = ramp(p, .025, .16);
-    uniform.wet.value = wet;
-    deposits.visible = p > .025;
-    depositMaterial.color.setRGB(.48 + wet * .25, .51 + wet * .27, .53 + wet * .29);
-    depositMaterial.roughness = .9 - wet * .65;
-    depositMaterial.metalness = .12 + wet * .75;
+    const p = progress;
+    solderProcess.update(p);
     for (const part of model.parts) {
-      const start = part.v5Back ? .755 : part.v5ThroughHole ? .86 : .18 + part.v5Order * .16;
-      const end = start + (part.v5Back || part.v5ThroughHole ? .07 : .1);
+      const start = part.v5Back ? .80 : part.v5ThroughHole ? .90 : .39 + part.v5Order * .035;
+      const end = start + .07;
       const landing = ramp(p, start, end);
       part.object.visible = p >= start;
       part.object.position.copy(part.base);
@@ -142,13 +98,16 @@
       // Original quaternions remain untouched. A single scalar reconstructs
       // every frame; forward, reverse and repeated scrolls cannot accumulate drift.
     }
-    const close = ramp(p, .40, .50) * (1 - ramp(p, .66, .74));
-    const underside = ramp(p, .71, .77) * (1 - ramp(p, .83, .90));
+    // Show the whole printing tool first. Move into the exposed paste as the
+    // stencil lifts, then hold that exact camera through placement and wetting.
+    // An immediate macro made the squeegee read as an unexplained gray wall.
+    const close = ramp(p, .27, .36) * (1 - ramp(p, .72, .795));
+    const underside = ramp(p, .795, .825) * (1 - ramp(p, .87, .935));
     const portrait = aspect < .8;
-    const yaw = -.34 + ramp(p, .12, .40) * .42 - close * .12 + underside * .22 + (portrait ? Math.PI / 2 : 0);
-    const polar = mix(.65, .46, close) + underside * 1.98;
+    const yaw = mix(-.34 + (portrait ? Math.PI / 2 : 0), Math.PI / 2 - .25, close) + underside * .22;
+    const polar = mix(.65, .84, close) + underside * 1.98;
     const cx = focus.x * close, cz = focus.z * close;
-    const span = mix(1.18, .48, close);
+    const span = mix(1.18, .12, close);
     // Fit the long board axis to the tall phone stage, instead of shrinking it
     // to the same landscape camera. Camera changes never alter the source model.
     const fit = Math.max(span, (portrait ? span * .80 : span) / aspect);
@@ -156,8 +115,9 @@
     camera.right = fit * aspect / 2;
     camera.top = fit / 2;
     camera.bottom = -fit / 2;
-    camera.position.set(cx + Math.sin(yaw) * Math.sin(polar) * 2, .025 + Math.cos(polar) * 2, cz + Math.cos(yaw) * Math.sin(polar) * 2);
-    camera.lookAt(cx, .025, cz);
+    const targetY = .025 + .008 * close;
+    camera.position.set(cx + Math.sin(yaw) * Math.sin(polar) * 2, targetY + Math.cos(polar) * 2, cz + Math.cos(yaw) * Math.sin(polar) * 2);
+    camera.lookAt(cx, targetY, cz);
     camera.updateProjectionMatrix();
     ground.visible = underside < .15;
     root.dataset.progress = p.toFixed(6);
@@ -189,7 +149,8 @@
       await script('/assets/vendor/three.min.js', () => Boolean(window.THREE));
       await Promise.all([
         script('/assets/v2-hero-assets.js', () => Boolean(window.V2HeroAssets)),
-        script('/assets/v2-hero-environment.js', () => Boolean(window.V2HeroEnvironment))
+        script('/assets/v2-hero-environment.js', () => Boolean(window.V2HeroEnvironment)),
+        script('/v5/solder-process.js?v=printing-2', () => Boolean(window.V5SolderProcess))
       ]);
       // A preference change during dependency loading must prevent CAD fetches.
       if (reduced.matches) { loading = false; setPresentation(); return; }
@@ -245,8 +206,6 @@
         part.v5Order = clamp((part.base.x + .5) * .7 + (part.base.z + .4) * .3);
         part.v5Quaternion = part.object.quaternion.toArray();
       }
-      const detail = model.parts.find(part => part.ref === 'U14' && !part.v5Back) || model.parts.find(part => part.ref === 'U7' && !part.v5Back);
-      if (detail) focus = {x: detail.base.x, z: detail.base.z};
       const shadowCanvas = document.createElement('canvas');
       shadowCanvas.width = shadowCanvas.height = 128;
       const ctx = shadowCanvas.getContext('2d');
@@ -257,13 +216,18 @@
       ground = new T.Mesh(new T.PlaneGeometry(1.5, 1.15), new T.MeshBasicMaterial({map: new T.CanvasTexture(shadowCanvas), transparent: true, depthWrite: false}));
       ground.rotation.x = -Math.PI / 2; ground.position.y = -.12;
       scene.add(ground);
-      createDeposits(lands);
+      solderProcess = window.V5SolderProcess.create(T, model, lands);
+      focus = solderProcess.focus;
+      model.group.add(solderProcess.group);
+      root.dataset.lands = String(lands.lands.length);
       scene.add(model.group);
       renderer.compile(scene, camera);
       ready = true; loading = false;
       root.assemblySnapshot = () => ({
         progress, frames, ready, reducedMotion: reduced.matches, state: root.dataset.state,
         drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
+        solder: solderProcess.snapshot(),
+        camera: {position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), width: camera.right-camera.left, height: camera.top-camera.bottom},
         parts: model.parts.map(part => ({
           ref: part.ref || part.object.name, visible: part.object.visible,
           back: part.v5Back, throughHole: part.v5ThroughHole,

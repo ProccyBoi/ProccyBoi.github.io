@@ -53,17 +53,17 @@ const makePage = async options => {
     const start=await snapshot(desktop);
     assert(start.parts.every(part=>!part.visible));
     await shot(desktop,'desktop-bare');
-    await position(desktop,.35);const middle=await snapshot(desktop);
+    await position(desktop,.45);const middle=await snapshot(desktop);
     assert(middle.parts.some(part=>part.visible));
     assert(middle.parts.some(part=>!part.visible));
     await shot(desktop,'desktop-placement');
-    await position(desktop,.60);await shot(desktop,'desktop-solder');
-    await position(desktop,.80);await shot(desktop,'desktop-underside');
+    await position(desktop,.66);await shot(desktop,'desktop-solder');
+    await position(desktop,.85);await shot(desktop,'desktop-underside');
     await position(desktop,1);const end=await snapshot(desktop);
     assert(end.parts.length>10);
     for(const part of end.parts){assert(part.visible);assert.deepEqual(part.position,part.base);assert.deepEqual(part.quaternion,part.sourceQuaternion);}
     await shot(desktop,'desktop-finished');
-    await position(desktop,.35);const repeated=await snapshot(desktop);
+    await position(desktop,.45);const repeated=await snapshot(desktop);
     for(let i=0;i<middle.parts.length;i++){
       assert.equal(middle.parts[i].visible,repeated.parts[i].visible);
       for(let axis=0;axis<3;axis++)assert(Math.abs(middle.parts[i].position[axis]-repeated.parts[i].position[axis])<.003);
