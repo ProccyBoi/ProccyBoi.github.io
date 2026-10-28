@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light"><title>LoRa Talkie — Andrew Chung</title>
+<meta name="description" content="A one-button Morse message composer and handheld 915 MHz LoRa radio."><meta name="theme-color" content="#f1f0e9">
+<link rel="canonical" href="https://proccyboi.github.io/v5/projects/lora-talkie/">
+<meta property="og:type" content="website"><meta property="og:title" content="LoRa Talkie — Andrew Chung">
+<meta property="og:description" content="A one-button Morse message composer and handheld 915 MHz LoRa radio."><meta property="og:url" content="https://proccyboi.github.io/v5/projects/lora-talkie/">
+<meta property="og:image" content="https://proccyboi.github.io/assets/images/projects/loratalkie-web.jpg">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/v5/site.css"><link rel="stylesheet" href="/v5/interiors.css">
+
+</head>
+<body class="interior">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><a class="brand" href="/v5/" aria-label="Andrew Chung home"><span class="brand-mark" aria-hidden="true">ac</span>Andrew Chung</a><nav aria-label="Primary navigation"><a href="/v5/#work">Work</a><a href="/v5/projects/">All projects</a><a href="/v5/references/">Notebook</a><a href="/v5/about/">About</a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV</a></nav></header>
+<main id="main" tabindex="-1"><div class="interior-wrap">
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/v5/projects/">All projects</a> <span aria-hidden="true">/</span> <span aria-current="page">LoRa Talkie</span></nav>
+<header class="case-heading"><p class="interior-kicker">15 / Radio &amp; measurement</p><h1>LoRa Talkie</h1><p class="interior-lead">A one-button Morse message composer and handheld 915 MHz LoRa radio.</p><div class="case-actions"><a href="/v2/projects/lora-talkie/#details" class="interior-button">Read original project <span aria-hidden="true">↗</span></a></div></header>
+<figure class="case-hero"><img src="/assets/images/projects/loratalkie-web.jpg" alt="LoRa Talkie handheld enclosure with screen and antenna" width="1600" height="900" loading="eager" decoding="async" fetchpriority="high"><figcaption>LoRa Talkie handheld enclosure with screen and antenna</figcaption></figure>
+<dl class="case-specs"><div><dt>Type</dt><dd>Personal project</dd></div><div><dt>Hardware</dt><dd>Heltec V3 LoRa board</dd></div><div><dt>Radio</dt><dd>915 MHz / SX126x</dd></div><div><dt>Input</dt><dd>One-button Morse code</dd></div></dl>
+<section class="case-section"><div><p class="interior-kicker">01 / Project notes</p><h2>From idea<br>to hardware.</h2></div><div class="case-prose"><section><h3>One button, full messages</h3><p>LoRa Talkie normally sits in receive mode and prints incoming messages straight to its OLED. A double-click opens the composer, where the same program button becomes a Morse key. I added dedicated patterns for spaces and deleting the last character so a complete message can be written without a keyboard.</p><p>A two-second hold sends the message and returns to the chat screen. The device remembers the last four outgoing messages; they can be selected with one to four clicks, edited and sent again.</p></section><section><h3>Radio and field controls</h3><p>The current radio profile uses 915 MHz LoRa with a 250 kHz bandwidth, spreading factor 12 and up to 22 dBm transmit power. After each transmission the firmware puts the radio straight back into continuous receive mode.</p><p>The status page shows battery voltage, the configured frequency and spreading factor, transmit power and board temperature. There is also a repeating beacon mode for link checks, battery and temperature safety cut-offs, and deep sleep for carrying the unit without running it flat.</p><p>The OLED interface is deliberately small but not purely functional: it has startup and shutdown animations, plus coin, dice and slot-machine diversions that use the same single-button control scheme.</p></section></div></section><section class="case-resources"><h2>Explore further.</h2><ul><li><a href="/v2/projects/lora-talkie/">Original project record <span aria-hidden="true">↗</span></a></li></ul></section><nav class="case-next" aria-label="More projects"><a href="/v5/projects/">← All projects</a><a href="/v5/projects/dash/">Next: Dash <span aria-hidden="true">↗</span></a></nav></div></main>
+<footer class="site-footer"><a href="/v5/">Andrew Chung</a><span>Electrical engineering · Sydney</span><nav aria-label="Footer"><a href="/v5/about/#contact">Contact <span aria-hidden="true">↗</span></a><a href="https://github.com/ProccyBoi">GitHub <span aria-hidden="true">↗</span></a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf">Public CV <span aria-hidden="true">↗</span></a><a href="#main">Back to top ↑</a></nav></footer>
+</body></html>

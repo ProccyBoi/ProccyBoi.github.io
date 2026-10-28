@@ -42,6 +42,12 @@ jobs:
           python3 v4/tests/static.py
           node --check v4/assets/site.js
 
+      - name: Verify v5 research portfolio and navigation
+        run: |
+          python3 v5/tests/static.py
+          node --check v5/assembly.js
+          node --check v5/interiors.js
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v5
         with:

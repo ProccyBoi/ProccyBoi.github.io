@@ -1,5 +1,9 @@
 # Andrew Chung — electrical engineering portfolio
 
+## V5 — From the workbench
+
+The independent `/v5/` portfolio adds a source-derived, native-scroll Skylabs assembly story, all 16 project records, two board records, searchable collection and a [reference notebook](https://proccyboi.github.io/v5/references/) with Japanese maker trails and explicitly credited interaction references. Earlier versions retain their own routes and controllers. Source, evidence boundaries and verification commands are documented in [v5/README.md](v5/README.md).
+
 Personal portfolio and public project archive published at:
 
 - https://proccyboi.github.io/
