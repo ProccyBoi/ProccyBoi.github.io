@@ -101,7 +101,12 @@ async function scroll(p,phase){
   await p.keyboard.press('Escape');await p.locator('.rf-poster').scrollIntoViewIfNeeded();
   await p.screenshot({path:path.join(shots,'context-loss.png')});
   const noJS=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:844}});watch(noJS);await noJS.goto(base+route);assert.ok(await noJS.locator('.rf-poster').isVisible());assert.equal(await noJS.locator('[data-reflow] button,[data-reflow] input').count(),0);assert.ok(await noJS.locator('[data-reflow]').evaluate(e=>e.offsetHeight<=innerHeight*1.6));await noJS.close();
-  const fail=await browser.newPage();watch(fail);await fail.route('**/telemetry.idx.bin.gz',r=>r.abort());await fail.goto(base+route);await fail.locator('[data-state="unavailable"]').waitFor({timeout:60000});assert.ok(await fail.locator('.rf-poster').isVisible());await fail.close();
+  const fail=await browser.newPage();watch(fail);let blockedCAD=0;
+  // Match the resource path independently of its content-revision query.
+  await fail.route(/\/telemetry\.idx\.bin\.gz(?:\?|$)/,r=>{blockedCAD++;return r.abort();});
+  await fail.goto(base+route);await fail.locator('[data-state="unavailable"]').waitFor({timeout:60000});
+  assert.ok(blockedCAD>0,'Failed-CAD scenario actually blocks the revisioned model request');
+  assert.ok(await fail.locator('.rf-poster').isVisible());await fail.close();
   const save=await browser.newPage({viewport:{width:390,height:844}});watch(save);
   await save.addInitScript(()=>Object.defineProperty(navigator,'connection',{value:{saveData:true}}));const modelRequests=[];
   save.on('request',request=>{if(request.url().includes('telemetry.idx'))modelRequests.push(request.url());});
