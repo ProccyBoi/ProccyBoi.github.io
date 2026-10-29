@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive visual simulator for the Skylabs Sensor Test PCB.">
+  <title>Sensor Test PCB · Skylabs</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark"><span></span><span></span><span></span><span></span></div><div><strong>SKYLABS</strong><small>AVIONICS &amp; PAYLOAD</small></div></div>
+      <div class="top-center"><span class="status-dot"></span> INTERACTIVE BOARD SIMULATOR <span class="divider">/</span> SENSOR TEST PCB</div>
+      <div class="top-right"><span class="status-dot"></span> SIMULATION MODE</div>
+    </header>
+    <main class="layout">
+      <section class="workspace" aria-label="Interactive 3D board viewer">
+        <div class="workspace-header"><div><div class="eyebrow">AVIONICS / PCB LAB <span>01</span></div><h1>Sensor Test PCB</h1><p>Explore the board and see its LED configurations in action.</p></div><div class="board-badge"><span>BOARD VIEW</span><strong>3D</strong></div></div>
+        <div class="viewer-wrap">
+          <div class="viewer-top"><div><span class="tiny-square"></span> POPULATED ASSEMBLY <span class="viewer-sep">/</span> TOP SIDE</div><div class="viewer-dim">124.80 × 38.37 mm</div></div>
+          <div id="viewer" aria-label="3D model of the Sensor Test PCB. Drag to rotate and scroll to zoom."></div>
+          <div id="viewer-error" hidden>3D rendering is unavailable in this browser. Try a browser with WebGL enabled.</div>
+          <div class="viewer-bottom"><div class="viewer-hint"><span class="mouse-icon"></span> DRAG TO ROTATE <span>·</span> SCROLL TO ZOOM</div><button id="reset-view" class="reset-view" type="button" title="Reset the 3D view">↻ <span>RESET VIEW</span></button></div>
+        </div>
+        <div class="board-meta"><div><span class="meta-label">ASSEMBLY</span><strong>Sensor Test PCB</strong></div><div><span class="meta-label">LIGHT SOURCES</span><strong>54 LEDs <span class="meta-faint">/ 3 banks</span></strong></div><div><span class="meta-label">BOARD SIZE</span><strong>124.80 <span class="meta-faint">×</span> 38.37 <span class="meta-faint">mm</span></strong></div><div><span class="meta-label">VIEW</span><strong>Fully populated</strong></div></div>
+        <div class="note"><span class="note-icon">i</span><p><strong>Visual simulation.</strong> Brightness and colour are illustrative; they do not predict measured light output or electrical behaviour.</p></div>
+      </section>
+      <aside class="controls" aria-label="LED controls">
+        <div class="panel-header"><div><div class="eyebrow">CONTROL PANEL <span>02</span></div><h2>LED controls</h2><p>Choose a bank, then adjust its output.</p></div><div class="panel-icon">✳</div></div>
+        <div class="bank-list" role="tablist" aria-label="LED bank">
+          <button class="bank active" role="tab" aria-selected="true" data-bank="small"><span class="bank-symbol grid-icon">▦</span><span class="bank-text"><strong>RGB array</strong><small>40 × WS2812C-2020</small></span><span class="bank-indicator" data-indicator="small"></span><span class="chevron">›</span></button>
+          <button class="bank" role="tab" aria-selected="false" data-bank="large"><span class="bank-symbol">◈</span><span class="bank-text"><strong>RGB cluster</strong><small>10 × WS2812B</small></span><span class="bank-indicator" data-indicator="large"></span><span class="chevron">›</span></button>
+          <button class="bank" role="tab" aria-selected="false" data-bank="red"><span class="bank-symbol">✳</span><span class="bank-text"><strong>Red emitters</strong><small>4 × OSRAM · shared drive</small></span><span class="bank-indicator" data-indicator="red"></span><span class="chevron">›</span></button>
+        </div>
+        <div class="section-rule"></div>
+        <div class="control-heading"><div><span class="field-label">SELECTED BANK</span><h3 id="selected-name">RGB array</h3></div><button id="power" class="power on" type="button" aria-pressed="true"><span></span> ON</button></div>
+        <div class="brightness-block"><div class="row-label"><label for="brightness">Brightness</label><output id="brightness-value" for="brightness">70%</output></div><input id="brightness" type="range" min="0" max="100" step="1" value="70"><div class="range-labels"><span>0%</span><span>50%</span><span>100%</span></div><div class="quick-values"><button data-brightness="10">10%</button><button data-brightness="25">25%</button><button data-brightness="50">50%</button><button data-brightness="100">100%</button></div></div>
+        <div id="color-controls"><div class="row-label color-heading"><span>Colour</span><span class="field-label">PRESETS</span></div><div class="swatches"><button class="swatch selected" data-color="#6bd8ff" style="--swatch:#6bd8ff" aria-label="Ice blue" title="Ice blue"></button><button class="swatch" data-color="#ff4b58" style="--swatch:#ff4b58" aria-label="Red" title="Red"></button><button class="swatch" data-color="#ffae45" style="--swatch:#ffae45" aria-label="Amber" title="Amber"></button><button class="swatch" data-color="#82ec87" style="--swatch:#82ec87" aria-label="Green" title="Green"></button><button class="swatch" data-color="#8a94ff" style="--swatch:#8a94ff" aria-label="Violet" title="Violet"></button><button class="swatch" data-color="#fff2d6" style="--swatch:#fff2d6" aria-label="Warm white" title="Warm white"></button><label class="custom-color" title="Choose custom colour"><span>+</span><input id="custom-color" type="color" value="#6bd8ff" aria-label="Choose custom colour"></label></div><div class="color-detail"><span id="color-name">ICE BLUE</span><span id="color-hex">#6BD8FF</span></div><div class="row-label pattern-heading"><span>Pattern</span><span class="field-label">SPATIAL</span></div><div class="pattern-buttons"><button class="active" data-pattern="solid" aria-pressed="true">Solid</button><button data-pattern="alternate" aria-pressed="false">Alternate</button><button data-pattern="sweep" aria-pressed="false">Sweep</button></div></div>
+        <div id="red-note" class="red-note" hidden><span class="red-chip"></span><div><strong>Fixed red output</strong><p>These four emitters share one drive. Their colour is fixed; adjust their brightness above.</p></div></div>
+        <div class="all-actions"><button id="all-on" type="button">Turn all on</button><button id="all-off" type="button">Turn all off</button></div>
+        <div class="panel-footer"><span class="status-dot"></span> VIRTUAL CONTROLS <span>NO HARDWARE CONNECTED</span></div>
+      </aside>
+    </main>
+    <footer><span>SKYLABS <b>/</b> AVIONICS &amp; PAYLOAD</span><span>DESIGNED FOR EXPLORATION <b>·</b> SENSOR TEST PCB</span></footer>
+  </div>
+  <script src="three.min.js"></script><script src="OrbitControls.js"></script><script src="board-data.js"></script><script src="app.js"></script>
+</body>
+</html>
