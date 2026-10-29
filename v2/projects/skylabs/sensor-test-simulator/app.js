@@ -8,6 +8,7 @@
   };
   let selected = 'small';
   const $ = id => document.getElementById(id);
+  $('v2-menu').addEventListener('click',()=>{const open=$('v2-menu').getAttribute('aria-expanded')!=='true';$('v2-menu').setAttribute('aria-expanded',String(open));$('v2-menu').setAttribute('aria-label',open?'Close navigation':'Open navigation');$('v2-navigation').classList.toggle('open',open)});
   const swatchNames = {'#6bd8ff':'ICE BLUE','#ff4b58':'RED','#ffae45':'AMBER','#82ec87':'GREEN','#8a94ff':'VIOLET','#fff2d6':'WARM WHITE'};
   const minX=79.91, maxX=204.71, minY=36.92, maxY=75.29, W=maxX-minX, H=maxY-minY;
   const x = v => v-(minX+maxX)/2, y = v => (minY+maxY)/2-v;

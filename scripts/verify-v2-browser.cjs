@@ -62,7 +62,7 @@ async function posters(page) {
     await page.locator('[data-v2-nav] a[href="/v2/projects/"]').click();
     await page.waitForURL('**/v2/projects/');
     assert.equal(await page.locator(primary).count(),16,'16 primary projects');
-    assert.equal(await page.locator(demos).count(),6,'Six interactive entries are separate from the 16 projects');
+    assert.equal(await page.locator(demos).count(),7,'Seven interactive entries are separate from the 16 projects');
     for(const tool of ['scopelab','lithography-animation','mosfet-operating-regions']){
       assert.equal(await page.locator(primary+'[href="/v2/projects/'+tool+'/"]').count(),0);
     }
@@ -83,8 +83,8 @@ async function posters(page) {
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/13 projects/);
     await page.locator('[data-v2-category="demos"]').click();
     assert.equal(await page.locator(primary+':visible').count(),0);
-    assert.equal(await page.locator(demos+':visible').count(),6);
-    assert.match(await page.locator('[data-v2-search-status]').textContent(),/6 demos and tools/);
+    assert.equal(await page.locator(demos+':visible').count(),7);
+    assert.match(await page.locator('[data-v2-search-status]').textContent(),/7 demos and tools/);
     await search.fill('firmware');
     assert.equal(await page.locator(demos+':visible').count(),1);
     await page.reload({waitUntil:'networkidle'});
@@ -169,7 +169,7 @@ async function posters(page) {
     assert.equal(await staticPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await staticPage.goto(base+'/v2/projects/',{waitUntil:'networkidle'});
     assert.equal(await staticPage.locator(primary+':visible').count(),16);
-    assert.equal(await staticPage.locator(demos+':visible').count(),6,'Demo destinations remain visible without JavaScript');
+    assert.equal(await staticPage.locator(demos+':visible').count(),7,'Demo destinations remain visible without JavaScript');
     await noJS.close();
     const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
     const reducedPage=await reduced.newPage();observe(reducedPage);

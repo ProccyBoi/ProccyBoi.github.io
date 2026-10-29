@@ -333,6 +333,18 @@ def integrate_skylabs(source, slug):
     source = replace_nodes(source, [(node, '') for node in tree.nodes if node.tag in ('script', 'link') and (node.attrs.get('src') or node.attrs.get('href', '')).split('?')[0].lstrip('/') in obsolete])
     source = re.sub(r' data-object-(?:inspector|live)| data-(?:view|board|annotations)="[^"]*"', '', source)
     source = source.replace(' class="object-main"', '')
+    if slug == 'skylabs':
+        catalog = Tree(source).find('div', 'board-catalog')
+        if catalog:
+            simulator = '''
+          <a class="board-row" href="/v2/projects/skylabs/sensor-test-simulator/">
+            <span>03</span>
+            <h3>Sensor test PCB</h3>
+            <p>Explore the populated LED test board and try colour, brightness and pattern configurations.</p>
+            <span aria-hidden="true">↗</span>
+          </a>
+        '''
+            source = source[:catalog.close_start] + simulator + source[catalog.close_start:]
     return source
 
 
@@ -612,6 +624,7 @@ def make_index():
         ('/v2/projects/kiku/#simulator', 'Kiku firmware simulator', 'Turn the dial, change the look and try the player interface.', 'Real C screen renderer · simulated hardware'),
         ('/v2/projects/dash/#explore', 'Dash device assembly', 'Inspect the complete enclosure, circuit board, display and power system.', 'Full-device CAD · component inspection'),
         ('/shared/projects/skylabs/f110211/', 'Replay a Skylabs flight', 'Scrub the recorded route, attitude and sensor timeline. A reference flight is already loaded.', 'Recorded flight · F110211'),
+        ('/v2/projects/skylabs/sensor-test-simulator/', 'Sensor test PCB simulator', 'Try colours, brightness and patterns on a populated 3D LED test board.', 'Skylabs · visual simulation'),
         ('/v2/projects/scopelab/#details', 'ScopeLab teaching bench', 'Explore micro:bit waveform labs and starter code. Hardware exercises need a board and test equipment.', 'Teaching tool · GPIO, UART, I2C and SPI'),
         ('/v2/projects/mosfet-operating-regions/', 'MOSFET Region Explorer', 'Change the bias and see the channel, operating region and characteristic curves respond.', 'Illustrative long-channel model'),
         ('/v2/projects/lithography-animation/', 'Optical lithography', 'Explore how exposure, focus and resist tone affect pattern transfer.', 'Illustrative teaching model'),
