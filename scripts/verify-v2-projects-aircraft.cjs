@@ -22,7 +22,7 @@ assert.match(projects, /id="collection" tabindex="-1"/);
 assert.match(projects, /class="v3-story-skip" href="\/v2\/projects\/#collection"/);
 assert.match(projects, /Browse all 16 projects/);
 assert.match(projects, /data-v2-search/);
-assert.equal((projects.match(/data-v2-project href=/g) || []).length, 22, 'Sixteen projects plus six demo destinations remain');
+assert.equal((projects.match(/data-v2-project href=/g) || []).length, 23, 'Sixteen projects plus seven demo destinations remain');
 assert.deepEqual([...projects.matchAll(/<article id="([^"]+)" data-aircraft-chapter="(\d+)"/g)].map(match => [match[1], match[2]]), [['skylabs-aircraft', '0'], ['skylabs-telemetry', '1']]);
 const source = read('assets/v3-aircraft-hero.js');
 const production = name => {
