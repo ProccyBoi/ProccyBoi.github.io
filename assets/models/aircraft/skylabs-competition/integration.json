@@ -1,48 +1,102 @@
 {
-  "version": 1,
-  "status": "illustrative-installed-sequence",
+  "version": 2,
+  "status": "internal-installation-review",
   "route": "/v2/projects/skylabs/#aircraft",
   "trainerStory": "/v2/projects/#skylabs-aircraft",
   "pairedEntrance": true,
   "aircraftConfiguration": "taildragger",
-  "specifications": {"reference": "skylabs-trainer", "status": "provisional"},
-  "esc": {"reference": "same as skylabs-trainer", "status": "provisional"},
+  "specifications": {
+    "reference": "skylabs-trainer",
+    "status": "provisional"
+  },
+  "esc": {
+    "reference": "same as skylabs-trainer",
+    "status": "provisional"
+  },
   "sources": {
-    "aircraft": {"libraryFileId": "libfile_4cb4e4c34c44819184fd2466f415e742", "cadUrl": "https://a360.co/4ioq3Ov", "manifest": "manifest.json"},
-    "mechanism": {"libraryFileId": "libfile_b63452a8dcbc8191bfb65f57b0304498", "cadUrl": "https://a360.co/3WXbmec", "manifest": "../skylabs-mechanism/manifest.json"}
+    "aircraft": {
+      "libraryFileId": "libfile_4cb4e4c34c44819184fd2466f415e742",
+      "cadUrl": "https://a360.co/4ioq3Ov",
+      "manifest": "manifest.json"
+    },
+    "mechanism": {
+      "libraryFileId": "libfile_b63452a8dcbc8191bfb65f57b0304498",
+      "cadUrl": "https://a360.co/3WXbmec",
+      "manifest": "../skylabs-mechanism/manifest.json"
+    }
   },
   "installation": {
-    "kind": "assumed external belly cradle",
+    "kind": "internal fuselage installation with integrated housing side faces",
     "units": "metres",
     "airframeCoordinates": "nose +X, up +Y, span Z; centred source bounds",
-    "sourceAirframeToLocal": {"x": "0.46381582 - sourceY/1000", "y": "sourceZ/1000 - 0.08375", "z": "0.28518418 - sourceX/1000"},
-    "mechanismSourceAxes": {"longitudinalX": "aircraft +X", "sourceZ": "aircraft +Y", "sourceY": "aircraft -Z"},
-    "mechanismCenteredPosition": [0.32, -0.17, 0],
-    "mechanismScale": [1, 1, 1],
-    "sourceEnvelopeTopBelowFuselageFloorM": 0.0306424995,
-    "sourceEnvelopeAftOfMainGearM": 0.073,
-    "authoredMounts": "Four illustrative 12 x 36 x 6 mm brackets; no source CAD edits",
-    "structuralFitValidated": false
+    "sourceAirframeToLocal": {
+      "x": "0.46381582 - sourceY/1000",
+      "y": "sourceZ/1000 - 0.08375",
+      "z": "0.28518418 - sourceX/1000"
+    },
+    "mechanismSourceAxes": {
+      "longitudinalX": "aircraft +X",
+      "sourceZ": "aircraft +Y",
+      "sourceY": "aircraft -Z"
+    },
+    "mechanismCenteredPosition": [
+      0.36381582,
+      -0.0246424995,
+      0
+    ],
+    "mechanismScale": [
+      1,
+      1,
+      1
+    ],
+    "authoredMounts": "None; source housing and carriage remain stationary",
+    "structuralFitValidated": false,
+    "sourceHeightEnvelopeMm": [
+      3.5,
+      114.715
+    ],
+    "widthsMm": {
+      "fuselageOuter": 100,
+      "fuselageInner": 94,
+      "housingOuter": 100,
+      "carriage": 90,
+      "sensor": 63.8
+    }
   },
   "towline": {
-    "kind": "illustrative geometry",
-    "crossSparCentre": [0.32031582, 0.008291693, 0],
-    "crossSparRadiusM": 0.006,
-    "crossSparLengthM": 0.15,
-    "crossSparBasis": "Named wing-spar station; short bridging carbon member assumed, not identified source hardware",
-    "loopRadiusM": 0.0085,
-    "loopSpanPositionM": 0.065,
-    "visualCableDiameterM": 0.003,
-    "sensorAttachmentInOriginalMechanismSourceM": [-0.14, -0.045, 0.055],
-    "lead": "Outside fuselage side, over aft cradle edge, continuous to moving sensor",
-    "payout": "Illustrative variable length; no source reel or release actuator is invented"
+    "kind": "illustrative flexible line around actual named Wing_spar",
+    "sparSectionMm": [
+      3,
+      22
+    ],
+    "sparCentreLocalM": [
+      0.32031582,
+      0.008291693
+    ],
+    "loopRadiiM": [
+      0.004,
+      0.014
+    ],
+    "loopSpanPositionM": 0.0555,
+    "visualCableDiameterM": 0.0013,
+    "sensorAttachmentInOriginalMechanismSourceM": [
+      0.061540941309766,
+      -0.0457201238048,
+      0.057815001
+    ],
+    "attachmentEvidence": "1.5 mm radius BRep bore edges at both front-notch faces; see sensor-identification.json",
+    "payout": "Illustrative variable length; no invented reel or release actuator"
   },
   "motion": {
-    "sensorFinalTranslationInSourceM": [-1.25, 0, -0.36],
-    "housing": "Brief fade, offset cutaway, ghosted inspection, then exact source-pose restoration after sensor clears",
-    "sidePanelOffsetsInSourceM": [[0, 0.10, -0.02], [0, -0.10, -0.02]],
-    "endPanelOffsetsInSourceM": [[0, 0.24, -0.03], [0, -0.24, -0.03]],
-    "cartAndGuideOffsetInSourceM": [0, 0.16, -0.10],
+    "sensorFinalTranslationInSourceM": [
+      -1.15,
+      0,
+      -0.3
+    ],
+    "movingSourceSolid": "Sensor V2 compound solid 0 only",
+    "carriage": "Independent Cart V2 stays at its source pose inside fuselage; embedded duplicate solid 1 is suppressed",
+    "housing": "Stationary cutaway opacity only; no exploded offsets",
+    "covering": "44 source-derived white/blue Solarfilm panels; same localized diagonal peel kernel as Projects hero",
     "reversible": true,
     "physicalKinematicsValidated": false
   },

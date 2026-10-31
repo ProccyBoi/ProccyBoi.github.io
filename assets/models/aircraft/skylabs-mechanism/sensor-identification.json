@@ -1,0 +1,39 @@
+{
+  "sourceOccurrence": "0:1:1:1/0:1:1:1:10",
+  "solid0": "Actual 300 mm sensor body",
+  "solid1": "Duplicate Cart V2 geometry embedded in Sensor product; hidden, original independent Cart V2 retained",
+  "solidBoundsMm": [
+    [
+      -150.459059,
+      -77.620124,
+      -0.084999,
+      149.540941,
+      -13.820124,
+      63.715001
+    ],
+    [
+      -175.459059,
+      -90.720124,
+      15.0,
+      174.541904,
+      -0.720124,
+      41.815001
+    ]
+  ],
+  "frontDirectionInMechanismSource": "+X (rounded nose; tapered tail at -X)",
+  "frontNotch": {
+    "centreMm": [
+      61.540941309766,
+      -45.7201238048,
+      57.815001
+    ],
+    "radiusMm": 1.5,
+    "axis": "+X",
+    "endFaceXMm": [
+      58.540941309766,
+      64.540941309766
+    ],
+    "evidence": "Source BRep circular edges, 1.5 mm radius at both notch faces; matching 3 mm outer recess"
+  },
+  "assetSha256": "b69b4ccf344e8a3ef92e372938a9d1034e23e29d2b11678244cae8302b4278d6"
+}
