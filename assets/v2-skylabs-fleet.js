@@ -1,12 +1,12 @@
 /* Original STEP geometry, internally installed with source-derived Solarfilm.
  * See docs/skylabs-competition-integration.md for mount, cutaway and towline
- * assumptions. Only the isolated sensor body deploys; the carriage never leaves the fuselage. */
+ * assumptions. Only the isolated sensor body deploys; the carriage lowers inside the fuselage before release. */
 (()=>{'use strict';
  const root=document.querySelector('[data-skylabs-fleet]');if(!root)return;
  const stage=root.querySelector('.fleet-stage'),track=root.querySelector('.fleet-track'),canvas=root.querySelector('canvas'),status=root.querySelector('.fleet-status');
  const title=root.querySelector('[data-fleet-title]'),caption=root.querySelector('[data-fleet-caption]'),bar=root.querySelector('.fleet-progress');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
- let renderer,scene,camera,plane,trainer,mechanism,sensor,line,mechanismSource,housing=[],films=[],filmGroup,airframeCutaway=[],cart,supersededSensor,wingCutaway=[],frame=0,loading=false,ready=false,active=false,failed=false,progress=0;
+ let renderer,scene,camera,plane,trainer,mechanism,sensor,line,mechanismSource,housing=[],films=[],filmGroup,airframeCutaway=[],cart,supersededSensor,systems,wingCutaway=[],frame=0,loading=false,ready=false,active=false,failed=false,progress=0;
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
  function staticCaption(){title.textContent='01 / Trainer + competition';caption.textContent='Trainer and competition taildragger · source assemblies';bar.style.transform='scaleX(0)';}
  const allowed=()=>!reduced.matches&&!navigator.connection?.saveData&&innerHeight>=560;
@@ -29,21 +29,22 @@
   if(!ready)return;progress=clamp(value);const T=THREE,w=stage.clientWidth,h=stage.clientHeight,mobile=w<680;
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);
   const arrival=smooth((progress-.03)/.21),trainerArrival=smooth(progress/.21),focus=smooth((progress-.28)/.18),returnWide=smooth((progress-.70)/.18);
-  const deploy=smooth((progress-.66)/.24),drop=.30*smooth((progress-.66)/.12),peel=smooth((progress-.28)/.27),inspect=smooth((progress-.51)/.10);
+  const lower=.025*smooth((progress-.60)/.10),deploy=smooth((progress-.74)/.18),drop=lower+.45*deploy,peel=smooth((progress-.28)/.27),inspect=smooth((progress-.51)/.10);
   const planeScale=(mobile?.57:.75)+focus*(mobile?.10:.18);
   plane.position.set((mobile?0:-.65)*(1-focus)+(1-arrival)*-2.2,(mobile?-.38:-.08)*(1-focus)+focus*.1+(1-arrival)*.55,(mobile?0:.45)*(1-focus));plane.rotation.set(.07,-.18+(1-arrival)*.2,(1-arrival)*-.18);plane.scale.setScalar(planeScale);plane.visible=true;
   trainer.position.set((mobile?0:.65)+(1-trainerArrival)*-2.2+focus*3,(mobile?.48:.15)+(1-trainerArrival)*.55,mobile?0:-.5);trainer.rotation.set(.07,-.18+(1-trainerArrival)*.2,(1-trainerArrival)*-.18);trainer.scale.setScalar(mobile?.50:.68);trainer.visible=focus<.995;
   // Only authored film peels. Structural CAD and the complete internal carriage
-  // remain fixed relative to the fuselage throughout every forward/reverse pose.
+  // remain aboard; the cart lowers on the internal guides before sensor release.
   films.forEach((part,index)=>{const amount=clamp(peel-(index%4)*.018*Math.sin(Math.PI*peel));part.patches.forEach(patch=>patch.deform(amount));part.group.position.copy(part.normal).multiplyScalar(.10*smooth((amount-.65)/.35));part.material.opacity=1-smooth((amount-.85)/.15);part.material.transparent=part.material.opacity<1;part.material.depthWrite=part.material.opacity>.95;part.group.visible=amount<.999;});
   housing.forEach(part=>{part.object.position.copy(part.rest);part.object.visible=true;part.materials.forEach(material=>{material.opacity=part.object===cart?1:1-.84*inspect;material.transparent=material.opacity<1;material.depthWrite=material.opacity>.95;});});
   airframeCutaway.forEach(part=>{part.object.visible=true;part.materials.forEach(material=>{material.opacity=1-inspect*(part.floor?1:.90);material.transparent=material.opacity<1;material.depthWrite=material.opacity>.95;});});
   wingCutaway.forEach(material=>{material.opacity=1-inspect*(1-returnWide);material.transparent=material.opacity<1;material.depthWrite=material.opacity>.95;});
-  sensor.position.copy(sensor.userData.rest);sensor.position.x-=deploy*1.15;sensor.position.z-=drop;
+  systems.setInspection(1-inspect*(1-returnWide));
+  sensor.position.copy(sensor.userData.rest);sensor.position.z-=drop;cart.position.z-=lower;
   plane.updateMatrixWorld(true);
-  const nearTarget=plane.localToWorld(new T.Vector3(.3638-.575*deploy,-.005-.15*smooth((progress-.66)/.12),0));
+  const nearTarget=plane.localToWorld(new T.Vector3(.3638,-.005-.225*deploy,0));
   const wideTarget=new T.Vector3(-.08*returnWide,-.07*returnWide,0),zoom=smooth((progress-.49)/.12)*(1-returnWide),target=wideTarget.lerp(nearTarget,zoom);
-  const nearCamera=nearTarget.clone().add(new T.Vector3(0,-.035,mobile?1.20:.90));
+  const nearCamera=nearTarget.clone().add(new T.Vector3(0,.12-.155*smooth((progress-.57)/.05),mobile?1.20:.90));
   const wideCamera=new T.Vector3((mobile?2.3:2.1)*(1-returnWide)+.65*returnWide,1.6-1.10*returnWide,(mobile?3.3:2.7)*(1-returnWide)+(mobile?4.0:3.1)*returnWide);
   camera.position.copy(wideCamera).lerp(nearCamera,zoom);camera.aspect=w/h;camera.lookAt(target);camera.updateProjectionMatrix();
   // Measured named wing spar, no invented cross-member or external extension.
@@ -58,7 +59,7 @@
   line.geometry.dispose();line.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(points,false,'centripetal'),160,.00065,6,false);line.userData.anchor=points[0].toArray();line.userData.attachment=attach.toArray();line.visible=peel>.8;
   renderer.render(scene,camera);bar.style.transform='scaleX('+progress+')';
   title.textContent=progress<.28?'01 / Trainer + competition':progress<.56?'02 / Beneath the Solarfilm':'03 / Deploy & retrieve';
-  caption.textContent=progress<.28?'Solarfilm-covered airframes. One avionics platform.':progress<.56?'The covering peels back to reveal the internal system.':'Internal carriage stays aboard · sensor tethered at its front notch';
+  caption.textContent=progress>=.53&&progress<.60?'Central telemetry · 100A ESC · four control servos':progress<.28?'Solarfilm-covered airframes. One avionics platform.':progress<.56?'The covering peels back to reveal the internal system.':'Carriage lowers inside · sensor releases vertically';
   root.dataset.fleetProgress=progress.toFixed(4);
  }
  function tick(){frame=0;if(!ready||!active||document.hidden||!allowed())return;const r=track.getBoundingClientRect();draw(clamp((110-r.top)/Math.max(1,track.offsetHeight-stage.offsetHeight)));}
@@ -67,8 +68,8 @@
   try{
    if(!window.DecompressionStream)throw Error('Static view');
    await script('/assets/vendor/three.min.js',()=>!!window.THREE);await script('/assets/vendor/GLTFLoader.js',()=>!!window.THREE.GLTFLoader);
-   await script('/assets/v3-aircraft-scene.js',()=>!!window.V3AircraftScene);await script('/assets/v2-hero-environment.js',()=>!!window.V2ProductStudio);await script('/assets/v2-skylabs-film.js',()=>!!window.V2SkylabsFilm);
-   const models=await Promise.all([asset('skylabs-competition'),asset('skylabs-mechanism'),window.V3AircraftScene.load(window.THREE),asset('skylabs-mechanism','sensor-body.glb.gz'),fetch('/assets/models/aircraft/skylabs-competition/solarfilm.json.gz').then(async response=>{if(!response.ok)throw Error('Film unavailable');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();})]);const T=THREE;
+   await script('/assets/v3-aircraft-scene.js',()=>!!window.V3AircraftScene);await script('/assets/v2-hero-environment.js',()=>!!window.V2ProductStudio);await script('/assets/v2-skylabs-film.js',()=>!!window.V2SkylabsFilm);await script('/assets/v2-hero-assets.js',()=>!!window.V2HeroAssets);await script('/assets/v3-aircraft-electronics.js',()=>!!window.V3AircraftElectronics);await script('/assets/v2-skylabs-systems.js',()=>!!window.V2SkylabsSystems);
+   const models=await Promise.all([asset('skylabs-competition'),asset('skylabs-mechanism'),window.V3AircraftScene.load(window.THREE),asset('skylabs-mechanism','sensor-body.glb.gz'),fetch('/assets/models/aircraft/skylabs-competition/solarfilm.json.gz').then(async response=>{if(!response.ok)throw Error('Film unavailable');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}),window.V2HeroAssets.load('telemetry')]);const T=THREE;
    scene=new T.Scene();camera=new T.PerspectiveCamera(37,1,.2,20);renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.8;
    window.V2ProductStudio.configureRenderer(renderer,T);scene.environment=await window.V2HeroEnvironment.load(T);const studio=window.V2ProductStudio.createLights(T,scene);renderer.toneMappingExposure=.72;studio.key.shadow.normalBias=.0006;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
    plane=wrap(models[0],true);mechanism=wrap(models[1],false);trainer=new T.Group();trainer.name='fleet-trainer';plane.name='fleet-competition';const sourceTrainer=models[2].group;trainer.add(sourceTrainer);sourceTrainer.traverse(node=>{if(node.userData.category==='covering')node.traverse(mesh=>{if(!mesh.isMesh)return;const materials=(Array.isArray(mesh.material)?mesh.material:[mesh.material]).map(material=>{const copy=material.clone();copy.polygonOffset=true;copy.polygonOffsetFactor=-2;copy.polygonOffsetUnits=-2;return copy;});mesh.material=materials.length===1?materials[0]:materials;});});sourceTrainer.updateMatrixWorld(true);sourceTrainer.position.sub(new T.Box3().setFromObject(sourceTrainer).getCenter(new T.Vector3()));scene.add(plane,trainer);plane.add(mechanism);mechanism.position.set(.36381582,-.0246424995,0);mechanismSource=models[1];
@@ -93,6 +94,7 @@
     const mesh=new T.Mesh(geometry,material);mesh.name=item.name;mesh.userData={filmSurface:item.kind,peelAxis:item.axis,outward:item.normal,panelNormal:item.normal,separatedFilmPanel:true,shortAxisPeel:item.shortAxisPeel,filmRegion:item.name.startsWith('fuselage')?'fuselage':'wing'};group.add(mesh);filmGroup.add(group);
     const patches=window.V2SkylabsFilm.covering(T,{object:group,filmRegion:mesh.userData.filmRegion},true);films.push({group,material,normal,patches});
    }
+   systems=window.V2SkylabsSystems.create(T,models[5]);plane.add(systems.group);
    plane.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true;}});ready=true;loading=false;
    if(allowed()){root.dataset.fleetState='ready';status.textContent='Scroll to fly in, deploy the sensor and reverse to retrieve.';draw(0);queue();}else{root.dataset.fleetState='static';}
   }catch(error){failed=true;loading=false;ready=false;renderer?.dispose();root.dataset.fleetState='failed';staticCaption();status.textContent='The 3D view is unavailable. The CAD preview and assembly notes remain below.';}
@@ -103,6 +105,6 @@
  reduced.addEventListener('change',preference);navigator.connection?.addEventListener?.('change',preference);
  canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();failed=true;ready=false;cancelAnimationFrame(frame);root.dataset.fleetState=allowed()?'failed':'static';staticCaption();status.textContent=allowed()?'3D rendering paused. The CAD preview remains available.':'Static CAD preview.';});
  addEventListener('pagehide',()=>{cancelAnimationFrame(frame);frame=0;});
- if(new URLSearchParams(location.search).has('fleet-capture'))window.__skylabsFleet={seek:draw,get ready(){return ready;},get renderer(){return renderer;},get scene(){return scene;},get camera(){return camera;},get sensor(){return sensor;},get mechanism(){return mechanism;},get housing(){return housing;},get cart(){return cart;},get films(){return films;},get filmGroup(){return filmGroup;},get mechanismSource(){return mechanismSource;},get supersededSensor(){return supersededSensor;},get line(){return line;},get progress(){return progress;}};
+ if(new URLSearchParams(location.search).has('fleet-capture'))window.__skylabsFleet={seek:draw,get ready(){return ready;},get renderer(){return renderer;},get scene(){return scene;},get camera(){return camera;},get sensor(){return sensor;},get mechanism(){return mechanism;},get housing(){return housing;},get cart(){return cart;},get systems(){return systems;},get films(){return films;},get filmGroup(){return filmGroup;},get mechanismSource(){return mechanismSource;},get supersededSensor(){return supersededSensor;},get line(){return line;},get progress(){return progress;}};
  preference();
 })();

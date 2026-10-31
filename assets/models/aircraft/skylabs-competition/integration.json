@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "status": "internal-installation-review",
+  "version": 3,
+  "status": "internal-lowering-and-vertical-release",
   "route": "/v2/projects/skylabs/#aircraft",
   "trainerStory": "/v2/projects/#skylabs-aircraft",
   "pairedEntrance": true,
@@ -89,16 +89,33 @@
   },
   "motion": {
     "sensorFinalTranslationInSourceM": [
-      -1.15,
       0,
-      -0.3
+      0,
+      -0.475
     ],
     "movingSourceSolid": "Sensor V2 compound solid 0 only",
-    "carriage": "Independent Cart V2 stays at its source pose inside fuselage; embedded duplicate solid 1 is suppressed",
+    "carriage": "25 mm internal downward stroke, progress 0.60\u20130.70; remains aboard during release",
     "housing": "Stationary cutaway opacity only; no exploded offsets",
     "covering": "44 source-derived white/blue Solarfilm panels; same localized diagonal peel kernel as Projects hero",
     "reversible": true,
-    "physicalKinematicsValidated": false
+    "physicalKinematicsValidated": false,
+    "release": "Sensor follows carriage for 25 mm, then drops a further 450 mm vertically, progress 0.74\u20130.92. No aft translation."
   },
-  "scope": "Visual storytelling authorized by user; not structural or flight validation"
+  "scope": "Visual storytelling authorized by user; not structural or flight validation",
+  "systems": {
+    "telemetry": "Existing 153-component Skylabs PCB, original 73.03 mm normalization",
+    "telemetryPositionM": [
+      0.115,
+      -0.025,
+      0
+    ],
+    "esc": "Existing trainer illustrative 100A ESC",
+    "escPositionM": [
+      0.605,
+      -0.045,
+      0
+    ],
+    "servos": "Four existing trainer KST-X10 Pro-B illustrative servos at flaperons, elevator and rudder",
+    "mounts": "Assumed positions and telemetry standoffs; actual board geometry unscaled except original metres normalization; harness routed outside carriage stroke"
+  }
 }

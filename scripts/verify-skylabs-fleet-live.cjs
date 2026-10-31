@@ -4,7 +4,7 @@ const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:a
 const base=process.env.V2_BASE_URL||'https://proccyboi.github.io';
 const revision=process.env.GITHUB_SHA||'local-review';
 const files=[
- ...['assets/v2-skylabs-film.js','assets/models/aircraft/skylabs-mechanism/sensor-body.glb.gz','assets/models/aircraft/skylabs-mechanism/sensor-identification.json'].map(file=>[file,'/'+file]),
+ ...['assets/v2-skylabs-systems.js','assets/v3-aircraft-electronics.js','assets/v2-hero-assets.js','assets/models/hero/telemetry.bin.gz','assets/v2-skylabs-film.js','assets/models/aircraft/skylabs-mechanism/sensor-body.glb.gz','assets/models/aircraft/skylabs-mechanism/sensor-identification.json'].map(file=>[file,'/'+file]),
  ['v2/projects/skylabs/index.html','/v2/projects/skylabs/'],
  ['assets/v2-skylabs-fleet.js','/assets/v2-skylabs-fleet.js'],
  ['assets/v2-skylabs-fleet.css','/assets/v2-skylabs-fleet.css'],
