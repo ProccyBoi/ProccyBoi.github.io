@@ -2,8 +2,8 @@
 
 The v2 Skylabs case page (`/v2/projects/skylabs/#aircraft`) now flies the actual
 trainer and competition aircraft into **one shared scene together**. Desktop
-uses a diagonal pair; mobile stacks them with separate silhouettes. Both move
-out as the separate sensor assembly enters. Scroll reverses every pose exactly.
+uses a diagonal pair; mobile stacks them with separate silhouettes. The trainer exits while the competition aircraft remains for its mounted
+sensor deployment and retrieval. Scroll reverses every pose exactly.
 The existing trainer-only Projects story, its assets and its controller are
 unchanged. Its existing loader supplies an independent trainer instance here.
 
@@ -62,35 +62,55 @@ the result. No authoritative assembly-to-aircraft transform is present, and no
 installed Boolean collision test was performed. This is a fit question, **not
 proof of a design flaw**.
 
-## Motion and routing evidence
+## Assumed installed deployment and retrieval
 
-`clearance-screen.json` records OpenCascade BRep Boolean common volumes in the
-mechanism's own supplied assembly coordinates, against all other leaf parts,
-with a >0.01 mm³ reporting threshold. All ten mechanism leaf occurrences pass
-`BRepCheck_Analyzer.IsValid()` in the current source.
+The user authorized sensible assumptions to finish the visual story. The scene
+now keeps the **actual mechanism mounted to the competition aircraft** throughout,
+with no independent resizing. Both STEP assemblies retain their geometry and
+relative metre scale. A single presentation scale acts on the whole aircraft,
+cradle, sensor and cable. `integration.json` records the placement and assumptions.
 
-At the untouched source pose, the sensor overlaps `Right Panel` by approximately
-16.823 mm³ and each of four `Bearing Guide` occurrences by approximately
-1.875 mm³. These are source-model overlaps; intended contact/tolerances are
-unknown and no operational fault is inferred from them.
+The mechanism’s source X is aligned with aircraft nose +X, source Z with up +Y,
+and source Y with aircraft −Z. Its centred source envelope sits at aircraft-local
+`[0.32, -0.17, 0]` metres. This puts the entire cradle **outside and below** the
+fuselage rather than forcing its 100 mm envelope inside the 94 mm wall gap.
+The cradle’s highest source point is about 30.64 mm below the fuselage floor;
+its forward envelope ends about 73 mm aft of the main-gear envelope. These are
+bounding-envelope checks, not installed solid/tolerance or structural validation.
+Four restrained authored bracket primitives illustrate support. They are labelled
+as assumptions in the manifest; no STEP mesh is modified or secretly shrunk.
 
-For the animation, an **illustrative sensor-only translation along source −Z**
-was sampled at 0, 10, 20, 40, 80, 120 and 160 mm. At 10 mm it intersects `Cart V2`
-by approximately 3186.605 mm³. At 80 mm it intersects both side panels; the final
-two samples have no reported intersections. This proves intersections only for
-that assumed path, not for the actual mechanism's unknown deployment motion.
-It is not a continuous sweep, joint solver, actuator-stroke calculation or
-installed aircraft test. The page therefore calls the animation an exploded
-routing study and explicitly states the actual release motion is unconfirmed.
+The paired entrance moves into a close underside view. Housing parts briefly
+fade, separate into a ghosted **cutaway**, and reveal the sensor. They reach their
+separated positions before the sensor moves, so the visual does not drive it
+through displayed solid panels. The sensor pays out aft and downward, ending
+1.25 m aft and 0.36 m below its source position. Once it clears, the housing
+returns to the exact original source positions and the camera widens to show the
+aircraft towing its sensor. Reversing scroll retrieves it, reopens the cutaway,
+returns the sensor to its source pose, and closes the assembly. This is an
+illustrated deployment, **not the mechanism’s inferred physical actuation**.
+No reel, hinge or actuator is invented to imply validated kinematics.
 
-The blue towline is a continuous schematic loop and lead to the moving sensor.
-Its loop station is illustrative, not measured mounting hardware. The user asks
-for a loop around the main carbon spar; a continuous main carbon spar through
-the fuselage has not been positively identified. The exported `Wing_spar` halves
-stop at the fuselage sides. `CF_Tube_20x20mm` runs aft longitudinally and is not
-silently assumed to be the main wing spar. A confirmed mount transform, actual
-release motion, loop station, attachment and cable dimensions are needed for
-installed routing/clearance. No structural or flight-safety certification is made.
+The original direct-downward motion was rejected as visual storytelling because
+it crossed the source cart. Historical `clearance-screen.json` records those
+Boolean checks; it is **not** validation of the current cutaway sequence. At the
+untouched source pose, the sensor/right-panel common volume is approximately
+16.823 mm³ and each bearing-guide overlap approximately 1.875 mm³. All ten
+mechanism leaf shapes pass `BRepCheck_Analyzer.IsValid()`. Intended source contacts
+or tolerances remain unknown. These minor source overlaps are preserved.
+
+A short assumed carbon cross-member bridges the named wing-spar station:
+`[0.32031582, 0.008291693, 0]` metres in centred aircraft coordinates, 12 mm
+illustrative diameter and 150 mm length. It is distinct from the existing aft
+longitudinal `CF_Tube_20x20mm`. The loop wraps around its outboard extension at
+span position 65 mm, outside the approximately 50 mm fuselage half-width.
+The continuous lead runs down the outside wall, above the aft cradle edge and
+to a fixed local point on the actual sensor occurrence. Every draw transforms
+that attachment with the sensor; the cable cannot detach during reverse motion.
+A 3 mm visual cable diameter keeps the line readable on mobile. The loop and
+member sizes, brackets, mounting location and payout are authoring assumptions,
+not measured component specifications. No structural or flight-safety
+certification is made. Page copy retains only a restrained illustrative label.
 
 ## Runtime, visual review and tests
 
@@ -98,8 +118,8 @@ One new renderer draws both aircraft and the mechanism. Native scroll drives
 finite poses; there is no scroll interception or idle loop. Assets begin near
 the section. Offscreen and hidden drawing stops. Reduced motion, Save Data,
 short viewports, failed downloads, no JavaScript and WebGL loss retain the
-rendered fleet poster and readable notes. The geometry is scaled for composition;
-this is not a dimension-comparison view.
+rendered fleet poster and readable notes. The whole aircraft rig is scaled for composition; its mechanism-to-airframe
+scale remains exactly 1:1. This is not a dimension-comparison view.
 
 Gzip delivery: competition 4,227,609 bytes; mechanism 178,695 bytes; existing
 trainer meshopt transport 5,402,507 bytes (approximately 9.81 MB combined, before
@@ -108,19 +128,22 @@ meshopt is unavailable. This is a meaningful loading cost, not a zero-cost reuse
 across separate documents. Static preferences skip all three model requests.
 
 Actual desktop 1440×1000 and mobile 390×844 frames were reviewed at arrival,
-paired flight, transition, mechanism and separated-sensor poses. The pair is
+paired flight, approach, cutaway, payout and fully towed poses. The pair is
 visible together and keeps separate silhouettes. A recovered visual issue was
 trainer covering depth flicker; this scene now uses a tighter camera depth range
 and cloned covering-material polygon offsets, without changing existing trainer
-assets or its original story. An initially empty mobile transition was corrected
-by bringing the mechanism up into view while the aircraft leave. The poster was regenerated from the corrected
+assets or its original story. The mounted cutaway uses a clear aft-quarter underside view; the final lateral
+view keeps the trailing sensor and continuous towline distinct on mobile. The poster was regenerated from the corrected
 shared scene. The source competition remains skeletal because covering is absent.
 
 Browser evidence lives in `.codex-temp/fleet/`. Tests:
 
 * `node scripts/verify-v2-skylabs-fleet.cjs`: new-source hashes/gzip parity and
   145 nodes; both aircraft present in one frame; desktop/mobile captures; exact
-  reversible pose and canvas; native scroll both ways; offscreen idle; reduced
+  reversible pose and canvas; original 1:1 mechanism scale; aircraft parenting;
+  sensor-to-displayed-housing envelope clearance and sensor framing during payout;
+  complete aircraft/sensor framing at full tow; continuously
+  attached towline; full retrieval restoring every source pose; native scroll both ways; offscreen idle; reduced
   motion; Save Data; short viewport; failed download; context loss; no-JS poster.
 * `CHROMIUM_EXECUTABLE=/usr/bin/chromium node scripts/verify-v2-skylabs.cjs`:
   existing board switching/picking, pending races, responsive layout, context
@@ -141,12 +164,12 @@ The earlier overview-only scaffold patch was provided, but its commits were not
 in this checkout. Its intended source references, trainer preservation,
 competition/taildragger description, provisional trainer/ESC specs, integration
 notes and verification are covered here. Its historical access blocker is
-superseded by verified imports. No separate stale `integration.json` is added;
-the model manifests and this report hold the current provenance and findings.
+superseded by verified imports. The current `integration.json`, model manifests and this report hold the
+provenance, provisional ESC/specs and explicit installation assumptions.
 The unrelated launch commit is absent and not claimed as included.
 
-Installed, mechanically valid deployment/retraction remains unresolved because
-mounting and kinematics are unknown. That action is pending CAD clarification,
-not denied and not executed with an uncertain outcome. Both aircraft fly in
-coordinately now; no source geometry is moved to guess a final installation.
-No push, deployment or publication has been performed.
+The authorized visual storytelling is complete. The supplied housing is shown
+in a deliberate cutaway during release; the mounting and physical release/reel
+mechanism are not validated. No further user input is needed for this website
+illustration. No operation is denied or pending approval. No push, deployment
+or publication has been performed.

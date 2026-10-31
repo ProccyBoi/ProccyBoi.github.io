@@ -21,3 +21,4 @@
 .fleet-status{padding:0 5vw;margin:0!important;font-size:.85rem}
 @media(max-width:680px){.skylabs-fleet-header{display:block;padding-top:2rem}.fleet-notes{grid-template-columns:1fr;gap:1rem}.fleet-stage{height:460px}.skylabs-fleet[data-fleet-state=ready] .fleet-stage{top:100px;min-height:320px}.fleet-caption{font-size:.78rem;bottom:1rem}.fleet-caption strong{font-size:.9rem}}
 @media(prefers-reduced-motion:reduce){.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:auto}.skylabs-fleet[data-fleet-state=ready] .fleet-stage{position:relative;top:0}.fleet-stage canvas{transition:none}}
+@media(prefers-reduced-motion:reduce){.skylabs-fleet .fleet-stage canvas{display:none}.skylabs-fleet .fleet-poster{visibility:visible!important}}
