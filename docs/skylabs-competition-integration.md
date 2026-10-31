@@ -1,107 +1,152 @@
-# Competition aircraft and sensor study
+# Skylabs fleet integration — unpublished review
 
-Unpublished implementation on the existing v2 Skylabs case page at
-`/v2/projects/skylabs/#aircraft`. The accepted trainer animation remains at
-`/v2/projects/#skylabs-aircraft`, with its runtime and assets unchanged. Both
-aircraft are linked; they do not share a simultaneous fly-in.
+The v2 Skylabs case page (`/v2/projects/skylabs/#aircraft`) now flies the actual
+trainer and competition aircraft into **one shared scene together**. Desktop
+uses a diagonal pair; mobile stacks them with separate silhouettes. Both move
+out as the separate sensor assembly enters. Scroll reverses every pose exactly.
+The existing trainer-only Projects story, its assets and its controller are
+unchanged. Its existing loader supplies an independent trainer instance here.
 
-## Imported sources
+## Sources and fidelity
 
-The download-host configuration is now enforced and both Library STEP files
-were successfully materialized with their Library identity/version attributes.
+Both Library files downloaded successfully with identity/version attributes.
 
 | File | Bytes | SHA-256 |
 | --- | ---: | --- |
 | Proposal_Assembly.step | 14,150,868 | 21028145146887c3709c1ab7d2f4e8a85aa0c7a3d4e6aa551691c18ff82fa695 |
 | V2 Assembly.step.step | 757,051 | 2057073d35cac58b3d254028ff1bfc1e79cd587797c888a8f5648ed0df7d315b |
 
-Each model manifest preserves every original occurrence (134 aircraft, 11
-mechanism), name, source-space bounds and transform. Tessellation uses 0.2 mm
-absolute / 0.15 rad angular deflection. Lossless accessor/mesh deduplication
-retains component hierarchy. No geometry is invented to complete the aircraft.
-The supplied aircraft includes two empty source nodes (`Wing_leading_edge(Mirror)` and `VT_Rib3`); export keeps their
-hierarchy but they cannot generate visible triangles. CAD source colours are
-replaced with a restrained presentation palette; geometry is unchanged.
+The manifests preserve all 134 aircraft and 11 mechanism occurrences, names,
+source-space transforms and bounds. Tessellation is 0.2 mm absolute / 0.15 rad
+angular deflection, with lossless geometry deduplication. Original hierarchy
+is retained. Two aircraft nodes have no exportable geometry:
+`Wing_leading_edge(Mirror)` and `VT_Rib3`. No replacement competition geometry,
+covering or tailwheel is invented. A restrained presentation palette replaces
+source colours. The existing trainer retains its accepted authored covering and
+reconstructed wheels, as documented in its pre-existing manifest.
 
-Web delivery uses gzip GLB: 4,227,609 bytes aircraft, 178,695 bytes mechanism.
-Uncompressed GLBs and provenance manifests are retained for inspection and
-reproduction. `poster.webp` is rendered from the same geometry and camera.
+The competition still contains the earlier `V2TP-Tainer Full Assembly` payload.
+Its `Rudder_Assembly` is near the wing/fuselage rather than the aft vertical tail.
+These saved source positions are preserved. No tailwheel is identified; the
+competition is called a taildragger per the user, without claiming a verified
+ground-contact pose. Trainer specs and ESC remain provisional for competition.
+
+## Measured dimensions versus assumptions
+
+Both STEP geometric contexts explicitly use millimetres: aircraft context
+`#187584`, mechanism context `#15303`, each `LENGTH_UNIT` /
+`SI_UNIT(.MILLI.,.METRE.)`. OpenCascade inspection records mm; exported glTF uses
+metres. The dimension comparison below is **not an installed solid fit check**.
+
+| Source occurrence | Source bounds relevant to width (mm) |
+| --- | --- |
+| Aircraft `0:1:1:1/0:1:1:1:5`, `Fuselage_Wall` | X = 235.18418 … 238.18418 |
+| Aircraft `0:1:1:1/0:1:1:1:4`, `Fuselage_Wall` | X = 332.18418 … 335.18418 |
+| Mechanism `0:1:1:1/0:1:1:1:1`, `Left Panel` | Y = −4.7 … 5 |
+| Mechanism `0:1:1:1/0:1:1:1:2`, `Right Panel` | Y = −95 … −85.3 |
+| Mechanism `0:1:1:1/0:1:1:1:5`, `Cart V2` | Y = −90.720124 … −0.720124 |
+
+The fuselage wall envelope is 100 mm outside, with two 3 mm walls and a
+94 mm gap between their inner envelope planes: 332.18418 − 238.18418.
+The **whole mechanism's panel envelope**, not `Cart V2` itself, is 100 mm wide:
+5 − (−95). `Cart V2` is 90 mm wide. Calling the cart itself 100 mm wide was
+imprecise and has been corrected in the page and report.
+
+The separate mechanism's overall envelope is 360 × 100 × 111.215001 mm.
+Only **if** its long source X axis is installed fore/aft along aircraft Y, its
+width Y across aircraft X, and it lies between those wall envelopes, does the
+comparison suggest a 6 mm envelope conflict (3 mm per side if centred).
+That orientation and placement are inferred, not supplied or confirmed.
+Cutouts, another orientation, a different station or an external mount may change
+the result. No authoritative assembly-to-aircraft transform is present, and no
+installed Boolean collision test was performed. This is a fit question, **not
+proof of a design flaw**.
+
+## Motion and routing evidence
+
+`clearance-screen.json` records OpenCascade BRep Boolean common volumes in the
+mechanism's own supplied assembly coordinates, against all other leaf parts,
+with a >0.01 mm³ reporting threshold. All ten mechanism leaf occurrences pass
+`BRepCheck_Analyzer.IsValid()` in the current source.
+
+At the untouched source pose, the sensor overlaps `Right Panel` by approximately
+16.823 mm³ and each of four `Bearing Guide` occurrences by approximately
+1.875 mm³. These are source-model overlaps; intended contact/tolerances are
+unknown and no operational fault is inferred from them.
+
+For the animation, an **illustrative sensor-only translation along source −Z**
+was sampled at 0, 10, 20, 40, 80, 120 and 160 mm. At 10 mm it intersects `Cart V2`
+by approximately 3186.605 mm³. At 80 mm it intersects both side panels; the final
+two samples have no reported intersections. This proves intersections only for
+that assumed path, not for the actual mechanism's unknown deployment motion.
+It is not a continuous sweep, joint solver, actuator-stroke calculation or
+installed aircraft test. The page therefore calls the animation an exploded
+routing study and explicitly states the actual release motion is unconfirmed.
+
+The blue towline is a continuous schematic loop and lead to the moving sensor.
+Its loop station is illustrative, not measured mounting hardware. The user asks
+for a loop around the main carbon spar; a continuous main carbon spar through
+the fuselage has not been positively identified. The exported `Wing_spar` halves
+stop at the fuselage sides. `CF_Tube_20x20mm` runs aft longitudinally and is not
+silently assumed to be the main wing spar. A confirmed mount transform, actual
+release motion, loop station, attachment and cable dimensions are needed for
+installed routing/clearance. No structural or flight-safety certification is made.
+
+## Runtime, visual review and tests
+
+One new renderer draws both aircraft and the mechanism. Native scroll drives
+finite poses; there is no scroll interception or idle loop. Assets begin near
+the section. Offscreen and hidden drawing stops. Reduced motion, Save Data,
+short viewports, failed downloads, no JavaScript and WebGL loss retain the
+rendered fleet poster and readable notes. The geometry is scaled for composition;
+this is not a dimension-comparison view.
+
+Gzip delivery: competition 4,227,609 bytes; mechanism 178,695 bytes; existing
+trainer meshopt transport 5,402,507 bytes (approximately 9.81 MB combined, before
+helpers). The existing trainer loader supplies its original GLB fallback if
+meshopt is unavailable. This is a meaningful loading cost, not a zero-cost reuse
+across separate documents. Static preferences skip all three model requests.
+
+Actual desktop 1440×1000 and mobile 390×844 frames were reviewed at arrival,
+paired flight, transition, mechanism and separated-sensor poses. The pair is
+visible together and keeps separate silhouettes. A recovered visual issue was
+trainer covering depth flicker; this scene now uses a tighter camera depth range
+and cloned covering-material polygon offsets, without changing existing trainer
+assets or its original story. An initially empty mobile transition was corrected
+by bringing the mechanism up into view while the aircraft leave. The poster was regenerated from the corrected
+shared scene. The source competition remains skeletal because covering is absent.
+
+Browser evidence lives in `.codex-temp/fleet/`. Tests:
+
+* `node scripts/verify-v2-skylabs-fleet.cjs`: new-source hashes/gzip parity and
+  145 nodes; both aircraft present in one frame; desktop/mobile captures; exact
+  reversible pose and canvas; native scroll both ways; offscreen idle; reduced
+  motion; Save Data; short viewport; failed download; context loss; no-JS poster.
+* `CHROMIUM_EXECUTABLE=/usr/bin/chromium node scripts/verify-v2-skylabs.cjs`:
+  existing board switching/picking, pending races, responsive layout, context
+  loss and no-JS navigation.
+* `node scripts/verify-v2-projects-aircraft.cjs`: existing trainer/collection
+  source checks. No trainer asset/controller changes.
+* JS syntax and `git -c core.whitespace=cr-at-eol diff --check`; original HTML
+  CRLF preserved.
 
 Rebuild with Python 3.12, cadquery-ocp 7.9.3.1.1 and compatible VTK 9.6:
+`python3 scripts/build-skylabs-competition.py /path/to/cad-source`.
+The geometry checker is `scripts/check-skylabs-mechanism.py`; regenerate posters
+with `node scripts/render-skylabs-competition.cjs` and a server on port 8080.
 
-```
-python3 scripts/build-skylabs-competition.py /path/to/cad-source
-python3 scripts/check-skylabs-mechanism.py '/path/to/V2 Assembly.step.step'
-```
+## Scope and remaining questions
 
-The exporter reuses the repository's existing CAD inspection and lossless
-compaction utilities. No `.agents` directory or `AGENTS.md` was present in this
-checkout. The earlier partial scaffold commits were absent; this implementation
-supersedes their overview-only content rather than applying outdated blocker text.
+The earlier overview-only scaffold patch was provided, but its commits were not
+in this checkout. Its intended source references, trainer preservation,
+competition/taildragger description, provisional trainer/ESC specs, integration
+notes and verification are covered here. Its historical access blocker is
+superseded by verified imports. No separate stale `integration.json` is added;
+the model manifests and this report hold the current provenance and findings.
+The unrelated launch commit is absent and not claimed as included.
 
-## Mechanical findings and unresolved integration
-
-* Aircraft source spans approximately 1833.632 mm, is 1634 mm long and 617.5 mm
-  high in its saved coordinates. These are model extents, not verified flight
-  specifications. ESC and other specs remain provisionally the trainer's, as
-  requested; no new current rating or performance claim is made.
-* Fuselage outer width is 100 mm, with two 3 mm walls: the parallel interior is
-  94 mm. The separate mechanism is 360 × 100 × 111.215 mm in its own axes.
-  With its length aligned fore/aft, its 100 mm width exceeds this internal
-  space by 6 mm (3 mm each side if centred). An exterior installation or revised
-  mount might differ; no authoritative assembly-to-aircraft transform exists.
-* The proposal still contains `V2TP-Tainer Full Assembly` (three earlier payload
-  segments). The new carriage is not silently superimposed on this occupied bay.
-* The separate mechanism has source intersections at rest: sensor/right panel
-  about 16.823 mm³, plus 1.875 mm³ against each of four bearing guides. These may
-  be CAD overlaps or intended contacts, and require designer review.
-* A proposed straight downward sensor-only motion is **not a validated release**.
-  At 10 mm travel its intersection with Cart V2 is about 3186.605 mm³; at 80 mm
-  travel it intersects both side panels. See `clearance-screen.json` for seven
-  sampled OpenCascade solid Boolean checks from 0 to 160 mm. No collision is
-  detected at the final two samples, which does not establish a clear sweep.
-* The animation therefore shows a separate exploded routing study, explicitly
-  labelled as needing revision. The 160 mm illustrative separation is not a
-  specified actuator stroke. Reversing scroll restores the exact source pose.
-* The blue towline is a conceptual closed loop followed by a continuous lead to
-  the moving sensor. Its guide station is illustrative. A continuous main carbon
-  spar through the fuselage is not positively identified in these exports.
-  `Wing_spar` halves stop at the fuselage sides; `CF_Tube_20x20mm` runs aft along
-  the fuselage and is not assumed to be the requested main wing spar. A verified
-  loop station, line diameter, minimum bend radius, attachment and release path
-  are needed before claiming installed routing or cable clearance.
-* `Rudder_Assembly` is near the wing/fuselage region, while the vertical tail is
-  roughly 1 m aft. The source position is preserved, not corrected by guesswork.
-* Main wheels exist, but no tailwheel/strut is identified. The design is described
-  as a taildragger per the user; no fabricated tailwheel or ground-contact pose
-  is shown. No skin/film surfaces are invented.
-
-This is a geometry and presentation review, not structural or flight-safety
-certification. Installed deployment/retraction remains blocked by the supplied
-geometry and missing mount/kinematic data, not by file access.
-
-## Runtime and review
-
-Native scroll controls the finite flight/inspection/separation poses in both
-directions. No scroll interception or continuous idle animation. Models start
-near the section; offscreen/hidden drawing pauses. Reduced motion, Save Data,
-short viewports, failed fetch/decompression/WebGL and context loss retain the
-CAD poster and readable notes. Preference changes during loading retain the
-static view. Canvas is decorative; the heading, caption, issues and source links
-remain accessible independently. Mobile framing uses the same actual geometry.
-
-Run the local server on 8080 and `node scripts/verify-v2-skylabs-fleet.cjs`.
-
-Validation completed in Chromium with SwiftShader: desktop 1440×1000 and mobile
-390×844 visual inspection; all 145 occurrence nodes and gzip/hash parity; exact
-pose and canvas reversal; native scrolling in both directions; offscreen idle;
-reduced motion; Save Data; short viewport; failed model request; context loss;
-and no-JavaScript poster. No page errors in the fleet suite. Existing
-`verify-v2-skylabs.cjs` passed board switching, picking, mobile, stale loads,
-context loss and no-JS navigation. `verify-v2-projects-aircraft.cjs` passed the
-existing trainer/collection source checks. Whitespace check uses `cr-at-eol`
-because the existing HTML retains its original CRLF endings. Browser evidence
-is in `.codex-temp/fleet/` (local review captures, not publication).
-
-No push, deployment or public update was performed. The unrelated launch commit
-mentioned in prior work is not present here and has not been claimed as included.
+Installed, mechanically valid deployment/retraction remains unresolved because
+mounting and kinematics are unknown. That action is pending CAD clarification,
+not denied and not executed with an uncertain outcome. Both aircraft fly in
+coordinately now; no source geometry is moved to guess a final installation.
+No push, deployment or publication has been performed.
