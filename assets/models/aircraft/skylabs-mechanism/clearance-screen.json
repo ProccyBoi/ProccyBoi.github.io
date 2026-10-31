@@ -1,0 +1,98 @@
+{
+  "method": "OpenCascade BRep boolean common; original source solids; sensor-only downward translation sampled at seven positions; >0.01 mm\u00b3 threshold. No continuous sweep, tolerances, cable or installed aircraft check.",
+  "samples": [
+    {
+      "downwardTravelMm": 0,
+      "intersections": [
+        {
+          "name": "Right Panel",
+          "intersectionMm3": 16.823
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.875
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.875
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.875
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.875
+        }
+      ]
+    },
+    {
+      "downwardTravelMm": 10,
+      "intersections": [
+        {
+          "name": "Right Panel",
+          "intersectionMm3": 16.823
+        },
+        {
+          "name": "Cart V2",
+          "intersectionMm3": 3186.605
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.291
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.291
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.291
+        },
+        {
+          "name": "Bearing Guide",
+          "intersectionMm3": 1.291
+        }
+      ]
+    },
+    {
+      "downwardTravelMm": 20,
+      "intersections": [
+        {
+          "name": "Right Panel",
+          "intersectionMm3": 16.823
+        }
+      ]
+    },
+    {
+      "downwardTravelMm": 40,
+      "intersections": [
+        {
+          "name": "Right Panel",
+          "intersectionMm3": 16.823
+        }
+      ]
+    },
+    {
+      "downwardTravelMm": 80,
+      "intersections": [
+        {
+          "name": "Left Panel",
+          "intersectionMm3": 71.055
+        },
+        {
+          "name": "Right Panel",
+          "intersectionMm3": 137.421
+        }
+      ]
+    },
+    {
+      "downwardTravelMm": 120,
+      "intersections": []
+    },
+    {
+      "downwardTravelMm": 160,
+      "intersections": []
+    }
+  ]
+}
