@@ -82,6 +82,9 @@
    cart.traverse(mesh=>{if(mesh.isMesh){mesh.material.color.setHex(0x29415a).convertSRGBToLinear();mesh.material.envMapIntensity=.25;}});
    plane.updateMatrixWorld(true);sensor.userData.tetherLocal=sensor.worldToLocal(mechanismSource.localToWorld(new T.Vector3(.061540941309766,-.0457201238048,.057815001)));
    sensor.userData.frontNotchSource=[.061540941309766,-.0457201238048,.057815001];
+   // Seat the body 5 mm lower; derive the notch above in original CAD coordinates
+   // so the attachment follows this placement rather than cancelling the offset.
+   sensor.position.z-=.005;sensor.userData.rest.copy(sensor.position);sensor.userData.mountOffsetM=[0,0,-.005];
    line=new T.Mesh(new T.BufferGeometry(),new T.MeshBasicMaterial({color:0x8abaff}));line.name='fleet-towline';plane.add(line);
    filmGroup=new T.Group();filmGroup.name='competition-solarfilm';plane.add(filmGroup);
    for(const item of models[4].panels){

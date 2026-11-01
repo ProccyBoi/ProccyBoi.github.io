@@ -37,3 +37,7 @@ The actual existing Skylabs telemetry asset (`assets/models/hero/telemetry.bin.g
 Carriage lowering occurs at progress 0.60–0.70. Release begins only at 0.74, with sensor displacement entirely along source -Z. At full extension the carriage has moved 25 mm and the sensor 475 mm; reverse scroll retrieves the sensor before raising the carriage. No source CAD is resized or replaced. Logos remain outside this release.
 
 Final checks also assert that the carriage bounding box stays inside the fuselage throughout its stroke and that the board, ESC and servo envelopes do not intersect the sampled sensor path. These envelope checks supplement rendered review; they do not certify the original release hardware.
+
+## Sensor seating refinement
+
+The sensor body is seated 5 mm lower in mechanism source -Z, independently of the aircraft, carriage and electronics. The carriage stroke (25 mm), subsequent vertical sensor travel (450 mm) and timing are unchanged. Full extension is therefore 480 mm below the original CAD body pose, or 475 mm below the adjusted rest pose. The measured front-notch coordinate is resolved before applying this installation offset, keeping the towline fixed to the actual body feature throughout reversal. This small seating adjustment is illustrative; original source CAD and scale remain unchanged.

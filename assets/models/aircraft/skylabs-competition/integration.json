@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "status": "internal-lowering-and-vertical-release",
   "route": "/v2/projects/skylabs/#aircraft",
   "trainerStory": "/v2/projects/#skylabs-aircraft",
@@ -91,7 +91,7 @@
     "sensorFinalTranslationInSourceM": [
       0,
       0,
-      -0.475
+      -0.48
     ],
     "movingSourceSolid": "Sensor V2 compound solid 0 only",
     "carriage": "25 mm internal downward stroke, progress 0.60\u20130.70; remains aboard during release",
@@ -99,7 +99,17 @@
     "covering": "44 source-derived white/blue Solarfilm panels; same localized diagonal peel kernel as Projects hero",
     "reversible": true,
     "physicalKinematicsValidated": false,
-    "release": "Sensor follows carriage for 25 mm, then drops a further 450 mm vertically, progress 0.74\u20130.92. No aft translation."
+    "release": "Sensor follows carriage for 25 mm, then drops a further 450 mm vertically, progress 0.74\u20130.92. No aft translation.",
+    "sensorMountOffsetInSourceM": [
+      0,
+      0,
+      -0.005
+    ],
+    "sensorTravelFromAdjustedRestM": [
+      0,
+      0,
+      -0.475
+    ]
   },
   "scope": "Visual storytelling authorized by user; not structural or flight validation",
   "systems": {
