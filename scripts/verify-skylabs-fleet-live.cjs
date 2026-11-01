@@ -9,7 +9,8 @@ const files=[
  ['assets/v2-skylabs-fleet.js','/assets/v2-skylabs-fleet.js'],
  ['assets/v2-skylabs-fleet.css','/assets/v2-skylabs-fleet.css'],
  ...['skylabs-competition','skylabs-mechanism'].flatMap(slug=>['assembly.glb.gz','manifest.json'].map(name=>{const file=`assets/models/aircraft/${slug}/${name}`;return [file,'/'+file];})),
- ...['poster.webp','integration.json','solarfilm.json.gz'].map(name=>{const file='assets/models/aircraft/skylabs-competition/'+name;return [file,'/'+file];})
+ ...['poster.webp','integration.json','solarfilm.json.gz'].map(name=>{const file='assets/models/aircraft/skylabs-competition/'+name;return [file,'/'+file];}),
+ ...['left-white','left-blue','right-white','right-blue'].map(name=>{const file='assets/models/aircraft/skylabs-competition/livery/'+name+'.png';return [file,'/'+file];})
 ];
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 (async()=>{
