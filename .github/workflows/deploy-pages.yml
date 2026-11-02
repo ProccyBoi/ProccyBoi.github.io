@@ -119,6 +119,7 @@ jobs:
         run: |
           export CHROMIUM_EXECUTABLE="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
           node scripts/verify-v2-skylabs-fleet.cjs
+          node scripts/verify-trainer-livery.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

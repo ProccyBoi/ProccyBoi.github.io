@@ -521,7 +521,7 @@
       key = window.V2ProductStudio.createLights(T, scene).key;
       key.userData.direction.set(-3, 8, 5).normalize();
       if (background && !await backgroundCPU('airframe-load')) return;
-      const [aircraft, environment] = await Promise.all([window.V3AircraftScene.load(T), window.V2HeroEnvironment.load(T).catch(background ? async error => {
+      const [aircraft, environment] = await Promise.all([window.V3AircraftScene.load(T, { trainerLivery: collection }), window.V2HeroEnvironment.load(T).catch(background ? async error => {
         if (!await backgroundCPU('environment-fallback')) throw error;
         return window.V2ProductStudio.createEnvironment(T, renderer).texture;
       } : () => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);

@@ -4,13 +4,15 @@ const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:a
 const base=process.env.V2_BASE_URL||'https://proccyboi.github.io';
 const revision=process.env.GITHUB_SHA||'local-review';
 const files=[
- ...['assets/v2-skylabs-systems.js','assets/v3-aircraft-electronics.js','assets/v2-hero-assets.js','assets/models/hero/telemetry.bin.gz','assets/v2-skylabs-film.js','assets/models/aircraft/skylabs-mechanism/sensor-body.glb.gz','assets/models/aircraft/skylabs-mechanism/sensor-identification.json'].map(file=>[file,'/'+file]),
+ ...['assets/v3-aircraft-scene.js','assets/v3-aircraft-hero.js','assets/v2-skylabs-systems.js','assets/v3-aircraft-electronics.js','assets/v2-hero-assets.js','assets/models/hero/telemetry.bin.gz','assets/v2-skylabs-film.js','assets/models/aircraft/skylabs-mechanism/sensor-body.glb.gz','assets/models/aircraft/skylabs-mechanism/sensor-identification.json'].map(file=>[file,'/'+file]),
  ['v2/projects/skylabs/index.html','/v2/projects/skylabs/'],
+ ['v2/projects/index.html','/v2/projects/'],
  ['assets/v2-skylabs-fleet.js','/assets/v2-skylabs-fleet.js'],
  ['assets/v2-skylabs-fleet.css','/assets/v2-skylabs-fleet.css'],
  ...['skylabs-competition','skylabs-mechanism'].flatMap(slug=>['assembly.glb.gz','manifest.json'].map(name=>{const file=`assets/models/aircraft/${slug}/${name}`;return [file,'/'+file];})),
  ...['poster.webp','integration.json','solarfilm.json.gz'].map(name=>{const file='assets/models/aircraft/skylabs-competition/'+name;return [file,'/'+file];}),
- ...['left-white','left-blue','right-white','right-blue'].map(name=>{const file='assets/models/aircraft/skylabs-competition/livery/'+name+'.png';return [file,'/'+file];})
+ ...['left-white','left-blue','right-white','right-blue'].map(name=>{const file='assets/models/aircraft/skylabs-competition/livery/'+name+'.png';return [file,'/'+file];}),
+ ...['left-outer','right-inner','right-outer'].map(name=>{const file='assets/models/aircraft/skylabs-trainer/livery/'+name+'.png';return [file,'/'+file];})
 ];
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 (async()=>{

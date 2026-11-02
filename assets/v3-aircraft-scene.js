@@ -55,7 +55,7 @@
       return { metadata, buffer: await download(metadata, metadata.asset.sha256), packed: false };
     });
   }
-  async function load(T) {
+  async function load(T, options = {}) {
     const { metadata, buffer, packed } = await prefetch();
     const parse = (bytes, useDecoder) => new Promise((resolve, reject) => {
       const loader = new T.GLTFLoader(); if (useDecoder) loader.setMeshoptDecoder(window.MeshoptDecoder);
@@ -65,7 +65,16 @@
     try { gltf = await parse(buffer, packed); }
     catch (error) { if (!packed) throw error; gltf = await parse(await download(metadata, metadata.asset.sha256), false); }
     if (metadata.units !== 'metres' || metadata.axes.nose !== '+X' || metadata.axes.up !== '+Y') throw new Error('Unexpected trainer coordinates');
-    return { group: gltf.scene, metadata };
+    let trainerLivery = null;
+    if (options.trainerLivery) {
+      try {
+        const names = ['left-outer', 'right-inner', 'right-outer'];
+        const maps = await Promise.all(names.map(name => new Promise((resolve, reject) =>
+          new T.TextureLoader().load(directory + 'livery/' + name + '.png', resolve, undefined, reject))));
+        trainerLivery = Object.fromEntries(names.map((name, index) => { maps[index].encoding = T.sRGBEncoding; maps[index].anisotropy = 8; return [name, maps[index]]; }));
+      } catch (_) { /* Keep the trainer available without markings if an image fails. */ }
+    }
+    return { group: gltf.scene, metadata, trainerLivery };
   }
 
   // Arc-length lookup for a thin sheet winding into a loose inward spiral.
@@ -181,6 +190,27 @@
       }
       mesh.parent.remove(mesh); resolved.dispose();
     }
+  }
+  // The trainer's top and bottom film are separate sheets in the hero. Split
+  // only the wing wrappers for the paired scene, which displays a static trainer.
+  function applyTrainerLivery(T, aircraft, split = false, root = aircraft.group) {
+    if (!aircraft.trainerLivery) return;
+    if (split) for (const part of aircraft.metadata.derivedParts || []) {
+      if (part.filmRegion !== 'fixed-wing') continue;
+      const object = aircraft.group.getObjectByName(part.nodeName);
+      if (object) filmPanels(T, { ...part, object });
+    }
+    root.traverse(mesh => {
+      if (!mesh.isMesh || !mesh.userData.separatedFilmPanel) return;
+      const match = mesh.name.match(/^film-wing-(left-outer|right-inner|right-outer)-wrap-sheet-0$/);
+      if (!match) return;
+      const material = mesh.material.clone(); material.map = aircraft.trainerLivery[match[1]];
+      // The authored film lies on the wing envelope. Keep its printed face
+      // in front of coincident underlying surfaces without adding geometry.
+      material.polygonOffset = true; material.polygonOffsetFactor = -2; material.polygonOffsetUnits = -2;
+      material.roughness = .65; material.metalness = 0; material.clearcoat = 0;
+      mesh.material = material; mesh.userData.trainerLivery = match[1];
+    });
   }
   // The authored end tabs are triangle fans. Re-tessellate their planar
   // profile into narrow chord strips so a bend cannot turn a long fan edge
@@ -398,9 +428,11 @@
       const turn = detailed && role === 'covering' ? new T.Vector3(sign * .13, sign * .11, centre.x < -.7 ? -.12 : .06) : new T.Vector3();
       parts.push({ ...item, base, quaternion, scale, offset, start, end, arc, turn });
     }
+    if (!detailed && aircraft.trainerLivery) for (const part of parts) if (part.filmRegion === 'fixed-wing') filmPanels(T, part);
     const films = parts.filter(part => part.category === 'covering').flatMap(part => {
       const patches = covering(T, part, detailed); part.filmPatches = patches; return patches;
     });
+    applyTrainerLivery(T, aircraft, false, carrier);
     const materials = new Map(), filmMaterials = new Map(), meshes = [];
     // Reparented groups are now carrier children, so inspect the carrier while
     // excluding the unchanged telemetry subtree.
@@ -422,6 +454,7 @@
       if (mesh.userData.filmSurface) (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(material => {
         material.side = T.DoubleSide;
         if (detailed) { material.roughness = .29; material.metalness = .08; }
+        if (mesh.userData.trainerLivery) { material.roughness = .65; material.metalness = 0; material.clearcoat = 0; }
       });
       meshes.push({ object: mesh, visible: mesh.visible, film: !!mesh.userData.filmSurface });
     });
@@ -598,5 +631,5 @@
       assemblyError() { return parts.reduce((error, part) => Math.max(error, part.object.position.distanceTo(part.base), 1 - Math.abs(part.object.quaternion.dot(part.quaternion))), 0); }
     };
   }
-  window.V3AircraftScene = Object.freeze({ prefetch, load, create, whenTransferSettled });
+  window.V3AircraftScene = Object.freeze({ prefetch, load, create, applyTrainerLivery, whenTransferSettled });
 })();

@@ -48,3 +48,21 @@ for side in ('left', 'right'):
             place(canvas, unsw, (.35, .30), (165, 172))
             place(canvas, arc, (.35, .70), (150, 187))
         canvas.convert('RGB').save(DEST / f'{side}-{colour}.png', optimize=True)
+
+# Trainer wings have separate inner and outer sheets. Their UV V axes run
+# root-to-tip on each side, so the left artwork is reflected along that axis.
+TRAINER = ROOT / 'assets/models/aircraft/skylabs-trainer/livery'
+TRAINER.mkdir(parents=True, exist_ok=True)
+for name, image, size, left in [
+    ('left-outer', sky, (350, 135), True),
+    ('right-inner', unsw, (180, 188), False),
+    ('right-outer', arc, (170, 212), False),
+]:
+    canvas = Image.new('RGBA', (512, 512), (255, 255, 255, 255))
+    logo = image.copy()
+    logo.thumbnail(size, Image.Resampling.LANCZOS)
+    logo = logo.rotate(90, expand=True, resample=Image.Resampling.BICUBIC)
+    if left:
+        logo = logo.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+    canvas.alpha_composite(logo, ((512 - logo.width) // 2, (512 - logo.height) // 2))
+    canvas.convert('RGB').save(TRAINER / f'{name}.png', optimize=True)
