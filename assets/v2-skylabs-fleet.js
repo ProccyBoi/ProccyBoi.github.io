@@ -29,7 +29,9 @@
   if(!ready)return;progress=clamp(value);const T=THREE,w=stage.clientWidth,h=stage.clientHeight,mobile=w<680;
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);
   const arrival=smooth((progress-.03)/.21),trainerArrival=smooth(progress/.21),focus=smooth((progress-.28)/.18),returnWide=smooth((progress-.70)/.18);
-  const lower=.025*smooth((progress-.60)/.10),deploy=smooth((progress-.74)/.18),drop=lower+.45*deploy,peel=smooth((progress-.28)/.27),inspect=smooth((progress-.51)/.10);
+  // Finish the 25 mm carriage stroke, hold briefly, then pay out the sensor.
+  // Every pose derives from scroll progress, so retrieval is the exact reverse.
+  const lower=.025*smooth((progress-.60)/.10),deploy=smooth((progress-.78)/.19),drop=lower+.45*deploy,peel=smooth((progress-.28)/.27),inspect=smooth((progress-.51)/.10);
   const planeScale=(mobile?.57:.75)+focus*(mobile?.10:.18);
   plane.position.set((mobile?0:-.65)*(1-focus)+(1-arrival)*-2.2,(mobile?-.38:-.08)*(1-focus)+focus*.1+(1-arrival)*.55,(mobile?0:.45)*(1-focus));plane.rotation.set(.07,-.18+(1-arrival)*.2,(1-arrival)*-.18);plane.scale.setScalar(planeScale);plane.visible=true;
   trainer.position.set((mobile?0:.65)+(1-trainerArrival)*-2.2+focus*3,(mobile?.48:.15)+(1-trainerArrival)*.55,mobile?0:-.5);trainer.rotation.set(.07,-.18+(1-trainerArrival)*.2,(1-trainerArrival)*-.18);trainer.scale.setScalar(mobile?.50:.68);trainer.visible=focus<.995;
@@ -41,10 +43,17 @@
   wingCutaway.forEach(material=>{material.opacity=1-inspect*(1-returnWide);material.transparent=material.opacity<1;material.depthWrite=material.opacity>.95;});
   systems.setInspection(1-inspect*(1-returnWide));
   sensor.position.copy(sensor.userData.rest);sensor.position.z-=drop;cart.position.z-=lower;
+  // A small, damped-looking roll appears only once the body has cleared its
+  // guides. It is deterministic in progress and vanishes at either endpoint.
+  // Compensate about the measured body centre so its travel remains vertical.
+  const sway=.012*smooth((deploy-.55)/.25)*Math.sin(Math.PI*deploy);
+  sensor.quaternion.copy(sensor.userData.restQuaternion);sensor.rotateX(sway);
+  const centre=sensor.userData.bodyCenterLocal;
+  sensor.position.add(centre.clone().applyQuaternion(sensor.userData.restQuaternion).sub(centre.clone().applyQuaternion(sensor.quaternion)));
   plane.updateMatrixWorld(true);
   const nearTarget=plane.localToWorld(new T.Vector3(.3638,-.005-.225*deploy,0));
   const wideTarget=new T.Vector3(-.08*returnWide,-.07*returnWide,0),zoom=smooth((progress-.49)/.12)*(1-returnWide),target=wideTarget.lerp(nearTarget,zoom);
-  const nearCamera=nearTarget.clone().add(new T.Vector3(0,.12-.155*smooth((progress-.57)/.05),mobile?1.20:.90));
+  const nearCamera=nearTarget.clone().add(new T.Vector3(0,.12-.155*smooth((progress-.57)/.05),mobile?1.55:.90));
   const wideCamera=new T.Vector3((mobile?2.3:2.1)*(1-returnWide)+.65*returnWide,1.6-1.10*returnWide,(mobile?3.3:2.7)*(1-returnWide)+(mobile?4.0:3.1)*returnWide);
   camera.position.copy(wideCamera).lerp(nearCamera,zoom);camera.aspect=w/h;camera.lookAt(target);camera.updateProjectionMatrix();
   // Measured named wing spar, no invented cross-member or external extension.
@@ -54,9 +63,11 @@
   for(let i=0;i<=48;i++){const angle=Math.PI+i/48*Math.PI*2;points.push(new T.Vector3(sx+Math.cos(angle)*.004,sy+Math.sin(angle)*.014,.0555));}
   points.push(new T.Vector3(.35,.031,.035),new T.Vector3(.37,.030,0));
   const attach=sensor.localToWorld(sensor.userData.tetherLocal.clone());plane.worldToLocal(attach);
-  const guide=points[points.length-1],mid=guide.clone().lerp(attach,.5);mid.y-=.018*deploy;
+  // A little stored line hangs slack at the guide; it straightens as the
+  // sensor pays out and the towline takes load, instead of sagging further.
+  const guide=points[points.length-1],mid=guide.clone().lerp(attach,.5),slack=.002+.018*(1-smooth((deploy-.08)/.78));mid.y-=slack;
   points.push(...new T.QuadraticBezierCurve3(guide,mid,attach).getPoints(32).slice(1));
-  line.geometry.dispose();line.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(points,false,'centripetal'),160,.00065,6,false);line.userData.anchor=points[0].toArray();line.userData.attachment=attach.toArray();line.visible=peel>.8;
+  line.geometry.dispose();line.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(points,false,'centripetal'),160,.00065,6,false);line.userData.anchor=points[0].toArray();line.userData.attachment=attach.toArray();line.userData.slack=slack;line.visible=peel>.8;
   renderer.render(scene,camera);bar.style.transform='scaleX('+progress+')';
   title.textContent=progress<.28?'01 / Trainer + competition':progress<.56?'02 / Beneath the Solarfilm':'03 / Deploy & retrieve';
   caption.textContent=progress>=.53&&progress<.60?'Central telemetry · 100A ESC · four control servos':progress<.28?'Solarfilm-covered airframes. One avionics platform.':progress<.56?'The covering peels back to reveal the internal system.':'Carriage lowers inside · sensor releases vertically';
@@ -85,7 +96,7 @@
    sensor.userData.frontNotchSource=[.061540941309766,-.0457201238048,.057815001];
    // Seat the body 5 mm lower; derive the notch above in original CAD coordinates
    // so the attachment follows this placement rather than cancelling the offset.
-   sensor.position.z-=.005;sensor.userData.rest.copy(sensor.position);sensor.userData.mountOffsetM=[0,0,-.005];
+   sensor.position.z-=.005;sensor.userData.rest.copy(sensor.position);sensor.userData.restQuaternion=sensor.quaternion.clone();sensor.userData.bodyCenterLocal=new T.Vector3(-.000459059,-.045720124,.031815001);sensor.userData.mountOffsetM=[0,0,-.005];
    line=new T.Mesh(new T.BufferGeometry(),new T.MeshBasicMaterial({color:0x8abaff}));line.name='fleet-towline';plane.add(line);
    filmGroup=new T.Group();filmGroup.name='competition-solarfilm';plane.add(filmGroup);
    for(const item of models[4].panels){

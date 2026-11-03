@@ -1,4 +1,4 @@
-/* Solarfilm peel kernel reused unchanged from the accepted Projects hero. */
+/* Source-derived Solarfilm, with the accepted Projects hero peel kernel. */
 (()=>{
 const clamp=n=>Math.max(0,Math.min(1,n));
   // Arc-length lookup for a thin sheet winding into a loose inward spiral.
@@ -167,6 +167,25 @@ const clamp=n=>Math.max(0,Math.min(1,n));
     output[0] = radius * Math.sin(turn) + tailX;
     output[1] = radius * (1 - Math.cos(turn)) + tailY;
   }
+  // Suggest the narrow edge overlap in the film's own material. This is a
+  // small satin tonal band, not another surface, so it follows the same UVs
+  // and cannot hover over or z-fight with the skin or its printed markings.
+  function finishFilm(mesh) {
+    const material = mesh.material;
+    if (!material || Array.isArray(material) || material.userData.solarfilmFinish) return;
+    material.userData.solarfilmFinish = true;
+    material.metalness = 0; material.roughness = .4;
+    if ('clearcoat' in material) { material.clearcoat = .13; material.clearcoatRoughness = .32; }
+    const previous = material.onBeforeCompile;
+    material.onBeforeCompile = function(shader, renderer) {
+      previous.call(this, shader, renderer);
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vSolarfilmUv;')
+        .replace('#include <uv_vertex>', '#include <uv_vertex>\nvSolarfilmUv = uv;');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vSolarfilmUv;')
+        .replace('#include <color_fragment>', '#include <color_fragment>\nfloat filmEdgeU = 1.0 - smoothstep(0.004, 0.014, vSolarfilmUv.x);\nfloat filmEdgeV = 1.0 - smoothstep(0.002, 0.007, vSolarfilmUv.y);\ndiffuseColor.rgb *= 1.0 - 0.035 * max(filmEdgeU, filmEdgeV);');
+    };
+    material.needsUpdate = true;
+  }
   function covering(T, part, detailed) {
     const patches = [];
     if (detailed) filmPanels(T, part);
@@ -180,6 +199,7 @@ const clamp=n=>Math.max(0,Math.min(1,n));
       const surface = mesh.userData.filmSurface;
       if (!mesh.isMesh || !surface) return;
       const geometry = mesh.userData.separatedFilmPanel ? mesh.geometry : detailed && surface === 'cap' ? resolvedCap(T, mesh) : mesh.geometry.clone(); mesh.geometry = geometry;
+      if (surface === 'wrap' && geometry.attributes.uv) finishFilm(mesh);
       const attribute = geometry.attributes.position, rest = attribute.array.slice(), restNormals = geometry.attributes.normal.array.slice();
       attribute.setUsage(T.DynamicDrawUsage);
       const axis = new T.Vector3(...mesh.userData.peelAxis).normalize();

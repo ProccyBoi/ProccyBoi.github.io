@@ -39,6 +39,8 @@ jobs:
           node scripts/verify-v2-hero-geometry.cjs
           node scripts/verify-v2-proximity-loading.cjs
           node scripts/verify-v2-projects-aircraft.cjs
+          node scripts/verify-skylabs-film-finish.cjs
+          node scripts/verify-skylabs-installation.cjs
           node scripts/verify-dash-idle-blink.cjs
           node scripts/verify-v2-hero-pacing.cjs --source-only
 
