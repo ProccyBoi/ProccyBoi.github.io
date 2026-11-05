@@ -67,9 +67,9 @@
     if (metadata.units !== 'metres' || metadata.axes.nose !== '+X' || metadata.axes.up !== '+Y') throw new Error('Unexpected trainer coordinates');
     let trainerLivery = null;
     if (options.trainerLivery) {
-      const names = ['left-inner', 'left-outer', 'side-negative', 'side-positive'];
+      const names = ['left-inner', 'left-outer', 'right-inner', 'right-outer', 'side-negative', 'side-positive'];
       const maps = await Promise.all(names.map(name => new Promise(resolve =>
-        new T.TextureLoader().load(directory + 'livery/' + name + '.png?v=trainer-20261105', resolve, undefined, () => resolve(null)))));
+        new T.TextureLoader().load(directory + 'livery/' + name + '.png?v=trainer-20261105b', resolve, undefined, () => resolve(null)))));
       // An unavailable decal must not suppress the other markings or the model.
       trainerLivery = Object.fromEntries(names.flatMap((name, index) => {
         const map = maps[index]; if (!map) return [];
@@ -205,7 +205,7 @@
     root.traverse(mesh => {
       if (!mesh.isMesh) return;
       let key;
-      const wing = mesh.name.match(/^film-wing-(left-inner|left-outer)-wrap-sheet-0$/);
+      const wing = mesh.name.match(/^film-wing-(left-inner|left-outer|right-inner|right-outer)-wrap-sheet-0$/);
       const side = mesh.name.match(/^film-fuselage-body-cap-([01])$/);
       if (wing && mesh.userData.separatedFilmPanel) key = wing[1];
       if (side) {

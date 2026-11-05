@@ -474,7 +474,7 @@
           // The decoder is independent of Three and the scene factory. Start
           // both helpers together so their round trips do not serialize.
           await Promise.all([
-            window.V3AircraftScene ? Promise.resolve() : script('/assets/v3-aircraft-scene.js?v=' + (background ? 'trainer-20261105' : 'aircraft-transition-20261010')),
+            window.V3AircraftScene ? Promise.resolve() : script('/assets/v3-aircraft-scene.js?v=' + (background ? 'trainer-20261105b' : 'aircraft-transition-20261010')),
             background && !window.MeshoptDecoder ? script('/assets/vendor/meshopt_decoder.js').catch(() => {}) : Promise.resolve()
           ]);
           if (!sourceEligible()) return;

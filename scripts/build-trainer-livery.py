@@ -1,7 +1,7 @@
 """Build trainer-only livery from the checked-in logo sources.
 
 The sponsor gaps on the fuselage remain blank where source artwork was not
-available. Wing coordinates are expressed in metres along the port half-span;
+available. Wing coordinates are expressed in metres along each half-span;
 side coordinates are normalized along the physical fuselage (rear to nose).
 """
 from pathlib import Path
@@ -57,16 +57,20 @@ if bbox: leap=leap.crop(bbox)
 # join so a marking can cross that join without distortion or duplication.
 half_span=.7504; seam=.3744; W=H=1024
 wing_marks=[(bird,.12,.075,.075),(unsw_horizontal,.48,.145,.065),(arc,.84,.115,.100)]
-for name,start,end,chord in [('left-inner',0,seam,.441089),('left-outer',seam,half_span,.305522)]:
+for name,start,end,chord in [('left-inner',0,seam,.441089),('left-outer',seam,half_span,.305522),
+                             ('right-inner',0,seam,.441089),('right-outer',seam,half_span,.305522)]:
     out=Image.new('RGBA',(W,H),'white')
     for image,centre,span_size,chord_size in wing_marks:
         # Upright artwork: top faces leading edge; writing runs root to tip.
-        rotated=image.rotate(90,expand=True)
         # Preserve physical proportions, which differ from the UV canvas ratio.
         logical=fit(image,(round(span_size*10000),round(chord_size*10000)))
         span_m=logical.width/10000; chord_m=logical.height/10000
-        rotated=logical.rotate(90,expand=True).transpose(Image.Transpose.FLIP_TOP_BOTTOM).resize((max(1,round(chord_m/chord*W)),max(1,round(span_m/(end-start)*H))),R)
-        u = (.325 if name == 'left-inner' or centre != .48 else .440)
+        rotated=logical.rotate(90,expand=True)
+        # Opposing span directions require opposite artwork orientation so
+        # both printed faces read correctly from above.
+        if name.startswith('left-'): rotated=rotated.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        rotated=rotated.resize((max(1,round(chord_m/chord*W)),max(1,round(span_m/(end-start)*H))),R)
+        u = (.325 if name.endswith('inner') or centre != .48 else .440)
         x=round(u*W-rotated.width/2); y=round((1-(centre*half_span-start)/(end-start))*H-rotated.height/2)
         out.alpha_composite(rotated,(x,y))
     out.convert('RGB').save(DEST/(name+'.png'),optimize=True)
