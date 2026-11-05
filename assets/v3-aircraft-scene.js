@@ -67,12 +67,14 @@
     if (metadata.units !== 'metres' || metadata.axes.nose !== '+X' || metadata.axes.up !== '+Y') throw new Error('Unexpected trainer coordinates');
     let trainerLivery = null;
     if (options.trainerLivery) {
-      try {
-        const names = ['left-outer', 'right-inner', 'right-outer'];
-        const maps = await Promise.all(names.map(name => new Promise((resolve, reject) =>
-          new T.TextureLoader().load(directory + 'livery/' + name + '.png', resolve, undefined, reject))));
-        trainerLivery = Object.fromEntries(names.map((name, index) => { maps[index].encoding = T.sRGBEncoding; maps[index].anisotropy = 8; return [name, maps[index]]; }));
-      } catch (_) { /* Keep the trainer available without markings if an image fails. */ }
+      const names = ['left-inner', 'left-outer', 'side-negative', 'side-positive'];
+      const maps = await Promise.all(names.map(name => new Promise(resolve =>
+        new T.TextureLoader().load(directory + 'livery/' + name + '.png?v=trainer-20261105', resolve, undefined, () => resolve(null)))));
+      // An unavailable decal must not suppress the other markings or the model.
+      trainerLivery = Object.fromEntries(names.flatMap((name, index) => {
+        const map = maps[index]; if (!map) return [];
+        map.encoding = T.sRGBEncoding; map.anisotropy = 8; return [[name, map]];
+      }));
     }
     return { group: gltf.scene, metadata, trainerLivery };
   }
@@ -201,15 +203,34 @@
       if (object) filmPanels(T, { ...part, object });
     }
     root.traverse(mesh => {
-      if (!mesh.isMesh || !mesh.userData.separatedFilmPanel) return;
-      const match = mesh.name.match(/^film-wing-(left-outer|right-inner|right-outer)-wrap-sheet-0$/);
-      if (!match) return;
-      const material = mesh.material.clone(); material.map = aircraft.trainerLivery[match[1]];
+      if (!mesh.isMesh) return;
+      let key;
+      const wing = mesh.name.match(/^film-wing-(left-inner|left-outer)-wrap-sheet-0$/);
+      const side = mesh.name.match(/^film-fuselage-body-cap-([01])$/);
+      if (wing && mesh.userData.separatedFilmPanel) key = wing[1];
+      if (side) {
+        key = side[1] === '0' ? 'side-negative' : 'side-positive';
+        // The fuselage caps are flat side sheets in the trainer's metre frame.
+        // Project the artwork in that frame so the logos follow their film
+        // through the hero's peel as well as the assembled fleet presentation.
+        if (aircraft.trainerLivery[key]) {
+          const geometry = mesh.geometry, positions = geometry.attributes.position;
+          const uv = new Float32Array(positions.count * 2);
+          for (let index = 0; index < positions.count; index++) {
+            uv[index * 2] = (positions.getX(index) + .3405) / .995;
+            uv[index * 2 + 1] = (positions.getY(index) - .1905) / .14503;
+          }
+          geometry.setAttribute('uv', new T.BufferAttribute(uv, 2));
+        }
+      }
+      if (!key || !aircraft.trainerLivery[key]) return;
+      const material = mesh.material.clone(); material.map = aircraft.trainerLivery[key];
+      material.color.setRGB(1, 1, 1);
       // The authored film lies on the wing envelope. Keep its printed face
       // in front of coincident underlying surfaces without adding geometry.
       material.polygonOffset = true; material.polygonOffsetFactor = -2; material.polygonOffsetUnits = -2;
       material.roughness = .65; material.metalness = 0; material.clearcoat = 0;
-      mesh.material = material; mesh.userData.trainerLivery = match[1];
+      mesh.material = material; mesh.userData.trainerLivery = key;
     });
   }
   // The authored end tabs are triangle fans. Re-tessellate their planar

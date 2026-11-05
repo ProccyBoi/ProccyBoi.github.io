@@ -17,14 +17,16 @@ const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080';
   }
   await seek(0);
   const names=await page.evaluate(()=>{const found=[];__v3Aircraft.flight.carrier.traverse(o=>{if(o.isMesh&&o.userData.trainerLivery)found.push({name:o.name,key:o.userData.trainerLivery,loaded:!!o.material.map?.image?.complete});});window.__trainerLiverySnapshot=Object.fromEntries(found.map(o=>{const m=__v3Aircraft.flight.carrier.getObjectByName(o.name);return [o.name,{positions:Array.from(m.geometry.attributes.position.array),uv:Array.from(m.geometry.attributes.uv.array)}];}));return found.sort((a,b)=>a.key.localeCompare(b.key));});
-  assert.deepEqual(names.map(x=>x.key),['left-outer','right-inner','right-outer']);
-  assert.ok(names.every(x=>x.loaded&&x.name.endsWith('-sheet-0')),'Only upper film sheets carry loaded trainer artwork');
+  assert.deepEqual(names.map(x=>x.key),['left-inner','left-outer','side-negative','side-positive']);
+  assert.ok(names.every(x=>x.loaded),'Each trainer marking loads');
+  assert.ok(names.filter(x=>x.key.startsWith('left-')).every(x=>x.name.endsWith('-sheet-0')),'Wing artwork is on the port upper sheets');
+  assert.ok(names.filter(x=>x.key.startsWith('side-')).every(x=>/film-fuselage-body-cap-[01]$/.test(x.name)),'Side artwork is attached to the fuselage film');
   await seek(.2);
-  const peeling=await page.evaluate(()=>Object.entries(window.__trainerLiverySnapshot).some(([name,s])=>{const p=__v3Aircraft.flight.carrier.getObjectByName(name).geometry.attributes.position.array;return s.positions.some((v,i)=>v!==p[i]);}));
-  assert.ok(peeling,'A marked sheet deforms during the peel');
+  const peeling=await page.evaluate(()=>Object.fromEntries(Object.entries(window.__trainerLiverySnapshot).map(([name,s])=>{const p=__v3Aircraft.flight.carrier.getObjectByName(name).geometry.attributes.position.array;return [name,s.positions.some((v,i)=>v!==p[i])];})));
+  assert.ok(Object.values(peeling).every(Boolean),'Each marked sheet follows the peel: '+JSON.stringify(peeling));
   await seek(0);
   const restored=await page.evaluate(()=>Object.entries(window.__trainerLiverySnapshot).every(([name,s])=>{const g=__v3Aircraft.flight.carrier.getObjectByName(name).geometry;return s.positions.every((v,i)=>v===g.attributes.position.array[i])&&s.uv.every((v,i)=>v===g.attributes.uv.array[i]);}));
   assert.ok(restored,'Marked geometry and UVs restore exactly');assert.deepEqual(errors,[]);
-  console.log('PASS: trainer upper-wing livery loads, follows the peel and restores on reversal.');
+  console.log('PASS: trainer port wing and fuselage livery loads, follows the peel and restores on reversal.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
