@@ -93,4 +93,34 @@ for (const [progress,expected] of [[0,1],[.06,1],[.22,.5],[.38,0],[1,0],[0,1]]) 
   assert.ok(Math.abs(poseContext.tucson.last-expected)<1e-6);
   assert.ok(Math.abs(poseContext.floorMaterial.opacity-(1-expected))<1e-6);
 }
+// Exercise the actual worker message contract and reconstruct both three-
+// dimensional LODs without a browser. Time or FPS is not asserted here.
+const T=require(path.join(root,'assets/vendor/three.min.js'));
+const dem=Uint16Array.from({length:193*185},(_,i)=>heights.readUInt16LE(i*2));
+class WorkerScope {}
+for (const mobile of [false,true]){
+  const self=new WorkerScope(); let baked, transfers;
+  self.postMessage=(value,buffers)=>{baked=value;transfers=buffers;};
+  vm.runInNewContext(geometryJS,{WorkerGlobalScope:WorkerScope,self});
+  self.onmessage({data:{heights:dem,mobile}});
+  assert.ok(baked && transfers.includes(baked.ground.p.buffer) && transfers.includes(baked.flora.i.buffer));
+  assert.ok(baked.ground.p.length>10000 && baked.flora.p.length>10000);
+  for(const mesh of [baked.ground,baked.flora,baked.shadows]){
+    assert.equal(mesh.p.length,mesh.n.length);
+    assert.ok(mesh.p.every(Number.isFinite));assert.ok(mesh.i.every(n=>n<mesh.p.length/3));
+  }
+  const w={};vm.runInNewContext(geometryJS,{window:w});
+  const scene=new T.Scene(),field=w.V2TucsonRelief.create(T,scene,{payload:baked},{mobile});
+  assert.equal(field.group,scene.getObjectByName('Tucson Mountain District'));
+  assert.equal(field.stats.draws,4);assert.equal(field.group.children.length,4);
+  assert.ok(field.stats.triangles < (mobile?105000:155000));
+  const width=mobile?390:1280,height=mobile?714:724,camera=new T.PerspectiveCamera(32,width/height,.1,80);
+  camera.position.set(2.1,1.2,-3.4);const target=new T.Vector3(0,.2,0);
+  camera.lookAt(target);camera.setViewOffset(width,height,0,-.08*height,width,height);
+  field.update({landing:1,progress:0},{target},camera,width,height,1);
+  assert.equal(field.group.visible,true);assert.ok(camera.far>1000);
+  field.update({landing:1,progress:1},{target},camera,width,height,0);assert.equal(field.group.visible,false);
+}
+assert.ok(fs.statSync(path.join(root,'assets/models/tucson-mountains/surface.webp')).size<190000);
+assert.ok(fs.statSync(path.join(root,'assets/models/tucson-mountains/trainer-occlusion.png')).size<35000);
 console.log('PASS: Projects-only rendered DEM and native accessible collection, source gate, reversible studio handoff and untouched home/v3 contracts. Source checks only.');

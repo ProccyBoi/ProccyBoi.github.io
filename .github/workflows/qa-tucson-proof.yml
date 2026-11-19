@@ -17,6 +17,7 @@ jobs:
       matrix:
         width: [1280,390]
     env:
+      CAPTURE_CLIP: '1'
       BASE_SHA: 6871e1e425e6a0ce87a490fefb0b390ac460c78a
       QA_PORT: '8080'
       WIDTHS: ${{ matrix.width }}
@@ -47,6 +48,17 @@ jobs:
           cp scripts/qa-tucson-private/assemble.py "$RUNNER_TEMP/assemble.py"
           node --check "$RUNNER_TEMP/render.cjs"
           git fetch --no-tags --depth=1 origin "$BASE_SHA"
+      - name: Validate release candidates against full checkout
+        if: matrix.width == 1280
+        run: |
+          python3 scripts/build-v2-home-styles.py --check
+          python3 scripts/audit-v2.py
+          python3 scripts/build-v3-pages.py --check
+          node scripts/verify-v2-projects-aircraft.cjs
+          node scripts/verify-v2-aircraft-pacing.cjs --source-only
+          node scripts/verify-v2-hero-handoffs.cjs
+          node scripts/verify-v2-proximity-loading.cjs
+          node scripts/verify-v3-aircraft-transport.cjs
       - name: Capture both revisions on this runner
         run: |
           set -uo pipefail

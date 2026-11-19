@@ -50,6 +50,17 @@ async function run(browser,base,tag,width,mode){
       }
       const file=id+'-'+i+'-'+type+'-'+v+'.png';await page.screenshot({path:path.join(out,file),animations:'allow'});row.frames.push({i,type,v,file,stat});save();
     }
+    if(tag==='after' && process.env.CAPTURE_CLIP==='1' && width===1280){
+     const os=require('node:os'),cp=require('node:child_process'),dir=fs.mkdtempSync(path.join(os.tmpdir(),'tucson-flight-')),count=37,meta=[];
+     for(let k=0;k<count;k++){
+      const v=k/(count-1);await page.evaluate(v=>window.__v3Aircraft.seekLanding(v),v);
+      await page.waitForFunction(()=>{const h=document.querySelector('[data-aircraft-hero]'),c=h.querySelector('canvas'),s=h.dataset;return h.classList.contains('is-ready')&&s.aircraftPoseRevision===s.aircraftPresentedRevision&&s.aircraftWarmMask==='false'&&s.aircraftGPUPending==='false'&&Number(getComputedStyle(c).opacity)>=.995;},null,{timeout:150000});
+      const pose=await page.evaluate(()=>{const h=document.querySelector('[data-aircraft-hero]'),d=h.dataset;return {phase:d.aircraftPhase,landing:d.aircraftLanding,completed:d.aircraftCompletedFrames,opacity:Number(getComputedStyle(h.querySelector('canvas')).opacity)};});meta.push({requested:v,...pose});
+      await page.screenshot({path:path.join(dir,String(k).padStart(3,'0')+'.jpg'),type:'jpeg',quality:91,animations:'allow'});
+     }
+     fs.writeFileSync(path.join(out,'clip-samples.json'),JSON.stringify({note:'37 browser-rendered landing samples at equally spaced source times; encoded at 10 fps, not a GPU frame-rate measurement',samples:meta},null,2));
+     cp.execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-framerate','10','-i',path.join(dir,'%03d.jpg'),'-c:v','libx264','-preset','fast','-crf','19','-pix_fmt','yuv420p','-movflags','+faststart',path.join(out,'tucson-trainer-landing.mp4')]);
+    }
    }else{
     await page.waitForFunction(()=>{const p=document.querySelector('[data-aircraft-poster]');return p?.complete&&p.naturalWidth>0;},null,{timeout:20000});await page.waitForTimeout(2200);
     row.fallback=await page.evaluate(()=>{const h=document.querySelector('[data-aircraft-hero]'),p=h.querySelector('[data-aircraft-poster]');return {heroState:h.dataset.aircraftState,rendered:!!window.__v3Aircraft?.flight,mask:h.dataset.aircraftWarmMask,poster:p.currentSrc,decoded:p.complete&&p.naturalWidth>0,saveData:navigator.connection?.saveData,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,scrollY,hash:location.hash,h1:document.querySelector('h1')?.textContent};});
