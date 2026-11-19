@@ -6,10 +6,10 @@
   const detailed = root.hasAttribute('data-aircraft-detailed');
   const background = root.hasAttribute('data-aircraft-background');
   const collection = root.hasAttribute('data-aircraft-collection');
-  // Only the Projects trainer uses the photographed field. Other v2/v3 scenes
-  // keep their existing atmosphere and ground shader.
+  // Projects alone owns the georeferenced field. Other v2/v3 scenes keep
+  // their existing atmosphere, lens and ground shader.
   const sonoran = collection && root.hasAttribute('data-aircraft-sonoran');
-  let fieldContext, fieldPicture;
+  let fieldContext, tucson, relief;
   // Opt-in v2 wheel interpolation leaves the accepted v3 controller unchanged.
   const scrub = root.hasAttribute('data-aircraft-smooth') && window.V2ScrollSmoothing;
   let renderedProgress = 0, scrubTime = 0, directScrub = false;
@@ -243,7 +243,7 @@
       near = Math.min(near, -corner.z); far = Math.max(far, -corner.z);
     }
     view.left = left - padding; view.right = right + padding; view.bottom = bottom - padding; view.top = top + padding;
-    view.near = Math.max(.01, near - padding); view.far = far + padding; view.updateProjectionMatrix();
+    view.near = Math.max(.01, near - padding); view.far = far + padding + (sonoran && tucson?.group.visible ? span * 2 : 0); view.updateProjectionMatrix();
     key.shadow.normalBias = span * .0007; key.shadow.bias = -.00015; renderer.shadowMap.needsUpdate = true;
   }
   function renderFrame() {
@@ -257,13 +257,18 @@
   // Shared drawing code lets a finite offscreen warm-up upload the same
   // geometry/textures without changing autoplay, chapters, focus or scroll.
   function drawPose(pose) {
-    const framing = flight.frame(camera, width, height); fitLight(framing.focus);
+    const framing = flight.frame(camera, width, height);
     const sky = sonoran ? 1 - smooth(((pose.progress || 0) - .06) / .32) : atmosphere?.update({ landing: pose.landing, progress: pose.progress, width, height }) || 0;
+    if (sonoran) {
+      tucson.update(pose, framing, camera, width, height, sky, flight);
+      key.userData.direction.set(-3 - 3.56 * sky, 8 - 4.88 * sky, 5 - 8.68 * sky).normalize();
+    }
+    fitLight(framing.focus);
     groundUniforms.sky.value = sky;
     groundUniforms.near.value = Math.max(3.5, framing.distance) * (width < 761 ? 1.08 : 1.28);
     groundUniforms.far.value = Math.max(3.5, framing.distance) * (width < 761 ? 1.48 : 2.6);
-    // At touchdown only the real shadow receiver is rendered: the asphalt is
-    // already in the plate. The normal studio floor returns on disassembly.
+    // The DEM and integral runway receive the live wheels; the separate
+    // contact-shadow receiver remains, and the studio floor returns on peel.
     if (sonoran) floorMaterial.opacity = 1 - sky;
     if (floorMaterial.transparent !== (sky > 0)) { floorMaterial.transparent = sky > 0; floorMaterial.needsUpdate = true; }
     floorMaterial.color.copy(studioGround).lerp(airfieldGround, sky);
@@ -375,7 +380,6 @@
       chapter(capture?.type === 'landing' ? 0 : chapterAt(shownProgress));
       bar.style.transform = `scaleX(${shownProgress})`; root.dataset.aircraftRenderedProgress = shownProgress.toFixed(6);
       root.dataset.aircraftAtmosphere = sky.toFixed(6);
-      if (fieldPicture) fieldPicture.style.opacity = String(sky);
       root.dataset.aircraftState = capture || kind === 'progress' ? 'ready' : 'landing';
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
       root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftAssemblyError = assemblyError.toFixed(9);
@@ -502,7 +506,10 @@
           if (sourceEligible()) window.V2HeroAssets.prefetch('telemetry').catch(() => {});
         })() : Promise.resolve(),
         (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=' + (background ? 'speed-20261029' : 'product-20261007')); if (sourceEligible()) window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
-        sonoran ? Promise.resolve() : script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
+        sonoran ? (async () => {
+          await script('/assets/v2-tucson-relief.js?v=relief-1');
+          if (sourceEligible()) relief = await window.V2TucsonRelief.prefetch();
+        })() : script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
         detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve(),
         background ? script('/assets/v2-gpu-preparation.js?v=paced-20261011') : Promise.resolve()
       ]).then(() => {
@@ -533,17 +540,6 @@
       window.V2ProductStudio.configureRenderer(renderer, T); renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;
       scene = new T.Scene(); camera = new T.PerspectiveCamera(32, width / height, .002, 80);
       atmosphere = sonoran ? null : window.V3AircraftAtmosphere?.create(T, { detailed });
-      // Initial stopped/approach posters already contain this identical plate.
-      // It is fetched at low priority only for a working live scene. Decode it
-      // before unmasking the canvas so the mountain horizon never blinks.
-      let fieldDecoded;
-      if (sonoran) {
-        const field = root.querySelector('[data-sonoran-template]').content.cloneNode(true);
-        fieldPicture = field.querySelector('picture');
-        const image = field.querySelector('img');
-        canvas.parentNode.insertBefore(field, poster.closest('picture'));
-        fieldDecoded = image.decode().then(() => true, () => false);
-      }
       key = window.V2ProductStudio.createLights(T, scene).key;
       key.userData.direction.set(-3, 8, 5).normalize();
       if (background && !await backgroundCPU('airframe-load')) return;
@@ -552,7 +548,11 @@
         return window.V2ProductStudio.createEnvironment(T, renderer).texture;
       } : () => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);
       if (failed || (background && !await backgroundCPU('scene-create'))) return;
-      if (sonoran && !await fieldDecoded) throw new Error('Field image unavailable; keeping the complete trainer poster');
+      if (sonoran) {
+        tucson = window.V2TucsonRelief.create(T, scene, relief || await window.V2TucsonRelief.prefetch(), { mobile: width < 761 });
+        root.dataset.aircraftLandscape = 'tucson-dem';
+        root.dataset.aircraftLandscapeTriangles = String(tucson.stats.triangles);
+      }
       scene.environment = environment;
       flight = window.V3AircraftScene.create(T, aircraft, null, { detailed }); scene.add(flight.group);
       studioGround = new T.Color('#101210').convertSRGBToLinear();
