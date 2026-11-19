@@ -1,0 +1,77 @@
+name: Preview Projects terrain in Chromium
+on:
+  push:
+    branches: ['qa/v2-tucson-render']
+permissions:
+  contents: read
+concurrency:
+  group: tucson-proof-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  render:
+    if: github.ref == 'refs/heads/qa/v2-tucson-render'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [1280,390]
+    env:
+      BASE_SHA: 6871e1e425e6a0ce87a490fefb0b390ac460c78a
+      QA_PORT: '8080'
+      WIDTHS: ${{ matrix.width }}
+      PHONE_HEIGHT: '770'
+      DESKTOP_HEIGHT: '800'
+      PHONE_DPR: '2'
+      SCENARIOS: normal
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated rendering dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/qa-deps" "$RUNNER_TEMP/tucson-proof"
+          python -m pip install --disable-pip-version-check Pillow==11.3.0
+          npm install --prefix "$RUNNER_TEMP/qa-deps" --no-save --package-lock=false playwright@1.57.0
+          "$RUNNER_TEMP/qa-deps/node_modules/.bin/playwright" install --with-deps chromium
+          echo "NODE_PATH=$RUNNER_TEMP/qa-deps/node_modules" >> "$GITHUB_ENV"
+          echo "CHROMIUM_EXECUTABLE=$(node -e 'process.stdout.write(require(process.argv[1]).chromium.executablePath())' "$RUNNER_TEMP/qa-deps/node_modules/playwright")" >> "$GITHUB_ENV"
+      - name: Preserve independent harness outside checkout
+        run: |
+          cp scripts/qa-tucson-private/render.cjs "$RUNNER_TEMP/render.cjs"
+          cp scripts/qa-tucson-private/assemble.py "$RUNNER_TEMP/assemble.py"
+          node --check "$RUNNER_TEMP/render.cjs"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+      - name: Capture both revisions on this runner
+        run: |
+          set -uo pipefail
+          rc=0
+          python -m http.server "$QA_PORT" --bind 127.0.0.1 --directory "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/qa-http.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for attempt in {1..20}; do curl -sf "http://127.0.0.1:$QA_PORT/v2/projects/" -o /dev/null && break; sleep .5; done
+          for revision in before after; do
+            if [ "$revision" = before ]; then ref="$BASE_SHA"; else ref="$GITHUB_SHA"; fi
+            git checkout --detach "$ref" || exit 1
+            case "$revision" in before) modes=normal;; after) modes="$SCENARIOS";; esac
+            target="$RUNNER_TEMP/tucson-proof/$revision"
+            mkdir -p "$target"
+            git rev-parse HEAD > "$target/commit.txt"
+            # Both revisions use the same HTTP origin and cache conditions.
+            REVISIONS="$revision" SCENARIOS="$modes" BEFORE_BASE="http://127.0.0.1:$QA_PORT" AFTER_BASE="http://127.0.0.1:$QA_PORT" OUTPUT_DIR="$target" node "$RUNNER_TEMP/render.cjs" || rc=1
+          done
+          python "$RUNNER_TEMP/assemble.py" "$RUNNER_TEMP/tucson-proof" || rc=1
+          exit "$rc"
+      - name: Upload exact revision screenshots, scene and timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tucson-render-${{ matrix.width }}-${{ github.sha }}
+          path: ${{ runner.temp }}/tucson-proof/
+          retention-days: 7
+          if-no-files-found: error
+
