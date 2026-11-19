@@ -18,7 +18,7 @@
   <link rel="preload" href="/assets/images/v2/tramtrace-cad.webp?v=product-20261007" as="image" type="image/webp" fetchpriority="high">
   <link rel="preload" href="/assets/images/v2/hardware/dash.webp" as="image" type="image/webp">
   <link rel="preload" href="/assets/images/v2/framework-pi-cad.webp?v=product-20261007" as="image" type="image/webp">
-<script src="/assets/v2-hero-startup.js?v=speed-20261029" defer></script>
+<script src="/assets/v2-hero-startup.js?v=workbench-20261119" defer></script>
   <!-- Generated homepage styles: scripts/build-v2-home-styles.py -->
 <style data-v2-home-styles>
 /* Source: assets/v2.css */
@@ -128,6 +128,28 @@ body.v2{margin:0;min-width:0;background:var(--v2-bg);color:var(--v2-ink);font-fa
 /* The opening keeps one shared CAD composition and a short, optional scroll. */
 .v2-assembly{position:relative;margin-top:-76px;background:var(--v2-bg);isolation:isolate}
 .v2-assembly-sticky{position:relative;min-height:760px;height:100svh;overflow:hidden;background:var(--v2-bg)}
+/* Homepage only: angled workbench light and a real, optional mat photograph.
+   The same matte surface stays behind both still posters and the transparent CAD. */
+.v2-home .v2-assembly-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:radial-gradient(ellipse 76% 53% at 57% 53%,#303131,#222322 63%,var(--v2-bg))}
+.v2-home .v2-assembly-backdrop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:55% 52%;opacity:.77}
+.v2-home .v2-assembly-backdrop::after{position:absolute;inset:0;content:'';background:
+  linear-gradient(180deg,var(--v2-bg) 2%,#141412ed 24%,#14141216 50%,#14141213 70%,var(--v2-bg) 100%),
+  linear-gradient(105deg,#141412eb,#14141280 26%,transparent 56%,#14141230 80%,#14141291)}
+.v2-home .v2-assembly-workbench .v2-assembly-posters img{filter:drop-shadow(1px 21px 17px #04050675)}
+@media(max-width:900px){
+  .v2-home .v2-assembly-backdrop::after{background:
+    linear-gradient(180deg,var(--v2-bg) 3%,#141412f5 29%,#14141285 46%,#1414121a 62%,#14141280 81%,var(--v2-bg) 100%),
+    linear-gradient(90deg,#14141270,transparent 25% 75%,#14141270)}
+}
+/* An inset 154×103 crop of the real mat is the final narrow-screen surface;
+   tile fine natural grain at its original scale rather than stretching it. */
+@media(max-width:600px){
+  .v2-home .v2-assembly-backdrop img{display:none}
+  .v2-home .v2-assembly-backdrop::before{position:absolute;inset:0;content:'';opacity:.48;
+    background:url("data:image/webp;base64,UklGRhYEAABXRUJQVlA4IAoEAADQDwCdASqaAGcAPzmUvFevKqWjqFR8weAnCWlmoynLe6c+AYsmifvebc9kI/otz7WIHiaQ4Hyp65wNXb/5UwdcYDBBxfDAvoPkclUFPC/pPa4N3mxYDyf51vyZTGRiVKcLWDqcQSDGcIA8mImRNiwUH0Rk1RUNPa4WNPrLPjpzYj9Gl0i3u8AA/urdHZTBP+zIPEmkbH9S8srdTborZ7z5H2f7jiUlYIG9VcegyPaFfdT/Tf5tHp6k4okmeYTWqoz1k+qOn+flFavaMI8xESx4JyXEtwtPfl8hst3qUB7vNc1VxzhooqVZuT8Tn3N68DthLzbkvzppyW48BFTaCegsDQ4DfsEMAwRO8FGrkRhp+CEoC7WvDNSotj8Lmlxf7KujeVH9BtWmTf1MD2DjRFvvR41oqBx3UkuAxVzZt8Cvl9VXfPyvHNyqe/EbYDrzW0XwJK46VdlDcs9Du7c/CR0n2dTswWugE2TO+1F4PZIQV8gF+axwk2DoKdfvaiVrYqTnTaUo0/0ok2a8FTGIIxajcekV9vqMeIFUtgGtThLRtAd5iAW1brFL6qXbS36oZJ4D83QADIIwfO71dEi7d8NBzp6dlurdgOTyn307tIZT3wV+RQOcvMLT9yASy98v8dpndTTY2Ye4PsA8kk1/aNy0GFQKMFF5M0792N0B5KGqityA0bsoSyFJzQc/gEfW2JO55KWD4IzyRFQmby8/TUowyG5z8NEjCxOb9yGE93U/MGl+xdKd9y7yIJylW/R4bbHCFza5WE7llaGoEJb63qqrJ/V+CIvsLky9FQ+KFRXAnK/QKGzqsMq5kirCf9l7gX2z88aoCRK+HWnPGOJb6Qj3Ew9nmnqJJiXScF3AF6fGXS+R6+Lkv0QPz+iq+GjN/ZkU3/GQXtLZZ9X+hbDNX+Ry8QF4eg7AaVWEmfcIzEhPTtZAD8S1zvCexjfkqAG0CxGaT8X/BB3dNZlMytt4ijNgc9WsZrerr+gyiS5x2Z4qga9p5YQI4v+UUeGALOk8MHhveYxAD3k+QWx9boUlURUsl3VElC9SOfDqVRAuXrqhhMJ1IuwvTwsjYDrYAVdjcoMiX2V0o3seV+5Xaxxy4lxfMbHmtq8y2NyCpOIQ4ishZoUCcltKvP4RhIsNJJE7wU0MW6Y78qDOAcBE8EpUnwIlyPC7CcFWX1Z9fsvdZPulEOuZ9dBMLTJTjLJzOP46U8DvCHUHJiV2iN+z00IWsLToVxwVf1rnTY/q815fIDOS+poal7vtxdX2DZsoeCO6zcRl2vU6Ra43JyHE1HamNTiH8iXfO6kjOzvn4hUqXS7OzWNE4I8jgy5fLPAob9jBe+3C01A5EFmqoY5OuAQIfMu/VGlyTZOc0J1gAA==") repeat center / 154px 103px}
+}
+@media print{.v2-home .v2-assembly-backdrop{display:none}}
 .v2-assembly-intro{position:absolute;z-index:3;top:clamp(112px,13svh,150px);left:var(--v2-gutter);right:var(--v2-gutter);display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);align-items:start;gap:clamp(28px,4vw,64px);pointer-events:none;will-change:transform,opacity}
 .v2-assembly-intro h1{display:flex;gap:.22em;font-size:clamp(66px,7.5vw,124px);line-height:.98;letter-spacing:-.065em;font-weight:500;white-space:nowrap;text-transform:none}
 .v2-assembly-intro h1 span{display:block;color:var(--v2-ink)}
@@ -635,7 +657,7 @@ body.v2.v2-home:not(.v3-product) :is(a,button){-webkit-tap-highlight-color:#7bbc
   </header>
   <main id="main">
     <section class="v2-assembly" data-assembly aria-labelledby="hero-title">
-      <div class="v2-assembly-sticky">
+      <div class="v2-assembly-sticky v2-assembly-workbench">
         <div class="v2-assembly-intro" data-assembly-intro>
           <div class="v2-hero-identity"><h1 id="hero-title"><span>Andrew</span> <span>Chung</span></h1><p class="v2-hero-credentials"><span class="v2-credentials-full">UNSW Electrical Engineering<br>Electronics Engineer Trainee · Switchmode<br>Avionics &amp; Payload Lead · UNSW Skylabs</span><span class="v2-credentials-compact">UNSW · Switchmode trainee<br>Skylabs avionics &amp; payload lead</span></p></div>
           <div class="v2-assembly-summary"><p>I build PCBs, firmware and tools for embedded systems, power electronics and avionics.</p><div class="v2-assembly-actions"><a href="#overview">Quick overview <span aria-hidden="true">↓</span></a><a href="/assets/documents/Andrew_Chung_Public_CV.pdf" download>Download CV <span aria-hidden="true">↓</span></a></div></div>
@@ -648,6 +670,7 @@ body.v2.v2-home:not(.v3-product) :is(a,button){-webkit-tap-highlight-color:#7bbc
             <img class="assembly-poster-pi" src="/assets/images/v2/framework-pi-cad.webp?v=product-20261007" width="1600" height="1200" alt="Raspberry Pi RP2354B expansion card with housing and mounting screws">
           </div>
         </div>
+        <div class="v2-assembly-backdrop" data-assembly-backdrop="/assets/images/v2/hero-workbench.webp" aria-hidden="true"></div>
         <div class="v2-assembly-caption" data-assembly-caption aria-hidden="true">
           <h2 data-assembly-title>TramTrace</h2>
           <p data-assembly-description>116 pixels following Sydney’s light-rail network.</p>

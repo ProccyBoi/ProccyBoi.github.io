@@ -15,21 +15,32 @@ const between = (source, from, to) => {
   return source.slice(start, end);
 };
 
-function hero({ direct = false, top = 0, hidden = false, compact = false } = {}) {
+function hero({ direct = false, top = 0, hidden = false, compact = false, includeBackdrop = false, saveData = false, failPhoto = false, narrow = false } = {}) {
   const events = new Map(), requests = [], binaries = [], models = [], environment = [];
-  const state = { top, hidden, fragmentRestores: 0 };
+  const state = { top, hidden, fragmentRestores: 0, ready: false, backdropTop: top, saveData, idle: [], photos: [], appended: [] };
   const root = { contains: () => false, getBoundingClientRect: () => ({ top: state.top, bottom: state.top + 2000 }) };
   const on = (name, callback) => { if (!events.has(name)) events.set(name, []); events.get(name).push(callback); };
   const compactMedia = { matches: compact, addEventListener: on };
-  const window = { V2HeroAssets: { prefetch: async name => models.push(name) }, V2HeroEnvironment: { prefetch: async () => environment.push(true) } };
+  const backdrop = includeBackdrop ? {
+    dataset: { assemblyBackdrop: 'workbench.webp' }, getBoundingClientRect: () => ({ top: state.backdropTop, bottom: state.backdropTop + 900 }),
+    append: photo => state.appended.push(photo),
+  } : null;
+  const window = { requestIdleCallback: fn => state.idle.push(fn),
+    V2HeroAssets: { prefetch: async name => models.push(name) }, V2HeroEnvironment: { prefetch: async () => environment.push(true) } };
   const context = {
     window, location: { hash: direct ? '#overview' : '' }, innerHeight: 900,
     fetch: url => { binaries.push(url); return new Promise(() => {}); },
-    navigator: {}, matchMedia: query => query.includes('max-height') ? compactMedia : { matches: false }, addEventListener: on,
+    navigator: { connection: { get saveData() { return state.saveData; } } },
+    Image: function (width, height) {
+      this.naturalWidth = width; this.naturalHeight = height;
+      Object.defineProperty(this, 'src', { set: src => state.photos.push({ src, priority: this.fetchPriority, decoding: this.decoding }) });
+      this.decode = async () => { if (failPhoto) throw new Error('Failed image'); };
+    },
+    matchMedia: query => query.includes('max-height') ? compactMedia : { matches: query.includes('600px') && narrow }, addEventListener: on,
     requestAnimationFrame: callback => callback(),
-    document: { get hidden() { return state.hidden; }, readyState: 'interactive',
-      querySelector: () => root, getElementById: () => ({ scrollIntoView(options) {
-        assert.equal(options.behavior, 'instant'); state.fragmentRestores++; state.top = -1900;
+    document: { get hidden() { return state.hidden; }, get readyState() { return state.ready ? 'complete' : 'interactive'; },
+      querySelector: selector => selector === '[data-assembly-backdrop]' ? backdrop : root, getElementById: () => ({ scrollIntoView(options) {
+        assert.equal(options.behavior, 'instant'); state.fragmentRestores++; state.top = -1900; state.backdropTop = -800;
       } }), addEventListener: on,
       createElement: () => ({}), head: { append: script => requests.push(script) } },
   };
@@ -75,6 +86,13 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
 (async () => {
   const homepage = read('v2/index.html');
   assert.doesNotMatch(homepage, /v2-hero-loading\.(?:js|css)/, 'Normal homepage uses posters, without the decorative loading canvas');
+  const backdropTag = homepage.match(/<div[^>]+data-assembly-backdrop[^>]+>/)?.[0];
+  assert.ok(backdropTag?.includes('aria-hidden="true"') && !/\ssrc=/.test(backdropTag), 'The backdrop is decorative and has no parser-started transfer');
+  assert.ok(!/<link[^>]+hero-workbench.webp/.test(homepage), 'No workbench preload');
+  const crop = homepage.match(/data:image\/webp;base64,([a-zA-Z0-9+/=]+).+154px 103px/)?.[1];
+  assert.ok(crop && crop.length <= 1500, 'Narrow layout keeps the final real texture in less than 1.5 KB inline');
+  assert.equal(Buffer.from(crop, 'base64').subarray(8, 12).toString(), 'WEBP', 'The embedded crop is a WebP');
+  assert.ok(fs.statSync(path.join(repo, 'assets/images/v2/hero-workbench.webp')).size <= 24000, 'Optional photo stays under 24 KB');
   const startupTag = homepage.match(/<script\b[^>]*v2-hero-startup\.js[^>]*>/)?.[0];
   assert.ok(startupTag && /\bdefer\b/.test(startupTag) && !/\basync\b/.test(startupTag), 'Startup gate precedes assembly without an async race');
   assert.ok(homepage.indexOf(startupTag) < homepage.indexOf('<script src="/assets/v2-assembly.js'), 'Eligibility is installed before assembly controller');
@@ -111,6 +129,33 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   h.state.hidden = false; h.event('visibilitychange'); assert.equal(h.requests.length, 4);
   h = hero({ compact: true }); assert.equal(h.requests.length, 0); assert.equal(h.window.V2HeroStartup.hasStarted(), false);
   h.compactMedia.matches = false; h.event('change'); assert.equal(h.requests.length, 4, 'Resizing out of compact mode enables the nearby hero');
+
+  h = hero({ includeBackdrop: true });
+  assert.equal(h.state.idle.length, 0, 'Backdrop cannot compete with initial posters');
+  h.state.ready = true; h.event('load');
+  assert.equal(h.state.photos.length, 0, 'Window load schedules the backdrop without fetching it synchronously');
+  h.state.backdropTop = -800; h.state.idle.shift()();
+  assert.equal(h.state.photos.length, 0, 'An idle callback rechecks visibility after fast navigation');
+  h.state.backdropTop = 0; h.event('scroll'); h.event('resize');
+  assert.equal(h.state.idle.length, 1, 'The optional photo only schedules once per eligible window');
+  h.state.idle.shift()(); await flush();
+  assert.deepEqual(h.state.photos, [{ src: 'workbench.webp', priority: 'low', decoding: 'async' }]);
+  assert.equal(h.state.appended.length, 1, 'Successful decode replaces the painted surface without a layout gate');
+  h.event('scroll');
+  assert.equal(h.state.idle.length, 0, 'Returning never refetches the loaded photo');
+
+  h = hero({ includeBackdrop: true, direct: true });
+  h.state.ready = true; h.event('load');
+  assert.equal(h.state.idle.length, 0, 'Direct links never load an offscreen backdrop');
+  h = hero({ includeBackdrop: true, saveData: true });
+  h.state.ready = true; h.event('load');
+  assert.equal(h.state.idle.length, 0, 'Save Data skips optional surface texture');
+  h = hero({ includeBackdrop: true, narrow: true });
+  h.state.ready = true; h.event('load');
+  assert.equal(h.state.idle.length, 0, 'Narrow screens never upgrade the complete inline surface');
+  h = hero({ includeBackdrop: true, failPhoto: true });
+  h.state.ready = true; h.event('load'); h.state.idle.shift()(); await flush();
+  assert.equal(h.state.appended.length, 0, 'Failed photo preserves painted fallback');
 
   let a = aircraft(); await a.context.prepare(); await a.context.transport();
   assert.equal(a.state.scripts.length, 0, 'Far aircraft loads no helper scripts');
@@ -156,5 +201,5 @@ function aircraft({ eligible = false, background = true, near = eligible, depend
   imageContext.warm(); assert.equal(decodes, 0, 'Far Framework leaves native lazy image loading alone');
   eligible = true; imageContext.warm(); await flush(); imageContext.warm();
   assert.equal(decodes, 1, 'Near Framework decodes each poster once');
-  console.log(`PASS: no decorative loading assets; hero gzip budget ${heroBudget}/2200000 B; fragment navigation, return, dependency exit, hidden tab; aircraft no offscreen requests, near start, exit/return, intent, v3 startup; Framework image proximity. Source scheduling only.`);
+  console.log(`PASS: no decorative loading assets; hero gzip budget ${heroBudget}/2200000 B; fragment navigation, return, dependency exit, hidden tab; inline phone surface, optional low-priority desktop texture and fallbacks; aircraft no offscreen requests, near start, exit/return, intent, v3 startup; Framework image proximity. Source scheduling only.`);
 })().catch(error => { console.error(error); process.exitCode = 1; });

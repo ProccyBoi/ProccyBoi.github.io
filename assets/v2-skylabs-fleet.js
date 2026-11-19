@@ -8,7 +8,7 @@
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  let renderer,scene,camera,plane,trainer,mechanism,sensor,line,mechanismSource,housing=[],films=[],filmGroup,airframeCutaway=[],cart,supersededSensor,systems,wingCutaway=[],frame=0,loading=false,ready=false,active=false,failed=false,progress=0;
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
- function staticCaption(){title.textContent='01 / Trainer + competition';caption.textContent='Trainer and competition taildragger · source assemblies';bar.style.transform='scaleX(0)';}
+ function staticCaption(){title.textContent='The two airframes';caption.textContent='Trainer and competition taildragger';bar.style.transform='scaleX(0)';}
  const allowed=()=>!reduced.matches&&!navigator.connection?.saveData&&innerHeight>=560;
  const script=(url,test)=>new Promise((resolve,reject)=>{if(test())return resolve();let el=[...document.scripts].find(s=>new URL(s.src,location.href).pathname===url);if(!el){el=document.createElement('script');el.src=url;document.head.append(el);}el.addEventListener('load',resolve,{once:true});el.addEventListener('error',reject,{once:true});});
  async function asset(slug,file="assembly.glb.gz"){
@@ -25,16 +25,46 @@
    node.material=new T.MeshStandardMaterial({color:/CF_|spar|Wheel|Prop|motor/i.test(name)?0x293449:/Sensor|Cart/i.test(name)?0x83aade:0xc7b9a1,roughness:.65,metalness:.08,envMapIntensity:.35,side:T.DoubleSide});node.material.color.convertSRGBToLinear();
   });return group;
  }
+ // Four authored compositions, driven only by scroll: overhead formation,
+ // skin lifting off the wing, a side elevation of the carriage, and the aircraft
+ // with its sensor extended. Use stage aspect (not viewport width); a narrow
+ // laptop split view needs the same fit protection as a phone.
+ function frameCamera(T,aspect,p,focus){
+  const portrait=clamp((1.30-aspect)/.54);
+  const widthFit=1/Math.min(1,aspect/.66),midFit=1/Math.min(1,aspect/1.12);
+  const local=(x,y,z)=>plane.localToWorld(new T.Vector3(x,y,z));
+  const pose=(target,x,y,z,fit=1)=>({target,offset:new T.Vector3(x,y,z).multiplyScalar(fit)});
+  const mix=(a,b,t)=>{a.target.lerp(b.target,t);a.offset.lerp(b.offset,t);return a;};
+  const formation=pose(new T.Vector3(-.04,-.075,0),1.25,1.38,2.10,1.06+portrait*.20);
+  formation.offset.multiplyScalar(widthFit);
+  // Move with the exhibition aircraft while the trainer leaves the composition.
+  const skin=pose(local(.02,-.06,0),1.09,1.64,1.77,midFit*1.07);
+  const close=pose(local(.352,-.034,0),.050,-.012,.81,1/Math.min(1,aspect/.92));
+  // The final sightline clears the wing and leaves the suspended sensor above
+  // the caption; it is a wider side elevation, not a return to the arrival view.
+  const payout=pose(local(.045,-.16,0),.83,.40,1.79,midFit*(1+.12*portrait));
+  mix(formation,skin,focus);
+  mix(formation,close,smooth((p-.48)/.13));
+  mix(formation,payout,smooth((p-.725)/.175));
+  camera.position.copy(formation.target).add(formation.offset);
+  camera.aspect=aspect;camera.lookAt(formation.target);camera.updateProjectionMatrix();
+ }
  function draw(value){
-  if(!ready)return;progress=clamp(value);const T=THREE,w=stage.clientWidth,h=stage.clientHeight,mobile=w<680;
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);
-  const arrival=smooth((progress-.03)/.21),trainerArrival=smooth(progress/.21),focus=smooth((progress-.28)/.18),returnWide=smooth((progress-.70)/.18);
+  if(!ready)return;progress=clamp(value);const T=THREE,w=stage.clientWidth,h=stage.clientHeight,aspect=w/h,portrait=clamp((1.30-aspect)/.54);
+  const dpr=Math.min(devicePixelRatio,1.5);if(renderer.getPixelRatio()!==dpr)renderer.setPixelRatio(dpr);if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);
+  const arrival=smooth((progress-.035)/.195),trainerArrival=smooth(progress/.17);
+  const focus=smooth((progress-.28)/.195),returnWide=smooth((progress-.725)/.225);
   // Finish the 25 mm carriage stroke, hold briefly, then pay out the sensor.
   // Every pose derives from scroll progress, so retrieval is the exact reverse.
   const lower=.025*smooth((progress-.60)/.10),deploy=smooth((progress-.78)/.19),drop=lower+.45*deploy,peel=smooth((progress-.28)/.27),inspect=smooth((progress-.51)/.10);
-  const planeScale=(mobile?.57:.75)+focus*(mobile?.10:.18);
-  plane.position.set((mobile?0:-.65)*(1-focus)+(1-arrival)*-2.2,(mobile?-.38:-.08)*(1-focus)+focus*.1+(1-arrival)*.55,(mobile?0:.45)*(1-focus));plane.rotation.set(.07,-.18+(1-arrival)*.2,(1-arrival)*-.18);plane.scale.setScalar(planeScale);plane.visible=true;
-  trainer.position.set((mobile?0:.65)+(1-trainerArrival)*-2.2+focus*3,(mobile?.48:.15)+(1-trainerArrival)*.55,mobile?0:-.5);trainer.rotation.set(.07,-.18+(1-trainerArrival)*.2,(1-trainerArrival)*-.18);trainer.scale.setScalar(mobile?.50:.68);trainer.visible=focus<.995;
+  // The trainer leads from the rear. Stack the pair in portrait instead of
+  // squeezing a landscape formation or shrinking its decals into the margins.
+  const cx=-.67*(1-portrait),cy=-.11-.23*portrait,cz=.35*(1-portrait);
+  plane.position.set(cx*(1-focus)-.52*(1-arrival),cy*(1-focus)+.075*focus+.13*(1-arrival),cz*(1-focus)-.46*(1-arrival));
+  plane.rotation.set(.025+.095*(1-arrival),-.18+.13*(1-arrival),-.11*(1-arrival));
+  plane.scale.setScalar(.80-.18*portrait+focus*(.12+.18*portrait));plane.visible=true;
+  trainer.position.set(.65*(1-portrait)-.29*(1-trainerArrival)+focus*2.5,.18+.30*portrait+.16*(1-trainerArrival)+focus*.52,-.47*(1-portrait)-.32*(1-trainerArrival)-focus*.7);
+  trainer.rotation.set(.045+.12*(1-trainerArrival),-.21+.19*(1-trainerArrival),-.085*(1-trainerArrival));trainer.scale.setScalar(.74-.17*portrait);trainer.visible=focus<.995;
   // Only authored film peels. Structural CAD and the complete internal carriage
   // remain aboard; the cart lowers on the internal guides before sensor release.
   films.forEach((part,index)=>{const amount=clamp(peel-(index%4)*.018*Math.sin(Math.PI*peel));part.patches.forEach(patch=>patch.deform(amount));part.group.position.copy(part.normal).multiplyScalar(.10*smooth((amount-.65)/.35));part.material.opacity=1-smooth((amount-.85)/.15);part.material.transparent=part.material.opacity<1;part.material.depthWrite=part.material.opacity>.95;part.group.visible=amount<.999;});
@@ -51,11 +81,7 @@
   const centre=sensor.userData.bodyCenterLocal;
   sensor.position.add(centre.clone().applyQuaternion(sensor.userData.restQuaternion).sub(centre.clone().applyQuaternion(sensor.quaternion)));
   plane.updateMatrixWorld(true);
-  const nearTarget=plane.localToWorld(new T.Vector3(.3638,-.005-.225*deploy,0));
-  const wideTarget=new T.Vector3(-.08*returnWide,-.07*returnWide,0),zoom=smooth((progress-.49)/.12)*(1-returnWide),target=wideTarget.lerp(nearTarget,zoom);
-  const nearCamera=nearTarget.clone().add(new T.Vector3(0,.12-.155*smooth((progress-.57)/.05),mobile?1.55:.90));
-  const wideCamera=new T.Vector3((mobile?2.3:2.1)*(1-returnWide)+.65*returnWide,1.6-1.10*returnWide,(mobile?3.3:2.7)*(1-returnWide)+(mobile?4.0:3.1)*returnWide);
-  camera.position.copy(wideCamera).lerp(nearCamera,zoom);camera.aspect=w/h;camera.lookAt(target);camera.updateProjectionMatrix();
+  frameCamera(T,aspect,progress,focus);
   // Measured named wing spar, no invented cross-member or external extension.
   // The ellipse clears its actual 3 x 22 mm section. Terminal point is the
   // measured 1.5 mm-radius FRONT notch, rigidly tracked on the isolated body.
@@ -69,8 +95,8 @@
   points.push(...new T.QuadraticBezierCurve3(guide,mid,attach).getPoints(32).slice(1));
   line.geometry.dispose();line.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(points,false,'centripetal'),160,.00065,6,false);line.userData.anchor=points[0].toArray();line.userData.attachment=attach.toArray();line.userData.slack=slack;line.visible=peel>.8;
   renderer.render(scene,camera);bar.style.transform='scaleX('+progress+')';
-  title.textContent=progress<.28?'01 / Trainer + competition':progress<.56?'02 / Beneath the Solarfilm':'03 / Deploy & retrieve';
-  caption.textContent=progress>=.53&&progress<.60?'Central telemetry · 100A ESC · four control servos':progress<.28?'Solarfilm-covered airframes. One avionics platform.':progress<.56?'The covering peels back to reveal the internal system.':'Carriage lowers inside · sensor releases vertically';
+  const label=progress<.28?['The two airframes','Trainer and competition taildragger']:progress<.52?['Beneath the Solarfilm','The covering lifts from the wing.']:progress<.76?['Inside the fuselage','The carriage lowers before release.']:['Sensor deployment','The sensor drops. The carriage stays aboard.'];
+  if(title.textContent!==label[0]){title.textContent=label[0];caption.textContent=label[1];}
   root.dataset.fleetProgress=progress.toFixed(4);
  }
  function tick(){frame=0;if(!ready||!active||document.hidden||!allowed())return;const r=track.getBoundingClientRect();draw(clamp((110-r.top)/Math.max(1,track.offsetHeight-stage.offsetHeight)));}
@@ -78,11 +104,16 @@
  async function start(){if(loading||ready||failed||!allowed())return;loading=true;root.dataset.fleetState='loading';
   try{
    if(!window.DecompressionStream)throw Error('Static view');
-   await script('/assets/vendor/three.min.js',()=>!!window.THREE);await script('/assets/vendor/GLTFLoader.js',()=>!!window.THREE.GLTFLoader);
+   await script('/assets/vendor/three.min.js',()=>!!window.THREE);
+   // Establish a usable graphics context before requesting several MB of CAD.
+   // If unavailable the accessible still is already on screen.
+   if(!allowed()){loading=false;root.dataset.fleetState='static';return;}
+   renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:true});
+   await script('/assets/vendor/GLTFLoader.js',()=>!!window.THREE.GLTFLoader);
    await script('/assets/v3-aircraft-scene.js?v=trainer-20261105b',()=>!!window.V3AircraftScene);await script('/assets/v2-hero-environment.js',()=>!!window.V2ProductStudio);await script('/assets/v2-skylabs-film.js',()=>!!window.V2SkylabsFilm);await script('/assets/v2-hero-assets.js',()=>!!window.V2HeroAssets);await script('/assets/v3-aircraft-electronics.js',()=>!!window.V3AircraftElectronics);await script('/assets/v2-skylabs-systems.js',()=>!!window.V2SkylabsSystems);
    const models=await Promise.all([asset('skylabs-competition'),asset('skylabs-mechanism'),window.V3AircraftScene.load(window.THREE,{trainerLivery:true}),asset('skylabs-mechanism','sensor-body.glb.gz'),fetch('/assets/models/aircraft/skylabs-competition/solarfilm.json.gz').then(async response=>{if(!response.ok)throw Error('Film unavailable');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}),window.V2HeroAssets.load('telemetry'),Promise.all(['left-white','left-blue','right-white','right-blue'].map(name=>new Promise((resolve,reject)=>new THREE.TextureLoader().load('/assets/models/aircraft/skylabs-competition/livery/'+name+'.png',resolve,undefined,reject)))).catch(()=>null)]);const T=THREE;
    const livery=models[6]?Object.fromEntries(['left-white','left-blue','right-white','right-blue'].map((name,index)=>{const texture=models[6][index];texture.encoding=T.sRGBEncoding;return [name,texture];})):{};root.dataset.fleetLivery=models[6]?'ready':'unavailable';
-   scene=new T.Scene();camera=new T.PerspectiveCamera(37,1,.2,20);renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.8;
+   scene=new T.Scene();camera=new T.PerspectiveCamera(37,1,.2,20);renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.8;
    window.V2ProductStudio.configureRenderer(renderer,T);scene.environment=await window.V2HeroEnvironment.load(T);const studio=window.V2ProductStudio.createLights(T,scene);renderer.toneMappingExposure=.72;studio.key.shadow.normalBias=.0006;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
    plane=wrap(models[0],true);mechanism=wrap(models[1],false);trainer=new T.Group();trainer.name='fleet-trainer';plane.name='fleet-competition';window.V3AircraftScene.applyTrainerLivery(T,models[2],true);const sourceTrainer=models[2].group;trainer.add(sourceTrainer);sourceTrainer.traverse(node=>{if(node.userData.category==='covering')node.traverse(mesh=>{if(!mesh.isMesh)return;const materials=(Array.isArray(mesh.material)?mesh.material:[mesh.material]).map(material=>{const copy=material.clone();copy.polygonOffset=true;copy.polygonOffsetFactor=-2;copy.polygonOffsetUnits=-2;return copy;});mesh.material=materials.length===1?materials[0]:materials;});});sourceTrainer.updateMatrixWorld(true);sourceTrainer.position.sub(new T.Box3().setFromObject(sourceTrainer).getCenter(new T.Vector3()));scene.add(plane,trainer);plane.add(mechanism);mechanism.position.set(.36381582,-.0246424995,0);mechanismSource=models[1];
    const materialsOf=object=>{const result=[];object.traverse(mesh=>{if(!mesh.isMesh)return;const copies=(Array.isArray(mesh.material)?mesh.material:[mesh.material]).map(m=>m.clone());mesh.material=copies.length===1?copies[0]:copies;result.push(...copies);});return result;};
@@ -114,7 +145,7 @@
    }
    systems=window.V2SkylabsSystems.create(T,models[5]);plane.add(systems.group);
    plane.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true;}});ready=true;loading=false;
-   if(allowed()){root.dataset.fleetState='ready';status.textContent='Scroll to fly in, deploy the sensor and reverse to retrieve.';draw(0);queue();}else{root.dataset.fleetState='static';}
+   if(allowed()){root.dataset.fleetState='ready';status.textContent='Scroll to fly in, deploy the sensor and reverse to retrieve.';queue();}else{root.dataset.fleetState='static';}
   }catch(error){failed=true;loading=false;ready=false;renderer?.dispose();root.dataset.fleetState='failed';staticCaption();status.textContent='The 3D view is unavailable. The CAD preview and assembly notes remain below.';}
  }
  const observer=new IntersectionObserver(entries=>{active=entries[0].isIntersecting;if(active){start();queue();}else{cancelAnimationFrame(frame);frame=0;}},{rootMargin:'400px 0px'});observer.observe(track);

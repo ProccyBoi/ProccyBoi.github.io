@@ -20,6 +20,12 @@ The deferred `v2-hero-startup.js` checks the hero's proximity and respects a dir
 
 Dash's occasional OLED blink reuses its existing idle image through `assets/dash-idle-blink.js`. The helper sleeps between blinks and advances each texture change only after the owning scene completes its draw. It does not create a continuous animation loop or load the character controller. Hidden/offscreen scenes and motion/data preferences suspend blinking.
 
+## Homepage workbench backdrop
+
+The v2 homepage uses a static CSS light pool on first paint. A clean patch of the real work surface from `assets/images/projects/switchmode-bus-alt-1920.webp` supplies the optional photo texture; no part of the circuit board appears in the crop. The 864×487 crop is tonally graded to charcoal and encoded as a 23,892-byte WebP. The upper and lower shading preserves contrast behind the hero links and controls.
+
+On screens up to 600 px wide, a 154×103 crop of the same mat is embedded in the critical CSS and supplies the final texture from first paint, with no late upgrade. Wider layouts start with the painted light pool. The larger image has no initial `src` or preload; after the window loads, it requests at low priority during an idle turn, only when enough of the hero is visible and Save Data is off. The decorative backdrop is static, including in reduced motion, and remains in place when the CAD fails or never starts. It does not change the renderer, HDR lighting map, geometry, or draw schedule.
+
 ## Prepared lighting
 
 The product studio PMREM environment is baked into a 164,981-byte compressed asset. All 768×768 native RGBE texels, their encoding, filtering and layout are preserved. `scripts/build-v2-hero-environment.cjs` uses the same studio function as runtime recovery and compares the fresh and prepared environment across all three complete CAD models in both assembled and exploded poses; all six comparisons produced zero changed pixel channels. `--verify` checks an existing build. The environment metadata records the shared studio helper hash as well as the baker and Three.js hashes.

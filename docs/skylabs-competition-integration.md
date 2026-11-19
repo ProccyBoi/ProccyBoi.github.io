@@ -45,3 +45,9 @@ Final checks also assert that the carriage bounding box stays inside the fuselag
 ## Sensor seating refinement
 
 The sensor body is seated 5 mm lower in mechanism source -Z, independently of the aircraft, carriage and electronics. The carriage stroke (25 mm) and subsequent vertical centre travel (450 mm) are unchanged. Full extension is therefore 480 mm below the original CAD body pose, or 475 mm below the adjusted rest pose. The measured front-notch coordinate is resolved before applying this installation offset, keeping the towline fixed to the actual body feature throughout reversal. This small seating adjustment is illustrative; original source CAD and scale remain unchanged.
+
+## Responsive camera preview
+
+The v2 fleet starts in a three-quarter formation. The camera follows the competition wing during the peel, moves alongside the carriage, then widens as the tether pays out. Each pose is evaluated from scroll progress, not elapsed time. Portrait and split-screen stages stack the two aircraft rather than cropping the wings; the motion-disabled phone layout reframes the same transparent CAD poster into separate trainer and competition views. No second poster transfer, scene, or model is required. A browser without WebGL retains this still without downloading the fleet models.
+
+The framing changes affect presentation wrappers and camera only. Trainer and competition markings keep their existing upper-sheet UVs. The projects collection’s trainer hero remains unmodified, as do the 25 mm carriage stroke, sensor travel and front-notch attachment. Run the existing fleet regression against a local server: `V2_BASE_URL=http://127.0.0.1:8080 node scripts/verify-v2-skylabs-fleet.cjs`.

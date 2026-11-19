@@ -5,15 +5,15 @@
 .skylabs-fleet a{color:var(--fleet-blue)}
 .fleet-eyebrow{font-size:.75rem;letter-spacing:.13em;text-transform:uppercase;color:var(--fleet-blue)}
 .fleet-track{position:relative}
-.fleet-stage{position:relative;height:640px;max-height:75svh;min-height:340px;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,#17283f 0, #0b1019 65%)}
+.fleet-stage{position:relative;height:640px;max-height:75svh;min-height:340px;overflow:hidden;background:radial-gradient(ellipse at 52% 48%,#26313a 0,#161c22 45%,#0d1115 86%)}
 .fleet-stage canvas,.fleet-poster{position:absolute;width:100%;height:100%;inset:0;object-fit:contain}
 .fleet-stage canvas{opacity:0;transition:opacity .2s}
 .skylabs-fleet[data-fleet-state=ready] canvas{opacity:1}
-.skylabs-fleet[data-fleet-state=ready] .fleet-poster{visibility:hidden}
+.skylabs-fleet[data-fleet-state=ready] .fleet-still{visibility:hidden}
 .fleet-caption{position:absolute;left:5vw;bottom:1.5rem;right:5vw;pointer-events:none;font-size:.88rem;color:#bac9dd}
 .fleet-caption strong{display:block;color:#f1f5fa;font-size:1rem;margin-bottom:.3rem}
 .fleet-progress{position:absolute;bottom:0;height:2px;background:var(--fleet-blue);width:100%;transform:scaleX(0);transform-origin:left}
-.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:170svh}
+.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:215svh}
 .skylabs-fleet[data-fleet-state=ready] .fleet-stage{position:sticky;top:110px;height:calc(100svh - 130px);max-height:800px}
 .fleet-notes{padding:2rem 5vw 3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;max-width:1280px;margin:auto}
 .fleet-notes h3{font-size:1.1rem;margin:0 0 .7rem;color:#e9eef6}
@@ -26,3 +26,16 @@
 .fleet-caption{z-index:1;text-shadow:0 1px 5px #07101c}
 .fleet-stage::after{content:"";position:absolute;inset:auto 0 0;height:115px;pointer-events:none;background:linear-gradient(transparent,rgba(8,14,23,.92))}
 .fleet-progress{z-index:2}
+
+/* Both frames use the same already-lazy, transparent CAD still. On a phone
+   split its two occupied rectangles, instead of letterboxing a landscape pair. */
+.fleet-still{position:absolute;inset:0;pointer-events:none}
+.fleet-still-trainer{display:none}
+@media(max-width:680px){
+ .fleet-still{inset:auto;left:50%;transform:translateX(-50%);overflow:hidden}
+ .fleet-still-pair{top:48%;width:min(74%,302px);aspect-ratio:452/277}
+ .fleet-still-trainer{display:block;bottom:52%;width:min(65%,270px);aspect-ratio:415/254}
+ .fleet-still img{display:block;position:absolute;max-width:none;height:auto;right:auto;bottom:auto}
+ .fleet-still-pair img{width:318.59%;left:-60.40%;top:-104.69%}
+ .fleet-still-trainer img{width:346.99%;left:-187.47%;top:-92.91%}
+}
