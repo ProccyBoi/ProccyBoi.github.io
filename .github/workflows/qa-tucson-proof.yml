@@ -23,7 +23,7 @@ jobs:
       PHONE_HEIGHT: '770'
       DESKTOP_HEIGHT: '800'
       PHONE_DPR: '2'
-      SCENARIOS: normal
+      SCENARIOS: normal,reduced,save,nogl,collection
     steps:
       - uses: actions/checkout@v7
         with:
@@ -43,6 +43,7 @@ jobs:
       - name: Preserve independent harness outside checkout
         run: |
           cp scripts/qa-tucson-private/render.cjs "$RUNNER_TEMP/render.cjs"
+          cp scripts/qa-tucson-private/cold.cjs "$RUNNER_TEMP/cold.cjs"
           cp scripts/qa-tucson-private/assemble.py "$RUNNER_TEMP/assemble.py"
           node --check "$RUNNER_TEMP/render.cjs"
           git fetch --no-tags --depth=1 origin "$BASE_SHA"
@@ -63,6 +64,7 @@ jobs:
             git rev-parse HEAD > "$target/commit.txt"
             # Both revisions use the same HTTP origin and cache conditions.
             REVISIONS="$revision" SCENARIOS="$modes" BEFORE_BASE="http://127.0.0.1:$QA_PORT" AFTER_BASE="http://127.0.0.1:$QA_PORT" OUTPUT_DIR="$target" node "$RUNNER_TEMP/render.cjs" || rc=1
+            if [ "$SCENARIOS" != normal ]; then AFTER_BASE="http://127.0.0.1:$QA_PORT" OUTPUT_DIR="$target" node "$RUNNER_TEMP/cold.cjs" || rc=1; fi
           done
           python "$RUNNER_TEMP/assemble.py" "$RUNNER_TEMP/tucson-proof" || rc=1
           exit "$rc"

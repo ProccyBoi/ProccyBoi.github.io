@@ -243,7 +243,7 @@
       near = Math.min(near, -corner.z); far = Math.max(far, -corner.z);
     }
     view.left = left - padding; view.right = right + padding; view.bottom = bottom - padding; view.top = top + padding;
-    view.near = Math.max(.01, near - padding); view.far = far + padding; view.updateProjectionMatrix();
+    view.near = Math.max(.01, near - padding); view.far = far + padding + (sonoran && tucson?.group.visible ? span * 2 : 0); view.updateProjectionMatrix();
     key.shadow.normalBias = span * .0007; key.shadow.bias = -.00015; renderer.shadowMap.needsUpdate = true;
   }
   function renderFrame() {
@@ -260,7 +260,7 @@
     const framing = flight.frame(camera, width, height);
     const sky = sonoran ? 1 - smooth(((pose.progress || 0) - .06) / .32) : atmosphere?.update({ landing: pose.landing, progress: pose.progress, width, height }) || 0;
     if (sonoran) {
-      tucson.update(pose, framing, camera, width, height, sky);
+      tucson.update(pose, framing, camera, width, height, sky, flight);
       key.userData.direction.set(-3 - 3.56 * sky, 8 - 4.88 * sky, 5 - 8.68 * sky).normalize();
     }
     fitLight(framing.focus);
