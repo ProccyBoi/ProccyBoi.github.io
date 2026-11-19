@@ -31,7 +31,14 @@
   </header>
 
   <main id="main">
-    <section class="page-hero"><div class="page-hero-inner shell"><p class="eyebrow">Design / build / test</p><h1>Projects</h1><p>PCBs, embedded systems, robotics and engineering tools. Explore the builds and the engineering behind them.</p></div></section>
+    <section class="page-hero"><div class="page-hero-inner shell"><p class="eyebrow">Design / build / test</p><h1>Projects</h1><p>PCBs, embedded systems, robotics and engineering tools. Explore the builds and the engineering behind them.</p></div>
+      <div class="shell v1-project-finder" id="find-projects" data-v1-project-finder role="search" aria-label="Portfolio" hidden>
+        <label for="find-work">Search projects and tools</label>
+        <div class="v1-find-row"><input id="find-work" type="search" placeholder="Search by name or technology" autocomplete="off"><button type="button" data-find-clear hidden>Clear</button></div>
+        <p class="v1-find-status" role="status" aria-live="polite"></p>
+      </div>
+      <script type="module" src="assets/v1-project-finder.js"></script>
+    </section>
 
     <nav class="project-jumpbar" aria-label="Project sections" data-project-jumpbar>
       <div class="project-jumpbar-inner shell">

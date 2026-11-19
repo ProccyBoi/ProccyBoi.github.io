@@ -13,6 +13,24 @@ body.kiku-page { --k-bg:#141412; --k-ink:#ecebe3; --k-muted:#aaa99f; --k-line:#3
 .kiku-page [hidden] { display:none!important; }
 .kiku-page a { color:inherit; }
 .kiku-page section[id] { scroll-margin-top:150px; }
+/* Keep v1's six case destinations individually tappable without changing the
+   tailored section navigation used by v2 and later Kiku pages. */
+.kiku-page [data-v1-kiku-sections] {
+  display:grid; grid-template-columns:repeat(6,minmax(0,1fr));
+  width:min(100% - 32px,720px); margin-inline:auto;
+  border-bottom:1px solid var(--k-line);
+}
+.kiku-page [data-v1-kiku-sections] > a {
+  display:grid; place-items:center; min-height:44px; padding:4px;
+  color:var(--k-muted); text-align:center; text-decoration:none; font-size:.8125rem;
+}
+.kiku-page [data-v1-kiku-sections] > a:hover,
+.kiku-page [data-v1-kiku-sections] > a:focus-visible { color:var(--k-ink); }
+.kiku-page [data-v1-kiku-sections] > a:focus-visible { outline-offset:-3px; }
+@media(max-width:540px) {
+  .kiku-page [data-v1-kiku-sections] { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+
 .kiku-wrap { width:min(1380px,calc(100% - 2 * clamp(22px,4.4vw,80px))); margin-inline:auto; }
 .kiku-page .kiku-label { font:400 12px/1.7 "IBM Plex Mono",Consolas,monospace; letter-spacing:.025em; color:var(--k-muted); }
 .kiku-page .kiku-small { font:400 13px/1.7 "IBM Plex Mono",Consolas,monospace; color:var(--k-muted); }

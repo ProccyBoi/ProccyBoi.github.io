@@ -2490,3 +2490,14 @@ p { line-height: 1.65; }
 .explorer-unavailable, .explorer-source-status { position:absolute; z-index:20; top:1rem; left:1rem; right:1rem; max-width:50ch; padding:.8rem 1rem; background:#182018; color:#f2f5ef; border:1px solid #82917a; font-size:.875rem; line-height:1.5; }
 .explorer-source-status[hidden] { display:none; }
 [data-explorer-unavailable] [hidden] { display:none !important; }
+
+/* Only the original project index opts into the searchable archive. */
+.page-hero:has(.v1-project-finder:not([hidden])) .page-hero-inner { padding-bottom: 1.25rem; }
+.v1-project-finder { padding-bottom: clamp(1.75rem, 3vw, 2.5rem); }
+.v1-project-finder label { display:block; margin-bottom:.25rem; font:500 .875rem/1.4 var(--sans); }
+.v1-find-row { display:flex; align-items:stretch; gap:.75rem; max-width:28rem; }
+.v1-find-row input { flex:1; min-width:0; min-height:44px; padding:.5rem .7rem; border:1px solid var(--rule-strong); background:var(--surface); color:var(--text); font:inherit; border-radius:0; }
+.v1-find-row button { min-height:44px; border:0; background:none; color:var(--red-text); font:500 .875rem/1.4 var(--sans); cursor:pointer; text-decoration:underline; }
+.v1-find-status:not(:empty) { margin:.6rem 0 0; color:var(--muted); font:400 .875rem/1.5 var(--sans); }
+.v1-find-status:empty { margin:0; }
+[data-v1-results] [hidden], [data-v1-results] .project-jumpbar[hidden] { display:none !important; }

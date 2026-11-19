@@ -26,12 +26,12 @@ if (sectionTargets.length) {
     const header = document.querySelector(".site-header");
     const localNav = document.querySelector(".project-flow, .project-jumpbar");
     const marker = (header?.offsetHeight || 0) + (localNav?.offsetHeight || 0) + 32;
-    let active = sectionTargets[0];
+    let active = sectionTargets.find(item => !item.section.hidden);
     sectionTargets.forEach((item) => {
-      if (item.section.getBoundingClientRect().top <= marker) active = item;
+      if (!item.section.hidden && item.section.getBoundingClientRect().top <= marker) active = item;
     });
     sectionTargets.forEach(({ link }) => {
-      if (link === active.link) link.setAttribute("aria-current", "location");
+      if (link === active?.link) link.setAttribute("aria-current", "location");
       else link.removeAttribute("aria-current");
     });
   };
@@ -40,6 +40,7 @@ if (sectionTargets.length) {
   };
   window.addEventListener("scroll", requestSection, { passive: true });
   window.addEventListener("resize", requestSection);
+  document.addEventListener("v1cataloguechange", requestSection);
   window.addEventListener("load", requestSection, { once: true });
   syncSection();
 }
@@ -82,7 +83,11 @@ navToggle?.addEventListener("click", () => {
   document.body.classList.toggle("nav-open", open);
   syncNavigationAccessibility(open);
   if (open) {
-    window.requestAnimationFrame(() => siteNav.querySelector("a")?.focus());
+    window.requestAnimationFrame(() => {
+      if (!desktopNavigation.matches && navToggle.getAttribute("aria-expanded") === "true") {
+        siteNav.querySelector("a")?.focus();
+      }
+    });
   }
 });
 
@@ -90,18 +95,36 @@ siteNav?.querySelectorAll("a").forEach((link) => {
   link.addEventListener("click", () => closeNavigation(false));
 });
 
-const handleNavigationBreakpoint = (event) => {
-  if (event.matches) {
-    closeNavigation(false);
-  } else {
-    syncNavigationAccessibility(navToggle?.getAttribute("aria-expanded") === "true");
-  }
-};
+// The v1 overlay becomes an ordinary inline nav on wider screens. CSS can
+// hide the focused link or button before the breakpoint callback runs.
+if (siteNav && navToggle) {
+  let focusOwner = null;
+  const rememberFocus = ({target}) => {
+    if (target === document.body || target === document.documentElement) return;
+    focusOwner = target === navToggle || siteNav.contains(target) ? target : null;
+  };
+  document.addEventListener("focusin", rememberFocus);
+  document.addEventListener("pointerdown", rememberFocus, {passive:true});
+  window.addEventListener("blur", () => { focusOwner = null; });
 
-if (desktopNavigation.addEventListener) {
-  desktopNavigation.addEventListener("change", handleNavigationBreakpoint);
-} else {
-  desktopNavigation.addListener(handleNavigationBreakpoint);
+  const handleNavigationBreakpoint = ({matches: wide}) => {
+    const active = document.activeElement === document.body ? focusOwner : document.activeElement;
+    closeNavigation(false);
+    if (!document.hasFocus()) return;
+    if (wide && active === navToggle) {
+      (siteNav.querySelector('[aria-current="page"]') || siteNav.querySelector("a"))?.focus({preventScroll:true});
+    } else if (!wide && active && siteNav.contains(active)) {
+      navToggle.focus({preventScroll:true});
+    }
+  };
+  if (desktopNavigation.addEventListener) {
+    desktopNavigation.addEventListener("change", handleNavigationBreakpoint);
+  } else {
+    desktopNavigation.addListener(handleNavigationBreakpoint);
+  }
+  window.addEventListener("pageshow", event => {
+    if (event.persisted && navToggle.getAttribute("aria-expanded") === "true") closeNavigation(!desktopNavigation.matches);
+  });
 }
 
 syncNavigationAccessibility(false);
