@@ -1,0 +1,79 @@
+/* Phone navigation replaces both sticky headers; it never sits below them.
+   Without the controller, every page keeps its ordinary linked header. */
+:root{--wayfinder-css:1}
+.v2-waybar,.v2-way-sheet:not([open]){display:none}
+@media screen and (max-width:640px){
+  html[data-v2-way]{
+    --way-safe:env(safe-area-inset-bottom,0px);
+    --way-height:calc(3.5rem + var(--way-safe));--way-ink:#f0efe9;--way-dim:#b5b6b0;--way-blue:#8bc6ff;--way-rule:#3b3e3c;
+    scroll-padding-block:0 var(--way-height);
+  }
+  html[data-v2-way] body{--header-height:0px;padding-bottom:var(--way-height)}
+  [data-v2-way] :is(.v2-header,.v2-case-nav){display:none}
+  [data-v2-way] .v2-waybar{
+    position:fixed;z-index:110;inset:auto 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    box-sizing:border-box;min-height:var(--way-height);padding:0 max(8px,env(safe-area-inset-right)) var(--way-safe) max(8px,env(safe-area-inset-left));
+    border-top:1px solid var(--way-rule);background:#171918;color:var(--way-ink);font-family:Archivo,Arial,sans-serif;
+  }
+  .v2-waybar :is(a,button),.v2-way-foot :is(a,button){
+    position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:.5rem;
+    min-width:0;min-height:max(44px,3.5rem);padding:.3rem .15rem;border:0;border-radius:0;
+    background:transparent;color:var(--way-dim);font:500 .9rem/1.2 Archivo,Arial,sans-serif;text-decoration:none;cursor:pointer;
+  }
+  .v2-waybar :is(a,button){flex-wrap:wrap;align-content:center}
+  .v2-waybar [aria-current],.v2-waybar [data-current]{color:var(--way-blue)}
+  .v2-waybar [aria-current]::after,.v2-waybar [data-current]::after{
+    content:"";position:absolute;top:-1px;height:2px;width:1.8rem;background:currentColor;
+  }
+  :is(.v2-waybar,.v2-way-foot) svg{flex:none;width:1.1rem;height:1.1rem;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  :is(.v2-waybar,.v2-way-sheet) :is(a,button):focus-visible{outline:2px solid var(--way-blue);outline-offset:-3px}
+  html:has(.v2-way-sheet[open]){overflow:hidden}
+  .v2-way-sheet[open]{
+    display:flex;flex-direction:column;position:fixed;inset:auto 0 0;box-sizing:border-box;width:100%;max-width:none;
+    max-height:calc(100vh - 1rem);max-height:calc(100dvh - max(1rem,env(safe-area-inset-top)));
+    margin:0;padding:0;overflow:hidden;border:1px solid var(--way-rule);border-bottom:0;border-radius:16px 16px 0 0;
+    background:#1a1c1b;color:var(--way-ink);font-family:Archivo,Arial,sans-serif;
+  }
+  .v2-way-sheet::backdrop{background:rgba(6,8,8,.66)}
+  .v2-way-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:1.3rem max(1.25rem,env(safe-area-inset-right)) 0 max(1.25rem,env(safe-area-inset-left))}
+  .v2-way-sheet .v2-way-eyebrow{margin:0 0 .35rem;font:500 .75rem/1.5 'IBM Plex Mono',Consolas,monospace;color:var(--way-dim)}
+  .v2-way-sheet .v2-way-title{margin:0 0 1rem;color:var(--way-ink);font:500 clamp(1.55rem,6.5vw,2.05rem)/1.12 Archivo,Arial,sans-serif;letter-spacing:-.04em;text-transform:none;overflow-wrap:anywhere}
+  .v2-way-title:focus{outline:none}
+  .v2-way-projects{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}
+  .v2-way-project{min-width:0;display:block;border:0;color:var(--way-ink);text-decoration:none}
+  .v2-way-project img{display:block;width:100%;height:auto;aspect-ratio:5/3;object-fit:cover;border-radius:3px;background:#121413}
+  .v2-way-project span{display:block;overflow-wrap:anywhere;margin-top:.38rem;font:500 .91rem/1.3 Archivo,Arial,sans-serif}
+  .v2-way-more,.v2-way-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:1.3rem}
+  .v2-way-more{margin-top:1.1rem}
+  .v2-way-sections{margin:-.2rem 0 1rem}
+  :is(.v2-way-more,.v2-way-sections) a{
+    display:flex;align-items:center;min-height:max(44px,2.8rem);box-sizing:border-box;padding:.35rem 0;border-top:1px solid var(--way-rule);
+    color:var(--way-ink);font:400 .96rem/1.3 Archivo,Arial,sans-serif;text-decoration:none;overflow-wrap:anywhere;
+  }
+  .v2-way-sheet [aria-current]{color:var(--way-blue)}
+  .v2-way-sections [aria-current]::before{content:"";width:5px;height:5px;margin-right:.45rem;background:currentColor}
+  .v2-way-foot{flex:none;display:grid;grid-template-columns:1fr auto;align-items:center;gap:.5rem;border-top:1px solid var(--way-rule);padding:0 max(1.25rem,env(safe-area-inset-right)) var(--way-safe) max(1.25rem,env(safe-area-inset-left));background:#171918}
+  .v2-way-foot .v2-way-all{justify-content:flex-start;gap:.6rem;color:var(--way-blue);font-size:1rem}
+  .v2-way-foot button{padding-inline:.65rem;color:var(--way-ink)}
+  @media(hover:hover){:is(.v2-waybar,.v2-way-sheet) :is(a,button):hover{color:var(--way-blue)}}
+  @media(prefers-reduced-motion:no-preference){.v2-way-sheet[open]{animation:v2-way-enter .15s ease-out}@keyframes v2-way-enter{from{transform:translateY(10px);opacity:.7}to{transform:none;opacity:1}}}
+  @media(max-width:345px){.v2-waybar :is(a,button){gap:.32rem}}
+  /* Reclaim the old top bar's space without covering a sticky CAD action. */
+  [data-v2-way] .v2-home .v2-assembly{margin-top:0}
+  [data-v2-way] .v2-selected-work.is-scene{--selected-top:0px;--selected-stage-height:calc(100svh - var(--way-height))}
+  [data-v2-way] .v2-aircraft-feature{--v3-header-height:0px}
+  [data-v2-way] .v2-aircraft-feature.is-story .v3-aircraft-stage{top:0;height:calc(100svh - var(--way-height))}
+  [data-v2-way] .reflow-page{--rf-header:0px}
+  [data-v2-way] .rf-stage{height:calc(100svh - var(--way-height))}
+  html[data-v2-way] .v2-case:has([data-v2-case-section-nav]) :is(#main,main [id]){scroll-margin-top:.7rem}
+  [data-v2-way] .v2-case .v2-anchor-alias{top:0}
+  [data-v2-way] .v2-case .fleet-stage{top:0}
+  @media(min-height:701px){
+    [data-v2-way] .v2-home .v2-assembly-sticky{min-height:0;height:calc(100svh - var(--way-height))}
+    [data-v2-way] .v2-home .v2-assembly-intro{top:max(1.8rem,env(safe-area-inset-top))}
+  }
+  @media(max-height:700px){
+    [data-v2-way] .v2-home .v2-assembly-sticky{padding-top:max(2rem,env(safe-area-inset-top))}
+  }
+}
+@media print{.v2-waybar,.v2-way-sheet{display:none!important}}

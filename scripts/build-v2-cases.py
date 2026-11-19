@@ -751,6 +751,8 @@ def normalized(content):
 
 def enrich_case(source, slug):
     """V2-only evidence notes, kept separate from shared source pages and v3."""
+    if 'class="v2-header"' in source and '/assets/v2-wayfinder.js' not in source:
+        source = source.replace('</head>', '<link rel="stylesheet" href="/assets/v2-wayfinder.css">\n<script src="/assets/v2-wayfinder.js" defer></script>\n</head>', 1)
     if slug == 'skylabs':
         source = source.replace('for 40 Hz onboard logging', 'targeting 40 Hz onboard logging').replace('scheduled at 40 Hz', 'with a 40 Hz target').replace('STM32G474 sensor acquisition, 40 Hz binary logging', 'STM32G474 sensor acquisition, a 40 Hz binary logging target')
     records = json.loads(CASE_EVIDENCE_PATH.read_text(encoding='utf-8')) if CASE_EVIDENCE_PATH.exists() else {}

@@ -420,6 +420,23 @@ def main() -> int:
             if count > 1:
                 error(page, f"duplicate id {identifier!r} ({count} occurrences)")
         if not exempt:
+            # The responsive layer must not replace the native, no-JS links,
+            # and its project photos must not join a page's initial downloads.
+            if not any("v2-nav" in item.attrs.get("class", "").split() for item in doc.tags("nav")):
+                error(page, "missing native primary navigation")
+            for item in doc.elements:
+                if any("/wayfinder/" in item.attrs.get(attr, "") for attr in ("src", "srcset", "href", "imagesrcset")):
+                    error(page, "mobile menu photos must wait for explicit open", item.line)
+            if relative == "v2/projects/skylabs/sensor-test-simulator/index.html":
+                # The self-contained file launches with no online dependencies.
+                loader = " ".join("".join(item.text) for item in doc.tags("script"))
+                if not all(token in loader for token in ("location.protocol", "/assets/v2-wayfinder.js", "/assets/v2-wayfinder.css")):
+                    error(page, "missing hosted-only simulator navigation")
+            else:
+                assets = {urlsplit(urljoin(doc.base, item.attrs[attr])).path for item in doc.elements
+                          for attr in ("src", "href") if attr in item.attrs}
+                if not {"/assets/v2-wayfinder.js", "/assets/v2-wayfinder.css"} <= assets:
+                    error(page, "missing responsive navigation assets")
             for tag in ("main", "h1"):
                 if len(doc.tags(tag)) != 1:
                     error(page, f"expected exactly one {tag}, found {len(doc.tags(tag))}")

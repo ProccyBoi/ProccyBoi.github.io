@@ -48,5 +48,15 @@
     <footer class="v2-footer"><div class="v2-footer-shell"><a class="v2-footer-name" href="https://proccyboi.github.io/v2/">Andrew Chung</a><div class="v2-footer-links"><a href="https://proccyboi.github.io/v2/projects/">Projects</a><a href="https://proccyboi.github.io/v2/about/#contact">Contact</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub ↗</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn ↗</a></div><p>Sydney, Australia</p><p>© 2026 Andrew Chung</p></div></footer>
   </div>
   <script src="three.min.js"></script><script src="OrbitControls.js"></script><script src="board-data.js"></script><script src="app.js"></script>
+  <script>
+    // The downloadable simulator stays completely offline. Only the hosted
+    // portfolio route adopts the same phone navigation as its parent pages.
+    if (/^https?:$/.test(location.protocol) && location.pathname.startsWith('/v2/projects/skylabs/sensor-test-simulator/')) {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = '/assets/v2-wayfinder.css';
+      css.onload = () => { const js = document.createElement('script'); js.src = '/assets/v2-wayfinder.js'; document.head.append(js); };
+      document.head.append(css);
+    }
+  </script>
 </body>
 </html>
