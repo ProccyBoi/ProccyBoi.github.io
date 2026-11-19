@@ -62,29 +62,35 @@ assert.equal(test.context.eligible(), true, 'Explicit chapter intent can prepare
 test = navigation({ collection: false, pending: true, bottom: -100 });
 assert.equal(test.context.eligible(), true, 'The collection gate never changes v3 scheduling');
 assert.match(source, /distance = height \* \(collection \? 1 : background \? \(width < 761 \? 2\.1 : 1\.8\) : \(width < 761 \? 3\.7 : 3\.1\)\)/, 'Shorter collection scroll does not alter existing variants');
-// The trainer's protected first paint is one opaque responsive poster. The
-// unmarked plate is inert until a real canvas is ready for it.
-const template = projects.match(/<template data-sonoran-template>([\s\S]*?)<\/template>/)[0];
-assert.match(template, /fetchpriority="low"/);
-assert.doesNotMatch(projects.replace(template, ''), /trainer-sonoran-field/);
-assert.match(projects, /data-aircraft-collection data-aircraft-sonoran/);
+// Only opted-in Projects fetches terrain after the same preference, viewport
+// and WebGL gates as the trainer. The early/save-data image is a direct render.
+assert.doesNotMatch(projects + source, /data-sonoran-template|trainer-sonoran-field|fieldPicture/);
+assert.match(source,/V2TucsonRelief\.create\(T, scene/);
+assert.match(projects,/data-aircraft-collection data-aircraft-sonoran/);
 for (const name of ['stopped','approach','stopped-mobile','approach-mobile']) {
-  const asset = 'assets/images/v2/trainer-' + name + '.webp';
-  assert.ok(projects.includes('/' + asset));
-  assert.ok(fs.statSync(path.join(root, asset)).size < (name.endsWith('mobile') ? 24000 : 70000));
+  const asset='assets/images/v2/tucson-trainer-'+name+'.webp';
+  assert.ok(projects.includes('/'+asset));
+  assert.ok(fs.statSync(path.join(root,asset)).size < (name.endsWith('mobile') ? 58000 : 100000));
 }
-assert.doesNotMatch(home + read('v2/projects/skylabs/index.html') + read('v3/index.html'), /data-aircraft-sonoran|trainer-sonoran-field/);
-const color = {copy(){return this}, lerp(){return this}};
-const poseContext = vm.createContext({
-  sonoran: true, width:1440, height:900, camera:{}, flight:{frame:()=>({focus:0,distance:5})},
-  fitLight(){}, smooth(n){const t=Math.max(0,Math.min(1,n));return t*t*(3-2*t)},
-  atmosphere:{update(){throw Error('v2 trainer should not draw a second sky')}},
-  scene:{fog:{color}}, floorMaterial:{color, transparent:true}, groundUniforms:{sky:{},near:{},far:{}},
-  studioGround:color, airfieldGround:color, studioFog:color, airfieldFog:color, renderFrame(){}
+assert.doesNotMatch(home + read('v2/projects/skylabs/index.html') + read('v3/index.html'),/data-aircraft-sonoran|tucson-trainer-|v2-tucson-relief/);
+const geometryJS=read('assets/v2-tucson-relief.js');
+assert.doesNotMatch(geometryJS,/requestAnimationFrame|ImageLoader|TextureLoader|trainer-sonoran-field/);
+const heights=fs.readFileSync(path.join(root,'assets/models/tucson-mountains/relief.bin'));
+assert.equal(heights.length, 193*185*2);
+const color={copy(){return this},lerp(){return this}};
+const poseContext=vm.createContext({
+  sonoran:true,width:1440,height:900,camera:{},flight:{frame:()=>({focus:0,distance:5})},
+  fitLight(){},smooth(n){const t=Math.max(0,Math.min(1,n));return t*t*(3-2*t)},
+  key:{userData:{direction:{set(){return this},normalize(){return this}}}},
+  tucson:{update(pose,framing,camera,width,height,amount){this.last=amount}},
+  atmosphere:{update(){throw Error('v2 trainer should not draw the legacy sky')}},
+  scene:{fog:{color}},floorMaterial:{color,transparent:true},groundUniforms:{sky:{},near:{},far:{}},
+  studioGround:color,airfieldGround:color,studioFog:color,airfieldFog:color,renderFrame(){}
 });
-vm.runInContext(production('drawPose'), poseContext);
-for (const [progress, expected] of [[0,1],[.06,1],[.22,.5],[.38,0],[1,0],[0,1]]) {
-  assert.ok(Math.abs(poseContext.drawPose({landing:1,progress})-expected) < 1e-6);
-  assert.ok(Math.abs(poseContext.floorMaterial.opacity-(1-expected)) < 1e-6);
+vm.runInContext(production('drawPose'),poseContext);
+for (const [progress,expected] of [[0,1],[.06,1],[.22,.5],[.38,0],[1,0],[0,1]]) {
+  assert.ok(Math.abs(poseContext.drawPose({landing:1,progress})-expected)<1e-6);
+  assert.ok(Math.abs(poseContext.tucson.last-expected)<1e-6);
+  assert.ok(Math.abs(poseContext.floorMaterial.opacity-(1-expected))<1e-6);
 }
-console.log('PASS: aircraft lives in Projects; native accessible collection skip; preserved filters/entries and legacy home fragments; direct-fragment deferral, return and intent; v3 unaffected. Source checks only.');
+console.log('PASS: Projects-only rendered DEM and native accessible collection, source gate, reversible studio handoff and untouched home/v3 contracts. Source checks only.');

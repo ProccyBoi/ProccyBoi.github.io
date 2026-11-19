@@ -90,8 +90,6 @@
 /* The Tucson flying strip belongs to this trainer, not the home CAD table or
    the case-study fleet. The flat fallback and live story share one first view. */
 [data-aircraft-sonoran] .v3-aircraft-visual{isolation:isolate;overflow:hidden}
-[data-aircraft-sonoran] .v2-trainer-field{z-index:-1;pointer-events:none}
-[data-aircraft-sonoran] .v2-trainer-field img,
 [data-aircraft-sonoran]:not(.is-story) .v3-aircraft-visual>picture>img{object-fit:cover;object-position:center}
 [data-aircraft-sonoran] .v3-aircraft-visual::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(110deg,rgba(8,13,22,.60) 0%,rgba(8,13,22,.28) 28%,transparent 56%),
