@@ -55,6 +55,8 @@ async function posters(page) {
     await page.locator('[data-v2-menu]').focus();await page.keyboard.press('Enter');
     assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'true');
     assert.equal(await page.locator('[data-v2-nav]').isVisible(),true);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('[data-v2-nav] a').first().evaluate(node=>node===document.activeElement),true,'Tab from the open disclosure enters its links');
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('[data-v2-menu]').getAttribute('aria-expanded'),'false');
     assert.equal(await page.locator('[data-v2-menu]').evaluate(node=>node===document.activeElement),true);
@@ -70,6 +72,18 @@ async function posters(page) {
     await search.fill('Framework');
     assert.equal(await page.locator(primary+':visible').count(),4);
     assert.match(await page.locator('[data-v2-search-status]').textContent(),/4 projects/);
+    assert.equal(new URL(page.url()).hash,'#collection','Share the results, not the aircraft intro');
+    const shared=await context.newPage();
+    try {
+      // Check old parameter-only URLs as well as the new shareable category link.
+      await shared.goto(page.url().split('#')[0],{waitUntil:'networkidle'});
+      assert.equal(new URL(shared.url()).hash,'#collection');
+      assert.equal(await shared.locator(primary+':visible').count(),4);
+      assert.ok(await shared.locator('[data-v2-search]').evaluate(node=>node.getBoundingClientRect().bottom<=innerHeight),'Saved search is in the first viewport');
+      const categoryURL=await shared.locator('[data-v2-category="hardware"]').getAttribute('href');
+      assert.equal(new URL(categoryURL,shared.url()).searchParams.get('category'),'hardware');
+      assert.equal(new URL(categoryURL,shared.url()).hash,'#collection');
+    } finally { await shared.close(); }
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await search.inputValue(),'Framework');
     assert.equal(await page.locator(primary+':visible').count(),4);
@@ -97,7 +111,7 @@ async function posters(page) {
     await search.press('Escape');
     await page.setViewportSize({width:320,height:900});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Collection overflows at 320px');
-    console.log('PASS TramTrace/Dash/Pi hero packs, three proof rows and build destinations, four Framework cards, keyboard/menu navigation, 16 projects plus 6 separate interactive entries, search and categories');
+    console.log('PASS TramTrace/Dash/Pi hero packs, three proof rows and build destinations, four Framework cards, keyboard/menu navigation, 16 projects plus 7 separate interactive entries, search and categories');
     await page.setViewportSize({width:1280,height:900});
     for(const [route,prefix] of [['framework-expansion-card','framework'],['framework-dual-usb','dual-usb']]){
       await page.goto(base+'/v2/projects/'+route+'/',{waitUntil:'networkidle'});

@@ -30,6 +30,9 @@
     placeIndicator(currentLink);
   }
   if (menu && nav) {
+    // The disclosure must precede its links in the keyboard reading order.
+    // Other portfolio versions import this controller with their own header.
+    if (location.pathname.startsWith('/v2/') && nav.parentElement === menu.parentElement) nav.before(menu);
     const wide = matchMedia('(min-width:541px)');
     // Layout can hide a focused control before the media-query callback.
     // Keep actual ownership through that blur, clearing it on new input.

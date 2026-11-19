@@ -39,6 +39,16 @@
     let category = validCategory(params.get('category'));
     search.value = params.get('q') || '';
     document.querySelector('[data-v2-search-wrap]').hidden = false;
+    // A shared result should reopen at the catalogue, not at the aircraft intro.
+    // Other versions also import this controller, but have a different collection.
+    const anchoredResults = location.pathname.startsWith('/v2/') && controls?.id === 'collection';
+    const resultURL = (value, section) => {
+      const url = new URL(location.href);
+      value ? url.searchParams.set('q', value) : url.searchParams.delete('q');
+      section === 'all' ? url.searchParams.delete('category') : url.searchParams.set('category', section);
+      url.hash = anchoredResults ? controls.id : '';
+      return url.pathname + url.search + url.hash;
+    };
     const apply = (updateURL = false) => {
       const query = normalize(search.value);
       const terms = query ? query.split(' ') : [];
@@ -66,14 +76,13 @@
       if (relatedTools) resultParts.push(`${relatedTools} ${relatedTools === 1 ? 'demo or tool' : 'demos and tools'}`);
       const resultSummary = total && relatedTools ? `${total + relatedTools} results: ${resultParts.join('; ')}` : resultParts.join('');
       status.textContent = resultParts.length ? `${resultSummary}${query ? ` matching “${search.value.trim()}”` : ''}.` : 'No results match these filters. Clear filters to see all projects, demos and tools, or try another term.';
-      if (updateURL) {
-        const url = new URL(location.href);
-        query ? url.searchParams.set('q', search.value.trim()) : url.searchParams.delete('q');
-        category === 'all' ? url.searchParams.delete('category') : url.searchParams.set('category', category);
-        history.replaceState(null, '', url.pathname + url.search);
-      }
+      if (anchoredResults) categories.forEach(link => {
+        link.href = resultURL(search.value.trim(), link.dataset.v2Category);
+      });
+      if (updateURL) history.replaceState(history.state, '', resultURL(search.value.trim(), category));
     };
     categories.forEach(link => link.addEventListener('click', event => {
+      if (anchoredResults && (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
       event.preventDefault();
       category = link.dataset.v2Category;
       apply(true);
@@ -94,7 +103,9 @@
       search.value = current.get('q') || '';
       apply();
     });
-    apply();
+    // Normalize older parameter-only links before the deferred aircraft
+    // controller decides which section to restore. Explicit story hashes win.
+    apply(anchoredResults && !location.hash && (search.value.trim() !== '' || category !== 'all'));
   }
   // Shared viewers also supply copy when a board or component changes. Keep
   // their facts and controls while giving the v2 pages the same direct wording.

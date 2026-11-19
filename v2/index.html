@@ -128,26 +128,26 @@ body.v2{margin:0;min-width:0;background:var(--v2-bg);color:var(--v2-ink);font-fa
 /* The opening keeps one shared CAD composition and a short, optional scroll. */
 .v2-assembly{position:relative;margin-top:-76px;background:var(--v2-bg);isolation:isolate}
 .v2-assembly-sticky{position:relative;min-height:760px;height:100svh;overflow:hidden;background:var(--v2-bg)}
-/* Homepage only: angled workbench light and a real, optional mat photograph.
-   The same matte surface stays behind both still posters and the transparent CAD. */
-.v2-home .v2-assembly-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
-  background:radial-gradient(ellipse 76% 53% at 57% 53%,#303131,#222322 63%,var(--v2-bg))}
-.v2-home .v2-assembly-backdrop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:55% 52%;opacity:.77}
+/* A low, grazing key across Andrew's photographed work mat. The very front
+   resolves to a narrow cut edge, then its cast shadow on the darker desk.
+   Paint the whole lighting composition before any optional texture arrives. */
+.v2-home .v2-assembly-backdrop{--bench-lip:85%;position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:radial-gradient(ellipse 83% 49% at 17% 64%,#667078 0%,#545d63 24%,#363d42 57%,#222529 84%,#191b1c 100%)}
+.v2-home .v2-assembly-backdrop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:55% 52%;opacity:.32}
 .v2-home .v2-assembly-backdrop::after{position:absolute;inset:0;content:'';background:
-  linear-gradient(180deg,var(--v2-bg) 2%,#141412ed 24%,#14141216 50%,#14141213 70%,var(--v2-bg) 100%),
-  linear-gradient(105deg,#141412eb,#14141280 26%,transparent 56%,#14141230 80%,#14141291)}
-.v2-home .v2-assembly-workbench .v2-assembly-posters img{filter:drop-shadow(1px 21px 17px #04050675)}
+  linear-gradient(180deg,var(--v2-bg) 3%,#141412f7 18%,#1414129c 33%,transparent 53% 77%,#14141240 92%,var(--v2-bg) 100%),
+  linear-gradient(177.5deg,transparent calc(var(--bench-lip) - 2px),#a9b3b633 calc(var(--bench-lip) - .7px),#30373a var(--bench-lip),#191e22 calc(var(--bench-lip) + 2px),#15181b calc(var(--bench-lip) + 5px),#0d1013 calc(var(--bench-lip) + 6px),#191b1c calc(var(--bench-lip) + 21px),var(--v2-bg) 100%)}
+.v2-home .v2-assembly-workbench .v2-assembly-posters img{filter:drop-shadow(6px 14px 7px #070a0d88)}
 @media(max-width:900px){
-  .v2-home .v2-assembly-backdrop::after{background:
-    linear-gradient(180deg,var(--v2-bg) 3%,#141412f5 29%,#14141285 46%,#1414121a 62%,#14141280 81%,var(--v2-bg) 100%),
-    linear-gradient(90deg,#14141270,transparent 25% 75%,#14141270)}
+  .v2-home .v2-assembly-backdrop{--bench-lip:82%;background:radial-gradient(ellipse 108% 36% at 11% 65%,#5e6971,#454e54 40%,#272c30 75%,#191b1c)}
 }
-/* An inset 154×103 crop of the real mat is the final narrow-screen surface;
-   tile fine natural grain at its original scale rather than stretching it. */
+/* The narrow-screen grain is still the final 154×103 source crop. No image
+   is requested or promoted to a new layer as a visitor scrolls. */
 @media(max-width:600px){
   .v2-home .v2-assembly-backdrop img{display:none}
-  .v2-home .v2-assembly-backdrop::before{position:absolute;inset:0;content:'';opacity:.48;
+  .v2-home .v2-assembly-backdrop::before{position:absolute;inset:0;content:'';opacity:.29;
     background:url("data:image/webp;base64,UklGRhYEAABXRUJQVlA4IAoEAADQDwCdASqaAGcAPzmUvFevKqWjqFR8weAnCWlmoynLe6c+AYsmifvebc9kI/otz7WIHiaQ4Hyp65wNXb/5UwdcYDBBxfDAvoPkclUFPC/pPa4N3mxYDyf51vyZTGRiVKcLWDqcQSDGcIA8mImRNiwUH0Rk1RUNPa4WNPrLPjpzYj9Gl0i3u8AA/urdHZTBP+zIPEmkbH9S8srdTborZ7z5H2f7jiUlYIG9VcegyPaFfdT/Tf5tHp6k4okmeYTWqoz1k+qOn+flFavaMI8xESx4JyXEtwtPfl8hst3qUB7vNc1VxzhooqVZuT8Tn3N68DthLzbkvzppyW48BFTaCegsDQ4DfsEMAwRO8FGrkRhp+CEoC7WvDNSotj8Lmlxf7KujeVH9BtWmTf1MD2DjRFvvR41oqBx3UkuAxVzZt8Cvl9VXfPyvHNyqe/EbYDrzW0XwJK46VdlDcs9Du7c/CR0n2dTswWugE2TO+1F4PZIQV8gF+axwk2DoKdfvaiVrYqTnTaUo0/0ok2a8FTGIIxajcekV9vqMeIFUtgGtThLRtAd5iAW1brFL6qXbS36oZJ4D83QADIIwfO71dEi7d8NBzp6dlurdgOTyn307tIZT3wV+RQOcvMLT9yASy98v8dpndTTY2Ye4PsA8kk1/aNy0GFQKMFF5M0792N0B5KGqityA0bsoSyFJzQc/gEfW2JO55KWD4IzyRFQmby8/TUowyG5z8NEjCxOb9yGE93U/MGl+xdKd9y7yIJylW/R4bbHCFza5WE7llaGoEJb63qqrJ/V+CIvsLky9FQ+KFRXAnK/QKGzqsMq5kirCf9l7gX2z88aoCRK+HWnPGOJb6Qj3Ew9nmnqJJiXScF3AF6fGXS+R6+Lkv0QPz+iq+GjN/ZkU3/GQXtLZZ9X+hbDNX+Ry8QF4eg7AaVWEmfcIzEhPTtZAD8S1zvCexjfkqAG0CxGaT8X/BB3dNZlMytt4ijNgc9WsZrerr+gyiS5x2Z4qga9p5YQI4v+UUeGALOk8MHhveYxAD3k+QWx9boUlURUsl3VElC9SOfDqVRAuXrqhhMJ1IuwvTwsjYDrYAVdjcoMiX2V0o3seV+5Xaxxy4lxfMbHmtq8y2NyCpOIQ4ishZoUCcltKvP4RhIsNJJE7wU0MW6Y78qDOAcBE8EpUnwIlyPC7CcFWX1Z9fsvdZPulEOuZ9dBMLTJTjLJzOP46U8DvCHUHJiV2iN+z00IWsLToVxwVf1rnTY/q815fIDOS+poal7vtxdX2DZsoeCO6zcRl2vU6Ra43JyHE1HamNTiH8iXfO6kjOzvn4hUqXS7OzWNE4I8jgy5fLPAob9jBe+3C01A5EFmqoY5OuAQIfMu/VGlyTZOc0J1gAA==") repeat center / 154px 103px}
+  .v2-home .v2-assembly-workbench .v2-assembly-posters img{filter:drop-shadow(3px 8px 4px #070a0d88)}
 }
 @media print{.v2-home .v2-assembly-backdrop{display:none}}
 .v2-assembly-intro{position:absolute;z-index:3;top:clamp(112px,13svh,150px);left:var(--v2-gutter);right:var(--v2-gutter);display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);align-items:start;gap:clamp(28px,4vw,64px);pointer-events:none;will-change:transform,opacity}
@@ -637,7 +637,7 @@ body.v2.v2-home:not(.v3-product) :is(a,button){-webkit-tap-highlight-color:#7bbc
 
 
   <script src="/assets/v2.js?v=controls-20261014" defer></script>
-  <script src="/assets/v2-assembly.js?v=speed-20261029" defer></script>
+  <script src="/assets/v2-assembly.js?v=bench-20261120" defer></script>
   <script src="/assets/v2-selected-work.js?v=speed-20261029" defer></script>
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
 </head>

@@ -8,3 +8,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font
 /* Keep keyboard navigation available without covering the visual workspace. */
 .v2-skip { position: fixed; left: 1rem; top: 1rem; z-index: 1000; padding: .75rem 1rem; background: #fff; color: #141412; transform: translateY(-200%); }
 .v2-skip:focus { transform: translateY(0); }
+
+/* Without the local controller, keep the five ordinary links on screen. */
+@media (max-width: 540px) {
+  .v2-header:not(.nav-ready) { height: auto; }
+  .v2-header:not(.nav-ready) .v2-nav-shell { flex-wrap: wrap; gap: 0; padding-block: 8px; }
+  .v2-header:not(.nav-ready) .v2-brand { display: flex; align-items: center; min-height: 36px; }
+  .v2-header:not(.nav-ready) .v2-menu { display: none; }
+  .v2-header:not(.nav-ready) .v2-nav {
+    position: static; display: flex; flex-flow: row wrap; justify-content: space-between;
+    gap: 0 8px; width: 100%; padding: 0; border: 0;
+  }
+  .v2-header:not(.nav-ready) .v2-nav a { font-size: 12px; }
+}

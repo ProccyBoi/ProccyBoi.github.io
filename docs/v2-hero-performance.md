@@ -26,6 +26,12 @@ The v2 homepage uses a static CSS light pool on first paint. A clean patch of th
 
 On screens up to 600 px wide, a 154×103 crop of the same mat is embedded in the critical CSS and supplies the final texture from first paint, with no late upgrade. Wider layouts start with the painted light pool. The larger image has no initial `src` or preload; after the window loads, it requests at low priority during an idle turn, only when enough of the hero is visible and Save Data is off. The decorative backdrop is static, including in reduced motion, and remains in place when the CAD fails or never starts. It does not change the renderer, HDR lighting map, geometry, or draw schedule.
 
+### Opening composition
+
+The original `switchmode-bus-alt-1920.webp` photograph supplies the actual mat grain. Its soft key and the shadow beneath the board in `switchmode-channel-assembled-960.webp` informed the raking side light and short poster shadows. The angled front edge is an art-directed depth cue, not a feature claimed to be in the source photo. All three objects are still the real project assets. The light and front edge are painted before the optional desktop photo decodes, so they remain visible with the network image disabled.
+
+The opening lineup uses smaller first-pose scales to separate the objects, especially TramTrace from the surrounding links on phones. The narrower layout also reserves the actual introduction height plus 14 CSS pixels for the two rear devices. Upper extents were checked by transforming vertices from the three production packs through the settled orthographic camera. The same first poses feed poster positions and live model transforms. Later keyframes, geometry, materials, existing shadows in WebGL, GPU scheduling and textures are unchanged; this change adds no network resource or renderer pass.
+
 ## Prepared lighting
 
 The product studio PMREM environment is baked into a 164,981-byte compressed asset. All 768×768 native RGBE texels, their encoding, filtering and layout are preserved. `scripts/build-v2-hero-environment.cjs` uses the same studio function as runtime recovery and compares the fresh and prepared environment across all three complete CAD models in both assembled and exploded poses; all six comparisons produced zero changed pixel channels. `--verify` checks an existing build. The environment metadata records the shared studio helper hash as well as the baker and Three.js hashes.

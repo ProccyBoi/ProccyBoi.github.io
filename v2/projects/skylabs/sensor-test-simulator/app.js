@@ -8,7 +8,33 @@
   };
   let selected = 'small';
   const $ = id => document.getElementById(id);
-  $('v2-menu').addEventListener('click',()=>{const open=$('v2-menu').getAttribute('aria-expanded')!=='true';$('v2-menu').setAttribute('aria-expanded',String(open));$('v2-menu').setAttribute('aria-label',open?'Close navigation':'Open navigation');$('v2-navigation').classList.toggle('open',open)});
+  // Keep the downloadable simulator's menu independent of sitewide assets.
+  const menu = $('v2-menu');
+  const nav = $('v2-navigation');
+  const header = menu.closest('header');
+  const setMenu = open => {
+    menu.setAttribute('aria-expanded', String(open));
+    menu.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+    nav.classList.toggle('open', open);
+  };
+  menu.addEventListener('click', () => setMenu(menu.getAttribute('aria-expanded') !== 'true'));
+  nav.addEventListener('click', event => { if (event.target.closest('a')) setMenu(false); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') {
+      setMenu(false);
+      menu.focus({preventScroll:true});
+    }
+  });
+  for (const type of ['click', 'focusin']) {
+    document.addEventListener(type, event => { if (!header.contains(event.target)) setMenu(false); });
+  }
+  addEventListener('pageshow', () => setMenu(false));
+  const wide = matchMedia('(min-width:541px)');
+  wide.addEventListener('change', event => {
+    if (!event.matches && nav.contains(document.activeElement)) setMenu(true);
+    else setMenu(false);
+  });
+  header.classList.add('nav-ready');
   const swatchNames = {'#6bd8ff':'ICE BLUE','#ff4b58':'RED','#ffae45':'AMBER','#82ec87':'GREEN','#8a94ff':'VIOLET','#fff2d6':'WARM WHITE'};
   const minX=79.91, maxX=204.71, minY=36.92, maxY=75.29, W=maxX-minX, H=maxY-minY;
   const x = v => v-(minX+maxX)/2, y = v => (minY+maxY)/2-v;

@@ -257,7 +257,7 @@ def case_navigation(source, slug, title):
                  ('details', 'Engineering'), ('explore', 'Assembly'),
                  ('build', 'Development'), ('verification', 'Evidence')]
     path = '/v2/projects/' + slug + '/'
-    markup = f'<nav class="v2-case-nav" aria-label="Case study sections"><div class="shell"><a class="v2-case-back" href="/v2/projects/">← <span>All work</span></a><span class="v2-case-nav-title">{escape(title)}</span><div class="v2-case-nav-links">'
+    markup = f'<nav class="v2-case-nav" aria-label="Case study sections" data-v2-case-section-nav><div class="shell"><a class="v2-case-back" href="/v2/projects/#collection" aria-label="All work">← <span>All work</span></a><span class="v2-case-nav-title">{escape(title)}</span><div class="v2-case-nav-links">'
     markup += ''.join(f'<a href="{path}#{anchor}" data-v2-section>{label}</a>' for anchor, label in links)
     markup += '</div></div><span class="v2-reading-progress" data-v2-progress aria-hidden="true"></span></nav>'
     old = tree.find('nav', 'project-flow')
@@ -268,7 +268,7 @@ def case_navigation(source, slug, title):
 
 def continuation(slug):
     if slug in TOOL_ROUTES:
-        return '<nav class="v2-continue shell" aria-label="Portfolio"><a class="v2-all-work" href="/v2/projects/">View projects <span aria-hidden="true">↗</span></a></nav>'
+        return '<nav class="v2-continue shell" aria-label="Portfolio"><a class="v2-all-work" href="/v2/projects/#collection">View projects <span aria-hidden="true">↗</span></a></nav>'
     if slug == 'skylabs/boards/telemetry':
         prev, nxt = 'skylabs', 'skylabs/boards/ground-station'
     elif slug == 'skylabs/boards/ground-station':
@@ -280,7 +280,7 @@ def continuation(slug):
     return f'''<nav class="v2-continue shell" aria-label="More project stories"><p class="eyebrow">Continue exploring</p><div>
       <a href="/v2/projects/{prev}/"><span>← Previous case study</span><strong>{escape(labels[prev])}</strong></a>
       <a href="/v2/projects/{nxt}/"><span>Next case study →</span><strong>{escape(labels[nxt])}</strong></a>
-    </div><a class="v2-all-work" href="/v2/projects/">View the complete collection <span aria-hidden="true">↗</span></a></nav>'''
+    </div><a class="v2-all-work" href="/v2/projects/#collection">View the complete collection <span aria-hidden="true">↗</span></a></nav>'''
 
 
 def hardware_viewer(model, title, identifier, manifest=None, poster=None):
@@ -514,6 +514,8 @@ def make_case(path, slug=None, source=None):
     if 'class="engineering-brief' not in source and slug in BRIEFS and slug != 'dash':
         brief = '<dl class="engineering-brief shell" aria-label="Engineering brief">' + ''.join(f'<div><dt>{escape(a)}</dt><dd>{escape(b)}</dd></div>' for a, b in BRIEFS[slug]) + '</dl>'
         source = source.replace('</section>', '</section>\n' + brief, 1)
+    # The closed gallery dialog does not need its placeholder image at startup.
+    source = re.sub(r'(<img src="[^"]+" alt="") data-lightbox-image', r'\1 loading="lazy" data-lightbox-image', source)
     source = common(source, 'v2-case')
     return case_navigation(source, slug, title)
 

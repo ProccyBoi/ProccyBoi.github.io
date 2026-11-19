@@ -360,3 +360,23 @@ body.v2-collection { min-height: 100vh; min-height: 100svh; }
 .v2-case:not(.v3) .project-hero-media{position:relative}
 .v2-case .project-hero-media .v2-media-label{position:absolute;left:16px;right:16px;bottom:12px;padding:8px 10px;background:var(--v2-bg);color:var(--v2-muted);font:400 13px/1.5 var(--v2-font)}
 @media(max-width:700px){.v2-evidence-grid{grid-template-columns:1fr;gap:24px}.v2-case .v2-engineering-evidence{scroll-margin-top:calc(var(--header-height) + 4.4rem);padding-block:26px 36px}.v2-evidence-note p{font-size:15px}.v2-case .project-hero-media .v2-media-label{position:static;padding:10px 0;margin:0;font-size:13px}}
+
+/* On a phone, let case links wrap instead of concealing the last section in
+   an unmarked horizontal scroll area. Keep anchor targets below both rows.
+   The data hook opts in v2 only; legacy versions also load this stylesheet. */
+@media (max-width: 520px) {
+  [data-v2-case-section-nav] > .shell { gap: .6rem; }
+  [data-v2-case-section-nav] .v2-case-back {
+    display: inline-flex; align-items: center; gap: .3rem; min-height: 2.75rem; flex: none;
+  }
+  [data-v2-case-section-nav] .v2-case-back span { display: inline; }
+  [data-v2-case-section-nav] .v2-case-nav-links {
+    flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 0 .75rem;
+    overflow: visible;
+  }
+  [data-v2-case-section-nav] .v2-case-nav-links a { min-height: 2.75rem; }
+  [data-v2-case-section-nav] .v2-case-nav-links a:focus-visible { outline-offset: -2px; }
+  .v2-case:has([data-v2-case-section-nav]) :is(#main, #overview, #explore, #assembly, #details, #build, #boards, #engineering, #aircraft, #simulator, #verification) {
+    scroll-margin-top: calc(var(--header-height) + 6.25rem);
+  }
+}

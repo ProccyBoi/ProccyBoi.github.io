@@ -13,7 +13,10 @@ const helpers=segment('  const clamp =','  let renderer,');
 const choreography=segment('  const pose =','  const render =');
 const captions=segment('  const captionAt =','  const updateProgress =');
 for(const [width,height] of [[1440,900],[1280,900],[390,844],[320,740]]){
-  const context=vm.createContext({stage:{clientWidth:width,clientHeight:height},innerWidth:width,devicePixelRatio:1,width:0,height:0,desiredRatio:0,revision:0,renderer:null,poses:[],updateProgress(){},refreshVisibility(){},request(){},active:-1,projects:[{title:'TramTrace'},{title:'Dash'},{title:'Pi'}],root:{dataset:{},querySelector:()=>({})},caption:{style:{},classList:{toggle(){}},setAttribute(){}},setExploreProject(){},selectors:[]});
+  // Production measures the masthead once during layout; use the observed
+  // desktop/phone copy boxes as layout inputs, not a synthetic zero-height box.
+  const intro={offsetTop:0,offsetHeight:width<=600?319:312};
+  const context=vm.createContext({intro,stage:{clientWidth:width,clientHeight:height},innerWidth:width,devicePixelRatio:1,width:0,height:0,desiredRatio:0,revision:0,renderer:null,poses:[],updateProgress(){},refreshVisibility(){},request(){},active:-1,projects:[{title:'TramTrace'},{title:'Dash'},{title:'Pi'}],root:{dataset:{},querySelector:()=>({})},caption:{style:{},classList:{toggle(){}},setAttribute(){}},setExploreProject(){},selectors:[]});
   vm.runInContext(`${helpers}\n${choreography}\n${captions}\nlayout();globalThis.inspect=value=>{captionAt(value);return{positions:poses.map(keys=>interpolate(keys,value)),opacity:Number(caption.style.opacity)}};`,context);
   for(const [start,end] of [[.34,.445],[.65,.765]])for(let p=start;p<=end;p+=.0005){
     const state=context.inspect(p);

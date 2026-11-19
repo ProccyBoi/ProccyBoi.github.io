@@ -218,12 +218,20 @@
     const startScale = small ? Math.min(3.6,half*1.45)*(width<360?.9:1) : Math.min(4.15,half*.6);
     const left = small ? -half*.47 : -half*.72;
     const right = small ? half*.53 : half*.69;
-    const leadStart=startScale*(small?1.2:1.7);
-    const sideStart=startScale*(small?.57:.8);
+    // Keep the three opening silhouettes clear of the masthead and controls.
+    // The same optical scale feeds each poster and its replacement CAD.
+    const leadStart=startScale*(small?.96:1.38);
+    const sideStart=startScale*(small?.50:.76);
+    // In the settled hero camera the tallest uppermost vertices rise .39
+    // (Dash) / .75 (Pi) scale units above the projected origin. Measure the
+    // real copy on layout, never per draw; rounded bounds leave a 14px gap.
+    const copyTop=small ? 5-(intro.offsetTop+intro.offsetHeight+14)*10/height : 0;
+    const dashY=small ? Math.min(.47,copyTop-.39*sideStart) : -.8;
+    const piY=small ? Math.min(.42,copyTop-.75*sideStart) : -.8;
     poses = [
-      [pose(0,0,small?-1.9:-.95,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.445,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
-      [pose(0,left,small ? -.2 : -.8,sideStart,.02,.08,-.04),pose(.10,-off,-1,sideStart,.02,.08,-.04),pose(.31,off,-.6,scale,.02,-.05,.02),pose(.385,focusX,focusY,scale,0,0,0),pose(.565,focusX,focusY-.15,scale*(small?.94:1),.02,.04,0,1),pose(.65,focusX,focusY,scale,0,0,0),pose(.765,-off,1,scale,.03,-.12,-.04),pose(1,-off,1,scale,.03,-.12,-.04)],
-      [pose(0,right,small ? -.25 : -.8,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.625,off,-.2,scale,1.1,.1,-.05),pose(.695,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
+      [pose(0,0,small?-1.20:-1.02,leadStart,1.04,-.12,-.2),pose(.135,focusX,focusY,tramScale,1.12,.05,-.1),pose(.265,focusX,focusY-.22,tramScale,.84,-.13,-.14,1),pose(.34,focusX,focusY,tramScale,1.3,0,0),pose(.445,-off,1,tramScale,.92,.65,-.35),pose(1,-off,1,tramScale,.92,.65,-.35)],
+      [pose(0,left,dashY,sideStart,.02,.08,-.04),pose(.10,-off,-1,sideStart,.02,.08,-.04),pose(.31,off,-.6,scale,.02,-.05,.02),pose(.385,focusX,focusY,scale,0,0,0),pose(.565,focusX,focusY-.15,scale*(small?.94:1),.02,.04,0,1),pose(.65,focusX,focusY,scale,0,0,0),pose(.765,-off,1,scale,.03,-.12,-.04),pose(1,-off,1,scale,.03,-.12,-.04)],
+      [pose(0,right,piY,sideStart,1.05,.22,.24),pose(.11,off,-1,sideStart,1.05,.22,.24),pose(.625,off,-.2,scale,1.1,.1,-.05),pose(.695,focusX,focusY,scale,1.12,.05,-.1),pose(.88,focusX,focusY-(small?.05:.12),scale*.76,.83,.18,-.23,1),pose(1,focusX,focusY,scale,1.12,.35,-.1)]
     ];
     updateProgress();
     refreshVisibility();
