@@ -10,11 +10,30 @@
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
  function staticCaption(){title.textContent='The two airframes';caption.textContent='Trainer and competition taildragger';bar.style.transform='scaleX(0)';}
  const allowed=()=>!reduced.matches&&!navigator.connection?.saveData&&innerHeight>=560;
- const script=(url,test)=>new Promise((resolve,reject)=>{if(test())return resolve();let el=[...document.scripts].find(s=>new URL(s.src,location.href).pathname===url);if(!el){el=document.createElement('script');el.src=url;document.head.append(el);}el.addEventListener('load',resolve,{once:true});el.addEventListener('error',reject,{once:true});});
- async function asset(slug,file="assembly.glb.gz"){
-  const response=await fetch('/assets/models/aircraft/'+slug+'/'+file);if(!response.ok)throw Error('Model download failed');
-  const bytes=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-  return new Promise((resolve,reject)=>new THREE.GLTFLoader().parse(bytes,'',g=>resolve(g.scene),reject));
+ const script=(url,test)=>new Promise((resolve,reject)=>{if(test())return resolve();const path=new URL(url,location.href).pathname;let el=[...document.scripts].find(s=>s.src&&new URL(s.src,location.href).pathname===path);if(!el){el=document.createElement('script');el.src=url;document.head.append(el);}el.addEventListener('load',resolve,{once:true});el.addEventListener('error',reject,{once:true});});
+ const aircraftRoot='/assets/models/aircraft/';
+ const trainerMarks=['left-inner','left-outer','right-inner','right-outer','side-negative','side-positive'];
+ const competitionMarks=['left-white','left-blue','right-white','right-blue'];
+ async function aircraftAsset(slug,name,packed){
+  const parse=async(usePacked)=>{
+   const path=aircraftRoot+slug+'/'+name+(usePacked?'.meshopt':'')+'.glb.gz';
+   const bytes=await window.V2ReadBinaryResponse(await fetch(path));
+   const loader=new THREE.GLTFLoader();if(usePacked)loader.setMeshoptDecoder(window.MeshoptDecoder);
+   return new Promise((resolve,reject)=>loader.parse(bytes,'',g=>resolve(g.scene),reject));
+  };
+  // Original unmodified CAD stays independently usable on decoder or pack failure.
+  if(packed){try{return await parse(true);}catch(_){/* try the original GLB */}}
+  return parse(false);
+ }
+ async function markings(T,slug,names,trainer=false){
+  const texture=url=>new Promise((resolve,reject)=>new T.TextureLoader().load(url,resolve,undefined,reject));
+  const pairs=await Promise.all(names.map(async name=>{
+   const path=aircraftRoot+slug+'/livery/'+name;let map;
+   try{map=await texture(path+'.webp');}
+   catch(_){try{map=await texture(path+'.png'+(trainer?'?v=trainer-20261105b':''));}catch(_){return null;}}
+   map.encoding=T.sRGBEncoding;if(trainer)map.anisotropy=8;return [name,map];
+  }));
+  return Object.fromEntries(pairs.filter(Boolean));
  }
  function wrap(source,isPlane){
   const T=THREE,group=new T.Group();group.add(source);
@@ -25,46 +44,60 @@
    node.material=new T.MeshStandardMaterial({color:/CF_|spar|Wheel|Prop|motor/i.test(name)?0x293449:/Sensor|Cart/i.test(name)?0x83aade:0xc7b9a1,roughness:.65,metalness:.08,envMapIntensity:.35,side:T.DoubleSide});node.material.color.convertSRGBToLinear();
   });return group;
  }
- // Four authored compositions, driven only by scroll: overhead formation,
- // skin lifting off the wing, a side elevation of the carriage, and the aircraft
- // with its sensor extended. Use stage aspect (not viewport width); a narrow
- // laptop split view needs the same fit protection as a phone.
- function frameCamera(T,aspect,p,focus){
-  const portrait=clamp((1.30-aspect)/.54);
+ // A chase shot, not an object turntable. Fly both airframes into a brief
+ // formation hold; let the trainer bank out before looking through the skin.
+ // Axes: +X nose, +Y up. One world-space pose per scroll position in either
+ // direction; no elapsed-time flight or camera state to reset on retrieval.
+ const beat=(p,a,b)=>smooth((p-a)/(b-a));
+ function flyPair(p,portrait){
+  const lead=beat(p,0,.19),join=beat(p,.018,.245),follow=beat(p,.31,.49);
+  const breakaway=beat(p,.295,.49),round=Math.sin(Math.PI*breakaway);
+  const cx=-.64*(1-portrait),cy=-.13-.20*portrait,cz=.36*(1-portrait);
+  const tx=.65*(1-portrait),ty=.18+.28*portrait,tz=-.48*(1-portrait);
+  // They fly nose-first from depth on two staggered paths. Begin fully in
+  // frame even on narrow screens; perspective, not a miniature-to-full-size
+  // scale trick, gives the incoming aircraft their change in apparent size.
+  plane.position.set(cx*(1-follow)-(1.22-.70*portrait)*(1-join),
+   cy*(1-follow)+.06*follow+.19*(1-join),cz*(1-follow)-1.66*(1-join));
+  plane.rotation.set(.025+.16*(1-join)-.065*Math.sin(Math.PI*join),
+   -.18-.42*(1-join),.055*(1-join));
+  plane.scale.setScalar(.80-.18*portrait+follow*(.12+.18*portrait));plane.visible=true;
+  trainer.position.set(tx-(.86-.51*portrait)*(1-lead)+breakaway*3.70,
+   ty+.21*(1-lead)+breakaway*.85,tz-.99*(1-lead)-breakaway*.55);
+  trainer.rotation.set(.045-.23*(1-lead)+.53*round,-.21-.29*(1-lead)+.33*breakaway,
+   .055*(1-lead)+.16*round);
+  trainer.scale.setScalar(.74-.17*portrait);trainer.visible=breakaway<.999;
+  return follow;
+ }
+ function frameCamera(T,aspect,p,follow){
+  const portrait=clamp((1.68-aspect)/.82);
   const widthFit=1/Math.min(1,aspect/.66),midFit=1/Math.min(1,aspect/1.12);
   const local=(x,y,z)=>plane.localToWorld(new T.Vector3(x,y,z));
   const pose=(target,x,y,z,fit=1)=>({target,offset:new T.Vector3(x,y,z).multiplyScalar(fit)});
   const mix=(a,b,t)=>{a.target.lerp(b.target,t);a.offset.lerp(b.offset,t);return a;};
-  const formation=pose(new T.Vector3(-.04,-.075,0),1.25,1.38,2.10,1.06+portrait*.20);
-  formation.offset.multiplyScalar(widthFit);
-  // Move with the exhibition aircraft while the trainer leaves the composition.
-  const skin=pose(local(.02,-.06,0),1.09,1.64,1.77,midFit*1.07);
-  const close=pose(local(.352,-.034,0),.050,-.012,.81,1/Math.min(1,aspect/.92));
-  // The final sightline clears the wing and leaves the suspended sensor above
-  // the caption; it is a wider side elevation, not a return to the arrival view.
-  const payout=pose(local(.045,-.16,0),.83,.40,1.79,midFit*(1+.12*portrait));
-  mix(formation,skin,focus);
-  mix(formation,close,smooth((p-.48)/.13));
-  mix(formation,payout,smooth((p-.725)/.175));
-  camera.position.copy(formation.target).add(formation.offset);
-  camera.aspect=aspect;camera.lookAt(formation.target);camera.updateProjectionMatrix();
+  const approach=1-beat(p,.01,.24);
+  const chase=pose(new T.Vector3(.105-(.80-.50*portrait)*approach,-.085+.06*approach,-.58*approach),
+   1.21+.23*approach,1.31-.11*approach,2.01+.48*approach,(1.05+portrait*.19)*widthFit);
+  const skin=pose(local(.02,-.055,0),1.07,1.49,1.69,midFit*1.05);
+  // The skin has its own shot before the lens drops under the wing. Stay
+  // alongside the cart at its lower stop; do not turn the side view into
+  // a fly-through while the small internal stroke is the subject.
+  const carriage=pose(local(.352,-.04,0),.065,-.009,.77,1/Math.min(1,aspect/.92));
+  // Start widening just before payout, then tilt with the falling sensor.
+  // The last few percent are a still end plate with the entire tether visible.
+  const reach=beat(p,.78,.955);
+  const tow=pose(local(.078,-.087-.087*reach,0),.83,.34+.035*reach,1.76,midFit*(1+.12*portrait));
+  mix(chase,skin,follow);mix(chase,carriage,beat(p,.495,.607));mix(chase,tow,beat(p,.738,.882));
+  camera.position.copy(chase.target).add(chase.offset);
+  camera.aspect=aspect;camera.lookAt(chase.target);camera.updateProjectionMatrix();
  }
  function draw(value){
-  if(!ready)return;progress=clamp(value);const T=THREE,w=stage.clientWidth,h=stage.clientHeight,aspect=w/h,portrait=clamp((1.30-aspect)/.54);
+  if(!ready)return;progress=clamp(value);const T=THREE,w=stage.clientWidth,h=stage.clientHeight,aspect=w/h,portrait=clamp((1.68-aspect)/.82);
   const dpr=Math.min(devicePixelRatio,1.5);if(renderer.getPixelRatio()!==dpr)renderer.setPixelRatio(dpr);if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);
-  const arrival=smooth((progress-.035)/.195),trainerArrival=smooth(progress/.17);
-  const focus=smooth((progress-.28)/.195),returnWide=smooth((progress-.725)/.225);
-  // Finish the 25 mm carriage stroke, hold briefly, then pay out the sensor.
-  // Every pose derives from scroll progress, so retrieval is the exact reverse.
-  const lower=.025*smooth((progress-.60)/.10),deploy=smooth((progress-.78)/.19),drop=lower+.45*deploy,peel=smooth((progress-.28)/.27),inspect=smooth((progress-.51)/.10);
-  // The trainer leads from the rear. Stack the pair in portrait instead of
-  // squeezing a landscape formation or shrinking its decals into the margins.
-  const cx=-.67*(1-portrait),cy=-.11-.23*portrait,cz=.35*(1-portrait);
-  plane.position.set(cx*(1-focus)-.52*(1-arrival),cy*(1-focus)+.075*focus+.13*(1-arrival),cz*(1-focus)-.46*(1-arrival));
-  plane.rotation.set(.025+.095*(1-arrival),-.18+.13*(1-arrival),-.11*(1-arrival));
-  plane.scale.setScalar(.80-.18*portrait+focus*(.12+.18*portrait));plane.visible=true;
-  trainer.position.set(.65*(1-portrait)-.29*(1-trainerArrival)+focus*2.5,.18+.30*portrait+.16*(1-trainerArrival)+focus*.52,-.47*(1-portrait)-.32*(1-trainerArrival)-focus*.7);
-  trainer.rotation.set(.045+.12*(1-trainerArrival),-.21+.19*(1-trainerArrival),-.085*(1-trainerArrival));trainer.scale.setScalar(.74-.17*portrait);trainer.visible=focus<.995;
+  const focus=flyPair(progress,portrait),returnWide=beat(progress,.738,.905);
+  // Let the peel trail the trainer's hand-off, so the marked wings can be
+  // compared intact. Carriage stroke and tether travel stay at source scale.
+  const lower=.025*beat(progress,.60,.70),deploy=beat(progress,.78,.955),drop=lower+.45*deploy,peel=beat(progress,.355,.555),inspect=beat(progress,.525,.61);
   // Only authored film peels. Structural CAD and the complete internal carriage
   // remain aboard; the cart lowers on the internal guides before sensor release.
   films.forEach((part,index)=>{const amount=clamp(peel-(index%4)*.018*Math.sin(Math.PI*peel));part.patches.forEach(patch=>patch.deform(amount));part.group.position.copy(part.normal).multiplyScalar(.10*smooth((amount-.65)/.35));part.material.opacity=1-smooth((amount-.85)/.15);part.material.transparent=part.material.opacity<1;part.material.depthWrite=part.material.opacity>.95;part.group.visible=amount<.999;});
@@ -95,11 +128,12 @@
   points.push(...new T.QuadraticBezierCurve3(guide,mid,attach).getPoints(32).slice(1));
   line.geometry.dispose();line.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(points,false,'centripetal'),160,.00065,6,false);line.userData.anchor=points[0].toArray();line.userData.attachment=attach.toArray();line.userData.slack=slack;line.visible=peel>.8;
   renderer.render(scene,camera);bar.style.transform='scaleX('+progress+')';
-  const label=progress<.28?['The two airframes','Trainer and competition taildragger']:progress<.52?['Beneath the Solarfilm','The covering lifts from the wing.']:progress<.76?['Inside the fuselage','The carriage lowers before release.']:['Sensor deployment','The sensor drops. The carriage stays aboard.'];
-  if(title.textContent!==label[0]){title.textContent=label[0];caption.textContent=label[1];}
+  const label=progress<.31?['The two airframes','The trainer leads the competition taildragger into formation.']:progress<.525?['Beneath the Solarfilm','The trainer banks away as the competition wing opens.']:progress<.765?['Inside the fuselage','The carriage lowers inside the aircraft before release.']:progress<.955?['Sensor deployment','The sensor leaves the belly on its front-notch tether.']:['On tow','The carriage stays aboard. Scroll back to retrieve the sensor.'];
+  if(title.textContent!==label[0])title.textContent=label[0];
+  if(caption.textContent!==label[1])caption.textContent=label[1];
   root.dataset.fleetProgress=progress.toFixed(4);
  }
- function tick(){frame=0;if(!ready||!active||document.hidden||!allowed())return;const r=track.getBoundingClientRect();draw(clamp((110-r.top)/Math.max(1,track.offsetHeight-stage.offsetHeight)));}
+ function tick(){frame=0;if(!ready||!active||document.hidden||!allowed())return;const r=track.getBoundingClientRect(),inset=parseFloat(getComputedStyle(stage).top)||0;draw(clamp((inset-r.top)/Math.max(1,track.offsetHeight-stage.offsetHeight)));}
  function queue(){if(!frame&&ready&&active&&allowed()&&!document.hidden)frame=requestAnimationFrame(tick);}
  async function start(){if(loading||ready||failed||!allowed())return;loading=true;root.dataset.fleetState='loading';
   try{
@@ -109,12 +143,41 @@
    // If unavailable the accessible still is already on screen.
    if(!allowed()){loading=false;root.dataset.fleetState='static';return;}
    renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,preserveDrawingBuffer:true});
-   await script('/assets/vendor/GLTFLoader.js',()=>!!window.THREE.GLTFLoader);
-   await script('/assets/v3-aircraft-scene.js?v=trainer-20261105b',()=>!!window.V3AircraftScene);await script('/assets/v2-hero-environment.js',()=>!!window.V2ProductStudio);await script('/assets/v2-skylabs-film.js',()=>!!window.V2SkylabsFilm);await script('/assets/v2-hero-assets.js',()=>!!window.V2HeroAssets);await script('/assets/v3-aircraft-electronics.js',()=>!!window.V3AircraftElectronics);await script('/assets/v2-skylabs-systems.js',()=>!!window.V2SkylabsSystems);
-   const models=await Promise.all([asset('skylabs-competition'),asset('skylabs-mechanism'),window.V3AircraftScene.load(window.THREE,{trainerLivery:true}),asset('skylabs-mechanism','sensor-body.glb.gz'),fetch('/assets/models/aircraft/skylabs-competition/solarfilm.json.gz').then(async response=>{if(!response.ok)throw Error('Film unavailable');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}),window.V2HeroAssets.load('telemetry'),Promise.all(['left-white','left-blue','right-white','right-blue'].map(name=>new Promise((resolve,reject)=>new THREE.TextureLoader().load('/assets/models/aircraft/skylabs-competition/livery/'+name+'.png',resolve,undefined,reject)))).catch(()=>null)]);const T=THREE;
-   const livery=models[6]?Object.fromEntries(['left-white','left-blue','right-white','right-blue'].map((name,index)=>{const texture=models[6][index];texture.encoding=T.sRGBEncoding;return [name,texture];})):{};root.dataset.fleetLivery=models[6]?'ready':'unavailable';
+   const T=window.THREE;
+   // These modules register factories. None requires another until its factory
+   // is called below. Overlap their transfers only after verifying real WebGL.
+   const decoder=window.WebAssembly
+    ?script('/assets/vendor/meshopt_decoder.js',()=>!!window.MeshoptDecoder).then(async()=>{await window.MeshoptDecoder.ready;return !!window.MeshoptDecoder.supported;}).catch(()=>false)
+    :Promise.resolve(false);
+   const [,packed]=await Promise.all([
+    Promise.all([
+     script('/assets/vendor/GLTFLoader.js',()=>!!T.GLTFLoader),
+     script('/assets/v3-aircraft-scene.js?v=trainer-20261105b',()=>!!window.V3AircraftScene),
+     script('/assets/v2-hero-environment.js',()=>!!window.V2ProductStudio),
+     script('/assets/v2-skylabs-film.js',()=>!!window.V2SkylabsFilm),
+     script('/assets/v2-hero-assets.js',()=>!!window.V2HeroAssets),
+     script('/assets/v3-aircraft-electronics.js',()=>!!window.V3AircraftElectronics),
+     script('/assets/v2-skylabs-systems.js',()=>!!window.V2SkylabsSystems)
+    ]),decoder
+   ]);
+   if(!allowed()){renderer.dispose();renderer=null;loading=false;root.dataset.fleetState='static';return;}
+   // Deliver the two appearances as a single draw, but no longer serialize the
+   // artwork and studio environment behind the last CAD decode.
+   const models=await Promise.all([
+    aircraftAsset('skylabs-competition','assembly',packed),
+    aircraftAsset('skylabs-mechanism','assembly',packed),
+    window.V3AircraftScene.load(T),
+    aircraftAsset('skylabs-mechanism','sensor-body',packed),
+    fetch(aircraftRoot+'skylabs-competition/solarfilm.json.gz').then(r=>window.V2ReadBinaryResponse(r)).then(b=>JSON.parse(new TextDecoder().decode(b))),
+    window.V2HeroAssets.load('telemetry'),
+    markings(T,'skylabs-competition',competitionMarks),
+    markings(T,'skylabs-trainer',trainerMarks,true),
+    window.V2HeroEnvironment.load(T)
+   ]);
+   const livery=models[6];models[2].trainerLivery=models[7];
+   root.dataset.fleetLivery=Object.keys(livery).length===competitionMarks.length?'ready':'unavailable';
    scene=new T.Scene();camera=new T.PerspectiveCamera(37,1,.2,20);renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.8;
-   window.V2ProductStudio.configureRenderer(renderer,T);scene.environment=await window.V2HeroEnvironment.load(T);const studio=window.V2ProductStudio.createLights(T,scene);renderer.toneMappingExposure=.72;studio.key.shadow.normalBias=.0006;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+   window.V2ProductStudio.configureRenderer(renderer,T);scene.environment=models[8];const studio=window.V2ProductStudio.createLights(T,scene);renderer.toneMappingExposure=.72;studio.key.shadow.normalBias=.0006;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
    plane=wrap(models[0],true);mechanism=wrap(models[1],false);trainer=new T.Group();trainer.name='fleet-trainer';plane.name='fleet-competition';window.V3AircraftScene.applyTrainerLivery(T,models[2],true);const sourceTrainer=models[2].group;trainer.add(sourceTrainer);sourceTrainer.traverse(node=>{if(node.userData.category==='covering')node.traverse(mesh=>{if(!mesh.isMesh)return;const materials=(Array.isArray(mesh.material)?mesh.material:[mesh.material]).map(material=>{const copy=material.clone();copy.polygonOffset=true;copy.polygonOffsetFactor=-2;copy.polygonOffsetUnits=-2;return copy;});mesh.material=materials.length===1?materials[0]:materials;});});sourceTrainer.updateMatrixWorld(true);sourceTrainer.position.sub(new T.Box3().setFromObject(sourceTrainer).getCenter(new T.Vector3()));scene.add(plane,trainer);plane.add(mechanism);mechanism.position.set(.36381582,-.0246424995,0);mechanismSource=models[1];
    const materialsOf=object=>{const result=[];object.traverse(mesh=>{if(!mesh.isMesh)return;const copies=(Array.isArray(mesh.material)?mesh.material:[mesh.material]).map(m=>m.clone());mesh.material=copies.length===1?copies[0]:copies;result.push(...copies);});return result;};
    models[1].traverse(object=>{const name=object.userData.sourceName;if(name==='Sensor V2, 300mm Length'){supersededSensor=object;object.visible=false;}else if(name&&name!=='V2 Assembly'){if(name==='Cart V2')cart=object;housing.push({object,rest:object.position.clone(),materials:materialsOf(object)});}});
