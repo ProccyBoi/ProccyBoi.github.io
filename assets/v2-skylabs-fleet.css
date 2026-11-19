@@ -10,16 +10,16 @@
 .fleet-stage canvas{opacity:0;transition:opacity .2s}
 .skylabs-fleet[data-fleet-state=ready] canvas{opacity:1}
 .skylabs-fleet[data-fleet-state=ready] .fleet-still{visibility:hidden}
-.fleet-caption{position:absolute;left:5vw;bottom:1.5rem;right:5vw;pointer-events:none;font-size:.88rem;color:#bac9dd}
-.fleet-caption strong{display:block;color:#f1f5fa;font-size:1rem;margin-bottom:.3rem}
+.fleet-caption{position:absolute;left:5vw;bottom:1.5rem;right:5vw;pointer-events:none;font-size:.88rem;color:#c3cfdb;line-height:1.45;max-width:38rem}
+.fleet-caption strong{display:block;color:#f1f5fa;font-size:clamp(1.05rem,1.7vw,1.45rem);line-height:1.18;letter-spacing:-.025em;margin-bottom:.32rem}
 .fleet-progress{position:absolute;bottom:0;height:2px;background:var(--fleet-blue);width:100%;transform:scaleX(0);transform-origin:left}
-.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:215svh}
+.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:265svh}
 .skylabs-fleet[data-fleet-state=ready] .fleet-stage{position:sticky;top:110px;height:calc(100svh - 130px);max-height:800px}
 .fleet-notes{padding:2rem 5vw 3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;max-width:1280px;margin:auto}
 .fleet-notes h3{font-size:1.1rem;margin:0 0 .7rem;color:#e9eef6}
 .fleet-notes p{font-size:.92rem;margin:.5rem 0}
 .fleet-status{padding:0 5vw;margin:0!important;font-size:.85rem}
-@media(max-width:680px){.skylabs-fleet-header{display:block;padding-top:2rem}.fleet-notes{grid-template-columns:1fr;gap:1rem}.fleet-stage{height:460px}.skylabs-fleet[data-fleet-state=ready] .fleet-stage{top:100px;min-height:320px}.fleet-caption{font-size:.78rem;bottom:1rem}.fleet-caption strong{font-size:.9rem}}
+@media(max-width:680px){.skylabs-fleet-header{display:block;padding-top:2rem}.fleet-notes{grid-template-columns:1fr;gap:1rem}.fleet-stage{height:460px}.skylabs-fleet[data-fleet-state=ready] .fleet-stage{top:100px;min-height:320px}.fleet-caption{font-size:.86rem;bottom:1.2rem}.fleet-caption strong{font-size:1.05rem}}
 @media(prefers-reduced-motion:reduce){.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:auto}.skylabs-fleet[data-fleet-state=ready] .fleet-stage{position:relative;top:0}.fleet-stage canvas{transition:none}}
 @media(prefers-reduced-motion:reduce){.skylabs-fleet .fleet-stage canvas{display:none}.skylabs-fleet .fleet-poster{visibility:visible!important}}
 

@@ -19,15 +19,27 @@ const skin=JSON.parse(zlib.gunzipSync(fs.readFileSync('assets/models/aircraft/sk
  try{
   for(const [label,viewport] of [['desktop',{width:1440,height:1000}],['mobile',{width:390,height:844}]]){
    const page=await open({viewport});await page.locator('#aircraft').scrollIntoViewIfNeeded();await page.waitForFunction(()=>window.__skylabsFleet?.ready,null,{timeout:90000});
-   await page.evaluate(()=>scrollTo(0,scrollY+document.querySelector('.fleet-track').getBoundingClientRect().top-110));await page.waitForTimeout(150);
-   const arrival=await page.evaluate(()=>{const f=__skylabsFleet,T=THREE,v=new T.Vector3();let max=0;
-    for(const phase of [0,.12,.24]){f.seek(phase);for(const name of ['fleet-trainer','fleet-competition']){
-     const craft=f.scene.getObjectByName(name);if(!craft.visible)throw Error(name+' missing from arrival');
-     craft.traverseVisible(m=>{if(!m.isMesh)return;const points=m.geometry.attributes.position;
-      for(let i=0;i<points.count;i++){v.fromBufferAttribute(points,i).applyMatrix4(m.matrixWorld).project(f.camera);max=Math.max(max,Math.abs(v.x),Math.abs(v.y));}});
-    }}return max;});
-   assert.ok(arrival<1,'Both complete airframes should already be visible and remain in frame through arrival: '+arrival);
-   for(const p of [.1,.24,.38,.43,.58,.62,.70,.74,.82,1]){await page.evaluate(p=>window.__skylabsFleet.seek(p),p);await page.locator('.fleet-stage').screenshot({path:'.codex-temp/fleet/'+label+'-'+p+'.png'});}
+   await page.evaluate(()=>scrollTo(0,scrollY+document.querySelector('.fleet-track').getBoundingClientRect().top-parseFloat(getComputedStyle(document.querySelector('.fleet-stage')).top)));await page.waitForTimeout(150);
+   const arrival=await page.evaluate(()=>{
+    const f=__skylabsFleet,T=THREE,v=new T.Vector3(),series={};
+    for(const phase of [0,.09,.15,.19,.245,.29]){
+     f.seek(phase);const row=series[phase]={};
+     for(const name of ['fleet-trainer','fleet-competition']){
+      const craft=f.scene.getObjectByName(name),bounds=new T.Box2();
+      if(!craft.visible)throw Error(name+' missing from arrival');
+      craft.traverseVisible(m=>{if(!m.isMesh)return;const points=m.geometry.attributes.position;
+       for(let i=0;i<points.count;i++){v.fromBufferAttribute(points,i).applyMatrix4(m.matrixWorld).project(f.camera);bounds.expandByPoint(v);}});
+      row[name]={edges:[bounds.min.x,bounds.max.x,bounds.min.y,bounds.max.y],width:bounds.max.x-bounds.min.x};
+     }
+    }
+    return series;
+   });
+   for(const shot of Object.values(arrival))for(const craft of Object.values(shot))assert.ok(craft.edges.every(x=>Math.abs(x)<.985),'Neither wingtip may be clipped on approach: '+JSON.stringify(craft));
+   for(const name of ['fleet-trainer','fleet-competition']){
+    assert.ok(arrival[.245][name].width>arrival[0][name].width*1.15,'Approach should read as coming towards camera: '+name);
+    assert.deepEqual(arrival[.245][name],arrival[.29][name],'Hold the marked pair together before the trainer breaks formation');
+   }
+   for(const p of [0,.1,.245,.34,.38,.43,.58,.62,.70,.74,.82,.9,1]){await page.evaluate(p=>window.__skylabsFleet.seek(p),p);await page.locator('.fleet-stage').screenshot({path:'.codex-temp/fleet/'+label+'-'+p+'.png'});}
    assert.ok(await page.evaluate(()=>{const f=window.__skylabsFleet;f.seek(.3);return ['fleet-trainer','fleet-competition'].every(name=>f.scene.getObjectByName(name)?.visible);}), 'Both real aircraft visible in one frame');
    const film=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.24);const wrapped=f.films.every(p=>p.group.visible&&p.material.opacity===1&&p.patches.every(q=>q.amount===0));const image=f.renderer.domElement.toDataURL();f.seek(.43);const peeling=f.films.some(p=>p.patches.some(q=>q.peeled>0&&q.attached>0));f.seek(.62);const unwrapped=f.films.every(p=>!p.group.visible);f.seek(.24);return {wrapped,peeling,unwrapped,reversed:image===f.renderer.domElement.toDataURL(),notch:f.sensor.userData.frontNotchSource,bodySize:new THREE.Box3().setFromObject(f.sensor).getSize(new THREE.Vector3()).toArray(),mountOffset:f.sensor.userData.mountOffsetM,notchLocal:f.sensor.userData.tetherLocal.toArray(),external:!!f.scene.getObjectByName('illustrative-cradle-bracket')};});
    const markings=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.24);const meshes=[];f.filmGroup.traverse(o=>{if(o.isMesh)meshes.push(o);});return {mapped:meshes.filter(o=>o.material.map).map(o=>o.name).sort(),invalid:meshes.filter(o=>o.material.map&&!o.material.map.image?.complete).map(o=>o.name)};});
@@ -48,18 +60,19 @@ const skin=JSON.parse(zlib.gunzipSync(fs.readFileSync('assets/models/aircraft/sk
    const finalFraming=await page.evaluate(()=>{const f=__skylabsFleet,T=THREE;f.seek(1);f.scene.updateMatrixWorld(true);const limits={x:0,y:0},v=new T.Vector3();f.scene.getObjectByName('fleet-competition').traverse(mesh=>{if(!mesh.isMesh)return;for(let node=mesh;node;node=node.parent)if(!node.visible)return;const positions=mesh.geometry.attributes.position;for(let i=0;i<positions.count;i++){v.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld).project(f.camera);limits.x=Math.max(limits.x,Math.abs(v.x));limits.y=Math.max(limits.y,Math.abs(v.y));}});return limits;});assert.ok(finalFraming.x<.99&&finalFraming.y<.90,'Whole towed aircraft fits final frame: '+JSON.stringify(finalFraming));
    const stowed=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.3);const first=f.renderer.domElement.toDataURL(),pose=f.sensor.position.toArray();f.seek(1);f.seek(.3);return {same:first===f.renderer.domElement.toDataURL(),pose,rest:f.sensor.userData.rest.toArray(),restored:f.housing.every(p=>p.object.position.distanceTo(p.rest)<1e-12)};});assert.ok(stowed.same&&stowed.restored,'Complete deployment/retrieval restores original source poses and image');assert.deepEqual(stowed.pose,stowed.rest);
    // Ordinary native scroll must update in both directions without capture seeks.
-   for(const p of [.15,.82,.15]){await page.evaluate(p=>{const t=document.querySelector('.fleet-track'),s=document.querySelector('.fleet-stage');scrollTo(0,scrollY+t.getBoundingClientRect().top-110+p*(t.offsetHeight-s.offsetHeight));},p);await page.waitForFunction(p=>Math.abs(Number(document.querySelector('[data-skylabs-fleet]').dataset.fleetProgress)-p)<.02,p);}
+   for(const p of [.15,.82,.15]){await page.evaluate(p=>{const t=document.querySelector('.fleet-track'),s=document.querySelector('.fleet-stage');scrollTo(0,scrollY+t.getBoundingClientRect().top-parseFloat(getComputedStyle(s).top)+p*(t.offsetHeight-s.offsetHeight));},p);await page.waitForFunction(p=>Math.abs(Number(document.querySelector('[data-skylabs-fleet]').dataset.fleetProgress)-p)<.02,p);}
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
    await page.evaluate(()=>scrollTo(0,document.body.scrollHeight));await page.waitForFunction(()=>document.querySelector('.fleet-track').getBoundingClientRect().bottom < -400);await page.waitForTimeout(700);const old=await page.evaluate(()=>window.__skylabsFleet.renderer.info.render.frame);await page.waitForTimeout(250);assert.equal(await page.evaluate(()=>window.__skylabsFleet.renderer.info.render.frame),old,'Offscreen rendering stops');
    await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>matchMedia('(prefers-reduced-motion: reduce)').matches&&document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='static').catch(async error=>{console.error('Preference state',await page.evaluate(()=>({state:document.querySelector('[data-skylabs-fleet]').dataset.fleetState,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches})),errors);throw error;});assert.equal(await page.locator('[data-skylabs-fleet]').getAttribute('data-fleet-state'),'static');assert.ok(await page.locator('.fleet-poster').evaluate(n=>getComputedStyle(n).visibility==='visible'));
    await page.close();
   }
-  for(const kind of ['reduced','save-data','short','no-webgl','failed','context-loss','no-js']){
+  for(const kind of ['reduced','save-data','short','no-webgl','failed','compat','context-loss','no-js']){
    const requests=[];const options={viewport:{width:390,height:kind==='short'?500:844},reducedMotion:kind==='reduced'?'reduce':'no-preference',javaScriptEnabled:kind!=='no-js'};
-   const page=await open(options,async p=>{p.on('request',r=>{if(/skylabs-(competition|mechanism|trainer)\/(assembly|airframe)/.test(r.url()))requests.push(r.url());});if(kind==='save-data')await p.addInitScript(()=>Object.defineProperty(navigator,'connection',{value:Object.assign(new EventTarget(),{saveData:true})}));if(kind==='no-webgl')await p.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/i.test(type)?null:original.call(this,type,...args);};});if(kind==='failed')await p.route('**/skylabs-competition/assembly.glb.gz',r=>r.abort());});
+   const page=await open(options,async p=>{p.on('request',r=>{if(/skylabs-(competition|mechanism|trainer)\/(assembly|airframe)/.test(r.url()))requests.push(r.url());});if(kind==='save-data')await p.addInitScript(()=>Object.defineProperty(navigator,'connection',{value:Object.assign(new EventTarget(),{saveData:true})}));if(kind==='no-webgl')await p.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/i.test(type)?null:original.call(this,type,...args);};});if(kind==='failed')await p.route(/skylabs-competition\/assembly(?:\.meshopt)?\.glb\.gz/,r=>r.abort());if(kind==='compat'){await p.route('**/*.meshopt.glb.gz*',r=>r.abort());await p.route('**/livery/*.webp',r=>r.abort());}});
    await page.locator('#aircraft').scrollIntoViewIfNeeded();
    if(kind==='no-webgl'){await page.waitForFunction(()=>document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='failed');assert.equal(requests.length,0,'An unavailable GPU should not download aircraft CAD');}
    else if(kind==='failed')await page.waitForFunction(()=>document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='failed');
+   else if(kind==='compat'){await page.waitForFunction(()=>window.__skylabsFleet?.ready,null,{timeout:90000});const sources=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.24);const urls=[];for(const object of [f.filmGroup,f.scene.getObjectByName('fleet-trainer')])object.traverse(m=>{if(m.isMesh&&(m.userData.trainerLivery||m.material.map&&m.name.startsWith('wing-')))urls.push(m.material.map.image.currentSrc||m.material.map.image.src);});return urls;});assert.equal(sources.length,10);assert.ok(sources.every(s=>/\.png(?:\?|$)/.test(s)));assert.ok(requests.some(s=>s.includes('/skylabs-competition/assembly.glb.gz')));await page.close();continue;}
    else if(kind==='context-loss'){await page.waitForFunction(()=>window.__skylabsFleet?.ready,null,{timeout:90000});await page.evaluate(()=>window.__skylabsFleet.renderer.getContext().getExtension('WEBGL_lose_context').loseContext());await page.waitForFunction(()=>document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='failed');}
    else {await page.waitForTimeout(400);assert.equal(requests.length,0,kind+' skips model delivery');}
    assert.ok(await page.locator('.fleet-poster').evaluate(n=>n.complete&&n.naturalWidth>0&&getComputedStyle(n).visibility==='visible'),kind+' preserves poster');
