@@ -86,3 +86,33 @@
  .v2-projects-aircraft .v3-aircraft-skip{bottom:68px}
  .v2-projects-aircraft:not(.is-story) .v3-aircraft-visual{max-height:260px;aspect-ratio:5/3}
 }
+
+/* The Tucson flying strip belongs to this trainer, not the home CAD table or
+   the case-study fleet. The flat fallback and live story share one first view. */
+[data-aircraft-sonoran] .v3-aircraft-visual{isolation:isolate;overflow:hidden}
+[data-aircraft-sonoran] .v2-trainer-field{z-index:-1;pointer-events:none}
+[data-aircraft-sonoran] .v2-trainer-field img,
+[data-aircraft-sonoran]:not(.is-story) .v3-aircraft-visual>picture>img{object-fit:cover;object-position:center}
+[data-aircraft-sonoran] .v3-aircraft-visual::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,rgba(8,13,22,.60) 0%,rgba(8,13,22,.28) 28%,transparent 56%),
+             linear-gradient(to top,rgba(6,10,15,.65),transparent 23%)}
+[data-aircraft-sonoran] .v3-aircraft-copy article:first-child>p{color:#e1e4e8}
+[data-aircraft-sonoran] .v3-aircraft-copy article:first-child .v3-intro-line{color:#ced5dd}
+[data-aircraft-sonoran] .v3-aircraft-copy article:first-child .v2-collection-jump{color:#f4f6f7}
+[data-aircraft-sonoran]:not(.is-story) .v3-aircraft-stage{display:grid;grid-template-columns:minmax(0,1fr);gap:0;padding:0}
+[data-aircraft-sonoran]:not(.is-story) .v3-aircraft-visual{
+  grid-area:1/1;max-height:none;aspect-ratio:auto;height:clamp(430px,calc(92svh - var(--header-height,76px)),810px)}
+[data-aircraft-sonoran]:not(.is-story) .v3-aircraft-copy article:first-child{grid-area:1/1;align-self:start;z-index:1;
+  padding:30px var(--v2-gutter) 0;width:fit-content;max-width:100%}
+[data-aircraft-sonoran]:not(.is-story) .v3-aircraft-copy article:not(:first-child){
+  margin:0 var(--v2-gutter);border:0;padding:clamp(26px,4vw,64px) 0 22px}
+[data-aircraft-sonoran]:not(.is-story) .v3-aircraft-foot{width:auto;margin:0 var(--v2-gutter);padding-bottom:24px}
+@media(max-width:760px){
+ [data-aircraft-sonoran] .v3-aircraft-visual::after{background:linear-gradient(to bottom,rgba(8,13,22,.76),rgba(8,13,22,.5) 23%,transparent 48%),
+  linear-gradient(to top,rgba(6,10,15,.54),transparent 20%)}
+ [data-aircraft-sonoran]:not(.is-story) .v3-aircraft-visual{height:clamp(480px,calc(90svh - var(--header-height,66px)),780px)}
+ [data-aircraft-sonoran]:not(.is-story) .v3-aircraft-copy article:first-child{padding-top:24px}
+}
+@media(max-height:600px) and (min-width:761px){
+ [data-aircraft-sonoran]:not(.is-story) .v3-aircraft-visual{height:max(380px,85svh)}
+}

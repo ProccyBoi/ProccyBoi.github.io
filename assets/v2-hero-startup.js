@@ -2,7 +2,6 @@
 (() => {
   'use strict';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  const narrow = matchMedia('(max-width: 600px)');
   const compact = matchMedia('(max-height: 620px), (max-width: 900px) and (max-height: 700px)');
   const allowed = () => !reduced.matches && !compact.matches && !navigator.connection?.saveData;
   const models = Object.freeze(['tramtrace', 'dash', 'pi']);
@@ -47,35 +46,7 @@
     }
     return pending.get(source);
   };
-  const backdrop = document.querySelector('[data-assembly-backdrop]');
-  let backdropQueued = false, backdropRequested = false;
-  const backdropVisible = () => {
-    if (!backdrop || narrow.matches || navigationPending || document.hidden || navigator.connection?.saveData ||
-        document.readyState !== 'complete') return false;
-    const bounds = backdrop.getBoundingClientRect();
-    return Math.min(bounds.bottom, innerHeight) - Math.max(bounds.top, 0) >= Math.min(240, innerHeight * .4);
-  };
-  const prepareBackdrop = () => {
-    if (backdropQueued || backdropRequested || !backdropVisible()) return;
-    backdropQueued = true;
-    const start = () => {
-      backdropQueued = false;
-      if (!backdropVisible()) return;
-      backdropRequested = true;
-      const photo = new Image(864, 487);
-      photo.alt = '';
-      photo.decoding = 'async';
-      photo.fetchPriority = 'low';
-      photo.src = backdrop.dataset.assemblyBackdrop;
-      photo.decode().then(() => {
-        if (!navigator.connection?.saveData) backdrop.append(photo);
-      }).catch(() => { /* Keep the painted workbench when the texture is unavailable. */ });
-    };
-    if ('requestIdleCallback' in window) window.requestIdleCallback(start);
-    else setTimeout(start, 80);
-  };
   const prepare = () => {
-    prepareBackdrop();
     if (!eligible()) return;
     waiters.forEach(resolve => resolve()); waiters.clear();
     if (started) return;

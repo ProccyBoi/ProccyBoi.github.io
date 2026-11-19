@@ -20,15 +20,9 @@ The deferred `v2-hero-startup.js` checks the hero's proximity and respects a dir
 
 Dash's occasional OLED blink reuses its existing idle image through `assets/dash-idle-blink.js`. The helper sleeps between blinks and advances each texture change only after the owning scene completes its draw. It does not create a continuous animation loop or load the character controller. Hidden/offscreen scenes and motion/data preferences suspend blinking.
 
-## Homepage workbench backdrop
+## Opening composition
 
-The v2 homepage uses a static CSS light pool on first paint. A clean patch of the real work surface from `assets/images/projects/switchmode-bus-alt-1920.webp` supplies the optional photo texture; no part of the circuit board appears in the crop. The 864×487 crop is tonally graded to charcoal and encoded as a 23,892-byte WebP. The upper and lower shading preserves contrast behind the hero links and controls.
-
-On screens up to 600 px wide, a 154×103 crop of the same mat is embedded in the critical CSS and supplies the final texture from first paint, with no late upgrade. Wider layouts start with the painted light pool. The larger image has no initial `src` or preload; after the window loads, it requests at low priority during an idle turn, only when enough of the hero is visible and Save Data is off. The decorative backdrop is static, including in reduced motion, and remains in place when the CAD fails or never starts. It does not change the renderer, HDR lighting map, geometry, or draw schedule.
-
-### Opening composition
-
-The original `switchmode-bus-alt-1920.webp` photograph supplies the actual mat grain. Its soft key and the shadow beneath the board in `switchmode-channel-assembled-960.webp` informed the raking side light and short poster shadows. The angled front edge is an art-directed depth cue, not a feature claimed to be in the source photo. All three objects are still the real project assets. The light and front edge are painted before the optional desktop photo decodes, so they remain visible with the network image disabled.
+The homepage places the existing CAD posters and live assemblies against the same flat charcoal stage. The background paints with the inline styles and has no decorative image or separate loading step.
 
 The opening lineup uses smaller first-pose scales to separate the objects, especially TramTrace from the surrounding links on phones. The narrower layout also reserves the actual introduction height plus 14 CSS pixels for the two rear devices. Upper extents were checked by transforming vertices from the three production packs through the settled orthographic camera. The same first poses feed poster positions and live model transforms. Later keyframes, geometry, materials, existing shadows in WebGL, GPU scheduling and textures are unchanged; this change adds no network resource or renderer pass.
 
@@ -197,3 +191,26 @@ expanded payloads are identical. A browser that still has the previous
 600-second cache entry can continue using it safely until revalidation.
 Compressed byte savings alone do not establish a page-readiness or GPU
 performance gain; cold and new-page cached visits are measured separately.
+
+### Projects trainer: Tucson-inspired flying strip
+
+Only the v2 Projects collection opts in. The environment is an original
+AI-generated photographic illustration, not a photograph of a particular
+airfield. The [Tucson Mountains](https://www.visittucson.org/things-to-do/outdoors/mountains/tucson-mountains/)
+and [NPS description of the Sonoran landscape](https://www.nps.gov/sagu/learn/nature/nature-and-science.htm)
+informed the mountain profiles, foothill vegetation and saguaros; no third-party
+photograph was incorporated. The white and blue trainer itself, including its
+markings, is taken from the original published CAD renders.
+
+The four stopped/approach and desktop/mobile posters are reproduced by
+`python scripts/build-v2-sonoran-posters.py` from the existing trainer renders
+and the two new optimized empty-field plates (Pillow and NumPy). The cold
+stopped poster is 50,384 bytes on desktop, 17,908 bytes on phone (previously
+41,912 and 11,460). No separate initial background request. The optional
+live-only field is 41,620 / 15,244 bytes; it is fetched with low priority from
+an inert template only on a capable, eligible visit. It has the same crop as its
+poster, with a separate contact-shadow receiver on the transparent live canvas.
+As the airframe opens, the field fades to the original studio by 38% inspection
+progress; this uses the already-paced scene, not a second animation clock.
+Save-Data, reduced motion and non-WebGL retain the composed stopped picture.
+Opening `#collection` still bypasses scene preparation.

@@ -597,10 +597,11 @@ def hardware_card(record):
 
 
 def projects_aircraft_header():
-    return '''<section class="v3-aircraft v2-aircraft-feature v2-projects-aircraft" data-aircraft-hero data-aircraft-detailed data-aircraft-deferred data-aircraft-smooth data-aircraft-background data-aircraft-collection aria-labelledby="projects-title">
+    return '''<section class="v3-aircraft v2-aircraft-feature v2-projects-aircraft" data-aircraft-hero data-aircraft-detailed data-aircraft-deferred data-aircraft-smooth data-aircraft-background data-aircraft-collection data-aircraft-sonoran aria-labelledby="projects-title">
       <div class="v3-aircraft-stage" data-aircraft-stage>
         <div class="v3-aircraft-visual" data-aircraft-visual>
-          <picture data-aircraft-picture><source media="(max-width:760px)" srcset="/assets/images/v3/skylabs-stopped-mobile.webp?v=trainer-20261105b" data-approach="/assets/images/v3/skylabs-approach-mobile.webp?v=trainer-20261105b" data-stopped="/assets/images/v3/skylabs-stopped-mobile.webp?v=trainer-20261105b"><img data-aircraft-poster src="/assets/images/v3/skylabs-stopped.webp?v=trainer-20261105b" data-approach="/assets/images/v3/skylabs-approach.webp?v=trainer-20261105b" data-stopped="/assets/images/v3/skylabs-stopped.webp?v=trainer-20261105b" width="1600" height="1000" alt="The Skylabs trainer aircraft, with its wing, tail and landing gear assembled" decoding="async" fetchpriority="high"></picture>
+          <template data-sonoran-template><picture class="v2-trainer-field" aria-hidden="true"><source media="(max-width:760px)" srcset="/assets/images/v2/trainer-sonoran-field-mobile.webp"><img src="/assets/images/v2/trainer-sonoran-field.webp" width="1280" height="800" alt="" decoding="async" fetchpriority="low"></picture></template>
+          <picture data-aircraft-picture><source media="(max-width:760px)" srcset="/assets/images/v2/trainer-stopped-mobile.webp" data-approach="/assets/images/v2/trainer-approach-mobile.webp" data-stopped="/assets/images/v2/trainer-stopped-mobile.webp"><img data-aircraft-poster src="/assets/images/v2/trainer-stopped.webp" data-approach="/assets/images/v2/trainer-approach.webp" data-stopped="/assets/images/v2/trainer-stopped.webp" width="1600" height="1000" alt="The Skylabs trainer aircraft, with its wing, tail and landing gear assembled" decoding="async" fetchpriority="high"></picture>
           <canvas data-aircraft-canvas aria-hidden="true"></canvas>
         </div>
         <div class="v3-aircraft-copy" data-aircraft-copy>
@@ -705,9 +706,9 @@ def make_index():
     source = source.replace('</head>', '<link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>\n</head>')
     source = source.replace('v2-case.css?v=physical-20261007', 'v2-case.css?v=collection-20261023b').replace('v2-cases.js"', 'v2-cases.js?v=demos-20261028"')
     source = source.replace('class="skip-link" href="/v2/projects/#main"', 'class="skip-link" href="/v2/projects/#collection"')
-    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/aircraft-story.css?v=collection-20261029">
+    source = source.replace('</head>', '''<link rel="stylesheet" href="/assets/aircraft-story.css?v=sonoran-20261120a">
   <script src="/assets/v2-scroll-smoothing.js?v=20261011" defer></script>
-  <script src="/assets/v3-aircraft-hero.js?v=trainer-20261105b" defer></script>
+  <script src="/assets/v3-aircraft-hero.js?v=sonoran-20261120a" defer></script>
 </head>''')
     return '\n'.join(line.rstrip() for line in source.splitlines()) + '\n'
 

@@ -6,13 +6,17 @@
   const detailed = root.hasAttribute('data-aircraft-detailed');
   const background = root.hasAttribute('data-aircraft-background');
   const collection = root.hasAttribute('data-aircraft-collection');
+  // Only the Projects trainer uses the photographed field. Other v2/v3 scenes
+  // keep their existing atmosphere and ground shader.
+  const sonoran = collection && root.hasAttribute('data-aircraft-sonoran');
+  let fieldContext, fieldPicture;
   // Opt-in v2 wheel interpolation leaves the accepted v3 controller unchanged.
   const scrub = root.hasAttribute('data-aircraft-smooth') && window.V2ScrollSmoothing;
   let renderedProgress = 0, scrubTime = 0, directScrub = false;
   const stage = root.querySelector('[data-aircraft-stage]'), canvas = root.querySelector('canvas');
   const poster = root.querySelector('[data-aircraft-poster]'), skip = root.querySelector('[data-aircraft-skip]');
   const posterSources = [...root.querySelectorAll('[data-aircraft-picture] source')];
-  const showPoster = pose => { posterSources.forEach(source => { source.srcset = source.dataset[pose]; }); poster.src = poster.dataset[pose]; };
+  const showPoster = pose => { if (sonoran && pose === 'approach') poster.fetchPriority = 'low'; posterSources.forEach(source => { source.srcset = source.dataset[pose]; }); poster.src = poster.dataset[pose]; };
   const chapters = [...root.querySelectorAll('[data-aircraft-chapter]')], links = [...root.querySelectorAll('[data-aircraft-go]')];
   const bar = root.querySelector('[data-aircraft-progress]'), ids = chapters.map(chapter => chapter.id);
   const initialCollectionHash = location.hash;
@@ -144,7 +148,7 @@
       const step = document.createElement('div'); step.id = ids[index]; step.className = 'v3-aircraft-step'; track.append(step);
     });
     root.append(track); root.classList.add('is-story'); currentChapter = -1; chapter(0); layout();
-    if (!background || preparationEligible()) showPoster('approach');
+    if (!sonoran && (!background || preparationEligible())) showPoster('approach');
     if (ids.includes(location.hash.slice(1))) {
       endLanding(); requestAnimationFrame(() => document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'instant' }));
     }
@@ -254,10 +258,13 @@
   // geometry/textures without changing autoplay, chapters, focus or scroll.
   function drawPose(pose) {
     const framing = flight.frame(camera, width, height); fitLight(framing.focus);
-    const sky = atmosphere?.update({ landing: pose.landing, progress: pose.progress, width, height }) || 0;
+    const sky = sonoran ? 1 - smooth(((pose.progress || 0) - .06) / .32) : atmosphere?.update({ landing: pose.landing, progress: pose.progress, width, height }) || 0;
     groundUniforms.sky.value = sky;
     groundUniforms.near.value = Math.max(3.5, framing.distance) * (width < 761 ? 1.08 : 1.28);
     groundUniforms.far.value = Math.max(3.5, framing.distance) * (width < 761 ? 1.48 : 2.6);
+    // At touchdown only the real shadow receiver is rendered: the asphalt is
+    // already in the plate. The normal studio floor returns on disassembly.
+    if (sonoran) floorMaterial.opacity = 1 - sky;
     if (floorMaterial.transparent !== (sky > 0)) { floorMaterial.transparent = sky > 0; floorMaterial.needsUpdate = true; }
     floorMaterial.color.copy(studioGround).lerp(airfieldGround, sky);
     scene.fog.color.copy(studioFog).lerp(airfieldFog, sky);
@@ -368,6 +375,7 @@
       chapter(capture?.type === 'landing' ? 0 : chapterAt(shownProgress));
       bar.style.transform = `scaleX(${shownProgress})`; root.dataset.aircraftRenderedProgress = shownProgress.toFixed(6);
       root.dataset.aircraftAtmosphere = sky.toFixed(6);
+      if (fieldPicture) fieldPicture.style.opacity = String(sky);
       root.dataset.aircraftState = capture || kind === 'progress' ? 'ready' : 'landing';
       root.dataset.aircraftPhase = pose.phase; root.dataset.aircraftLanding = pose.landing.toFixed(6);
       root.dataset.aircraftSeparated = String(pose.separated); root.dataset.aircraftAssemblyError = assemblyError.toFixed(9);
@@ -467,6 +475,13 @@
   }
   function prepareSources() {
     if (!sourceEligible()) return Promise.resolve(false);
+    if (sonoran && !fieldContext) {
+      // Reuse the real canvas (not a separate GPU allocation). On devices with
+      // no WebGL, avoid both an alternate pose and the complete CAD download.
+      const options = { alpha: true, antialias: true, powerPreference: 'high-performance' };
+      try { fieldContext = canvas.getContext('webgl2', options) || canvas.getContext('webgl', options); } catch (_) {}
+      if (!fieldContext) { fail(new Error('No WebGL context for the trainer')); return Promise.resolve(false); }
+    }
     warmFallbackImages();
     return sourcePreparation ||= Promise.all([
         (async () => { if (!window.THREE) await script('/assets/vendor/three.min.js'); if (sourceEligible() && !window.THREE.GLTFLoader) await script('/assets/vendor/GLTFLoader.js'); })(),
@@ -487,7 +502,7 @@
           if (sourceEligible()) window.V2HeroAssets.prefetch('telemetry').catch(() => {});
         })() : Promise.resolve(),
         (async () => { if (!window.V2HeroEnvironment) await script('/assets/v2-hero-environment.js?v=' + (background ? 'speed-20261029' : 'product-20261007')); if (sourceEligible()) window.V2HeroEnvironment.prefetch().catch(() => {}); })(),
-        script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
+        sonoran ? Promise.resolve() : script('/assets/v3-aircraft-atmosphere.js?v=aircraft-refine-20261010').catch(() => {}),
         detailed ? script('/assets/v3-aircraft-electronics.js?v=aircraft-refine-20261010') : Promise.resolve(),
         background ? script('/assets/v2-gpu-preparation.js?v=paced-20261011') : Promise.resolve()
       ]).then(() => {
@@ -512,12 +527,23 @@
         if (!await backgroundCPU('renderer')) return;
       }
       const T = window.THREE;
-      renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+      renderer = new T.WebGLRenderer({ canvas, ...(sonoran ? { context: fieldContext } : {}), alpha: true, antialias: true, powerPreference: 'high-performance' });
       renderer.autoClear = false;
       renderer.setPixelRatio(Math.min(devicePixelRatio || 1, width < 761 ? 1.35 : 1.65));
       window.V2ProductStudio.configureRenderer(renderer, T); renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;
       scene = new T.Scene(); camera = new T.PerspectiveCamera(32, width / height, .002, 80);
-      atmosphere = window.V3AircraftAtmosphere?.create(T, { detailed });
+      atmosphere = sonoran ? null : window.V3AircraftAtmosphere?.create(T, { detailed });
+      // Initial stopped/approach posters already contain this identical plate.
+      // It is fetched at low priority only for a working live scene. Decode it
+      // before unmasking the canvas so the mountain horizon never blinks.
+      let fieldDecoded;
+      if (sonoran) {
+        const field = root.querySelector('[data-sonoran-template]').content.cloneNode(true);
+        fieldPicture = field.querySelector('picture');
+        const image = field.querySelector('img');
+        canvas.parentNode.insertBefore(field, poster.closest('picture'));
+        fieldDecoded = image.decode().then(() => true, () => false);
+      }
       key = window.V2ProductStudio.createLights(T, scene).key;
       key.userData.direction.set(-3, 8, 5).normalize();
       if (background && !await backgroundCPU('airframe-load')) return;
@@ -526,6 +552,7 @@
         return window.V2ProductStudio.createEnvironment(T, renderer).texture;
       } : () => window.V2ProductStudio.createEnvironment(T, renderer).texture)]);
       if (failed || (background && !await backgroundCPU('scene-create'))) return;
+      if (sonoran && !await fieldDecoded) throw new Error('Field image unavailable; keeping the complete trainer poster');
       scene.environment = environment;
       flight = window.V3AircraftScene.create(T, aircraft, null, { detailed }); scene.add(flight.group);
       studioGround = new T.Color('#101210').convertSRGBToLinear();
@@ -539,7 +566,7 @@
         shader.uniforms.uGroundFar = groundUniforms.far;
         shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying float vGroundDepth;').replace('#include <project_vertex>', '#include <project_vertex>\nvGroundDepth = -mvPosition.z;');
         shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vGroundDepth; uniform float uSky; uniform float uGroundNear; uniform float uGroundFar;').replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.a *= uSky > 0.0 ? 1.0 - smoothstep(uGroundNear, uGroundFar, vGroundDepth) : 1.0;');
-        if (detailed) window.V3AircraftAtmosphere?.detailGround?.(shader);
+        if (!sonoran && detailed) window.V3AircraftAtmosphere?.detailGround?.(shader);
       };
       const floorGeometry = new T.PlaneGeometry(100, 100);
       const floor = new T.Mesh(floorGeometry, floorMaterial); floor.rotation.x = -Math.PI / 2; floor.position.y = -.0007; scene.add(floor);

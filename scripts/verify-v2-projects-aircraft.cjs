@@ -62,4 +62,29 @@ assert.equal(test.context.eligible(), true, 'Explicit chapter intent can prepare
 test = navigation({ collection: false, pending: true, bottom: -100 });
 assert.equal(test.context.eligible(), true, 'The collection gate never changes v3 scheduling');
 assert.match(source, /distance = height \* \(collection \? 1 : background \? \(width < 761 \? 2\.1 : 1\.8\) : \(width < 761 \? 3\.7 : 3\.1\)\)/, 'Shorter collection scroll does not alter existing variants');
+// The trainer's protected first paint is one opaque responsive poster. The
+// unmarked plate is inert until a real canvas is ready for it.
+const template = projects.match(/<template data-sonoran-template>([\s\S]*?)<\/template>/)[0];
+assert.match(template, /fetchpriority="low"/);
+assert.doesNotMatch(projects.replace(template, ''), /trainer-sonoran-field/);
+assert.match(projects, /data-aircraft-collection data-aircraft-sonoran/);
+for (const name of ['stopped','approach','stopped-mobile','approach-mobile']) {
+  const asset = 'assets/images/v2/trainer-' + name + '.webp';
+  assert.ok(projects.includes('/' + asset));
+  assert.ok(fs.statSync(path.join(root, asset)).size < (name.endsWith('mobile') ? 24000 : 70000));
+}
+assert.doesNotMatch(home + read('v2/projects/skylabs/index.html') + read('v3/index.html'), /data-aircraft-sonoran|trainer-sonoran-field/);
+const color = {copy(){return this}, lerp(){return this}};
+const poseContext = vm.createContext({
+  sonoran: true, width:1440, height:900, camera:{}, flight:{frame:()=>({focus:0,distance:5})},
+  fitLight(){}, smooth(n){const t=Math.max(0,Math.min(1,n));return t*t*(3-2*t)},
+  atmosphere:{update(){throw Error('v2 trainer should not draw a second sky')}},
+  scene:{fog:{color}}, floorMaterial:{color, transparent:true}, groundUniforms:{sky:{},near:{},far:{}},
+  studioGround:color, airfieldGround:color, studioFog:color, airfieldFog:color, renderFrame(){}
+});
+vm.runInContext(production('drawPose'), poseContext);
+for (const [progress, expected] of [[0,1],[.06,1],[.22,.5],[.38,0],[1,0],[0,1]]) {
+  assert.ok(Math.abs(poseContext.drawPose({landing:1,progress})-expected) < 1e-6);
+  assert.ok(Math.abs(poseContext.floorMaterial.opacity-(1-expected)) < 1e-6);
+}
 console.log('PASS: aircraft lives in Projects; native accessible collection skip; preserved filters/entries and legacy home fragments; direct-fragment deferral, return and intent; v3 unaffected. Source checks only.');
