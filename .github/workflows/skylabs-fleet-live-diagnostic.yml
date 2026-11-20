@@ -1,0 +1,39 @@
+name: Trace live fleet browser exceptions (no deployment)
+on:
+  push:
+    branches: [qa/v2-fleet-cold]
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Use the exact runner Playwright Chromium release
+        timeout-minutes: 4
+        working-directory: ${{ runner.temp }}
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund --fetch-retries=1 --fetch-timeout=24000 playwright@1.57.0
+          ./node_modules/.bin/playwright install chromium
+      - name: Trace the approved live Pages revision
+        shell: bash
+        env:
+          V2_BASE_URL: https://proccyboi.github.io
+        run: |
+          set -euo pipefail
+          export NODE_PATH="$RUNNER_TEMP/node_modules"
+          export CHROMIUM_EXECUTABLE="$(node -p "require('playwright').chromium.executablePath()")"
+          node scripts/fleet-live-diagnostic.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fleet-live-diagnostic-${{ github.sha }}
+          path: .codex-temp/fleet/
+          include-hidden-files: true
+          retention-days: 7

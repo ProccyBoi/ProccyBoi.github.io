@@ -1,0 +1,138 @@
+/* Actual browser, asset provenance, reversible native scroll and fallback checks. */
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),crypto=require('node:crypto'),zlib=require('node:zlib');
+const {chromium}=require('playwright');
+const base=process.env.V2_BASE_URL||'http://127.0.0.1:8080',route='/v2/projects/skylabs/?fleet-capture';
+for(const [slug,count] of [['skylabs-competition',134],['skylabs-mechanism',11]]){
+ const dir='assets/models/aircraft/'+slug,manifest=JSON.parse(fs.readFileSync(dir+'/manifest.json')),bytes=fs.readFileSync(dir+'/assembly.glb');
+ assert.equal(manifest.parts.length,count);assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),manifest.assetSha256);assert.deepEqual(zlib.gunzipSync(fs.readFileSync(dir+'/assembly.glb.gz')),bytes);
+ const gltf=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)));assert.equal(gltf.nodes.length,count);assert.ok(gltf.nodes.every(n=>n.extras.sourceOccurrenceId));assert.ok(manifest.gzipBytes<4.3e6);
+}
+const sensorDir='assets/models/aircraft/skylabs-mechanism/',body=fs.readFileSync(sensorDir+'sensor-body.glb'),identity=JSON.parse(fs.readFileSync(sensorDir+'sensor-identification.json'));
+assert.equal(crypto.createHash('sha256').update(body).digest('hex'),identity.assetSha256);assert.deepEqual(zlib.gunzipSync(fs.readFileSync(sensorDir+'sensor-body.glb.gz')),body);
+assert.equal(identity.solidBoundsMm.length,2);assert.ok(Math.abs(identity.solidBoundsMm[0][3]-identity.solidBoundsMm[0][0]-300)<1e-5);
+const skin=JSON.parse(zlib.gunzipSync(fs.readFileSync('assets/models/aircraft/skylabs-competition/solarfilm.json.gz')));assert.equal(skin.panels.length,44);assert.equal(skin.sourceSha256,crypto.createHash('sha256').update(fs.readFileSync('assets/models/aircraft/skylabs-competition/assembly.glb')).digest('hex'));
+(async()=>{
+ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTABLE||'/usr/bin/chromium',headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const errors=[];fs.mkdirSync('.codex-temp/fleet',{recursive:true});
+ async function open(options={},setup,label='normal'){const page=await browser.newPage(options);
+  page.on('pageerror',e=>{const details={label,url:page.url(),error:e.stack||e.message};errors.push(details);console.error('FLEET PAGE ERROR',JSON.stringify(details));});
+  await page.addInitScript(()=>addEventListener('webglcontextlost',e=>console.info('GRAPHICS LOSS',e.target.className,e.target.closest('[data-skylabs-fleet],[data-hardware]')?.dataset.fleetState),true));
+  page.on('console',m=>{if(m.text().startsWith('GRAPHICS LOSS'))console.log(label,m.text());});if(setup)await setup(page);await page.goto(base+route);return page;}
+ try{
+  for(const [label,viewport] of [['desktop',{width:1440,height:1000}],['mobile',{width:390,height:844}]]){
+   const page=await open({viewport},undefined,label);await page.locator('#aircraft').scrollIntoViewIfNeeded();await page.waitForFunction(()=>window.__skylabsFleet?.ready,null,{timeout:90000});
+   await page.evaluate(()=>scrollTo(0,scrollY+document.querySelector('.fleet-track').getBoundingClientRect().top-parseFloat(getComputedStyle(document.querySelector('.fleet-stage')).top)));await page.waitForTimeout(150);
+   const firstCaption=await page.evaluate(()=>{const f=__skylabsFleet,c=document.querySelector('[data-fleet-caption]');f.seek(0);const first=c.textContent;f.seek(1);f.seek(0);return [first,c.textContent];});
+   assert.equal(firstCaption[0],'The trainer leads the competition taildragger into formation.');assert.equal(firstCaption[0],firstCaption[1],'Formation subtitle matches on first approach and retrieval');
+   const arrival=await page.evaluate(()=>{
+    const f=__skylabsFleet,T=THREE,v=new T.Vector3(),series={};
+    for(const phase of [0,.09,.15,.19,.245,.29]){
+     f.seek(phase);const row=series[phase]={};
+     for(const name of ['fleet-trainer','fleet-competition']){
+      const craft=f.scene.getObjectByName(name),bounds=new T.Box2();
+      if(!craft.visible)throw Error(name+' missing from arrival');
+      craft.traverseVisible(m=>{if(!m.isMesh)return;const points=m.geometry.attributes.position;
+       for(let i=0;i<points.count;i++){v.fromBufferAttribute(points,i).applyMatrix4(m.matrixWorld).project(f.camera);bounds.expandByPoint(v);}});
+      row[name]={edges:[bounds.min.x,bounds.max.x,bounds.min.y,bounds.max.y],width:bounds.max.x-bounds.min.x};
+     }
+    }
+    return series;
+   });
+   for(const shot of Object.values(arrival))for(const craft of Object.values(shot))assert.ok(craft.edges.every(x=>Math.abs(x)<.985),'Neither wingtip may be clipped on approach: '+JSON.stringify(craft));
+   for(const name of ['fleet-trainer','fleet-competition']){
+    assert.ok(arrival[.245][name].width>arrival[0][name].width*1.15,'Approach should read as coming towards camera: '+name);
+    assert.deepEqual(arrival[.245][name],arrival[.29][name],'Hold the marked pair together before the trainer breaks formation');
+   }
+   for(const p of [0,.1,.245,.34,.38,.43,.58,.62,.65,.72,.76,.82,.85,.91,.95,.967,.995,1]){await page.evaluate(p=>window.__skylabsFleet.seek(p),p);await page.locator('.fleet-stage').screenshot({path:'.codex-temp/fleet/'+label+'-'+p+'.png'});}
+   assert.ok(await page.evaluate(()=>{const f=window.__skylabsFleet;f.seek(.3);return ['fleet-trainer','fleet-competition'].every(name=>f.scene.getObjectByName(name)?.visible);}), 'Both real aircraft visible in one frame');
+   const film=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.24);const wrapped=f.films.every(p=>p.group.visible&&p.material.opacity===1&&p.patches.every(q=>q.amount===0));const image=f.renderer.domElement.toDataURL();f.seek(.43);const peeling=f.films.some(p=>p.patches.some(q=>q.peeled>0&&q.attached>0));f.seek(.62);const unwrapped=f.films.every(p=>!p.group.visible);f.seek(.24);return {wrapped,peeling,unwrapped,reversed:image===f.renderer.domElement.toDataURL(),notch:f.sensor.userData.frontNotchSource,bodySize:new THREE.Box3().setFromObject(f.sensor).getSize(new THREE.Vector3()).toArray(),mountOffset:f.sensor.userData.mountOffsetM,notchLocal:f.sensor.userData.tetherLocal.toArray(),external:!!f.scene.getObjectByName('illustrative-cradle-bracket')};});
+   const markings=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.24);const meshes=[];f.filmGroup.traverse(o=>{if(o.isMesh)meshes.push(o);});return {mapped:meshes.filter(o=>o.material.map).map(o=>o.name).sort(),invalid:meshes.filter(o=>o.material.map&&!o.material.map.image?.complete).map(o=>o.name)};});
+   assert.deepEqual(markings.mapped,['wing-left1-blue','wing-left1-white','wing-right1-blue','wing-right1-white']);assert.deepEqual(markings.invalid,[]);
+   const trainerMarkings=await page.evaluate(()=>{const result=[];__skylabsFleet.scene.getObjectByName('fleet-trainer').traverse(o=>{if(o.isMesh&&o.userData.trainerLivery)result.push({name:o.name,key:o.userData.trainerLivery,loaded:!!o.material.map?.image?.complete});});return result.sort((a,b)=>a.key.localeCompare(b.key));});
+   assert.deepEqual(trainerMarkings.map(x=>x.key),['left-inner','left-outer','right-inner','right-outer','side-negative','side-positive']);assert.ok(trainerMarkings.every(x=>x.loaded),'Trainer markings load on both upper wings and fuselage sides');
+   assert.ok(film.wrapped&&film.peeling&&film.unwrapped&&film.reversed,'Opaque Solarfilm, localized peel and exact reverse render');assert.deepEqual(film.notch,[.061540941309766,-.0457201238048,.057815001]);assert.ok(!film.external);assert.deepEqual(film.mountOffset,[0,0,-.005]);film.notchLocal.forEach((v,i)=>assert.ok(Math.abs(v-film.notch[i])<1e-10,"Mount adjustment preserves the original front-notch point on the body"));
+   const restored=await page.evaluate(()=>{const f=window.__skylabsFleet;f.seek(.62);const before=f.sensor.position.toArray(),image=f.renderer.domElement.toDataURL();f.seek(.85);const deployed=f.sensor.position.toArray();f.seek(.62);return {before,after:f.sensor.position.toArray(),deployed,sameImage:image===f.renderer.domElement.toDataURL()};});assert.deepEqual(restored.before,restored.after);assert.notDeepEqual(restored.before,restored.deployed);assert.ok(restored.sameImage,'Exactly reversible canvas');
+   const sequence=await page.evaluate(()=>{const f=__skylabsFleet,result=[];const rest=f.housing.find(p=>p.object===f.cart).rest;for(const p of [.58,.65,.72,.82,.91,.955,.985]){f.seek(p);result.push({p,cart:f.cart.position.clone().sub(rest).toArray(),sensor:f.sensor.position.clone().sub(f.sensor.userData.rest).toArray()});}f.seek(.82);return {result,board:f.systems.board.userData,servos:f.systems.servos.length,esc:f.systems.esc.name,opaque:[f.systems.esc,...f.systems.servos].every(o=>{let ok=true;o.traverse(m=>{if(m.isMesh&&(Array.isArray(m.material)?m.material:[m.material]).some(v=>v.opacity<.99))ok=false;});return ok;})};});
+   for(const pose of sequence.result){assert.equal(pose.cart[0],0);assert.equal(pose.cart[1],0);assert.ok(pose.cart[2]>=-.02500001&&pose.cart[2]<=0);assert.equal(pose.sensor[1],0);if(pose.p<=.65||pose.p>=.985)assert.ok(Math.abs(pose.sensor[2]-pose.cart[2])<1e-10,'Body follows the carriage while inside');if(pose.p===.72)assert.ok(pose.sensor[0]===0&&pose.sensor[2]<pose.cart[2],'Belly release is vertical first');if(pose.p===.82)assert.ok(pose.sensor[0]<-1&&pose.sensor[2]<-1,'Full tow trails below and aft');}assert.equal(sequence.board.components,153);assert.equal(sequence.board.scaleToMetres,.07303);assert.equal(sequence.servos,4);assert.ok(sequence.opaque,"Installed ESC and servos are actually rendered, not faded by trainer landing state");assert.match(sequence.esc,/100A/);
+   const payout=await page.evaluate(()=>{
+    const f=__skylabsFleet,T=THREE,craft=f.scene.getObjectByName('fleet-competition');
+    const vec=new T.Vector3(),wing=new T.Box3(),floor=new T.Box3(),nose=new T.Vector3(-Infinity,0,0),pose=[];
+    f.seek(.82);
+    function points(object,coordinateSpace,callback){
+     if(!object)throw Error('Missing source occurrence');
+     const inverse=coordinateSpace.matrixWorld.clone().invert(),mat=new T.Matrix4();
+     object.traverse(mesh=>{if(!mesh.isMesh)return;const a=mesh.geometry.attributes.position;mat.multiplyMatrices(inverse,mesh.matrixWorld);
+      for(let i=0;i<a.count;i++)callback(vec.fromBufferAttribute(a,i).applyMatrix4(mat));});
+    }
+    craft.traverse(o=>{
+     if(/^cad-(16|42|132|133)-/.test(o.name))points(o,craft,v=>wing.expandByPoint(v));
+     if(o.userData.sourceName==='Fuselage_Floor')points(o,craft,v=>floor.expandByPoint(v));
+    });
+    points(f.sensor,f.sensor,v=>{if(v.x>nose.x)nose.copy(v);});
+    const span=wing.max.z-wing.min.z;
+    const rest=f.sensor.userData.rest,restQuat=f.sensor.userData.restQuaternion;
+    const sample=[.65,.72,.76,.80,.82,.85,.878,.91,.942,.95,.962,.985,1];
+    for(const p of sample){
+     f.seek(p);
+     const m=f.mission;
+     const exit=new T.Vector3(...m.exitLocalM),noseWorld=f.sensor.localToWorld(nose.clone()),notch=f.sensor.localToWorld(f.sensor.userData.tetherLocal.clone());
+     const points=f.line.geometry.parameters.path.points,tip=points[points.length-1],end=craft.localToWorld(tip.clone());
+     const delta=f.sensor.position.clone().sub(rest).toArray(),scale=craft.getWorldScale(new T.Vector3()).x;
+     if(!Number.isFinite(scale))throw Error('Invalid scene transform');
+     const e=craft.localToWorld(exit.clone());
+     pose.push({p,delta,phase:m.phase,held:noseWorld.distanceTo(e)/scale,reported:m.distanceM,minimum:m.minimumM,exitOnFloor:Math.abs(exit.y-floor.min.y),noseError:nose.distanceTo(new T.Vector3(...m.forwardTipLocalM)),notchError:end.distanceTo(notch),angle:f.sensor.quaternion.angleTo(restQuat),exitOnLine:points.some(v=>v.distanceTo(exit)<1e-8),
+      x:craft.position.x});
+    }
+    return {span,pose};
+   });
+   assert.ok(Math.abs(payout.span-1.83363159)<1e-6,'Measure span from both complete wings including endplate extrema');
+   const full=payout.pose.filter(v=>v.p>=.8&&v.p<=.878);
+   for(const v of payout.pose){
+    assert.ok(v.noseError<1e-7&&v.exitOnFloor<1e-7,'Use CAD forward tip and belly exit as separate measurement points');
+    assert.ok(Math.abs(v.held-v.reported)<1e-7&&Math.abs(v.minimum-1.5*payout.span)<1e-7,'Rule distance is the straight exit-to-tip distance in model metres');
+    assert.ok(v.notchError<1e-8&&v.angle<1e-7,'Line stays on the front notch and the body does not spin');
+   }
+   assert.ok(full.every(v=>v.exitOnLine&&v.phase==='tow'&&v.held>=1.5*payout.span&&v.held-1.5*payout.span<.001),'Maintain ≥1.5 wingspans across the entire forward tow hold');
+   const at=p=>payout.pose.find(v=>v.p===p);
+   assert.ok(at(.76).held<at(.82).held&&at(.82).held>at(.91).held&&at(.91).held>at(.942).held&&at(.942).held>at(.95).held,'Payout and retrieval occur in forward scroll order');
+   assert.ok(at(.72).delta[0]===0&&at(.942).delta[0]===0&&at(.95).delta[0]===0&&at(.95).exitOnLine,'Leave vertically and lift back through the same belly exit');
+   assert.ok(at(.985).delta.every(v=>v===0)&&at(1).delta.every(v=>v===0)&&at(.985).phase==='stowed'&&at(1).x>at(.985).x,'Recover to CAD rest before the flight sequence ends');
+   const installation=await page.evaluate(()=>{const f=window.__skylabsFleet,T=THREE,results=[];const parent=f.sensor.parent;
+    function sourceBox(object,space=parent){const box=new T.Box3(),inverse=new T.Matrix4().copy(space.matrixWorld).invert();object.traverse(mesh=>{if(!mesh.isMesh)return;mesh.geometry.computeBoundingBox();const matrix=new T.Matrix4().multiplyMatrices(inverse,mesh.matrixWorld);box.union(mesh.geometry.boundingBox.clone().applyMatrix4(matrix));});return box;}
+    for(const p of [.60,.65,.70,.72,.75,.80,.85,.92,.95,.967,.985,1]){f.seek(p);f.scene.updateMatrixWorld(true);const sensorBox=sourceBox(f.sensor);const stationary=f.housing.every(part=>part.object===f.cart||part.object.position.distanceTo(part.rest)<1e-12);const cartBounds=sourceBox(f.cart,f.mechanism.parent),cartInFuse=f.cart&&f.cart.visible&&!f.supersededSensor.visible&&new T.Box3(new T.Vector3(.033,-.08075,-.047),new T.Vector3(.699,.03825,.047)).containsBox(cartBounds);const electronicsClear=[f.systems.board,f.systems.esc,...f.systems.servos].every(object=>!sourceBox(object).intersectsBox(sensorBox));const endpoint=f.line.parent.localToWorld(new T.Vector3(...f.line.userData.attachment)),attachment=f.sensor.localToWorld(f.sensor.userData.tetherLocal.clone());const screenBox=new T.Box3().setFromObject(f.sensor),projected=[];for(const x of [screenBox.min.x,screenBox.max.x])for(const y of [screenBox.min.y,screenBox.max.y])for(const z of [screenBox.min.z,screenBox.max.z])projected.push(new T.Vector3(x,y,z).project(f.camera).toArray());results.push({p,stationary,cartInFuse,electronicsClear,projected,sensorStowed:new T.Box3(new T.Vector3(.033,-.08075,-.047),new T.Vector3(.699,.03825,.047)).containsBox(sourceBox(f.sensor,f.mechanism.parent)),attachmentError:endpoint.distanceTo(attachment),scale:f.mechanism.scale.toArray(),mounted:f.mechanism.parent===f.scene.getObjectByName('fleet-competition')});}return results;});
+   for(const result of installation){assert.ok(result.stationary&&result.cartInFuse,'Carriage and housing stay aboard, duplicate cart suppressed at '+result.p);assert.ok(result.electronicsClear,'Electronics clear sensor travel at '+result.p);if(result.p>=.985)assert.ok(result.sensorStowed,'Recovered CAD body fits fully in the fuselage');assert.ok(result.attachmentError<1e-8,'Towline remains attached');assert.deepEqual(result.scale,[1,1,1],'No hidden mechanism resizing');assert.ok(result.mounted,'Mechanism stays parented to fuselage');assert.ok(result.projected.every(v=>Math.abs(v[0])<.98&&Math.abs(v[1])<.90),'Sensor stays in frame through payout '+result.p+': '+JSON.stringify(result.projected));}
+   const missionFraming=await page.evaluate(()=>{
+    const f=__skylabsFleet,T=THREE,plane=f.scene.getObjectByName('fleet-competition'),v=new T.Vector3();
+    return [.76,.80,.85,.91,.993,1].map(p=>{
+     f.seek(p);const rect=new T.Box2();
+     plane.traverseVisible(mesh=>{if(!mesh.isMesh)return;const a=mesh.geometry.attributes.position;
+      for(let i=0;i<a.count;i++){v.fromBufferAttribute(a,i).applyMatrix4(mesh.matrixWorld).project(f.camera);rect.expandByPoint(v);}});
+     return {p,x:Math.max(Math.abs(rect.min.x),Math.abs(rect.max.x)),y:Math.max(Math.abs(rect.min.y),Math.abs(rect.max.y))};
+    });
+   });
+   assert.ok(missionFraming.every(v=>v.x<.99&&v.y<.90),'Whole aircraft, towline and payload fit wide shots: '+JSON.stringify(missionFraming));
+   const stowed=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.3);const first=f.renderer.domElement.toDataURL(),pose=f.sensor.position.toArray();f.seek(1);f.seek(.3);return {same:first===f.renderer.domElement.toDataURL(),pose,rest:f.sensor.userData.rest.toArray(),restored:f.housing.every(p=>p.object.position.distanceTo(p.rest)<1e-12)};});assert.ok(stowed.same&&stowed.restored,'Complete deployment/retrieval restores original source poses and image');assert.deepEqual(stowed.pose,stowed.rest);
+   // Ordinary native scroll must update in both directions without capture seeks.
+   const nativePhases=[];for(const p of [.15,.72,.83,.91,.995,.83,.15]){await page.evaluate(p=>{const t=document.querySelector('.fleet-track'),s=document.querySelector('.fleet-stage');scrollTo(0,scrollY+t.getBoundingClientRect().top-parseFloat(getComputedStyle(s).top)+p*(t.offsetHeight-s.offsetHeight));},p);await page.waitForFunction(p=>Math.abs(Number(document.querySelector('[data-skylabs-fleet]').dataset.fleetProgress)-p)<.009,p);nativePhases.push(await page.evaluate(()=>__skylabsFleet.mission.phase));}
+   assert.deepEqual(nativePhases,['internal','deploy','tow','recover','stowed','tow','internal'],'Ordinary forward scroll recovers the sensor and reversing revisits the tow');
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
+   await page.evaluate(()=>scrollTo(0,document.body.scrollHeight));await page.waitForFunction(()=>document.querySelector('.fleet-track').getBoundingClientRect().bottom < -400);await page.waitForTimeout(700);const old=await page.evaluate(()=>window.__skylabsFleet.renderer.info.render.frame);await page.waitForTimeout(250);assert.equal(await page.evaluate(()=>window.__skylabsFleet.renderer.info.render.frame),old,'Offscreen rendering stops');
+   await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>matchMedia('(prefers-reduced-motion: reduce)').matches&&document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='static').catch(async error=>{console.error('Preference state',await page.evaluate(()=>({state:document.querySelector('[data-skylabs-fleet]').dataset.fleetState,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches})),errors);throw error;});assert.equal(await page.locator('[data-skylabs-fleet]').getAttribute('data-fleet-state'),'static');assert.ok(await page.locator('.fleet-poster').evaluate(n=>getComputedStyle(n).visibility==='visible'));
+   await page.close();
+  }
+  for(const kind of ['reduced','save-data','short','no-webgl','failed','compat','context-loss','no-js']){
+   const requests=[];const options={viewport:{width:390,height:kind==='short'?500:844},reducedMotion:kind==='reduced'?'reduce':'no-preference',javaScriptEnabled:kind!=='no-js'};
+   const page=await open(options,async p=>{p.on('request',r=>{if(/skylabs-(competition|mechanism|trainer)\/(assembly|airframe)/.test(r.url()))requests.push(r.url());});if(kind==='save-data')await p.addInitScript(()=>Object.defineProperty(navigator,'connection',{value:Object.assign(new EventTarget(),{saveData:true})}));if(kind==='no-webgl')await p.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/i.test(type)?null:original.call(this,type,...args);};});if(kind==='failed')await p.route(/skylabs-competition\/assembly(?:\.meshopt)?\.glb\.gz/,r=>r.abort());if(kind==='compat'){await p.route('**/*.meshopt.glb.gz*',r=>r.abort());await p.route('**/livery/*.webp',r=>r.abort());}},kind);
+   await page.locator('#aircraft').scrollIntoViewIfNeeded();
+   if(kind==='no-webgl'){await page.waitForFunction(()=>document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='failed');assert.equal(requests.length,0,'An unavailable GPU should not download aircraft CAD');}
+   else if(kind==='failed')await page.waitForFunction(()=>document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='failed');
+   else if(kind==='compat'){await page.waitForFunction(()=>window.__skylabsFleet?.ready,null,{timeout:90000});const sources=await page.evaluate(()=>{const f=__skylabsFleet;f.seek(.24);const urls=[];for(const object of [f.filmGroup,f.scene.getObjectByName('fleet-trainer')])object.traverse(m=>{if(m.isMesh&&(m.userData.trainerLivery||m.material.map&&m.name.startsWith('wing-')))urls.push(m.material.map.image.currentSrc||m.material.map.image.src);});return urls;});assert.equal(sources.length,10);assert.ok(sources.every(s=>/\.png(?:\?|$)/.test(s)));assert.ok(requests.some(s=>s.includes('/skylabs-competition/assembly.glb.gz')));await page.close();continue;}
+   else if(kind==='context-loss'){await page.waitForFunction(()=>window.__skylabsFleet?.ready,null,{timeout:90000});await page.evaluate(()=>window.__skylabsFleet.renderer.getContext().getExtension('WEBGL_lose_context').loseContext());await page.waitForFunction(()=>document.querySelector('[data-skylabs-fleet]').dataset.fleetState==='failed');}
+   else {await page.waitForTimeout(400);assert.equal(requests.length,0,kind+' skips model delivery');}
+   assert.ok(await page.locator('.fleet-poster').evaluate(n=>n.complete&&n.naturalWidth>0&&getComputedStyle(n).visibility==='visible'),kind+' preserves poster');
+   await page.screenshot({path:'.codex-temp/fleet/'+kind+'.png'});await page.close();
+  }
+  assert.deepEqual(errors,[]);console.log('PASS: 145 new source nodes, gzip/hash parity, simultaneous trainer/competition, desktop/mobile visual captures, internal lowering carriage at original scale, vertical belly release, measured 1.5× mission tow and forward in-flight recovery, original telemetry PCB and trainer ESC/servos, isolated sensor body, opaque Solarfilm/peel/reassembly, attached towline, full deployment/retrieval reversal, native scroll, idle pause, reduced motion, Save Data, short viewport, failed download, context loss, no JS.');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
