@@ -6,7 +6,7 @@
  const stage=root.querySelector('.fleet-stage'),track=root.querySelector('.fleet-track'),canvas=root.querySelector('canvas'),status=root.querySelector('.fleet-status');
  const title=root.querySelector('[data-fleet-title]'),caption=root.querySelector('[data-fleet-caption]'),bar=root.querySelector('.fleet-progress');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
- let renderer,scene,camera,plane,trainer,mechanism,sensor,line,mechanismSource,housing=[],films=[],filmGroup,airframeCutaway=[],cart,supersededSensor,systems,wingCutaway=[],frame=0,loading=false,ready=false,active=false,failed=false,progress=0;
+ let renderer,scene,camera,plane,trainer,mechanism,sensor,line,mechanismSource,housing=[],films=[],filmGroup,airframeCutaway=[],mission,towExit,fullTowShift,cart,supersededSensor,systems,wingCutaway=[],frame=0,loading=false,ready=false,active=false,failed=false,progress=0;
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
  function staticCaption(){title.textContent='The two airframes';caption.textContent='Trainer and competition taildragger';bar.style.transform='scaleX(0)';}
  const allowed=()=>!reduced.matches&&!navigator.connection?.saveData&&innerHeight>=560;
@@ -49,6 +49,19 @@
  // Axes: +X nose, +Y up. One world-space pose per scroll position in either
  // direction; no elapsed-time flight or camera state to reset on retrieval.
  const beat=(p,a,b)=>smooth((p-a)/(b-a));
+ // Section 3.1.2 measures the straight distance from the airframe exit to
+ // the actual nose, not to the notch or along the curved line. Values below
+ // are in the original metre-scale CAD space, before presentation scaling.
+ const wingspanM=1.8336315894139834, minimumM=1.5*wingspanM, floorY=-.08375000046007501;
+ const fullyOut=.800, reelIn=.878, underExit=.942, captured=.962, latched=.979;
+ function flightMotion(p){
+  return {
+   lower:.025*(beat(p,.600,.657)-beat(p,captured,latched)),
+   vertical:beat(p,.684,.735)*(1-beat(p,underExit,captured)),
+   trail:beat(p,.724,fullyOut)*(1-beat(p,reelIn,underExit)),
+   recovering:beat(p,.934,.950)*(1-beat(p,.977,.998))
+  };
+ }
  function flyPair(p,portrait){
   const lead=beat(p,0,.19),join=beat(p,.018,.245),follow=beat(p,.31,.49);
   const breakaway=beat(p,.295,.49),round=Math.sin(Math.PI*breakaway);
@@ -61,6 +74,11 @@
    cy*(1-follow)+.06*follow+.19*(1-join),cz*(1-follow)-1.66*(1-join));
   plane.rotation.set(.025+.16*(1-join)-.065*Math.sin(Math.PI*join),
    -.18-.42*(1-join),.055*(1-join));
+  const flight=beat(p,.63,1);
+  plane.position.x+=1.06*flight;
+  plane.position.y+=.07*Math.sin(Math.PI*flight);
+  plane.rotation.x+=.025*Math.sin(2*Math.PI*flight);
+  plane.rotation.y-=.10*flight;
   plane.scale.setScalar(.80-.18*portrait+follow*(.12+.18*portrait));plane.visible=true;
   trainer.position.set(tx-(.86-.51*portrait)*(1-lead)+breakaway*3.70,
    ty+.21*(1-lead)+breakaway*.85,tz-.99*(1-lead)-breakaway*.55);
@@ -69,7 +87,7 @@
   trainer.scale.setScalar(.74-.17*portrait);trainer.visible=breakaway<.999;
   return follow;
  }
- function frameCamera(T,aspect,p,follow){
+ function frameCamera(T,aspect,p,follow,motion){
   const portrait=clamp((1.68-aspect)/.82);
   const widthFit=1/Math.min(1,aspect/.66),midFit=1/Math.min(1,aspect/1.12);
   const local=(x,y,z)=>plane.localToWorld(new T.Vector3(x,y,z));
@@ -83,21 +101,25 @@
   // alongside the cart at its lower stop; do not turn the side view into
   // a fly-through while the small internal stroke is the subject.
   const carriage=pose(local(.352,-.04,0),.065,-.009,.77,1/Math.min(1,aspect/.92));
-  // Start widening just before payout, then tilt with the falling sensor.
-  // The last few percent are a still end plate with the entire tether visible.
-  const reach=beat(p,.78,.955);
-  const tow=pose(local(.078,-.087-.087*reach,0),.83,.34+.035*reach,1.76,midFit*(1+.12*portrait));
-  mix(chase,skin,follow);mix(chase,carriage,beat(p,.495,.607));mix(chase,tow,beat(p,.738,.882));
+  const release=pose(local(.078,-.14,0),.80,.36,1.86,midFit*(1+.10*portrait));
+  // A long side view on desktop, and a more nose-on sightline on phones
+  // so the trailing line reads diagonally without shrinking the wings to dots.
+  // Keep the whole vector in frame and away from the caption.
+  const tow=pose(local(-.56+portrait*.27,-.89+portrait*.11,-.33*portrait),
+   1.58+2.29*portrait,.49-.20*portrait,4.39-.16*portrait,
+   (1+.09*portrait)/Math.min(1,aspect/.53));
+  mix(chase,skin,follow);mix(chase,carriage,beat(p,.495,.607));
+  mix(chase,release,beat(p,.674,.748));mix(chase,tow,motion.trail);
+  mix(chase,carriage,motion.recovering);
   camera.position.copy(chase.target).add(chase.offset);
   camera.aspect=aspect;camera.lookAt(chase.target);camera.updateProjectionMatrix();
  }
  function draw(value){
   if(!ready)return;progress=clamp(value);const T=THREE,w=stage.clientWidth,h=stage.clientHeight,aspect=w/h,portrait=clamp((1.68-aspect)/.82);
   const dpr=Math.min(devicePixelRatio,1.5);if(renderer.getPixelRatio()!==dpr)renderer.setPixelRatio(dpr);if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);
-  const focus=flyPair(progress,portrait),returnWide=beat(progress,.738,.905);
-  // Let the peel trail the trainer's hand-off, so the marked wings can be
-  // compared intact. Carriage stroke and tether travel stay at source scale.
-  const lower=.025*beat(progress,.60,.70),deploy=beat(progress,.78,.955),drop=lower+.45*deploy,peel=beat(progress,.355,.555),inspect=beat(progress,.525,.61);
+  const focus=flyPair(progress,portrait),motion=flightMotion(progress);
+  const returnWide=beat(progress,.701,.789)*(1-motion.recovering);
+  const peel=beat(progress,.355,.555),inspect=beat(progress,.525,.61);
   // Only authored film peels. Structural CAD and the complete internal carriage
   // remain aboard; the cart lowers on the internal guides before sensor release.
   films.forEach((part,index)=>{const amount=clamp(peel-(index%4)*.018*Math.sin(Math.PI*peel));part.patches.forEach(patch=>patch.deform(amount));part.group.position.copy(part.normal).multiplyScalar(.10*smooth((amount-.65)/.35));part.material.opacity=1-smooth((amount-.85)/.15);part.material.transparent=part.material.opacity<1;part.material.depthWrite=part.material.opacity>.95;part.group.visible=amount<.999;});
@@ -105,16 +127,16 @@
   airframeCutaway.forEach(part=>{part.object.visible=true;part.materials.forEach(material=>{material.opacity=1-inspect*(part.floor?1:.90);material.transparent=material.opacity<1;material.depthWrite=material.opacity>.95;});});
   wingCutaway.forEach(material=>{material.opacity=1-inspect*(1-returnWide);material.transparent=material.opacity<1;material.depthWrite=material.opacity>.95;});
   systems.setInspection(1-inspect*(1-returnWide));
-  sensor.position.copy(sensor.userData.rest);sensor.position.z-=drop;cart.position.z-=lower;
-  // A small, damped-looking roll appears only once the body has cleared its
-  // guides. It is deterministic in progress and vanishes at either endpoint.
-  // Compensate about the measured body centre so its travel remains vertical.
-  const sway=.012*smooth((deploy-.55)/.25)*Math.sin(Math.PI*deploy);
-  sensor.quaternion.copy(sensor.userData.restQuaternion);sensor.rotateX(sway);
-  const centre=sensor.userData.bodyCenterLocal;
-  sensor.position.add(centre.clone().applyQuaternion(sensor.userData.restQuaternion).sub(centre.clone().applyQuaternion(sensor.quaternion)));
+  // Clear the belly vertically first. Only then move the sensor aft into
+  // a steady tow. Reel to that same exit, lift it in and raise the carriage.
+  // The original sensor orientation stays fixed for computer-model flight.
+  const {lower,vertical,trail}=motion;
+  sensor.position.copy(sensor.userData.rest);
+  sensor.position.x+=fullTowShift.x*trail;
+  sensor.position.z-=lower+.19*vertical+(fullTowShift.drop-.215)*trail;
+  cart.position.z-=lower;
   plane.updateMatrixWorld(true);
-  frameCamera(T,aspect,progress,focus);
+  frameCamera(T,aspect,progress,focus,motion);
   // Measured named wing spar, no invented cross-member or external extension.
   // The ellipse clears its actual 3 x 22 mm section. Terminal point is the
   // measured 1.5 mm-radius FRONT notch, rigidly tracked on the isolated body.
@@ -122,13 +144,26 @@
   for(let i=0;i<=48;i++){const angle=Math.PI+i/48*Math.PI*2;points.push(new T.Vector3(sx+Math.cos(angle)*.004,sy+Math.sin(angle)*.014,.0555));}
   points.push(new T.Vector3(.35,.031,.035),new T.Vector3(.37,.030,0));
   const attach=sensor.localToWorld(sensor.userData.tetherLocal.clone());plane.worldToLocal(attach);
-  // A little stored line hangs slack at the guide; it straightens as the
-  // sensor pays out and the towline takes load, instead of sagging further.
-  const guide=points[points.length-1],mid=guide.clone().lerp(attach,.5),slack=.002+.018*(1-smooth((deploy-.08)/.78));mid.y-=slack;
+  const tip=plane.worldToLocal(sensor.localToWorld(sensor.userData.forwardTipLocal.clone()));
+  const distanceM=tip.distanceTo(towExit);
+  // The exposed tow always begins at the same belly plane. The notch remains
+  // the actual tether attachment; a separate nose point is used for the rule.
+  const outside=attach.y<towExit.y;
+  if(outside)points.push(towExit.clone());
+  const guide=points[points.length-1],mid=guide.clone().lerp(attach,.5);
+  const slack=outside?.003+.030*trail:.018*(1-vertical);
+  mid.y-=slack;
   points.push(...new T.QuadraticBezierCurve3(guide,mid,attach).getPoints(32).slice(1));
-  line.geometry.dispose();line.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(points,false,'centripetal'),160,.00065,6,false);line.userData.anchor=points[0].toArray();line.userData.attachment=attach.toArray();line.userData.slack=slack;line.visible=peel>.8;
+  line.geometry.dispose();line.geometry=new T.TubeGeometry(new T.CatmullRomCurve3(points,false,'centripetal'),160,.00065+.0023*trail,6,false);line.userData.anchor=points[0].toArray();line.userData.attachment=attach.toArray();line.userData.slack=slack;line.visible=peel>.8;
   renderer.render(scene,camera);bar.style.transform='scaleX('+progress+')';
-  const label=progress<.31?['The two airframes','The trainer leads the competition taildragger into formation.']:progress<.525?['Beneath the Solarfilm','The trainer banks away as the competition wing opens.']:progress<.765?['Inside the fuselage','The carriage lowers inside the aircraft before release.']:progress<.955?['Sensor deployment','The sensor leaves the belly on its front-notch tether.']:['On tow','The carriage stays aboard. Scroll back to retrieve the sensor.'];
+  const phase=progress<.684?'internal':progress<fullyOut?'deploy':progress<=reelIn?'tow':progress<latched?'recover':'stowed';
+  mission={phase,wingspanM,minimumM,distanceM,exitLocalM:towExit.toArray(),forwardTipLocalM:sensor.userData.forwardTipLocal.toArray()};
+  const label=progress<.31?['The two airframes','The trainer leads the competition taildragger into formation.']:progress<.525?['Beneath the Solarfilm','The trainer banks away as the competition wing opens.']:
+   phase==='internal'?['Inside the fuselage','The carriage lowers inside the aircraft before release.']:
+   phase==='deploy'?['Deploying in flight','The sensor clears the belly, then trails behind the aircraft.']:
+   phase==='tow'?['On tow · 1.5× wingspan','Measured from the aircraft’s towline exit to the sensor’s forward tip.']:
+   phase==='recover'?['Retracting in flight','The towline reels in and lifts the sensor back through the belly.']:
+   ['Stowed before landing','The sensor is secured inside the fuselage while the aircraft is still airborne.'];
   if(title.textContent!==label[0])title.textContent=label[0];
   if(caption.textContent!==label[1])caption.textContent=label[1];
   root.dataset.fleetProgress=progress.toFixed(4);
@@ -191,6 +226,16 @@
    // Seat the body 5 mm lower; derive the notch above in original CAD coordinates
    // so the attachment follows this placement rather than cancelling the offset.
    sensor.position.z-=.005;sensor.userData.rest.copy(sensor.position);sensor.userData.restQuaternion=sensor.quaternion.clone();sensor.userData.bodyCenterLocal=new T.Vector3(-.000459059,-.045720124,.031815001);sensor.userData.mountOffsetM=[0,0,-.005];
+   // Actual nose extremum of the isolated CAD body. The illustrative exit is
+   // on the fuselage underside, directly below the stowed front-notch tether.
+   sensor.userData.forwardTipLocal=new T.Vector3(.149540941309766,-.0457201238048,.0318149997162829);
+   // r128 localToWorld uses the cached transform; seat the body before calibration.
+   sensor.updateMatrixWorld(true);
+   const notch=plane.worldToLocal(sensor.localToWorld(sensor.userData.tetherLocal.clone()));
+   const stowedTip=plane.worldToLocal(sensor.localToWorld(sensor.userData.forwardTipLocal.clone()));
+   towExit=new T.Vector3(notch.x,floorY,notch.z);
+   const targetTip=new T.Vector3(-.66,-Math.sqrt(1-.66*.66),0).multiplyScalar(minimumM+.0002).add(towExit);
+   fullTowShift={x:targetTip.x-stowedTip.x,drop:stowedTip.y-targetTip.y};
    line=new T.Mesh(new T.BufferGeometry(),new T.MeshBasicMaterial({color:0x8abaff}));line.name='fleet-towline';plane.add(line);
    filmGroup=new T.Group();filmGroup.name='competition-solarfilm';plane.add(filmGroup);
    for(const item of models[4].panels){
@@ -208,7 +253,7 @@
    }
    systems=window.V2SkylabsSystems.create(T,models[5]);plane.add(systems.group);
    plane.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true;}});ready=true;loading=false;
-   if(allowed()){root.dataset.fleetState='ready';status.textContent='Scroll to fly in, deploy the sensor and reverse to retrieve.';queue();}else{root.dataset.fleetState='static';}
+   if(allowed()){root.dataset.fleetState='ready';status.textContent='Scroll to follow the sensor from deployment to recovery.';queue();}else{root.dataset.fleetState='static';}
   }catch(error){failed=true;loading=false;ready=false;renderer?.dispose();root.dataset.fleetState='failed';staticCaption();status.textContent='The 3D view is unavailable. The CAD preview and assembly notes remain below.';}
  }
  const observer=new IntersectionObserver(entries=>{active=entries[0].isIntersecting;if(active){start();queue();}else{cancelAnimationFrame(frame);frame=0;}},{rootMargin:'400px 0px'});observer.observe(track);
@@ -217,6 +262,6 @@
  reduced.addEventListener('change',preference);navigator.connection?.addEventListener?.('change',preference);
  canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();failed=true;ready=false;cancelAnimationFrame(frame);root.dataset.fleetState=allowed()?'failed':'static';staticCaption();status.textContent=allowed()?'3D rendering paused. The CAD preview remains available.':'Static CAD preview.';});
  addEventListener('pagehide',()=>{cancelAnimationFrame(frame);frame=0;});
- if(new URLSearchParams(location.search).has('fleet-capture'))window.__skylabsFleet={seek:draw,get ready(){return ready;},get renderer(){return renderer;},get scene(){return scene;},get camera(){return camera;},get sensor(){return sensor;},get mechanism(){return mechanism;},get housing(){return housing;},get cart(){return cart;},get systems(){return systems;},get films(){return films;},get filmGroup(){return filmGroup;},get mechanismSource(){return mechanismSource;},get supersededSensor(){return supersededSensor;},get line(){return line;},get progress(){return progress;}};
+ if(new URLSearchParams(location.search).has('fleet-capture'))window.__skylabsFleet={seek:draw,get ready(){return ready;},get renderer(){return renderer;},get scene(){return scene;},get camera(){return camera;},get sensor(){return sensor;},get mechanism(){return mechanism;},get housing(){return housing;},get cart(){return cart;},get systems(){return systems;},get films(){return films;},get filmGroup(){return filmGroup;},get mechanismSource(){return mechanismSource;},get supersededSensor(){return supersededSensor;},get line(){return line;},get mission(){return mission;},get progress(){return progress;}};
  preference();
 })();
