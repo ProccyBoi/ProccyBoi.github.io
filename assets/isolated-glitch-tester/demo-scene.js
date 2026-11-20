@@ -9,16 +9,10 @@ const LAMP_COLORS = {
   D13: '#ff7569', D14: '#bba6ff', D15: '#ffb75b', D16: '#64b8ff'
 };
 const SWITCH_REFS = new Set(['SW2', 'SW3', 'SW4']);
-const ACTIONS = [
-  { action: 'input', ref: 'J1', label: 'Input leads', side: 'left', z: 1.1, pad: '1' },
-  { action: 'power', ref: 'J5', label: 'Power plug', side: 'right', z: 10.5, pad: '1' },
-  { action: 'reset', ref: 'SW2', label: 'Arm / Reset', side: 'left', z: 23 },
-  { action: 'threshold', ref: 'SW3', label: 'Threshold', side: 'left', z: 24 },
-  { action: 'mute', ref: 'SW4', label: 'Buzzer', side: 'right', z: 24 }
-];
-
-const actionByPart = new Map(ACTIONS.map(({ action, ref }) => [ref, action]));
-actionByPart.set('J2', 'input');
+const actionByPart = new Map([
+  ['J1', 'input'], ['J2', 'input'], ['J5', 'power'],
+  ['SW2', 'reset'], ['SW3', 'threshold'], ['SW4', 'mute']
+]);
 
 export function benchNeedsActuatorNodes(ref) {
   return SWITCH_REFS.has(ref);
@@ -43,54 +37,7 @@ function glowTexture(THREE) {
   return new THREE.CanvasTexture(canvas);
 }
 
-function buildHotspots(THREE, board, stage, boardPoint, onAction) {
-  const layer = document.createElement('div');
-  layer.className = 'mct-bench__hotspots';
-  layer.hidden = true;
-  const hotspots = ACTIONS.map(definition => {
-    const { action, ref, label, z, pad } = definition;
-    const part = board.components.find(component => component.ref === ref);
-    const point = pad && part.pads.find(candidate => candidate.number === pad)?.absolute;
-    const [x, y] = boardPoint(board, ...(point || [part.x, part.y]));
-    const line = document.createElement('span');
-    line.className = 'mct-bench__link';
-    line.setAttribute('aria-hidden', 'true');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'mct-bench__hotspot';
-    button.dataset.benchAction = action;
-    button.dataset.footprint = action === 'input' ? 'J1 J2' : ref;
-    button.textContent = label;
-    button.addEventListener('click', () => onAction(action));
-    layer.append(line, button);
-    return { ...definition, line, button, anchor: new THREE.Vector3(x, y, z) };
-  });
-  stage.append(layer);
-  return { layer, hotspots };
-}
-
-function updateHotspotLabels(hotspots, state) {
-  const labels = {
-    input: state.inputConnected ? 'Detach simulated input leads at J1 and J2' : 'Attach simulated input leads at J1 and J2',
-    power: state.powered ? 'Unplug simulated power at J5' : 'Plug in simulated power at J5',
-    reset: 'Arm or reset at SW2',
-    threshold: `Change window at SW3, currently ±${state.threshold} mV`,
-    mute: state.buzzerMuted ? 'Unmute buzzer at SW4' : 'Mute buzzer at SW4'
-  };
-  const pressed = {
-    input: state.inputConnected,
-    power: state.powered,
-    threshold: state.threshold === 150,
-    mute: state.buzzerMuted
-  };
-  for (const { action, button } of hotspots) {
-    button.setAttribute('aria-label', labels[action]);
-    if (action in pressed) button.setAttribute('aria-pressed', String(pressed[action]));
-  }
-}
-
-export function createBenchVisual(THREE, board, { stage, boardPoint, onAction, invalidate }) {
-  const { layer, hotspots } = buildHotspots(THREE, board, stage, boardPoint, onAction);
+export function createBenchVisual(THREE, board, { boardPoint, invalidate }) {
   const leads = createLeadHarness(THREE, board, { boardPoint });
   const group = new THREE.Group();
   group.name = 'Simulated plug-in leads and LED indicators';
@@ -145,7 +92,6 @@ export function createBenchVisual(THREE, board, { stage, boardPoint, onAction, i
   let power = 0;
   let input = 0;
   let lastTime = 0;
-  const viewPoint = new THREE.Vector3();
 
   function paintLamps() {
     const active = new Set(state.powered ? [...state.live, ...state.latched] : []);
@@ -221,7 +167,6 @@ export function createBenchVisual(THREE, board, { stage, boardPoint, onAction, i
     state = { ...state, ...next };
     paintLamps();
     paintSwitches();
-    updateHotspotLabels(hotspots, state);
     lastTime = 0;
     invalidate();
   }
@@ -240,54 +185,15 @@ export function createBenchVisual(THREE, board, { stage, boardPoint, onAction, i
     return moving;
   }
 
-  function renderHotspots(camera, assembly, width, height, facingFront) {
-    layer.hidden = !facingFront;
-    if (!facingFront) return;
-    const mobile = width < 560;
-    const lanes = { left: [], right: [] };
-    for (const spot of hotspots) {
-      viewPoint.copy(spot.anchor).applyMatrix4(assembly.matrixWorld).project(camera);
-      const x = (viewPoint.x + 1) * width / 2;
-      const y = (1 - viewPoint.y) * height / 2;
-      const inside = x > 3 && x < width - 3 && y > 3 && y < height - 3;
-      spot.button.hidden = !inside;
-      spot.line.hidden = !inside;
-      if (!inside) continue;
-      lanes[spot.side].push({ spot, x, y });
-    }
-    for (const lane of Object.values(lanes)) {
-      lane.sort((a, b) => a.y - b.y);
-      let previous = 0;
-      for (const { spot, x, y } of lane) {
-        const inset = mobile ? 7 : 18;
-        const gap = mobile ? 16 : 38;
-        const buttonWidth = spot.button.offsetWidth;
-        const buttonHeight = spot.button.offsetHeight;
-        const left = spot.side === 'left';
-        const row = Math.min(height - buttonHeight - inset, Math.max(inset, previous, y - buttonHeight / 2));
-        const column = Math.min(width - buttonWidth - inset, Math.max(inset, left ? x - buttonWidth - gap : x + gap));
-        spot.button.style.transform = `translate(${column}px, ${row}px)`;
-        previous = row + buttonHeight + 5;
-        const dx = (left ? column + buttonWidth : column) - x;
-        const dy = row + buttonHeight / 2 - y;
-        spot.line.style.width = `${Math.hypot(dx, dy)}px`;
-        spot.line.style.transform = `translate(${x}px, ${y}px) rotate(${Math.atan2(dy, dx)}rad)`;
-      }
-    }
-  }
-
-  updateHotspotLabels(hotspots, state);
   return {
-    group, update, animate, registerPart, renderHotspots,
+    group, update, animate, registerPart,
     lookupAction: ref => actionByPart.get(ref),
-    showHotspots: visible => { layer.hidden = !visible; },
     readState: () => state,
     mated: () => ({ power: power === 1, input: input === 1 }),
     dispose() {
       leads.dispose();
       texture.dispose();
       for (const material of disposeMaterial) material.dispose();
-      layer.remove();
     }
   };
 }

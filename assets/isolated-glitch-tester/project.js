@@ -25,7 +25,7 @@ function loadBoardScene() {
         window.V2CadGeometry || loadScript('../v2-assembly-models.js?v=mechanics-20261003'),
         window.V2CadStudio || loadScript('../v2-cad-studio.js'),
       ]);
-      return import('./viewer.js?v=20261120-bench');
+      return import('./viewer.js?v=20261120-bench-clean');
     })(),
   ]);
   return boardScene;

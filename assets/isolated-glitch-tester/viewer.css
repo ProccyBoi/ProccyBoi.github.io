@@ -363,58 +363,6 @@
   height: auto;
 }
 
-.mct-bench__hotspots {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  pointer-events: none;
-}
-
-.mct-bench__link,
-.mct-bench__hotspot {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.mct-bench__link {
-  height: 1px;
-  background: #aaa99f;
-  transform-origin: 0 50%;
-  opacity: 0.75;
-}
-
-.mct-bench__link::before {
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #ecebe3;
-  content: "";
-}
-
-.mct-bench .mct-bench__hotspot {
-  z-index: 1;
-  padding: 0.48rem 0.72rem;
-  border-color: #55564f;
-  background: #171816f5;
-  color: var(--mct-ink);
-  font-size: 0.875rem;
-  font-weight: 550;
-  line-height: 1.2;
-  white-space: nowrap;
-  pointer-events: auto;
-}
-
-@media (max-width: 520px) {
-  .mct-bench .mct-bench__hotspot {
-    padding-inline: 0.45rem;
-    font-size: 0.8125rem;
-  }
-}
-
 .mct-bench .mct-bench__reset {
   position: absolute;
   z-index: 2;

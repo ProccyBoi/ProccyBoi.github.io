@@ -106,7 +106,7 @@ function sourceLabel(component, modelStatus) {
 }
 
 export async function mountDemoScene(container, { board, assetBase, poster, onAction }) {
-  const module = await import('./demo-scene.js?v=20261120-bench');
+  const module = await import('./demo-scene.js?v=20261120-bench-clean');
   return mountViewer(container, board, { assetBase, poster, bench: { module, onAction } });
 }
 
@@ -371,7 +371,6 @@ export function mountViewer(container, board, options = {}) {
     }
     renderer.render(scene, camera);
     if (benchVisual) {
-      benchVisual.renderHotspots(camera, assembly, width, height, state.elevation > 0.15);
       const mated = benchVisual.mated();
       container.dataset.benchPowerMated = String(mated.power);
       container.dataset.benchInputMated = String(mated.input);
@@ -392,7 +391,6 @@ export function mountViewer(container, board, options = {}) {
     fallback.hidden = false;
     fallbackStatus.hidden = false;
     if (detailSource) detailSource.textContent = '';
-    benchVisual?.showHotspots(false);
     if (benchReset) benchReset.hidden = true;
     updateControls();
   }
@@ -437,7 +435,7 @@ export function mountViewer(container, board, options = {}) {
   presentation.add(assembly);
   if (bench) {
     benchVisual = bench.module.createBenchVisual(THREE, board, {
-      stage, boardPoint, onAction: bench.onAction, invalidate: requestDraw
+      boardPoint, invalidate: requestDraw
     });
     assembly.add(benchVisual.group);
     publishBenchState();
