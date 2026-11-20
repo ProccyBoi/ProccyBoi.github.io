@@ -1,6 +1,6 @@
-# V5 — From the workbench
+# V5 — From the bench to the flight line
 
-An independent portfolio at `/v5/`: home, 16 project stories, two Skylabs board records, searchable collection, About and a reference notebook. Existing versions and shared model assets are retained.
+The `/v5/` portfolio covers 17 projects, two Skylabs board records, a searchable archive, About and a reference notebook. Its homepage follows Andrew’s work across power electronics, avionics and teaching.
 
 ## Evidence and design
 
@@ -8,13 +8,17 @@ The [reference notebook](/v5/references/) records 12 creator resources, three da
 
 The main sources are 74th's RP2040 alignment jig, ciniml's M5Stack reflow controller and STEP model combiner, Lang-ship's EasyEDA/OSHWLab workflow, CHIRIMEN, UniBoard SPICE, and Switch Science's historical reflow guide. International interaction references include Ciechanowski's Mechanical Watch, KiCanvas, InteractiveHtmlBom, Falstad and CPU Land. Sources and boundaries are linked individually in the notebook.
 
-The composition uses a warm paper background, green accent and existing self-hosted Archivo/Plex Mono. Those are editorial choices, not scientifically proven preferences or a claim of a Japanese visual style. The hypothesis is that a clear identity, early project links and one optional assembly story help visitors reach and understand the work. No user study or conversion lift is claimed. A follow-up study should ask visitors to identify Andrew's work, find the telemetry evidence, and reach CV/contact, comparing task completion and misconceptions with the existing site.
+The composition pairs warm paper and deep pine with amber controls and self-hosted Archivo and Plex Mono. The homepage leads with a real photograph of the Skylabs telemetry board and direct routes into project case studies, the demos and the CV.
 
 W3C keyboard, reflow, focus visibility and motion guidance inform the implementation. The 320px surrounding layout, native links, visible focus, static reduced-motion presentation and skip route have explicit acceptance checks. MDN progressive enhancement and visibility tracking inform fallbacks and rendering lifecycle. Desktop tests are not screen-reader certification, physical-device frame-rate measurements or field Core Web Vitals data.
 
 ## Content and geometry
 
-`build-pages.py` renders 20 interiors from the existing `v4/content/projects.json` evidence ledger and established public profile material. Home and the notebook are authored separately. Published targets, recorded results and limitations remain distinct. Photos and CAD assets come from the existing approved site; no new third-party imagery is imported.
+`build-pages.py` renders 20 interiors from the existing `v4/content/projects.json` evidence ledger and established public profile material. The V5-only tester record appears in the archive and opens its authored case study. Home and the notebook are also authored separately. Photos and CAD assets come from the existing site.
+
+The Glitch Tester case mounts the shared 129-footprint inspector and virtual bench with draggable leads, a working supply switch and simulated fault LEDs. The Dash, Skylabs telemetry and Skylabs ground station cases mount the existing CAD assemblies with part identification and disassembly.
+
+`flight.js` draws the track and barometric height change from 348 exact rows in the published F110211 replay, selected at roughly two-second intervals with endpoints and extrema included. The preview reports GNSS ground speed. Its source link opens the full Flight Review.
 
 `assembly.js` loads the existing telemetry model and extracted CAD lands near the viewport. It preserves source triangles, component rotations and final placements. The camera and component reveal respond to native document scrolling. Paste volume, wetting and process timing are illustrative; this is not production stencil data, a measured reflow trace or a validated process recipe. Underside and through-hole parts appear in separate steps. Package-model limitations of the existing export remain; there was no new verification against a separate local board project.
 
@@ -33,6 +37,7 @@ python v5/tests/static.py
 node --check v5/assembly.js
 node --check v5/solder-process.js
 node --check v5/interiors.js
+node --check v5/flight.js
 node v5/tests/assembly.cjs
 node v5/tests/solder-visibility.cjs
 node v5/tests/interiors.cjs

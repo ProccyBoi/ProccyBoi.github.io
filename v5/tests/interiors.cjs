@@ -5,7 +5,9 @@ const assert = require('node:assert/strict');
 const playwright = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base = process.env.V5_BASE_URL || 'http://127.0.0.1:8765';
 const output = process.env.V5_QA_DIR || path.resolve(__dirname, '../../../v5-qa');
-const projects = require('../../v4/content/projects.json');
+const tester = require('../content/isolated-glitch-tester.json');
+const projects = [...require('../../v4/content/projects.json'), tester];
+const projectCount = 17;
 const checks = [];
 const failures = [];
 const check = async (name, action) => {
@@ -34,11 +36,14 @@ if (process.env.CHROMIUM_EXECUTABLE) launch.executablePath = process.env.CHROMIU
     const page = await browser.newPage({viewport:{width:1440,height:1000}});
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await check('Collection contains all 16 projects and two board records', async () => {
+    await check('Collection contains all 17 projects and two board records', async () => {
       const response = await page.goto(`${base}/v5/projects/`);
       assert.equal(response.status(), 200);
-      assert.equal(await visibleCount(page),16);
+      assert.equal(await visibleCount(page),projectCount);
       assert.equal(await page.locator('#board-records article').count(),2);
+      assert.deepEqual(await page.locator('.site-header nav a').allTextContents(), ['Projects', 'Demos', 'Notebook', 'About', 'CV']);
+      assert.equal(await page.locator('.site-header nav a[aria-current="page"]').getAttribute('href'), '/v5/projects/');
+      assert.equal(await page.locator('.site-header nav').getByRole('link', {name:'Demos',exact:true}).getAttribute('href'), '/v5/#bench');
       await capture(page,'interiors-collection-desktop.png');
     });
     await check('Search, discipline, empty state and resets reflect the same results', async () => {
@@ -46,7 +51,11 @@ if (process.env.CHROMIUM_EXECUTABLE) launch.executablePath = process.env.CHROMIU
       assert.equal(await visibleCount(page),4);
       assert.equal(new URL(page.url()).searchParams.get('q'),'radio');
       await page.getByRole('button',{name:'Reset filters',exact:true}).click();
-      assert.equal(await visibleCount(page),16);
+      assert.equal(await visibleCount(page),projectCount);
+      await page.getByLabel('Search projects', {exact:true}).fill('glitch tester');
+      assert.equal(await visibleCount(page),1);
+      assert.equal(await page.locator('.project-entry:visible h2 a').getAttribute('href'), `/v5/projects/${tester.slug}/`);
+      await page.getByRole('button',{name:'Reset filters',exact:true}).click();
       await page.getByLabel('Discipline',{exact:true}).selectOption('Expansion cards');
       assert.equal(await visibleCount(page),5);
       assert.equal(new URL(page.url()).searchParams.get('discipline'),'Expansion cards');
@@ -54,7 +63,7 @@ if (process.env.CHROMIUM_EXECUTABLE) launch.executablePath = process.env.CHROMIU
       assert.equal(await visibleCount(page),0);
       await page.locator('[data-empty]').waitFor({state:'visible'});
       await page.getByRole('button',{name:'Show all projects',exact:true}).click();
-      assert.equal(await visibleCount(page),16);
+      assert.equal(await visibleCount(page),projectCount);
       assert.equal(await page.getByLabel('Search projects',{exact:true}).inputValue(),'');
       assert.equal(await page.locator(':focus').getAttribute('id'),'project-query');
       assert.equal(new URL(page.url()).searchParams.has('q'),false);
@@ -90,12 +99,16 @@ if (process.env.CHROMIUM_EXECUTABLE) launch.executablePath = process.env.CHROMIU
       await page.keyboard.press('Enter');
       await page.waitForURL('**/v5/projects/dash/');
     });
-    await check('Every generated case loads with valid media and one heading', async () => {
+    await check('Every case loads with valid media and one heading', async () => {
       for (const project of projects) {
         const response = await page.goto(`${base}/v5/projects/${project.slug}/`);
         assert.equal(response.status(),200,project.slug);
         assert.equal(await page.locator('h1').count(),1,project.slug);
-        assert.equal(await page.locator('h1').innerText(),project.name,project.slug);
+        if (project === tester) {
+          assert.equal(await page.title(), `${tester.name} — Andrew Chung`);
+        } else {
+          assert.equal(await page.locator('h1').innerText(), project.name, project.slug);
+        }
         const broken = await page.locator('img').evaluateAll(images => images.filter(im=>im.complete&&!im.naturalWidth).map(im=>im.src));
         assert.deepEqual(broken,[],project.slug);
         assert.equal(await overflow(page),false,project.slug);
@@ -116,14 +129,14 @@ if (process.env.CHROMIUM_EXECUTABLE) launch.executablePath = process.env.CHROMIU
         await page.getByLabel('Discipline',{exact:true}).selectOption('Embedded systems');
         assert.equal(await visibleCount(page),3);
         await page.getByRole('button',{name:'Reset filters',exact:true}).click();
-        assert.equal(await visibleCount(page),16);
+        assert.equal(await visibleCount(page),projectCount);
       });
     }
     await check('No JavaScript retains all projects, contact and case evidence', async () => {
       const context=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});
       const nojs=await context.newPage();
       await nojs.goto(`${base}/v5/projects/`);
-      assert.equal(await visibleCount(nojs),16);
+      assert.equal(await visibleCount(nojs),projectCount);
       assert.equal(await nojs.locator('[data-filters]').isVisible(),false);
       await nojs.goto(`${base}/v5/projects/kiku/`);
       assert.ok((await nojs.locator('main').innerText()).includes('not extended listening reliability'));

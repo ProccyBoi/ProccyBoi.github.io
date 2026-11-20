@@ -2,7 +2,7 @@
 """Generate v5 project interiors from the established v4 factual content ledger.
 
 Run from any directory. --check compares without writing. Standard library only.
-The v5 home and references pages are deliberately outside this generator.
+The v5 home, references and interactive tester case are authored separately.
 """
 import argparse
 import html
@@ -11,7 +11,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'v4/content/projects.json'
+TESTER = ROOT / 'v5/content/isolated-glitch-tester.json'
 CV = '/assets/documents/Andrew_Chung_Public_CV.pdf'
+HARDWARE_MODELS = {
+    'dash': ('dash', 'Dash device assembly'),
+    'skylabs/boards/telemetry': ('skylabs-telemetry', 'Aircraft telemetry board assembly'),
+    'skylabs/boards/ground-station': ('skylabs-ground-station', 'Ground station board assembly'),
+}
+HARDWARE_ASSETS = '''<link rel="stylesheet" href="/assets/v2-hardware.css">
+<link rel="stylesheet" href="/v5/hardware.css">
+<script src="/assets/v2-hardware.js?v=studio-20261120" defer></script>'''
 
 
 def esc(value):
@@ -32,8 +41,8 @@ def image(img, eager=False):
             + (' fetchpriority="high"' if eager else '') + '>')
 
 
-def shell(title, description, route, content, active='', script=False, social=None):
-    nav = [('/v5/#work', 'Work'), ('/v5/projects/', 'All projects'), ('/v5/references/', 'Notebook'), ('/v5/about/', 'About'), (CV, 'CV')]
+def shell(title, description, route, content, active='', script=False, social=None, hardware=False):
+    nav = [('/v5/projects/', 'Projects'), ('/v5/#bench', 'Demos'), ('/v5/references/', 'Notebook'), ('/v5/about/', 'About'), (CV, 'CV')]
     navigation = ''.join(f'<a href="{esc(url)}"' + (' aria-current="page"' if active == url else '') + f'>{name}</a>' for url, name in nav)
     social = social or '/assets/images/projects/skylabs-telemetry-macro-1920.webp'
     return f'''<!doctype html>
@@ -41,15 +50,15 @@ def shell(title, description, route, content, active='', script=False, social=No
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light"><title>{esc(title)} — Andrew Chung</title>
-<meta name="description" content="{esc(description)}"><meta name="theme-color" content="#f1f0e9">
+<meta name="description" content="{esc(description)}"><meta name="theme-color" content="#14251f">
 <link rel="canonical" href="https://proccyboi.github.io{route}">
 <meta property="og:type" content="website"><meta property="og:title" content="{esc(title)} — Andrew Chung">
 <meta property="og:description" content="{esc(description)}"><meta property="og:url" content="https://proccyboi.github.io{route}">
 <meta property="og:image" content="https://proccyboi.github.io{esc(social)}">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/v5/site.css"><link rel="stylesheet" href="/v5/interiors.css">
-{'<script src="/v5/interiors.js" defer></script>' if script else ''}
+<link rel="stylesheet" href="/v5/site.css?v=flightline-20261120"><link rel="stylesheet" href="/v5/interiors.css">
+{'<script src="/v5/interiors.js" defer></script>' if script else ''}{HARDWARE_ASSETS if hardware else ''}
 </head>
 <body class="interior">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -57,6 +66,24 @@ def shell(title, description, route, content, active='', script=False, social=No
 <main id="main" tabindex="-1">{content}</main>
 <footer class="site-footer"><a href="/v5/">Andrew Chung</a><span>Electrical engineering · Sydney</span><nav aria-label="Footer">{link('/v5/about/#contact', 'Contact')}{link('https://github.com/ProccyBoi', 'GitHub')}{link(CV, 'Public CV')}<a href="#main">Back to top ↑</a></nav></footer>
 </body></html>
+'''
+
+
+def hardware_panel(asset, title, poster):
+    return f'''<section id="explore" class="v5-hardware-panel" aria-labelledby="v5-hardware-title">
+  <header><h2 id="v5-hardware-title">Inspect the assembly</h2><p>Rotate the model and select a part to identify it. Disassemble to see where the parts sit.</p></header>
+  <figure data-hardware="/assets/models/hardware/{esc(asset)}/assembly.json" data-hardware-title="{esc(title)}">
+    <div class="hardware-stage" data-hardware-stage>
+      <img data-hardware-poster src="{esc(poster['src'])}" width="{int(poster['width'])}" height="{int(poster['height'])}" alt="{esc(poster['alt'])}" loading="lazy" decoding="async">
+      <canvas data-hardware-canvas hidden></canvas>
+      <output class="v2-part-readout" data-hardware-part aria-live="polite" hidden></output>
+    </div>
+    <div class="hardware-start"><button type="button" data-hardware-start>Explore in 3D</button></div>
+    <div class="hardware-controls"><button type="button" data-hardware-explode aria-pressed="false">Disassemble</button></div>
+    <p data-hardware-status role="status" aria-live="polite"></p>
+  </figure>
+  <noscript><p class="v5-hardware-note">Enable JavaScript to rotate or disassemble the model.</p></noscript>
+</section>
 '''
 
 
@@ -70,10 +97,11 @@ def render_case(project, number, projects):
     if '/boards/' in slug:
         crumbs += ' <span aria-hidden="true">/</span> <a href="/v5/projects/skylabs/">Skylabs</a>'
     crumbs += f' <span aria-hidden="true">/</span> <span aria-current="page">{esc(p["name"])}</span>'
+    hardware = HARDWARE_MODELS.get(slug)
     lab = p.get('lab')
     # #details identifies an article, not an interactive viewer.
     action_label = 'Open interactive viewer' if lab and not lab.endswith('#details') else 'Read original project'
-    actions = link(lab or p['source'], action_label, 'interior-button')
+    actions = '<a class="interior-button" href="#explore">Inspect in 3D</a>' if hardware else link(lab or p['source'], action_label, 'interior-button')
     if slug == 'kiku':
         actions += link('/v3/projects/kiku/#explore', 'Inspect the assembly', 'interior-text-link')
     if slug == 'skylabs':
@@ -90,6 +118,8 @@ def render_case(project, number, projects):
 <figure class="case-hero">{image(hero, eager=True)}<figcaption>{esc(caption)}</figcaption></figure>
 <dl class="case-specs">{specs}</dl>
 '''
+    if hardware:
+        content += hardware_panel(*hardware, hero)
     if e:
         overview = ''
         if e.get('maturity'):
@@ -130,11 +160,12 @@ def render_case(project, number, projects):
         main_projects = [x for x in projects if '/boards/' not in x['slug']]
         next_p = main_projects[(main_projects.index(p) + 1) % len(main_projects)]
     content += f'<nav class="case-next" aria-label="More projects"><a href="/v5/projects/">← All projects</a>{link("/v5/projects/" + next_p["slug"] + "/", "Next: " + next_p["name"])}</nav></div>'
-    return route, shell(p['name'], p['description'], route, content, social=hero['src'])
+    return route, shell(p['name'], p['description'], route, content, social=hero['src'], hardware=bool(hardware))
 
 
 def collection(projects):
     main = [p for p in projects if '/boards/' not in p['slug']]
+    project_count = len(main)
     categories = sorted({p['category'] for p in main})
     options = ''.join(f'<option value="{esc(c)}">{esc(c)}</option>' for c in categories)
     cards = []
@@ -142,28 +173,28 @@ def collection(projects):
         hero = p.get('hero') or p['images'][0]
         search = ' '.join([p['name'], p['description'], p['spec'], p['category'], (p.get('evidence') or {}).get('maturity', '')])
         cards.append(f'''<article class="project-entry" data-project data-category="{esc(p['category'])}" data-search="{esc(search.lower())}"><a class="project-entry-image" href="/v5/projects/{p['slug']}/" tabindex="-1" aria-hidden="true">{image({**hero, 'alt': ''})}</a><div class="project-entry-copy"><p class="interior-kicker">{i:02d} / {esc(p['category'])}</p><h2><a href="/v5/projects/{p['slug']}/">{esc(p['name'])}<span aria-hidden="true">↗</span></a></h2><p>{esc(p['description'])}</p><p class="project-entry-spec">{esc(p['spec'])}</p></div></article>''')
-    content = f'''<div class="interior-wrap"><header class="collection-heading"><p class="interior-kicker">The project archive / 16 projects</p><h1>On the<br>workbench.</h1><p class="interior-lead">Circuit boards, embedded software and the tools that connect them.</p></header>
+    content = f'''<div class="interior-wrap"><header class="collection-heading"><p class="interior-kicker">The project archive / {project_count} projects</p><h1>On the<br>workbench.</h1><p class="interior-lead">Circuit boards, embedded software and the tools that connect them.</p></header>
 <form class="project-filters" data-filters hidden role="search" aria-label="Find a project"><div><label for="project-query">Search projects</label><input id="project-query" name="q" type="search" placeholder="Try PCB, radio or STM32" autocomplete="off"></div><div><label for="project-discipline">Discipline</label><select id="project-discipline" name="discipline"><option value="">All disciplines</option>{options}</select></div><button type="reset">Reset filters</button></form>
-<div class="collection-status"><p data-count role="status" aria-live="polite" aria-atomic="true">16 projects</p><a href="#board-records">Skylabs board records ↓</a></div>
+<div class="collection-status"><p data-count role="status" aria-live="polite" aria-atomic="true">{project_count} projects</p><a href="#board-records">Skylabs board records ↓</a></div>
 <div class="project-list">{''.join(cards)}</div><div class="project-empty" data-empty hidden><h2>No projects match.</h2><p>Try a different keyword or select all disciplines.</p><button type="button" data-reset>Show all projects</button></div>
 <section class="board-records" id="board-records" aria-labelledby="boards-title"><div><p class="interior-kicker">Inside Skylabs</p><h2 id="boards-title">Two ends of<br>the link.</h2></div><div>{''.join(f'<article><h3>{link("/v5/projects/" + p["slug"] + "/", p["name"])}</h3><p>{esc(p["description"])}</p></article>' for p in projects if '/boards/' in p['slug'])}</div></section>
 </div>'''
-    return shell('All projects', 'Explore 16 electrical engineering projects, plus the Skylabs aircraft and ground-station board records.', '/v5/projects/', content, active='/v5/projects/', script=True)
+    return shell('Projects', f'Explore {project_count} electrical engineering projects, plus the Skylabs aircraft and ground-station board records.', '/v5/projects/', content, active='/v5/projects/', script=True)
 
 
 def about():
-    # Factual copy retained from v4/about/index.html; no inferred personal claims.
     roles = [
-        ('Jun. 2026 — present', 'Electronics Engineer Trainee', 'Switchmode Power Supplies', 'Maintenance, testing and repair of low- and high-voltage power supplies and other equipment.'),
-        ('May 2026 — present', 'Avionics & Payload Team Lead', 'UNSW Skylabs', 'Aircraft telemetry, flight-data hardware and replay tools. Joined Mission Systems in August 2025.'),
-        ('Dec. 2023 — present', 'Senior Lab Demonstrator', 'UNSW', 'Teaching and assessing practical electrical engineering and design classes.'),
-        ('Dec. 2024 — present', 'Behaviours / Hardware Team Member', 'rUNSWift', 'Python, C++ and ROS2 for humanoid robots. Prepared and led the Sydney team at RoboCup 2025 in Salvador, Brazil.'),
-        ('Sep. 2024 — Jan. 2026', 'President', 'UNSW Electrical Engineering & Telecommunications Society', 'Led a team of more than 50 students. In 2025, the society ran 100+ events and delivered 4,000 hours of course support.'),
+        ('Jun. 2026 — present', 'Electronics Engineer Trainee', 'Switchmode Power Supplies', 'I maintain, test and repair low- and high-voltage power supplies and other equipment.'),
+        ('May 2026 — present', 'Avionics & Payload Team Lead', 'UNSW Skylabs', 'I joined Mission Systems in August 2025 and became team lead in May 2026. I work on the aircraft logger, ground-station hardware and post-flight replay, and represented UNSW at AIAA Design/Build/Fly 2026 in Wichita.'),
+        ('Dec. 2023 — present', 'Senior Lab Demonstrator', 'UNSW', 'I teach and assess practical classes in electrical engineering and design.'),
+        ('Dec. 2024 — present', 'Behaviours / Hardware Team Member', 'rUNSWift', 'I develop and test Python and C++ ROS2 software for NAO and Booster K1 humanoid robots. I prepared and led the Sydney team at RoboCup 2025 in Salvador, Brazil.'),
+        ('Sep. 2024 — Jan. 2026', 'President', 'UNSW Electrical Engineering & Telecommunications Society', 'I led a team of more than 50 students. In 2025, the society ran over 100 events and delivered 4,000 hours of course support.'),
     ]
-    rows = ''.join(f'<article class="experience-entry"><p class="interior-kicker">{esc(date)}</p><div><h3>{esc(role)}</h3><p class="experience-place">{esc(place)}</p></div><p>{esc(description)}</p></article>' for date, role, place, description in roles)
-    content = f'''<div class="interior-wrap"><header class="about-heading"><p class="interior-kicker">Electrical engineering / Sydney</p><h1>Andrew Chung.</h1><div class="about-intro"><h2>I like building<br>the whole thing.</h2><div><p class="interior-lead">From a schematic and PCB layout to the firmware, measurements and interface that make a system useful.</p><p>I study electrical engineering at UNSW, work in power electronics and lead avionics and payload work at UNSW Skylabs.</p>{link(CV, 'Download public CV', 'interior-button')}</div></div></header>
+    teaching_anchor = ' id="teaching"'
+    rows = ''.join(f'<article class="experience-entry"{teaching_anchor if role == "Senior Lab Demonstrator" else ""}><p class="interior-kicker">{esc(date)}</p><div><h3>{esc(role)}</h3><p class="experience-place">{esc(place)}</p></div><p>{esc(description)}</p></article>' for date, role, place, description in roles)
+    content = f'''<div class="interior-wrap"><header class="about-heading"><p class="interior-kicker">Electrical engineering / Sydney</p><h1>Andrew Chung.</h1><div class="about-intro"><h2>From the bench<br>to the field.</h2><div><p class="interior-lead">I study electrical engineering at UNSW, work on power supplies at Switchmode, and lead avionics and payload work at UNSW Skylabs.</p><p>On the bench, I test and repair power supplies. For Skylabs, I work on the whole data path, from the STM32 aircraft logger through a LoRa ground station to the replay tools we use after landing.</p><p>I also teach engineering labs at UNSW, where students turn a circuit or design into something they can build and measure.</p><div class="case-actions">{link(CV, 'Download public CV', 'interior-button')}{link('/v5/projects/skylabs/', 'Explore Skylabs', 'interior-text-link')}{link('/v5/projects/isolated-glitch-tester/', 'Explore the tester', 'interior-text-link')}</div></div></div></header>
 <section class="experience" aria-labelledby="experience-title"><div class="interior-section-head"><p class="interior-kicker">Experience</p><h2 id="experience-title">In the lab.<br>In the field.</h2></div>{rows}</section>
-<section class="case-section education"><div><p class="interior-kicker">Education & tools</p><h2>UNSW,<br>2023–2027.</h2></div><div class="case-prose"><p>Bachelor of Electrical Engineering (Honours)<br>Master of Electrical Engineering</p><ul class="tools-list"><li>C / C++ / Python / Assembly</li><li>KiCad / LTspice / MATLAB / Simulink / ROS2</li><li>PCB design / Embedded systems / RF & GNSS / Electronics testing</li></ul></div></section>
+<section class="case-section education"><div><p class="interior-kicker">Education & tools</p><h2>UNSW,<br>2023–2027.</h2></div><div class="case-prose"><p>Bachelor of Electrical Engineering (Honours)<br>Master of Electrical Engineering</p><ul class="tools-list"><li>C / C++ / Python / Assembly</li><li>KiCad / LTspice / MATLAB / Simulink / ROS2</li><li>PCB design / Embedded systems / RF & GNSS / Electronics testing</li></ul><p>My music background includes AMEB Grade 8 Piano and Grade 6 Clarinet.</p></div></section>
 <section class="interior-contact" id="contact" aria-labelledby="contact-title"><p class="interior-kicker">Engineering, project questions or collaboration</p><h2 id="contact-title">Let's talk.</h2><a class="interior-email" href="mailto:andrew.noah.chung@gmail.com">andrew.noah.chung@gmail.com <span aria-hidden="true">↗</span></a><div class="case-actions">{link('/book/', 'Book a time', 'interior-button')}{link('https://www.linkedin.com/in/22anc/', 'LinkedIn', 'interior-text-link')}{link('https://github.com/ProccyBoi', 'GitHub', 'interior-text-link')}</div></section></div>'''
     return shell('About', 'Electrical engineering at UNSW, power electronics, avionics, robotics and embedded systems.', '/v5/about/', content, active='/v5/about/')
 
@@ -172,12 +203,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    projects = json.loads(DATA.read_text(encoding='utf-8'))
-    if len(projects) != 18 or len({p['slug'] for p in projects}) != 18:
-        raise SystemExit('Expected 16 projects and two unique Skylabs board records.')
+    cases = json.loads(DATA.read_text(encoding='utf-8'))
+    tester = json.loads(TESTER.read_text(encoding='utf-8'))
+    projects = cases + [tester]
+    if len(cases) != 18 or len({project['slug'] for project in projects}) != 19:
+        raise SystemExit('Expected 17 projects and two unique Skylabs board records.')
     outputs = {ROOT / 'v5/projects/index.html': collection(projects), ROOT / 'v5/about/index.html': about()}
-    for n, project in enumerate(projects, 1):
-        route, page = render_case(project, n, projects)
+    for n, project in enumerate(cases, 1):
+        route, page = render_case(project, n, cases)
         outputs[ROOT / route.lstrip('/') / 'index.html'] = page
     mismatches = []
     for path, content in outputs.items():
@@ -189,7 +222,7 @@ def main():
             path.write_text(content, encoding='utf-8', newline='\n')
     if mismatches:
         raise SystemExit('Generated files are stale: ' + ', '.join(mismatches))
-    print(f'{"Checked" if args.check else "Generated"} {len(outputs)} v5 pages: 16 projects, two board records, collection and about.')
+    print(f'{"Checked" if args.check else "Generated"} {len(outputs)} v5 pages: 16 generated projects, two board records, About and the 17-project collection.')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,75 @@
+.v5-hardware-panel {
+  padding-block: clamp(2.75rem, 6vw, 5rem);
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 0;
+}
+
+.v5-hardware-panel > header {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, .85fr);
+  align-items: end;
+  gap: .85rem 2.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.v5-hardware-panel > header h2 {
+  margin: 0;
+}
+
+.v5-hardware-panel > header p {
+  max-width: 45ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.v5-hardware-panel [data-hardware] {
+  --v2-panel: var(--v5-deep, #14251f);
+  --v2-ink: var(--v5-on-dark, #f5f1e5);
+  --v2-muted: var(--v5-dim, #c4cec0);
+  --v2-line: var(--v5-dark-line, #41534a);
+  --v2-accent: var(--signal, #f4b76e);
+  --v2-on-accent: var(--ink);
+  border-radius: 0;
+  color-scheme: dark;
+}
+
+.v5-hardware-panel .hardware-stage {
+  background: #10110f;
+}
+
+.v5-hardware-panel :is(.hardware-controls, .hardware-start) {
+  border-top: 1px solid var(--v2-line);
+  padding: .8rem;
+}
+
+.v5-hardware-panel [data-hardware] button {
+  min-height: 44px;
+  padding: .55rem 1rem;
+  border-radius: 0;
+  font-size: .875rem;
+  font-weight: 550;
+}
+
+.v5-hardware-panel [data-hardware] .v2-part-readout {
+  border-color: var(--v2-line);
+  border-radius: 0;
+  background: var(--v2-panel);
+  font: 400 .8125rem/1.5 var(--mono);
+}
+
+.v5-hardware-panel [data-hardware-status] {
+  padding: .65rem .8rem;
+}
+
+.v5-hardware-panel .v5-hardware-note {
+  margin-top: .8rem;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+@media (max-width: 700px) {
+  .v5-hardware-panel > header {
+    grid-template-columns: 1fr;
+  }
+}

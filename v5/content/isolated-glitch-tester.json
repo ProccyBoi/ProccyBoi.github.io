@@ -1,0 +1,13 @@
+{
+  "slug": "isolated-glitch-tester",
+  "name": "Isolated Glitch Tester v04",
+  "description": "A bench PCB for catching slow voltage drift and short spikes during power-supply testing. Try the virtual bench and inspect the four fault channels.",
+  "spec": "2-layer PCB · ±75 mV and ±150 mV spike thresholds",
+  "category": "Power electronics",
+  "hero": {
+    "src": "/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio",
+    "alt": "Isolated Glitch Tester v04 CAD assembly with rotary switch, trim controls and fault LEDs",
+    "width": 1600,
+    "height": 1200
+  }
+}

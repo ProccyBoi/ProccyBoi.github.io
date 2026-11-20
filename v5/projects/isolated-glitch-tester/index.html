@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Isolated Glitch Tester v04 — Andrew Chung</title>
+  <meta name="description" content="Explore the Isolated Glitch Tester v04 PCB, connect virtual leads, and see how it detects slow drift and short voltage spikes.">
+  <meta name="theme-color" content="#14251f">
+  <link rel="canonical" href="https://proccyboi.github.io/v5/projects/isolated-glitch-tester/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Isolated Glitch Tester v04 — Andrew Chung">
+  <meta property="og:description" content="A bench PCB for catching slow drift and short spikes on power-supply outputs.">
+  <meta property="og:url" content="https://proccyboi.github.io/v5/projects/isolated-glitch-tester/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/isolated-glitch-tester/assembly.webp">
+  <meta property="og:image:alt" content="CAD assembly of the Isolated Glitch Tester v04">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/v5/site.css?v=flightline-20261120">
+  <link rel="stylesheet" href="/v5/interiors.css">
+  <link rel="stylesheet" href="/assets/isolated-glitch-tester/project.css?v=20261120-studio">
+  <link rel="stylesheet" href="/assets/isolated-glitch-tester/viewer.css?v=20261120-bench-plus">
+  <link rel="stylesheet" href="/assets/isolated-glitch-tester/demo.css?v=20261120-bench-plus">
+  <link rel="stylesheet" href="/v5/projects/isolated-glitch-tester/tester.css">
+  <script type="module" src="/assets/isolated-glitch-tester/project.js?v=20261120-bench-plus"></script>
+</head>
+<body class="interior v5-tester">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="/v5/" aria-label="Andrew Chung home"><span class="brand-mark" aria-hidden="true">ac</span>Andrew Chung</a>
+    <nav aria-label="Primary navigation">
+      <a href="/v5/projects/">Projects</a>
+      <a href="/v5/#bench">Demos</a>
+      <a href="/v5/references/">Notebook</a>
+      <a href="/v5/about/">About</a>
+      <a href="/assets/documents/Andrew_Chung_Public_CV.pdf">CV</a>
+    </nav>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section id="overview" class="tester-overview" aria-labelledby="tester-title">
+      <div class="interior-wrap">
+        <nav class="tester-breadcrumb" aria-label="Breadcrumb">
+          <a href="/v5/projects/">Projects</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">Isolated Glitch Tester</span>
+        </nav>
+        <div class="tester-hero">
+          <div class="tester-hero-copy">
+            <p class="tester-kicker">Power-supply test hardware</p>
+            <h1 id="tester-title">Isolated Glitch Tester <span class="tester-revision">v04</span></h1>
+            <p class="tester-lead">A bench PCB that catches slow drift and short voltage spikes on power-supply outputs.</p>
+            <div class="tester-actions">
+              <a href="#demo" class="tester-primary">Try the virtual bench</a>
+              <a href="#explore" class="tester-secondary">Inspect the 3D board</a>
+            </div>
+          </div>
+          <figure class="tester-hero-figure">
+            <div class="tester-hero-image">
+              <img src="/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio" width="1600" height="1200" alt="Front CAD view of the Isolated Glitch Tester PCB with rotary selector, toggle switches, trim controls and fault LEDs" decoding="async" fetchpriority="high">
+            </div>
+            <figcaption><span>Front assembly</span><span>KiCad v04</span></figcaption>
+          </figure>
+        </div>
+        <dl class="tester-specs" aria-label="Board specifications">
+          <div><dt>Board</dt><dd>57 × 121.1 mm</dd></div>
+          <div><dt>Stack-up</dt><dd>2 layers · 1.6 mm</dd></div>
+          <div><dt>Fault outputs</dt><dd>4 latched indicators</dd></div>
+          <div><dt>Spike thresholds</dt><dd>±75 mV / ±150 mV</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="demo" class="tester-section tester-bench" aria-labelledby="tester-demo-title">
+      <div class="interior-wrap">
+        <div class="tester-section-heading">
+          <h2 id="tester-demo-title">Virtual test bench</h2>
+          <p>Drag the power plug and test leads into place, or use the controls. Arm the tester, apply a signal, and watch the live and latched LEDs.</p>
+        </div>
+        <div data-glitch-demo>
+          <div class="glitch-tester-placeholder tester-placeholder">
+            <img src="/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio" width="1600" height="1200" alt="Isolated Glitch Tester assembly with its input pads and signal LEDs" loading="lazy" decoding="async">
+            <p data-glitch-demo-status role="status" hidden></p>
+          </div>
+        </div>
+        <noscript><p class="tester-note">Enable JavaScript to connect the virtual leads and try the tester controls.</p></noscript>
+      </div>
+    </section>
+
+    <section id="explore" class="tester-section tester-inspection" aria-labelledby="tester-explore-title">
+      <div class="interior-wrap">
+        <div class="tester-section-heading">
+          <h2 id="tester-explore-title">Inspect the board</h2>
+          <p>Orbit the assembly or turn it over. Select a part on the board or search all 129 footprints to inspect each model separately.</p>
+        </div>
+        <div data-glitch-viewer>
+          <div class="glitch-tester-placeholder tester-placeholder">
+            <img src="/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio" width="1600" height="1200" alt="Isolated Glitch Tester v04 source-CAD assembly" loading="lazy" decoding="async">
+            <p data-glitch-viewer-status role="status" hidden></p>
+          </div>
+        </div>
+        <noscript><p class="tester-note">Enable JavaScript to rotate the assembly and inspect individual footprints.</p></noscript>
+      </div>
+    </section>
+
+    <section id="details" class="tester-section tester-details" aria-labelledby="tester-details-title">
+      <div class="interior-wrap">
+        <div class="tester-section-heading">
+          <h2 id="tester-details-title">Two ways to detect a fault</h2>
+          <p>The isolated input is split into a path for slow changes and a path for brief disturbances.</p>
+        </div>
+        <div class="tester-detection">
+          <div>
+            <h3>Drift</h3>
+            <p>A low-pass filter follows slow voltage changes. An LM339 window comparator checks the filtered voltage against the upper and lower drift limits.</p>
+          </div>
+          <div>
+            <h3>Spikes</h3>
+            <p>The second path catches short excursions outside the selected ±75 mV or ±150 mV window.</p>
+          </div>
+        </div>
+        <div class="tester-notes">
+          <section aria-labelledby="tester-latch-title">
+            <h3 id="tester-latch-title">Hold the indication</h3>
+            <p>The CD4043 latch holds an indication after the comparator output clears. The board also breaks out oscilloscope signals and provides separate reference adjustments and a buzzer mute.</p>
+            <p>The virtual bench uses synthetic signals to illustrate the controls and indicator behavior.</p>
+          </section>
+          <section aria-labelledby="tester-model-title">
+            <h3 id="tester-model-title">Model sources</h3>
+            <p>The assembly follows the v04 KiCad layout. The inspector identifies the model source and footprints marked do-not-populate.</p>
+            <ul>
+              <li><a href="/assets/isolated-glitch-tester/models/MODEL-CREDITS.txt">KiCad model credits</a></li>
+              <li><a href="/assets/isolated-glitch-tester/models/RECONSTRUCTION-CREDITS.txt">Reconstruction sources</a></li>
+            </ul>
+          </section>
+        </div>
+        <nav class="tester-more" aria-label="More projects">
+          <a href="/v5/#work">Selected work</a>
+          <a href="/v5/projects/switch-mode-power-supplies/">Earlier Switchmode test hardware</a>
+        </nav>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="brand" href="/v5/">Andrew Chung</a>
+    <p>Electrical engineering · Sydney</p>
+    <nav aria-label="Footer">
+      <a href="/v5/about/#contact">Contact</a>
+      <a href="https://github.com/ProccyBoi">GitHub</a>
+      <a href="/assets/documents/Andrew_Chung_Public_CV.pdf">Public CV</a>
+    </nav>
+  </footer>
+</body>
+</html>

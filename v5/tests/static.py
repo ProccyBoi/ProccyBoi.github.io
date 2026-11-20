@@ -2,7 +2,7 @@
 from pathlib import Path
 from html.parser import HTMLParser
 from urllib.parse import urlsplit, unquote
-import re, subprocess, sys
+import json, re, subprocess, sys
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parent
 class Page(HTMLParser):
@@ -46,6 +46,17 @@ for path in sorted(ROOT.rglob('*.html')):
 for css in ROOT.rglob('*.css'):
     for url in re.findall(r'url\([\"\']?([^\)\"\']+)',css.read_text(encoding='utf-8')):
         if url.startswith('/') and not (REPO/url.lstrip('/')).is_file():errors.append(f'{css.name}: missing {url}')
+
+preview = json.loads((ROOT / 'f110211-preview.json').read_text(encoding='utf-8'))
+published = (REPO / 'shared/projects/skylabs/f110211/index.html').read_text(encoding='utf-8')
+data, _ = json.JSONDecoder().raw_decode(published.split('  const DATA = ', 1)[1])
+rows = list(zip(*(data[channel] for channel in ('t', 'baro_up', 'speed', 'east', 'north')), strict=True))
+samples = [tuple(sample) for sample in preview['samples']]
+if preview['sourceSamples'] != len(rows) or not set(samples).issubset(rows):
+    errors.append('Flight preview includes a row absent from the published F110211 data.')
+if not samples or samples[0] != rows[0] or samples[-1] != rows[-1] or samples != sorted(set(samples)):
+    errors.append('Flight preview must contain ordered, unique samples and both endpoints.')
+
 if errors:print('\n'.join(errors));sys.exit(1)
 subprocess.run([sys.executable,str(ROOT/'build-pages.py'),'--check'],check=True)
 print(f'V5 static audit passed: {count} pages, local assets, fragments, metadata and generated records.')
