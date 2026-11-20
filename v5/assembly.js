@@ -33,15 +33,17 @@
     return scripts.get(src);
   };
   function cancelFrame() { if (frame) cancelAnimationFrame(frame); frame = 0; }
+
+  function stickyTop() { return parseFloat(getComputedStyle(stage).top) || 0; }
+
   function requestFrame() {
     if (ready && !failed && visible && root.classList.contains('is-active') && !reduced.matches && !document.hidden && !frame) {
       frame = requestAnimationFrame(render);
     }
   }
   function readProgress() {
-    const top = parseFloat(getComputedStyle(stage).top) || 0;
     const rect = root.getBoundingClientRect();
-    return clamp((top - rect.top) / Math.max(1, rect.height - stage.clientHeight));
+    return clamp((stickyTop() - rect.top) / Math.max(1, rect.height - stage.clientHeight));
   }
   function setPresentation() {
     if (failed) return;
@@ -55,8 +57,13 @@
     } else if (ready) {
       // If a visitor used the skip link while assets loaded, do not insert
       // several viewports above their reading position when the fetch completes.
-      const top = parseFloat(getComputedStyle(stage).top) || 0;
-      if (!root.classList.contains('is-active') && root.getBoundingClientRect().bottom <= top) {
+      const top = stickyTop();
+      const bounds = root.getBoundingClientRect();
+      const anchor = document.getElementById(location.hash.slice(1));
+      const anchoredBelow = anchor && !root.contains(anchor) &&
+        (root.compareDocumentPosition(anchor) & Node.DOCUMENT_POSITION_FOLLOWING);
+      if (!root.classList.contains('is-active') &&
+          (bounds.bottom <= top || (anchoredBelow && bounds.top < top))) {
         root.dataset.state = 'static';
         canvas.setAttribute('aria-hidden', 'true');
         status.textContent = '';
@@ -242,7 +249,10 @@
       unavailable();
     }
   }
-  window.addEventListener('scroll', requestFrame, {passive: true});
+  window.addEventListener('scroll', () => {
+    if (ready && visible && root.dataset.state === 'static' && !reduced.matches) setPresentation();
+    requestFrame();
+  }, {passive: true});
   window.addEventListener('resize', resize, {passive: true});
   document.addEventListener('visibilitychange', () => document.hidden ? cancelFrame() : requestFrame());
   reduced.addEventListener('change', setPresentation);

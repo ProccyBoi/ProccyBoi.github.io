@@ -137,11 +137,14 @@ const makePage = async options => {
     let release;const gate=new Promise(resolve=>release=resolve);let requestedResolve;const requested=new Promise(resolve=>requestedResolve=resolve);
     await page.route('**/assets/models/hero/telemetry*',async route=>{requestedResolve();await gate;await route.continue();});
     await page.goto(base+'/v5/');await page.locator('[data-v5-assembly]').scrollIntoViewIfNeeded();await requested;
-    await page.evaluate(()=>document.getElementById('work').scrollIntoView({behavior:'instant'}));
+    await page.getByRole('link',{name:'Skip the assembly',exact:true}).click();
+    await page.waitForURL('**/#profile');
     await page.waitForTimeout(200);const before=await page.evaluate(()=>scrollY);release();
     await page.waitForFunction(()=>Boolean(document.querySelector('[data-v5-assembly]').assemblySnapshot),{},{timeout:90000});
     assert.equal(await page.locator('[data-v5-assembly]').evaluate(el=>el.classList.contains('is-active')),false);
     const after=await page.evaluate(()=>scrollY);assert(Math.abs(after-before)<5);
+    await page.locator('[data-v5-assembly]').evaluate(root=>root.scrollIntoView({block:'start',behavior:'instant'}));
+    await page.waitForFunction(()=>document.querySelector('[data-v5-assembly]').dataset.state==='ready');
     await page.close();
   });
   report.status='passed';
