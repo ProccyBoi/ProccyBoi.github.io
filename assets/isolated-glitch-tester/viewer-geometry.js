@@ -107,12 +107,16 @@ function drawLabel(context, label, x, y) {
   context.restore();
 }
 
-function drawBoardFace(context, canvas, board, face, images) {
+function drawBoardFace(context, canvas, board, face, images, surfaces = false) {
   const isFront = face === 'front';
   const silkLayer = isFront ? 'F.SilkS' : 'B.SilkS';
   const copperLayer = isFront ? 'F.Cu' : 'B.Cu';
   const maskLayer = isFront ? 'F.Mask' : 'B.Mask';
   const density = canvas.width / board.width;
+  const maskColor = surfaces ? '#00c70c' : '#151513';
+  const traceColor = surfaces ? '#00c112' : '#1c1e1c';
+  const padColor = surfaces ? '#0063c4' : '#88744e';
+  const silkColor = surfaces ? '#00e600' : '#c9c9bd';
   const tintCanvas = document.createElement('canvas');
   tintCanvas.width = canvas.width;
   tintCanvas.height = canvas.height;
@@ -130,22 +134,22 @@ function drawBoardFace(context, canvas, board, face, images) {
   context.save();
   context.scale(density, canvas.height / board.height);
   context.translate(-board.bounds.minX, -board.bounds.minY);
-  context.fillStyle = '#242929';
+  context.fillStyle = maskColor;
   context.fillRect(board.bounds.minX, board.bounds.minY, board.width, board.height);
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
   if (images.copper) {
-    layer(images.copper, '#303636');
+    layer(images.copper, traceColor);
   } else {
-    context.strokeStyle = '#333a39';
+    context.strokeStyle = traceColor;
     board.tracks.filter(track => track.layer === copperLayer).forEach(track => drawGraphic(context, track));
   }
 
   if (images.mask) {
-    layer(images.mask, '#b79a63');
+    layer(images.mask, padColor);
   } else {
-    context.fillStyle = '#b79a63';
+    context.fillStyle = padColor;
     board.vias.forEach(via => {
       context.beginPath();
       context.arc(via.x, via.y, via.diameter / 2, 0, Math.PI * 2);
@@ -171,10 +175,10 @@ function drawBoardFace(context, canvas, board, face, images) {
   }
 
   if (images.silk) {
-    layer(images.silk, '#efefe2');
+    layer(images.silk, silkColor);
   } else {
-    context.fillStyle = '#efefe2';
-    context.strokeStyle = '#efefe2';
+    context.fillStyle = silkColor;
+    context.strokeStyle = silkColor;
     board.silk.filter(graphic => graphic.layer === silkLayer).forEach(graphic => drawGraphic(context, graphic));
     board.labels.filter(label => label.layer === silkLayer).forEach(label => drawLabel(context, label, label.x, label.y));
     for (const component of board.components) {
@@ -210,7 +214,12 @@ export function buildBoard(THREE, board, artwork, resolveAsset, redraw, anisotro
   const shape = makeBoardShape(THREE, board);
   const edge = new THREE.ExtrudeGeometry(shape, { depth: board.thickness, bevelEnabled: false });
   edge.translate(0, 0, -board.thickness / 2);
-  const boardBody = new THREE.Mesh(edge, new THREE.MeshStandardMaterial({ color: '#9a7958', roughness: 0.87 }));
+  // Only draw the extrusion walls. The registered faces below are the
+  // physical caps, so there is no second surface to fight their depth.
+  const walls = edge.groups.find(group => group.materialIndex === 1);
+  edge.setDrawRange(walls.start, walls.count);
+  const boardBody = new THREE.Group();
+  boardBody.add(new THREE.Mesh(edge, new THREE.MeshStandardMaterial({ color: '#5c4931', roughness: 0.88 })));
   assembly.add(boardBody);
   const geometry = new THREE.ShapeGeometry(shape);
   const position = geometry.getAttribute('position');
@@ -218,45 +227,114 @@ export function buildBoard(THREE, board, artwork, resolveAsset, redraw, anisotro
   for (let index = 0; index < position.count; index += 1) {
     uv.setXY(index, position.getX(index) / board.width + 0.5, position.getY(index) / board.height + 0.5);
   }
+  const artworkLoads = [];
   for (const face of ['front', 'back']) {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = Math.round(canvas.width * board.height / board.width);
-    const context = canvas.getContext('2d');
+    const surfaceCanvas = document.createElement('canvas');
+    surfaceCanvas.width = canvas.width;
+    surfaceCanvas.height = canvas.height;
     const texture = new THREE.CanvasTexture(canvas);
     texture.encoding = THREE.sRGBEncoding;
     texture.anisotropy = anisotropy;
-    const material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.74, side: THREE.DoubleSide });
+    const surfaces = new THREE.CanvasTexture(surfaceCanvas);
+    surfaces.anisotropy = anisotropy;
+    const material = new THREE.MeshPhysicalMaterial({
+      map: texture,
+      roughness: 1,
+      roughnessMap: surfaces,
+      metalness: 1,
+      metalnessMap: surfaces,
+      clearcoat: 0.08,
+      clearcoatRoughness: 0.65,
+      envMapIntensity: 0.38,
+      side: THREE.DoubleSide
+    });
     const surface = new THREE.Mesh(geometry, material);
     surface.position.z = (board.thickness / 2 + 0.005) * (face === 'front' ? 1 : -1);
-    assembly.add(surface);
-    drawBoardFace(context, canvas, board, face, {});
+    surface.receiveShadow = true;
+    boardBody.add(surface);
+    const paint = images => {
+      drawBoardFace(canvas.getContext('2d'), canvas, board, face, images);
+      drawBoardFace(surfaceCanvas.getContext('2d'), surfaceCanvas, board, face, images, true);
+      texture.needsUpdate = true;
+      surfaces.needsUpdate = true;
+    };
+    paint({});
     const layers = artwork?.[face];
     if (!layers) continue;
-    Promise.all(Object.entries(layers).map(async ([key, path]) => [key, await loadImage(resolveAsset(path))]))
+    artworkLoads.push(Promise.all(Object.entries(layers).map(async ([key, path]) => [key, await loadImage(resolveAsset(path))]))
       .then(entries => {
-        drawBoardFace(context, canvas, board, face, Object.fromEntries(entries));
-        texture.needsUpdate = true;
+        paint(Object.fromEntries(entries));
         redraw();
-      });
+      }));
   }
-  return { assembly, boardBody };
+  return { assembly, boardBody, artworkReady: Promise.all(artworkLoads) };
+}
+
+// KiCad's neutral CAD exports often omit explicit PBR values. Keep their
+// material colours and restore the different finishes implied by each group.
+export function finishPackage(THREE, object, asset, source) {
+  const materialVariants = new Map();
+  const usesKiCadFinishes = source === 'kicad-library' || source === 'library-package-equivalent';
+  const throughHoleLED = asset.includes('LED_D5.0mm_Clear');
+  object.traverse(mesh => {
+    if (!mesh.isMesh) return;
+    if (usesKiCadFinishes && !Array.isArray(mesh.material) && mesh.material?.isMeshStandardMaterial) {
+      const material = mesh.material;
+      if (!materialVariants.has(material)) {
+        const { r, g, b } = material.color;
+        let finish = material.clone();
+        if (throughHoleLED && r > 0.72 && g > 0.7) {
+          finish = new THREE.MeshPhysicalMaterial({
+            color: '#e2ddd0',
+            metalness: 0,
+            roughness: 0.2,
+            clearcoat: 0.86,
+            clearcoatRoughness: 0.16,
+            transparent: true,
+            opacity: 0.32,
+            depthWrite: false,
+            side: THREE.DoubleSide
+          });
+        } else if ((r > 0.57 && r < 0.72 && g > r * 0.92 && b > g * 0.8)
+          || (r > 0.58 && g < r * 0.86 && b < g * 0.65)) {
+          finish.roughness = 0.32;
+          finish.metalness = 0.8;
+          finish.color.multiplyScalar(0.68);
+        } else {
+          finish.roughness = 0.56;
+          finish.metalness = 0.02;
+          if (r < 0.075 && g < 0.075 && b < 0.075) finish.color.offsetHSL(0, 0, 0.014);
+          if (g > 0.23 && g > r * 1.6) finish.color.multiplyScalar(0.67);
+        }
+        materialVariants.set(material, finish);
+      }
+      mesh.material = materialVariants.get(material);
+    }
+    for (const material of (Array.isArray(mesh.material) ? mesh.material : [mesh.material])) {
+      if (material?.isMeshStandardMaterial) material.envMapIntensity = material.metalness > 0.3 ? 0.64 : 0.24;
+    }
+    mesh.castShadow = !(mesh.material?.transparent);
+    mesh.receiveShadow = true;
+  });
 }
 
 export function makeComponentFactory(THREE) {
   const materials = Object.fromEntries(
     Object.entries({
-      polymer: '#272a2b',
+      polymer: '#282825',
       ceramic: '#947c63',
-      silver: '#bcc6c3',
-      gold: '#bb9352',
+      silver: '#9c9e9b',
+      gold: '#977649',
       copper: '#886647',
-      led: '#c9c8b4',
+      led: '#dddbce',
       green: '#507d52',
       blue: '#315a74',
       paper: '#e9e9d9'
     }).map(([name, color]) => [name, new THREE.MeshStandardMaterial({
-      color, roughness: name === 'silver' ? 0.32 : 0.58, metalness: ['gold', 'silver'].includes(name) ? 0.45 : 0
+      color, roughness: name === 'silver' ? 0.28 : 0.58, metalness: ['gold', 'silver'].includes(name) ? 0.73 : 0.02
     })])
   );
 

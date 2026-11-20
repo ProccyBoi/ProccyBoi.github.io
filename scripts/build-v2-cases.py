@@ -630,6 +630,7 @@ def make_index():
     tools = next(node for node in tree.nodes if node.tag == 'section' and node.attrs.get('id') == 'interactive')
     demos = [
         ('/v2/projects/kiku/#simulator', 'Kiku firmware simulator', 'Turn the dial, change the look and try the player interface.', 'Real C screen renderer · simulated hardware'),
+        ('/v2/projects/isolated-glitch-tester/#demo', 'Isolated Glitch Tester demo', 'Run voltage drift or spikes and see which fault indicator latches.', 'Bench test hardware · waveform demo'),
         ('/v2/projects/dash/#explore', 'Dash device assembly', 'Inspect the complete enclosure, circuit board, display and power system.', 'Full-device CAD · component inspection'),
         ('/shared/projects/skylabs/f110211/', 'Replay a Skylabs flight', 'Scrub the recorded route, attitude and sensor timeline. A reference flight is already loaded.', 'Recorded flight · F110211'),
         ('/v2/projects/skylabs/sensor-test-simulator/', 'Sensor test PCB simulator', 'Try colours, brightness and patterns on a populated 3D LED test board.', 'Skylabs · visual simulation'),
@@ -659,17 +660,18 @@ def make_index():
     tree = Tree(source)
     media_changes = []
     card_images = {
-        'projects/tramtrace/': ('v2/tramtrace-cad.webp', 1600, 1200, 'TramTrace light-rail display PCB'),
-        'projects/framework-expansion-card/': ('v2/framework-cad.webp', 1600, 1200, 'Framework ESP32 expansion card'),
-        'projects/skylabs/': ('v2/hardware/skylabs-telemetry.webp', 1600, 1200, 'Skylabs aircraft telemetry PCB'),
+        'projects/isolated-glitch-tester/': ('/assets/isolated-glitch-tester/assembly.webp', 1600, 1200, 'Isolated Glitch Tester v04 CAD assembly'),
+        'projects/tramtrace/': ('/assets/images/v2/tramtrace-cad.webp', 1600, 1200, 'TramTrace light-rail display PCB'),
+        'projects/framework-expansion-card/': ('/assets/images/v2/framework-cad.webp', 1600, 1200, 'Framework ESP32 expansion card'),
+        'projects/skylabs/': ('/assets/images/v2/hardware/skylabs-telemetry.webp', 1600, 1200, 'Skylabs aircraft telemetry PCB'),
     }
     for route, record in HARDWARE_ASSEMBLIES.items():
         if '/' not in route:
-            card_images[f'projects/{route}/'] = (f'v2/hardware/{record["model"]}.webp', 1600, 1200, record.get('poster_alt', LABELS[route] + ' circuit board assembly'))
+            card_images[f'projects/{route}/'] = (f'/assets/images/v2/hardware/{record["model"]}.webp', 1600, 1200, record.get('poster_alt', LABELS[route] + ' circuit board assembly'))
     for node in tree.nodes:
         if node.has('catalog-card-media') and node.parent and node.parent.attrs.get('href') in card_images:
             filename, width, height, alt = card_images[node.parent.attrs['href']]
-            media_changes.append((node, f'<div class="catalog-card-media v2-catalog-cad"><img src="/assets/images/{filename}" width="{width}" height="{height}" alt="{escape(alt)}" loading="lazy"></div>'))
+            media_changes.append((node, f'<div class="catalog-card-media v2-catalog-cad"><img src="{filename}" width="{width}" height="{height}" alt="{escape(alt)}" loading="lazy"></div>'))
     source = replace_nodes(source, media_changes)
     source = re.sub(r'<p class="eyebrow">0[1-4] / (?:Hardware|Tools|Robotics|Archive)</p>', '', source)
     source = source.replace('Boards and systems', 'Hardware').replace('Software meets hardware', 'Robotics').replace('Earlier builds', 'Earlier projects')

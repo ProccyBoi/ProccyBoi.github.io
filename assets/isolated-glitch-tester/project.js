@@ -23,8 +23,13 @@ async function loadViewer(container) {
         return response.json();
       }),
       (async () => {
-        if (!window.THREE) await loadScript('../vendor/three.min.js');
-        if (!window.THREE.GLTFLoader) await loadScript('../vendor/GLTFLoader.js');
+        const threeReady = window.THREE ? Promise.resolve() : loadScript('../vendor/three.min.js');
+        await Promise.all([
+          threeReady.then(() => {
+            if (!window.THREE.GLTFLoader) return loadScript('../vendor/GLTFLoader.js');
+          }),
+          window.V2CadGeometry || loadScript('../v2-assembly-models.js?v=mechanics-20261003'),
+        ]);
         return import('./viewer.js');
       })(),
     ]);

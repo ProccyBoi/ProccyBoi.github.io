@@ -59,6 +59,16 @@ function createScope(canvas) {
     return () => {};
   }
 
+  const style = window.getComputedStyle(canvas);
+  const color = (name) => style.getPropertyValue(`--demo-${name}`).trim();
+  const labelColor = color('screen-muted');
+  const gridColor = color('screen-rule');
+  const limitColor = color('limit');
+  const traceColors = [
+    ['drift', color('drift'), 1.5],
+    ['signal', color('signal'), 2],
+  ];
+
   function line(x1, y1, x2, y2, color, dash = []) {
     ctx.beginPath();
     ctx.strokeStyle = color;
@@ -84,34 +94,34 @@ function createScope(canvas) {
     ctx.clearRect(0, 0, width, height);
 
     const left = 38;
-    const top = 14;
+    const top = 18;
     const right = width - 22;
-    const bottom = height - 24;
+    const bottom = height - 28;
     const x = (fraction) => left + fraction * (right - left);
     const y = (mv) => top + (180 - mv) / 360 * (bottom - top);
 
     ctx.font = '12px "IBM Plex Mono", Consolas, monospace';
-    ctx.fillStyle = '#adb8ae';
+    ctx.fillStyle = labelColor;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     for (const mv of [150, 75, 0, -75, -150]) {
       const label = mv > 0 ? `+${mv}` : `${mv}`;
       ctx.fillText(label, left - 7, y(mv));
-      line(left, y(mv), right, y(mv), mv ? '#29372f' : '#465c50');
+      line(left, y(mv), right, y(mv), mv ? gridColor : '#56584e');
     }
 
     ctx.textAlign = 'center';
     for (let time = 0; time <= captureSeconds; time += 0.5) {
       const px = x(time / captureSeconds);
-      line(px, top, px, bottom, time % 1 ? '#253129' : '#35453b');
+      line(px, top, px, bottom, time % 1 ? '#292b25' : gridColor);
       if (time % 1 === 0) ctx.fillText(`${time} s`, px, bottom + 12);
     }
-    line(left, y(spikeLimitMv), right, y(spikeLimitMv), '#e58c7d', [5, 5]);
-    line(left, y(-spikeLimitMv), right, y(-spikeLimitMv), '#e58c7d', [5, 5]);
+    line(left, y(spikeLimitMv), right, y(spikeLimitMv), limitColor, [5, 5]);
+    line(left, y(-spikeLimitMv), right, y(-spikeLimitMv), limitColor, [5, 5]);
 
-    for (const [key, color, strokeWidth] of [['drift', '#e7b47b', 1.5], ['signal', '#a7deab', 2]]) {
+    for (const [key, traceColor, strokeWidth] of traceColors) {
       ctx.beginPath();
-      ctx.strokeStyle = color;
+      ctx.strokeStyle = traceColor;
       ctx.lineWidth = strokeWidth;
       ctx.lineJoin = 'round';
       samples.forEach((sample, index) => {
@@ -125,7 +135,7 @@ function createScope(canvas) {
 
     if (cursor !== null) {
       const px = x(cursor);
-      line(px, top, px, bottom, '#adb8ae');
+      line(px, top, px, bottom, labelColor);
     }
   };
 }
@@ -134,7 +144,7 @@ export function mountDemo(container) {
   container.classList.add('glitch-demo');
   container.innerHTML = `
     <figure class="glitch-demo__scope">
-      <figcaption class="glitch-demo__scope-label">Scope <span>Deviation in mV</span></figcaption>
+      <figcaption class="glitch-demo__scope-label">Signal capture <span>Deviation in mV</span></figcaption>
       <canvas class="glitch-demo__canvas" role="img" aria-label="Steady signal with its low-pass drift trace"></canvas>
       <ul class="glitch-demo__legend" aria-label="Scope legend">
         <li data-trace="signal">Input deviation</li>
@@ -153,7 +163,7 @@ export function mountDemo(container) {
       </label>
       <fieldset class="glitch-demo__threshold">
         <legend>Spike threshold</legend>
-        <div class="glitch-demo__segments" aria-label="Spike threshold options">
+        <div class="glitch-demo__segments">
           <button type="button" aria-pressed="true" data-threshold="75">±75 mV</button>
           <button type="button" aria-pressed="false" data-threshold="150">±150 mV</button>
         </div>
@@ -169,8 +179,8 @@ export function mountDemo(container) {
         ${indicators.map(({ id, ref, label }) => `
           <li data-indicator="${id}">
             <span class="glitch-demo__lamp" aria-hidden="true"></span>
-            <span>${label} <small>· ${ref}</small></span>
-            <span class="glitch-demo__indicator-state">Clear</span>
+            <span>${label}</span>
+            <span class="glitch-demo__indicator-detail"><span class="glitch-demo__indicator-state">Clear</span> <small>· ${ref}</small></span>
           </li>
         `).join('')}
       </ul>
@@ -230,7 +240,7 @@ export function mountDemo(container) {
     const trips = [...waveform.trips].map((id) => indicatorLabels.get(id));
     const outcome = trips.length ? `${trips.join(' and ')} latched.` : 'No new fault detected.';
     result.textContent = `${scenario.label}. ${outcome}`;
-    canvas.setAttribute('aria-label', `Scope plot for ${scenario.label.toLowerCase()}. ${outcome}`);
+    canvas.setAttribute('aria-label', `${scenario.label} with its low-pass drift trace`);
     redraw();
 
     if (!reduceMotion.matches) {

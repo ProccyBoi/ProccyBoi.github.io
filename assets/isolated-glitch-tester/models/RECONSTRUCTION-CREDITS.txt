@@ -1,0 +1,35 @@
+Reconstructed component models
+
+Original meshes modeled from package dimensions and aligned to the supplied KiCad board footprints.
+
+RBE01VYM6AFHTR-TUMD2M.glb — ROHM RBE01VYM6AFHTR
+The TUMD2M diode package includes asymmetric underside contacts and a cathode marking.
+https://fscdn.rohm.com/en/products/databook/datasheet/discrete/diode/schottky_barrier/rbe01vym6afhtr-e.pdf
+
+AMC3311DWER-DWE0016A.glb — Texas Instruments AMC3311DWER
+DWE0016A wide-body isolator package modeled with its specified lead span and pin-one recess.
+https://www.ti.com/lit/ds/symlink/amc3311.pdf
+
+ACPL-K376-SSO8.glb — Broadcom ACPL-K376-000E
+Surface-mount optocoupler with a 3.18 mm-high SSO-8 package and 11.50 mm lead span.
+https://docs.broadcom.com/doc/AV02-2153EN
+
+CK-1050.control.glb — Lorlin CK-1050
+CK rotary package reconstructed with a two-pole PCB terminal wafer, threaded M10 bushing and 50 mm metric spindle.
+https://lorlinelectronics.co.uk/wp-content/uploads/2020/11/CK-ROTARY-Nov-2020-1.pdf
+
+100DP1T1B1M1QEH.control.glb — E-Switch 100DP1T1B1M1QEH
+Reconstructed with six through-board solder lugs, a keyed threaded collar, locking hardware and chrome toggle.
+https://configured-product-images.s3.amazonaws.com/2D/specs/100DP1T1B1M1QEH.pdf
+
+100SP1T1B4M2QE.control.glb — E-Switch 100SP1T1B4M2QE
+Reconstructed with three straight PCB tails, a smooth keyed bushing and polished toggle.
+https://configured-product-images.s3.amazonaws.com/2D/specs/100SP1T1B4M2QE.pdf
+
+RK09D1130A1N.control.glb — Alps Alpine RK09D1130A1N
+Reconstructed with an insulated 30 mm D-flat shaft, formed metal clip, smooth collar and PCB terminal bends.
+https://datasheet.octopart.com/RK09D1130A1N-ALPS-datasheet-182141103.pdf
+
+SOP-8-XX112.glb — SOP-8 / XX112 footprint
+Reconstructed from the XX112 outline identified by the KiCad footprint. The schematic names LM2904 without confirming the orderable package.
+https://www.minicircuits.com/case_style/XX112.pdf

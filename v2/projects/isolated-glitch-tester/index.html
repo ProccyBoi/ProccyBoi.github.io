@@ -16,6 +16,7 @@
   <link rel="canonical" href="https://proccyboi.github.io/v2/projects/isolated-glitch-tester/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/project-integrated.css">
   <link rel="stylesheet" href="assets/isolated-glitch-tester/project.css">
   <link rel="stylesheet" href="assets/isolated-glitch-tester/viewer.css">
   <link rel="stylesheet" href="assets/isolated-glitch-tester/demo.css">
@@ -29,7 +30,7 @@
 <link rel="stylesheet" href="/assets/v2-wayfinder.css">
 <script src="/assets/v2-wayfinder.js" defer></script>
 </head>
-<body class="v2 v2-case glitch-tester-page">
+<body class="v2 v2-case project-page glitch-tester-page">
   <a class="skip-link" href="/v2/projects/isolated-glitch-tester/#main">Skip to content</a>
   <header class="v2-header"><div class="v2-nav-shell">
       <a class="v2-brand" href="/v2/">Andrew Chung</a>
@@ -47,51 +48,63 @@
     <div class="project-hero-grid"><div class="project-hero-copy"><div>
 
             <h1 id="project-title">Isolated Glitch Tester v04</h1>
-            <p>A PCB designed to distinguish slow voltage drift from brief spikes, with separate high and low fault indicators.</p>
+            <p>An isolated test board that distinguishes slow voltage drift from brief spikes on a power-supply output.</p>
           </div><nav class="project-hero-actions" aria-label="Explore the tester">
             <a href="/v2/projects/isolated-glitch-tester/#explore">Explore the 3D board</a>
             <a href="/v2/projects/isolated-glitch-tester/#demo">Try the signal demo</a>
-          </nav></div><figure class="project-hero-media glitch-tester-poster">
-          <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1000" alt="CAD rendering of the Isolated Glitch Tester v04 PCB with its library component models" fetchpriority="high" decoding="async">
-          <figcaption>Multi-Channel Tester v04 · CAD render</figcaption>
+          </nav></div><figure class="project-hero-media v2-cad-media glitch-tester-poster">
+          <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1200" alt="CAD assembly of the Isolated Glitch Tester v04 with rotary selector, toggle switches, trim controls and fault LEDs" fetchpriority="high" decoding="async">
+          <figcaption class="v2-media-label">CAD assembly rendering</figcaption>
         </figure></div>
     <div class="v2-case-specs shell"><dl class="project-meta">
             <div><dt>Board dimensions</dt><dd>57 × 121.1 × 1.6 mm</dd></div>
-            <div><dt>Copper layers</dt><dd>2</dd></div>
+            <div><dt>Stack-up</dt><dd>2 copper layers</dd></div>
+            <div><dt>Fault outputs</dt><dd>Drift and spike, high and low</dd></div>
             <div><dt>Footprints</dt><dd>129</dd></div>
           </dl></div></section>
 
-    <section class="glitch-tester-section shell" id="explore" aria-labelledby="glitch-viewer-heading">
-      <header class="glitch-tester-section-heading">
-        <h2 id="glitch-viewer-heading">Board and components</h2>
-        <p>Turn the board to see both sides. Pick a footprint on the board or search by reference or value to open its own 3D view.</p>
-      </header>
-      <div class="glitch-tester-viewer" data-glitch-viewer>
-        <div class="glitch-tester-placeholder">
-          <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1000" alt="Isolated Glitch Tester v04 assembly render" loading="lazy" decoding="async">
-          <p data-glitch-viewer-status role="status" hidden></p>
+    <section class="project-interactive v2-hardware-section" id="explore" aria-labelledby="glitch-viewer-heading">
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header">
+          <div><h2 id="glitch-viewer-heading">Board assembly</h2></div>
+          <p>Turn the board over to see the comparator and latch circuits. Choose a part on the board or search the footprint list to inspect it in 3D.</p>
+        </header>
+        <div data-glitch-viewer>
+          <div class="glitch-tester-placeholder">
+            <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1200" alt="Isolated Glitch Tester v04 assembly render" loading="lazy" decoding="async">
+            <p data-glitch-viewer-status role="status" hidden></p>
+          </div>
         </div>
+        <noscript><p>Enable JavaScript to rotate the board and inspect individual footprints.</p></noscript>
       </div>
-      <noscript><p>Enable JavaScript to rotate the board and inspect individual footprints.</p></noscript>
     </section>
 
-    <section class="glitch-tester-section shell" id="demo" aria-labelledby="glitch-demo-heading">
-      <header class="glitch-tester-section-heading">
-        <h2 id="glitch-demo-heading">Signal demo</h2>
-        <p>Inject drift or a spike and see which fault indicators latch. Change the spike threshold or reset the indicators between runs.</p>
-      </header>
-      <div class="glitch-tester-demo" data-glitch-demo>
-        <p data-glitch-demo-status role="status" hidden></p>
+    <section class="project-interactive" id="demo" aria-labelledby="glitch-demo-heading">
+      <div class="project-interactive-inner">
+        <header class="project-interactive-header">
+          <div><h2 id="glitch-demo-heading">Signal demo</h2></div>
+          <p>Run a spike or a drifting signal and see which indicator latches. Use Arm / Reset to clear the latched indicators.</p>
+        </header>
+        <div data-glitch-demo>
+          <p data-glitch-demo-status role="status" hidden></p>
+        </div>
+        <noscript><p>Enable JavaScript to try the signal demo.</p></noscript>
       </div>
-      <noscript><p>Enable JavaScript to try the signal demo.</p></noscript>
     </section>
 
-    <div class="glitch-tester-section shell" id="details">
-      <section class="project-summary glitch-tester-details" aria-labelledby="glitch-details-heading">
-        <h2 id="glitch-details-heading">Detection paths</h2>
+    <div class="project-body shell" id="details">
+      <section class="project-summary" aria-labelledby="glitch-details-heading">
+        <h2 id="glitch-details-heading">Two ways to detect a fault</h2>
         <div class="project-prose">
-          <p>The schematic shows a differential input stage feeding separate drift and spike comparator paths. Each path has high and low fault indicators. The board brings signals out to oscilloscope connectors and provides reference adjustments, an arm/reset control and a buzzer mute.</p>
-          <p>The 3D assembly uses the v04 KiCad layout. The inspector identifies each model’s source and flags footprints marked do-not-populate in the design. <a href="assets/isolated-glitch-tester/models/MODEL-CREDITS.txt">3D model credits</a></p>
+          <p>The differential input feeds two paths. A low-pass filter tracks slow drift, while a separate path responds to brief excursions. An LM339 comparator drives four independent indicators through a CD4043 latch, so a momentary fault stays visible until reset.</p>
+          <p>The board has reference adjustments for drift and spike detection, oscilloscope outputs, and a buzzer mute.</p>
+        </div>
+      </section>
+      <section class="project-summary" aria-labelledby="glitch-model-heading">
+        <h2 id="glitch-model-heading">Model sources</h2>
+        <div class="project-prose">
+          <p>The assembly follows the v04 KiCad layout. The inspector lists each model’s source and identifies the footprints marked do-not-populate. <a href="assets/isolated-glitch-tester/models/MODEL-CREDITS.txt">KiCad model credits</a> and <a href="assets/isolated-glitch-tester/models/RECONSTRUCTION-CREDITS.txt">reconstruction sources</a>.</p>
+          <p><a href="/v2/projects/switch-mode-power-supplies/">Earlier tester hardware at Switchmode Power Supplies</a></p>
         </div>
       </section>
     </div>
