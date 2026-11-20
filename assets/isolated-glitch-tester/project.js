@@ -25,7 +25,7 @@ function loadBoardScene() {
         window.V2CadGeometry || loadScript('../v2-assembly-models.js?v=mechanics-20261003'),
         window.V2CadStudio || loadScript('../v2-cad-studio.js'),
       ]);
-      return import('./viewer.js?v=20261120-bench-clean');
+      return import('./viewer.js?v=20261120-bench-plus');
     })(),
   ]);
   return boardScene;
@@ -59,7 +59,7 @@ async function loadDemo(container) {
 
   try {
     const [{ mountDemo }, scene] = await Promise.all([
-      import('./demo.js?v=20261120-bench'),
+      import('./demo.js?v=20261120-bench-plus'),
       loadBoardScene().catch(error => {
         console.error('Isolated Glitch Tester bench scene could not load', error);
         return [];

@@ -268,7 +268,7 @@ export function buildBoard(THREE, board, artwork, resolveAsset, redraw, anisotro
         redraw();
       }));
   }
-  return { assembly, boardBody, artworkReady: Promise.all(artworkLoads) };
+  return { assembly, boardBody, surfaceGeometry: geometry, artworkReady: Promise.all(artworkLoads) };
 }
 
 // KiCad's neutral CAD exports often omit explicit PBR values. Keep their

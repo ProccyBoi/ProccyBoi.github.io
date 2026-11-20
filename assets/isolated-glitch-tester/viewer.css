@@ -374,3 +374,15 @@
   color: var(--mct-ink);
   font-size: 0.8125rem;
 }
+
+.mct-bench .mct-viewer__stage canvas {
+  cursor: move;
+}
+
+.mct-bench .mct-viewer__stage canvas.mct-bench__lead-grab {
+  cursor: grab;
+}
+
+.mct-bench .mct-viewer__stage canvas.mct-viewer__dragging {
+  cursor: grabbing;
+}

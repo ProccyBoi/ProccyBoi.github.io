@@ -1,4 +1,4 @@
-import { createLeadHarness } from './bench-leads.js?v=20261120-bench';
+import { createLeadHarness } from './bench-leads.js?v=20261120-bench-plus';
 
 export const BENCH_FITTED_REFS = new Set([
   'J1', 'J2', 'J5', 'SW1', 'SW2', 'SW3', 'SW4', 'VR1', 'VR2', 'D13', 'D14', 'D15', 'D16'
@@ -37,7 +37,54 @@ function glowTexture(THREE) {
   return new THREE.CanvasTexture(canvas);
 }
 
-export function createBenchVisual(THREE, board, { boardPoint, invalidate }) {
+function createBoardGlow(THREE, board, surfaceGeometry, lamps) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = Math.round(canvas.width * board.height / board.width);
+  const scale = canvas.width / board.width;
+  const context = canvas.getContext('2d');
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.encoding = THREE.sRGBEncoding;
+  const material = new THREE.MeshBasicMaterial({
+    map: texture, transparent: true, blending: THREE.AdditiveBlending,
+    depthWrite: false, toneMapped: false
+  });
+  const mesh = new THREE.Mesh(surfaceGeometry, material);
+  mesh.name = 'LED light on PCB';
+  mesh.position.z = board.thickness / 2 + 0.021;
+  mesh.visible = false;
+  mesh.raycast = () => {};
+  let previous = '';
+
+  function paint(active) {
+    const key = [...active].join(' ');
+    if (key === previous) return;
+    previous = key;
+    mesh.visible = active.size > 0;
+    if (!mesh.visible) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.globalCompositeOperation = 'lighter';
+    for (const ref of active) {
+      const { halo, throughHole } = lamps.get(ref);
+      const x = canvas.width / 2 + halo.position.x * scale;
+      const y = canvas.height / 2 - halo.position.y * scale;
+      const radius = (throughHole ? 10 : 6.5) * scale;
+      const color = LAMP_COLORS[ref];
+      const glow = context.createRadialGradient(x, y, 0, x, y, radius);
+      glow.addColorStop(0, `${color}${throughHole ? '78' : '65'}`);
+      glow.addColorStop(0.34, `${color}48`);
+      glow.addColorStop(0.68, `${color}17`);
+      glow.addColorStop(1, `${color}00`);
+      context.fillStyle = glow;
+      context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
+    texture.needsUpdate = true;
+  }
+
+  return { mesh, paint, dispose: () => texture.dispose() };
+}
+
+export function createBenchVisual(THREE, board, { boardPoint, surfaceGeometry, invalidate }) {
   const leads = createLeadHarness(THREE, board, { boardPoint });
   const group = new THREE.Group();
   group.name = 'Simulated plug-in leads and LED indicators';
@@ -87,14 +134,30 @@ export function createBenchVisual(THREE, board, { boardPoint, invalidate }) {
     lamps.set(ref, { halo, throughHole, finishes: [] });
     disposeMaterial.add(material);
   }
+  const boardGlow = createBoardGlow(THREE, board, surfaceGeometry, lamps);
+  group.add(boardGlow.mesh);
 
-  let state = { powered: false, inputConnected: false, armed: false, buzzerMuted: false, threshold: 75, live: [], latched: [] };
+  const dropMaterial = new THREE.MeshBasicMaterial({
+    color: '#8cc4f4', transparent: true, opacity: 0.58,
+    depthWrite: false, toneMapped: false
+  });
+  const dropRing = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 40), dropMaterial);
+  dropRing.name = 'Cable drop target';
+  dropRing.visible = false;
+  dropRing.raycast = () => {};
+  group.add(dropRing);
+
+  let state = {
+    powerConnected: false, sourceOn: true, powered: false, inputConnected: false,
+    armed: false, buzzerMuted: false, threshold: 75, live: [], latched: []
+  };
   let power = 0;
   let input = 0;
   let lastTime = 0;
 
   function paintLamps() {
     const active = new Set(state.powered ? [...state.live, ...state.latched] : []);
+    boardGlow.paint(active);
     for (const [ref, lamp] of lamps) {
       const lit = active.has(ref);
       lamp.halo.visible = lit;
@@ -165,6 +228,7 @@ export function createBenchVisual(THREE, board, { boardPoint, invalidate }) {
 
   function update(next) {
     state = { ...state, ...next };
+    leads.setSourcePower(state.sourceOn);
     paintLamps();
     paintSwitches();
     lastTime = 0;
@@ -175,24 +239,58 @@ export function createBenchVisual(THREE, board, { boardPoint, invalidate }) {
     const amount = reducedMotion.matches ? 1 : Math.min(48, lastTime ? time - lastTime : 16) / 220;
     lastTime = time;
     const next = (value, goal) => value < goal ? Math.min(goal, value + amount) : Math.max(goal, value - amount);
-    const powered = Number(state.powered);
+    const attachedPower = Number(state.powerConnected);
     const attached = Number(state.inputConnected);
-    power = next(power, powered);
+    power = next(power, attachedPower);
     input = next(input, attached);
     leads.update(power, input);
-    const moving = power !== powered || input !== attached;
+    const moving = power !== attachedPower || input !== attached;
     if (!moving) lastTime = 0;
     return moving;
   }
 
+  function beginLeadDrag(action, ref) {
+    const target = leads.leadDragTarget(action, ref);
+    if (!target || leads.beginLeadDrag(action, ref) === false) return false;
+    dropRing.position.copy(target);
+    dropRing.position.z += 0.15;
+    dropRing.scale.setScalar(action === 'power' ? 4.5 : 6.2);
+    dropMaterial.color.set('#8cc4f4').convertSRGBToLinear();
+    dropMaterial.opacity = 0.58;
+    dropRing.visible = true;
+    invalidate();
+    return true;
+  }
+
+  function moveLeadDrag(action, point, canSnap) {
+    leads.moveLeadDrag(action, point);
+    dropMaterial.color.set(canSnap ? '#a6efd7' : '#8cc4f4').convertSRGBToLinear();
+    dropMaterial.opacity = canSnap ? 0.92 : 0.58;
+    invalidate();
+  }
+
+  function endLeadDrag(action, snapped) {
+    leads.endLeadDrag(action, snapped);
+    if (snapped) {
+      if (action === 'power') power = 1;
+      else input = 1;
+    }
+    dropRing.visible = false;
+    invalidate();
+  }
+
   return {
     group, update, animate, registerPart,
+    beginLeadDrag, moveLeadDrag, endLeadDrag,
+    leadDragAnchor: (action, ref) => leads.leadDragAnchor(action, ref),
+    leadDragTarget: (action, ref) => leads.leadDragTarget(action, ref),
     lookupAction: ref => actionByPart.get(ref),
     readState: () => state,
     mated: () => ({ power: power === 1, input: input === 1 }),
     dispose() {
       leads.dispose();
       texture.dispose();
+      boardGlow.dispose();
       for (const material of disposeMaterial) material.dispose();
     }
   };

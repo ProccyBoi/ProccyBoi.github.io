@@ -103,6 +103,10 @@
   color: #70b4ee;
 }
 
+.glitch-demo__poster [data-bench-post-port="power"]:not([data-output-on]) {
+  color: #818c92;
+}
+
 .glitch-demo__poster [data-bench-post-port="positive"] {
   --mark-x: 45.9%; --mark-y: 22.8%; --mark-angle: -149deg;
   color: #f27562;

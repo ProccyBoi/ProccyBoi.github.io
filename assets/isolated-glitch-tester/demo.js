@@ -14,7 +14,8 @@ const signals = [
 ];
 
 const controls = [
-  { action: 'power', ref: 'J5', label: 'Demo power' },
+  { action: 'sourcePower', label: 'Bench supply power' },
+  { action: 'power', ref: 'J5', label: 'Power lead' },
   { action: 'input', ref: 'J1 / J2', label: 'Test leads' },
   { action: 'reset', ref: 'SW2', label: 'Arm / Reset' },
   { action: 'threshold', ref: 'SW3', label: 'Spike threshold' },
@@ -45,7 +46,7 @@ function benchMarkup() {
         <legend>Connections and switches</legend>
         ${controls.map(({ action, ref, label }) => `
           <button type="button" data-bench-action="${action}" aria-label="${label}" ${action === 'threshold' ? '' : 'aria-pressed="false"'}>
-            <span>${label} <small>${ref}</small></span><span data-bench-control-state></span>
+            <span>${label}${ref ? ` <small>${ref}</small>` : ''}</span><span data-bench-control-state></span>
           </button>
         `).join('')}
       </fieldset>
@@ -105,7 +106,8 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
   orderControls();
 
   const state = {
-    powered: false,
+    powerConnected: false,
+    sourceOn: true,
     inputConnected: false,
     armed: false,
     threshold: 75,
@@ -117,8 +119,13 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
   let eventTimer = null;
   let scene = null;
 
+  function boardPowered() {
+    return state.powerConnected && state.sourceOn;
+  }
+
   function nextAction() {
-    if (!state.powered) return 'power';
+    if (!state.powerConnected) return 'power';
+    if (!state.sourceOn) return 'sourcePower';
     if (!state.inputConnected) return 'input';
     if (!state.armed) return 'reset';
     return '';
@@ -126,21 +133,24 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
 
   function guidance() {
     return {
-      power: 'Connect demo power at J5.',
-      input: 'Connect the test leads at J1 and J2.',
+      power: scene ? 'Drag or tap the power lead to connect it at J5.' : 'Connect the power lead at J5.',
+      sourcePower: 'Switch on the bench supply to power the board.',
+      input: scene ? 'Drag or tap the test leads to connect them at J1 and J2.' : 'Connect the test leads at J1 and J2.',
       reset: 'Flip Arm / Reset to keep fault LEDs on after a test.',
       '': 'The tester is armed. Choose a test input.',
     }[nextAction()];
   }
 
   function publishSceneState() {
-    scene?.update({ ...state, live: activeIndicator ? [activeIndicator.live] : [], latched: [...latched] });
+    scene?.update({ ...state, powered: boardPowered(), live: activeIndicator ? [activeIndicator.live] : [], latched: [...latched] });
   }
 
   function refresh(message) {
     const next = nextAction();
+    const powered = boardPowered();
     const settings = {
-      power: [state.powered ? 'Connected' : 'Connect', state.powered],
+      sourcePower: [state.sourceOn ? 'On' : 'Off', state.sourceOn],
+      power: [state.powerConnected ? 'Connected' : 'Connect', state.powerConnected],
       input: [state.inputConnected ? 'Connected' : 'Connect', state.inputConnected],
       reset: [state.armed ? 'Armed' : 'Reset', state.armed],
       threshold: [`±${state.threshold} mV`],
@@ -156,7 +166,7 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
       else button.setAttribute('aria-label', `Spike threshold ${label}. Switch to ±${state.threshold === 75 ? 150 : 75} mV.`);
     }
 
-    inputControls.disabled = !state.powered || !state.inputConnected;
+    inputControls.disabled = !powered || !state.inputConnected;
     for (const row of ledRows) {
       const lit = latched.has(row.dataset.benchLed);
       const live = activeIndicator?.live === row.dataset.benchLiveLed;
@@ -167,13 +177,15 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
     }
 
     for (const mark of posterPorts) {
-      mark.hidden = !poster || (mark.dataset.benchPostPort === 'power' ? !state.powered : !state.inputConnected);
+      const powerLead = mark.dataset.benchPostPort === 'power';
+      mark.hidden = !poster || (powerLead ? !state.powerConnected : !state.inputConnected);
+      if (powerLead) mark.toggleAttribute('data-output-on', powered);
     }
     for (const mark of posterLeds) {
       mark.hidden = !poster || (activeIndicator?.live !== mark.dataset.benchPostLed && !latched.has(mark.dataset.benchPostLed));
     }
 
-    buzzer.textContent = state.powered ? (state.buzzerMuted ? 'Muted' : (latched.size ? 'Alert' : 'Ready')) : 'Off';
+    buzzer.textContent = powered ? (state.buzzerMuted ? 'Muted' : (latched.size ? 'Alert' : 'Ready')) : 'Off';
     if (message) result.textContent = message;
     publishSceneState();
   }
@@ -185,19 +197,37 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
     state.signal = 'steady';
   }
 
+  function clearBoardPower() {
+    latched.clear();
+    clearInputEvent();
+  }
+
+  function setPowerLead(connected) {
+    if (state.powerConnected === connected) return;
+    state.powerConnected = connected;
+    if (connected) return guidance();
+    clearBoardPower();
+    return 'Power lead unplugged. The fault LEDs are off.';
+  }
+
+  function setTestLeads(connected) {
+    if (state.inputConnected === connected) return;
+    state.inputConnected = connected;
+    if (connected) return guidance();
+    clearInputEvent();
+    return latched.size ? 'Test leads disconnected. The latched LEDs stay on.' : 'Test leads disconnected.';
+  }
+
   const actions = {
-    power() {
-      state.powered = !state.powered;
-      if (state.powered) return guidance();
-      latched.clear();
-      clearInputEvent();
-      return 'Demo power disconnected. The fault LEDs are off.';
-    },
-    input() {
-      state.inputConnected = !state.inputConnected;
-      if (state.inputConnected) return guidance();
-      clearInputEvent();
-      return latched.size ? 'Test leads disconnected. The latched LEDs stay on.' : 'Test leads disconnected.';
+    power: () => setPowerLead(!state.powerConnected),
+    connectPower: () => setPowerLead(true),
+    input: () => setTestLeads(!state.inputConnected),
+    connectInput: () => setTestLeads(true),
+    sourcePower() {
+      state.sourceOn = !state.sourceOn;
+      if (state.sourceOn) return guidance();
+      clearBoardPower();
+      return state.powerConnected ? 'Bench supply off. The power lead stays connected.' : 'Bench supply off.';
     },
     reset() {
       state.armed = !state.armed;
@@ -223,7 +253,9 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
   };
 
   function onAction(action) {
-    if (Object.hasOwn(actions, action)) refresh(actions[action]());
+    if (!Object.hasOwn(actions, action)) return;
+    const message = actions[action]();
+    if (message) refresh(message);
   }
 
   for (const button of controlButtons) {
@@ -258,7 +290,8 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
     });
   }
 
-  refresh(guidance());
+  const initialGuidance = guidance();
+  refresh(initialGuidance);
   if (board && mountScene) {
     fallbackNote.textContent = 'Loading the 3D board…';
     // The model stage must be measurable while the poster is visible.
@@ -267,6 +300,7 @@ export async function mountDemo(container, { board, assetBase, poster, mountScen
     try {
       scene = await mountScene(model, { board, assetBase, poster, onAction });
       if (scene) {
+        if (result.textContent === initialGuidance) result.textContent = guidance();
         publishSceneState();
         model.style.removeProperty('visibility');
         fallback.hidden = true;

@@ -1,3 +1,5 @@
+import { createBenchSupply } from './bench-supply.js?v=20261120-bench-plus';
+
 const TAU = 2 * Math.PI;
 
 export function createLeadHarness(THREE, board, { boardPoint }) {
@@ -21,6 +23,13 @@ export function createLeadHarness(THREE, board, { boardPoint }) {
     input: material('#db645b', 0.61),
     inputReturn: material('#a09a8b', 0.68)
   };
+
+  const supply = createBenchSupply(THREE, {
+    power: [finishes.power, finishes.powerReturn],
+    input: [finishes.input, finishes.inputReturn]
+  });
+  group.add(supply.group);
+  const pickMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
   function pinPosition(ref, number, z) {
     const component = board.components.find(component => component.ref === ref);
@@ -83,12 +92,10 @@ export function createLeadHarness(THREE, board, { boardPoint }) {
 
   function cable(parent, start, outgoing, radius, finish, exit) {
     const wire = mesh(parent, new THREE.BufferGeometry(), finish);
-    const sleeve = mesh(parent, new THREE.CylinderGeometry(radius * 1.34, radius * 1.2, 5, 10), finish, ...start.toArray());
-    sleeve.quaternion.setFromUnitVectors(v(0, 1, 0), outgoing.clone().normalize());
     const end = v(0, 0, 0);
     return () => {
       const point = exit(end);
-      const approach = parent.userData.action === 'power' ? v(5.5, 0, 9) : v(0, 5.2, 4.6);
+      const approach = parent.userData.action === 'power' ? v(6.2, 2.5, 8.3) : v(1.5, 4.5, 3.8);
       const route = new THREE.CubicBezierCurve3(
         start,
         start.clone().add(outgoing),
@@ -111,7 +118,7 @@ export function createLeadHarness(THREE, board, { boardPoint }) {
 
   const plug = new THREE.Group();
   plug.name = 'J5 two-pin plug';
-  plug.userData.footprints = ['J5'];
+  Object.assign(plug.userData, { footprints: ['J5'], leadDragAction: 'power', leadDragRef: 'J5' });
   plug.rotation.z = Math.atan2(padDirection.y, padDirection.x) - Math.PI / 2;
   power.add(plug);
   mesh(plug, roundedBox(3.65, padPitch + 3.0, 3.6, 0.45), finishes.shell);
@@ -123,7 +130,7 @@ export function createLeadHarness(THREE, board, { boardPoint }) {
     mesh(plug, zCylinder(0.94, 1.55, 0.68), finish, 0, y, 4.82);
     mesh(plug, zCylinder(0.88, 0.4), finishes.collar, 0, y, 4.25);
     const wirePoint = v(0, y, 5.48).applyEuler(plug.rotation);
-    return cable(power, v(62 + 2 * index, 34 + 5 * index, 5.8), v(-10, -2, 0.5),
+    return cable(power, supply.outputs.power[index], v(index * 1.5, -18, 0.7),
       0.61, finish, target => target.copy(plug.position).add(wirePoint));
   });
 
@@ -134,49 +141,110 @@ export function createLeadHarness(THREE, board, { boardPoint }) {
     const finish = index === 0 ? finishes.input : finishes.inputReturn;
     const lug = new THREE.Group();
     lug.name = ref + ' ring contact';
-    lug.userData.footprints = [ref];
+    Object.assign(lug.userData, { footprints: [ref], leadDragAction: 'input', leadDragRef: ref });
     input.add(lug);
     mesh(lug, ringGeometry(3.25, 4.65, 0.56), finishes.lug);
+    mesh(lug, zCylinder(3.28, 0.6), pickMaterial, 0, 0, 0.32);
     mesh(lug, ringGeometry(4.36, 4.66, 0.15), finishes.pin, 0, 0, 0.54);
     mesh(lug, new THREE.BoxGeometry(3.05, 3.5, 0.64), finishes.lug, 0, 4.87, 0.32);
     mesh(lug, roundedBox(4.08, 4.62, 2.89, 0.65), finish, 0, 6.48, 0.08);
     mesh(lug, roundedBox(3.34, 1.6, 2.4, 0.48), finishes.collar, 0, 8.13, 0.3);
-    const updateCable = cable(input, v(index === 0 ? -62 : -14, 73 + index * 5, 5.8),
-      v(index === 0 ? 10 : 6, 0, 0.2), 0.79, finish,
+    const updateCable = cable(input, supply.outputs.input[index],
+      v(-10 - index * 1.7, -4, 1.7), 0.79, finish,
       target => target.copy(lug.position).add(v(0, 8.8, 1.48).applyEuler(lug.rotation)));
-    return { lug, seat, park, updateCable };
+    return { ref, node: lug, seat, park, updateCable };
   });
 
-  let lastPower = NaN;
-  let lastInput = NaN;
+  const leads = {
+    power: {
+      group: power, grips: [{ ref: 'J5', node: plug, seat: powerSeat, park: powerPark }],
+      reroute: () => powerCables.forEach(updateCable => updateCable()), lift: 12.8, parkTilt: 0
+    },
+    input: {
+      group: input, grips: inputLugs,
+      reroute: () => inputLugs.forEach(grip => grip.updateCable()), lift: 12, parkTilt: -0.2
+    }
+  };
+
+  function gripFor(lead, ref) {
+    return ref ? lead?.grips.find(grip => grip.ref === ref) : lead?.grips[0];
+  }
+
+  function positionLead(lead, progress) {
+    for (const [index, { node, park, seat }] of lead.grips.entries()) {
+      node.position.copy(lead.release?.[index] || park).lerp(seat, progress);
+      if (!lead.release) node.position.z += lead.lift * progress * (1 - progress);
+      node.rotation.x = lead.release ? 0 : lead.parkTilt * (1 - progress);
+    }
+    if (progress === 1) lead.release = null;
+    lead.reroute();
+  }
+
+  function updateLead(lead, progress) {
+    const amount = THREE.MathUtils.clamp(progress, 0, 1);
+    if (amount === lead.progress) return;
+    lead.progress = amount;
+    lead.group.userData.connected = amount === 1;
+    if (!lead.drag) positionLead(lead, amount);
+  }
+
   function update(powerProgress, inputProgress) {
-    const powerAmount = THREE.MathUtils.clamp(powerProgress, 0, 1);
-    const inputAmount = THREE.MathUtils.clamp(inputProgress, 0, 1);
-    if (powerAmount !== lastPower) {
-      plug.position.copy(powerPark).lerp(powerSeat, powerAmount);
-      plug.position.z += 12.8 * powerAmount * (1 - powerAmount);
-      powerCables.forEach(updateCable => updateCable());
-      power.userData.connected = powerAmount === 1;
-      lastPower = powerAmount;
+    updateLead(leads.power, powerProgress);
+    updateLead(leads.input, inputProgress);
+  }
+
+  function beginLeadDrag(action, ref) {
+    const lead = leads[action];
+    const grip = gripFor(lead, ref);
+    if (!grip || lead.progress !== 0 || lead.drag) return false;
+    lead.release = null;
+    lead.drag = grip;
+    return true;
+  }
+
+  function moveLeadDrag(action, point) {
+    const lead = leads[action];
+    if (!lead?.drag) return;
+    const offset = point.clone().sub(lead.drag.seat);
+    for (const grip of lead.grips) {
+      grip.node.position.copy(grip.seat).add(offset);
+      grip.node.rotation.x = 0;
     }
-    if (inputAmount !== lastInput) {
-      for (const { lug, seat, park, updateCable } of inputLugs) {
-        lug.position.copy(park).lerp(seat, inputAmount);
-        lug.position.z += 12 * inputAmount * (1 - inputAmount);
-        lug.rotation.x = -0.2 * (1 - inputAmount);
-        updateCable();
-      }
-      input.userData.connected = inputAmount === 1;
-      lastInput = inputAmount;
+    lead.reroute();
+  }
+
+  function endLeadDrag(action, connect = false) {
+    const lead = leads[action];
+    if (!lead?.drag) return;
+    lead.drag = null;
+    if (connect) {
+      lead.release = lead.grips.map(grip => grip.node.position.clone());
+    } else {
+      lead.release = null;
+      positionLead(lead, lead.progress);
     }
+  }
+
+  function leadDragAnchor(action, ref) {
+    return gripFor(leads[action], ref)?.node.position.clone();
+  }
+
+  function leadDragTarget(action, ref) {
+    return gripFor(leads[action], ref)?.seat.clone();
   }
 
   function dispose() {
     group.parent?.remove(group);
+    supply.dispose();
+    pickMaterial.dispose();
     group.traverse(object => object.geometry?.dispose());
     Object.values(finishes).forEach(finish => finish.dispose());
   }
 
   update(0, 0);
-  return { group, update, dispose };
+  return {
+    group, update, dispose,
+    setSourcePower: supply.setSourcePower,
+    beginLeadDrag, moveLeadDrag, endLeadDrag, leadDragAnchor, leadDragTarget
+  };
 }

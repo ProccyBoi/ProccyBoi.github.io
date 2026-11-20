@@ -1,4 +1,4 @@
-import { boardPoint, buildBoard, makeComponentFactory, finishPackage } from './viewer-geometry.js?v=20261120-studio';
+import { boardPoint, buildBoard, makeComponentFactory, finishPackage } from './viewer-geometry.js?v=20261120-bench-plus';
 
 const ELEVATION_LIMIT = Math.PI / 2 - 0.0001;
 const normalizeSearch = text => text.toLowerCase().replaceAll('_', ' ').trim();
@@ -106,7 +106,7 @@ function sourceLabel(component, modelStatus) {
 }
 
 export async function mountDemoScene(container, { board, assetBase, poster, onAction }) {
-  const module = await import('./demo-scene.js?v=20261120-bench-clean');
+  const module = await import('./demo-scene.js?v=20261120-bench-plus');
   return mountViewer(container, board, { assetBase, poster, bench: { module, onAction } });
 }
 
@@ -235,7 +235,7 @@ export function mountViewer(container, board, options = {}) {
 
   function updateControls() {
     if (bench) {
-      canvas.setAttribute('aria-label', 'Interactive 3D tester bench. Tap a plug, input, or switch. Use arrow keys to turn the board, plus and minus to zoom, and Home to reset.');
+      canvas.setAttribute('aria-label', 'Interactive 3D tester bench. Drag or tap the plugs and tap the switches. Use the bench controls for keyboard operation, arrow keys to turn the board, plus and minus to zoom, and Home to reset the view.');
       return;
     }
     const preset = orbits[mode].preset;
@@ -435,7 +435,7 @@ export function mountViewer(container, board, options = {}) {
   presentation.add(assembly);
   if (bench) {
     benchVisual = bench.module.createBenchVisual(THREE, board, {
-      boardPoint, invalidate: requestDraw
+      boardPoint, surfaceGeometry: boardBuild.surfaceGeometry, invalidate: requestDraw
     });
     assembly.add(benchVisual.group);
     publishBenchState();
@@ -578,11 +578,21 @@ export function mountViewer(container, board, options = {}) {
   });
 
   const raycaster = new THREE.Raycaster();
+  const pointerNdc = new THREE.Vector2();
+
+  function pointRay(x, y, bounds) {
+    pointerNdc.set((x - bounds.left) / bounds.width * 2 - 1, 1 - (y - bounds.top) / bounds.height * 2);
+    raycaster.setFromCamera(pointerNdc, camera);
+    return raycaster.ray;
+  }
+
+  function onBenchFront() {
+    return benchVisual && orbits.board.elevation > 0.15;
+  }
+
   function pick(x, y) {
-    if (mode !== 'board' || (bench && orbits.board.elevation <= 0.15)) return;
-    const bounds = canvas.getBoundingClientRect();
-    const point = new THREE.Vector2((x - bounds.left) / bounds.width * 2 - 1, 1 - (y - bounds.top) / bounds.height * 2);
-    raycaster.setFromCamera(point, camera);
+    if (mode !== 'board' || (bench && !onBenchFront())) return;
+    pointRay(x, y, canvas.getBoundingClientRect());
     const targets = benchVisual ? [boardBody, footprints, benchVisual.group] : [boardBody, footprints];
     const [hit] = raycaster.intersectObjects(targets, true);
     for (let object = hit?.object; object; object = object.parent) {
@@ -599,9 +609,92 @@ export function mountViewer(container, board, options = {}) {
     }
   }
 
+  const dragPorts = [
+    { action: 'power', ref: 'J5', radius: 3.3 },
+    { action: 'input', ref: 'J1', radius: 5.7 },
+    { action: 'input', ref: 'J2', radius: 5.7 },
+  ];
   const pointers = new Map();
   let didDrag = false;
   let interactedWithMultiplePointers = false;
+  let leadDrag = null;
+
+  function findLead(x, y) {
+    if (!onBenchFront() || !releasePoster || !benchVisual.leadDragAnchor) return null;
+    pointRay(x, y, canvas.getBoundingClientRect());
+    const [hit] = raycaster.intersectObject(benchVisual.group, true);
+    for (let object = hit?.object; object; object = object.parent) {
+      const { leadDragAction: action, leadDragRef: ref } = object.userData;
+      if (!action) continue;
+      const state = benchVisual.readState();
+      const connected = action === 'power' ? state.powerConnected : state.inputConnected;
+      return connected ? null : { action, ref };
+    }
+    return null;
+  }
+
+  function startLeadDrag(gesture, pointer) {
+    const { action, ref } = gesture;
+    const anchor = benchVisual.leadDragAnchor(action, ref);
+    if (!anchor) return false;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -anchor.z).applyMatrix4(assembly.matrixWorld);
+    const point = pointRay(pointer.startX, pointer.startY, canvas.getBoundingClientRect())
+      .intersectPlane(plane, new THREE.Vector3());
+    if (!point || benchVisual.beginLeadDrag(action, ref) === false) return false;
+    gesture.plane = plane;
+    gesture.offset = anchor.clone().sub(assembly.worldToLocal(point));
+    container.dataset.benchDrag = action;
+    container.dataset.benchDragRef = ref;
+    canvas.classList.add('mct-viewer__dragging');
+    return true;
+  }
+
+  function moveLeadDrag(event) {
+    const bounds = canvas.getBoundingClientRect();
+    const point = pointRay(event.clientX, event.clientY, bounds).intersectPlane(leadDrag.plane, new THREE.Vector3());
+    if (!point) return false;
+    assembly.worldToLocal(point).add(leadDrag.offset);
+    const projection = point.clone().applyMatrix4(assembly.matrixWorld).project(camera);
+    const scaleX = bounds.width / 2;
+    const scaleY = bounds.height / 2;
+    const underCanvas = event.clientX >= bounds.left && event.clientX <= bounds.right &&
+      event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+
+    let nearest;
+    for (const port of dragPorts) {
+      const target = benchVisual.leadDragTarget(port.action, port.ref);
+      if (!target) continue;
+      const projected = target.clone().applyMatrix4(assembly.matrixWorld).project(camera);
+      const distance = Math.hypot((projection.x - projected.x) * scaleX, (projection.y - projected.y) * scaleY);
+      if (!nearest || distance < nearest.distance) nearest = { port, distance };
+    }
+    const radius = nearest?.port.radius || 0;
+    const pixelsPerMm = assembly.scale.x * bounds.width / (camera.right - camera.left);
+    const tolerance = Math.max(event.pointerType === 'touch' ? 21 : 13, Math.min(34, radius * pixelsPerMm + 5));
+    const canSnap = underCanvas && nearest?.port.ref === leadDrag.ref && nearest.distance <= tolerance;
+    benchVisual.moveLeadDrag(leadDrag.action, point, canSnap);
+    container.dataset.benchDropReady = String(canSnap);
+    requestDraw();
+    return canSnap;
+  }
+
+  function finishLeadDrag(snapped = false) {
+    if (!leadDrag) return;
+    const { action, plane, pointerId } = leadDrag;
+    leadDrag = null;
+    delete container.dataset.benchDrag;
+    delete container.dataset.benchDragRef;
+    delete container.dataset.benchDropReady;
+    if (!plane) return;
+    didDrag = true;
+    const pointer = pointers.get(pointerId);
+    if (pointer) pointer.cancelled = true;
+    benchVisual.endLeadDrag(action, snapped);
+    canvas.classList.remove('mct-viewer__dragging');
+    if (snapped) bench.onAction(action === 'power' ? 'connectPower' : 'connectInput');
+    requestDraw();
+  }
+
   const pinchDistance = () => {
     const [a, b] = [...pointers.values()];
     return Math.hypot(b.x - a.x, b.y - a.y);
@@ -611,8 +704,11 @@ export function mountViewer(container, board, options = {}) {
     if (pointers.size === 0) {
       didDrag = false;
       interactedWithMultiplePointers = false;
+      const handle = findLead(event.clientX, event.clientY);
+      leadDrag = handle ? { ...handle, pointerId: event.pointerId } : null;
     } else {
       interactedWithMultiplePointers = true;
+      finishLeadDrag();
     }
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY });
     canvas.setPointerCapture(event.pointerId);
@@ -620,37 +716,59 @@ export function mountViewer(container, board, options = {}) {
   });
   canvas.addEventListener('pointermove', event => {
     const pointer = pointers.get(event.pointerId);
-    if (!pointer) return;
+    if (!pointer) {
+      if (bench && event.pointerType === 'mouse' && !pointers.size) {
+        canvas.classList.toggle('mct-bench__lead-grab', Boolean(findLead(event.clientX, event.clientY)));
+      }
+      return;
+    }
     const dx = event.clientX - pointer.x;
     const dy = event.clientY - pointer.y;
     const previousDistance = pointers.size > 1 ? pinchDistance() : 0;
     pointer.x = event.clientX;
     pointer.y = event.clientY;
+    if (pointer.cancelled && pointers.size === 1) return;
+    const threshold = leadDrag && event.pointerType === 'touch' ? 6 : 3;
     if (previousDistance > 0) {
       applyZoom(pinchDistance() / previousDistance);
       didDrag = true;
-    } else if (Math.hypot(pointer.x - pointer.startX, pointer.y - pointer.startY) > 3 || didDrag) {
-      orbit(dx, dy);
+    } else if (Math.hypot(pointer.x - pointer.startX, pointer.y - pointer.startY) > threshold || didDrag) {
+      if (leadDrag && !leadDrag.plane && !startLeadDrag(leadDrag, pointer)) leadDrag = null;
+      if (leadDrag?.plane) moveLeadDrag(event);
+      else orbit(dx, dy);
       didDrag = true;
     }
     if (didDrag) canvas.classList.add('mct-viewer__dragging');
   });
   function endPointer(event) {
     if (!pointers.delete(event.pointerId)) return;
+    if (leadDrag?.pointerId === event.pointerId) {
+      const snapped = Boolean(leadDrag.plane && event.type === 'pointerup' && moveLeadDrag(event));
+      finishLeadDrag(snapped);
+    }
     if (pointers.size) return;
-    canvas.classList.remove('mct-viewer__dragging');
+    canvas.classList.remove('mct-viewer__dragging', 'mct-bench__lead-grab');
     if (event.type === 'pointerup' && !didDrag && !interactedWithMultiplePointers) pick(event.clientX, event.clientY);
   }
   canvas.addEventListener('pointerup', endPointer);
   canvas.addEventListener('pointercancel', endPointer);
   canvas.addEventListener('lostpointercapture', endPointer);
+  canvas.addEventListener('pointerleave', () => canvas.classList.remove('mct-bench__lead-grab'));
   canvas.addEventListener('wheel', event => {
     if (!available || (document.activeElement !== canvas && !event.ctrlKey)) return;
     event.preventDefault();
+    if (leadDrag?.plane) return;
     applyZoom(Math.exp(-Math.max(-150, Math.min(150, event.deltaY)) * 0.0025));
   }, { passive: false });
   canvas.addEventListener('keydown', event => {
     if (!available) return;
+    if (leadDrag?.plane) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        finishLeadDrag();
+      }
+      return;
+    }
     const directional = { ArrowLeft: [-14, 0], ArrowRight: [14, 0], ArrowUp: [0, -14], ArrowDown: [0, 14] };
     if (directional[event.key]) orbit(...directional[event.key]);
     else if (event.key === '+' || event.key === '=') applyZoom(1.24);
@@ -661,6 +779,7 @@ export function mountViewer(container, board, options = {}) {
   });
 
   resizeObserver = new ResizeObserver(() => {
+    if (leadDrag?.plane) finishLeadDrag();
     fitNeeded = true;
     requestDraw();
   });
@@ -672,9 +791,14 @@ export function mountViewer(container, board, options = {}) {
     }, { rootMargin: '90px' });
     viewportObserver.observe(stage);
   }
-  document.addEventListener('visibilitychange', requestDraw);
+  function handleVisibility() {
+    if (document.hidden) finishLeadDrag();
+    requestDraw();
+  }
+  document.addEventListener('visibilitychange', handleVisibility);
   canvas.addEventListener('webglcontextlost', event => {
     event.preventDefault();
+    finishLeadDrag();
     showUnavailable();
   });
   canvas.addEventListener('webglcontextrestored', () => {
@@ -691,6 +815,8 @@ export function mountViewer(container, board, options = {}) {
   function publishBenchState() {
     const state = benchVisual.readState();
     container.dataset.benchPower = String(state.powered);
+    container.dataset.benchPowerConnected = String(state.powerConnected);
+    container.dataset.benchSourceOn = String(state.sourceOn);
     container.dataset.benchInput = String(state.inputConnected);
     container.dataset.benchLiveLamps = state.live.join(' ');
     container.dataset.benchLatchedLamps = state.latched.join(' ');
@@ -700,11 +826,12 @@ export function mountViewer(container, board, options = {}) {
     if (disposed) return;
     disposed = true;
     available = false;
+    finishLeadDrag();
     cancelAnimationFrame(frame);
     window.clearTimeout(revealTimer);
     resizeObserver?.disconnect();
     viewportObserver?.disconnect();
-    document.removeEventListener('visibilitychange', requestDraw);
+    document.removeEventListener('visibilitychange', handleVisibility);
     benchVisual?.dispose();
     const geometries = new Set();
     const materials = new Set();
@@ -731,6 +858,7 @@ export function mountViewer(container, board, options = {}) {
   if (bench) return {
     update(state) {
       if (disposed) return;
+      if ((leadDrag?.action === 'power' && state.powerConnected) || (leadDrag?.action === 'input' && state.inputConnected)) finishLeadDrag();
       benchVisual.update(state);
       publishBenchState();
     },
