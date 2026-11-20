@@ -24,18 +24,19 @@
 }
 
 .v5-hardware-panel [data-hardware] {
-  --v2-panel: var(--v5-deep, #14251f);
-  --v2-ink: var(--v5-on-dark, #f5f1e5);
-  --v2-muted: var(--v5-dim, #c4cec0);
-  --v2-line: var(--v5-dark-line, #41534a);
-  --v2-accent: var(--signal, #f4b76e);
+  --v2-panel: var(--v5-deep);
+  --v2-ink: var(--v5-on-dark);
+  --v2-muted: var(--v5-dim);
+  --v2-line: var(--v5-dark-line);
+  --v2-accent: var(--signal);
   --v2-on-accent: var(--ink);
+  border: 1px solid var(--ink);
   border-radius: 0;
   color-scheme: dark;
 }
 
 .v5-hardware-panel .hardware-stage {
-  background: #10110f;
+  background: #191c3d;
 }
 
 .v5-hardware-panel :is(.hardware-controls, .hardware-start) {

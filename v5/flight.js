@@ -1,5 +1,6 @@
 const playbackRate = 24;
-const colors = { grid: '#345145', baseline: '#6d897b', muted: '#b9c9bf', track: '#658174', signal: '#ffbe6b', marker: '#ffdf9b' };
+const trackInk = { grid: '#6675f8', baseline: '#a3adff', label: '#f5f3ff', trace: '#b0baff', active: '#fff' };
+const heightInk = { grid: '#d6d8f8', baseline: '#777fa9', label: '#4c527b', trace: '#7c86b4', active: '#2639f5' };
 
 function elapsedLabel(seconds) {
   const tenths = Math.round(seconds * 10);
@@ -63,9 +64,12 @@ function trace(context, samples, point, index, color, width) {
 
 function marker(context, x, y) {
   context.beginPath();
-  context.fillStyle = colors.marker;
-  context.arc(x, y, 4, 0, Math.PI * 2);
+  context.fillStyle = '#dffc58';
+  context.strokeStyle = '#11122a';
+  context.lineWidth = 1.5;
+  context.arc(x, y, 4.5, 0, Math.PI * 2);
   context.fill();
+  context.stroke();
 }
 
 function trackPlot(canvas, samples) {
@@ -85,23 +89,39 @@ function trackPlot(canvas, samples) {
     const area = sizedCanvas(canvas, context);
     if (!area) return;
     const { width, height } = area;
-    const scale = Math.min((width - 36) / spanEast, (height - 28) / spanNorth);
-    const left = (width - spanEast * scale) / 2;
-    const bottom = (height + spanNorth * scale) / 2;
-    const point = ([, , , sampleEast, sampleNorth]) => [left + (sampleEast - minEast) * scale, bottom - (sampleNorth - minNorth) * scale];
-    const spacing = 50 * scale;
-    for (let x = width / 2 % spacing; x < width; x += spacing) line(context, x, 0, x, height, colors.grid);
-    for (let y = height / 2 % spacing; y < height; y += spacing) line(context, 0, y, width, y, colors.grid);
-    trace(context, samples, point, samples.length - 1, colors.track, 1.25);
-    trace(context, samples, point, index, colors.signal, 1.9);
-    marker(context, ...point(samples[index]));
-    context.fillStyle = colors.muted;
-    context.textAlign = 'left';
+    const left = 40;
+    const right = width - 15;
+    const top = 11;
+    const bottom = height - 23;
+    const scale = Math.min((right - left - 24) / spanEast, (bottom - top - 20) / spanNorth);
+    if (!Number.isFinite(scale) || scale <= 0) return;
+    const eastZero = (left + right - spanEast * scale) / 2 - minEast * scale;
+    const northZero = (top + bottom + spanNorth * scale) / 2 + minNorth * scale;
+    const x = metres => eastZero + metres * scale;
+    const y = metres => northZero - metres * scale;
+    const point = ([, , , sampleEast, sampleNorth]) => [x(sampleEast), y(sampleNorth)];
+    const tick = Math.max(50, Math.ceil(41 / scale / 50) * 50);
+
+    context.fillStyle = trackInk.label;
+    context.textAlign = 'center';
     context.textBaseline = 'top';
-    context.fillText('N ↑', 8, 7);
-    context.textBaseline = 'bottom';
-    context.fillText('50 m', 8, height - 10);
-    line(context, 8, height - 7, 8 + spacing, height - 7, colors.muted);
+    for (let value = Math.ceil((left - eastZero) / (scale * tick)) * tick; x(value) <= right; value += tick) {
+      const position = x(value);
+      line(context, position, top, position, bottom, value === 0 ? trackInk.baseline : trackInk.grid);
+      context.fillText(String(value), position, bottom + 6);
+    }
+    context.textAlign = 'right';
+    context.textBaseline = 'middle';
+    for (let value = Math.ceil((northZero - bottom) / (scale * tick)) * tick; y(value) >= top; value += tick) {
+      const position = y(value);
+      line(context, left, position, right, position, value === 0 ? trackInk.baseline : trackInk.grid);
+      context.fillText(String(value), left - 7, position);
+    }
+    line(context, left, top, left, bottom, trackInk.baseline);
+    line(context, left, bottom, right, bottom, trackInk.baseline);
+    trace(context, samples, point, samples.length - 1, trackInk.trace, 1.45);
+    trace(context, samples, point, index, trackInk.active, 2.1);
+    marker(context, ...point(samples[index]));
   };
 }
 
@@ -127,25 +147,25 @@ function heightPlot(canvas, samples) {
     const x = time => left + time / duration * (right - left);
     const y = metres => top + (maxHeight - metres) / (maxHeight - minHeight) * (bottom - top);
     const point = ([time, metres]) => [x(time), y(metres)];
-    context.fillStyle = colors.muted;
+    context.fillStyle = heightInk.label;
     context.textAlign = 'right';
     context.textBaseline = 'middle';
     for (const value of [-25, 0, 50, 100]) {
       context.fillText(String(value), left - 6, y(value));
-      line(context, left, y(value), right, y(value), value === 0 ? colors.baseline : colors.grid);
+      line(context, left, y(value), right, y(value), value === 0 ? heightInk.baseline : heightInk.grid);
     }
     context.textAlign = 'center';
     context.textBaseline = 'top';
     for (const minute of [0, 2, 4, 6, 8, 10]) {
       if (width < 310 && minute !== 0 && minute % 4 !== 0) continue;
       const position = x(minute * 60);
-      line(context, position, top, position, bottom, colors.grid);
+      line(context, position, top, position, bottom, heightInk.grid);
       context.fillText(`${minute}:00`, position, bottom + 6);
     }
-    trace(context, samples, point, samples.length - 1, colors.track, 1.25);
-    trace(context, samples, point, index, colors.signal, 2);
+    trace(context, samples, point, samples.length - 1, heightInk.trace, 1.25);
+    trace(context, samples, point, index, heightInk.active, 2);
     const [selectedX, selectedY] = point(samples[index]);
-    line(context, selectedX, top, selectedX, bottom, colors.baseline);
+    line(context, selectedX, top, selectedX, bottom, heightInk.baseline);
     marker(context, selectedX, selectedY);
   };
 }
@@ -154,22 +174,24 @@ function mountFlight(container, data) {
   const { samples } = data;
   const duration = samples.at(-1)[0];
   container.innerHTML = `
-    <div class="flight-preview" aria-label="F110211 flight replay preview">
-      <div class="flight-preview__plots">
-        <figure>
-          <figcaption>Ground track <span>GNSS</span></figcaption>
+    <div class="flight-preview">
+      <div class="flight-preview__instrument">
+        <figure class="flight-preview__map">
+          <figcaption>Ground track <span>East / North · m</span></figcaption>
           <canvas data-flight-track aria-hidden="true"></canvas>
         </figure>
-        <figure>
-          <figcaption>Barometric height change <span>m</span></figcaption>
-          <canvas data-flight-height aria-hidden="true"></canvas>
-        </figure>
+        <div class="flight-preview__telemetry">
+          <dl class="flight-preview__readouts">
+            <div><dt>Elapsed</dt><dd data-flight-time></dd></div>
+            <div><dt>Height change</dt><dd data-flight-altitude></dd></div>
+            <div><dt>Ground speed</dt><dd data-flight-speed></dd></div>
+          </dl>
+          <figure class="flight-preview__height">
+            <figcaption>Barometric height change <span>m</span></figcaption>
+            <canvas data-flight-height aria-hidden="true"></canvas>
+          </figure>
+        </div>
       </div>
-      <dl class="flight-preview__readouts">
-        <div><dt>Elapsed</dt><dd data-flight-time></dd></div>
-        <div><dt>Height change</dt><dd data-flight-altitude></dd></div>
-        <div><dt>Ground speed</dt><dd data-flight-speed></dd></div>
-      </dl>
       <div class="flight-preview__controls">
         <button type="button" data-flight-play>Play ${playbackRate}×</button>
         <label><span>Replay position</span><input type="range" min="0" max="${samples.length - 1}" value="0" data-flight-scrub></label>

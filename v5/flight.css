@@ -1,71 +1,95 @@
 .flight-preview {
-  --flight-stage: #10231c;
-  --flight-line: #3b564b;
-  --flight-ink: #f2f2e7;
-  --flight-muted: #bdc9c0;
-  --flight-accent: #ffbe6b;
-  --flight-pad: clamp(.8rem, 2vw, 1.4rem);
+  --flight-cobalt: #2639f5;
+  --flight-line: #b6bbed;
+  --flight-paper: var(--paper, #f5f3ff);
+  --flight-ink: var(--ink, #11122a);
+  --flight-muted: #4c527b;
+  --flight-pad: clamp(.8rem, 2.2vw, 1.75rem);
   min-width: 0;
   border: 1px solid var(--flight-line);
-  background: var(--flight-stage);
+  background: var(--flight-paper);
   color: var(--flight-ink);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
-.flight-preview__plots {
+.flight-preview__instrument {
   display: grid;
-  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr);
 }
 
 .flight-preview figure {
   min-width: 0;
   margin: 0;
-  padding: .8rem var(--flight-pad) .3rem;
+  padding: 1rem var(--flight-pad) .65rem;
 }
 
-.flight-preview figure + figure {
-  border-left: 1px solid var(--flight-line);
+.flight-preview .flight-preview__map {
+  display: flex;
+  flex-direction: column;
+  background: var(--flight-cobalt);
+  color: #fff;
 }
 
 .flight-preview figcaption {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: .45rem;
+  gap: .5rem 1rem;
+  flex-wrap: wrap;
   margin-bottom: .65rem;
-  color: var(--flight-ink);
-  font-size: .9375rem;
-  font-weight: 550;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .flight-preview figcaption span {
   color: var(--flight-muted);
-  font: .8125rem/1.35 var(--mono, monospace);
+  font: 400 .8125rem/1.4 var(--mono, monospace);
 }
+
+.flight-preview__map figcaption span { color: #f5f3ff; }
 
 .flight-preview canvas {
   display: block;
   width: 100%;
-  height: clamp(9rem, 19vw, 14rem);
   max-width: 100%;
 }
 
+.flight-preview__map canvas {
+  flex: 1 0 auto;
+  height: 0;
+  min-height: clamp(15rem, 27vw, 24rem);
+}
+
+.flight-preview__height canvas { height: clamp(8rem, 15vw, 13rem); }
 .flight-preview canvas[hidden] { display: none; }
+
+.flight-preview__telemetry {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+}
 
 .flight-preview__readouts {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
   margin: 0;
   padding: 0;
-  border-block: 1px solid var(--flight-line);
+  border-bottom: 1px solid var(--flight-line);
 }
 
 .flight-preview__readouts div {
   min-width: 0;
-  padding: .66rem var(--flight-pad) .7rem;
+  padding: .8rem var(--flight-pad);
 }
 
-.flight-preview__readouts div + div { border-left: 1px solid var(--flight-line); }
+.flight-preview__readouts div:first-child {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--flight-line);
+}
+
+.flight-preview__readouts div:nth-child(3) { border-left: 1px solid var(--flight-line); }
 
 .flight-preview__readouts dt {
   color: var(--flight-muted);
@@ -74,12 +98,13 @@
 }
 
 .flight-preview__readouts dd {
-  margin: .3rem 0 0;
+  margin: .35rem 0 0;
   color: var(--flight-ink);
-  font: 400 clamp(.875rem, 1.7vw, 1.125rem)/1.4 var(--mono, monospace);
+  font: 400 clamp(1rem, 2vw, 1.55rem)/1.25 var(--mono, monospace);
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
 }
+
+.flight-preview__readouts div:first-child dd { font-size: clamp(1.05rem, 2.15vw, 1.9rem); }
 
 .flight-preview__controls {
   display: grid;
@@ -87,23 +112,28 @@
   align-items: end;
   gap: 1rem;
   padding: .75rem var(--flight-pad) 1rem;
+  border-top: 1px solid var(--flight-line);
+  background: #eeedff;
 }
 
 .flight-preview__controls button {
   min-width: 6.25rem;
   min-height: 2.75rem;
   padding: .5rem .7rem;
-  border: 1px solid var(--flight-accent);
+  border: 1px solid var(--flight-cobalt);
   border-radius: 0;
-  background: var(--flight-accent);
-  color: #221b10;
+  background: var(--flight-cobalt);
+  color: #fff;
   font: inherit;
   font-size: .9375rem;
   font-weight: 650;
   cursor: pointer;
 }
 
-.flight-preview__controls button:hover { background: #ffd596; }
+.flight-preview__controls button:hover {
+  border-color: var(--flight-ink);
+  background: var(--flight-ink);
+}
 
 .flight-preview__controls label {
   display: grid;
@@ -118,12 +148,12 @@
   min-width: 0;
   min-height: 2.75rem;
   margin: 0;
-  accent-color: var(--flight-accent);
+  accent-color: var(--flight-cobalt);
   cursor: pointer;
 }
 
 .flight-preview__controls :is(button, input):focus-visible {
-  outline: 2px solid var(--flight-accent);
+  outline: 2px solid var(--flight-cobalt);
   outline-offset: 3px;
 }
 
@@ -138,22 +168,20 @@
   line-height: 1.5;
 }
 
-.flight-preview__source p { max-width: 59ch; margin: 0; }
+.flight-preview__source p { max-width: 64ch; margin: 0; }
 
 .flight-preview__source a {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
-  font-weight: 550;
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: .22em;
 }
 
-@media (max-width: 540px) {
-  .flight-preview__plots { grid-template-columns: minmax(0, 1fr); }
-  .flight-preview figure + figure { border-top: 1px solid var(--flight-line); border-left: 0; }
-  .flight-preview__readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .flight-preview__readouts div:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--flight-line); }
-  .flight-preview__readouts div:nth-child(2) { border-left: 0; }
-  .flight-preview__readouts div { padding-block: .55rem; }
+@media (max-width: 700px) {
+  .flight-preview__instrument { grid-template-columns: minmax(0, 1fr); }
+  .flight-preview__map canvas { min-height: clamp(12.5rem, 65vw, 23rem); }
+  .flight-preview__height canvas { height: clamp(9rem, 34vw, 13rem); }
+  .flight-preview__readouts div { padding-block: .65rem; }
 }

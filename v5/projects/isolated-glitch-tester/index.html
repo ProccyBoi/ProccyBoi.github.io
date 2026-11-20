@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>Isolated Glitch Tester v04 — Andrew Chung</title>
   <meta name="description" content="Explore the Isolated Glitch Tester v04 PCB, connect virtual leads, and see how it detects slow drift and short voltage spikes.">
-  <meta name="theme-color" content="#14251f">
+  <meta name="theme-color" content="#f5f3ff">
   <link rel="canonical" href="https://proccyboi.github.io/v5/projects/isolated-glitch-tester/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Isolated Glitch Tester v04 — Andrew Chung">
@@ -16,12 +16,12 @@
   <meta property="og:image:alt" content="CAD assembly of the Isolated Glitch Tester v04">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/assets/fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/v5/site.css?v=flightline-20261120">
-  <link rel="stylesheet" href="/v5/interiors.css">
+  <link rel="stylesheet" href="/v5/site.css?v=workbench-20261120">
+  <link rel="stylesheet" href="/v5/interiors.css?v=workbench-20261120">
   <link rel="stylesheet" href="/assets/isolated-glitch-tester/project.css?v=20261120-studio">
   <link rel="stylesheet" href="/assets/isolated-glitch-tester/viewer.css?v=20261120-bench-plus">
   <link rel="stylesheet" href="/assets/isolated-glitch-tester/demo.css?v=20261120-bench-plus">
-  <link rel="stylesheet" href="/v5/projects/isolated-glitch-tester/tester.css">
+  <link rel="stylesheet" href="/v5/projects/isolated-glitch-tester/tester.css?v=instrument-20261120">
   <script type="module" src="/assets/isolated-glitch-tester/project.js?v=20261120-bench-plus"></script>
 </head>
 <body class="interior v5-tester">
@@ -45,29 +45,32 @@
           <span aria-hidden="true">/</span>
           <span aria-current="page">Isolated Glitch Tester</span>
         </nav>
-        <div class="tester-hero">
-          <div class="tester-hero-copy">
-            <p class="tester-kicker">Power-supply test hardware</p>
-            <h1 id="tester-title">Isolated Glitch Tester <span class="tester-revision">v04</span></h1>
+        <header class="tester-heading">
+          <p class="tester-kicker">Power-supply test hardware</p>
+          <h1 id="tester-title">Isolated Glitch Tester <span class="tester-revision">v04</span></h1>
+          <div class="tester-heading-foot">
             <p class="tester-lead">A bench PCB that catches slow drift and short voltage spikes on power-supply outputs.</p>
-            <div class="tester-actions">
+            <nav class="tester-actions" aria-label="On this page">
               <a href="#demo" class="tester-primary">Try the virtual bench</a>
               <a href="#explore" class="tester-secondary">Inspect the 3D board</a>
-            </div>
+              <a href="#details" class="tester-secondary">Circuit details</a>
+            </nav>
           </div>
+        </header>
+        <div class="tester-record">
           <figure class="tester-hero-figure">
             <div class="tester-hero-image">
               <img src="/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio" width="1600" height="1200" alt="Front CAD view of the Isolated Glitch Tester PCB with rotary selector, toggle switches, trim controls and fault LEDs" decoding="async" fetchpriority="high">
             </div>
             <figcaption><span>Front assembly</span><span>KiCad v04</span></figcaption>
           </figure>
+          <dl class="tester-specs" aria-label="Board specifications">
+            <div><dt>Board</dt><dd>57 × 121.1 mm</dd></div>
+            <div><dt>Stack-up</dt><dd>2 layers · 1.6 mm</dd></div>
+            <div><dt>Fault outputs</dt><dd>4 latched indicators</dd></div>
+            <div><dt>Spike thresholds</dt><dd>±75 mV / ±150 mV</dd></div>
+          </dl>
         </div>
-        <dl class="tester-specs" aria-label="Board specifications">
-          <div><dt>Board</dt><dd>57 × 121.1 mm</dd></div>
-          <div><dt>Stack-up</dt><dd>2 layers · 1.6 mm</dd></div>
-          <div><dt>Fault outputs</dt><dd>4 latched indicators</dd></div>
-          <div><dt>Spike thresholds</dt><dd>±75 mV / ±150 mV</dd></div>
-        </dl>
       </div>
     </section>
 
@@ -110,30 +113,29 @@
           <p>The isolated input is split into a path for slow changes and a path for brief disturbances.</p>
         </div>
         <div class="tester-detection">
-          <div>
-            <h3>Drift</h3>
+          <section aria-labelledby="tester-drift-title">
+            <h3 id="tester-drift-title">Drift</h3>
             <p>A low-pass filter follows slow voltage changes. An LM339 window comparator checks the filtered voltage against the upper and lower drift limits.</p>
-          </div>
-          <div>
-            <h3>Spikes</h3>
-            <p>The second path catches short excursions outside the selected ±75 mV or ±150 mV window.</p>
-          </div>
-        </div>
-        <div class="tester-notes">
-          <section aria-labelledby="tester-latch-title">
-            <h3 id="tester-latch-title">Hold the indication</h3>
-            <p>The CD4043 latch holds an indication after the comparator output clears. The board also breaks out oscilloscope signals and provides separate reference adjustments and a buzzer mute.</p>
-            <p>The virtual bench uses synthetic signals to illustrate the controls and indicator behavior.</p>
           </section>
-          <section aria-labelledby="tester-model-title">
-            <h3 id="tester-model-title">Model sources</h3>
-            <p>The assembly follows the v04 KiCad layout. The inspector identifies the model source and footprints marked do-not-populate.</p>
+          <section aria-labelledby="tester-spike-title">
+            <h3 id="tester-spike-title">Spikes</h3>
+            <p>The second path catches short excursions outside the selected ±75 mV or ±150 mV window.</p>
+          </section>
+          <section aria-labelledby="tester-latch-title">
+            <h3 id="tester-latch-title">Latch</h3>
+            <p>The CD4043 holds an indication after the comparator output clears. The board also breaks out oscilloscope signals and provides separate reference adjustments and a buzzer mute.</p>
+          </section>
+        </div>
+        <section class="tester-model-sources" aria-labelledby="tester-model-title">
+          <h3 id="tester-model-title">Model sources</h3>
+          <div>
+            <p>The assembly follows the v04 KiCad layout. The inspector identifies the model source and footprints marked do-not-populate. The virtual bench uses synthetic signals to illustrate the controls and indicator behavior.</p>
             <ul>
               <li><a href="/assets/isolated-glitch-tester/models/MODEL-CREDITS.txt">KiCad model credits</a></li>
               <li><a href="/assets/isolated-glitch-tester/models/RECONSTRUCTION-CREDITS.txt">Reconstruction sources</a></li>
             </ul>
-          </section>
-        </div>
+          </div>
+        </section>
         <nav class="tester-more" aria-label="More projects">
           <a href="/v5/#work">Selected work</a>
           <a href="/v5/projects/switch-mode-power-supplies/">Earlier Switchmode test hardware</a>

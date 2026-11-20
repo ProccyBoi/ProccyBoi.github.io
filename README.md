@@ -1,8 +1,8 @@
 # Andrew Chung — electrical engineering portfolio
 
-## V5 — From the bench to the flight line
+## V5 — Workbench
 
-The independent `/v5/` portfolio brings together 17 searchable projects, two Skylabs board records, a native Glitch Tester bench, a scrubber for the recorded F110211 flight and the source-CAD Skylabs assembly story. It also includes a [reference notebook](https://proccyboi.github.io/v5/references/) with Japanese maker trails and credited interaction references. Source, evidence boundaries and verification commands are documented in [v5/README.md](v5/README.md).
+The independent `/v5/` portfolio opens on an interactive workbench index. It brings together 17 searchable projects, two Skylabs board records, a native Glitch Tester bench, a scrubber for the recorded F110211 flight and the source-CAD Skylabs assembly story. The reference notebook includes Japanese maker trails and credited interaction references. [Reference notebook](https://proccyboi.github.io/v5/references/) · [Source and verification notes](v5/README.md)
 
 Personal portfolio and public project archive published at:
 

@@ -1,6 +1,6 @@
-# V5 — From the bench to the flight line
+# V5 — Workbench
 
-The `/v5/` portfolio covers 17 projects, two Skylabs board records, a searchable archive, About and a reference notebook. Its homepage follows Andrew’s work across power electronics, avionics and teaching.
+The `/v5/` portfolio covers 17 projects, two Skylabs board records, a searchable archive, About and a reference notebook. Its homepage opens on a four-project workbench index with direct links to the builds and their demos.
 
 ## Evidence and design
 
@@ -8,7 +8,7 @@ The [reference notebook](/v5/references/) records 12 creator resources, three da
 
 The main sources are 74th's RP2040 alignment jig, ciniml's M5Stack reflow controller and STEP model combiner, Lang-ship's EasyEDA/OSHWLab workflow, CHIRIMEN, UniBoard SPICE, and Switch Science's historical reflow guide. International interaction references include Ciechanowski's Mechanical Watch, KiCanvas, InteractiveHtmlBom, Falstad and CPU Land. Sources and boundaries are linked individually in the notebook.
 
-The composition pairs warm paper and deep pine with amber controls and self-hosted Archivo and Plex Mono. The homepage leads with a real photograph of the Skylabs telemetry board and direct routes into project case studies, the demos and the CV.
+The composition uses cobalt media plates, paper, near-black rules and chartreuse active controls, with self-hosted Archivo and Plex Mono. `workbench.js` adds keyboard and pointer selection to the project index. With JavaScript disabled, all four plates and their links remain available.
 
 W3C keyboard, reflow, focus visibility and motion guidance inform the implementation. The 320px surrounding layout, native links, visible focus, static reduced-motion presentation and skip route have explicit acceptance checks. MDN progressive enhancement and visibility tracking inform fallbacks and rendering lifecycle. Desktop tests are not screen-reader certification, physical-device frame-rate measurements or field Core Web Vitals data.
 
@@ -38,6 +38,7 @@ node --check v5/assembly.js
 node --check v5/solder-process.js
 node --check v5/interiors.js
 node --check v5/flight.js
+node --check v5/workbench.js
 node v5/tests/assembly.cjs
 node v5/tests/solder-visibility.cjs
 node v5/tests/interiors.cjs

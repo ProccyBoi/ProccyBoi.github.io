@@ -128,7 +128,7 @@ const makePage = async options => {
   });
   await check('lost WebGL context returns static fallback',async()=>{
     const page=await makePage({viewport:{width:1200,height:900}});await prepare(page);
-    const lost=await page.locator('canvas').evaluate(canvas=>{const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');const ext=gl?.getExtension('WEBGL_lose_context');ext?.loseContext();return Boolean(ext);});
+    const lost=await page.locator('[data-v5-assembly] canvas').evaluate(canvas=>{const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');const ext=gl?.getExtension('WEBGL_lose_context');ext?.loseContext();return Boolean(ext);});
     assert(lost);await page.waitForFunction(()=>document.querySelector('[data-v5-assembly]').dataset.state==='unavailable');
     assert(await page.locator('.assembly-poster').isVisible());await page.close();
   });
