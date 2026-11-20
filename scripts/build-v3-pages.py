@@ -11,7 +11,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 import json
 import re
-from v3_interior_source import source as interior_source
+from v3_interior_source import route_paths, source as interior_source
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / 'scripts/v3-webgpu/baseline-manifest.json').read_text())
@@ -29,16 +29,12 @@ def main():
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     errors = []
-    # These Skylabs tools are deliberately v2-only; do not clone them into v3.
-    v2_only = {'projects/skylabs/reflow/index.html', 'projects/skylabs/sensor-test-simulator/index.html'}
-    sources = sorted(p for p in (ROOT / 'v2').rglob('*.html')
-                     if p.relative_to(ROOT / 'v2').as_posix() not in v2_only)
-    expected_paths = {str(p.relative_to(ROOT / 'v2')) for p in sources}
+    # The accepted interior sources define the v3 inventory independently of v2.
+    expected_paths = set(route_paths())
     actual_paths = {str(p.relative_to(ROOT / 'v3')) for p in (ROOT / 'v3').rglob('*.html') if 'assets' not in p.relative_to(ROOT / 'v3').parts}
     if actual_paths - expected_paths:
         errors.append('Unexpected old v3 routes: ' + ', '.join(sorted(actual_paths - expected_paths)))
-    for path in sources:
-        relative = str(path.relative_to(ROOT / 'v2'))
+    for relative in sorted(expected_paths):
         target = ROOT / 'v3' / relative
         if relative == 'index.html':
             if not target.is_file():
@@ -53,7 +49,7 @@ def main():
             target.write_text(expected, encoding='utf-8')
     if errors:
         raise SystemExit('\n'.join(errors))
-    print(f'{len(sources)} routes {"verified" if args.check else "maintained"} (authored home preserved); all production assets remain unchanged.')
+    print(f'{len(expected_paths)} routes {"verified" if args.check else "maintained"} (authored home preserved); all production assets remain unchanged.')
 
 if __name__ == '__main__':
     main()

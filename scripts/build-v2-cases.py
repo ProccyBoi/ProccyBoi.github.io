@@ -109,6 +109,8 @@ ORDER.insert(1, 'coaster')
 LABELS['coaster'] = 'RGB Drink Coaster'
 ORDER.insert(0, 'kiku')
 LABELS['kiku'] = 'Kiku'
+ORDER.insert(ORDER.index('switch-mode-power-supplies') + 1, 'isolated-glitch-tester')
+LABELS['isolated-glitch-tester'] = 'Isolated Glitch Tester v04'
 for record in HARDWARE_PROJECTS:
     ORDER.insert(ORDER.index('switch-mode-power-supplies'), record['slug'])
     LABELS[record['slug']] = record['title']
@@ -246,6 +248,8 @@ def case_navigation(source, slug, title):
         links.append(('assembly', 'Assembly'))
     if slug == 'dash':
         links.extend((anchor, label) for anchor, label in [('prototype', 'Prototype'), ('character', 'Character')] if f'id="{anchor}"' in source)
+    if 'id="demo"' in source:
+        links.append(('demo', 'Signal demo'))
     if 'id="details"' in source:
         links.append(('details', 'Details'))
     if 'id="build"' in source:
@@ -495,6 +499,8 @@ def make_case(path, slug=None, source=None):
     explore_anchor = 'assembly' if 'id="assembly"' in source and 'data-skylabs-inspector' not in source else 'explore'
     explore_label = escape(HARDWARE_PROJECT_BY_SLUG.get(slug, {}).get('explore_label', HARDWARE_ASSEMBLIES.get(slug, {}).get('explore_label', 'Explore the assembly' if explore_anchor == 'assembly' else 'Explore the board')))
     hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
+    if slug == 'isolated-glitch-tester':
+        hero_actions = tree.find('nav', 'project-hero-actions').outer(source)
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
     <div class="v2-case-specs shell">{meta.outer(source) if meta else ''}</div></section>'''
@@ -604,7 +610,7 @@ def projects_aircraft_header():
           <canvas data-aircraft-canvas aria-hidden="true"></canvas>
         </div>
         <div class="v3-aircraft-copy" data-aircraft-copy>
-          <article id="skylabs-aircraft" data-aircraft-chapter="0"><h1 id="projects-title">Projects</h1><p>PCBs, embedded systems and robotics.</p><p class="v3-intro-line">Featured build / UNSW Skylabs</p><a class="v3-link v2-collection-jump" href="/v2/projects/#collection">Browse all 16 projects <span aria-hidden="true">↓</span></a></article>
+          <article id="skylabs-aircraft" data-aircraft-chapter="0"><h1 id="projects-title">Projects</h1><p>PCBs, embedded systems and robotics.</p><p class="v3-intro-line">Featured build / UNSW Skylabs</p><a class="v3-link v2-collection-jump" href="/v2/projects/#collection">Browse all 17 projects <span aria-hidden="true">↓</span></a></article>
           <article id="skylabs-telemetry" data-aircraft-chapter="1"><h2>Inside Skylabs.</h2><p>Navigation, sensing and a radio link to the ground, on a 73 × 57 mm board.</p><div class="v2-aircraft-actions"><a class="v3-link" href="/v2/projects/skylabs/boards/telemetry/">Explore the board <span aria-hidden="true">↗</span></a></div></article>
         </div>
         <button class="v3-aircraft-skip" data-aircraft-skip type="button" hidden>Skip landing <span aria-hidden="true">↘</span></button>

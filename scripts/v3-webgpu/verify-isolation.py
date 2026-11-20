@@ -2,8 +2,8 @@
 """Independent, read-only boundaries for the v3 WebGPU experiment.
 
 Checks the working tree against a frozen pre-experiment commit, never regenerates
-pages, and verifies route/content/form contracts against the current v2 sources
-(or the independently maintained source for the Kiku interior).
+pages, and verifies route, content and form contracts against the accepted v3
+interior sources.
 This is structural evidence, not a claim of browser or graphics correctness.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
-from v3_interior_source import source as interior_source
+from v3_interior_source import route_paths, source as interior_source
 BASE = "8e24c7d18bd745cdaf7b6b23ef87db8bb5f6ea33"
 ORIGIN = "https://proccyboi.github.io"
 # Exact support files are allowed; existing assets and all production/v2 routes
@@ -89,17 +89,12 @@ def run(base: str, structure_only: bool = False) -> dict:
     forbidden = [name for name in changed + untracked if not allowed(name)]
     errors.extend(f"Outside v3 isolation boundary: {name}" for name in forbidden)
     protected = [] if structure_only else [name for name in git("ls-tree", "-r", "--name-only", base).decode().splitlines() if not allowed(name)]
-    # Keep the explicitly v2-only manufacturing study out of the v3 inventory.
-    v2_only = {"projects/skylabs/reflow/index.html", "projects/skylabs/sensor-test-simulator/index.html"}
-    v2_pages = sorted(p for p in (ROOT / "v2").rglob("*.html")
-                      if p.relative_to(ROOT / "v2").as_posix() not in v2_only)
-    route_names = [str(page.relative_to(ROOT / "v2")) for page in v2_pages]
+    route_names = route_paths()
     v3_routes = {str(page.relative_to(ROOT / "v3")) for page in (ROOT / "v3").rglob("*.html") if "assets" not in page.relative_to(ROOT / "v3").parts}
     missing = set(route_names) - v3_routes
-    errors.extend(f"Missing copied v2 route: /v3/{name}" for name in sorted(missing))
+    errors.extend(f"Missing v3 snapshot route: /v3/{name}" for name in sorted(missing))
     references = 0
-    for before_path in v2_pages:
-        rel = before_path.relative_to(ROOT / "v2")
+    for rel in route_names:
         after_path = ROOT / "v3" / rel
         if not after_path.exists():
             continue

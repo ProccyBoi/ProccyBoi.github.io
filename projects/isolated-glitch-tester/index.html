@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>Isolated Glitch Tester v04 | Andrew Chung</title>
+  <meta name="description" content="Explore the Isolated Glitch Tester v04 circuit board and each component in 3D, then try a browser demo of drift and spike detection.">
+  <meta name="theme-color" content="#f2f1eb">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Isolated Glitch Tester v04 | Andrew Chung">
+  <meta property="og:description" content="An isolated voltage-fault test board with an interactive 3D assembly and signal demo.">
+  <meta property="og:url" content="https://proccyboi.github.io/projects/isolated-glitch-tester/">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/isolated-glitch-tester/assembly.webp">
+  <meta property="og:image:alt" content="CAD rendering of the Isolated Glitch Tester v04 PCB">
+  <link rel="canonical" href="https://proccyboi.github.io/projects/isolated-glitch-tester/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/project.css">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/viewer.css">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/demo.css">
+  <script src="assets/site.js" defer></script>
+  <script type="module" src="assets/isolated-glitch-tester/project.js"></script>
+</head>
+<body class="glitch-tester-page">
+  <a class="skip-link" href="/projects/isolated-glitch-tester/#main">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand brand-plain" href="./">Andrew Chung</a>
+      <nav class="site-nav" aria-label="Primary navigation" data-site-nav data-open="false">
+        <a href="projects/" aria-current="page">Projects</a><a href="about/">About</a><a href="shared/">Files</a><a href="book/">Book</a>
+      </nav>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open navigation" data-nav-toggle><span aria-hidden="true"></span></button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="project-hero" id="overview" aria-labelledby="project-title">
+      <div class="project-hero-grid">
+        <div class="project-hero-copy">
+          <div>
+            <p class="eyebrow">Bench test hardware</p>
+            <h1 id="project-title">Isolated Glitch Tester v04</h1>
+            <p>A PCB designed to distinguish slow voltage drift from brief spikes, with separate high and low fault indicators.</p>
+          </div>
+          <nav class="project-hero-actions" aria-label="Explore the tester">
+            <a href="/projects/isolated-glitch-tester/#explore">Explore the 3D board</a>
+            <a href="/projects/isolated-glitch-tester/#demo">Try the signal demo</a>
+          </nav>
+          <dl class="project-meta">
+            <div><dt>Board dimensions</dt><dd>57 × 121.1 × 1.6 mm</dd></div>
+            <div><dt>Copper layers</dt><dd>2</dd></div>
+            <div><dt>Footprints</dt><dd>129</dd></div>
+          </dl>
+        </div>
+        <figure class="project-hero-media glitch-tester-poster">
+          <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1000" alt="CAD rendering of the Isolated Glitch Tester v04 PCB with its library component models" fetchpriority="high" decoding="async">
+          <figcaption>Multi-Channel Tester v04 · CAD render</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="glitch-tester-section shell" id="explore" aria-labelledby="glitch-viewer-heading">
+      <header class="glitch-tester-section-heading">
+        <h2 id="glitch-viewer-heading">Board and components</h2>
+        <p>Turn the board to see both sides. Pick a footprint on the board or search by reference or value to open its own 3D view.</p>
+      </header>
+      <div class="glitch-tester-viewer" data-glitch-viewer>
+        <div class="glitch-tester-placeholder">
+          <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1000" alt="Isolated Glitch Tester v04 assembly render" loading="lazy" decoding="async">
+          <p data-glitch-viewer-status role="status" hidden></p>
+        </div>
+      </div>
+      <noscript><p>Enable JavaScript to rotate the board and inspect individual footprints.</p></noscript>
+    </section>
+
+    <section class="glitch-tester-section shell" id="demo" aria-labelledby="glitch-demo-heading">
+      <header class="glitch-tester-section-heading">
+        <h2 id="glitch-demo-heading">Signal demo</h2>
+        <p>Inject drift or a spike and see which fault indicators latch. Change the spike threshold or reset the indicators between runs.</p>
+      </header>
+      <div class="glitch-tester-demo" data-glitch-demo>
+        <p data-glitch-demo-status role="status" hidden></p>
+      </div>
+      <noscript><p>Enable JavaScript to try the signal demo.</p></noscript>
+    </section>
+
+    <div class="glitch-tester-section shell" id="details">
+      <section class="project-summary glitch-tester-details" aria-labelledby="glitch-details-heading">
+        <h2 id="glitch-details-heading">Detection paths</h2>
+        <div class="project-prose">
+          <p>The schematic shows a differential input stage feeding separate drift and spike comparator paths. Each path has high and low fault indicators. The board brings signals out to oscilloscope connectors and provides reference adjustments, an arm/reset control and a buzzer mute.</p>
+          <p>The 3D assembly uses the v04 KiCad layout. The inspector identifies each model’s source and flags footprints marked do-not-populate in the design. <a href="assets/isolated-glitch-tester/models/MODEL-CREDITS.txt">3D model credits</a></p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner"><p>&copy; <span data-current-year>2026</span> Andrew Chung</p><a href="about/#contact">Contact</a><a href="https://www.linkedin.com/in/22anc/" target="_blank" rel="noreferrer">LinkedIn</a><a href="https://github.com/ProccyBoi" target="_blank" rel="noreferrer">GitHub</a></div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,261 @@
+.glitch-demo {
+  --demo-ink: var(--text, #20251f);
+  --demo-paper: var(--surface, #fafaf6);
+  --demo-rule: var(--rule, #ced2c6);
+  --demo-muted: var(--muted, #565e52);
+  --demo-accent: var(--copper, #b63b2f);
+  --demo-on-accent: #fff;
+  --demo-focus: var(--blue, #226879);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
+  gap: 0;
+  border: 1px solid var(--demo-rule);
+  background: var(--demo-paper);
+  color: var(--demo-ink);
+  color-scheme: light;
+}
+
+.v2 .glitch-demo {
+  --demo-on-accent: var(--v2-on-accent);
+  --demo-focus: var(--v2-accent);
+  color-scheme: dark;
+}
+
+.glitch-demo__scope {
+  min-width: 0;
+  margin: 0;
+  padding: 1.1rem clamp(.75rem, 2.2vw, 1.5rem);
+  background: #121a16;
+  color: #e2e9df;
+}
+
+.glitch-demo__scope-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .5rem;
+  margin-bottom: .5rem;
+  font-weight: 550;
+}
+
+.glitch-demo__scope-label span,
+.glitch-demo__legend {
+  font: 400 .8125rem/1.45 var(--mono, monospace);
+  color: #bac7ba;
+}
+
+.glitch-demo__canvas {
+  display: block;
+  width: 100%;
+  height: clamp(11rem, 23vw, 17.5rem);
+}
+
+.glitch-demo__canvas[hidden] { display: none; }
+
+.glitch-demo__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  margin: .6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.glitch-demo__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.glitch-demo__legend li::before {
+  content: '';
+  display: inline-block;
+  width: .9rem;
+  border-top: 2px solid #a7deab;
+}
+
+.glitch-demo__legend [data-trace="drift"]::before { border-color: #e7b47b; }
+.glitch-demo__legend [data-trace="limit"]::before { border-top: 2px dashed #e58c7d; }
+
+.glitch-demo__controls {
+  display: grid;
+  gap: 1rem;
+  align-content: center;
+  padding: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+.glitch-demo__field,
+.glitch-demo__threshold legend {
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.glitch-demo__field {
+  display: grid;
+  gap: .375rem;
+}
+
+.glitch-demo__select {
+  position: relative;
+  display: block;
+}
+
+.glitch-demo__select::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - .23rem);
+  right: .9rem;
+  width: .42rem;
+  height: .42rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.glitch-demo__controls :is(button, select) {
+  min-height: 2.75rem;
+  border: 1px solid var(--demo-rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--demo-ink);
+  font-size: .9375rem;
+}
+
+.glitch-demo__controls button {
+  padding: .5rem .65rem;
+  cursor: pointer;
+}
+
+.glitch-demo__controls select {
+  appearance: none;
+  width: 100%;
+  padding: .5rem 1.9rem .5rem .65rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.glitch-demo__threshold {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.glitch-demo__threshold legend {
+  margin-bottom: .375rem;
+  padding: 0;
+}
+
+.glitch-demo__segments,
+.glitch-demo__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .35rem;
+}
+
+.glitch-demo__controls button:hover,
+.glitch-demo__controls select:hover { border-color: var(--demo-ink); }
+
+.glitch-demo__controls button[aria-pressed="true"] {
+  border-color: var(--demo-ink);
+  background: var(--demo-ink);
+  color: var(--demo-paper);
+}
+
+.glitch-demo__controls .glitch-demo__run {
+  border-color: var(--demo-accent);
+  background: var(--demo-accent);
+  color: var(--demo-on-accent);
+}
+
+.glitch-demo__controls .glitch-demo__run:hover {
+  border-color: var(--demo-ink);
+  background: var(--demo-ink);
+  color: var(--demo-paper);
+}
+
+.glitch-demo__controls :is(button, select):focus-visible {
+  outline: 2px solid var(--demo-focus);
+  outline-offset: 2px;
+}
+
+.glitch-demo__readout {
+  grid-column: 1 / -1;
+  padding: 0 clamp(.75rem, 2.2vw, 1.5rem) 1rem;
+  border-top: 1px solid var(--demo-rule);
+}
+
+.glitch-demo__result {
+  max-width: none;
+  margin: .85rem 0;
+  font-weight: 550;
+}
+
+.glitch-demo__indicators {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--demo-rule);
+  border-left: 1px solid var(--demo-rule);
+  list-style: none;
+}
+
+.glitch-demo__indicators li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: .125rem .5rem;
+  padding: .5rem .625rem;
+  border-bottom: 1px solid var(--demo-rule);
+  border-right: 1px solid var(--demo-rule);
+  font-size: .875rem;
+  line-height: 1.35;
+}
+
+.glitch-demo__lamp {
+  align-self: center;
+  width: .6rem;
+  height: .6rem;
+  border: 1px solid var(--demo-muted);
+  border-radius: 50%;
+}
+
+.glitch-demo__indicators li[data-latched] .glitch-demo__lamp {
+  border-color: var(--demo-accent);
+  background: var(--demo-accent);
+}
+
+.glitch-demo__indicators small,
+.glitch-demo__indicator-state,
+.glitch-demo__note {
+  color: var(--demo-muted);
+  font-size: .8125rem;
+}
+
+.glitch-demo__indicators small { white-space: nowrap; }
+.glitch-demo__indicator-state { grid-column: 2; }
+
+.glitch-demo__indicators [data-latched] .glitch-demo__indicator-state {
+  color: var(--red-text, #a43529);
+  font-weight: 600;
+}
+
+.glitch-demo__note {
+  max-width: 76ch;
+  margin: .75rem 0 0;
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 690px) {
+  .glitch-demo { grid-template-columns: minmax(0, 1fr); }
+  .glitch-demo__controls { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+  .glitch-demo__actions { grid-column: 1 / -1; }
+}
+
+@media (max-width: 420px) {
+  .glitch-demo__controls { grid-template-columns: minmax(0, 1fr); }
+  .glitch-demo__indicators { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

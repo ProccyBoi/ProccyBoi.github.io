@@ -1,0 +1,30 @@
+KiCad 3D Models 9.0.2
+Copyright KiCad Libraries Contributors
+Source https://gitlab.com/kicad/libraries/kicad-packages3D/-/tree/9.0.2
+License CC BY-SA 4.0 with KiCad Library Exception
+License terms https://creativecommons.org/licenses/by-sa/4.0/legalcode
+See KICAD-LICENSE.md for the KiCad Library Exception and additional license information.
+The following individual models were converted from STEP to binary glTF.
+The RBE01VYM6AFHTR alternate was rotated 90 degrees to align with its PCB footprint.
+
+ACPL-K376-000E.alternate.glb is based on Package_SO.3dshapes/SSO-8_6.8x5.9mm_P1.27mm_Clearance8mm.step
+AMC3311DWER.alternate.glb is based on Package_SO.3dshapes/SOIC-16W_7.5x10.3mm_P1.27mm.step
+C_0603_1608Metric.glb is based on Capacitor_SMD.3dshapes/C_0603_1608Metric.step
+C_0805_2012Metric.glb is based on Capacitor_SMD.3dshapes/C_0805_2012Metric.step
+D_DO-41_SOD81_P10.16mm_Horizontal.glb is based on Diode_THT.3dshapes/D_DO-41_SOD81_P10.16mm_Horizontal.step
+D_SMA.glb is based on Diode_SMD.3dshapes/D_SMA.step
+LED_0805_2012Metric.glb is based on LED_SMD.3dshapes/LED_0805_2012Metric.step
+LED_D5.0mm_Clear.glb is based on LED_THT.3dshapes/LED_D5.0mm_Clear.step
+LT1678CS8PBF.alternate.glb is based on Package_SO.3dshapes/SOIC-8_3.9x4.9mm_P1.27mm.step
+L_0603_1608Metric.glb is based on Inductor_SMD.3dshapes/L_0603_1608Metric.step
+PinHeader_1x02_P2.54mm_Vertical.glb is based on Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x02_P2.54mm_Vertical.step
+PinSocket_1x02_P2.54mm_Vertical.glb is based on Connector_PinSocket_2.54mm.3dshapes/PinSocket_1x02_P2.54mm_Vertical.step
+RBE01VYM6AFHTR.alternate.glb is based on Diode_SMD.3dshapes/D_TUMD2.step
+R_0805_2012Metric.glb is based on Resistor_SMD.3dshapes/R_0805_2012Metric.step
+SO-16_3.9x9.9mm_P1.27mm.glb is based on Package_SO.3dshapes/SO-16_3.9x9.9mm_P1.27mm.step
+SOIC-14_3.9x8.7mm_P1.27mm.glb is based on Package_SO.3dshapes/SOIC-14_3.9x8.7mm_P1.27mm.step
+SOT-23-6.glb is based on Package_TO_SOT_SMD.3dshapes/SOT-23-6.step
+SOT-23.glb is based on Package_TO_SOT_SMD.3dshapes/SOT-23.step
+TSOT-23.glb is based on Package_TO_SOT_SMD.3dshapes/TSOT-23.step
+TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal.glb is based on TerminalBlock_Phoenix.3dshapes/TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal.step
+VSSOP-8_3x3mm_P0.65mm.glb is based on Package_SO.3dshapes/VSSOP-8_3x3mm_P0.65mm.step
