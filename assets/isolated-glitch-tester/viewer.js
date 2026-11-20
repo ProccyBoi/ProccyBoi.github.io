@@ -5,20 +5,23 @@ const normalizeSearch = text => text.toLowerCase().replaceAll('_', ' ').trim();
 
 let viewerSequence = 0;
 
-function viewerMarkup() {
+function viewerMarkup(bench) {
   const listId = `mct-footprints-${++viewerSequence}`;
-  return `
+  const display = `
     <div class="mct-viewer__stage">
       <canvas tabindex="0" aria-label="3D PCB assembly. Use arrow keys to orbit, plus and minus to zoom, and Home to reset."></canvas>
       <div class="mct-viewer__fallback" hidden>
         <img class="mct-viewer__poster" alt="Isolated Glitch Tester PCB assembly">
         <p role="status" hidden>3D rendering is unavailable in this browser.</p>
       </div>
-      <div class="mct-viewer__meter" aria-hidden="true">
-        <span data-view-label></span>
-        <span data-size-label></span>
-      </div>
-    </div>
+      ${bench ? '<button type="button" class="mct-bench__reset" data-bench-reset-view hidden>Reset view</button>' : `
+        <div class="mct-viewer__meter" aria-hidden="true">
+          <span data-view-label></span>
+          <span data-size-label></span>
+        </div>`}
+    </div>`;
+  if (bench) return display;
+  return `${display}
       <div class="mct-viewer__detail v2-part-readout" aria-live="polite" hidden>
         <p data-detail-name></p>
         <p data-detail-face></p>
@@ -102,15 +105,21 @@ function sourceLabel(component, modelStatus) {
   }[component.model.source] || 'CAD package model';
 }
 
+export async function mountDemoScene(container, { board, assetBase, poster, onAction }) {
+  const module = await import('./demo-scene.js?v=20261120-bench');
+  return mountViewer(container, board, { assetBase, poster, bench: { module, onAction } });
+}
+
 export function mountViewer(container, board, options = {}) {
-  const { artwork = board.artwork, poster, capture = false } = options;
+  const { artwork = board.artwork, poster, capture = false, bench } = options;
   const assetBase = new URL(options.assetBase || '.', document.baseURI);
   const resolveAsset = path => new URL(path, assetBase).href;
   const THREE = window.THREE;
   const studio = window.V2CadStudio;
   const boardPose = THREE && studio ? fromNativeBoardPose(THREE, studio.boardRotation) : undefined;
   container.classList.add('mct-viewer');
-  container.innerHTML = viewerMarkup();
+  if (bench) container.classList.add('mct-bench');
+  container.innerHTML = viewerMarkup(bench);
 
   const stage = container.querySelector('.mct-viewer__stage');
   const canvas = stage.querySelector('canvas');
@@ -125,6 +134,7 @@ export function mountViewer(container, board, options = {}) {
     posterElement.hidden = true;
   }
 
+  const benchReset = stage.querySelector('[data-bench-reset-view]');
   const browse = container.querySelector('.mct-viewer__browse');
   const detail = container.querySelector('.mct-viewer__detail');
   const buttons = Object.fromEntries([...container.querySelectorAll('[data-view]')].map(button => [button.dataset.view, button]));
@@ -138,7 +148,10 @@ export function mountViewer(container, board, options = {}) {
   const detailSource = container.querySelector('[data-detail-source]');
 
   const collator = new Intl.Collator('en', { numeric: true });
-  const components = [...board.components].sort((a, b) => {
+  const assembled = bench
+    ? board.components.filter(component => !component.dnp || bench.module.BENCH_FITTED_REFS.has(component.ref))
+    : board.components;
+  const components = [...assembled].sort((a, b) => {
     return Number(a.side === 'bottom') - Number(b.side === 'bottom') || collator.compare(a.ref, b.ref);
   });
   const componentByRef = new Map(components.map(component => [component.ref, component]));
@@ -151,6 +164,8 @@ export function mountViewer(container, board, options = {}) {
   let renderer;
   let camera;
   let scene;
+  let environment;
+  let benchVisual;
   let assembly;
   let boardBody;
   let isolated;
@@ -164,26 +179,32 @@ export function mountViewer(container, board, options = {}) {
   let visible = true;
   let renderedWidth = 0;
   let renderedHeight = 0;
+  let disposed = false;
+  let viewportObserver;
+  let resizeObserver;
+  let revealTimer;
 
-  for (const component of components) {
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    const ref = document.createElement('span');
-    const value = document.createElement('span');
-    button.type = 'button';
-    button.setAttribute('aria-pressed', 'false');
-    ref.textContent = component.ref;
-    value.textContent = component.value;
-    button.append(ref, value);
-    item.append(button);
-    button.addEventListener('click', () => {
-      select(component, true);
-      if (available && stage.getBoundingClientRect().bottom < Math.min(110, window.innerHeight * 0.18)) {
-        stage.scrollIntoView({ block: 'center' });
-      }
-    });
-    partButtons.set(component.ref, { button, item });
-    list.append(item);
+  if (!bench) {
+    for (const component of components) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      const ref = document.createElement('span');
+      const value = document.createElement('span');
+      button.type = 'button';
+      button.setAttribute('aria-pressed', 'false');
+      ref.textContent = component.ref;
+      value.textContent = component.value;
+      button.append(ref, value);
+      item.append(button);
+      button.addEventListener('click', () => {
+        select(component, true);
+        if (available && stage.getBoundingClientRect().bottom < Math.min(110, window.innerHeight * 0.18)) {
+          stage.scrollIntoView({ block: 'center' });
+        }
+      });
+      partButtons.set(component.ref, { button, item });
+      list.append(item);
+    }
   }
 
   function filterParts() {
@@ -204,6 +225,7 @@ export function mountViewer(container, board, options = {}) {
   }
 
   function updateDetails() {
+    if (bench) return;
     detail.hidden = !chosen;
     if (!chosen) return;
     detailFace.textContent = [chosen.side === 'top' ? 'Front' : 'Back', chosen.dnp ? 'KiCad DNP' : ''].filter(Boolean).join(' · ');
@@ -212,6 +234,10 @@ export function mountViewer(container, board, options = {}) {
   }
 
   function updateControls() {
+    if (bench) {
+      canvas.setAttribute('aria-label', 'Interactive 3D tester bench. Tap a plug, input, or switch. Use arrow keys to turn the board, plus and minus to zoom, and Home to reset.');
+      return;
+    }
     const preset = orbits[mode].preset;
     for (const name of ['board', 'part', 'front', 'back']) {
       buttons[name].setAttribute('aria-pressed', String(name === mode || (mode === 'board' && name === preset)));
@@ -289,6 +315,7 @@ export function mountViewer(container, board, options = {}) {
 
   function resetView() {
     orbits[mode] = newOrbit(mode, boardPose);
+    if (benchReset) benchReset.hidden = true;
     updateControls();
     fitNeeded = true;
     requestDraw();
@@ -297,6 +324,7 @@ export function mountViewer(container, board, options = {}) {
   function applyZoom(factor) {
     const state = orbits[mode];
     state.zoom = Math.min(6, Math.max(0.67, state.zoom * factor));
+    if (benchReset) benchReset.hidden = false;
     requestDraw();
   }
 
@@ -304,6 +332,7 @@ export function mountViewer(container, board, options = {}) {
     const state = orbits[mode];
     state.azimuth -= deltaX * 0.0085;
     state.elevation = Math.max(-ELEVATION_LIMIT, Math.min(ELEVATION_LIMIT, state.elevation + deltaY * 0.0085));
+    if (benchReset) benchReset.hidden = false;
     if (state.preset) {
       state.preset = '';
       updateControls();
@@ -315,12 +344,13 @@ export function mountViewer(container, board, options = {}) {
     if (available && releasePoster && visible && !document.hidden && !frame) frame = requestAnimationFrame(draw);
   }
 
-  function draw() {
+  function draw(time) {
     frame = 0;
     if (!available || !visible || document.hidden) return;
     const width = stage.clientWidth;
     const height = stage.clientHeight;
     if (!width || !height) return;
+    const moving = benchVisual?.animate(time);
     const state = orbits[mode];
     const aspect = width / height;
     const { direction, right, up } = cameraBasis(THREE, state);
@@ -330,7 +360,8 @@ export function mountViewer(container, board, options = {}) {
       frameBounds = modelBounds(THREE, mode === 'board' ? assembly : isolated);
       fitNeeded = false;
     }
-    studio.frame(camera, { aspect, bounds: frameBounds, span: 1, zoom: state.zoom });
+    const benchMagnification = bench ? (aspect > 1.3 ? 1.26 : 1.02) : 1;
+    studio.frame(camera, { aspect, bounds: frameBounds, span: 1, zoom: state.zoom * benchMagnification });
     highlight.visible = mode === 'board' && Boolean(chosen);
     if (highlight.visible) highlight.setFromObject(placements.get(chosen.ref).body);
     if (width !== renderedWidth || height !== renderedHeight) {
@@ -339,6 +370,13 @@ export function mountViewer(container, board, options = {}) {
       renderedHeight = height;
     }
     renderer.render(scene, camera);
+    if (benchVisual) {
+      benchVisual.renderHotspots(camera, assembly, width, height, state.elevation > 0.15);
+      const mated = benchVisual.mated();
+      container.dataset.benchPowerMated = String(mated.power);
+      container.dataset.benchInputMated = String(mated.input);
+    }
+    if (moving) requestDraw();
     container.dataset.viewerDraws = String(renderer.info.render.calls);
     container.dataset.viewerPose = mode === 'part' ? chosen.ref : state.preset || 'assembly';
     if (releasePoster) {
@@ -353,35 +391,39 @@ export function mountViewer(container, board, options = {}) {
     container.dataset.viewerState = 'unavailable';
     fallback.hidden = false;
     fallbackStatus.hidden = false;
-    detailSource.textContent = '';
+    if (detailSource) detailSource.textContent = '';
+    benchVisual?.showHotspots(false);
+    if (benchReset) benchReset.hidden = true;
     updateControls();
   }
 
-  search.addEventListener('input', () => {
+  if (!bench) {
+    search.addEventListener('input', () => {
+      filterParts();
+      setBrowserOpen(Boolean(normalizeSearch(search.value)));
+    });
+    search.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        setBrowserOpen(false);
+      } else if (event.key === 'Enter') {
+        const match = list.querySelector('li:not([hidden]) button');
+        if (match) match.click();
+      }
+    });
+    browse.addEventListener('click', () => setBrowserOpen(list.hidden));
     filterParts();
-    setBrowserOpen(Boolean(normalizeSearch(search.value)));
-  });
-  search.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
-      setBrowserOpen(false);
-    } else if (event.key === 'Enter') {
-      const match = list.querySelector('li:not([hidden]) button');
-      if (match) match.click();
-    }
-  });
-  browse.addEventListener('click', () => setBrowserOpen(list.hidden));
-  filterParts();
-  updateDetails();
+    updateDetails();
+  }
   if (!THREE || !studio) {
     showUnavailable();
-    return { selectRef: ref => select(componentByRef.get(ref), true) };
+    return bench ? null : { selectRef: ref => select(componentByRef.get(ref), true) };
   }
 
   try {
-    ({ renderer, scene, camera } = studio.create(THREE, { canvas, capture }));
+    ({ renderer, scene, camera, environment } = studio.create(THREE, { canvas, capture }));
   } catch {
     showUnavailable();
-    return { selectRef: ref => select(componentByRef.get(ref), true) };
+    return bench ? null : { selectRef: ref => select(componentByRef.get(ref), true) };
   }
   available = true;
   renderer.shadowMap.enabled = components.length < 80;
@@ -393,6 +435,13 @@ export function mountViewer(container, board, options = {}) {
   assembly.scale.setScalar(1 / Math.max(board.width, board.height));
   assembly.position.z = assembly.scale.z * board.thickness / 2;
   presentation.add(assembly);
+  if (bench) {
+    benchVisual = bench.module.createBenchVisual(THREE, board, {
+      stage, boardPoint, onAction: bench.onAction, invalidate: requestDraw
+    });
+    assembly.add(benchVisual.group);
+    publishBenchState();
+  }
   const footprints = new THREE.Group();
   const batches = new THREE.Group();
   assembly.add(footprints, batches);
@@ -436,16 +485,21 @@ export function mountViewer(container, board, options = {}) {
     for (const [asset, refs] of referencesByAsset) {
       models.set(asset, 'loading');
       loadPromises.push(new Promise(resolve => loader.load(resolveAsset(asset), ({ scene: imported }) => {
+        if (disposed) {
+          resolve();
+          return;
+        }
         models.set(asset, 'ready');
         imported.rotation.x += Math.PI / 2;
         imported.scale.multiplyScalar(1000);
         finishPackage(THREE, imported, asset, componentByRef.get(refs[0]).model.source);
         imported.updateMatrixWorld(true);
-        const merge = window.V2CadGeometry?.mergeReference;
+        const preserveActuator = bench && refs.some(bench.module.benchNeedsActuatorNodes);
+        const merge = preserveActuator ? undefined : window.V2CadGeometry?.mergeReference;
         const packageModel = merge
           ? merge(THREE, [imported], new THREE.Vector3(), 1, material => material)
           : new THREE.Group().add(imported);
-        const repeat = merge && refs.length > 1;
+        const repeat = merge && refs.length > 1 && (!bench || refs.every(bench.module.benchCanInstance));
         const instancedByMesh = new Map();
         if (repeat) {
           for (const mesh of packageModel.children) {
@@ -468,6 +522,7 @@ export function mountViewer(container, board, options = {}) {
           const clone = packageModel.clone(true);
           body.clear();
           body.add(clone);
+          benchVisual?.registerPart(ref, clone);
           body.updateWorldMatrix(true, false);
           if (!repeat) return;
           packageModel.children.forEach((mesh, childIndex) => {
@@ -494,38 +549,56 @@ export function mountViewer(container, board, options = {}) {
   }
 
   function reveal() {
+    if (disposed) return;
     releasePoster = true;
     fitNeeded = true;
     requestDraw();
   }
-  const revealTimer = poster && !capture ? window.setTimeout(reveal, 2500) : 0;
+  revealTimer = poster && !capture ? window.setTimeout(reveal, 2500) : 0;
   Promise.allSettled(loadPromises).then(() => {
     window.clearTimeout(revealTimer);
     reveal();
   });
 
-  buttons.board.addEventListener('click', () => {
-    const side = chosen?.side === 'bottom' ? 'back' : 'front';
-    if (chosen && mode === 'part' && Math.sign(orbits.board.elevation) !== (side === 'front' ? 1 : -1)) setSide(side);
-    else setMode('board');
+  if (!bench) {
+    buttons.board.addEventListener('click', () => {
+      const side = chosen?.side === 'bottom' ? 'back' : 'front';
+      if (chosen && mode === 'part' && Math.sign(orbits.board.elevation) !== (side === 'front' ? 1 : -1)) setSide(side);
+      else setMode('board');
+    });
+    buttons.part.addEventListener('click', () => setMode('part'));
+    buttons.front.addEventListener('click', () => setSide('front'));
+    buttons.back.addEventListener('click', () => setSide('back'));
+    buttons.reset.addEventListener('click', resetView);
+    buttons.in.addEventListener('click', () => applyZoom(1.24));
+    buttons.out.addEventListener('click', () => applyZoom(1 / 1.24));
+  }
+
+  benchReset?.addEventListener('click', () => {
+    resetView();
+    canvas.focus({ preventScroll: true });
   });
-  buttons.part.addEventListener('click', () => setMode('part'));
-  buttons.front.addEventListener('click', () => setSide('front'));
-  buttons.back.addEventListener('click', () => setSide('back'));
-  buttons.reset.addEventListener('click', resetView);
-  buttons.in.addEventListener('click', () => applyZoom(1.24));
-  buttons.out.addEventListener('click', () => applyZoom(1 / 1.24));
 
   const raycaster = new THREE.Raycaster();
   function pick(x, y) {
-    if (mode !== 'board') return;
+    if (mode !== 'board' || (bench && orbits.board.elevation <= 0.15)) return;
     const bounds = canvas.getBoundingClientRect();
     const point = new THREE.Vector2((x - bounds.left) / bounds.width * 2 - 1, 1 - (y - bounds.top) / bounds.height * 2);
     raycaster.setFromCamera(point, camera);
-    const [hit] = raycaster.intersectObjects([boardBody, footprints], true);
-    let object = hit?.object;
-    while (object && !object.userData.componentRef) object = object.parent;
-    if (object) select(componentByRef.get(object.userData.componentRef));
+    const targets = benchVisual ? [boardBody, footprints, benchVisual.group] : [boardBody, footprints];
+    const [hit] = raycaster.intersectObjects(targets, true);
+    for (let object = hit?.object; object; object = object.parent) {
+      const { action, componentRef } = object.userData;
+      if (bench && (action || componentRef)) {
+        const control = action || benchVisual.lookupAction(componentRef);
+        if (control) bench.onAction(control);
+        break;
+      }
+      if (componentRef) {
+        select(componentByRef.get(componentRef));
+        break;
+      }
+    }
   }
 
   const pointers = new Map();
@@ -589,17 +662,17 @@ export function mountViewer(container, board, options = {}) {
     event.preventDefault();
   });
 
-  const observer = new ResizeObserver(() => {
+  resizeObserver = new ResizeObserver(() => {
     fitNeeded = true;
     requestDraw();
   });
-  observer.observe(stage);
+  resizeObserver.observe(stage);
   if ('IntersectionObserver' in window) {
-    const visibility = new IntersectionObserver(([entry]) => {
+    viewportObserver = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       if (visible) requestDraw();
     }, { rootMargin: '90px' });
-    visibility.observe(stage);
+    viewportObserver.observe(stage);
   }
   document.addEventListener('visibilitychange', requestDraw);
   canvas.addEventListener('webglcontextlost', event => {
@@ -607,6 +680,7 @@ export function mountViewer(container, board, options = {}) {
     showUnavailable();
   });
   canvas.addEventListener('webglcontextrestored', () => {
+    if (disposed) return;
     available = true;
     canvas.hidden = false;
     fallback.hidden = true;
@@ -616,6 +690,53 @@ export function mountViewer(container, board, options = {}) {
     fitNeeded = true;
     requestDraw();
   });
+  function publishBenchState() {
+    const state = benchVisual.readState();
+    container.dataset.benchPower = String(state.powered);
+    container.dataset.benchInput = String(state.inputConnected);
+    container.dataset.benchLiveLamps = state.live.join(' ');
+    container.dataset.benchLatchedLamps = state.latched.join(' ');
+  }
+
+  function disposeBench() {
+    if (disposed) return;
+    disposed = true;
+    available = false;
+    cancelAnimationFrame(frame);
+    window.clearTimeout(revealTimer);
+    resizeObserver?.disconnect();
+    viewportObserver?.disconnect();
+    document.removeEventListener('visibilitychange', requestDraw);
+    benchVisual?.dispose();
+    const geometries = new Set();
+    const materials = new Set();
+    scene.traverse(object => {
+      if (object.geometry) geometries.add(object.geometry);
+      for (const material of (Array.isArray(object.material) ? object.material : [object.material])) {
+        if (material) materials.add(material);
+      }
+    });
+    const textures = new Set();
+    for (const material of materials) {
+      for (const texture of [material.map, material.roughnessMap, material.metalnessMap]) {
+        if (texture) textures.add(texture);
+      }
+      material.dispose();
+    }
+    for (const geometry of geometries) geometry.dispose();
+    for (const texture of textures) texture.dispose();
+    environment?.dispose();
+    renderer.dispose();
+  }
+
   requestDraw();
+  if (bench) return {
+    update(state) {
+      if (disposed) return;
+      benchVisual.update(state);
+      publishBenchState();
+    },
+    dispose: disposeBench
+  };
   return { selectRef: ref => select(componentByRef.get(ref), true) };
 }

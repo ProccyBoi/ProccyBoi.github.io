@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="/">
   <title>Isolated Glitch Tester v04 | Andrew Chung</title>
-  <meta name="description" content="Explore the Isolated Glitch Tester v04 circuit board and each component in 3D, then try a browser demo of drift and spike detection.">
+  <meta name="description" content="Explore the Isolated Glitch Tester v04 in 3D, connect virtual leads to the board and watch its fault LEDs light up.">
   <meta name="theme-color" content="#f2f1eb">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Isolated Glitch Tester v04 | Andrew Chung">
-  <meta property="og:description" content="An isolated voltage-fault test board with an interactive 3D assembly and signal demo.">
+  <meta property="og:description" content="An isolated voltage-fault tester with a 3D component inspector and a hands-on virtual bench.">
   <meta property="og:url" content="https://proccyboi.github.io/projects/isolated-glitch-tester/">
   <meta property="og:image" content="https://proccyboi.github.io/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio">
   <meta property="og:image:alt" content="CAD rendering of the Isolated Glitch Tester v04 PCB">
@@ -19,10 +19,10 @@
   <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
   <link rel="stylesheet" href="assets/project-integrated.css">
   <link rel="stylesheet" href="assets/isolated-glitch-tester/project.css?v=20261120-studio">
-  <link rel="stylesheet" href="assets/isolated-glitch-tester/viewer.css?v=20261120-studio">
-  <link rel="stylesheet" href="assets/isolated-glitch-tester/demo.css?v=20261120-studio">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/viewer.css?v=20261120-bench">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/demo.css?v=20261120-bench">
   <script src="assets/site.js" defer></script>
-  <script type="module" src="assets/isolated-glitch-tester/project.js?v=20261120-studio"></script>
+  <script type="module" src="assets/isolated-glitch-tester/project.js?v=20261120-bench"></script>
 </head>
 <body class="project-page glitch-tester-page">
   <a class="skip-link" href="/projects/isolated-glitch-tester/#main">Skip to content</a>
@@ -42,7 +42,7 @@
       <div class="project-flow-tabs">
         <a href="projects/isolated-glitch-tester/#overview">Overview</a>
         <a href="projects/isolated-glitch-tester/#explore">3D board</a>
-        <a href="projects/isolated-glitch-tester/#demo">Signal demo</a>
+        <a href="projects/isolated-glitch-tester/#demo">Board demo</a>
         <a href="projects/isolated-glitch-tester/#details">Design</a>
       </div>
     </div>
@@ -64,8 +64,8 @@
             <div><dt>Spike thresholds</dt><dd>±75 mV and ±150 mV</dd></div>
           </dl>
           <nav class="project-hero-actions" aria-label="Explore the tester">
+            <a href="projects/isolated-glitch-tester/#demo">Try the virtual bench</a>
             <a href="projects/isolated-glitch-tester/#explore">Explore the 3D board</a>
-            <a href="projects/isolated-glitch-tester/#demo">Try the signal demo</a>
           </nav>
         </div>
         <figure class="project-hero-media contain-media glitch-tester-poster">
@@ -94,13 +94,16 @@
     <section class="project-interactive glitch-tester-demo-section" id="demo" aria-labelledby="glitch-demo-heading">
       <div class="project-interactive-inner">
         <header class="project-interactive-header">
-          <div><h2 id="glitch-demo-heading">Signal demo</h2></div>
-          <p>Run a spike or a drifting signal and see which indicator latches. Arm / Reset clears the indicators for the next capture.</p>
+          <div><h2 id="glitch-demo-heading">Interactive board demo</h2></div>
+          <p>Connect virtual leads, operate the switches and watch the board’s fault LEDs light up.</p>
         </header>
         <div data-glitch-demo>
-          <p data-glitch-demo-status role="status" hidden></p>
+          <div class="glitch-tester-placeholder">
+            <img src="assets/isolated-glitch-tester/assembly.webp?v=20261120-studio" width="1600" height="1200" alt="Isolated Glitch Tester v04 board with its terminals, switches and LEDs" loading="lazy" decoding="async">
+            <p data-glitch-demo-status role="status" hidden></p>
+          </div>
         </div>
-        <noscript><p>Enable JavaScript to try the signal demo.</p></noscript>
+        <noscript><p>Enable JavaScript to connect leads and operate the board on the virtual bench.</p></noscript>
       </div>
     </section>
 

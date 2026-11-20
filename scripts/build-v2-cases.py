@@ -249,7 +249,7 @@ def case_navigation(source, slug, title):
     if slug == 'dash':
         links.extend((anchor, label) for anchor, label in [('prototype', 'Prototype'), ('character', 'Character')] if f'id="{anchor}"' in source)
     if 'id="demo"' in source:
-        links.append(('demo', 'Signal demo'))
+        links.append(('demo', 'Board demo'))
     if 'id="details"' in source:
         links.append(('details', 'Details'))
     if 'id="build"' in source:
@@ -632,7 +632,7 @@ def make_index():
     tools = next(node for node in tree.nodes if node.tag == 'section' and node.attrs.get('id') == 'interactive')
     demos = [
         ('/v2/projects/kiku/#simulator', 'Kiku firmware simulator', 'Turn the dial, change the look and try the player interface.', 'Real C screen renderer · simulated hardware'),
-        ('/v2/projects/isolated-glitch-tester/#demo', 'Isolated Glitch Tester demo', 'Run voltage drift or spikes and see which fault indicator latches.', 'Bench test hardware · waveform demo'),
+        ('/v2/projects/isolated-glitch-tester/#demo', 'Isolated Glitch Tester board demo', 'Plug in virtual leads, operate the board and see its fault LEDs light up.', 'Interactive 3D board'),
         ('/v2/projects/dash/#explore', 'Dash device assembly', 'Inspect the complete enclosure, circuit board, display and power system.', 'Full-device CAD · component inspection'),
         ('/shared/projects/skylabs/f110211/', 'Replay a Skylabs flight', 'Scrub the recorded route, attitude and sensor timeline. A reference flight is already loaded.', 'Recorded flight · F110211'),
         ('/v2/projects/skylabs/sensor-test-simulator/', 'Sensor test PCB simulator', 'Try colours, brightness and patterns on a populated 3D LED test board.', 'Skylabs · visual simulation'),

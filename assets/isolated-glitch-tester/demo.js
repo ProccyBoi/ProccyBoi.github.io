@@ -1,265 +1,283 @@
-const scenarios = [
-  { id: 'steady', label: 'Steady signal', type: 'steady', direction: 0 },
-  { id: 'spike-high', label: 'Positive spike', type: 'spike', direction: 1 },
-  { id: 'spike-low', label: 'Negative spike', type: 'spike', direction: -1 },
-  { id: 'drift-high', label: 'Upward drift', type: 'drift', direction: 1 },
-  { id: 'drift-low', label: 'Downward drift', type: 'drift', direction: -1 },
-];
-
 const indicators = [
-  { id: 'spike-high', ref: 'D9', label: 'Spike High' },
-  { id: 'spike-low', ref: 'D8', label: 'Spike Low' },
-  { id: 'drift-high', ref: 'D7', label: 'Drift High' },
-  { id: 'drift-low', ref: 'D6', label: 'Drift Low' },
+  { id: 'spike-high', live: 'D9', latched: 'D13', label: 'Spike High' },
+  { id: 'spike-low', live: 'D8', latched: 'D14', label: 'Spike Low' },
+  { id: 'drift-high', live: 'D7', latched: 'D15', label: 'Drift High' },
+  { id: 'drift-low', live: 'D6', latched: 'D16', label: 'Drift Low' },
 ];
 
-const captureSeconds = 3;
-const samplesPerSecond = 160;
-const driftCutoffHz = 1;
-const driftLimitMv = 45;
-const indicatorLabels = new Map(indicators.map(({ id, label }) => [id, label]));
+const signals = [
+  { id: 'steady', label: 'Steady input' },
+  { id: 'spike-high', label: 'Positive spike', duration: 520, spike: true },
+  { id: 'spike-low', label: 'Negative spike', duration: 520, spike: true },
+  { id: 'drift-high', label: 'Upward drift', duration: 1500 },
+  { id: 'drift-low', label: 'Downward drift', duration: 1500 },
+];
 
-function capture(scenario, spikeLimitMv) {
-  const samples = [];
-  const trips = new Set();
-  const smoothing = 1 - Math.exp(-2 * Math.PI * driftCutoffHz / samplesPerSecond);
-  let drift = 0;
+const controls = [
+  { action: 'power', ref: 'J5', label: 'Demo power' },
+  { action: 'input', ref: 'J1 / J2', label: 'Test leads' },
+  { action: 'reset', ref: 'SW2', label: 'Arm / Reset' },
+  { action: 'threshold', ref: 'SW3', label: 'Spike threshold' },
+  { action: 'mute', ref: 'SW4', label: 'Buzzer mute' },
+];
 
-  for (let index = 0; index <= captureSeconds * samplesPerSecond; index += 1) {
-    const time = index / samplesPerSecond;
-    const ripple = 5 * Math.sin(time * Math.PI * 6) + 2 * Math.sin(time * Math.PI * 28);
-    let excursion = 0;
-
-    if (scenario.type === 'spike') {
-      const position = (time - 1.16) / 0.029;
-      excursion = scenario.direction * 118 * Math.exp(-0.5 * position ** 2);
-    }
-    if (scenario.type === 'drift') {
-      const rise = 1 / (1 + Math.exp(-12 * (time - 0.95)));
-      const decay = 1 / (1 + Math.exp(-12 * (time - 2.2)));
-      excursion = scenario.direction * 63 * (rise - decay);
-    }
-
-    const signal = ripple + excursion;
-    drift += (signal - drift) * smoothing;
-    if (signal > spikeLimitMv) trips.add('spike-high');
-    if (signal < -spikeLimitMv) trips.add('spike-low');
-    if (drift > driftLimitMv) trips.add('drift-high');
-    if (drift < -driftLimitMv) trips.add('drift-low');
-    samples.push({ signal, drift });
-  }
-
-  return { samples, trips, spikeLimitMv };
-}
-
-function createScope(canvas) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    canvas.hidden = true;
-    return () => {};
-  }
-
-  const style = window.getComputedStyle(canvas);
-  const color = (name) => style.getPropertyValue(`--demo-${name}`).trim();
-  const labelColor = color('screen-muted');
-  const gridColor = color('screen-rule');
-  const limitColor = color('limit');
-  const traceColors = [
-    ['drift', color('drift'), 1.5],
-    ['signal', color('signal'), 2],
-  ];
-
-  function line(x1, y1, x2, y2, color, dash = []) {
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.setLineDash(dash);
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  return ({ samples, spikeLimitMv }, cursor) => {
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    if (width < 64 || height < 64) return;
-
-    const density = Math.min(window.devicePixelRatio || 1, 2);
-    const pixelWidth = Math.round(width * density);
-    const pixelHeight = Math.round(height * density);
-    if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
-    if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
-    ctx.setTransform(density, 0, 0, density, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-
-    const left = 38;
-    const top = 18;
-    const right = width - 22;
-    const bottom = height - 28;
-    const x = (fraction) => left + fraction * (right - left);
-    const y = (mv) => top + (180 - mv) / 360 * (bottom - top);
-
-    ctx.font = '12px "IBM Plex Mono", Consolas, monospace';
-    ctx.fillStyle = labelColor;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    for (const mv of [150, 75, 0, -75, -150]) {
-      const label = mv > 0 ? `+${mv}` : `${mv}`;
-      ctx.fillText(label, left - 7, y(mv));
-      line(left, y(mv), right, y(mv), mv ? gridColor : '#56584e');
-    }
-
-    ctx.textAlign = 'center';
-    for (let time = 0; time <= captureSeconds; time += 0.5) {
-      const px = x(time / captureSeconds);
-      line(px, top, px, bottom, time % 1 ? '#292b25' : gridColor);
-      if (time % 1 === 0) ctx.fillText(`${time} s`, px, bottom + 12);
-    }
-    line(left, y(spikeLimitMv), right, y(spikeLimitMv), limitColor, [5, 5]);
-    line(left, y(-spikeLimitMv), right, y(-spikeLimitMv), limitColor, [5, 5]);
-
-    for (const [key, traceColor, strokeWidth] of traceColors) {
-      ctx.beginPath();
-      ctx.strokeStyle = traceColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.lineJoin = 'round';
-      samples.forEach((sample, index) => {
-        const px = x(index / (samples.length - 1));
-        const py = y(sample[key]);
-        if (index === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      });
-      ctx.stroke();
-    }
-
-    if (cursor !== null) {
-      const px = x(cursor);
-      line(px, top, px, bottom, labelColor);
-    }
-  };
-}
-
-export function mountDemo(container) {
-  container.classList.add('glitch-demo');
-  container.innerHTML = `
-    <figure class="glitch-demo__scope">
-      <figcaption class="glitch-demo__scope-label">Signal capture <span>Deviation in mV</span></figcaption>
-      <canvas class="glitch-demo__canvas" role="img" aria-label="Steady signal with its low-pass drift trace"></canvas>
-      <ul class="glitch-demo__legend" aria-label="Scope legend">
-        <li data-trace="signal">Input deviation</li>
-        <li data-trace="drift">Filtered drift</li>
-        <li data-trace="limit">Spike threshold</li>
-      </ul>
-    </figure>
+function benchMarkup() {
+  return `
+    <div class="glitch-demo__stage">
+      <div class="glitch-demo__fallback" data-bench-fallback>
+        <div class="glitch-demo__poster">
+          <img width="1600" height="1200" alt="Isolated Glitch Tester circuit board with its switches and indicators">
+          <span data-bench-post-port="power" aria-hidden="true" hidden></span>
+          <span data-bench-post-port="positive" aria-hidden="true" hidden></span>
+          <span data-bench-post-port="negative" aria-hidden="true" hidden></span>
+          ${indicators.map(({ id, live, latched }) => `
+            <span class="glitch-demo__poster-led" data-fault="${id}" data-bench-post-led="${live}" aria-hidden="true" hidden></span>
+            <span class="glitch-demo__poster-led" data-fault="${id}" data-bench-post-led="${latched}" aria-hidden="true" hidden></span>
+          `).join('')}
+        </div>
+        <p data-bench-fallback-note role="status"></p>
+      </div>
+      <div class="glitch-demo__model" data-bench-model aria-label="Interactive 3D board" hidden></div>
+    </div>
     <div class="glitch-demo__controls">
-      <label class="glitch-demo__field">
-        Signal
-        <span class="glitch-demo__select">
-          <select data-scenario>
-            ${scenarios.map(({ id, label }) => `<option value="${id}">${label}</option>`).join('')}
-          </select>
-        </span>
-      </label>
-      <fieldset class="glitch-demo__threshold">
-        <legend>Spike threshold</legend>
-        <div class="glitch-demo__segments">
-          <button type="button" aria-pressed="true" data-threshold="75">±75 mV</button>
-          <button type="button" aria-pressed="false" data-threshold="150">±150 mV</button>
+      <p class="glitch-demo__result" role="status" data-bench-result></p>
+      <fieldset class="glitch-demo__switches" data-bench-switches>
+        <legend>Connections and switches</legend>
+        ${controls.map(({ action, ref, label }) => `
+          <button type="button" data-bench-action="${action}" aria-label="${label}" ${action === 'threshold' ? '' : 'aria-pressed="false"'}>
+            <span>${label} <small>${ref}</small></span><span data-bench-control-state></span>
+          </button>
+        `).join('')}
+      </fieldset>
+      <fieldset class="glitch-demo__events" data-bench-signals disabled>
+        <legend>Test input</legend>
+        <div>
+          ${signals.map(({ id, label }) => `<button type="button" data-bench-signal="${id}">${label}</button>`).join('')}
         </div>
       </fieldset>
-      <div class="glitch-demo__actions">
-        <button type="button" class="glitch-demo__run" data-run>Run signal</button>
-        <button type="button" data-reset>Arm / Reset</button>
-      </div>
     </div>
     <div class="glitch-demo__readout">
-      <p class="glitch-demo__result" role="status" data-result>Armed. Choose a signal and run a capture.</p>
-      <ul class="glitch-demo__indicators" aria-label="Latched fault indicators">
-        ${indicators.map(({ id, ref, label }) => `
-          <li data-indicator="${id}">
+      <ul class="glitch-demo__indicators" aria-label="Board fault LEDs">
+        ${indicators.map(({ id, live, latched, label }) => `
+          <li data-fault="${id}" data-bench-live-led="${live}" data-bench-led="${latched}">
             <span class="glitch-demo__lamp" aria-hidden="true"></span>
             <span>${label}</span>
-            <span class="glitch-demo__indicator-detail"><span class="glitch-demo__indicator-state">Clear</span> <small>· ${ref}</small></span>
+            <span class="glitch-demo__indicator-detail">
+              <span data-bench-live-state>Live off</span> <small>· ${live}</small><br>
+              <span data-bench-led-state>Latch off</span> <small>· ${latched}</small>
+            </span>
           </li>
         `).join('')}
       </ul>
-      <p class="glitch-demo__note">Illustrative signals show how the spike and drift paths set separate fault latches. The drift path uses an approximately 1 Hz filter and a demo threshold of ±45 mV.</p>
+      <p class="glitch-demo__note"><strong>Optional buzzer</strong> <span data-bench-buzzer>Off</span></p>
+      <p class="glitch-demo__note">The virtual board has the optional latch LEDs fitted. Signal timing and LED colors are illustrative.</p>
     </div>`;
+}
 
+export async function mountDemo(container, { board, assetBase, poster, mountScene } = {}) {
+  container.classList.add('glitch-demo');
+  container.innerHTML = benchMarkup();
+
+  const fallback = container.querySelector('[data-bench-fallback]');
+  const fallbackNote = container.querySelector('[data-bench-fallback-note]');
+  const fallbackImage = fallback.querySelector('img');
+  const model = container.querySelector('[data-bench-model]');
+  const result = container.querySelector('[data-bench-result]');
+  const inputControls = container.querySelector('[data-bench-signals]');
+  const switchControls = container.querySelector('[data-bench-switches]');
+  const buzzer = container.querySelector('[data-bench-buzzer]');
+  const controlButtons = container.querySelectorAll('[data-bench-action]');
+  const signalButtons = container.querySelectorAll('[data-bench-signal]');
+  const ledRows = container.querySelectorAll('[data-bench-led]');
+  const posterPorts = container.querySelectorAll('[data-bench-post-port]');
+  const posterLeds = container.querySelectorAll('[data-bench-post-led]');
+  if (poster) fallbackImage.src = poster;
+  else fallbackImage.hidden = true;
+
+  const compactBench = window.matchMedia('(max-width: 760px)');
+  function orderControls() {
+    const active = document.activeElement;
+    if (compactBench.matches) switchControls.before(inputControls);
+    else switchControls.after(inputControls);
+    if (inputControls.contains(active)) active.focus({ preventScroll: true });
+  }
+  compactBench.addEventListener('change', orderControls);
+  orderControls();
+
+  const state = {
+    powered: false,
+    inputConnected: false,
+    armed: false,
+    threshold: 75,
+    buzzerMuted: false,
+    signal: 'steady',
+  };
   const latched = new Set();
-  const canvas = container.querySelector('canvas');
-  const select = container.querySelector('[data-scenario]');
-  const thresholdButtons = container.querySelectorAll('[data-threshold]');
-  const indicatorRows = container.querySelectorAll('[data-indicator]');
-  const result = container.querySelector('[data-result]');
-  const draw = createScope(canvas);
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let activeIndicator = null;
+  let eventTimer = null;
+  let scene = null;
 
-  let spikeLimit = 75;
-  let waveform = capture(scenarios[0], spikeLimit);
-  let frame = 0;
-  let cursor = null;
+  function nextAction() {
+    if (!state.powered) return 'power';
+    if (!state.inputConnected) return 'input';
+    if (!state.armed) return 'reset';
+    return '';
+  }
 
-  const redraw = () => draw(waveform, cursor);
-  const resize = new ResizeObserver(redraw);
-  resize.observe(canvas);
-  redraw();
+  function guidance() {
+    return {
+      power: 'Connect demo power at J5.',
+      input: 'Connect the test leads at J1 and J2.',
+      reset: 'Flip Arm / Reset to keep fault LEDs on after a test.',
+      '': 'The tester is armed. Choose a test input.',
+    }[nextAction()];
+  }
 
-  function showIndicators() {
-    for (const row of indicatorRows) {
-      const tripped = latched.has(row.dataset.indicator);
-      row.toggleAttribute('data-latched', tripped);
-      row.querySelector('.glitch-demo__indicator-state').textContent = tripped ? 'Latched' : 'Clear';
+  function publishSceneState() {
+    scene?.update({ ...state, live: activeIndicator ? [activeIndicator.live] : [], latched: [...latched] });
+  }
+
+  function refresh(message) {
+    const next = nextAction();
+    const settings = {
+      power: [state.powered ? 'Connected' : 'Connect', state.powered],
+      input: [state.inputConnected ? 'Connected' : 'Connect', state.inputConnected],
+      reset: [state.armed ? 'Armed' : 'Reset', state.armed],
+      threshold: [`±${state.threshold} mV`],
+      mute: [state.buzzerMuted ? 'Muted' : 'Enabled', state.buzzerMuted],
+    };
+
+    for (const button of controlButtons) {
+      const action = button.dataset.benchAction;
+      const [label, pressed] = settings[action];
+      button.querySelector('[data-bench-control-state]').textContent = label;
+      button.toggleAttribute('data-bench-next', action === next);
+      if (pressed !== undefined) button.setAttribute('aria-pressed', String(pressed));
+      else button.setAttribute('aria-label', `Spike threshold ${label}. Switch to ±${state.threshold === 75 ? 150 : 75} mV.`);
     }
+
+    inputControls.disabled = !state.powered || !state.inputConnected;
+    for (const row of ledRows) {
+      const lit = latched.has(row.dataset.benchLed);
+      const live = activeIndicator?.live === row.dataset.benchLiveLed;
+      row.toggleAttribute('data-latched', lit);
+      row.toggleAttribute('data-live', live);
+      row.querySelector('[data-bench-live-state]').textContent = live ? 'Live on' : 'Live off';
+      row.querySelector('[data-bench-led-state]').textContent = lit ? 'Latched' : 'Latch off';
+    }
+
+    for (const mark of posterPorts) {
+      mark.hidden = !poster || (mark.dataset.benchPostPort === 'power' ? !state.powered : !state.inputConnected);
+    }
+    for (const mark of posterLeds) {
+      mark.hidden = !poster || (activeIndicator?.live !== mark.dataset.benchPostLed && !latched.has(mark.dataset.benchPostLed));
+    }
+
+    buzzer.textContent = state.powered ? (state.buzzerMuted ? 'Muted' : (latched.size ? 'Alert' : 'Ready')) : 'Off';
+    if (message) result.textContent = message;
+    publishSceneState();
   }
 
-  function stopSweep() {
-    cancelAnimationFrame(frame);
-    frame = 0;
-    cursor = null;
+  function clearInputEvent() {
+    clearTimeout(eventTimer);
+    eventTimer = null;
+    activeIndicator = null;
+    state.signal = 'steady';
   }
 
-  for (const button of thresholdButtons) {
+  const actions = {
+    power() {
+      state.powered = !state.powered;
+      if (state.powered) return guidance();
+      latched.clear();
+      clearInputEvent();
+      return 'Demo power disconnected. The fault LEDs are off.';
+    },
+    input() {
+      state.inputConnected = !state.inputConnected;
+      if (state.inputConnected) return guidance();
+      clearInputEvent();
+      return latched.size ? 'Test leads disconnected. The latched LEDs stay on.' : 'Test leads disconnected.';
+    },
+    reset() {
+      state.armed = !state.armed;
+      if (state.armed) {
+        if (activeIndicator) {
+          latched.add(activeIndicator.latched);
+          return `${activeIndicator.label} latched. The LED stays on until reset.`;
+        }
+        return guidance();
+      }
+      latched.clear();
+      return 'Reset cleared the fault LEDs. Flip Arm / Reset again to rearm.';
+    },
+    threshold() {
+      state.threshold = state.threshold === 75 ? 150 : 75;
+      if (state.threshold === 150 && state.signal.startsWith('spike-')) clearInputEvent();
+      return `Spike threshold set to ±${state.threshold} mV.`;
+    },
+    mute() {
+      state.buzzerMuted = !state.buzzerMuted;
+      return state.buzzerMuted ? 'The optional buzzer is muted.' : 'The optional buzzer is enabled.';
+    },
+  };
+
+  function onAction(action) {
+    if (Object.hasOwn(actions, action)) refresh(actions[action]());
+  }
+
+  for (const button of controlButtons) {
+    button.addEventListener('click', () => onAction(button.dataset.benchAction));
+  }
+
+  for (const button of signalButtons) {
     button.addEventListener('click', () => {
-      spikeLimit = Number(button.dataset.threshold);
-      for (const option of thresholdButtons) option.setAttribute('aria-pressed', String(option === button));
-      waveform = { ...waveform, spikeLimitMv: spikeLimit };
-      redraw();
-      result.textContent = `Spike threshold set to ±${spikeLimit} mV. Run a signal to test it.`;
+      if (inputControls.disabled) return;
+      const signal = signals.find(({ id }) => id === button.dataset.benchSignal);
+      clearInputEvent();
+      state.signal = signal.id;
+      if (!signal.duration) {
+        refresh(latched.size ? 'Steady input applied. The latched LEDs stay on.' : 'Steady input applied. The fault LEDs stay clear.');
+        return;
+      }
+      eventTimer = setTimeout(() => {
+        clearInputEvent();
+        refresh();
+      }, signal.duration);
+      if (signal.spike && state.threshold === 150) {
+        refresh('This demo spike stays below the ±150 mV threshold.');
+      } else {
+        activeIndicator = indicators.find(({ id }) => id === signal.id);
+        if (state.armed) {
+          latched.add(activeIndicator.latched);
+          refresh(`${activeIndicator.label} latched. The LED stays on until reset.`);
+        } else {
+          refresh(`${activeIndicator.label} detected. Reset is holding the latch clear.`);
+        }
+      }
     });
   }
 
-  container.querySelector('[data-run]').addEventListener('click', () => {
-    const scenario = scenarios.find(({ id }) => id === select.value);
-    stopSweep();
-    waveform = capture(scenario, spikeLimit);
-    for (const trip of waveform.trips) latched.add(trip);
-    showIndicators();
-
-    const trips = [...waveform.trips].map((id) => indicatorLabels.get(id));
-    const outcome = trips.length ? `${trips.join(' and ')} latched.` : 'No new fault detected.';
-    result.textContent = `${scenario.label}. ${outcome}`;
-    canvas.setAttribute('aria-label', `${scenario.label} with its low-pass drift trace`);
-    redraw();
-
-    if (!reduceMotion.matches) {
-      const start = performance.now();
-      const sweep = (now) => {
-        const elapsed = (now - start) / 1000;
-        cursor = elapsed < 1.25 ? Math.max(0, elapsed / 1.25) : null;
-        redraw();
-        frame = cursor === null ? 0 : requestAnimationFrame(sweep);
-      };
-      frame = requestAnimationFrame(sweep);
+  refresh(guidance());
+  if (board && mountScene) {
+    fallbackNote.textContent = 'Loading the 3D board…';
+    // The model stage must be measurable while the poster is visible.
+    model.hidden = false;
+    model.style.visibility = 'hidden';
+    try {
+      scene = await mountScene(model, { board, assetBase, poster, onAction });
+      if (scene) {
+        publishSceneState();
+        model.style.removeProperty('visibility');
+        fallback.hidden = true;
+        return;
+      }
+    } catch (error) {
+      console.warn('The tester’s interactive 3D board is unavailable.', error);
     }
-  });
-
-  container.querySelector('[data-reset]').addEventListener('click', () => {
-    stopSweep();
-    latched.clear();
-    showIndicators();
-    redraw();
-    result.textContent = 'Rearmed. All fault latches cleared.';
-  });
+    scene?.dispose();
+    scene = null;
+    model.hidden = true;
+  }
+  fallbackNote.textContent = '3D is unavailable. Use the bench controls to try the board.';
 }
