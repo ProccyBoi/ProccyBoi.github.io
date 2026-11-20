@@ -29,14 +29,15 @@ async function loadViewer(container) {
             if (!window.THREE.GLTFLoader) return loadScript('../vendor/GLTFLoader.js');
           }),
           window.V2CadGeometry || loadScript('../v2-assembly-models.js?v=mechanics-20261003'),
+          window.V2CadStudio || loadScript('../v2-cad-studio.js'),
         ]);
-        return import('./viewer.js');
+        return import('./viewer.js?v=20261120-studio');
       })(),
     ]);
     await mountViewer(container, board, {
       assetBase: assetBase.href,
       artwork: board.artwork,
-      poster: new URL('assembly.webp', assetBase).href,
+      poster: new URL('assembly.webp?v=20261120-studio', assetBase).href,
     });
   } catch (error) {
     console.error('Isolated Glitch Tester viewer could not load', error);

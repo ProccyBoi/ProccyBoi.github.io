@@ -17,8 +17,8 @@
     const reduced=matchMedia('(prefers-reduced-motion: reduce)'),capture=root.hasAttribute('data-hardware-capture');
     const labels=JSON.parse(root.querySelector('[data-hardware-labels]')?.textContent||'{}');
     let renderer,scene,camera,model,environment,raycaster,pointer,frame=0,frames=0,ready=false,loading=false,visible=true,generation=0;
-    let initialRotation={x:1.03,y:-.16,z:-.26};
-    let current=0,target=0,rotation={...initialRotation},zoom=1,drag,pendingPick,hoverPick,selected='',lastTime=0;
+    let initialRotation;
+    let current=0,target=0,rotation,zoom=1,drag,pendingPick,hoverPick,selected='',lastTime=0;
     let dashDevice=null,dashBlink=null,activePage=true;
     const blinkAllowed=()=>ready&&visible&&activePage&&!document.hidden&&!reduced.matches&&!capture&&!navigator.connection?.saveData&&current===target&&!drag;
     let pickables=[],partByMesh=new Map(),keyboardParts=[],keyboardIndex=-1;
@@ -74,9 +74,7 @@
       const phases=model.metadata?.slug==='dash'?[current]:[0,.25,.5,.75,1];
       for(const phase of phases){window.V2CadGeometry.applyMotion(model.parts,phase);model.group.updateMatrixWorld(true);bounds.union(new T.Box3().setFromObject(model.group));}
       window.V2CadGeometry.applyMotion(model.parts,current);model.group.updateMatrixWorld(true);
-      const extentX=Math.max(Math.abs(bounds.min.x),Math.abs(bounds.max.x)),extentY=Math.max(Math.abs(bounds.min.y),Math.abs(bounds.max.y));
-      const half=Math.max(.77,model.span*.7,extentX*1.12/Math.max(1,aspect),extentY*1.12/Math.max(1,1/aspect))/zoom;
-      camera.left=-half*Math.max(1,aspect);camera.right=-camera.left;camera.top=half*Math.max(1,1/aspect);camera.bottom=-camera.top;camera.updateProjectionMatrix();
+      const half=window.V2CadStudio.frame(camera,{aspect,bounds,span:model.span,zoom});
       root.dataset.hardwareCameraHalf=String(half);
     };
     const layout=()=>{if(!renderer||!ready)return;renderer.setSize(stage.clientWidth,stage.clientHeight,false);frameCamera();request();};
@@ -96,20 +94,15 @@
       if(loading||ready)return;loading=true;start.disabled=true;showRetry(false);showStatus('Loading assembly…');root.dataset.hardwareState='loading';const token=++generation;
       try{
         if(!window.THREE)await script('/assets/vendor/three.min.js');if(!window.THREE.GLTFLoader)await script('/assets/vendor/GLTFLoader.js');
+        if(!window.V2CadStudio)await script('/assets/v2-cad-studio.js');
         if(!window.V2CadGeometry)await script('/assets/v2-assembly-models.js?v=mechanics-20261003');if(!window.V2HardwareModels)await script('/assets/v2-hardware-models.js?v=dash-refined-20261025');
         if(token!==generation)return;const T=window.THREE;
         if(!renderer){
-          renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:capture});
-          renderer.setPixelRatio(capture?1:Math.min(devicePixelRatio||1,1.75));renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
-          scene=new T.Scene();camera=new T.OrthographicCamera(-1,1,1,-1,.1,50);camera.position.set(0,0,8);camera.lookAt(0,0,0);raycaster=new T.Raycaster();pointer=new T.Vector2();
-          scene.add(new T.HemisphereLight(0xffffff,0xb6c0c2,.72));
-          [[0xfff5e6,1.35,-4,7,8],[0xdaeaff,.7,5,2,4],[0xffffff,.45,-5,-4,3]].forEach(([colour,power,x,y,z],index)=>{const light=new T.DirectionalLight(colour,power);light.position.set(x,y,z);if(index===0){light.castShadow=true;light.shadow.mapSize.set(1536,1536);Object.assign(light.shadow.camera,{left:-1.4,right:1.4,top:1.4,bottom:-1.4,near:.1,far:25});light.shadow.bias=-.00015;light.shadow.normalBias=.001;}scene.add(light);});
-          const studio=new T.Scene();studio.background=new T.Color(0xb5bfc1);const material=new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide});material.color.multiplyScalar(3);
-          const panel=new T.Mesh(new T.PlaneGeometry(8,12),material);panel.position.set(-6,5,2);panel.rotation.y=Math.PI/2;studio.add(panel);
-          const pmrem=new T.PMREMGenerator(renderer);environment=pmrem.fromScene(studio,.06);scene.environment=environment.texture;pmrem.dispose();panel.geometry.dispose();material.dispose();
+          ({renderer,scene,camera,environment}=window.V2CadStudio.create(T,{canvas,capture}));
+          raycaster=new T.Raycaster();pointer=new T.Vector2();
         }
         const loaded=await window.V2HardwareModels.load(root.dataset.hardware);if(token!==generation){releaseGroup(loaded.group);return;}
-        model=loaded;initialRotation=model.defaultRotation||{x:1.03,y:-.16,z:-.26};rotation={...initialRotation};window.V2CadGeometry.prepareMotion(model.parts);scene.add(model.group);renderer.shadowMap.enabled=model.parts.length<80;renderer.shadowMap.type=T.PCFSoftShadowMap;
+        model=loaded;initialRotation=model.defaultRotation||window.V2CadStudio.boardRotation;rotation={...initialRotation};window.V2CadGeometry.prepareMotion(model.parts);scene.add(model.group);renderer.shadowMap.enabled=model.parts.length<80;renderer.shadowMap.type=T.PCFSoftShadowMap;
         partByMesh=new Map();model.parts.forEach(part=>part.object.traverse(object=>{if(object.isMesh)partByMesh.set(object,part);}));
         keyboardParts=model.parts.flatMap(part=>part.object.userData.componentCenters||[{ref:part.ref,value:part.value}]);
         // Board surfaces occlude parts on the far side instead of picking
@@ -137,7 +130,7 @@
     };
     const reset=()=>{dashDevice?.setView('angled');rotation={...initialRotation};zoom=1;keyboardIndex=-1;setPhase(0);layout();};
     const showBoard=link=>{
-      const load=ready||loading;if(load)releaseModel();current=0;target=0;drag=null;zoom=1;rotation={x:1.03,y:-.16,z:-.26};keyboardIndex=-1;setPhase(0);lastTime=0;
+      const load=ready||loading;if(load)releaseModel();current=0;target=0;drag=null;zoom=1;rotation={...window.V2CadStudio?.boardRotation};keyboardIndex=-1;setPhase(0);lastTime=0;
       root.dataset.hardware=link.dataset.hardwareModel;root.dataset.hardwareTitle=link.dataset.hardwareTitle;root.dataset.hardwareBoardKey=link.dataset.hardwareBoard;root.dataset.hardwareState='poster';
       canvas.hidden=true;start.disabled=false;showRetry(false);poster.src=link.dataset.hardwarePosterSrc;poster.alt=link.dataset.hardwareTitle;poster.hidden=false;showStatus('');
       boardLinks.forEach(item=>item===link?item.setAttribute('aria-current','true'):item.removeAttribute('aria-current'));if(load)initialize();

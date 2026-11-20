@@ -11,17 +11,18 @@
   <meta property="og:title" content="Isolated Glitch Tester v04 | Andrew Chung">
   <meta property="og:description" content="An isolated voltage-fault test board with an interactive 3D assembly and signal demo.">
   <meta property="og:url" content="https://proccyboi.github.io/projects/isolated-glitch-tester/">
-  <meta property="og:image" content="https://proccyboi.github.io/assets/isolated-glitch-tester/assembly.webp">
+  <meta property="og:image" content="https://proccyboi.github.io/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio">
   <meta property="og:image:alt" content="CAD rendering of the Isolated Glitch Tester v04 PCB">
   <link rel="canonical" href="https://proccyboi.github.io/projects/isolated-glitch-tester/">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="assets/project-flow.css?v=20260907">
   <link rel="stylesheet" href="assets/project-integrated.css">
-  <link rel="stylesheet" href="assets/isolated-glitch-tester/project.css">
-  <link rel="stylesheet" href="assets/isolated-glitch-tester/viewer.css">
-  <link rel="stylesheet" href="assets/isolated-glitch-tester/demo.css">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/project.css?v=20261120-studio">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/viewer.css?v=20261120-studio">
+  <link rel="stylesheet" href="assets/isolated-glitch-tester/demo.css?v=20261120-studio">
   <script src="assets/site.js" defer></script>
-  <script type="module" src="assets/isolated-glitch-tester/project.js"></script>
+  <script type="module" src="assets/isolated-glitch-tester/project.js?v=20261120-studio"></script>
 </head>
 <body class="project-page glitch-tester-page">
   <a class="skip-link" href="/projects/isolated-glitch-tester/#main">Skip to content</a>
@@ -35,6 +36,18 @@
     </div>
   </header>
 
+  <nav class="project-flow" aria-label="Isolated Glitch Tester sections">
+    <div class="project-flow-inner">
+      <a class="project-flow-parent" href="projects/isolated-glitch-tester/#overview"><strong>Isolated Glitch Tester v04</strong></a>
+      <div class="project-flow-tabs">
+        <a href="projects/isolated-glitch-tester/#overview">Overview</a>
+        <a href="projects/isolated-glitch-tester/#explore">3D board</a>
+        <a href="projects/isolated-glitch-tester/#demo">Signal demo</a>
+        <a href="projects/isolated-glitch-tester/#details">Design</a>
+      </div>
+    </div>
+  </nav>
+
   <main id="main">
     <section class="project-hero" id="overview" aria-labelledby="project-title">
       <div class="project-hero-grid">
@@ -42,22 +55,22 @@
           <div>
             <p class="eyebrow">Bench test hardware</p>
             <h1 id="project-title">Isolated Glitch Tester v04</h1>
-            <p>An isolated test board that distinguishes slow voltage drift from brief spikes on a power-supply output.</p>
+            <p>A bench PCB for catching slow drift and short voltage spikes during power-supply testing.</p>
           </div>
-          <nav class="project-hero-actions" aria-label="Explore the tester">
-            <a href="/projects/isolated-glitch-tester/#explore">Explore the 3D board</a>
-            <a href="/projects/isolated-glitch-tester/#demo">Try the signal demo</a>
-          </nav>
           <dl class="project-meta">
-            <div><dt>Board dimensions</dt><dd>57 × 121.1 × 1.6 mm</dd></div>
-            <div><dt>Stack-up</dt><dd>2 copper layers</dd></div>
-            <div><dt>Fault outputs</dt><dd>Drift and spike, high and low</dd></div>
-            <div><dt>Footprints</dt><dd>129</dd></div>
+            <div><dt>Board</dt><dd>57 × 121.1 × 1.6 mm</dd></div>
+            <div><dt>Stack-up</dt><dd>2-layer PCB</dd></div>
+            <div><dt>Fault outputs</dt><dd>4 latched indicators</dd></div>
+            <div><dt>Spike thresholds</dt><dd>±75 mV and ±150 mV</dd></div>
           </dl>
+          <nav class="project-hero-actions" aria-label="Explore the tester">
+            <a href="projects/isolated-glitch-tester/#explore">Explore the 3D board</a>
+            <a href="projects/isolated-glitch-tester/#demo">Try the signal demo</a>
+          </nav>
         </div>
-        <figure class="project-hero-media v2-cad-media glitch-tester-poster">
-          <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1200" alt="CAD assembly of the Isolated Glitch Tester v04 with rotary selector, toggle switches, trim controls and fault LEDs" fetchpriority="high" decoding="async">
-          <figcaption class="v2-media-label">CAD assembly rendering</figcaption>
+        <figure class="project-hero-media contain-media glitch-tester-poster">
+          <div class="glitch-tester-poster-art"><img src="assets/isolated-glitch-tester/assembly.webp?v=20261120-studio" width="1600" height="1200" alt="CAD assembly of the Isolated Glitch Tester v04 with rotary selector, toggle switches, trim controls and fault LEDs" fetchpriority="high" decoding="async"></div>
+          <figcaption>CAD assembly</figcaption>
         </figure>
       </div>
     </section>
@@ -66,11 +79,11 @@
       <div class="project-interactive-inner">
         <header class="project-interactive-header">
           <div><h2 id="glitch-viewer-heading">Board assembly</h2></div>
-          <p>Turn the board over to see the comparator and latch circuits. Choose a part on the board or search the footprint list to inspect it in 3D.</p>
+          <p>Flip the board to find the comparator and latch circuits. Select a part or search all 129 footprints for a closer look.</p>
         </header>
         <div data-glitch-viewer>
           <div class="glitch-tester-placeholder">
-            <img src="assets/isolated-glitch-tester/assembly.webp" width="1600" height="1200" alt="Isolated Glitch Tester v04 assembly render" loading="lazy" decoding="async">
+            <img src="assets/isolated-glitch-tester/assembly.webp?v=20261120-studio" width="1600" height="1200" alt="Isolated Glitch Tester v04 assembly render" loading="lazy" decoding="async">
             <p data-glitch-viewer-status role="status" hidden></p>
           </div>
         </div>
@@ -78,11 +91,11 @@
       </div>
     </section>
 
-    <section class="project-interactive" id="demo" aria-labelledby="glitch-demo-heading">
+    <section class="project-interactive glitch-tester-demo-section" id="demo" aria-labelledby="glitch-demo-heading">
       <div class="project-interactive-inner">
         <header class="project-interactive-header">
           <div><h2 id="glitch-demo-heading">Signal demo</h2></div>
-          <p>Run a spike or a drifting signal and see which indicator latches. Use Arm / Reset to clear the latched indicators.</p>
+          <p>Run a spike or a drifting signal and see which indicator latches. Arm / Reset clears the indicators for the next capture.</p>
         </header>
         <div data-glitch-demo>
           <p data-glitch-demo-status role="status" hidden></p>
@@ -95,8 +108,8 @@
       <section class="project-summary" aria-labelledby="glitch-details-heading">
         <h2 id="glitch-details-heading">Two ways to detect a fault</h2>
         <div class="project-prose">
-          <p>The differential input feeds two paths. A low-pass filter tracks slow drift, while a separate path responds to brief excursions. An LM339 comparator drives four independent indicators through a CD4043 latch, so a momentary fault stays visible until reset.</p>
-          <p>The board has reference adjustments for drift and spike detection, oscilloscope outputs, and a buzzer mute.</p>
+          <p>The isolated input feeds two detection paths. A low-pass filter tracks drift, while the spike path catches short excursions. An LM339 compares both paths against high and low limits.</p>
+          <p>The four comparator outputs feed a CD4043 latch, so a momentary fault stays visible until reset. The board also breaks out signals to an oscilloscope and provides separate reference adjustments and a buzzer mute.</p>
         </div>
       </section>
       <section class="project-summary" aria-labelledby="glitch-model-heading">

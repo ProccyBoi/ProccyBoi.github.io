@@ -55,10 +55,10 @@
 
 .mct-viewer__stage {
   position: relative;
-  height: clamp(31rem, 50vw, 43rem);
+  height: 570px;
   overflow: hidden;
   isolation: isolate;
-  background: radial-gradient(ellipse at 48% 44%, #22231f 0, #171815 45%, #10110f 78%);
+  background: #10110f;
 }
 
 .mct-viewer__stage canvas {
@@ -289,9 +289,9 @@
   outline-offset: -3px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 700px) {
   .mct-viewer__stage {
-    height: clamp(24rem, 90vw, 34rem);
+    height: 410px;
   }
 
   .mct-viewer__bar {
@@ -304,10 +304,6 @@
 }
 
 @media (max-width: 520px) {
-  .mct-viewer__stage {
-    height: clamp(20.5rem, 108vw, 28rem);
-  }
-
   .mct-viewer__bar {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -346,5 +342,11 @@
 @media (max-width: 345px) {
   .mct-viewer__bar button {
     padding-inline: 0.45rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .mct-viewer__stage {
+    height: 350px;
   }
 }

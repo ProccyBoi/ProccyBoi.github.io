@@ -1,4 +1,4 @@
-import { boardPoint, buildBoard, makeComponentFactory, finishPackage } from './viewer-geometry.js';
+import { boardPoint, buildBoard, makeComponentFactory, finishPackage } from './viewer-geometry.js?v=20261120-studio';
 
 const ELEVATION_LIMIT = Math.PI / 2 - 0.0001;
 const normalizeSearch = text => text.toLowerCase().replaceAll('_', ' ').trim();
@@ -49,60 +49,6 @@ function viewerMarkup() {
     </div>`;
 }
 
-function setupStudio(THREE, scene, renderer) {
-  const ambient = new THREE.HemisphereLight(0xfff9ec, 0xadad9f, 0.52);
-  ambient.position.set(0, 0, 1);
-  scene.add(ambient);
-
-  const keyDirection = new THREE.Vector3(-0.52, -0.38, 0.76).normalize();
-  const key = new THREE.DirectionalLight(0xfff1dc, 1.1);
-  key.position.copy(keyDirection);
-  key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
-  key.shadow.bias = -0.00015;
-  scene.add(key, key.target);
-
-  const fill = new THREE.DirectionalLight(0xe8eced, 0.43);
-  fill.position.set(-0.4, 0.85, -0.45);
-  scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xf6eee4, 0.55);
-  rim.position.set(0.8, 0.55, 0.2);
-  scene.add(rim);
-  const underside = new THREE.DirectionalLight(0xe6e4de, 0.58);
-  underside.position.set(0.15, -0.4, -0.85);
-  scene.add(underside);
-
-  const studio = new THREE.Scene();
-  studio.background = new THREE.Color(0.13, 0.13, 0.12);
-  const panels = [
-    [12, 9, [-4, -5, 7], [2.65, 2.48, 2.24]],
-    [10, 5, [5, 7, 3], [1.28, 1.39, 1.46]],
-    [12, 4, [-4, 2, -6], [1.5, 1.45, 1.31]]
-  ].map(([width, height, position, color]) => {
-    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(...color), side: THREE.DoubleSide });
-    const panel = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
-    panel.position.set(...position);
-    panel.lookAt(0, 0, 0);
-    studio.add(panel);
-    return panel;
-  });
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(studio, 0.06).texture;
-  pmrem.dispose();
-  for (const panel of panels) {
-    panel.geometry.dispose();
-    panel.material.dispose();
-  }
-
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(220, 235), new THREE.ShadowMaterial({
-    color: 0x020201, opacity: 0.25, depthWrite: false
-  }));
-  floor.position.z = -4.5;
-  floor.receiveShadow = true;
-  scene.add(floor);
-  return { key, keyDirection, floor };
-}
-
 function cameraBasis(THREE, { azimuth, elevation, roll }) {
   const direction = new THREE.Vector3(Math.cos(azimuth) * Math.cos(elevation),
     Math.sin(azimuth) * Math.cos(elevation), Math.sin(elevation));
@@ -113,46 +59,34 @@ function cameraBasis(THREE, { azimuth, elevation, roll }) {
   return { direction, right, up };
 }
 
-function fitFrustum(THREE, object, state, aspect, mode) {
-  const { direction, right, up } = cameraBasis(THREE, state);
-  const point = new THREE.Vector3();
-  const minimum = new THREE.Vector3(Infinity, Infinity, Infinity);
-  const maximum = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
-  const projection = new THREE.Vector3();
-  object.updateMatrixWorld(true);
-  object.traverse(mesh => {
+function modelBounds(THREE, model) {
+  const bounds = new THREE.Box3();
+  const transformed = new THREE.Box3();
+  model.updateMatrixWorld(true);
+  model.traverse(mesh => {
     if (!mesh.isMesh || mesh.isInstancedMesh) return;
     if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-    const bounds = mesh.geometry.boundingBox;
-    for (let corner = 0; corner < 8; corner += 1) {
-      point.set(
-        corner & 1 ? bounds.max.x : bounds.min.x,
-        corner & 2 ? bounds.max.y : bounds.min.y,
-        corner & 4 ? bounds.max.z : bounds.min.z
-      ).applyMatrix4(mesh.matrixWorld);
-      projection.set(point.dot(right), point.dot(up), point.dot(direction));
-      minimum.min(projection);
-      maximum.max(projection);
-    }
+    transformed.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld);
+    bounds.union(transformed);
   });
-  const centre = minimum.clone().add(maximum).multiplyScalar(0.5);
-  const size = maximum.clone().sub(minimum);
-  const target = right.multiplyScalar(centre.x).add(up.multiplyScalar(centre.y)).add(direction.multiplyScalar(centre.z));
-  const halfHeight = Math.max(0.25, size.x / aspect / 2, size.y / 2) * (mode === 'board' ? 1.12 : 1.38);
-  return { target, distance: Math.max(3, size.length() * 1.8), halfHeight, extent: size.length() };
+  return bounds;
 }
 
-function newOrbit(mode) {
-  if (mode === 'part') return { azimuth: -2.3, elevation: 0.62, roll: 0, zoom: 1, preset: '', responsive: false };
-  return { azimuth: -0.66, elevation: 1.04, roll: 0.28, zoom: 1, preset: '', responsive: true };
+function fromNativeBoardPose(THREE, rotation) {
+  // The portfolio imports KiCad CAD as Y-up. The tester data is Z-up.
+  const view = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rotation.x, rotation.y, rotation.z))
+    .multiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2)).invert();
+  const direction = new THREE.Vector3(0, 0, 1).transformDirection(view);
+  const up = new THREE.Vector3(0, 1, 0).transformDirection(view);
+  const azimuth = Math.atan2(direction.y, direction.x);
+  const elevation = Math.asin(direction.z);
+  const base = cameraBasis(THREE, { azimuth, elevation, roll: 0 });
+  return { azimuth, elevation, roll: Math.atan2(-up.dot(base.right), up.dot(base.up)) };
 }
 
-function setResponsiveOrbit(state, aspect) {
-  if (!state.responsive) return;
-  const mobile = aspect < 1.12;
-  state.azimuth = mobile ? -1.88 : -0.66;
-  state.elevation = mobile ? 1.13 : 1.04;
-  state.roll = mobile ? 0 : 0.28;
+function newOrbit(mode, boardPose) {
+  const orientation = mode === 'part' ? { azimuth: -2.3, elevation: 0.62, roll: 0 } : boardPose;
+  return { ...orientation, zoom: 1, preset: '' };
 }
 
 function sourceLabel(component, modelStatus) {
@@ -173,6 +107,8 @@ export function mountViewer(container, board, options = {}) {
   const assetBase = new URL(options.assetBase || '.', document.baseURI);
   const resolveAsset = path => new URL(path, assetBase).href;
   const THREE = window.THREE;
+  const studio = window.V2CadStudio;
+  const boardPose = THREE && studio ? fromNativeBoardPose(THREE, studio.boardRotation) : undefined;
   container.classList.add('mct-viewer');
   container.innerHTML = viewerMarkup();
 
@@ -209,7 +145,7 @@ export function mountViewer(container, board, options = {}) {
   const models = new Map();
   const placements = new Map();
   const partButtons = new Map();
-  const orbits = { board: newOrbit('board'), part: newOrbit('part') };
+  const orbits = { board: newOrbit('board', boardPose), part: newOrbit('part') };
   let chosen;
   let mode = 'board';
   let renderer;
@@ -219,9 +155,9 @@ export function mountViewer(container, board, options = {}) {
   let boardBody;
   let isolated;
   let highlight;
-  let studio;
-  let releasePoster = !poster;
-  let frustum;
+  let presentation;
+  let releasePoster = !poster && !capture;
+  let frameBounds;
   let fitNeeded = true;
   let available = false;
   let frame = 0;
@@ -301,15 +237,12 @@ export function mountViewer(container, board, options = {}) {
     isolated.clear();
     const model = showModel(chosen).clone(true);
     model.traverse(mesh => { mesh.visible = true; });
+    const bounds = modelBounds(THREE, model);
+    const size = bounds.getSize(new THREE.Vector3());
+    model.position.sub(bounds.getCenter(new THREE.Vector3()));
+    isolated.scale.setScalar(1 / Math.max(0.01, size.x, size.y, size.z));
     isolated.add(model);
     fitNeeded = true;
-    renderer.shadowMap.needsUpdate = true;
-  }
-
-  function refreshHighlight() {
-    if (!available) return;
-    highlight.visible = Boolean(chosen);
-    if (chosen) highlight.setFromObject(placements.get(chosen.ref).body);
   }
 
   function setMode(nextMode) {
@@ -318,17 +251,16 @@ export function mountViewer(container, board, options = {}) {
     assembly.visible = mode === 'board';
     isolated.visible = mode === 'part';
     if (mode === 'part') refreshPart();
-    refreshHighlight();
     updateControls();
     fitNeeded = true;
-    renderer.shadowMap.needsUpdate = true;
+    renderer.shadowMap.enabled = mode === 'part' || components.length < 80;
     requestDraw();
   }
 
   function setSide(face) {
     const front = face === 'front';
     orbits.board = { azimuth: front ? -Math.PI / 2 : Math.PI / 2,
-      elevation: front ? ELEVATION_LIMIT : -ELEVATION_LIMIT, roll: 0, zoom: 1, preset: face, responsive: false };
+      elevation: front ? ELEVATION_LIMIT : -ELEVATION_LIMIT, roll: 0, zoom: 1, preset: face };
     setMode('board');
   }
 
@@ -350,14 +282,13 @@ export function mountViewer(container, board, options = {}) {
     if (isolatePart) {
       setMode('part');
     } else {
-      refreshHighlight();
       requestDraw();
     }
     return true;
   }
 
   function resetView() {
-    orbits[mode] = newOrbit(mode);
+    orbits[mode] = newOrbit(mode, boardPose);
     updateControls();
     fitNeeded = true;
     requestDraw();
@@ -371,7 +302,6 @@ export function mountViewer(container, board, options = {}) {
 
   function orbit(deltaX, deltaY) {
     const state = orbits[mode];
-    state.responsive = false;
     state.azimuth -= deltaX * 0.0085;
     state.elevation = Math.max(-ELEVATION_LIMIT, Math.min(ELEVATION_LIMIT, state.elevation + deltaY * 0.0085));
     if (state.preset) {
@@ -393,34 +323,16 @@ export function mountViewer(container, board, options = {}) {
     if (!width || !height) return;
     const state = orbits[mode];
     const aspect = width / height;
+    const { direction, right, up } = cameraBasis(THREE, state);
+    presentation.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, direction).transpose());
+    presentation.updateMatrixWorld(true);
     if (fitNeeded) {
-      setResponsiveOrbit(state, aspect);
-      frustum = fitFrustum(THREE, mode === 'board' ? assembly : isolated, state, aspect, mode);
-      const { extent, target } = frustum;
-      const { key, keyDirection } = studio;
-      const radius = Math.max(1, extent * 0.57);
-      key.target.position.copy(target);
-      key.position.copy(keyDirection).multiplyScalar(radius * 2.4).add(target);
-      Object.assign(key.shadow.camera, { left: -radius, right: radius, top: radius, bottom: -radius,
-        near: 0.02, far: radius * 4.4 });
-      key.shadow.camera.updateProjectionMatrix();
-      key.shadow.normalBias = radius * 0.0008;
-      renderer.shadowMap.needsUpdate = true;
+      frameBounds = modelBounds(THREE, mode === 'board' ? assembly : isolated);
       fitNeeded = false;
     }
-    const { target, halfHeight, distance } = frustum;
-    const span = halfHeight / state.zoom;
-    camera.left = -span * aspect;
-    camera.right = span * aspect;
-    camera.top = span;
-    camera.bottom = -span;
-    camera.far = distance * 5;
-    camera.updateProjectionMatrix();
-    const { direction, up } = cameraBasis(THREE, state);
-    camera.position.copy(direction.multiplyScalar(distance)).add(target);
-    camera.up.copy(up);
-    camera.lookAt(target);
-    studio.floor.visible = mode === 'board' && state.elevation > 0.25;
+    studio.frame(camera, { aspect, bounds: frameBounds, span: 1, zoom: state.zoom });
+    highlight.visible = mode === 'board' && Boolean(chosen);
+    if (highlight.visible) highlight.setFromObject(placements.get(chosen.ref).body);
     if (width !== renderedWidth || height !== renderedHeight) {
       renderer.setSize(width, height, false);
       renderedWidth = width;
@@ -428,6 +340,7 @@ export function mountViewer(container, board, options = {}) {
     }
     renderer.render(scene, camera);
     container.dataset.viewerDraws = String(renderer.info.render.calls);
+    container.dataset.viewerPose = mode === 'part' ? chosen.ref : state.preset || 'assembly';
     if (releasePoster) {
       fallback.hidden = true;
       container.dataset.viewerState = 'ready';
@@ -459,42 +372,38 @@ export function mountViewer(container, board, options = {}) {
   browse.addEventListener('click', () => setBrowserOpen(list.hidden));
   filterParts();
   updateDetails();
-  if (!THREE) {
+  if (!THREE || !studio) {
     showUnavailable();
     return { selectRef: ref => select(componentByRef.get(ref), true) };
   }
 
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer: capture });
+    ({ renderer, scene, camera } = studio.create(THREE, { canvas, capture }));
   } catch {
     showUnavailable();
     return { selectRef: ref => select(componentByRef.get(ref), true) };
   }
   available = true;
-  renderer.setPixelRatio(capture ? 1 : Math.min(window.devicePixelRatio || 1, 1.7));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.93;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.autoUpdate = false;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 1000);
-  scene = new THREE.Scene();
-  studio = setupStudio(THREE, scene, renderer);
+  renderer.shadowMap.enabled = components.length < 80;
+  presentation = new THREE.Group();
+  scene.add(presentation);
 
   const boardBuild = buildBoard(THREE, board, artwork, resolveAsset, requestDraw, Math.min(8, renderer.capabilities.getMaxAnisotropy()));
   ({ assembly, boardBody } = boardBuild);
-  scene.add(assembly);
+  assembly.scale.setScalar(1 / Math.max(board.width, board.height));
+  assembly.position.z = assembly.scale.z * board.thickness / 2;
+  presentation.add(assembly);
   const footprints = new THREE.Group();
   const batches = new THREE.Group();
   assembly.add(footprints, batches);
   isolated = new THREE.Group();
   isolated.visible = false;
-  scene.add(isolated);
-  highlight = new THREE.BoxHelper(new THREE.Group(), 0xfa7148);
+  presentation.add(isolated);
+  const accent = getComputedStyle(container).getPropertyValue('--mct-accent').trim();
+  highlight = new THREE.BoxHelper(new THREE.Group(), accent || 0x7bbcff);
   highlight.material.toneMapped = false;
   highlight.visible = false;
-  assembly.add(highlight);
+  scene.add(highlight);
   const makeFallback = makeComponentFactory(THREE);
   const referencesByAsset = new Map();
 
@@ -552,6 +461,8 @@ export function mountViewer(container, board, options = {}) {
             batches.add(instanced);
           }
         }
+        assembly.updateWorldMatrix(true, false);
+        const inverseAssembly = assembly.matrixWorld.clone().invert();
         refs.forEach((ref, index) => {
           const { body } = placements.get(ref);
           const clone = packageModel.clone(true);
@@ -562,18 +473,16 @@ export function mountViewer(container, board, options = {}) {
           packageModel.children.forEach((mesh, childIndex) => {
             const instanced = instancedByMesh.get(mesh);
             if (!instanced) return;
-            instanced.setMatrixAt(index, body.matrixWorld);
+            instanced.setMatrixAt(index, inverseAssembly.clone().multiply(body.matrixWorld));
             // Retain ordinary meshes for per-reference raycasting and bounds.
             clone.children[childIndex].visible = false;
           });
         });
         for (const instanced of instancedByMesh.values()) instanced.instanceMatrix.needsUpdate = true;
         if (refs.includes(chosen?.ref)) {
-          refreshHighlight();
           if (mode === 'part') refreshPart();
           updateDetails();
         }
-        renderer.shadowMap.needsUpdate = true;
         requestDraw();
         resolve();
       }, undefined, () => {
@@ -586,10 +495,10 @@ export function mountViewer(container, board, options = {}) {
 
   function reveal() {
     releasePoster = true;
-    if (mode === 'board' && orbits.board.responsive) fitNeeded = true;
+    fitNeeded = true;
     requestDraw();
   }
-  const revealTimer = poster ? window.setTimeout(reveal, 2500) : 0;
+  const revealTimer = poster && !capture ? window.setTimeout(reveal, 2500) : 0;
   Promise.allSettled(loadPromises).then(() => {
     window.clearTimeout(revealTimer);
     reveal();

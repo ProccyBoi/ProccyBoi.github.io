@@ -11,10 +11,34 @@
   width: 100%;
 }
 
+.glitch-tester-page:not(.v2) .glitch-tester-poster {
+  background: var(--surface-deep);
+  border: 1px solid var(--rule);
+}
+
+.glitch-tester-page:not(.v2) .glitch-tester-poster-art {
+  overflow: hidden;
+}
+
+.glitch-tester-page:not(.v2) .glitch-tester-poster-art img {
+  transform: scale(1.24);
+}
+
 .glitch-tester-page:not(.v2) .glitch-tester-poster figcaption {
-  padding: .55rem .8rem;
-  color: #b8b9b2;
+  padding: .65rem .85rem;
+  border-top: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--muted);
   font: .8125rem/1.5 var(--mono);
+}
+
+.glitch-tester-page:not(.v2) .glitch-tester-demo-section {
+  --object-text: var(--text);
+  --object-muted: var(--muted);
+  --object-accent: var(--copper);
+  background: var(--bg);
+  color: var(--text);
+  border-bottom: 1px solid var(--rule);
 }
 
 .glitch-tester-page .project-prose a {
@@ -40,4 +64,34 @@
   padding: .75rem 1rem;
   margin: 0;
   background: #10110ff2;
+}
+
+.js [data-glitch-viewer] {
+  min-height: 710px;
+}
+
+@media (max-width: 720px) {
+  .glitch-tester-page:not(.v2) .project-hero-copy {
+    display: contents;
+  }
+
+  .glitch-tester-page:not(.v2) .glitch-tester-poster {
+    grid-row: 2;
+  }
+
+  .glitch-tester-page:not(.v2) .project-hero-actions {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .js [data-glitch-viewer] {
+    min-height: 550px;
+  }
+}
+
+@media (max-width: 520px) {
+  .js [data-glitch-viewer] {
+    min-height: 660px;
+  }
 }

@@ -113,10 +113,10 @@ function drawBoardFace(context, canvas, board, face, images, surfaces = false) {
   const copperLayer = isFront ? 'F.Cu' : 'B.Cu';
   const maskLayer = isFront ? 'F.Mask' : 'B.Mask';
   const density = canvas.width / board.width;
-  const maskColor = surfaces ? '#00c70c' : '#151513';
-  const traceColor = surfaces ? '#00c112' : '#1c1e1c';
-  const padColor = surfaces ? '#0063c4' : '#88744e';
-  const silkColor = surfaces ? '#00e600' : '#c9c9bd';
+  const maskColor = surfaces ? '#009408' : '#121416';
+  const traceColor = surfaces ? '#009408' : '#191c1e';
+  const padColor = surfaces ? '#004fcc' : '#917851';
+  const silkColor = surfaces ? '#00f200' : '#d3d2c8';
   const tintCanvas = document.createElement('canvas');
   tintCanvas.width = canvas.width;
   tintCanvas.height = canvas.height;
@@ -219,7 +219,7 @@ export function buildBoard(THREE, board, artwork, resolveAsset, redraw, anisotro
   const walls = edge.groups.find(group => group.materialIndex === 1);
   edge.setDrawRange(walls.start, walls.count);
   const boardBody = new THREE.Group();
-  boardBody.add(new THREE.Mesh(edge, new THREE.MeshStandardMaterial({ color: '#5c4931', roughness: 0.88 })));
+  boardBody.add(new THREE.Mesh(edge, new THREE.MeshStandardMaterial({ color: new THREE.Color('#5c4931').convertSRGBToLinear(), roughness: 0.86, envMapIntensity: 0.12 })));
   assembly.add(boardBody);
   const geometry = new THREE.ShapeGeometry(shape);
   const position = geometry.getAttribute('position');
@@ -240,15 +240,13 @@ export function buildBoard(THREE, board, artwork, resolveAsset, redraw, anisotro
     texture.anisotropy = anisotropy;
     const surfaces = new THREE.CanvasTexture(surfaceCanvas);
     surfaces.anisotropy = anisotropy;
-    const material = new THREE.MeshPhysicalMaterial({
+    const material = new THREE.MeshStandardMaterial({
       map: texture,
       roughness: 1,
       roughnessMap: surfaces,
       metalness: 1,
       metalnessMap: surfaces,
-      clearcoat: 0.08,
-      clearcoatRoughness: 0.65,
-      envMapIntensity: 0.38,
+      envMapIntensity: 0.32,
       side: THREE.DoubleSide
     });
     const surface = new THREE.Mesh(geometry, material);
@@ -298,23 +296,18 @@ export function finishPackage(THREE, object, asset, source) {
             depthWrite: false,
             side: THREE.DoubleSide
           });
-        } else if ((r > 0.57 && r < 0.72 && g > r * 0.92 && b > g * 0.8)
-          || (r > 0.58 && g < r * 0.86 && b < g * 0.65)) {
-          finish.roughness = 0.32;
-          finish.metalness = 0.8;
-          finish.color.multiplyScalar(0.68);
         } else {
-          finish.roughness = 0.56;
-          finish.metalness = 0.02;
-          if (r < 0.075 && g < 0.075 && b < 0.075) finish.color.offsetHSL(0, 0, 0.014);
-          if (g > 0.23 && g > r * 1.6) finish.color.multiplyScalar(0.67);
+          const brightness = Math.max(r, g, b);
+          const neutral = brightness - Math.min(r, g, b) < 0.15;
+          finish.metalness = brightness > 0.3 && neutral ? 0.65 : 0.03;
+          finish.roughness = finish.metalness > 0.2 ? 0.37 : 0.7;
         }
         materialVariants.set(material, finish);
       }
       mesh.material = materialVariants.get(material);
     }
     for (const material of (Array.isArray(mesh.material) ? mesh.material : [mesh.material])) {
-      if (material?.isMeshStandardMaterial) material.envMapIntensity = material.metalness > 0.3 ? 0.64 : 0.24;
+      if (material?.isMeshStandardMaterial) material.envMapIntensity = material.metalness > 0.2 ? 0.45 : 0.12;
     }
     mesh.castShadow = !(mesh.material?.transparent);
     mesh.receiveShadow = true;

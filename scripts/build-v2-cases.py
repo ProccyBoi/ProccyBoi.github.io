@@ -501,6 +501,8 @@ def make_case(path, slug=None, source=None):
     hero_actions = f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#{explore_anchor}">{explore_label} <span aria-hidden="true">↗</span></a><a href="/v2/projects/{slug}/#details">Design details <span aria-hidden="true">↓</span></a></div>' if has_explorer else f'<div class="project-hero-actions"><a href="/v2/projects/{slug}/#details">Project details <span aria-hidden="true">↓</span></a></div>'
     if slug == 'isolated-glitch-tester':
         hero_actions = tree.find('nav', 'project-hero-actions').outer(source)
+        hero_media = hero_media.replace('contain-media ', 'v2-cad-media ', 1)
+        hero_media = hero_media.replace('<figcaption>', '<figcaption class="v2-media-label">', 1)
     new_hero = f'''<section class="project-hero" id="overview" aria-labelledby="{tree.find('h1').attrs['id']}">
     <div class="project-hero-grid"><div class="project-hero-copy"><div>{copy_intro}</div>{hero_actions}</div>{hero_media}</div>
     <div class="v2-case-specs shell">{meta.outer(source) if meta else ''}</div></section>'''
@@ -660,7 +662,7 @@ def make_index():
     tree = Tree(source)
     media_changes = []
     card_images = {
-        'projects/isolated-glitch-tester/': ('/assets/isolated-glitch-tester/assembly.webp', 1600, 1200, 'Isolated Glitch Tester v04 CAD assembly'),
+        'projects/isolated-glitch-tester/': ('/assets/isolated-glitch-tester/assembly.webp?v=20261120-studio', 1600, 1200, 'Isolated Glitch Tester v04 CAD assembly'),
         'projects/tramtrace/': ('/assets/images/v2/tramtrace-cad.webp', 1600, 1200, 'TramTrace light-rail display PCB'),
         'projects/framework-expansion-card/': ('/assets/images/v2/framework-cad.webp', 1600, 1200, 'Framework ESP32 expansion card'),
         'projects/skylabs/': ('/assets/images/v2/hardware/skylabs-telemetry.webp', 1600, 1200, 'Skylabs aircraft telemetry PCB'),
