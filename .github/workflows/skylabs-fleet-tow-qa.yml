@@ -1,0 +1,95 @@
+name: Fleet tow GPU proof (stage only)
+on:
+  push:
+    branches: [qa/v2-fleet-cold]
+permissions:
+  contents: read
+concurrency:
+  group: fleet-tow-branch-only
+  cancel-in-progress: true
+jobs:
+  render:
+    timeout-minutes: 22
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [390, 1280]
+    env:
+      BASE_SHA: cb25f2fbd2bf87ba102ad171390a869ad4a17609
+      WIDTH: ${{ matrix.width }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: after
+          fetch-depth: 3
+      - uses: actions/checkout@v4
+        with:
+          ref: cb25f2fbd2bf87ba102ad171390a869ad4a17609
+          persist-credentials: false
+          path: before
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Record exact candidate and audit authored assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p proof
+          git -C after rev-parse HEAD HEAD^{tree} HEAD^ HEAD^^{tree} > proof/revisions.txt
+          git -C after diff --name-status "$BASE_SHA" HEAD^ > proof/feature-files.txt
+          cd after
+          if [ "$WIDTH" = 1280 ]; then python3 scripts/audit-v2.py 2>&1 | tee ../proof/audit-v2.log; fi
+          node --check assets/v2-skylabs-fleet.js
+          node --check scripts/verify-v2-skylabs-fleet.cjs
+      - name: Use runner Chrome and isolated browser controller
+        timeout-minutes: 2
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          chrome="$(command -v google-chrome || command -v chromium)"
+          "$chrome" --version
+          echo "CHROMIUM_EXECUTABLE=$chrome" >> "$GITHUB_ENV"
+          npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund --fetch-retries=1 --fetch-timeout=24000 playwright@1.57.0
+      - name: Prove the actual tow and retraction in both viewport compositions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp after/scripts/tow-independent.cjs "$RUNNER_TEMP/tow-independent.cjs"
+          export FEATURE_ROOT="$PWD/after"
+          python3 -m http.server 8808 --bind 127.0.0.1 --directory after &
+          listener=$!
+          trap 'kill "$listener"' EXIT
+          for n in {1..25}; do curl -fsS http://127.0.0.1:8808/v2/projects/skylabs/ -o /dev/null && break; sleep .25; done
+          node "$RUNNER_TEMP/tow-independent.cjs" "$WIDTH" proof/tow
+      - name: Compare cold startup and no-download fallback
+        env:
+          FLEET_RUNS: 3
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp after/scripts/fleet-cold.cjs "$RUNNER_TEMP/fleet-cold.cjs"
+          node "$RUNNER_TEMP/fleet-cold.cjs" before after proof "$WIDTH"
+      - name: Run existing full case-study regression
+        if: ${{ success() && matrix.width == 1280 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export NODE_PATH="$RUNNER_TEMP/node_modules"
+          export V2_BASE_URL=http://127.0.0.1:8808
+          python3 -m http.server 8808 --bind 127.0.0.1 --directory after &
+          listener=$!
+          trap 'kill "$listener"' EXIT
+          for n in {1..25}; do curl -fsS "$V2_BASE_URL/v2/projects/skylabs/" -o /dev/null && break; sleep .25; done
+          cd after
+          node scripts/verify-v2-skylabs-fleet.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fleet-tow-${{ matrix.width }}-${{ github.sha }}
+          path: |
+            proof/
+            after/.codex-temp/fleet/
+          include-hidden-files: true
+          retention-days: 10
