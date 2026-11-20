@@ -761,7 +761,7 @@ def enrich_case(source, slug):
         nav = '<a href="/v2/projects/skylabs/#explore" data-v2-section>'
         source = source.replace(nav, '<a href="/v2/projects/skylabs/#aircraft" data-v2-section>Aircraft</a>' + nav, 1)
         source = source.replace('<link rel="stylesheet" href="/assets/v2-wayfinder.css">',
-            '<link rel="stylesheet" href="/assets/v2-skylabs-fleet.css?v=formation-2">\n<script src="/assets/v2-skylabs-fleet.js?v=formation-2" defer></script>\n<link rel="stylesheet" href="/assets/v2-wayfinder.css">', 1)
+            '<link rel="stylesheet" href="/assets/v2-skylabs-fleet.css?v=mission3-1">\n<script src="/assets/v2-skylabs-fleet.js?v=mission3-1" defer></script>\n<link rel="stylesheet" href="/assets/v2-wayfinder.css">', 1)
     if slug == 'skylabs':
         source = source.replace('for 40 Hz onboard logging', 'targeting 40 Hz onboard logging').replace('scheduled at 40 Hz', 'with a 40 Hz target').replace('STM32G474 sensor acquisition, 40 Hz binary logging', 'STM32G474 sensor acquisition, a 40 Hz binary logging target')
     records = json.loads(CASE_EVIDENCE_PATH.read_text(encoding='utf-8')) if CASE_EVIDENCE_PATH.exists() else {}

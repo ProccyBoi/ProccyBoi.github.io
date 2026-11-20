@@ -13,7 +13,7 @@
 .fleet-caption{position:absolute;left:5vw;bottom:1.5rem;right:5vw;pointer-events:none;font-size:.88rem;color:#c3cfdb;line-height:1.45;max-width:38rem}
 .fleet-caption strong{display:block;color:#f1f5fa;font-size:clamp(1.05rem,1.7vw,1.45rem);line-height:1.18;letter-spacing:-.025em;margin-bottom:.32rem}
 .fleet-progress{position:absolute;bottom:0;height:2px;background:var(--fleet-blue);width:100%;transform:scaleX(0);transform-origin:left}
-.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:265svh}
+.skylabs-fleet[data-fleet-state=ready] .fleet-track{height:334svh}
 .skylabs-fleet[data-fleet-state=ready] .fleet-stage{position:sticky;top:110px;height:calc(100svh - 130px);max-height:800px}
 .fleet-notes{padding:2rem 5vw 3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;max-width:1280px;margin:auto}
 .fleet-notes h3{font-size:1.1rem;margin:0 0 .7rem;color:#e9eef6}
