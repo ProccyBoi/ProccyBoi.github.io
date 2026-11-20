@@ -2,6 +2,10 @@
   scroll-margin-top: calc(var(--header-height) + 4.4rem);
 }
 
+.glitch-tester-page:not(.v2) :is(#main, #overview, #explore, #demo, #details) {
+  scroll-margin-top: 2.25rem;
+}
+
 .glitch-tester-page .glitch-tester-poster {
   margin: 0;
   background: #10110f;
@@ -71,6 +75,10 @@
 }
 
 @media (max-width: 720px) {
+  .glitch-tester-page:not(.v2) :is(#main, #overview, #explore, #demo, #details) {
+    scroll-margin-top: 1.75rem;
+  }
+
   .glitch-tester-page:not(.v2) .project-hero-copy {
     display: contents;
   }
