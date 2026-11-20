@@ -1,0 +1,89 @@
+name: Fleet tow GPU proof (stage only)
+on:
+  push:
+    branches: [qa/v2-fleet-cold]
+permissions:
+  contents: read
+jobs:
+  render:
+    timeout-minutes: 22
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [390, 1280]
+    env:
+      BASE_SHA: f5ed872921afcbdecffc05f0d383afa9aca8c86b
+      WIDTH: ${{ matrix.width }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: after
+          fetch-depth: 2
+      - uses: actions/checkout@v4
+        with:
+          ref: f5ed872921afcbdecffc05f0d383afa9aca8c86b
+          persist-credentials: false
+          path: before
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Record exact candidate and audit authored assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p proof
+          git -C after rev-parse HEAD HEAD^{tree} HEAD^ HEAD^^{tree} > proof/revisions.txt
+          git -C after diff --name-status "$BASE_SHA" HEAD^ > proof/feature-files.txt
+          cd after
+          if [ "$WIDTH" = 1280 ]; then python3 scripts/audit-v2.py 2>&1 | tee ../proof/audit-v2.log; fi
+          node --check assets/v2-skylabs-fleet.js
+          node --check scripts/verify-v2-skylabs-fleet.cjs
+      - name: Install isolated Chromium
+        working-directory: ${{ runner.temp }}
+        run: |
+          npm install --no-save --no-package-lock playwright@1.57.0
+          ./node_modules/.bin/playwright install --with-deps chromium
+      - name: Prove the actual tow and retraction in both viewport compositions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp after/scripts/tow-independent.cjs "$RUNNER_TEMP/tow-independent.cjs"
+          export FEATURE_ROOT="$PWD/after"
+          python3 -m http.server 8808 --bind 127.0.0.1 --directory after &
+          listener=$!
+          trap 'kill "$listener"' EXIT
+          for n in {1..25}; do curl -fsS http://127.0.0.1:8808/v2/projects/skylabs/ -o /dev/null && break; sleep .25; done
+          node "$RUNNER_TEMP/tow-independent.cjs" "$WIDTH" proof/tow
+      - name: Compare cold startup and no-download fallback
+        env:
+          FLEET_RUNS: 3
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp after/scripts/fleet-cold.cjs "$RUNNER_TEMP/fleet-cold.cjs"
+          node "$RUNNER_TEMP/fleet-cold.cjs" before after proof "$WIDTH"
+      - name: Run existing full case-study regression
+        if: ${{ !cancelled() && matrix.width == 1280 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export NODE_PATH="$RUNNER_TEMP/node_modules"
+          export CHROMIUM_EXECUTABLE="$(node -p "require('playwright').chromium.executablePath()")"
+          export V2_BASE_URL=http://127.0.0.1:8808
+          python3 -m http.server 8808 --bind 127.0.0.1 --directory after &
+          listener=$!
+          trap 'kill "$listener"' EXIT
+          for n in {1..25}; do curl -fsS "$V2_BASE_URL/v2/projects/skylabs/" -o /dev/null && break; sleep .25; done
+          cd after
+          node scripts/verify-v2-skylabs-fleet.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fleet-tow-${{ matrix.width }}-${{ github.sha }}
+          path: |
+            proof/
+            after/.codex-temp/fleet/
+          include-hidden-files: true
+          retention-days: 10
