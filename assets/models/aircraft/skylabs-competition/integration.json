@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "status": "internal-lowering-and-vertical-release",
+  "version": 5,
+  "status": "mission-3-forward-scroll-deploy-tow-recover",
   "route": "/v2/projects/skylabs/#aircraft",
   "trainerStory": "/v2/projects/#skylabs-aircraft",
   "pairedEntrance": true,
@@ -78,7 +78,11 @@
       0.014
     ],
     "loopSpanPositionM": 0.0555,
-    "visualCableDiameterM": 0.0013,
+    "visualCableDiameterM": {
+      "inside": 0.0013,
+      "wideTowShot": 0.0059,
+      "note": "Exaggerated in the wide shot for legibility; not a hardware diameter."
+    },
     "sensorAttachmentInOriginalMechanismSourceM": [
       0.061540941309766,
       -0.0457201238048,
@@ -88,28 +92,19 @@
     "payout": "Illustrative variable length; no invented reel or release actuator"
   },
   "motion": {
-    "sensorFinalTranslationInSourceM": [
-      0,
-      0,
-      -0.48
-    ],
     "movingSourceSolid": "Sensor V2 compound solid 0 only",
-    "carriage": "25 mm internal downward stroke, progress 0.60\u20130.70; remains aboard during release",
+    "carriage": "25 mm internal stroke at progress .600\u2013.657 and restored .962\u2013.979; remains aboard",
     "housing": "Stationary cutaway opacity only; no exploded offsets",
     "covering": "44 source-derived white/blue Solarfilm panels; same localized diagonal peel kernel as Projects hero",
     "reversible": true,
     "physicalKinematicsValidated": false,
-    "release": "Sensor follows carriage for 25 mm, then drops a further 450 mm vertically, progress 0.74\u20130.92. No aft translation.",
+    "release": "Vertical belly release begins at .684; body clears before it trails aft. Full deployment .800\u2013.878. It reels to the same exit before lifting vertically back inside.",
     "sensorMountOffsetInSourceM": [
       0,
       0,
       -0.005
     ],
-    "sensorTravelFromAdjustedRestM": [
-      0,
-      0,
-      -0.475
-    ]
+    "sensorFullyStowedAt": 0.979
   },
   "scope": "Visual storytelling authorized by user; not structural or flight validation",
   "systems": {
@@ -127,5 +122,27 @@
     ],
     "servos": "Four existing trainer KST-X10 Pro-B illustrative servos at flaperons, elevator and rudder",
     "mounts": "Assumed positions and telemetry standoffs; actual board geometry unscaled except original metres normalization; harness routed outside carriage stroke"
+  },
+  "mission3": {
+    "rules": "https://aiaa.org/wp-content/uploads/2026/10/DBF-2027-Rules-Final.pdf",
+    "sections": [
+      "3.1.2",
+      "3.3.3.3"
+    ],
+    "wingspanM": 1.8336315894139834,
+    "wingspanEvidence": "Spanwise extrema of the actual Wing_Assembly and mirrored Wing_Assembly, including both CAD Endplate occurrences. Not the trainer or official maximum allowed span.",
+    "minimumExitToForwardTipM": 2.750447384120975,
+    "animatedTargetExitToForwardTipM": 2.750647384120975,
+    "forwardTipSourceM": [
+      0.149540941309766,
+      -0.0457201238048,
+      0.0318149997162829
+    ],
+    "exitLocalM": [
+      0.425356761309766,
+      -0.08375000046007501,
+      0.0007201238048
+    ],
+    "exitEvidence": "Illustrative cutaway exit centred directly below the front-notch path at the original outer fuselage floor plane. Provided source does not substantiate a validated opening or latch."
   }
 }
